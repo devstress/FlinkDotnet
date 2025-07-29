@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Common.Constants.Tests</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Common.Constants.Tests.ServiceConstantsTests">
+            <summary>
+            Unit tests for the common constants library to ensure hardcoded values are properly centralized
+            </summary>
+        </member>
+    </members>
+</doc>

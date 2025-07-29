@@ -1,0 +1,913 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Core.Api</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl">
+            <summary>
+            Flink.Net style credit-based flow control for individual pipeline stages.
+            Manages credits and back pressure for a specific stage in the processing pipeline.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.RequestCredits(System.Int32)">
+            <summary>
+            Request credits for processing data in this stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.ReplenishCredits(System.Int32)">
+            <summary>
+            Replenish credits when processing completes
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.ReduceCreditsForBackPressure(System.Double)">
+            <summary>
+            Reduce credits for back pressure management
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.RestoreNormalCredits">
+            <summary>
+            Restore normal credit allocation
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.GetBackPressureLevel">
+            <summary>
+            Get current back pressure level (0.0 to 1.0)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.AvailableCredits">
+            <summary>
+            Get current available credits
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.MaxCredits">
+            <summary>
+            Get maximum credits for this stage
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.StageName">
+            <summary>
+            Get stage name
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl.GetStatistics">
+            <summary>
+            Get credit statistics for monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.StageFlowConfiguration">
+            <summary>
+            Configuration for stage-specific flow control
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.StageFlowConfiguration.MaxBufferSize">
+            <summary>
+            Maximum buffer size (credits) for this stage
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.StageFlowConfiguration.BackPressureThreshold">
+            <summary>
+            Back pressure threshold (0.0 to 1.0)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.StageFlowConfiguration.CreditReplenishRate">
+            <summary>
+            Rate at which credits are replenished per second
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.StageFlowConfiguration.CreditRequestTimeout">
+            <summary>
+            Timeout for credit allocation requests
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.CreditStatistics">
+            <summary>
+            Statistics for credit-based flow control monitoring
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.CreditStatistics.CreditEfficiency">
+            <summary>
+            Calculate credit efficiency (granted/requested ratio)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureDetector">
+            <summary>
+            Local back pressure detection and throttling for LocalStreamExecutor.
+            Provides Flink.Net style back pressure handling within a single process.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureDetector.RecordQueueSize(System.String,System.Int32,System.Int32)">
+            <summary>
+            Records queue size for a specific operator to monitor back pressure.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureDetector.ShouldThrottle(System.String)">
+            <summary>
+            Determines if the system should throttle data processing due to back pressure.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureDetector.GetThrottleDelayMs">
+            <summary>
+            Gets the recommended throttle delay in milliseconds.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureDetector.GetOverallPressureLevel">
+            <summary>
+            Gets overall system back pressure level (0.0 to 1.0).
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureConfiguration">
+            <summary>
+            Configuration for local back pressure detection.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureConfiguration.BackPressureThreshold">
+            <summary>
+            Back pressure threshold (0.0 to 1.0). When queue utilization exceeds this, throttling is applied.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureConfiguration.BaseThrottleDelayMs">
+            <summary>
+            Base throttle delay in milliseconds when back pressure is detected.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.BackPressure.LocalBackPressureConfiguration.DefaultMaxQueueSize">
+            <summary>
+            Maximum queue size for each operator before considering it under pressure.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.QueueMetrics">
+            <summary>
+            Metrics for monitoring queue back pressure.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController">
+            <summary>
+            Flink.Net style pipeline back pressure controller that manages back pressure
+            across a complex multi-stage pipeline with proper credit-based flow control.
+            
+            Supports the pipeline: Gateway -> KeyGen -> IngressProcessing -> AsyncEgressProcessing -> Final Sink
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.InitializeStageFlowControls">
+            <summary>
+            Initialize credit-based flow controls for each pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.GetStageConfiguration(System.String)">
+            <summary>
+            Get stage-specific configuration based on Flink.Net best practices
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.MonitorPipelineBackPressure(System.Object)">
+            <summary>
+            Monitor pipeline back pressure and apply Flink.Net style throttling
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.CalculateOverallPipelinePressure">
+            <summary>
+            Calculate overall pipeline pressure using Flink.Net heuristics
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.CalculateStagePressure(System.String,FlinkDotNet.Core.Api.BackPressure.PipelineStageMetrics,FlinkDotNet.Core.Api.BackPressure.CreditBasedFlowControl)">
+            <summary>
+            Calculate back pressure for a specific pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.ApplyPipelineBackPressureDecisions">
+            <summary>
+            Apply back pressure decisions across the pipeline
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.ApplyHighPressureThrottling(System.String,System.Double)">
+            <summary>
+            Apply high pressure throttling to a pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.ApplyModeratePressureThrottling(System.String,System.Double)">
+            <summary>
+            Apply moderate pressure throttling to a pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.RelievePressureThrottling(System.String)">
+            <summary>
+            Relieve pressure throttling for a pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.LogPipelineHealth(System.Double)">
+            <summary>
+            Log overall pipeline health status
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.RequestCredits(System.String,System.Int32)">
+            <summary>
+            Request credits for processing data in a specific pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.ReplenishCredits(System.String,System.Int32)">
+            <summary>
+            Replenish credits when processing completes in a pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.UpdateStageMetrics(System.String,System.Int32,System.Int32,System.Double,System.Double)">
+            <summary>
+            Update stage metrics for back pressure calculation
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.ShouldThrottleStage(System.String)">
+            <summary>
+            Check if a specific pipeline stage should throttle intake
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.GetStageThrottleDelayMs(System.String)">
+            <summary>
+            Get throttle delay for a specific pipeline stage
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureController.GetPipelineStatus">
+            <summary>
+            Get pipeline back pressure status for monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.PipelineStage">
+            <summary>
+            Pipeline stage names for Flink.Net style processing
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureConfiguration">
+            <summary>
+            Configuration for pipeline back pressure system
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.PipelineStageMetrics">
+            <summary>
+            Metrics for a specific pipeline stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.PipelineBackPressureStatus">
+            <summary>
+            Overall pipeline back pressure status
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.BackPressure.StageBackPressureStatus">
+            <summary>
+            Back pressure status for a specific stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Execution.LocalStreamExecutor">
+            <summary>
+            Local execution engine for FlinkDotNet that can execute JobGraphs in a single process.
+            This enables local testing and development without requiring a full distributed setup.
+            Implements core Flink.Net execution concepts including back pressure handling.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Execution.LocalStreamExecutor.ExecuteJobAsync(FlinkDotNet.JobManager.Models.JobGraph.JobGraph,System.Threading.CancellationToken)">
+            <summary>
+            Executes the given JobGraph locally in the current process.
+            This provides Flink.Net compatible execution semantics.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1">
+            <summary>
+            Flink.Net style FinalSink stage that provides acknowledgment-based
+            back pressure for Kafka, Database, or Callback destinations.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.SendToDestination(FlinkDotNet.Core.Api.Pipeline.EgressResult{`0})">
+            <summary>
+            Send record to final destination (Kafka, Database, Callback)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.SendToKafka(FlinkDotNet.Core.Api.Pipeline.EgressResult{`0})">
+            <summary>
+            Send record to Kafka with acknowledgment support
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.SendToDatabase(FlinkDotNet.Core.Api.Pipeline.EgressResult{`0})">
+            <summary>
+            Send record to Database with transaction support
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.SendToCallback(FlinkDotNet.Core.Api.Pipeline.EgressResult{`0})">
+            <summary>
+            Send record to Callback with response handling
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.TrackPendingAcknowledgment(System.String,FlinkDotNet.Core.Api.Pipeline.EgressResult{`0},System.DateTime)">
+            <summary>
+            Track pending acknowledgment for back pressure management
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.HandleAcknowledgment(System.String,System.Boolean,System.String)">
+            <summary>
+            Handle acknowledgment from destination
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.CompleteProcessing(FlinkDotNet.Core.Api.Pipeline.EgressResult{`0},System.DateTime)">
+            <summary>
+            Complete processing and update metrics
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.HandleFailedAcknowledgment(FlinkDotNet.Core.Api.Pipeline.PendingAcknowledgment{`0},System.String)">
+            <summary>
+            Handle failed acknowledgment
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.CheckAcknowledgmentTimeouts(System.Object)">
+            <summary>
+            Check for acknowledgment timeouts
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.UpdateStageMetrics(System.Double)">
+            <summary>
+            Update stage metrics for back pressure monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.FinalSinkStage`1.UpdateMetrics(System.Object)">
+            <summary>
+            Update metrics for monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.FinalSinkConfiguration">
+            <summary>
+            Configuration for FinalSink stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.DestinationType">
+            <summary>
+            Types of final destinations
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.PendingAcknowledgment`1">
+            <summary>
+            Represents a pending acknowledgment
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IFinalDestination`1">
+            <summary>
+            Base interface for final destinations
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IKafkaDestination`1">
+            <summary>
+            Kafka destination interface
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IDatabaseDestination`1">
+            <summary>
+            Database destination interface
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.ICallbackDestination`1">
+            <summary>
+            Callback destination interface
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.GatewayStage`1">
+            <summary>
+            Flink.Net style Gateway stage that provides ingress rate control
+            and back pressure management for the pipeline entry point.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.GatewayStage`1.ApplyRateLimiting">
+            <summary>
+            Apply rate limiting at the gateway level
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.GatewayStage`1.ProcessRecord(`0)">
+            <summary>
+            Process individual record with gateway-specific logic
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.GatewayStage`1.UpdateMetrics(System.Object)">
+            <summary>
+            Update metrics for back pressure monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.GatewayStage`1.LogPerformanceMetrics(System.Double)">
+            <summary>
+            Log performance metrics for monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1">
+            <summary>
+            Flink.Net style KeyGen stage that provides deterministic partitioning
+            with load awareness and back pressure handling.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1.DetermineOptimalPartition(System.String)">
+            <summary>
+            Determine optimal partition based on load balancing
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1.ShouldRebalance">
+            <summary>
+            Check if rebalancing is needed based on partition load
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1.FindLeastLoadedPartition">
+            <summary>
+            Find the least loaded partition for rebalancing
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1.UpdatePartitionMetrics(System.Int32)">
+            <summary>
+            Update partition-specific metrics
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1.UpdateStageMetrics(System.Double)">
+            <summary>
+            Update stage metrics for back pressure monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.KeyGenStage`1.MonitorLoadBalancing(System.Object)">
+            <summary>
+            Monitor load balancing across partitions
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.GatewayConfiguration">
+            <summary>
+            Configuration for Gateway stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.KeyGenConfiguration">
+            <summary>
+            Configuration for KeyGen stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.KeyedRecord`1">
+            <summary>
+            Represents a keyed record with partition information
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.PartitionMetrics">
+            <summary>
+            Metrics for partition load monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IngressProcessingStage`1">
+            <summary>
+            Flink.Net style IngressProcessing stage that provides validation 
+            and preprocessing with bounded buffers and back pressure handling.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.IngressProcessingStage`1.ValidateRecord(FlinkDotNet.Core.Api.Pipeline.KeyedRecord{`0})">
+            <summary>
+            Validate record according to configured rules
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.IngressProcessingStage`1.PreprocessRecord(FlinkDotNet.Core.Api.Pipeline.KeyedRecord{`0})">
+            <summary>
+            Preprocess record with configured processor
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.IngressProcessingStage`1.CreateProcessingMetadata(FlinkDotNet.Core.Api.Pipeline.KeyedRecord{`0})">
+            <summary>
+            Create processing metadata for the record
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.IngressProcessingStage`1.UpdateStageMetrics(System.Double)">
+            <summary>
+            Update stage metrics for back pressure monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.IngressProcessingStage`1.UpdateMetrics(System.Object)">
+            <summary>
+            Update metrics for monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1">
+            <summary>
+            Flink.Net style AsyncEgressProcessing stage that handles external I/O
+            with timeout, retry, and Dead Letter Queue (DLQ) support.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1.ProcessWithRetry(FlinkDotNet.Core.Api.Pipeline.ProcessedRecord{`0})">
+            <summary>
+            Process record with retry logic and timeout handling
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1.ApplyExponentialBackoff(System.Int32)">
+            <summary>
+            Apply exponential backoff between retry attempts
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1.SendToDeadLetterQueue(FlinkDotNet.Core.Api.Pipeline.ProcessedRecord{`0})">
+            <summary>
+            Send failed record to Dead Letter Queue
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1.UpdateStageMetrics(System.Double)">
+            <summary>
+            Update stage metrics for back pressure monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1.UpdateMetrics(System.Object)">
+            <summary>
+            Update metrics for monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Pipeline.AsyncEgressProcessingStage`1.GetDeadLetterQueueContents">
+            <summary>
+            Get Dead Letter Queue contents for manual processing
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IngressProcessingConfiguration">
+            <summary>
+            Configuration for IngressProcessing stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.AsyncEgressConfiguration">
+            <summary>
+            Configuration for AsyncEgressProcessing stage
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.ProcessedRecord`1">
+            <summary>
+            Represents a processed record with validation and processing metadata
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.EgressResult`1">
+            <summary>
+            Result of external processing operation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.ValidationResult">
+            <summary>
+            Result of record validation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IRecordValidator`1">
+            <summary>
+            Interface for record validation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IRecordProcessor`1">
+            <summary>
+            Interface for record preprocessing
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Pipeline.IExternalService`1">
+            <summary>
+            Interface for external service operations
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.StreamExecutionEnvironment.ExecuteLocallyAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Executes the job locally in the current process using the LocalStreamExecutor.
+            This provides Flink.Net compatible execution for development and testing.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.DataStream`1.KeyBy``1(FlinkDotNet.Core.Api.Streaming.KeySelector{`0,``0})">
+            <summary>
+            Partitions the DataStream by the given key selector.
+            All elements with the same key will be sent to the same parallel instance of the next operator.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <param name="keySelector">The function to extract the key from each element.</param>
+            <returns>A KeyedDataStream.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.DataStream`1.KeyBy``1(System.Linq.Expressions.Expression{System.Func{`0,``0}})">
+            <summary>
+            Partitions the DataStream by the given expression key selector.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <param name="keySelectorExpression">The expression to extract the key from each element.</param>
+            <returns>A KeyedDataStream.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.DataStream`1.KeyBy``1(FlinkDotNet.Core.Abstractions.Functions.IKeySelector{`0,``0})">
+            <summary>
+            Partitions the DataStream by the given key selector instance.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <param name="keySelectorInstance">The key selector instance.</param>
+            <returns>A KeyedDataStream.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.DataStream`1.KeyBy``1(System.Type)">
+            <summary>
+            Partitions the DataStream by the given key selector type.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <param name="keySelectorType">The key selector type.</param>
+            <returns>A KeyedDataStream.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.DataStream`1.Map``1(FlinkDotNet.Core.Abstractions.Operators.IMapOperator{`0,``0})">
+            <summary>
+            Applies a Map transformation to this DataStream.
+            (Example of a typical DataStream operator to show context)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Streaming.TransformationBase">
+            <summary>
+            Non-generic base type for all transformations so that they can be stored
+            in collections without invalid casts.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.KeyedDataStream`2.Map``1(FlinkDotNet.Core.Abstractions.Operators.IMapOperator{`1,``0})">
+            <summary>
+            Applies a Map transformation to this KeyedDataStream.
+            The IMapOperator will be executed in parallel instances, each receiving data for a subset of keys.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Streaming.KeyedDataStream`2.Window``1(FlinkDotNet.Core.Api.Windowing.IWindowAssigner{`1,``0})">
+            <summary>
+            Windows this KeyedDataStream into a WindowedStream, based on the provided WindowAssigner.
+            </summary>
+            <typeparam name="TNewWindow">The type of Window that the WindowAssigner creates.</typeparam>
+            <param name="assigner">The WindowAssigner that assigns elements to windows.</param>
+            <returns>A new WindowedStream.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Streaming.KeySelector`2">
+            <summary>
+            Defines a function that extracts a key from an element.
+            </summary>
+            <typeparam name="TElement">The type of the element.</typeparam>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <param name="element">The element to extract the key from.</param>
+            <returns>The extracted key.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Streaming.WindowedStream`2">
+            <summary>
+            --- Transformation Stubs for Windowed Operations ---
+            These (WindowedTransformation, WindowReduceTransformation, WindowAggregateTransformation, WindowProcessTransformation)
+            have been removed as they are expected to be defined elsewhere, likely in a Transformations.cs file or similar.
+            </summary>
+            <typeparam name="TElement"></typeparam>
+            <typeparam name="TKey"></typeparam>
+            <typeparam name="TWindow"></typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IEvictor`2">
+            <summary>
+            Interface for Evictor. Evictors can remove elements from a window
+            after a trigger fires but before the window function is applied.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IEvictor`2.EvictBefore(System.Collections.Generic.IEnumerable{`0},System.Int32,`1)">
+            <summary>
+            Called before the window function is applied.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IEvictor`2.EvictAfter(System.Collections.Generic.IEnumerable{`0},System.Int32,`1)">
+            <summary>
+            Called after the window function is applied.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.GlobalWindow">
+            <summary>
+            Represents a single, global window to which all elements are assigned.
+            Typically used with custom triggers to define processing logic.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.GlobalWindowSerializer">
+            <summary>
+            Serializer for the singleton GlobalWindow.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.GlobalWindows`1">
+            <summary>
+            Assigns all elements to a single <see cref="T:FlinkDotNet.Core.Api.Windowing.GlobalWindow"/>.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IWindowContext">
+            <summary>
+            Base context for window operations, providing access to time and global runtime context.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IWindowContext.RuntimeContext">
+            <summary>
+            Gets the IRuntimeContext of the task running this window operator.
+            Provides access to global task information and non-windowed (operator) state.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IWindowContext.CurrentProcessingTime">
+            <summary>
+            Gets the current processing time.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IWindowContext.CurrentWatermark">
+            <summary>
+            Gets the current event time watermark for this operator instance.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IProcessWindowContext`2">
+            <summary>
+            Context available to an <see cref="T:FlinkDotNet.Core.Api.Windowing.IProcessWindowFunction`4"/>.
+            Provides information about the current window, key, time, and access to per-window state.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IProcessWindowContext`2.Window">
+            <summary>
+            Gets the window that is being processed.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IProcessWindowContext`2.CurrentKey">
+            <summary>
+            Gets the key for the current window.
+            (Note: Process method also receives key directly for convenience).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IProcessWindowContext`2.GetWindowState``1(FlinkDotNet.Core.Abstractions.Models.State.ValueStateDescriptor{``0})">
+            <summary>
+            State accessor for per-window state. This state is scoped by the current key AND the current window.
+            The state is automatically cleared when the window is purged by the system.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IProcessWindowContext`2.GetWindowListState``1(FlinkDotNet.Core.Abstractions.Models.State.ListStateDescriptor{``0})">
+            <summary>
+            State accessor for per-window list state.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IProcessWindowFunction`4">
+            <summary>
+            Function to be applied to all elements in a window.
+            Provides access to the window's elements, the key, the window object, and context information.
+            This is the most general windowing function, allowing for per-window state, side outputs (future),
+            and arbitrary computations on all elements of a window.
+            </summary>
+            <typeparam name="TIn">Type of the input elements.</typeparam>
+            <typeparam name="TOut">Type of the output elements.</typeparam>
+            <typeparam name="TKey">Type of the key.</typeparam>
+            <typeparam name="TWindow">Type of the window.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IProcessWindowFunction`4.Process(`2,FlinkDotNet.Core.Api.Windowing.IProcessWindowContext{`2,`3},System.Collections.Generic.IEnumerable{`0},FlinkDotNet.Core.Abstractions.Collectors.ICollector{`1})">
+            <summary>
+            Evaluates the window and outputs results.
+            </summary>
+            <param name="key">The key for which this window is being evaluated.</param>
+            <param name="context">Context object with access to window metadata, time, and state.</param>
+            <param name="elements">All elements assigned to the current window for the given key.
+            The elements are iterable. Note that this requires buffering all elements in the window until it fires.</param>
+            <param name="output">A collector to emit resulting elements.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IProcessWindowFunction`4.Clear(`2,FlinkDotNet.Core.Api.Windowing.IProcessWindowContext{`2,`3})">
+            <summary>
+            Called when a window is purged. This can be used to clean up any per-window state.
+            This is typically called when a trigger signals to purge, or when event-time windows are finally cleaned up.
+            </summary>
+            <param name="key">The key for which this window is being evaluated.</param>
+            <param name="context">Context object with access to window metadata, time, and state.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.ITriggerContext">
+            <summary>
+            Context available to triggers, allowing them to register timers and access limited state.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.Trigger`2">
+            <summary>
+            Abstract base class for all triggers. A trigger determines when a window
+            should be fired (i.e., its window function evaluated and results emitted).
+            </summary>
+            <typeparam name="TElement">The type of elements in the stream.</typeparam>
+            <typeparam name="TWindow">The type of <see cref="T:FlinkDotNet.Core.Abstractions.Windowing.Window"/> to which this trigger can be applied.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.Trigger`2.OnElement(`0,System.Int64,`1,FlinkDotNet.Core.Api.Windowing.ITriggerContext)">
+            <summary>
+            Called for every element that is assigned to a window.
+            </summary>
+            <param name="element">The element that was added.</param>
+            <param name="timestamp">The timestamp of the element.</param>
+            <param name="window">The window to which the element was assigned.</param>
+            <param name="ctx">A context object that can be used to register timers and access state.</param>
+            <returns>The action that should be taken on the window.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.Trigger`2.OnProcessingTime(System.Int64,`1,FlinkDotNet.Core.Api.Windowing.ITriggerContext)">
+            <summary>
+            Called when a processing-time timer that was set using the trigger context fires.
+            </summary>
+            <param name="time">The timestamp of the fired timer.</param>
+            <param name="window">The window for which the timer fired.</param>
+            <param name="ctx">A context object that can be used to register timers and access state.</param>
+            <returns>The action that should be taken on the window.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.Trigger`2.OnEventTime(System.Int64,`1,FlinkDotNet.Core.Api.Windowing.ITriggerContext)">
+            <summary>
+            Called when an event-time timer that was set using the trigger context fires.
+            </summary>
+            <param name="time">The timestamp of the fired timer.</param>
+            <param name="window">The window for which the timer fired.</param>
+            <param name="ctx">A context object that can be used to register timers and access state.</param>
+            <returns>The action that should be taken on the window.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.Trigger`2.OnMerge(`1,FlinkDotNet.Core.Api.Windowing.IMergeTriggerContext{`1})">
+            <summary>
+            Called when a window is merged into another window (e.g., in session windows).
+            The state of the merged source window should be merged into the target window.
+            </summary>
+            <param name="window">The window into which others are merged.</param>
+            <param name="mergeContext">Context allowing access to merged windows and state.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.Trigger`2.Clear(`1,FlinkDotNet.Core.Api.Windowing.ITriggerContext)">
+            <summary>
+            Performs any cleanup related to the given window, for example deleting per-window state
+            that was created by the trigger.
+            This is called when a window is purged.
+            </summary>
+            <param name="window">The window.</param>
+            <param name="ctx">A context object that can be used to access state.</param>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.Trigger`2.CanMerge">
+            <summary>
+            Determines whether this trigger can cause a window to merge with another.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IMergeTriggerContext`1">
+            <summary>
+            Context for merging windows, passed to Trigger.OnMerge.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IMergeTriggerContext`1.MergeState(`0,System.Collections.Generic.ICollection{`0})">
+            <summary>
+            Merges the state of the source windows into the state of the target window.
+            The trigger implementation is responsible for defining how state is merged.
+            </summary>
+            <param name="target">The window into which state is merged.</param>
+            <param name="mergedWindows">The collection of windows being merged into the target.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.TriggerResults">
+            <summary>
+            Result type for trigger methods. It tells the system how to act on the window,
+            e.g., fire, purge, or do nothing.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Api.Windowing.TriggerResults.None">
+            <summary>Do nothing.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Api.Windowing.TriggerResults.Fire">
+            <summary>Fire the window function and emit results.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Api.Windowing.TriggerResults.Purge">
+            <summary>Purge the elements in the window.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Api.Windowing.TriggerResults.FireAndPurge">
+            <summary>Fire the window function and then purge elements.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.TumblingEventTimeWindows`1.Of(FlinkDotNet.Core.Abstractions.Common.Time)">
+            <summary>
+            Creates a new TumblingEventTimeWindows assigner with the given window size.
+            Windows are aligned with the epoch (00:00:00 UTC on 1 January 1970).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.TumblingEventTimeWindows`1.Of(FlinkDotNet.Core.Abstractions.Common.Time,FlinkDotNet.Core.Abstractions.Common.Time)">
+            <summary>
+            Creates a new TumblingEventTimeWindows assigner with the given window size and offset.
+            Windows can be aligned to a specific offset from the epoch (e.g., for daily windows starting at local midnight).
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IWindowAssignerContext">
+            <summary>
+            Context passed to WindowAssigner methods, providing access to e.g. current processing time.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IWindowAssignerContext.CurrentProcessingTime">
+            <summary>
+            Gets the current processing time.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.DefaultWindowAssignerContext">
+            <summary>
+            Default implementation of <see cref="T:FlinkDotNet.Core.Api.Windowing.IWindowAssignerContext"/>.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Api.Windowing.IWindowAssigner`2">
+            <summary>
+            A WindowAssigner assigns zero or more <see cref="T:FlinkDotNet.Core.Abstractions.Windowing.Window"/>s to an element,
+            based on the element, its timestamp, and context.
+            </summary>
+            <typeparam name="TElement">The type of elements to which windows are assigned.</typeparam>
+            <typeparam name="TWindow">The type of <see cref="T:FlinkDotNet.Core.Abstractions.Windowing.Window"/> that this assigner assigns.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IWindowAssigner`2.AssignWindows(`0,System.Int64,FlinkDotNet.Core.Api.Windowing.IWindowAssignerContext)">
+            <summary>
+            Given an element and its timestamp, returns the set of windows to which it should be assigned.
+            </summary>
+            <param name="element">The element to assign to windows.</param>
+            <param name="timestamp">The timestamp of the element, used for time-based windows.</param>
+            <param name="context">The <see cref="T:FlinkDotNet.Core.Api.Windowing.IWindowAssignerContext"/> in which the assigner operates.</param>
+            <returns>A collection of windows.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IWindowAssigner`2.GetDefaultTrigger(FlinkDotNet.Core.Api.StreamExecutionEnvironment)">
+            <summary>
+            Returns the default <see cref="T:FlinkDotNet.Core.Api.Windowing.Trigger`2"/> for this.
+            This trigger is used if no custom trigger is specified on the <see cref="!:WindowedStream&lt;TElement, TKey, TWindow&gt;"/>.
+            </summary>
+            <param name="environment">The stream execution environment.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Api.Windowing.IWindowAssigner`2.GetWindowSerializer">
+            <summary>
+            Returns an <see cref="T:FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer`1"/> for serializing windows of type <c>TWindow</c>.
+            This is crucial for checkpointing window state.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Api.Windowing.IWindowAssigner`2.IsEventTime">
+            <summary>
+            Returns <c>true</c> if this assigner assigns windows based on event time, <c>false</c> otherwise (e.g., processing time).
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Examples.Pipeline.FlinkDotnetPipelineExample">
+            <summary>
+            Complete example of Flink.Net style pipeline with comprehensive back pressure handling.
+            Demonstrates: Gateway -> KeyGen -> IngressProcessing -> AsyncEgressProcessing -> FinalSink
+            </summary>
+        </member>
+    </members>
+</doc>

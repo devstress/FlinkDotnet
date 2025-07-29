@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "GgpU7fYBqXI=",
+  "success": true,
+  "projectFilePath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\FlinkDotNet.Common.Constants.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\DevStar\\.nuget\\packages\\sonaranalyzer.csharp\\10.11.0.117924\\sonaranalyzer.csharp.10.11.0.117924.nupkg.sha512"
+  ],
+  "logs": []
+}

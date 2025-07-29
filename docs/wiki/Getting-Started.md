@@ -1,0 +1,217 @@
+# Getting Started with Flink.NET
+
+This guide will walk you through setting up the Flink.JobBuilder SDK and deploying Apache Flink infrastructure to run your first streaming job.
+
+## Prerequisites
+
+*   **.NET SDK:** Ensure you have .NET 8.0 SDK or higher installed. You can download it from [here](https://dotnet.microsoft.com/download).
+*   **IDE (Optional but Recommended):** An IDE like Visual Studio, JetBrains Rider, or VS Code can greatly improve your development experience.
+*   **Docker and Kubernetes:** For deploying Apache Flink cluster infrastructure.
+*   **Apache Flink Cluster:** You'll need either:
+    *   A Kubernetes cluster with our provided manifests (recommended)
+    *   A local Apache Flink installation following the [Apache Flink Local Installation Guide](https://nightlies.apache.org/flink/flink-docs-stable/docs/try-flink/local_installation/)
+
+## 1. Create a New .NET Project
+
+Start by creating a new .NET console application. You can do this using the .NET CLI or your preferred IDE.
+
+```bash
+dotnet new console -n MyFlinkJobApp
+cd MyFlinkJobApp
+```
+
+## 2. Add Flink.JobBuilder NuGet Package
+
+Add the Flink.JobBuilder SDK to your project:
+
+```bash
+dotnet add package Flink.JobBuilder
+```
+
+## 3. Write Your First Apache Flink Job
+
+Let's create a simple streaming job that processes data using Apache Flink:
+
+```csharp
+// Program.cs
+using Flink.JobBuilder;
+using Flink.JobBuilder.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        // 1. Set up dependency injection
+        var services = new ServiceCollection();
+        services.AddFlinkJobBuilder(config =>
+        {
+            config.BaseUrl = "http://localhost:8080"; // Flink Job Gateway URL
+        });
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        // 2. Create a streaming job with fluent API
+        var job = serviceProvider.CreateJobBuilder()
+            .FromKafka("orders")
+            .Where("Amount > 100")
+            .GroupBy("Region")
+            .Aggregate("SUM", "Amount")
+            .ToKafka("high-value-orders");
+
+        // 3. Submit to Apache Flink cluster
+        try
+        {
+            var result = await job.Submit("OrderProcessingJob");
+            Console.WriteLine($"Job submitted successfully!");
+            Console.WriteLine($"Flink Job ID: {result.FlinkJobId}");
+            Console.WriteLine($"Status: {result.Status}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to submit job: {ex.Message}");
+        }
+    }
+}
+```
+
+## 4. Deploy Apache Flink Infrastructure
+
+To run your job, you need Apache Flink cluster infrastructure. Choose one of the options:
+
+### Option A: Kubernetes Deployment (Recommended)
+
+Deploy the complete Flink.NET ecosystem to Kubernetes:
+
+```bash
+# Clone the repository
+git clone https://github.com/devstress/FLINK.NET.git
+cd FLINK.NET
+
+# Deploy to Kubernetes
+kubectl apply -f k8s/
+```
+
+This deploys:
+- Apache Flink cluster (JobManager + TaskManager)
+- Flink Job Gateway (.NET ASP.NET Core service)  
+- Apache Kafka + Zookeeper
+- All necessary services and configuration
+
+### Option B: Local Development with Aspire
+
+For local development and testing:
+
+```bash
+# Build all components
+./build-all.sh
+
+# Run with Aspire orchestration
+cd Sample/FlinkDotNetAspire.AppHost.AppHost
+dotnet run
+```
+
+## 5. Run Your Application
+
+Once your infrastructure is running:
+
+```bash
+# Run your .NET application
+dotnet run
+```
+
+The application will:
+1. Generate JSON IR from your C# job definition
+2. Submit it to the Flink Job Gateway
+3. The gateway translates it to Apache Flink DataStream jobs
+4. Execute on the Flink cluster
+
+## 6. Monitor Your Job
+
+Access monitoring interfaces:
+
+```bash
+# Flink Web UI (if running locally)
+kubectl port-forward svc/flink-jobmanager-ui 8081:8081 -n flink-system
+# Visit http://localhost:8081
+
+# Job Gateway API
+kubectl port-forward svc/flink-job-gateway 8080:8080 -n flink-system
+# Visit http://localhost:8080/swagger-ui.html
+```
+
+## Next Steps
+
+- **[Deployment Guide](./Deployment-Kubernetes.md)**: Learn about production deployment
+- **[Sample Applications](../../Sample/)**: Explore working examples
+- **[API Reference](../../FlinkDotNet/Flink.JobBuilder/)**: Detailed SDK documentation
+- **[Architecture Overview](./System-Design-Overview.md)**: Understand the system design
+
+## Troubleshooting
+
+### Common Issues
+
+**Job submission fails with connection error:**
+- Ensure Flink Job Gateway is running and accessible
+- Check the BaseUrl configuration in your application
+- Verify network connectivity to the gateway
+
+**Gateway returns validation errors:**
+- Check your job definition syntax
+- Ensure all required fields are provided
+- Review the IR generated by your job builder
+
+**Infrastructure deployment issues:**
+- Verify Kubernetes cluster has sufficient resources
+- Check pod logs: `kubectl logs -n flink-system <pod-name>`
+- Ensure all images are accessible from your cluster
+
+*   Setting environment variables.
+*   A configuration file (e.g., `appsettings.json`).
+*   Programmatic configuration.
+
+**Example (Conceptual `appsettings.json`):**
+
+```json
+{
+  "Flink": {
+    "JobManagerRestAddress": "http://localhost:8081"
+    // Other relevant configurations
+  }
+}
+```
+
+*(Refer to Flink.NET's specific documentation for details on how to configure the job submission and connection to Flink.)*
+
+## 5. Run Your Application
+
+Once your code is ready and the Flink connection is configured:
+
+1.  **Ensure your stream processing cluster is running.** You can typically start it by navigating to your Flink installation's `bin` directory and running `./start-cluster.sh` (on Linux/macOS) or `start-cluster.bat` (on Windows).
+2.  **Run your .NET application:**
+
+    ```bash
+    dotnet run
+    ```
+
+You should see the odd numbers (1, 3, 5, 7, 9) printed in the console output from your Flink job. You can also monitor the job through the Flink Web UI (usually at `http://localhost:8081`).
+
+## Next Steps
+
+*   Explore different [[Operators|Developing-Operators]] available in Flink.NET.
+*   Learn about [[Connectors|Connectors-Overview]] to read from and write to external systems.
+*   Understand [[State Management|Core-Concepts-State-Management-Overview]] for building stateful applications.
+
+## Testing Your Applications
+
+Flink.NET provides comprehensive testing capabilities:
+
+*   **Integration Tests**: For quick validation of AppHost structure and basic configuration (see `Sample.IntegrationTests`)
+*   **Stress Tests**: For high-throughput performance validation with full orchestration (see [[Sample Local High Throughput Test|Sample-Local-High-Throughput-Test]])
+*   **Local Development**: Use the [[Deployment Local|Deployment-Local]] environment for interactive development and debugging
+
+**External References:**
+
+*   [Flink DataStream API Programming Guide](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/overview/)
+*   [Fundamental Concepts (Flink Architecture)](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/flink_architecture/)

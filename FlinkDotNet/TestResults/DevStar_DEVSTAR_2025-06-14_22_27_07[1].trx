@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="0fff46eb-56b6-4532-bf4a-f594c192e6b0" name="DevStar@DEVSTAR 2025-06-14 22:27:07" runUser="DEVSTAR\DevStar" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2025-06-14T22:27:07.0609616+10:00" queuing="2025-06-14T22:27:07.0609622+10:00" start="2025-06-14T22:27:05.9373431+10:00" finish="2025-06-14T22:27:07.0886001+10:00" />
+  <TestSettings name="default" id="1f9724fa-4a2e-4cb9-bdaa-8d16ba9ec4f1">
+    <Deployment runDeploymentRoot="DevStar_DEVSTAR_2025-06-14_22_27_07" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="1c8b96c6-f93e-4a40-b808-4ebb16d07be4" testId="a9385654-a891-b216-11bd-69c8e37201fa" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Open_WithValidContext_UpdatesTaskNameAndLogsMessage" computerName="DEVSTAR" duration="00:00:00.0002027" startTime="2025-06-14T22:27:07.0025277+10:00" endTime="2025-06-14T22:27:07.0025891+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1c8b96c6-f93e-4a40-b808-4ebb16d07be4" />
+    <UnitTestResult executionId="f61dd6fd-eb9c-46aa-a4ee-998b2e8fcaa2" testId="a161f6bf-1824-3b42-0fe2-4ebbaf9a833c" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithNullRecord_LogsNullString" computerName="DEVSTAR" duration="00:00:00.0002796" startTime="2025-06-14T22:27:07.0031688+10:00" endTime="2025-06-14T22:27:07.0032320+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f61dd6fd-eb9c-46aa-a4ee-998b2e8fcaa2" />
+    <UnitTestResult executionId="35383494-125d-4708-ba1f-4536f86cac1f" testId="ff66534f-ad1d-590f-c019-5e5b819205cb" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_MultipleRecords_LogsAllRecords" computerName="DEVSTAR" duration="00:00:00.0012553" startTime="2025-06-14T22:27:07.0023501+10:00" endTime="2025-06-14T22:27:07.0024203+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="35383494-125d-4708-ba1f-4536f86cac1f" />
+    <UnitTestResult executionId="c3b3586e-22de-492c-ad80-03b5d109d78a" testId="42909286-37ec-0721-e561-61a85c8966ad" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.LifecycleTest_OpenInvokeClose_WorksCorrectly" computerName="DEVSTAR" duration="00:00:00.1848468" startTime="2025-06-14T22:27:06.7987682+10:00" endTime="2025-06-14T22:27:06.9927200+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c3b3586e-22de-492c-ad80-03b5d109d78a" />
+    <UnitTestResult executionId="8afa0427-3d8a-4864-b233-736e89c50e6e" testId="8736a468-2cb9-a199-e2c3-515cc4cce624" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithEmptyString_LogsEmptyRecord" computerName="DEVSTAR" duration="00:00:00.0005467" startTime="2025-06-14T22:27:07.0030107+10:00" endTime="2025-06-14T22:27:07.0030701+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8afa0427-3d8a-4864-b233-736e89c50e6e" />
+    <UnitTestResult executionId="48a51602-5a8e-49b6-9004-b668ea4c8db2" testId="c98f263c-7d8e-dcd1-0d0d-71173678b2e3" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithIntegerRecord_LogsRecordAsString" computerName="DEVSTAR" duration="00:00:00.0005063" startTime="2025-06-14T22:27:07.0279476+10:00" endTime="2025-06-14T22:27:07.0280114+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="48a51602-5a8e-49b6-9004-b668ea4c8db2" />
+    <UnitTestResult executionId="36171389-d9bb-48f8-8e81-b10506776a3d" testId="41f9ba48-d149-c0f9-0057-78a89656065a" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.TaskName_ChangesAfterMultipleOpens" computerName="DEVSTAR" duration="00:00:00.0003904" startTime="2025-06-14T22:27:07.0282580+10:00" endTime="2025-06-14T22:27:07.0283111+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="36171389-d9bb-48f8-8e81-b10506776a3d" />
+    <UnitTestResult executionId="46a5a965-c1e6-4e13-b1ef-52d28278a8cf" testId="1ffee195-a87b-0d4a-91b4-d2a09cc770c1" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Constructor_CreatesInstance" computerName="DEVSTAR" duration="00:00:00.0001124" startTime="2025-06-14T22:27:07.0015313+10:00" endTime="2025-06-14T22:27:07.0016359+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="46a5a965-c1e6-4e13-b1ef-52d28278a8cf" />
+    <UnitTestResult executionId="a3f05611-a9c8-4c2d-9157-0ff448432479" testId="dec6947c-216b-1f27-b33a-1dab4773e2a1" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Close_LogsCloseMessage" computerName="DEVSTAR" duration="00:00:00.0001929" startTime="2025-06-14T22:27:07.0276066+10:00" endTime="2025-06-14T22:27:07.0276945+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a3f05611-a9c8-4c2d-9157-0ff448432479" />
+    <UnitTestResult executionId="375c0c11-5a8c-4cb1-aa35-86cea4b65b3e" testId="d3730070-77a5-3819-431f-88a0dbbe4fa4" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Close_WithoutOpen_UsesDefaultTaskName" computerName="DEVSTAR" duration="00:00:00.0000576" startTime="2025-06-14T22:27:07.0026905+10:00" endTime="2025-06-14T22:27:07.0027509+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="375c0c11-5a8c-4cb1-aa35-86cea4b65b3e" />
+    <UnitTestResult executionId="0ec86031-c2c2-4500-a93a-24daf34e0712" testId="48e0d15c-25f0-b3e8-3c73-4d4996f188f2" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_BeforeOpen_UsesDefaultTaskName" computerName="DEVSTAR" duration="00:00:00.0002022" startTime="2025-06-14T22:27:07.0028449+10:00" endTime="2025-06-14T22:27:07.0029094+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0ec86031-c2c2-4500-a93a-24daf34e0712" />
+    <UnitTestResult executionId="31e45228-eae6-493c-8125-202c49997505" testId="14e28e8b-56cb-01d6-20ab-1b8bcc9cc78c" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithStringRecord_LogsRecordWithTimestamp" computerName="DEVSTAR" duration="00:00:00.0002921" startTime="2025-06-14T22:27:07.0281123+10:00" endTime="2025-06-14T22:27:07.0281727+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="31e45228-eae6-493c-8125-202c49997505" />
+    <UnitTestResult executionId="b66208be-29dd-45b0-8c57-be2698f97a33" testId="1aca46e7-7bc9-a04c-3061-2d2340ec4ae5" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Open_WithDefaultContext_UsesDefaultTaskName" computerName="DEVSTAR" duration="00:00:00.0006832" startTime="2025-06-14T22:27:07.0021295+10:00" endTime="2025-06-14T22:27:07.0021983+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b66208be-29dd-45b0-8c57-be2698f97a33" />
+    <UnitTestResult executionId="1bfb258a-42c3-479a-bea2-b81410a6ff10" testId="bfa9e438-0ff0-d8ba-25cb-48872d4a0853" testName="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithComplexObject_LogsObjectToString" computerName="DEVSTAR" duration="00:00:00.0023017" startTime="2025-06-14T22:27:07.0283914+10:00" endTime="2025-06-14T22:27:07.0284488+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1bfb258a-42c3-479a-bea2-b81410a6ff10" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithNullRecord_LogsNullString" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="a161f6bf-1824-3b42-0fe2-4ebbaf9a833c">
+      <Execution id="f61dd6fd-eb9c-46aa-a4ee-998b2e8fcaa2" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_WithNullRecord_LogsNullString" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.TaskName_ChangesAfterMultipleOpens" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="41f9ba48-d149-c0f9-0057-78a89656065a">
+      <Execution id="36171389-d9bb-48f8-8e81-b10506776a3d" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="TaskName_ChangesAfterMultipleOpens" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_BeforeOpen_UsesDefaultTaskName" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="48e0d15c-25f0-b3e8-3c73-4d4996f188f2">
+      <Execution id="0ec86031-c2c2-4500-a93a-24daf34e0712" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_BeforeOpen_UsesDefaultTaskName" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_MultipleRecords_LogsAllRecords" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="ff66534f-ad1d-590f-c019-5e5b819205cb">
+      <Execution id="35383494-125d-4708-ba1f-4536f86cac1f" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_MultipleRecords_LogsAllRecords" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.LifecycleTest_OpenInvokeClose_WorksCorrectly" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="42909286-37ec-0721-e561-61a85c8966ad">
+      <Execution id="c3b3586e-22de-492c-ad80-03b5d109d78a" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="LifecycleTest_OpenInvokeClose_WorksCorrectly" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Close_LogsCloseMessage" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="dec6947c-216b-1f27-b33a-1dab4773e2a1">
+      <Execution id="a3f05611-a9c8-4c2d-9157-0ff448432479" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Close_LogsCloseMessage" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Close_WithoutOpen_UsesDefaultTaskName" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="d3730070-77a5-3819-431f-88a0dbbe4fa4">
+      <Execution id="375c0c11-5a8c-4cb1-aa35-86cea4b65b3e" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Close_WithoutOpen_UsesDefaultTaskName" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithIntegerRecord_LogsRecordAsString" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="c98f263c-7d8e-dcd1-0d0d-71173678b2e3">
+      <Execution id="48a51602-5a8e-49b6-9004-b668ea4c8db2" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_WithIntegerRecord_LogsRecordAsString" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Constructor_CreatesInstance" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="1ffee195-a87b-0d4a-91b4-d2a09cc770c1">
+      <Execution id="46a5a965-c1e6-4e13-b1ef-52d28278a8cf" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Constructor_CreatesInstance" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Open_WithValidContext_UpdatesTaskNameAndLogsMessage" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="a9385654-a891-b216-11bd-69c8e37201fa">
+      <Execution id="1c8b96c6-f93e-4a40-b808-4ebb16d07be4" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Open_WithValidContext_UpdatesTaskNameAndLogsMessage" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithStringRecord_LogsRecordWithTimestamp" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="14e28e8b-56cb-01d6-20ab-1b8bcc9cc78c">
+      <Execution id="31e45228-eae6-493c-8125-202c49997505" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_WithStringRecord_LogsRecordWithTimestamp" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Open_WithDefaultContext_UsesDefaultTaskName" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="1aca46e7-7bc9-a04c-3061-2d2340ec4ae5">
+      <Execution id="b66208be-29dd-45b0-8c57-be2698f97a33" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Open_WithDefaultContext_UsesDefaultTaskName" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithComplexObject_LogsObjectToString" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="bfa9e438-0ff0-d8ba-25cb-48872d4a0853">
+      <Execution id="1bfb258a-42c3-479a-bea2-b81410a6ff10" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_WithComplexObject_LogsObjectToString" />
+    </UnitTest>
+    <UnitTest name="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests.Invoke_WithEmptyString_LogsEmptyRecord" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.connectors.sinks.console.tests\bin\release\net8.0\flinkdotnet.connectors.sinks.console.tests.dll" id="8736a468-2cb9-a199-e2c3-515cc4cce624">
+      <Execution id="8afa0427-3d8a-4864-b233-736e89c50e6e" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Connectors.Sinks.Console.Tests\bin\Release\net8.0\FlinkDotNet.Connectors.Sinks.Console.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="FlinkDotNet.Connectors.Sinks.Console.Tests.ConsoleSinkFunctionTests" name="Invoke_WithEmptyString_LogsEmptyRecord" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="a9385654-a891-b216-11bd-69c8e37201fa" executionId="1c8b96c6-f93e-4a40-b808-4ebb16d07be4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a161f6bf-1824-3b42-0fe2-4ebbaf9a833c" executionId="f61dd6fd-eb9c-46aa-a4ee-998b2e8fcaa2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ff66534f-ad1d-590f-c019-5e5b819205cb" executionId="35383494-125d-4708-ba1f-4536f86cac1f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="42909286-37ec-0721-e561-61a85c8966ad" executionId="c3b3586e-22de-492c-ad80-03b5d109d78a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8736a468-2cb9-a199-e2c3-515cc4cce624" executionId="8afa0427-3d8a-4864-b233-736e89c50e6e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c98f263c-7d8e-dcd1-0d0d-71173678b2e3" executionId="48a51602-5a8e-49b6-9004-b668ea4c8db2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="41f9ba48-d149-c0f9-0057-78a89656065a" executionId="36171389-d9bb-48f8-8e81-b10506776a3d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1ffee195-a87b-0d4a-91b4-d2a09cc770c1" executionId="46a5a965-c1e6-4e13-b1ef-52d28278a8cf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dec6947c-216b-1f27-b33a-1dab4773e2a1" executionId="a3f05611-a9c8-4c2d-9157-0ff448432479" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d3730070-77a5-3819-431f-88a0dbbe4fa4" executionId="375c0c11-5a8c-4cb1-aa35-86cea4b65b3e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="48e0d15c-25f0-b3e8-3c73-4d4996f188f2" executionId="0ec86031-c2c2-4500-a93a-24daf34e0712" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="14e28e8b-56cb-01d6-20ab-1b8bcc9cc78c" executionId="31e45228-eae6-493c-8125-202c49997505" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1aca46e7-7bc9-a04c-3061-2d2340ec4ae5" executionId="b66208be-29dd-45b0-8c57-be2698f97a33" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bfa9e438-0ff0-d8ba-25cb-48872d4a0853" executionId="1bfb258a-42c3-479a-bea2-b81410a6ff10" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="14" executed="14" passed="14" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.1+bf6400fd51 (64-bit .NET 8.0.16)&#xD;
+[xUnit.net 00:00:00.11]   Discovering: FlinkDotNet.Connectors.Sinks.Console.Tests&#xD;
+[xUnit.net 00:00:00.15]   Discovered:  FlinkDotNet.Connectors.Sinks.Console.Tests&#xD;
+[xUnit.net 00:00:00.17]   Starting:    FlinkDotNet.Connectors.Sinks.Console.Tests&#xD;
+[xUnit.net 00:00:00.42]   Finished:    FlinkDotNet.Connectors.Sinks.Console.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

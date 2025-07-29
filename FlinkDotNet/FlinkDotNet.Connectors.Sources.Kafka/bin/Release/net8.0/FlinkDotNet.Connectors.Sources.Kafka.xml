@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Connectors.Sources.Kafka</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.Deserializers.StringDeserializer">
+            <summary>
+            String deserializer for Kafka messages
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.Deserializers.JsonDeserializer`1">
+            <summary>
+            JSON deserializer for Kafka messages
+            </summary>
+            <typeparam name="T">The type to deserialize to</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.Deserializers.ByteArrayDeserializer">
+            <summary>
+            Byte array deserializer for Kafka messages
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.Deserializers.IntDeserializer">
+            <summary>
+            Integer deserializer for Kafka messages
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.Deserializers.LongDeserializer">
+            <summary>
+            Long deserializer for Kafka messages  
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup">
+            <summary>
+            Apache Flink 2.0-compliant consumer group manager that provides proper coordination
+            between Flink's checkpointing mechanism and Kafka's consumer group protocol.
+            This follows Apache Flink 2.0 patterns of managing consumer groups with:
+            - Checkpoint-based offset management
+            - Proper partition assignment coordination  
+            - Enhanced failure recovery and rebalancing
+            - Automatic resumption capabilities with exponential backoff
+            - Circuit breaker pattern for robust error handling
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.ConfigureFlinkOptimalSettings">
+            <summary>
+            Configure consumer settings to match Apache Flink 2.0 optimal patterns exactly.
+            Based on Apache Flink KafkaSource implementation with production-grade polling patterns.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.InitializeAsync(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Initialize consumer with Apache Flink 2.0 patterns - rapid initialization and efficient polling setup.
+            Follows Apache Flink KafkaSource initialization pattern with minimal delays.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.WaitForPartitionAssignment">
+            <summary>
+            Wait for consumer to get partition assignments after subscription
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync(System.TimeSpan)">
+            <summary>
+            Wait for Kafka cluster to be ready before attempting consumer operations.
+            Implements Apache Flink-style reliability patterns for infrastructure readiness.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.ConsumeMessage(System.TimeSpan)">
+            <summary>
+            Consume messages with Flink-compatible offset management and automatic resumption.
+            Implements Apache Flink 2.0 recovery patterns with exponential backoff.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.HandleRecoverableError(Confluent.Kafka.ConsumeException)">
+            <summary>
+            Handle recoverable Kafka errors with Apache Flink 2.0 resumption patterns.
+            Implements exponential backoff and automatic consumer group resumption.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.IsConsumerResumptionNeeded(Confluent.Kafka.ConsumeException)">
+            <summary>
+            Determine if a Kafka error requires consumer resumption based on Apache Flink patterns.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.AttemptConsumerResumption">
+            <summary>
+            Attempt to resume the FlinkKafkaConsumerGroup by recreating the consumer
+            while preserving checkpoint state. Follows Apache Flink 2.0 recovery patterns.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.CalculateExponentialBackoff(System.Int32)">
+            <summary>
+            Calculate exponential backoff delay based on failure count.
+            Implements Apache Flink's exponential backoff pattern with maximum delay cap.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.IsInRecoveryMode">
+            <summary>
+            Check if the consumer group is currently in recovery mode.
+            Used by external components to determine health status.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.GetConsecutiveFailureCount">
+            <summary>
+            Get the number of consecutive failures for monitoring purposes.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.CommitCheckpointOffsetsAsync(System.Int64)">
+            <summary>
+            Commit offsets as part of Flink checkpoint process
+            This replaces Kafka's auto-commit with Flink-managed checkpointing
+            Following Apache Flink 2.0 exactly-once semantics patterns
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.RestoreFromCheckpointAsync(System.Collections.Generic.Dictionary{Confluent.Kafka.TopicPartition,Confluent.Kafka.Offset})">
+            <summary>
+            Restore offsets from Flink checkpoint during recovery
+            This implements Apache Flink's state recovery pattern
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.GetCheckpointState">
+            <summary>
+            Get current checkpoint state for Flink snapshot
+            Returns copy of current offset state for exactly-once semantics
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.GetAssignment">
+            <summary>
+            Get consumer assignment for partition coordination
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Connectors.Sources.Kafka.FlinkKafkaConsumerGroup.GetConsumerGroupId">
+            <summary>
+            Get consumer group metadata for external coordination
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.KafkaSinkFunction`1">
+            <summary>
+            Kafka sink function that supports exactly-once semantics via transactions
+            </summary>
+            <typeparam name="T">The type of records to write</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.KafkaSinkBuilder`1">
+            <summary>
+            Builder for creating Kafka sink functions with fluent API
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.KafkaSourceFunction`1">
+            <summary>
+            Kafka source function that implements the unified source API for both bounded and unbounded reading.
+            Supports stream processing with event time and watermarks.
+            Uses Apache Flink-style consumer group management for proper coordination between
+            Flink's checkpointing mechanism and Kafka's consumer group protocol.
+            </summary>
+            <typeparam name="T">The type of records to produce</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Connectors.Sources.Kafka.KafkaSourceBuilder`1">
+            <summary>
+            Builder for creating Kafka source functions with fluent API
+            </summary>
+        </member>
+    </members>
+</doc>

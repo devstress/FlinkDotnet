@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "idjyy8CmuIs=",
+  "success": true,
+  "projectFilePath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.FileSystem\\FlinkDotNet.Storage.FileSystem.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\DevStar\\.nuget\\packages\\memorypack\\1.21.4\\memorypack.1.21.4.nupkg.sha512",
+    "C:\\Users\\DevStar\\.nuget\\packages\\memorypack.core\\1.21.4\\memorypack.core.1.21.4.nupkg.sha512",
+    "C:\\Users\\DevStar\\.nuget\\packages\\memorypack.generator\\1.21.4\\memorypack.generator.1.21.4.nupkg.sha512",
+    "C:\\Users\\DevStar\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.0\\microsoft.extensions.dependencyinjection.abstractions.9.0.0.nupkg.sha512",
+    "C:\\Users\\DevStar\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\9.0.0\\microsoft.extensions.logging.abstractions.9.0.0.nupkg.sha512",
+    "C:\\Users\\DevStar\\.nuget\\packages\\sonaranalyzer.csharp\\10.11.0.117924\\sonaranalyzer.csharp.10.11.0.117924.nupkg.sha512",
+    "C:\\Users\\DevStar\\.nuget\\packages\\system.diagnostics.diagnosticsource\\9.0.0\\system.diagnostics.diagnosticsource.9.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

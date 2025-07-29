@@ -1,0 +1,1028 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "FlinkDotNet.JobManager",
+    "version": "1.0"
+  },
+  "paths": {
+    "/weatherforecast": {
+      "get": {
+        "tags": [
+          "FlinkDotNet.JobManager"
+        ],
+        "operationId": "GetWeatherForecast",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherForecast"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobmanager/taskmanagers": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskManagerInfo"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskManagerInfo"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskManagerInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobmanager/jobs": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobOverviewDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobOverviewDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobOverviewDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobmanager/jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobGraph"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobGraph"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobGraph"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobmanager/jobs/{jobId}/metrics": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VertexMetricsDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VertexMetricsDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VertexMetricsDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobmanager/submit": {
+      "post": {
+        "tags": [
+          "JobManager"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobDefinitionDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobDefinitionDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobDefinitionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}/scale": {
+      "put": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScaleParametersDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScaleParametersDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScaleParametersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}/stop": {
+      "post": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}/cancel": {
+      "post": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/jobmanager/jobs/{jobId}/checkpoints": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/jobmanager/jobs/{jobId}/logs": {
+      "get": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": { }
+              },
+              "application/json": {
+                "schema": { }
+              },
+              "text/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}/restart": {
+      "post": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/dlq/{jobId}/resubmit": {
+      "post": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/dlq/{jobId}/messages/{messageId}": {
+      "put": {
+        "tags": [
+          "JobManager"
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DlqMessageDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DlqMessageDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DlqMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DlqMessageDto": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobId": {
+            "type": "string",
+            "nullable": true
+          },
+          "originalTopic": {
+            "type": "string",
+            "nullable": true
+          },
+          "payload": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          },
+          "errorReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "failedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "newPayload": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JobDefinitionDto": {
+        "type": "object",
+        "properties": {
+          "jobName": {
+            "type": "string",
+            "nullable": true
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorDefinitionDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JobEdge": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "sourceVertexId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetVertexId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shuffleMode": {
+            "$ref": "#/components/schemas/ShuffleMode"
+          },
+          "outputKeyingConfig": {
+            "$ref": "#/components/schemas/OutputKeyingConfig"
+          },
+          "dataTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "serializerTypeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JobGraph": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "jobName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vertices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobVertex"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobEdge"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "submissionTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "taskInstanceMetrics": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TaskMetrics"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "serializerTypeRegistrations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JobOverviewDto": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobName": {
+            "type": "string",
+            "nullable": true
+          },
+          "submissionTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "string",
+            "format": "date-span",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "JobVertex": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/VertexType"
+          },
+          "operatorDefinition": {
+            "$ref": "#/components/schemas/OperatorDefinition"
+          },
+          "parallelism": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inputTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "outputTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "inputSerializerTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "outputSerializerTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "outputEdgeKeying": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/KeyingInfo"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "chainedOperators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorDefinition"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "aggregatedRecordsIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "aggregatedRecordsOut": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputEdgeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true,
+            "readOnly": true
+          },
+          "outputEdgeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "KeyingInfo": {
+        "type": "object",
+        "properties": {
+          "keySelectorTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "keyTypeAssemblyName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperatorDefinition": {
+        "type": "object",
+        "properties": {
+          "fullyQualifiedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "configurationJson": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperatorDefinitionDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "typeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "operatorType": {
+            "type": "string",
+            "nullable": true
+          },
+          "parallelism": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "inputDataTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "outputType": {
+            "type": "string",
+            "nullable": true
+          },
+          "inputSerializerTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "outputSerializerTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "outputKeying": {
+            "$ref": "#/components/schemas/OutputKeyingConfigDto"
+          },
+          "chainedOperators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorDefinitionDto"
+            },
+            "nullable": true
+          },
+          "windowing": {
+            "$ref": "#/components/schemas/WindowConfigDto"
+          },
+          "operatorPropertiesJson": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OutputKeyingConfig": {
+        "type": "object",
+        "properties": {
+          "keySelectorTypeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "keyTypeAssemblyName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OutputKeyingConfigDto": {
+        "type": "object",
+        "properties": {
+          "serializedKeySelector": {
+            "type": "string",
+            "nullable": true
+          },
+          "keyTypeName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScaleParametersDto": {
+        "required": [
+          "desiredParallelism"
+        ],
+        "type": "object",
+        "properties": {
+          "operatorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "desiredParallelism": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShuffleMode": {
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "TaskManagerInfo": {
+        "type": "object",
+        "properties": {
+          "taskManagerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastHeartbeat": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskMetrics": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "nullable": true
+          },
+          "recordsIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recordsOut": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VertexMetricsDto": {
+        "type": "object",
+        "properties": {
+          "vertexId": {
+            "type": "string",
+            "nullable": true
+          },
+          "vertexName": {
+            "type": "string",
+            "nullable": true
+          },
+          "recordsIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recordsOut": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VertexType": {
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "WeatherForecast": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "temperatureC": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "summary": {
+            "type": "string",
+            "nullable": true
+          },
+          "temperatureF": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WindowConfigDto": {
+        "type": "object",
+        "properties": {
+          "assignerType": {
+            "type": "string",
+            "nullable": true
+          },
+          "sizeMs": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "slideMs": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "gapMs": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "triggerType": {
+            "type": "string",
+            "nullable": true
+          },
+          "evictorType": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowedLatenessMs": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

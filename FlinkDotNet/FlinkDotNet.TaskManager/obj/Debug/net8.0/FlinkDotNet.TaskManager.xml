@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.TaskManager</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.TaskManager.ChainedCollector`1">
+            <summary>
+            Collects records from an operator and forwards them to the next operator in a chain.
+            </summary>
+            <typeparam name="TIn">The type of record accepted by this collector (output from the previous operator).</typeparam>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:FlinkDotNet.TaskManager.ChainedCollector`1.#ctor(System.Object,System.Object,System.Type)" -->
+        <member name="T:FlinkDotNet.TaskManager.Internal.WindowProcessorConfig`2">
+            <summary>
+            Configuration for window processing
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Internal.WindowProcessorConfig`2.#ctor(FlinkDotNet.Core.Api.Windowing.IWindowAssigner{`0,`1},FlinkDotNet.Core.Api.Windowing.Trigger{`0,`1},FlinkDotNet.Core.Api.Windowing.IEvictor{`0,`1},System.Object)">
+            <summary>
+            Configuration for window processing
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.TaskManager.Internal.WindowProcessorServices`3">
+            <summary>
+            Runtime services for window processing
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Internal.WindowProcessorServices`3.#ctor(FlinkDotNet.Core.Abstractions.Context.IRuntimeContext,FlinkDotNet.Core.Abstractions.Collectors.ICollector{`2},FlinkDotNet.Core.Abstractions.Timers.ITimerService{`0,`1},FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`1})">
+            <summary>
+            Runtime services for window processing
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.TaskManager.Internal.KeyedWindowProcessor`5">
+            <summary>
+            Conceptual placeholder for a class that manages windowing logic for a single key.
+            Instantiated by TaskExecutor for each active key in a window operator.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.TaskManager.Operators.KafkaToRedisOperator">
+            <summary>
+            Combined Kafka-to-Redis operator for TaskManager execution.
+            Consumes from Kafka and writes directly to Redis for simplified architecture.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.InitializeDynamicPortAllocation">
+            <summary>
+            Initialize dynamic port allocation based on environment settings
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.ProcessCommandLineArguments(System.String[])">
+            <summary>
+            Process command line arguments for configuration overrides
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.ApplyEnvironmentVariables">
+            <summary>
+            Apply configuration from environment variables (Aspire service discovery)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.ApplyTaskManagerIdFromEnvironment">
+            <summary>
+            Apply TaskManager ID from environment variable if available
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.ApplyJobManagerAddressFromEnvironment">
+            <summary>
+            Apply JobManager address from environment variables with fallback chain
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.ApplyGrpcPortFromEnvironment">
+            <summary>
+            Apply gRPC port from environment variable if available
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.Program.DisplayStartupConfiguration">
+            <summary>
+            Display startup configuration information
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.TaskManager.SimpleSinkContext">
+            <summary>
+            Minimal sink context used when invoking sink functions in tests or simplified flows.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.TaskManager.SimpleSourceContext">
+            <summary>
+            Simple source context implementation for TaskManager execution
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.ResolveJobManagerAddressAsync">
+            <summary>
+            Resolve JobManager address for Aspire environments with service discovery
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.GetActualGrpcPort">
+            <summary>
+            Discover the actual assigned gRPC port when using dynamic port allocation
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.DiscoverDynamicPort">
+            <summary>
+            Attempts to discover the dynamically assigned port from server features
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.TryGetPortFromServerAddresses(System.Int32,System.Int32)">
+            <summary>
+            Attempts to extract port from server addresses feature
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.ExtractPortFromAddress(System.String)">
+            <summary>
+            Extracts port number from server address string
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.GetTaskManagerAddress">
+            <summary>
+            Get the TaskManager address for registration - supports Aspire/K8s environments
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.WaitForServerReadyAsync(System.Threading.CancellationToken)">
+            <summary>
+            Wait for the TaskManager's own server to be ready before attempting registration
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.TaskManager.TaskManagerCoreService.CreateGrpcChannel(System.String)">
+            <summary>
+            Create gRPC channel with appropriate configuration for the environment
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,79 @@
+name: Build Solutions
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  configuration: Release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Set up .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET Solutions
+        run: |
+          dotnet restore FlinkDotNet/FlinkDotNet.sln
+          dotnet restore Sample/Sample.sln
+
+      - name: Install SonarCloud scanner
+        run: |
+          rm -rf ./.sonar/scanner
+          mkdir -p ./.sonar/scanner
+          dotnet tool install dotnet-sonarscanner --tool-path ./.sonar/scanner
+
+      - name: Build and analyze
+        shell: bash
+        run: |
+          # Build all solutions
+          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
+          dotnet build Sample/Sample.sln --configuration ${{ env.configuration }} --no-restore
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-solutions
+          path: |
+            FlinkDotNet/**/bin/${{ env.configuration }}/
+            Sample/**/bin/${{ env.configuration }}/
+
+  unit_tests:
+    needs: build
+    uses: ./.github/workflows/unit-tests.yml
+
+  integration_tests:
+    needs: build
+    uses: ./.github/workflows/integration-tests.yml
+
+  reliability_tests:
+    needs: build
+    uses: ./.github/workflows/reliability-tests.yml
+
+  stress_tests_confluent:
+    needs: build
+    uses: ./.github/workflows/stress-tests-confluent.yml
+
+  backpressure_tests:
+    needs: build
+    uses: ./.github/workflows/backpressure-tests.yml

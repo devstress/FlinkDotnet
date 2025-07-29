@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Storage.FileSystem</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Storage.FileSystem.DisaggregatedStateBackend">
+            <summary>
+            Simple state backend that stores snapshots on the local filesystem in a
+            disaggregated layout. This is a minimal prototype for testing.
+            </summary>
+        </member>
+    </members>
+</doc>

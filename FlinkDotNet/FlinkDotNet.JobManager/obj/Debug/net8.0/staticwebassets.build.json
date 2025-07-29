@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "cj/G/AkMiyjJOXsKWZNDQETr/fEsjX60Wd8SRD/fFNs=",
+  "Source": "FlinkDotNet.JobManager",
+  "BasePath": "_content/FlinkDotNet.JobManager",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

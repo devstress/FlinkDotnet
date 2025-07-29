@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Core.Observability</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityExtensions">
+            <summary>
+            Extension methods for configuring Flink observability following Apache Flink 2.0 standards.
+            Provides comprehensive setup for metrics, tracing, logging, and health monitoring.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityExtensions.AddFlinkObservability(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.Action{FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions})">
+            <summary>
+            Adds comprehensive Flink observability services to the service collection.
+            Configures all observability components following Apache Flink 2.0 patterns.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityExtensions.AddFlinkObservability(Microsoft.Extensions.Hosting.IHostBuilder,System.String,System.Action{FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions})">
+            <summary>
+            Adds Flink observability to a host builder with default configuration.
+            Simplifies setup for applications using the generic host.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityExtensions.CreateScopedLogger(System.IServiceProvider,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Creates a scoped Flink logger with additional context.
+            Useful for adding operation-specific context to logs.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityExtensions.StartFlinkOperatorActivity(System.IServiceProvider,System.String,System.String,System.String)">
+            <summary>
+            Starts an operator activity with proper Flink context.
+            Enables distributed tracing across operator boundaries.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityExtensions.RecordFlinkMetric(System.IServiceProvider,System.String,System.String,System.String,System.Object)">
+            <summary>
+            Records Flink metrics using the registered metrics collector.
+            Provides convenient access to metrics recording.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions">
+            <summary>
+            Configuration options for Flink observability.
+            Allows customization of observability features and exporters.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnablePrometheusMetrics">
+            <summary>Enable Prometheus metrics export</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableConsoleMetrics">
+            <summary>Enable console metrics export for development</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableConsoleTracing">
+            <summary>Enable console tracing export for development</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableJaegerTracing">
+            <summary>Enable Jaeger tracing export</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.JaegerEndpoint">
+            <summary>Jaeger endpoint for trace export</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableOperatorMonitoring">
+            <summary>Enable detailed operator-level monitoring</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableJobMonitoring">
+            <summary>Enable comprehensive job-level monitoring</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableNetworkMonitoring">
+            <summary>Enable network performance monitoring</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.EnableStateBackendMonitoring">
+            <summary>Enable state backend monitoring</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.HealthCheckIntervalSeconds">
+            <summary>Health check interval in seconds</summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Observability.Extensions.FlinkObservabilityOptions.MetricsIntervalSeconds">
+            <summary>Metrics collection interval in seconds</summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.FlinkHealthMonitor">
+            <summary>
+            Implementation of comprehensive health monitoring following Apache Flink 2.0 standards.
+            Provides health checks for all critical Flink components.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.FlinkMetricsCollector">
+            <summary>
+            Implementation of comprehensive metrics collection following Apache Flink 2.0 standards.
+            Uses OpenTelemetry for metrics export and follows Flink metric naming conventions.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.FlinkStructuredLogger">
+            <summary>
+            Implementation of structured logging following Apache Flink 2.0 standards.
+            Provides consistent, contextual logging across all Flink components.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.FlinkTracingCollector">
+            <summary>
+            Implementation of distributed tracing following Apache Flink 2.0 patterns.
+            Provides end-to-end trace correlation across job components.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.FlinkComponentHealthCheck">
+            <summary>
+            Health check for Flink components following Apache Flink patterns.
+            Integrates with ASP.NET Core health check framework.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Observability.FlinkJobHealthCheck">
+            <summary>
+            Health check for Flink jobs following Apache Flink patterns.
+            Monitors job execution status and performance metrics.
+            </summary>
+        </member>
+    </members>
+</doc>

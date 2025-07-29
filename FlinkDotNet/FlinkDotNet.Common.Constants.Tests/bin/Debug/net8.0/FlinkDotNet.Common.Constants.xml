@@ -1,0 +1,218 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Common.Constants</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Common.Constants.ServicePorts">
+            <summary>
+            Default port configurations for FlinkDotNet services
+            These values are used as fallbacks when environment variables are not set
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServicePorts.JobManagerGrpc">
+            <summary>
+            Default port for JobManager gRPC service (fallback when JOBMANAGER_GRPC_PORT env var not set)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServicePorts.JobManagerHttp">
+            <summary>
+            Default port for JobManager HTTP API (fallback when JOBMANAGER_HTTP_PORT env var not set)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServicePorts.Kafka">
+            <summary>
+            Default port for Kafka service (dynamically assigned by Aspire)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServicePorts.Redis">
+            <summary>
+            Default port for Redis service (dynamically assigned by Aspire)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServicePorts.TaskManagerGrpc">
+            <summary>
+            Default port for TaskManager gRPC service (fallback when TASKMANAGER_GRPC_PORT env var not set)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Common.Constants.ServiceHosts">
+            <summary>
+            Default host configurations for FlinkDotNet services
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.ServiceHosts.Localhost">
+            <summary>
+            Default localhost address
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.ServiceHosts.LocalIP">
+            <summary>
+            Default local IP address
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Common.Constants.ServiceUris">
+            <summary>
+            Service URI configurations combining hosts and ports
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.JobManagerGrpc">
+            <summary>
+            Default JobManager gRPC address (secure HTTPS)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.JobManagerHttp">
+            <summary>
+            Default JobManager HTTP API address (secure HTTPS)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.KafkaBootstrapServers">
+            <summary>
+            Default Kafka bootstrap servers (dynamically assigned by Aspire)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.RedisConnectionString">
+            <summary>
+            Default Redis connection string (dynamically assigned by Aspire)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Common.Constants.ServiceUris.TaskManagerGrpc">
+            <summary>
+            Default TaskManager gRPC address (secure HTTPS)
+            </summary>
+            <returns>TaskManager gRPC URI</returns>
+        </member>
+        <member name="M:FlinkDotNet.Common.Constants.ServiceUris.TaskManagerGrpc(System.Int32)">
+            <summary>
+            TaskManager gRPC address with specified port (secure HTTPS)
+            </summary>
+            <param name="port">Custom port number</param>
+            <returns>TaskManager gRPC URI</returns>
+        </member>
+        <member name="T:FlinkDotNet.Common.Constants.ServiceUris.Insecure">
+            <summary>
+            Insecure service URIs for local development only
+            </summary>
+            <summary>
+            Service URIs for insecure HTTP connections.
+            WARNING: These should only be used for local development and testing.
+            For production environments, use the Secure class with HTTPS endpoints.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.Insecure.JobManagerGrpcHttp">
+            <summary>
+            JobManager gRPC address (insecure HTTP - use only for local development)
+            For production, use Secure.JobManagerGrpcHttps instead.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.Insecure.JobManagerHttpApi">
+            <summary>
+            JobManager HTTP API address (insecure HTTP - use only for local development)
+            For production, use Secure.JobManagerHttpsApi instead.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Common.Constants.ServiceUris.Insecure.TaskManagerGrpcHttp">
+            <summary>
+            TaskManager gRPC address (insecure HTTP - use only for local development)
+            For production, use Secure.TaskManagerGrpcHttps instead.
+            </summary>
+            <returns>TaskManager gRPC URI</returns>
+        </member>
+        <member name="M:FlinkDotNet.Common.Constants.ServiceUris.Insecure.TaskManagerGrpcHttp(System.Int32)">
+            <summary>
+            TaskManager gRPC address with specified port (insecure HTTP - use only for local development)
+            For production, use Secure.TaskManagerGrpcHttps instead.
+            </summary>
+            <param name="port">Custom port number</param>
+            <returns>TaskManager gRPC URI</returns>
+        </member>
+        <member name="T:FlinkDotNet.Common.Constants.ServiceUris.Secure">
+            <summary>
+            Service URIs for secure HTTPS connections.
+            Use these for production environments.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.Secure.JobManagerGrpcHttps">
+            <summary>
+            JobManager gRPC address (secure HTTPS - recommended for production)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Common.Constants.ServiceUris.Secure.JobManagerHttpsApi">
+            <summary>
+            JobManager HTTP API address (secure HTTPS - recommended for production)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Common.Constants.ServiceUris.Secure.TaskManagerGrpcHttps">
+            <summary>
+            TaskManager gRPC address (secure HTTPS - recommended for production)
+            </summary>
+            <returns>TaskManager gRPC URI</returns>
+        </member>
+        <member name="M:FlinkDotNet.Common.Constants.ServiceUris.Secure.TaskManagerGrpcHttps(System.Int32)">
+            <summary>
+            TaskManager gRPC address with specified port (secure HTTPS - recommended for production)
+            </summary>
+            <param name="port">Custom port number</param>
+            <returns>TaskManager gRPC URI</returns>
+        </member>
+        <member name="T:FlinkDotNet.Common.Constants.EnvironmentVariables">
+            <summary>
+            Environment variable names used across the application
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.JobManagerGrpcPort">
+            <summary>
+            Environment variable for JobManager gRPC port
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.JobManagerHttpPort">
+            <summary>
+            Environment variable for JobManager HTTP port
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.TaskManagerGrpcPort">
+            <summary>
+            Environment variable for TaskManager gRPC port
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.KafkaPort">
+            <summary>
+            Environment variable for Kafka port (dynamically assigned by Aspire)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.RedisPort">
+            <summary>
+            Environment variable for Redis port (dynamically assigned by Aspire)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.DotNetKafkaPort">
+            <summary>
+            Environment variable for Kafka port from Aspire port discovery (DOTNET_KAFKA_PORT)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.DotNetRedisPort">
+            <summary>
+            Environment variable for Redis port from Aspire port discovery (DOTNET_REDIS_PORT)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.DotNetKafkaBootstrapServers">
+            <summary>
+            Environment variable for Kafka bootstrap servers from Aspire port discovery (DOTNET_KAFKA_BOOTSTRAP_SERVERS)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.DotNetRedisUrl">
+            <summary>
+            Environment variable for Redis connection string from Aspire port discovery (DOTNET_REDIS_URL)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.KafkaBootstrapServers">
+            <summary>
+            Environment variable for Kafka bootstrap servers
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Common.Constants.EnvironmentVariables.RedisConnectionString">
+            <summary>
+            Environment variable for Redis connection string
+            </summary>
+        </member>
+    </members>
+</doc>

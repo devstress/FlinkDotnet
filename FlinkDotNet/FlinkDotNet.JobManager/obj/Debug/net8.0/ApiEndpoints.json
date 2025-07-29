@@ -1,0 +1,298 @@
+[
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetJobs",
+    "RelativePath": "api/jobmanager/jobs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[FlinkDotNet.JobManager.Models.JobOverviewDto, FlinkDotNet.JobManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetJobDetails",
+    "RelativePath": "api/jobmanager/jobs/{jobId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "FlinkDotNet.JobManager.Models.JobGraph.JobGraph",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetJobCheckpoints",
+    "RelativePath": "api/jobmanager/jobs/{jobId}/checkpoints",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetJobLogs",
+    "RelativePath": "api/jobmanager/jobs/{jobId}/logs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Object",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetJobMetrics",
+    "RelativePath": "api/jobmanager/jobs/{jobId}/metrics",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[FlinkDotNet.JobManager.Models.VertexMetricsDto, FlinkDotNet.JobManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "SubmitJob",
+    "RelativePath": "api/jobmanager/submit",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobDefinition",
+        "Type": "FlinkDotNet.JobManager.Models.JobDefinitionDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetTaskManagers",
+    "RelativePath": "api/jobmanager/taskmanagers",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[FlinkDotNet.JobManager.Models.TaskManagerInfo, FlinkDotNet.JobManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "ModifyDlqMessage",
+    "RelativePath": "dlq/{jobId}/messages/{messageId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "messageId",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "messageData",
+        "Type": "FlinkDotNet.JobManager.Models.DlqMessageDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "ResubmitDlqMessages",
+    "RelativePath": "dlq/{jobId}/resubmit",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "GetJobStatus",
+    "RelativePath": "jobs/{jobId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "CancelJob",
+    "RelativePath": "jobs/{jobId}/cancel",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "RestartJob",
+    "RelativePath": "jobs/{jobId}/restart",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "ScaleJob",
+    "RelativePath": "jobs/{jobId}/scale",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "scaleParameters",
+        "Type": "FlinkDotNet.JobManager.Models.ScaleParametersDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Controllers.JobManagerController",
+    "Method": "StopJob",
+    "RelativePath": "jobs/{jobId}/stop",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "jobId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FlinkDotNet.JobManager.Program\u002B\u003C\u003Ec__DisplayClass3_0",
+    "Method": "\u003CConfigurePipeline\u003Eb__0",
+    "RelativePath": "weatherforecast",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "FlinkDotNet.JobManager.Program\u002BWeatherForecast[]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetWeatherForecast"
+  }
+]

@@ -1,0 +1,1564 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Core.Abstractions</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Core.Abstractions.Checkpointing.ICheckpointedFunction">
+            <summary>
+            Interface for functions that need to participate in Apache Flink's checkpointing mechanism.
+            This provides exactly-once processing guarantees by allowing functions to snapshot and restore state.
+            
+            Apache Flink's checkpointing works by:
+            1. Coordinator triggers checkpoint on all operators
+            2. Each operator snapshots its state via SnapshotState()
+            3. State is persisted to distributed storage
+            4. Once all operators complete, checkpoint is committed
+            5. On recovery, RestoreState() is called with last successful checkpoint
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Checkpointing.ICheckpointedFunction.SnapshotState(System.Int64,System.Int64)">
+            <summary>
+            Called when a checkpoint is triggered to snapshot the function's state.
+            This method should capture all necessary state for recovery and store it
+            in a serializable format.
+            </summary>
+            <param name="checkpointId">Unique identifier for this checkpoint</param>
+            <param name="checkpointTimestamp">Timestamp when checkpoint was triggered</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Checkpointing.ICheckpointedFunction.RestoreState(System.Object)">
+            <summary>
+            Called when the function is restored from a checkpoint to recover its state.
+            This method receives the state that was previously captured in SnapshotState().
+            </summary>
+            <param name="state">The state object that was previously snapshotted</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Checkpointing.ICheckpointedFunction.NotifyCheckpointComplete(System.Int64)">
+            <summary>
+            Called when a checkpoint has been successfully completed and committed.
+            This is useful for functions that need to perform cleanup or commit operations
+            only after a checkpoint is fully complete (e.g., committing Kafka offsets).
+            </summary>
+            <param name="checkpointId">The ID of the completed checkpoint</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Collectors.ICollector`1">
+            <summary>
+            Interface for a collector that collects records of a specific type.
+            This is used by operators like FlatMap to emit output elements.
+            Similar to Flinks org.apache.flink.util.Collector.
+            </summary>
+            <typeparam name="T">The type of the records collected by this collector.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Collectors.ICollector`1.Collect(`0)">
+            <summary>
+            Emits a record.
+            </summary>
+            <param name="record">The record to collect.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Common.Time">
+            <summary>
+            Represents a time interval, typically used for window sizes, slides, or gaps.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Common.Time.Milliseconds">
+            <summary>
+            Gets the time interval in milliseconds.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Common.Time.MillisecondsMethod(System.Int64)">
+            <summary>
+            Creates a Time representing the given number of milliseconds.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Common.Time.Seconds(System.Int64)">
+            <summary>
+            Creates a Time representing the given number of seconds.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Common.Time.Minutes(System.Int64)">
+            <summary>
+            Creates a Time representing the given number of minutes.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Common.Time.Hours(System.Int64)">
+            <summary>
+            Creates a Time representing the given number of hours.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Common.Time.Days(System.Int64)">
+            <summary>
+            Creates a Time representing the given number of days.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext">
+            <summary>
+            Provides information about the context in which an operator is executed.
+            This includes information about the job, the task, parallelism, and access to state.
+            Similar to Flink's org.apache.flink.api.common.functions.RuntimeContext.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.JobName">
+            <summary>
+            Gets the name of the job the operator is part of.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.TaskName">
+            <summary>
+            Gets the name of the task (operator instance).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.NumberOfParallelSubtasks">
+            <summary>
+            Gets the total number of parallel subtasks for the operator.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.IndexOfThisSubtask">
+            <summary>
+            Gets the index of this parallel subtask (0-based).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.JobConfiguration">
+            <summary>
+            Gets the job configuration associated with the current job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.GetValueState``1(FlinkDotNet.Core.Abstractions.Models.State.ValueStateDescriptor{``0})">
+            <summary>
+            Gets a handle to a <see cref="T:FlinkDotNet.Core.Abstractions.States.IValueState`1"/>, which is scoped to the current key.
+            </summary>
+            <typeparam name="T">The type of value in the state.</typeparam>
+            <param name="stateDescriptor">Descriptor that contains the name and other properties for the state.</param>
+            <returns>The value state.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.GetListState``1(FlinkDotNet.Core.Abstractions.Models.State.ListStateDescriptor{``0})">
+            <summary>
+            Gets a handle to an <see cref="T:FlinkDotNet.Core.Abstractions.States.IListState`1"/>, which is scoped to the current key.
+            </summary>
+            <typeparam name="T">The type of elements in the list state.</typeparam>
+            <param name="stateDescriptor">Descriptor that contains the name and other properties for the state.</param>
+            <returns>The list state.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.GetMapState``2(FlinkDotNet.Core.Abstractions.Models.State.MapStateDescriptor{``0,``1})">
+            <summary>
+            Gets a handle to an <see cref="T:FlinkDotNet.Core.Abstractions.States.IMapState`2"/>, which is scoped to the current key.
+            </summary>
+            <typeparam name="TK">The type of keys in the map state. Must be notnull.</typeparam>
+            <typeparam name="TV">The type of values in the map state.</typeparam>
+            <param name="stateDescriptor">Descriptor that contains the name and other properties for the state.</param>
+            <returns>The map state.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.GetCurrentKey">
+            <summary>
+            Gets the current key in a keyed context. Returns null if not in a keyed context or key is null.
+            Used by state implementations to scope state to the current key.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.SetCurrentKey(System.Object)">
+            <summary>
+            INTERNAL USE: Sets the current key. Called by the TaskExecutor before processing a record in a keyed stream.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext.StateSnapshotStore">
+            <summary>
+            Gets the state snapshot store for this operator, used during checkpointing.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Functions.IKeySelector`2">
+            <summary>
+            Interface for user-defined key selectors.
+            Allows users to implement custom key extraction logic that can be instantiated by type name.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TKey">The type of the extracted key.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointBarrier">
+            <summary>
+            In-memory representation of a checkpoint barrier flowing through the data stream.
+            This mirrors the corresponding gRPC message but keeps the core abstractions
+            decoupled from the generated types.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointMetadata">
+            <summary>
+            Represents the metadata for a checkpoint.
+            Corresponds to the "Checkpoints" JSON schema (Section 2.3 of the design document).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointMetadata.Id">
+            <summary>
+            Unique document ID, typically "jobId_checkpointId".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointMetadata.PartitionKey">
+            <summary>
+            Partition key for storage, typically "jobId".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointMetadata.Status">
+            <summary>
+            Status of the checkpoint, e.g., "COMPLETED", "IN_PROGRESS", "FAILED".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointMetadata.OperatorStates">
+            <summary>
+            List of state metadata for each operator instance included in this checkpoint.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.CheckpointMetadata.SinkTransactions">
+            <summary>
+            List of pointers to sink transactions associated with this checkpoint.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorCheckpointState">
+            <summary>
+            Represents metadata about a specific operators state within a checkpoint.
+            Corresponds to an item in the "operatorStates" array in the Checkpoints JSON schema.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorCheckpointState.OperatorInstanceId">
+            <summary>
+            Identifier for the operator instance, e.g., "MapOperator_Instance_0".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorCheckpointState.InputOffsets">
+            <summary>
+            Input stream offsets for each source partition handled by this operator instance.
+            Key: Source Name/ID (e.g., KafkaTopicA_Partition0), Value: Offset.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorCheckpointState.StateCommitToken">
+            <summary>
+            A token or pointer representing the committed state for this operator instance
+            at this checkpoint. This could be a path to a file in durable storage,
+            a version ID, or a database reference.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata">
+            <summary>
+            Represents the metadata for a specific piece of keyed operator state,
+            typically as stored or referenced as part of a checkpoint.
+            Corresponds to the "OperatorState" JSON schema (Section 2.2 of the design document).
+            This describes the persisted snapshot of a keyed state, not the live state object.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata.Id">
+            <summary>
+            Unique document ID, e.g., "jobId_operatorInstanceId_keyHash".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata.PartitionKey">
+            <summary>
+            Partition key for storage, typically "jobId_operatorInstanceId".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata.OperatorId">
+            <summary>
+            Identifier for the specific operator instance this state belongs to.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata.KeyHash">
+            <summary>
+            Hash of the data key (e.g., customer ID) this state is for.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata.StateDataLocation">
+            <summary>
+            Placeholder for the actual serialized state data or a pointer/reference to it.
+            This could be a URI to a file in blob storage (MinIO, S3, Azure Blob),
+            a base64 encoded string for small states, or a JSON serialized version.
+            The interpretation of this field depends on the chosen state persistence strategy.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateMetadata.LastUpdatedCheckpointId">
+            <summary>
+            The checkpoint ID with which this state version was last updated/snapshotted.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateSnapshot">
+            <summary>
+            Represents the result of a single operator's snapshot during checkpointing.
+            Contains the storage handle to the snapshot and optional metadata about the snapshot.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateSnapshot.Metadata">
+            <summary>
+            Optional metadata describing the snapshot.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.Checkpointing.SinkTransactionStatePointer">
+            <summary>
+            Represents a pointer or reference to a sink transaction associated with a checkpoint.
+            Corresponds to an item in the "sinkTransactions" array in the Checkpoints JSON schema.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.SinkTransactionStatePointer.SinkInstanceId">
+            <summary>
+            Identifier for the sink instance.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.Checkpointing.SinkTransactionStatePointer.TransactionId">
+            <summary>
+            The unique transaction ID used with the external sink system.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.JobConfiguration">
+            <summary>
+            Represents the configuration parameters for a job.
+            This is a placeholder and can be expanded to include specific
+            job-level settings, user parameters, etc.
+            Flinks equivalent is org.apache.flink.api.common.ExecutionConfig
+            and the Configuration object passed to RichFunctions.
+            </summary>
+            <summary>
+            Simple mutable job configuration used by tests.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.State.ListStateDescriptor`1">
+            <summary>
+            Descriptor for <see cref="T:FlinkDotNet.Core.Abstractions.States.IListState`1"/>.
+            </summary>
+            <typeparam name="T">The type of the elements in the list state.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.State.MapStateDescriptor`2">
+            <summary>
+            Descriptor for <see cref="T:FlinkDotNet.Core.Abstractions.States.IMapState`2"/>.
+            </summary>
+            <typeparam name="TK">The type of the keys in the map state.</typeparam>
+            <typeparam name="TV">The type of the values in the map state.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.State.StateDescriptor">
+            <summary>
+            Base class for state descriptors. Contains the name of the state.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.State.StateDescriptor.Name">
+            <summary>
+            Gets the name of the state.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Models.State.ValueStateDescriptor`1">
+            <summary>
+            Descriptor for <see cref="T:FlinkDotNet.Core.Abstractions.States.IValueState`1"/>.
+            </summary>
+            <typeparam name="T">The type of the value in the state.</typeparam>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Models.State.ValueStateDescriptor`1.DefaultValue">
+            <summary>
+            Gets the default value for the state.
+            This is returned by <see cref="M:FlinkDotNet.Core.Abstractions.States.IValueState`1.Value"/> if no value was set.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Networking.INetworkBufferPool">
+            <summary>
+            Defines a pool for managing NetworkBuffer instances to reduce GC pressure
+            and manage memory for network operations.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Networking.INetworkBufferPool.BufferSegmentSize">
+            <summary>
+            Gets the configured size of individual buffer segments managed by this pool.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Networking.INetworkBufferPool.TotalPoolBuffers">
+            <summary>
+            Gets the total number of buffer segments this pool is configured to manage.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Networking.INetworkBufferPool.AvailablePoolBuffers">
+            <summary>
+            Gets the current number of available (free) buffer segments in the pool.
+            This count should be thread-safe.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Networking.INetworkBufferPool.RequestBuffer(System.Int32)">
+            <summary>
+            Requests a NetworkBuffer from the pool.
+            This method might block if no buffers are available and the pool is configured to wait,
+            or it might return null or throw an exception if unable to satisfy immediately.
+            </summary>
+            <param name="minCapacity">The minimum capacity required for the buffer.
+            The pool will try to provide a buffer of at least this size, typically its standard BufferSegmentSize.</param>
+            <returns>A NetworkBuffer instance, or null if no buffer is available and the pool is non-blocking.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Networking.INetworkBufferPool.ReturnBuffer(FlinkDotNet.Core.Abstractions.Networking.INetworkBuffer)">
+            <summary>
+            Returns a NetworkBuffer (and its underlying byte array) to the pool.
+            </summary>
+            <param name="buffer">The NetworkBuffer to return.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.FlinkHealthStatus">
+            <summary>
+            Defines health check states following Apache Flink patterns.
+            Maps to Flink's component health model.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Observability.FlinkHealthStatus.Healthy">
+            <summary>Component is healthy and operating normally.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Observability.FlinkHealthStatus.Degraded">
+            <summary>Component is degraded but still operational.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Observability.FlinkHealthStatus.Unhealthy">
+            <summary>Component is unhealthy and may fail soon.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Observability.FlinkHealthStatus.Failed">
+            <summary>Component has failed and is not operational.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.FlinkHealthCheckResult">
+            <summary>
+            Represents a health check result with detailed information.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor">
+            <summary>
+            Provides comprehensive health monitoring following Apache Flink 2.0 standards.
+            Implements health checks for all critical Flink components.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.CheckOperatorHealthAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks the health of a specific operator.
+            Validates operator state, performance, and resource usage.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.CheckJobHealthAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Checks the health of job execution.
+            Validates job progress, resource consumption, and error rates.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.CheckStateBackendHealthAsync(System.Threading.CancellationToken)">
+            <summary>
+            Checks the health of state backend.
+            Validates state access, checkpointing, and storage performance.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.CheckNetworkHealthAsync(System.Threading.CancellationToken)">
+            <summary>
+            Checks the health of network communication.
+            Validates inter-operator communication and data flow.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.CheckResourceHealthAsync(System.Threading.CancellationToken)">
+            <summary>
+            Checks the health of resource allocation.
+            Validates memory usage, CPU utilization, and resource availability.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.CheckOverallHealthAsync(System.Threading.CancellationToken)">
+            <summary>
+            Performs a comprehensive health check of all components.
+            Returns aggregated health status and detailed component information.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.RegisterCustomHealthCheck(System.String,System.Func{System.Threading.CancellationToken,System.Threading.Tasks.Task{FlinkDotNet.Core.Abstractions.Observability.FlinkHealthCheckResult}})">
+            <summary>
+            Registers a custom health check for application-specific components.
+            Enables extensible health monitoring for custom operators.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkHealthMonitor.GetHealthStatusSummaryAsync(System.Threading.CancellationToken)">
+            <summary>
+            Gets the current health status of all monitored components.
+            Provides real-time health overview.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger">
+            <summary>
+            Provides structured logging capabilities following Apache Flink 2.0 standards.
+            Implements consistent logging patterns across all Flink components.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogOperatorLifecycle(Microsoft.Extensions.Logging.LogLevel,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs operator lifecycle events (start, stop, restart).
+            Provides visibility into operator state transitions.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogRecordProcessing(Microsoft.Extensions.Logging.LogLevel,System.String,System.String,System.String,System.Int64,System.Nullable{System.TimeSpan},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs record processing events with timing and context.
+            Enables tracing of individual record flow through operators.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogCheckpoint(Microsoft.Extensions.Logging.LogLevel,System.String,System.Int64,System.String,System.Nullable{System.TimeSpan},System.Nullable{System.Int64},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs checkpoint events with detailed state information.
+            Tracks checkpoint coordination and completion status.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogBackpressure(Microsoft.Extensions.Logging.LogLevel,System.String,System.String,System.String,System.TimeSpan,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs backpressure events for flow control monitoring.
+            Identifies bottlenecks in the processing pipeline.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogError(System.String,System.String,System.Exception,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs error events with full context for debugging.
+            Provides structured error information for analysis.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogPerformance(Microsoft.Extensions.Logging.LogLevel,System.String,System.String,System.String,System.Double,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs performance metrics and statistics.
+            Records throughput, latency, and resource usage information.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogStateOperation(Microsoft.Extensions.Logging.LogLevel,FlinkDotNet.Core.Abstractions.Observability.StateOperationInfo)">
+            <summary>
+            Logs state operations (create, restore, snapshot).
+            Tracks state backend interactions and performance.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogNetworkOperation(Microsoft.Extensions.Logging.LogLevel,System.String,System.String,System.String,System.Int64,System.Nullable{System.TimeSpan},System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs network communication events between operators.
+            Tracks data flow and network performance.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.LogJobEvent(Microsoft.Extensions.Logging.LogLevel,System.String,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Logs job-level events (submission, execution, completion).
+            Provides high-level job execution visibility.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkLogger.WithContext(System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Creates a scoped logger with additional context.
+            Maintains contextual information across related operations.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.StateOperationInfo">
+            <summary>
+            Encapsulates state operation parameters to reduce method parameter count.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics">
+            <summary>
+            Provides comprehensive metrics collection following Apache Flink 2.0 standards.
+            Implements the same metric patterns as Apache Flink for consistency and compatibility.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordIncomingRecord(System.String,System.String)">
+            <summary>
+            Records processed incoming records for throughput calculation.
+            Maps to Flink's numRecordsIn metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordOutgoingRecord(System.String,System.String)">
+            <summary>
+            Records processed outgoing records for throughput calculation.
+            Maps to Flink's numRecordsOut metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordBytesIn(System.String,System.String,System.Int64)">
+            <summary>
+            Records bytes received from upstream operators.
+            Maps to Flink's numBytesIn metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordBytesOut(System.String,System.String,System.Int64)">
+            <summary>
+            Records bytes sent to downstream operators.
+            Maps to Flink's numBytesOut metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordLatency(System.String,System.String,System.TimeSpan)">
+            <summary>
+            Records processing latency for performance monitoring.
+            Maps to Flink's latency histogram metrics.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordBackpressure(System.String,System.String,System.TimeSpan)">
+            <summary>
+            Records backpressure indication for flow control monitoring.
+            Maps to Flink's backPressuredTimeMsPerSecond metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordCheckpointDuration(System.String,System.TimeSpan)">
+            <summary>
+            Records checkpoint duration for reliability monitoring.
+            Maps to Flink's checkpointDuration metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordCheckpointSize(System.String,System.Int64)">
+            <summary>
+            Records checkpoint size for state monitoring.
+            Maps to Flink's checkpointSize metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordRestart(System.String,System.String)">
+            <summary>
+            Records operator restart count for failure tracking.
+            Maps to Flink's numRestarts metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordError(System.String,System.String,System.String)">
+            <summary>
+            Records error occurrences for reliability monitoring.
+            Maps to Flink's error rate metrics.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordQueueSize(System.String,System.String,System.Int32)">
+            <summary>
+            Records current queue size for buffer monitoring.
+            Maps to Flink's inPoolUsage and outPoolUsage metrics.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordWatermarkLag(System.String,System.String,System.TimeSpan)">
+            <summary>
+            Records watermark lag for event time processing monitoring.
+            Maps to Flink's watermarkLag metric.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkMetrics.RecordStateSize(System.String,System.String,System.Int64)">
+            <summary>
+            Records state size for memory usage monitoring.
+            Maps to Flink's managedMemoryUsed metric.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing">
+            <summary>
+            Provides distributed tracing capabilities following Apache Flink 2.0 patterns.
+            Implements trace correlation across job components for end-to-end visibility.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.StartOperatorSpan(System.String,System.String,System.String)">
+            <summary>
+            Creates a new trace span for operator execution.
+            Maps to Flink's span creation for operator chains.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.StartRecordProcessingSpan(System.String,System.String,System.String)">
+            <summary>
+            Creates a span for record processing within an operator.
+            Enables fine-grained tracing of record flow.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.StartCheckpointSpan(System.String,System.Int64)">
+            <summary>
+            Creates a span for checkpoint operations.
+            Traces checkpoint coordination and state persistence.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.StartStateOperationSpan(System.String,System.String,System.String)">
+            <summary>
+            Creates a span for state operations (read/write/recovery).
+            Traces state backend interactions for performance analysis.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.StartNetworkSpan(System.String,System.String,System.String)">
+            <summary>
+            Creates a span for network communication between operators.
+            Traces data flow across task boundaries.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.AddSpanAttribute(System.String,System.Object)">
+            <summary>
+            Adds contextual information to the current span.
+            Enriches traces with Flink-specific metadata.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.AddSpanEvent(System.String,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Adds span event for significant occurrences.
+            Records important events like backpressure, restarts, etc.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.RecordSpanError(System.Exception,System.String)">
+            <summary>
+            Records an error in the current span.
+            Correlates errors with trace context for debugging.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.GetCurrentTraceContext">
+            <summary>
+            Gets the current trace context for propagation.
+            Enables trace correlation across async boundaries.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Observability.IFlinkTracing.SetTraceContext(System.String)">
+            <summary>
+            Sets the trace context from upstream components.
+            Continues traces across component boundaries.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Operators.ChainingStrategy.ALWAYS">
+            <summary>
+            Always chain this operator with the preceding and succeeding operators if possible.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Operators.ChainingStrategy.NEVER">
+            <summary>
+            Never chain this operator with any other operator.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Core.Abstractions.Operators.ChainingStrategy.HEAD">
+            <summary>
+            Chain this operator with the preceding operator, but do not chain with the succeeding operator.
+            This operator will be the head of a new chain (if chained with previous) or start a new chain itself.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IAggregateOperator`3">
+            <summary>
+            Interface for an aggregate operator that computes an aggregate over elements.
+            It involves creating an accumulator, adding elements to it, and then deriving a final result.
+            Similar to Flink's AggregateFunction.
+            
+            Note: Uses contravariant 'in' parameters and covariant 'out' parameter
+            for proper type variance in functional composition scenarios.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TAgg">The type of the accumulator.</typeparam>
+            <typeparam name="TOut">The type of the output (result) elements.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IAggregateOperator`3.CreateAccumulator">
+            <summary>
+            Creates a new accumulator, starting a new aggregate.
+            </summary>
+            <returns>A new accumulator.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IAggregateOperator`3.Add(`1,`0)">
+            <summary>
+            Adds the given input value to the given accumulator, returning the new accumulator value.
+            </summary>
+            <param name="accumulator">The current accumulator.</param>
+            <param name="value">The value to add.</param>
+            <returns>The new accumulator.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IAggregateOperator`3.GetResult(`1)">
+            <summary>
+            Gets the result of the aggregation from the accumulator.
+            </summary>
+            <param name="accumulator">The accumulator.</param>
+            <returns>The final aggregation result.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IAggregateOperator`3.Merge(`1,`1)">
+            <summary>
+            Merges two accumulators, returning an accumulator with the merged state.
+            This is important for combining intermediate results in distributed computations
+            or for merging session windows.
+            </summary>
+            <param name="a">An accumulator to merge.</param>
+            <param name="b">Another accumulator to merge.</param>
+            <returns>The merged accumulator.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.ICheckpointableOperator">
+            <summary>
+            Implemented by operators that support Flink.NET style state checkpointing.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.ICheckpointableOperator.SnapshotState(System.Int64,System.Int64)">
+            <summary>
+            Snapshots the state of the operator for the given checkpoint.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.ICheckpointableOperator.RestoreState(FlinkDotNet.Core.Abstractions.Models.Checkpointing.OperatorStateSnapshot)">
+            <summary>
+            Restores the operator's state from a previously taken snapshot.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IFilterOperator`1">
+            <summary>
+            Interface for a filter operator that decides whether to keep an element.
+            Similar to Flinks FilterFunction.
+            </summary>
+            <typeparam name="T">The type of the elements.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IFilterOperator`1.Filter(`0)">
+            <summary>
+            Evaluates a condition on the input element.
+            </summary>
+            <param name="element">The input element.</param>
+            <returns>True if the element should be kept, false otherwise.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IFlatMapOperator`2">
+            <summary>
+            Interface for a flatmap operator that transforms one element into zero, one, or more output elements.
+            Output elements are emitted via an <see cref="T:FlinkDotNet.Core.Abstractions.Collectors.ICollector`1"/>.
+            Similar to Flinks FlatMapFunction.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TOut">The type of the output elements.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IFlatMapOperator`2.FlatMap(`0,FlinkDotNet.Core.Abstractions.Collectors.ICollector{`1})">
+            <summary>
+            Transforms the input element into zero, one, or more output elements,
+            emitting them to the provided collector.
+            </summary>
+            <param name="element">The input element.</param>
+            <param name="collector">The collector to which output elements are emitted.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IJoinFunction`3">
+            <summary>
+            Interface for a join function that combines two elements from different inputs
+            into a single output element.
+            Similar to Flinks JoinFunction.
+            
+            Note: Uses contravariant 'in' parameters and covariant 'out' parameter
+            for proper type variance in functional composition scenarios.
+            </summary>
+            <typeparam name="TLeft">The type of the elements from the left input stream.</typeparam>
+            <typeparam name="TRight">The type of the elements from the right input stream.</typeparam>
+            <typeparam name="TOut">The type of the output elements produced by the join.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IJoinFunction`3.Join(`0,`1)">
+            <summary>
+            Joins one element from the left input with one element from the right input.
+            </summary>
+            <param name="left">The element from the left input.</param>
+            <param name="right">The element from the right input.</param>
+            <returns>The joined output element.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IMapOperator`2">
+            <summary>
+            Interface for a map operator that transforms one element into another.
+            Similar to Flinks MapFunction.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TOut">The type of the output elements.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IMapOperator`2.Map(`0)">
+            <summary>
+            Transforms the input element into an output element.
+            </summary>
+            <param name="element">The input element.</param>
+            <returns>The transformed output element.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle">
+            <summary>
+            Defines lifecycle methods for operators that require initialization, cleanup,
+            or access to runtime context. This is analogous to Flinks RichFunction features.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle.Open(FlinkDotNet.Core.Abstractions.Context.IRuntimeContext)">
+            <summary>
+            Initialization method for the operator. It is called before the main
+            processing methods (e.g., Map, Filter, FlatMap).
+            The <see cref="T:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext"/> provides access to runtime information and state.
+            Flinks equivalent is open(Configuration parameters).
+            </summary>
+            <param name="context">The runtime context for this operator instance.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle.Close">
+            <summary>
+            Cleanup method for the operator. It is called after all records have been
+            processed, or when the operator is being shut down.
+            Flinks equivalent is close().
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IReduceOperator`1">
+            <summary>
+            Interface for a reduce operator that combines two elements of the same type
+            into a single element of that type. This is typically used on keyed streams.
+            Similar to Flinks ReduceFunction.
+            </summary>
+            <typeparam name="T">The type of the elements to be reduced.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Operators.IReduceOperator`1.Reduce(`0,`0)">
+            <summary>
+            Combines the current accumulator with a new value to produce a new accumulator.
+            </summary>
+            <param name="currentAccumulator">The current accumulated value.</param>
+            <param name="newValue">The new value to combine with the accumulator.</param>
+            <returns>The new accumulator value.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IRichAggregateOperator`3">
+            <summary>
+            A "rich" version of <see cref="T:FlinkDotNet.Core.Abstractions.Operators.IAggregateOperator`3"/> that provides
+            access to lifecycle methods and runtime context.
+            Similar to Flinks RichAggregateFunction.
+            
+            Note: Uses contravariant 'in' parameters and covariant 'out' parameter
+            for proper type variance in functional composition scenarios.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TAgg">The type of the accumulator.</typeparam>
+            <typeparam name="TOut">The type of the output (result) elements.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IRichFilterOperator`1">
+            <summary>
+            A "rich" version of <see cref="T:FlinkDotNet.Core.Abstractions.Operators.IFilterOperator`1"/> that provides
+            access to lifecycle methods and runtime context.
+            Similar to Flinks RichFilterFunction.
+            </summary>
+            <typeparam name="T">The type of the elements.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IRichFlatMapOperator`2">
+            <summary>
+            A "rich" version of <see cref="T:FlinkDotNet.Core.Abstractions.Operators.IFlatMapOperator`2"/> that provides
+            access to lifecycle methods and runtime context.
+            Similar to Flinks RichFlatMapFunction.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TOut">The type of the output elements.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IRichJoinFunction`3">
+            <summary>
+            A "rich" version of <see cref="T:FlinkDotNet.Core.Abstractions.Operators.IJoinFunction`3"/> that provides
+            access to lifecycle methods and runtime context.
+            Similar to Flinks RichJoinFunction.
+            
+            Note: Uses contravariant 'in' parameters and covariant 'out' parameter
+            for proper type variance in functional composition scenarios.
+            </summary>
+            <typeparam name="TLeft">The type of the elements from the left input stream.</typeparam>
+            <typeparam name="TRight">The type of the elements from the right input stream.</typeparam>
+            <typeparam name="TOut">The type of the output elements produced by the join.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IRichMapOperator`2">
+            <summary>
+            A "rich" version of <see cref="T:FlinkDotNet.Core.Abstractions.Operators.IMapOperator`2"/> that provides
+            access to lifecycle methods (<see cref="M:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle.Open(FlinkDotNet.Core.Abstractions.Context.IRuntimeContext)"/> and
+            <see cref="M:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle.Close"/>) and runtime context.
+            Similar to Flinks RichMapFunction.
+            </summary>
+            <typeparam name="TIn">The type of the input elements.</typeparam>
+            <typeparam name="TOut">The type of the output elements.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IRichReduceOperator`1">
+            <summary>
+            A "rich" version of <see cref="T:FlinkDotNet.Core.Abstractions.Operators.IReduceOperator`1"/> that provides
+            access to lifecycle methods and runtime context.
+            Similar to Flinks RichReduceFunction.
+            </summary>
+            <typeparam name="T">The type of the elements to be reduced.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Operators.IWindowOperator">
+            <summary>
+            Placeholder interface for a window operator.
+            The specifics of windowing (assigners, triggers, window functions like ProcessWindowFunction)
+            will be detailed later. This serves as a marker for now.
+            TIn is the type of elements in the stream.
+            TOut is the type of elements produced by the window operation.
+            </summary>
+            <typeparam name="TIn">The input element type.</typeparam>
+            <typeparam name="TOut">The output element type after window processing.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Runtime.BasicRuntimeContext">
+            <summary>
+            A basic, partial implementation of <see cref="T:FlinkDotNet.Core.Abstractions.Context.IRuntimeContext"/> primarily for
+            local testing, illustration, or simple single-node execution environments.
+            This implementation uses in-memory state.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Serializers.JsonPocoSerializer`1">
+            <summary>
+            A generic serializer for Plain Old CLR Objects (POCOs) using System.Text.Json.
+            This is intended to be a safer and more performant default replacement
+            for the old BinaryFormatter-based PocoSerializer.
+            </summary>
+            <typeparam name="T">The type of the object to serialize/deserialize.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Serializers.MemoryPackSerializer`1">
+            <summary>
+            An implementation of <see cref="T:FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer`1"/> that uses MemoryPack
+            for high-performance binary serialization.
+            Types to be serialized by this serializer typically need to be annotated with
+            [MemoryPackable] and relevant MemoryPack attributes for members.
+            </summary>
+            <typeparam name="T">The type to be serialized.</typeparam>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Sinks.ISinkContext">
+            <summary>
+            Context that is available to sink functions.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ISinkContext.CurrentProcessingTimeMillis">
+            <summary>
+            Gets the current processing time in milliseconds.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Sinks.ISinkFunction`1">
+            <summary>
+            Interface for all Flink data sinks.
+            Sinks consume records and typically write them to an external system or output.
+            Sinks must be serializable if they are part of a JobGraph.
+            </summary>
+            <typeparam name="TIn">The type of the records consumed by the sink.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ISinkFunction`1.Open(FlinkDotNet.Core.Abstractions.Context.IRuntimeContext)">
+            <summary>
+            Called once when the sink is initialized.
+            This can be used to set up connections or resources.
+            Similar to <see cref="M:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle.Open(FlinkDotNet.Core.Abstractions.Context.IRuntimeContext)"/>.
+            </summary>
+            <param name="context">The runtime context of the sink operator.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ISinkFunction`1.Invoke(`0,FlinkDotNet.Core.Abstractions.Sinks.ISinkContext)">
+            <summary>
+            This is the main method that is called for each record.
+            </summary>
+            <param name="record">The record to be processed.</param>
+            <param name="context">The context for the sink invocation.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ISinkFunction`1.Close">
+            <summary>
+            Called once when the sink is shutting down.
+            This can be used to flush buffers, close connections, etc.
+            Similar to <see cref="M:FlinkDotNet.Core.Abstractions.Operators.IOperatorLifecycle.Close"/>.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Sinks.ITransactionalSinkFunction`1">
+            <summary>
+            Sink function with transaction hooks to allow exactly-once semantics.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ITransactionalSinkFunction`1.BeginTransaction">
+            <summary>
+            Starts a new transaction and returns an identifier.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ITransactionalSinkFunction`1.PreCommit(System.String)">
+            <summary>
+            Called before a transaction is committed.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ITransactionalSinkFunction`1.Commit(System.String)">
+            <summary>
+            Commits the pending transaction.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sinks.ITransactionalSinkFunction`1.Abort(System.String)">
+            <summary>
+            Aborts the pending transaction.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1">
+            <summary>
+            Context that is available to source functions, allowing them to emit records.
+            </summary>
+            <typeparam name="TOut">The type of the records produced by the source.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1.Collect(`0)">
+            <summary>
+            Emits a record from the source.
+            </summary>
+            <param name="record">The record to emit.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1.CollectAsync(`0)">
+            <summary>
+            Emits a record from the source asynchronously.
+            </summary>
+            <param name="record">The record to emit.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1.CollectWithTimestamp(`0,System.Int64)">
+            <summary>
+            Emits a record with the given event time timestamp.
+            </summary>
+            <param name="record">The record to emit.</param>
+            <param name="timestamp">The event time timestamp in milliseconds.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1.CollectWithTimestampAsync(`0,System.Int64)">
+            <summary>
+            Emits a record with the given event time timestamp asynchronously.
+            </summary>
+            <param name="record">The record to emit.</param>
+            <param name="timestamp">The event time timestamp in milliseconds.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1.EmitWatermark(FlinkDotNet.Core.Abstractions.Windowing.Watermark)">
+            <summary>
+            Emits a watermark to signal the progress of event time.
+            </summary>
+            <param name="watermark">The watermark to emit.</param>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Sources.ISourceContext`1.ProcessingTime">
+            <summary>
+            Gets the current processing time in milliseconds.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1">
+            <summary>
+            Interface for all Flink data sources.
+            The main methods are <see cref="M:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1.Run(FlinkDotNet.Core.Abstractions.Sources.ISourceContext{`0})"/> and <see cref="M:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1.Cancel"/>.
+            Sources must be serializable if they are part of a JobGraph that gets serialized.
+            </summary>
+            <typeparam name="TOut">The type of the records produced by the source.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1.Run(FlinkDotNet.Core.Abstractions.Sources.ISourceContext{`0})">
+            <summary>
+            Starts the source. Implementations can run in a loop to continuously read data.
+            The source should not return from this method until it is canceled.
+            Exceptions thrown from this method will cause the task to fail.
+            </summary>
+            <param name="ctx">The context to emit elements to and for accessing locking objects.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1.Cancel">
+            <summary>
+            Cancels the source. Most sources will implement this by breaking out of the
+            main loop in the <see cref="M:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1.Run(FlinkDotNet.Core.Abstractions.Sources.ISourceContext{`0})"/> method.
+            The method should block until the <see cref="M:FlinkDotNet.Core.Abstractions.Sources.ISourceFunction`1.Run(FlinkDotNet.Core.Abstractions.Sources.ISourceContext{`0})"/> method has completely
+            returned.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Sources.IUnifiedSource`1">
+            <summary>
+            Base interface for sources that can operate in both bounded and unbounded modes.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Sources.IUnifiedSource`1.IsBounded">
+            <summary>
+            Returns true if the source is bounded (batch) and will eventually finish.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.States.IListState`1">
+            <summary>
+            Interface for a state that holds a list of values.
+            Similar to Flinks org.apache.flink.api.common.state.ListState.
+            </summary>
+            <typeparam name="T">The type of the values in the list.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IListState`1.GetValues">
+            <summary>
+            Retrieves all elements currently in the list. (Renamed from Get to GetValues)
+            </summary>
+            <returns>An enumerable of elements, or an empty enumerable if the list is empty or not set.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IListState`1.Get">
+            <summary>
+            Compatibility alias matching older API that exposed <c>Get()</c>.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IListState`1.Add(`0)">
+            <summary>
+            Adds a single value to the list.
+            </summary>
+            <param name="value">The value to add.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IListState`1.AddAll(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Adds all given values to the list.
+            </summary>
+            <param name="values">The collection of values to add.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IListState`1.Update(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+            Replaces all current elements in the list with the given values.
+            </summary>
+            <param name="values">The new collection of values for the list.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IListState`1.Clear">
+            <summary>
+            Deletes all elements from the list.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.States.IMapState`2">
+            <summary>
+            Interface for a state that holds a map of key-value pairs.
+            Similar to Flinks org.apache.flink.api.common.state.MapState.
+            </summary>
+            <typeparam name="TK">The type of the keys in the map.</typeparam>
+            <typeparam name="TV">The type of the values in the map.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.GetValueForKey(`0)">
+            <summary>
+            Retrieves the value associated with the given key using GetValueForKey.
+            </summary>
+            <param name="key">The key to retrieve.</param>
+            <returns>The value, or default(TV) if the key is not present.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Get(`0)">
+            <summary>
+            Compatibility alias matching older API that exposed <c>Get()</c>.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Put(`0,`1)">
+            <summary>
+            Associates the given value with the given key.
+            </summary>
+            <param name="key">The key.</param>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.PutAll(System.Collections.Generic.IDictionary{`0,`1})">
+            <summary>
+            Copies all mappings from the specified dictionary to this map.
+            </summary>
+            <param name="map">The dictionary of key-value pairs to add.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Contains(`0)">
+            <summary>
+            Checks if the map contains a mapping for the specified key.
+            </summary>
+            <param name="key">The key to check.</param>
+            <returns>True if the key exists, false otherwise.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Remove(`0)">
+            <summary>
+            Removes the mapping for the specified key.
+            </summary>
+            <param name="key">The key to remove.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Keys">
+            <summary>
+            Retrieves an enumerable of all keys in the map.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Values">
+            <summary>
+            Retrieves an enumerable of all values in the map.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Entries">
+            <summary>
+            Retrieves an enumerable of all key-value pairs (entries) in the map.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.IsEmpty">
+            <summary>
+            Checks if the map contains no key-value mappings.
+            </summary>
+            <returns>True if the map is empty, false otherwise.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IMapState`2.Clear">
+            <summary>
+            Removes all mappings from the map.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1">
+            <summary>
+            An in-memory implementation of <see cref="T:FlinkDotNet.Core.Abstractions.States.IListState`1"/>.
+            This implementation is primarily for local testing and development.
+            It is not designed for distributed fault tolerance.
+            </summary>
+            <typeparam name="T">The type of the values in the list.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.#ctor(FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1"/> class.
+            </summary>
+            <param name="elementSerializer">The serializer for the elements in the list.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.#ctor(System.Collections.Generic.IEnumerable{`0},FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`0})">
+            <summary>
+            Initializes a new instance of the <see cref="T:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1"/> class
+            with an initial list of elements and a serializer. (Primarily for testing/mocking setup)
+            </summary>
+            <param name="initialElements">The initial elements for the list state.</param>
+            <param name="elementSerializer">The serializer for the elements in the list.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.GetValues">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.Get">
+            <summary>
+            Compatibility alias matching older API that exposed <c>Get()</c>.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.Add(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.AddAll(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.Update(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryListState`1.Clear">
+            <inheritdoc/>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2">
+            <summary>
+            An in-memory implementation of <see cref="T:FlinkDotNet.Core.Abstractions.States.IMapState`2"/>.
+            This implementation is primarily for local testing and development.
+            It is not designed for distributed fault tolerance.
+            </summary>
+            <typeparam name="TK">The type of the keys in the map.</typeparam>
+            <typeparam name="TV">The type of the values in the map.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.#ctor(FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`0},FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`1})">
+            <summary>
+            Initializes a new instance of the <see cref="T:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2"/> class.
+            </summary>
+            <param name="keySerializer">The serializer for the keys.</param>
+            <param name="valueSerializer">The serializer for the values.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.#ctor(System.Collections.Generic.IDictionary{`0,`1},FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`0},FlinkDotNet.Core.Abstractions.Serializers.ITypeSerializer{`1})">
+            <summary>
+            Initializes a new instance of the <see cref="T:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2"/> class
+            with an initial set of entries and serializers. (Primarily for testing/mocking setup)
+            </summary>
+            <param name="initialEntries">The initial entries for the map state.</param>
+            <param name="keySerializer">The serializer for the keys.</param>
+            <param name="valueSerializer">The serializer for the values.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.GetValueForKey(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Get(`0)">
+            <summary>
+            Compatibility alias matching older API that exposed <c>Get()</c>.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Put(`0,`1)">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.PutAll(System.Collections.Generic.IDictionary{`0,`1})">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Contains(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Remove(`0)">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Keys">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Values">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Entries">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.IsEmpty">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryMapState`2.Clear">
+            <inheritdoc/>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryValueState`1.GetKeyedStateEntries">
+            <summary>
+            FOR SNAPSHOTTING: Returns all key-value pairs stored in this state.
+            The owning operator will use this to snapshot the state.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.InMemoryValueState`1.SetKeyedStateEntries(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.Object,`0}})">
+            <summary>
+            FOR RESTORATION: Clears current state and loads the provided keyed state entries.
+            The owning operator will use this to restore state.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.States.IValueState`1">
+            <summary>
+            Interface for a state that holds a single value.
+            Similar to Flinks org.apache.flink.api.common.state.ValueState.
+            </summary>
+            <typeparam name="T">The type of the value in the state.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IValueState`1.Value">
+            <summary>
+            Retrieves the current value of the state.
+            </summary>
+            <returns>The current value, or default(T) if not set.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IValueState`1.Update(`0)">
+            <summary>
+            Updates the value of the state.
+            </summary>
+            <param name="value">The new value.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.States.IValueState`1.Clear">
+            <summary>
+            Deletes the value in the state, resetting it to default.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Storage.InMemoryStateSnapshotStore">
+            <summary>
+            Simple in-memory snapshot store used for unit tests.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Storage.IStateBackend">
+            <summary>
+            Represents a pluggable state backend which exposes a snapshot store.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Storage.IStateBackend.SnapshotStore">
+            <summary>
+            Gets the snapshot store used to persist operator state.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotReader.GetStateInputStream(System.String)">
+            <summary>
+            Gets an input stream to read raw, non-keyed state for a given state name.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotReader.HasState(System.String)">
+            <summary>
+            Checks if raw, non-keyed state exists for the given name.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotReader.HasKeyedState(System.String)">
+            <summary>
+            Checks if keyed state exists for the given state name.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotReader.ReadKeyedStateEntries(System.String)">
+            <summary>
+            Reads all serialized key-value entries for a given named keyed state.
+            The caller is responsible for deserializing both the key and the value.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotStore">
+            <summary>
+            Interface for a service that stores and retrieves state snapshots.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotStore.StoreSnapshot(System.String,System.Int64,System.String,System.String,System.Byte[])">
+            <summary>
+            Stores the snapshot data for a specific part of a checkpoint.
+            </summary>
+            <param name="jobId">Identifier for the job.</param>
+            <param name="checkpointId">Identifier for the checkpoint.</param>
+            <param name="taskManagerId">Identifier for the TaskManager (or subtask).</param>
+            <param name="operatorId">Identifier for the operator (or state name).</param>
+            <param name="snapshotData">The serialized state data.</param>
+            <returns>A handle to the stored snapshot.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotStore.RetrieveSnapshot(FlinkDotNet.Core.Abstractions.Storage.SnapshotHandle)">
+            <summary>
+            Retrieves the snapshot data for a specific part of a checkpoint.
+            </summary>
+            <param name="handle">The handle of the snapshot to retrieve.</param>
+            <returns>The snapshot data, or null if not found.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotWriter.GetStateOutputStream(System.String)">
+            <summary>
+            Gets an output stream to write raw, non-keyed state for a given state name.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotWriter.BeginKeyedState(System.String)">
+            <summary>
+            Signals the beginning of writing entries for a named keyed state.
+            All subsequent calls to WriteKeyedEntry are associated with this stateName until EndKeyedState is called.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotWriter.WriteKeyedEntry(System.Byte[],System.Byte[])">
+            <summary>
+            Writes a single serialized key-value pair for the currently open keyed state.
+            The caller is responsible for serializing both the key and the value.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotWriter.EndKeyedState(System.String)">
+            <summary>
+            Signals the end of writing entries for a named keyed state.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.IStateSnapshotWriter.CommitAndGetHandleAsync">
+            <summary>
+            Commits all written data (both raw and keyed states) and returns a handle
+            representing the entire snapshot written by this writer.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Storage.SnapshotHandle">
+            <summary>
+            Represents a handle to a stored state snapshot.
+            Could be a file path, a URI, or an opaque ID.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Storage.SnapshotHandle.#ctor(System.String)">
+            <summary>
+            Represents a handle to a stored state snapshot.
+            Could be a file path, a URI, or an opaque ID.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Timers.ITimerService`2">
+            <summary>
+            Service responsible for managing and firing timers for keyed window operations.
+            An instance is typically scoped per operator subtask.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <typeparam name="TWindow">The type of the window.</typeparam>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Timers.ITimerService`2.AdvanceProcessingTime(System.Int64)">
+            <summary>
+            Called by the system when processing time advances.
+            </summary>
+            <param name="newProcessingTime">The new current processing time.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Timers.ITimerService`2.AdvanceKeyWatermark(`0,System.Int64)">
+            <summary>
+            Called by the system when the watermark for a specific key advances.
+            </summary>
+            <param name="key">The key whose watermark advanced.</param>
+            <param name="newWatermark">The new watermark for the key.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Timers.ITimerService`2.AdvanceGlobalWatermark(System.Int64)">
+            <summary>
+            Called by the system when the global watermark for the operator advances.
+            Use this if watermarks are not tracked per key by the TimerService itself.
+            </summary>
+            <param name="newWatermark">The new global watermark.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Windowing.IWatermarkGenerator`1">
+            <summary>
+            Interface for objects that derive watermarks from stream events.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Windowing.MonotonicWatermarkGenerator`1">
+            <summary>
+            Simple watermark generator that emits monotonically increasing watermarks.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow">
+            <summary>
+            Represents a window defined by a start and end timestamp.
+            The window typically includes elements with timestamps <c>T</c> where <c>Start &lt;= T &lt; End</c>.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow.Start">
+            <summary>
+            Gets the start timestamp of the window (inclusive).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow.End">
+            <summary>
+            Gets the end timestamp of the window (exclusive).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow.MaxTimestamp">
+            <summary>
+            Returns the last millisecond that is still part of this window.
+            This is `End - 1`.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow.Intersects(FlinkDotNet.Core.Abstractions.Windowing.TimeWindow)">
+            <summary>
+            Checks if this window intersects with another TimeWindow.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow.Cover(FlinkDotNet.Core.Abstractions.Windowing.TimeWindow)">
+            <summary>
+            Returns a new TimeWindow that covers both this window and the other window.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Windowing.TimeWindow.GetWindowStartWithOffset(System.Int64,System.Int64,System.Int64)">
+            <summary>
+            Helper method to get the start of a window for a given timestamp, window size, and offset.
+            This is often used by tumbling and sliding window assigners.
+            </summary>
+            <param name="timestamp">The timestamp to assign to a window.</param>
+            <param name="offset">The offset to apply to the window alignment (e.g., for timezone or daily windows not starting at epoch 0). Should be less than windowSize.</param>
+            <param name="windowSize">The size of the window (must be > 0).</param>
+            <returns>The start timestamp of the window.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Windowing.Watermark">
+            <summary>
+            Represents the progress of event time in a stream.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Windowing.Watermark.#ctor(System.Int64)">
+            <summary>
+            Represents the progress of event time in a stream.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Abstractions.Windowing.Window">
+            <summary>
+            Base class for all window types (e.g., TimeWindow, GlobalWindow).
+            A Window is a logical grouping of elements from a stream.
+            
+            Note: This is intentionally an abstract class rather than an interface
+            to provide common Equals/GetHashCode implementations which are essential
+            for window objects used as keys in internal state management.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Abstractions.Windowing.Window.MaxTimestamp">
+            <summary>
+            Gets the maximum timestamp that is included in this window.
+            For time-based windows, this is typically the window end timestamp minus one.
+            For other window types (like count or global), this might have different semantics
+            or could represent a logical point in time.
+            </summary>
+        </member>
+    </members>
+</doc>

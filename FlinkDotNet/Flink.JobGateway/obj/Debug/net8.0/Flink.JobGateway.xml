@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Flink.JobGateway</name>
+    </assembly>
+    <members>
+        <member name="T:Flink.JobGateway.Controllers.JobsController">
+            <summary>
+            REST Controller for Flink Job Gateway
+            Handles job submissions from .NET SDK and communicates with Apache Flink cluster
+            </summary>
+        </member>
+        <member name="M:Flink.JobGateway.Controllers.JobsController.SubmitJob(Flink.JobBuilder.Models.JobDefinition)">
+            <summary>
+            Submit a job to the Flink cluster
+            </summary>
+            <param name="jobDefinition">Job definition from .NET SDK</param>
+            <returns>Job submission result</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Controllers.JobsController.GetJobStatus(System.String)">
+            <summary>
+            Get the status of a running job
+            </summary>
+            <param name="flinkJobId">Flink job ID</param>
+            <returns>Job status</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Controllers.JobsController.GetJobMetrics(System.String)">
+            <summary>
+            Get metrics for a job
+            </summary>
+            <param name="flinkJobId">Flink job ID</param>
+            <returns>Job metrics</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Controllers.JobsController.CancelJob(System.String)">
+            <summary>
+            Cancel a running job
+            </summary>
+            <param name="flinkJobId">Flink job ID</param>
+            <returns>Success status</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Controllers.JobsController.HealthCheck">
+            <summary>
+            Health check endpoint
+            </summary>
+            <returns>Health status</returns>
+        </member>
+        <member name="T:Flink.JobGateway.Services.FlinkJobManager">
+            <summary>
+            Implementation of Flink Job Manager that simulates Apache Flink integration
+            In a real implementation, this would interact with Flink REST API or DataStream API
+            </summary>
+        </member>
+        <member name="T:Flink.JobGateway.Services.IFlinkJobManager">
+            <summary>
+            Interface for managing Apache Flink jobs
+            </summary>
+        </member>
+        <member name="M:Flink.JobGateway.Services.IFlinkJobManager.SubmitJobAsync(Flink.JobBuilder.Models.JobDefinition)">
+            <summary>
+            Submit a job to the Flink cluster
+            </summary>
+            <param name="jobDefinition">Job definition from .NET SDK</param>
+            <returns>Job submission result</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Services.IFlinkJobManager.GetJobStatusAsync(System.String)">
+            <summary>
+            Get the status of a running job
+            </summary>
+            <param name="flinkJobId">Flink job ID</param>
+            <returns>Job status</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Services.IFlinkJobManager.GetJobMetricsAsync(System.String)">
+            <summary>
+            Get metrics for a job
+            </summary>
+            <param name="flinkJobId">Flink job ID</param>
+            <returns>Job metrics</returns>
+        </member>
+        <member name="M:Flink.JobGateway.Services.IFlinkJobManager.CancelJobAsync(System.String)">
+            <summary>
+            Cancel a running job
+            </summary>
+            <param name="flinkJobId">Flink job ID</param>
+            <returns>True if canceled successfully</returns>
+        </member>
+    </members>
+</doc>

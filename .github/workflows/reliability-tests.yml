@@ -1,0 +1,98 @@
+name: Reliability Tests - Back Pressure and Rebalance
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  FLINKDOTNET_STANDARD_TEST_MESSAGES: "1000000"
+  MAX_ALLOWED_TIME_MS: "300000"
+
+jobs:
+  run-reliability-tests:
+    name: Run Back Pressure and Rebalance Reliability Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure Docker is running
+        run: docker info
+
+      - name: Set up .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-solutions
+
+      - name: Ensure build assemblies
+        shell: bash
+        run: |
+          if [ ! -f Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net8.0/FlinkDotNet.Aspire.IntegrationTests.dll ]; then
+            echo "Build artifacts missing. Building solutions..."
+            dotnet restore FlinkDotNet/FlinkDotNet.sln
+            dotnet restore Sample/Sample.sln
+            dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
+            dotnet build Sample/Sample.sln --configuration Release
+          fi
+
+      - name: Run BDD Reliability Test Scenarios with ReqNRoll
+        timeout-minutes: 25
+        env:
+          FLINKDOTNET_STANDARD_TEST_MESSAGES: "1000000"
+          INTEGRATION_TEST_MODE: "RELIABILITY"
+          GITHUB_ACTIONS: "true"
+          ALLURE_RESULTS_DIRECTORY: "allure-results"
+        run: |
+          Write-Host "🎭 Running BDD Reliability Test Scenarios with ReqNRoll..." -ForegroundColor Green
+          Write-Host "📋 Testing back pressure and rebalance scenarios" -ForegroundColor Green
+          
+          # Set environment variables for reliability testing scenarios
+          $env:FLINKDOTNET_STANDARD_TEST_MESSAGES = "1000000"
+          $env:INTEGRATION_TEST_MODE = "RELIABILITY"
+          $env:GITHUB_ACTIONS = "true"
+          $env:ALLURE_RESULTS_DIRECTORY = "allure-results"
+          
+          # Run BDD reliability test scenarios - let ReqNRoll show native BDD output
+          try {
+              Write-Host "🚀 Scenario Execution: Starting BDD reliability test scenarios..." -ForegroundColor Yellow
+              Write-Host "  📊 ReqNRoll BDD framework will display full Given/When/Then step execution" -ForegroundColor Cyan
+              
+              # Run BDD scenarios from ReqNRoll feature files - display full Given/When/Then step execution
+              dotnet test Sample/FlinkDotNet.Aspire.IntegrationTests/FlinkDotNet.Aspire.IntegrationTests.csproj --configuration Release --logger "console;verbosity=detailed" --logger trx --verbosity minimal --no-build --filter "Category=reliability_test"
+            
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ BDD reliability test scenarios failed" -ForegroundColor Red
+              throw "BDD reliability test scenarios failed - see ReqNRoll output above"
+            } else {
+              Write-Host "🎉 All BDD reliability test scenarios passed!" -ForegroundColor Green
+              Write-Host "  📊 Allure BDD test reports generated from C# code" -ForegroundColor Cyan
+            }
+          }
+          catch {
+            Write-Host "❌ Aspire reliability test execution failed: $_" -ForegroundColor Red
+            throw
+          }
+
+      - name: Upload BDD reliability test results and Allure reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bdd-reliability-test-results
+          path: |
+            **/*.trx
+            **/allure-results/**
+            **/allure-report/**
+            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net8.0/allure-results/**
+            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net8.0/allure-report/**

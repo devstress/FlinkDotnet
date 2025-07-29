@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0/ubuntu.24.04-x64": {
+      "dotnet-sonarscanner/10.2.0": {
+        "type": "package",
+        "tools": {
+          "tools/netcoreapp3.1/any/DotnetToolSettings.xml": {},
+          "tools/netcoreapp3.1/any/Google.Protobuf.dll": {},
+          "tools/netcoreapp3.1/any/ICSharpCode.SharpZipLib.dll": {},
+          "tools/netcoreapp3.1/any/Newtonsoft.Json.dll": {},
+          "tools/netcoreapp3.1/any/SonarQube.Analysis.xml": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.Common.dll": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.PostProcessor.dll": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.PreProcessor.dll": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.Shim.dll": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.Tasks.dll": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.dll": {},
+          "tools/netcoreapp3.1/any/SonarScanner.MSBuild.runtimeconfig.json": {},
+          "tools/netcoreapp3.1/any/Targets/SonarQube.Integration.ImportBefore.targets": {},
+          "tools/netcoreapp3.1/any/Targets/SonarQube.Integration.targets": {},
+          "tools/netcoreapp3.1/any/sonar-scanner-5.0.2.4997/bin/sonar-scanner": {},
+          "tools/netcoreapp3.1/any/sonar-scanner-5.0.2.4997/bin/sonar-scanner-debug": {},
+          "tools/netcoreapp3.1/any/sonar-scanner-5.0.2.4997/bin/sonar-scanner-debug.bat": {},
+          "tools/netcoreapp3.1/any/sonar-scanner-5.0.2.4997/bin/sonar-scanner.bat": {},
+          "tools/netcoreapp3.1/any/sonar-scanner-5.0.2.4997/conf/sonar-scanner.properties": {},
+          "tools/netcoreapp3.1/any/sonar-scanner-5.0.2.4997/lib/sonar-scanner-cli-5.0.2.4997.jar": {}
+        }
+      }
+    }
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {}
+}

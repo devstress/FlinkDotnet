@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Table.Api</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Table.Api.StreamTable`1">
+            <summary>
+            Implementation of ITable that wraps a DataStream
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.ProjectedTable`1">
+            <summary>
+            Table that represents a projection (SELECT with specific fields)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.FilteredTable`1">
+            <summary>
+            Table that represents a filter (WHERE clause)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.GroupedStreamTable">
+            <summary>
+            Grouped table implementation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.AggregatedTable">
+            <summary>
+            Table that represents an aggregation result
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.JoinedTable">
+            <summary>
+            Table that represents a join operation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.ITable">
+            <summary>
+            Represents a table in Flink.NET's Table API
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Table.Api.ITable.Schema">
+            <summary>
+            Gets the schema of the table
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITable.Select(System.String[])">
+            <summary>
+            Selects specific columns from the table
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITable.Where(System.String)">
+            <summary>
+            Filters rows based on a predicate
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITable.GroupBy(System.String[])">
+            <summary>
+            Groups the table by the specified fields
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITable.Join(FlinkDotNet.Table.Api.ITable,System.String)">
+            <summary>
+            Joins this table with another table
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITable.ToDataStream``1">
+            <summary>
+            Converts the table to a data stream
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITable.Sql(System.String)">
+            <summary>
+            Executes a SQL query on this table
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.IGroupedTable">
+            <summary>
+            Represents a grouped table that supports aggregation operations
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.IGroupedTable.Aggregate(FlinkDotNet.Table.Api.IAggregateFunction[])">
+            <summary>
+            Aggregates the grouped table
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.IGroupedTable.Count">
+            <summary>
+            Computes the count for each group
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.IGroupedTable.Sum(System.String)">
+            <summary>
+            Computes the sum for each group
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.IGroupedTable.Avg(System.String)">
+            <summary>
+            Computes the average for each group
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.IGroupedTable.Min(System.String)">
+            <summary>
+            Computes the minimum for each group
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.IGroupedTable.Max(System.String)">
+            <summary>
+            Computes the maximum for each group
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.IAggregateFunction">
+            <summary>
+            Base interface for aggregate functions
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.TableSchema">
+            <summary>
+            Represents the schema of a table
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.TableField">
+            <summary>
+            Represents a field in a table schema
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.Aggregates">
+            <summary>
+            Factory for creating common aggregate functions
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.ITableEnvironment">
+            <summary>
+            Table environment that manages table operations and SQL execution
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITableEnvironment.FromDataStream``1(FlinkDotNet.Core.Api.Streaming.DataStream{``0},System.String[])">
+            <summary>
+            Creates a table from a data stream
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITableEnvironment.RegisterTable(System.String,FlinkDotNet.Table.Api.ITable)">
+            <summary>
+            Registers a table with a name for SQL queries
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITableEnvironment.SqlQuery(System.String)">
+            <summary>
+            Executes a SQL query and returns the result as a table
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITableEnvironment.GetTable(System.String)">
+            <summary>
+            Gets a registered table by name
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Table.Api.ITableEnvironment.ListTables">
+            <summary>
+            Lists all registered table names
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.TableEnvironment">
+            <summary>
+            Default implementation of the table environment
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.SchemaInference">
+            <summary>
+            Utility class for inferring table schemas from .NET types
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Table.Api.ISqlParser">
+            <summary>
+            Simple SQL parser for basic query support
+            </summary>
+        </member>
+    </members>
+</doc>

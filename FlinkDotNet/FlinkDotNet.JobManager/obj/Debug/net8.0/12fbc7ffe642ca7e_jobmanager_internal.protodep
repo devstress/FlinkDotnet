@@ -1,0 +1,4 @@
+obj\Debug\net8.0\Protos/JobmanagerInternal.cs \
+obj\Debug\net8.0\Protos/JobmanagerInternalGrpc.cs: C:/Users/DevStar/.nuget/packages/grpc.tools/2.72.0/build/native/include/google/protobuf/struct.proto\
+ C:/Users/DevStar/.nuget/packages/grpc.tools/2.72.0/build/native/include/google/protobuf/timestamp.proto\
+ Protos/jobmanager_internal.proto

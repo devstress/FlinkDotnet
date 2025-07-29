@@ -1,0 +1,12 @@
+# Global code owners for the FLINK.NET repository
+# This file specifies reviewers for pull requests, including Dependabot PRs
+# See: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for all files
+* @devstress
+
+# Specific ownership for different solution areas
+/FlinkDotNet/ @devstress
+/Sample/ @devstress  
+/FlinkDotNet.WebUI/ @devstress
+/.github/ @devstress

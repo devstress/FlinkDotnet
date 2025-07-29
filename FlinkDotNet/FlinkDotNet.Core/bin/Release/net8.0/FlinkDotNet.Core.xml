@@ -1,0 +1,353 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Core</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Core.Memory.IMemoryManager">
+            <summary>
+            Advanced memory manager for high-performance stream processing
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Memory.IMemoryManager.Allocate(System.Int32)">
+            <summary>
+            Allocates a memory segment of the specified size
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Memory.IMemoryManager.Release(FlinkDotNet.Core.Memory.IMemorySegment)">
+            <summary>
+            Releases a memory segment back to the pool
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.IMemoryManager.TotalMemory">
+            <summary>
+            Gets the total amount of memory managed
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.IMemoryManager.AvailableMemory">
+            <summary>
+            Gets the amount of available memory
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Memory.IMemoryManager.GetStatistics">
+            <summary>
+            Gets memory usage statistics
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Memory.IMemorySegment">
+            <summary>
+            Represents a managed memory segment
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.IMemorySegment.Span">
+            <summary>
+            Gets the memory span
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.IMemorySegment.Size">
+            <summary>
+            Gets the size of the segment
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.IMemorySegment.IsOffHeap">
+            <summary>
+            Gets whether the segment is allocated off-heap
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.IMemorySegment.Id">
+            <summary>
+            Gets the segment identifier
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Memory.MemoryStatistics">
+            <summary>
+            Memory usage statistics
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Memory.FlinkMemoryManager">
+            <summary>
+            High-performance memory manager with pooling and off-heap support
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Memory.PooledMemorySegment">
+            <summary>
+            Pooled memory segment implementation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Memory.OffHeapMemorySegment">
+            <summary>
+            Off-heap memory segment using unmanaged memory
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Memory.OffHeapMemorySegment.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the OffHeapMemorySegment class.
+            </summary>
+            <param name="size">The size of the memory segment to allocate.</param>
+            <remarks>
+            This constructor uses unsafe code to allocate unmanaged memory via Marshal.AllocHGlobal.
+            The unsafe keyword is required here to create a Span&lt;byte&gt; from the raw pointer.
+            SAFETY ANALYSIS: Using unsafe code for off-heap memory allocation.
+            This is safe because:
+            1. The memory is properly allocated using Marshal.AllocHGlobal
+            2. The size parameter is validated and stored for bounds checking
+            3. The memory is zeroed immediately after allocation
+            4. The memory is properly freed in the Dispose method using Marshal.FreeHGlobal
+            5. Access to the memory is controlled through the Span property which checks disposal state
+            6. The unsafe context is limited to only the specific operations that require it
+            7. No unsafe pointer arithmetic is performed beyond creating the Span
+            </remarks>
+        </member>
+        <member name="P:FlinkDotNet.Core.Memory.OffHeapMemorySegment.Span">
+            <summary>
+            Gets the memory span for this segment.
+            </summary>
+            <remarks>
+            This property uses unsafe code to create a Span from the unmanaged memory pointer.
+            SAFETY ANALYSIS: Using unsafe code for high-performance memory access.
+            This is safe because:
+            1. The pointer was allocated with Marshal.AllocHGlobal and is valid until disposal
+            2. The size is exactly what was allocated and stored during construction
+            3. Disposal state is checked before accessing the memory
+            4. The Span provides bounds checking for all subsequent access
+            </remarks>
+        </member>
+        <member name="T:FlinkDotNet.Core.Memory.NetworkMemoryPool">
+            <summary>
+            Memory pool specifically for network buffers
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.ICreditBasedFlowController">
+            <summary>
+            Credit-based backpressure system for controlling data flow between tasks
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.ICreditBasedFlowController.RequestCredits(System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Requests credits to send data to the specified output channel
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.ICreditBasedFlowController.GrantCredits(System.String,System.Int32)">
+            <summary>
+            Grants credits to the specified input channel
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.ICreditBasedFlowController.ConsumeCredits(System.String,System.Int32)">
+            <summary>
+            Notifies that credits have been consumed
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.ICreditBasedFlowController.GetAvailableCredits(System.String)">
+            <summary>
+            Gets the current available credits for a channel
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.CreditBasedFlowController">
+            <summary>
+            Credit-based flow controller implementation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.ChannelCredits">
+            <summary>
+            Manages credits for a single channel
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.BackpressureMonitor">
+            <summary>
+            Backpressure monitor that tracks system pressure and adjusts flow control
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.ChannelMetrics">
+            <summary>
+            Metrics for a single channel
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.LocalBufferPool">
+            <summary>
+            Manages a local collection of NetworkBuffer instances, drawing memory segments
+            from a global NetworkBufferPool.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Networking.NetworkBuffer">
+            <summary>
+            Represents a segment of memory, typically pooled, used for network I/O.
+            It provides stream-based access for reading and writing, and manages its return to a pool via IDisposable.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.UnderlyingBuffer">
+            <summary>
+            The underlying byte array from a pool.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.DataOffset">
+            <summary>
+            The offset within the UnderlyingBuffer where valid data starts.
+            For buffers obtained from ArrayPool, this is typically 0.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.DataLength">
+            <summary>
+            The length of the valid data currently stored in the UnderlyingBuffer.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.Capacity">
+            <summary>
+            Gets the total capacity of the underlying buffer segment.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.IsBarrierPayload">
+            <summary>
+            Gets or sets a flag indicating whether this buffer contains a checkpoint barrier.
+            This needs to be set by the producer of the buffer (e.g., NetworkedCollector).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.CheckpointId">
+            <summary>
+            Gets the Checkpoint ID if this buffer represents a barrier.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Networking.NetworkBuffer.CheckpointTimestamp">
+            <summary>
+            Gets the timestamp of the checkpoint if this buffer represents a barrier.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.#ctor(System.Byte[],System.Action{FlinkDotNet.Core.Networking.NetworkBuffer},System.Int32,System.Int32,System.Boolean,System.Int64,System.Int64)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FlinkDotNet.Core.Networking.NetworkBuffer"/> class.
+            </summary>
+            <param name="rentedBuffer">The byte array rented from a pool.</param>
+            <param name="returnToPoolAction">The action to call to return this buffer to its pool.</param>
+            <param name="initialDataOffset">The offset where data starts in the buffer (usually 0).</param>
+            <param name="initialDataLength">The initial length of data in the buffer (usually 0 for writing).</param>
+            <param name="isBarrier">Indicates if this buffer is a checkpoint barrier.</param>
+            <param name="checkpointId">The ID of the checkpoint if it's a barrier.</param>
+            <param name="checkpointTimestamp">The timestamp of the checkpoint if it's a barrier.</param>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.SetBarrierInfo(System.Boolean,System.Int64,System.Int64)">
+            <summary>
+            Sets or clears checkpoint barrier information for this buffer.
+            </summary>
+            <param name="isBarrier">True if this buffer should be marked as a barrier, false otherwise.</param>
+            <param name="checkpointId">The checkpoint ID, used if isBarrier is true.</param>
+            <param name="checkpointTimestamp">The checkpoint timestamp, used if isBarrier is true.</param>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:FlinkDotNet.Core.Networking.NetworkBuffer.GetMemory" -->
+        <!-- Badly formed XML comment ignored for member "M:FlinkDotNet.Core.Networking.NetworkBuffer.GetReadOnlyMemory" -->
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.GetWriteStream">
+            <summary>
+            Provides a Stream for writing data into this buffer.
+            The stream starts at the current DataOffset and is limited by the buffer's total capacity.
+            DataLength will be updated as data is written to the stream.
+            </summary>
+            <returns>A MemoryStream configured for writing.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.GetReadStream">
+            <summary>
+            Provides a Stream for reading the valid data currently in this buffer.
+            </summary>
+            <returns>A MemoryStream configured for reading.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.SetDataLength(System.Int32)">
+            <summary>
+            Sets the length of the valid data in the buffer.
+            Should be called after writing to the buffer, e.g., via GetWriteStream().
+            </summary>
+            <param name="length">The new data length.</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">If length is negative or exceeds buffer capacity from offset.</exception>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.Reset">
+            <summary>
+            Resets the buffer for reuse (typically for writing).
+            Sets DataLength to 0 and IsBarrierPayload to false.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBuffer.Dispose">
+            <summary>
+            Returns the buffer to its pool if a return action was provided.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:FlinkDotNet.Core.Networking.NetworkBufferPool" -->
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBufferPool.RequestMemorySegment">
+            <summary>
+            Requests a memory segment from the pool.
+            </summary>
+            <returns>A byte array segment, or null if no segments are available.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Core.Networking.NetworkBufferPool.RecycleMemorySegment(System.Byte[])">
+            <summary>
+            Recycles a memory segment back into the pool.
+            </summary>
+            <param name="segment">The segment to recycle.</param>
+        </member>
+        <member name="T:FlinkDotNet.Core.Windowing.WatermarkManager">
+            <summary>
+            Advanced watermark manager that handles alignment across multiple input streams
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Core.Windowing.WatermarkManager.CurrentWatermark">
+            <summary>
+            Gets the current aligned watermark across all inputs
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkManager.AddListener(FlinkDotNet.Core.Windowing.IWatermarkListener)">
+            <summary>
+            Registers a watermark listener
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkManager.UpdateWatermark(System.String,System.Int64)">
+            <summary>
+            Updates the watermark for a specific input stream
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkManager.RemoveInput(System.String)">
+            <summary>
+            Removes an input stream (e.g., when it finishes)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Windowing.IWatermarkListener">
+            <summary>
+            Interface for components that need to be notified of watermark changes
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Windowing.PunctuatedWatermarkGenerator`1">
+            <summary>
+            Enhanced watermark generator with support for punctuated watermarks
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Windowing.PeriodicWatermarkGenerator`1">
+            <summary>
+            Periodic watermark generator that emits watermarks at regular intervals
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Windowing.WatermarkStrategy`1">
+            <summary>
+            Watermark strategy that combines timestamp assignment and watermark generation
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkStrategy`1.ForMonotonousTimestamps(System.Func{`0,System.Int64})">
+            <summary>
+            Creates a watermark strategy for monotonically increasing timestamps
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkStrategy`1.ForBoundedOutOfOrderness(System.Func{`0,System.Int64},System.TimeSpan)">
+            <summary>
+            Creates a watermark strategy for bounded out-of-orderness
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkStrategy`1.ForPunctuatedWatermarks(System.Func{`0,System.Int64},System.Func{`0,System.Boolean},System.Int64)">
+            <summary>
+            Creates a watermark strategy for punctuated watermarks
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Core.Windowing.WatermarkStrategy`1.ForPeriodicWatermarks(System.Func{`0,System.Int64},System.Int64,System.Nullable{System.TimeSpan})">
+            <summary>
+            Creates a watermark strategy for periodic watermarks
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Core.Windowing.EventTimeWindowAssigner`1">
+            <summary>
+            Event time window assigner that uses watermarks to determine window completeness
+            </summary>
+        </member>
+    </members>
+</doc>

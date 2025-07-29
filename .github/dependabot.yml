@@ -1,0 +1,73 @@
+# Dependabot configuration for FLINK.NET
+# Automatically manages dependency updates for .NET packages and GitHub Actions
+# Documentation: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # NuGet packages for main FlinkDotNet solution
+  - package-ecosystem: "nuget"
+    directory: "/FlinkDotNet"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 10
+    groups:
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # NuGet packages for Sample solution
+  - package-ecosystem: "nuget"
+    directory: "/Sample"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 10
+    groups:
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # NuGet packages for FlinkDotNet.WebUI solution
+  - package-ecosystem: "nuget"
+    directory: "/FlinkDotNet.WebUI"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 10
+    groups:
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

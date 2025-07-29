@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="4890e8dd-1521-4650-b40f-c6f1bda7c729" name="DevStar@DEVSTAR 2025-06-14 22:27:07" runUser="DEVSTAR\DevStar" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2025-06-14T22:27:07.8707634+10:00" queuing="2025-06-14T22:27:07.8707638+10:00" start="2025-06-14T22:27:07.3824635+10:00" finish="2025-06-14T22:27:07.8768682+10:00" />
+  <TestSettings name="default" id="b6df2a82-a84e-40b0-acef-f6c0c2678be9">
+    <Deployment runDeploymentRoot="DevStar_DEVSTAR_2025-06-14_22_27_07" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="383baa4b-56d9-4404-a81d-fb737616e586" testId="c8147b72-bad5-a8a0-f2c9-c545ccdbd616" testName="TaskManager_ShouldNotDependOn_JobManager" computerName="DEVSTAR" duration="00:00:00.0000408" startTime="2025-06-14T22:27:07.7831450+10:00" endTime="2025-06-14T22:27:07.7832062+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="383baa4b-56d9-4404-a81d-fb737616e586" />
+    <UnitTestResult executionId="c5fdbbeb-5635-4891-a7b5-7196a2451f46" testId="43d67166-af1f-a70e-7cdd-0864aec98037" testName="CoreLogic_ShouldNotDependOn_SpecificConnectorsOrStorage" computerName="DEVSTAR" duration="00:00:00.0003292" startTime="2025-06-14T22:27:07.7824321+10:00" endTime="2025-06-14T22:27:07.7828329+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c5fdbbeb-5635-4891-a7b5-7196a2451f46" />
+    <UnitTestResult executionId="bcf3825b-882f-42cc-a3d0-2cb95a36921a" testId="b5ce2590-8c94-a96e-8969-4ff93eb9cffd" testName="CoreApi_ShouldNotDependOn_Implementations" computerName="DEVSTAR" duration="00:00:00.0003560" startTime="2025-06-14T22:27:07.7814470+10:00" endTime="2025-06-14T22:27:07.7822614+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bcf3825b-882f-42cc-a3d0-2cb95a36921a" />
+    <UnitTestResult executionId="032c30bd-523c-4f5d-ad68-c5694b96037e" testId="388a1180-d122-43b1-5394-59fc5284e495" testName="CoreAbstractions_ShouldNotDependOn_Implementations" computerName="DEVSTAR" duration="00:00:00.0160731" startTime="2025-06-14T22:27:07.7527657+10:00" endTime="2025-06-14T22:27:07.7788887+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="032c30bd-523c-4f5d-ad68-c5694b96037e" />
+    <UnitTestResult executionId="6d9a5da3-505f-4639-b769-3e32646f6e95" testId="5aea4a59-faed-fe27-d6ea-ac1d011f4ee7" testName="JobManager_ShouldNotDependOn_TaskManager" computerName="DEVSTAR" duration="00:00:00.0000506" startTime="2025-06-14T22:27:07.7830464+10:00" endTime="2025-06-14T22:27:07.7831352+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6d9a5da3-505f-4639-b769-3e32646f6e95" />
+    <UnitTestResult executionId="d19ce726-193c-4fe8-9fcc-a2b417d54e3e" testId="eac49fe0-c561-5ecc-5e75-c0b5704fbcb2" testName="InterfacesInCoreAbstractions_ShouldHave_IPrefix" computerName="DEVSTAR" duration="00:00:00.0003845" startTime="2025-06-14T22:27:07.7832164+10:00" endTime="2025-06-14T22:27:07.7840558+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d19ce726-193c-4fe8-9fcc-a2b417d54e3e" />
+    <UnitTestResult executionId="86a89e5d-1bff-4968-b56d-d349ea848a05" testId="0d261576-cdf0-be40-54d9-db6ce9a27954" testName="Connectors_ShouldNotDependOn_OtherConnectors" computerName="DEVSTAR" duration="00:00:00.0001089" startTime="2025-06-14T22:27:07.7828606+10:00" endTime="2025-06-14T22:27:07.7830222+10:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="86a89e5d-1bff-4968-b56d-d349ea848a05" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="CoreAbstractions_ShouldNotDependOn_Implementations" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="388a1180-d122-43b1-5394-59fc5284e495">
+      <Execution id="032c30bd-523c-4f5d-ad68-c5694b96037e" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="CoreAbstractions_ShouldNotDependOn_Implementations" />
+    </UnitTest>
+    <UnitTest name="CoreLogic_ShouldNotDependOn_SpecificConnectorsOrStorage" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="43d67166-af1f-a70e-7cdd-0864aec98037">
+      <Execution id="c5fdbbeb-5635-4891-a7b5-7196a2451f46" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="CoreLogic_ShouldNotDependOn_SpecificConnectorsOrStorage" />
+    </UnitTest>
+    <UnitTest name="CoreApi_ShouldNotDependOn_Implementations" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="b5ce2590-8c94-a96e-8969-4ff93eb9cffd">
+      <Execution id="bcf3825b-882f-42cc-a3d0-2cb95a36921a" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="CoreApi_ShouldNotDependOn_Implementations" />
+    </UnitTest>
+    <UnitTest name="TaskManager_ShouldNotDependOn_JobManager" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="c8147b72-bad5-a8a0-f2c9-c545ccdbd616">
+      <Execution id="383baa4b-56d9-4404-a81d-fb737616e586" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="TaskManager_ShouldNotDependOn_JobManager" />
+    </UnitTest>
+    <UnitTest name="InterfacesInCoreAbstractions_ShouldHave_IPrefix" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="eac49fe0-c561-5ecc-5e75-c0b5704fbcb2">
+      <Execution id="d19ce726-193c-4fe8-9fcc-a2b417d54e3e" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="InterfacesInCoreAbstractions_ShouldHave_IPrefix" />
+    </UnitTest>
+    <UnitTest name="Connectors_ShouldNotDependOn_OtherConnectors" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="0d261576-cdf0-be40-54d9-db6ce9a27954">
+      <Execution id="86a89e5d-1bff-4968-b56d-d349ea848a05" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="Connectors_ShouldNotDependOn_OtherConnectors" />
+    </UnitTest>
+    <UnitTest name="JobManager_ShouldNotDependOn_TaskManager" storage="c:\github\flink.net\flinkdotnet\flinkdotnet.architecture.tests\bin\release\net8.0\flinkdotnet.architecture.tests.dll" id="5aea4a59-faed-fe27-d6ea-ac1d011f4ee7">
+      <Execution id="6d9a5da3-505f-4639-b769-3e32646f6e95" />
+      <TestMethod codeBase="C:\GitHub\FLINK.NET\FlinkDotNet\FlinkDotNet.Architecture.Tests\bin\Release\net8.0\FlinkDotNet.Architecture.Tests.dll" adapterTypeName="executor://mstestadapter/v2" className="FlinkDotNet.Architecture.Tests.ArchitectureTests" name="JobManager_ShouldNotDependOn_TaskManager" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="c8147b72-bad5-a8a0-f2c9-c545ccdbd616" executionId="383baa4b-56d9-4404-a81d-fb737616e586" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="43d67166-af1f-a70e-7cdd-0864aec98037" executionId="c5fdbbeb-5635-4891-a7b5-7196a2451f46" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b5ce2590-8c94-a96e-8969-4ff93eb9cffd" executionId="bcf3825b-882f-42cc-a3d0-2cb95a36921a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="388a1180-d122-43b1-5394-59fc5284e495" executionId="032c30bd-523c-4f5d-ad68-c5694b96037e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5aea4a59-faed-fe27-d6ea-ac1d011f4ee7" executionId="6d9a5da3-505f-4639-b769-3e32646f6e95" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="eac49fe0-c561-5ecc-5e75-c0b5704fbcb2" executionId="d19ce726-193c-4fe8-9fcc-a2b417d54e3e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0d261576-cdf0-be40-54d9-db6ce9a27954" executionId="86a89e5d-1bff-4968-b56d-d349ea848a05" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="7" executed="7" passed="7" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+  </ResultSummary>
+</TestRun>

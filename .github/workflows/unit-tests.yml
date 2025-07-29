@@ -1,0 +1,72 @@
+name: Unit Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  run-unit-tests:
+    name: Run .NET Unit Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-solutions
+
+      - name: Ensure build assemblies
+        shell: bash
+        run: |
+          if [ ! -f FlinkDotNet/*/bin/Release/net8.0/*.dll ]; then
+            echo "Build artifacts missing. Building solutions..."
+            dotnet restore FlinkDotNet/FlinkDotNet.sln
+            dotnet restore Sample/Sample.sln
+            dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
+            dotnet build Sample/Sample.sln --configuration Release
+          fi
+
+      - name: Run tests for FlinkDotNet solution
+        run: |
+          Write-Host "Running tests for FlinkDotNet/FlinkDotNet.sln..."
+          Push-Location FlinkDotNet
+          dotnet test FlinkDotNet.sln --configuration Release --no-build --logger "trx" --results-directory "TestResults"
+          Pop-Location
+
+      - name: Verify Test Results
+        run: |
+          Write-Host "Unit tests completed successfully."
+          Write-Host "Test Results Summary:"
+          Get-ChildItem -Path "./FlinkDotNet/TestResults" -Recurse -Filter "*.trx" | ForEach-Object {
+            Write-Host "  Test Result: $($_.FullName)"
+          }
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-results
+          path: |
+            FlinkDotNet/TestResults/**/*.trx
+          retention-days: 7
+

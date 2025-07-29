@@ -1,0 +1,355 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.JobManager\\FlinkDotNet.JobManager.csproj": {}
+  },
+  "projects": {
+    "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\FlinkDotNet.Common.Constants.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\FlinkDotNet.Common.Constants.csproj",
+        "projectName": "FlinkDotNet.Common.Constants",
+        "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\FlinkDotNet.Common.Constants.csproj",
+        "packagesPath": "C:\\Users\\DevStar\\.nuget\\packages\\",
+        "outputPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\DevStar\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "SonarAnalyzer.CSharp": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.11.0.117924, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.411/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj",
+        "projectName": "FlinkDotNet.Core.Abstractions",
+        "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj",
+        "packagesPath": "C:\\Users\\DevStar\\.nuget\\packages\\",
+        "outputPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\DevStar\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "MemoryPack": {
+              "target": "Package",
+              "version": "[1.21.4, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "SonarAnalyzer.CSharp": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.11.0.117924, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.411/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.JobManager\\FlinkDotNet.JobManager.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.JobManager\\FlinkDotNet.JobManager.csproj",
+        "projectName": "FlinkDotNet.JobManager",
+        "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.JobManager\\FlinkDotNet.JobManager.csproj",
+        "packagesPath": "C:\\Users\\DevStar\\.nuget\\packages\\",
+        "outputPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.JobManager\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\DevStar\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\FlinkDotNet.Common.Constants.csproj": {
+                "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Common.Constants\\FlinkDotNet.Common.Constants.csproj"
+              },
+              "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj": {
+                "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj"
+              },
+              "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.RocksDB\\FlinkDotNet.Storage.RocksDB.csproj": {
+                "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.RocksDB\\FlinkDotNet.Storage.RocksDB.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Google.Protobuf": {
+              "target": "Package",
+              "version": "[3.31.1, )"
+            },
+            "Grpc.AspNetCore": {
+              "target": "Package",
+              "version": "[2.71.0, )"
+            },
+            "Grpc.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.72.0, )"
+            },
+            "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[8.0.17, )"
+            },
+            "SonarAnalyzer.CSharp": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.11.0.117924, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[8.1.4, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.411/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.RocksDB\\FlinkDotNet.Storage.RocksDB.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.RocksDB\\FlinkDotNet.Storage.RocksDB.csproj",
+        "projectName": "FlinkDotNet.Storage.RocksDB",
+        "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.RocksDB\\FlinkDotNet.Storage.RocksDB.csproj",
+        "packagesPath": "C:\\Users\\DevStar\\.nuget\\packages\\",
+        "outputPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Storage.RocksDB\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\DevStar\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj": {
+                "projectPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Abstractions\\FlinkDotNet.Core.Abstractions.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.Extensions.Options": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "RocksDbSharp": {
+              "target": "Package",
+              "version": "[6.2.2, )"
+            },
+            "SonarAnalyzer.CSharp": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.11.0.117924, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.411/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

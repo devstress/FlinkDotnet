@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.Storage.RocksDB</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.Storage.RocksDB.RocksDBOptions">
+            <summary>
+            Configuration options for RocksDB state backend with Flink.Net enhancements
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Storage.RocksDB.RocksDBConfiguration">
+            <summary>
+            Flink.Net enhanced RocksDB configuration
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Storage.RocksDB.BlockBasedTableOptions">
+            <summary>
+            Block-based table configuration for RocksDB optimization
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Storage.RocksDB.RocksDBStatistics">
+            <summary>
+            RocksDB statistics for monitoring and back pressure detection
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Storage.RocksDB.RocksDBStateBackend">
+            <summary>
+            High-performance RocksDB-based state backend for production workloads with Flink.Net enhancements
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Storage.RocksDB.RocksDBStateBackend.Database">
+            <summary>
+            Gets the RocksDB database instance for direct access
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Storage.RocksDB.RocksDBStateBackend.InitializeAsync">
+            <summary>
+            Initialize async for Flink.Net compatibility
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Storage.RocksDB.RocksDBStateBackend.CreateCheckpointAsync(System.Int64)">
+            <summary>
+            Create a checkpoint for distributed snapshots
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Storage.RocksDB.RocksDBStateBackend.GetStatistics">
+            <summary>
+            Get statistics for monitoring and back pressure detection
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.Storage.RocksDB.RocksDBStateBackend.DisposeAsync">
+            <summary>
+            Dispose async for proper resource cleanup
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Storage.RocksDB.RocksDBSnapshotStore">
+            <summary>
+            RocksDB-based snapshot store implementation - simplified to match existing interfaces
+            </summary>
+        </member>
+    </members>
+</doc>

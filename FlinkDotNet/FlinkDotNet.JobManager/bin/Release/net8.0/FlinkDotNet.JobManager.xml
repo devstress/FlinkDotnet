@@ -1,0 +1,1773 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlinkDotNet.JobManager</name>
+    </assembly>
+    <members>
+        <member name="T:FlinkDotNet.JobManager.Interfaces.IJobManagerApi">
+            <summary>
+            Defines the contract for the Job Management API.
+            These methods correspond to the REST/gRPC endpoints for managing jobs.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Interfaces.IJobManagerInternalApi">
+            <summary>
+            Defines the contract for the internal control plane APIs,
+            typically used for communication between JobManager and TaskManagers (e.g., via gRPC).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobManagerInternalApi.ReportStateCompletion(FlinkDotNet.JobManager.InternalApiModels.ReportStateCompletionRequest)">
+            <summary>
+            TaskManager reports completion of its state persistence for a checkpoint.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobManagerInternalApi.RequestCheckpoint(FlinkDotNet.JobManager.InternalApiModels.RequestCheckpointRequest)">
+            <summary>
+            JobManager requests a TaskManager to initiate a checkpoint.
+            (Note: In Flink, barriers are injected into streams. This might be an alternative or complementary control path)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobManagerInternalApi.RequestRecovery(FlinkDotNet.JobManager.InternalApiModels.RequestRecoveryRequest)">
+            <summary>
+            JobManager requests a TaskManager (or a new instance) to recover state for a job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobManagerInternalApi.Heartbeat(FlinkDotNet.JobManager.InternalApiModels.HeartbeatRequest)">
+            <summary>
+            TaskManager sends a heartbeat to the JobManager.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Interfaces.IJobRepository">
+            <summary>
+            Defines the contract for a repository that handles persistence of job definitions and statuses.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.CreateJobAsync(System.String,FlinkDotNet.JobManager.Models.JobDefinitionDto,FlinkDotNet.JobManager.Models.JobStatusDto)">
+            <summary>
+            Stores a new job definition and its initial status.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.GetJobStatusAsync(System.String)">
+            <summary>
+            Retrieves the status of a specific job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.GetJobDefinitionAsync(System.String)">
+            <summary>
+            Retrieves the definition of a specific job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.UpdateJobStatusAsync(System.String,FlinkDotNet.JobManager.Models.JobStatusDto)">
+            <summary>
+            Updates the status of an existing job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.GetCheckpointsAsync(System.String)">
+            <summary>
+            Retrieves all checkpoint information for a specific job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.AddCheckpointAsync(System.String,FlinkDotNet.JobManager.Models.CheckpointInfoDto)">
+            <summary>
+            Adds a new checkpoint information entry for a specific job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.RequestBatchDlqResubmissionAsync(System.String)">
+            <summary>
+            Conceptually requests resubmission of all DLQ messages for a given job.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.GetDlqMessageAsync(System.String,System.String)">
+            <summary>
+            Retrieves a specific DLQ message.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Interfaces.IJobRepository.UpdateDlqMessagePayloadAsync(System.String,System.String,System.Byte[])">
+            <summary>
+            Updates the payload of a specific DLQ message.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobDefinitionDto.Steps">
+            <summary>
+            List of operator definitions that form the job graph.
+            Each OperatorDefinitionDto can be the head of an operator chain.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobEdge.OutputKeyingConfig">
+            <summary>
+            Configuration for key-based partitioning if ShuffleMode is Hash.
+            Null otherwise.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.JobEdge.ToProto">
+            <summary>
+            Converts this JobEdge model to its Protobuf representation.
+            </summary>
+            <returns>The Protobuf JobEdge message.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.JobEdge.FromProto(FlinkDotNet.Proto.Internal.JobEdge)">
+            <summary>
+            Creates a JobEdge model from its Protobuf representation.
+            </summary>
+            <param name="protoEdge">The Protobuf JobEdge message.</param>
+            <returns>A new JobEdge instance.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.JobGraph.ToProto">
+            <summary>
+            Converts this JobGraph model to its Protobuf representation.
+            </summary>
+            <returns>The Protobuf JobGraph message.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.JobGraph.FromProto(FlinkDotNet.Proto.Internal.JobGraph)">
+            <summary>
+            Creates a JobGraph model from its Protobuf representation.
+            </summary>
+            <param name="protoJobGraph">The Protobuf JobGraph message.</param>
+            <returns>A new JobGraph instance.</returns>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.OperatorDefinition">
+            <summary>
+            Definition of the operator, including its class name and configuration.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.InputTypeName">
+            <summary>
+            Assembly-qualified name of the primary input data type for this vertex's operator.
+            Null for Source vertices.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.OutputTypeName">
+            <summary>
+            Assembly-qualified name of the primary output data type of this vertex's operator.
+            Null for Sink vertices.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.InputSerializerTypeName">
+            <summary>
+            Optional: Assembly-qualified type name of the ITypeSerializer for this vertex's primary input.
+            If null, a default will be used based on InputTypeName.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.OutputSerializerTypeName">
+            <summary>
+            Optional: Assembly-qualified type name of the ITypeSerializer for this vertex's primary output.
+            If null, a default will be used based on OutputTypeName.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.OutputEdgeKeying">
+            <summary>
+            Stores keying information for output edges that require hash-based shuffling.
+            Key is the JobEdge.Id of the output edge.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.ChainedOperators">
+            <summary>
+            List of operators chained to this vertex.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.ToProto">
+            <summary>
+            Converts this JobVertex model to its Protobuf representation.
+            </summary>
+            <returns>The Protobuf JobVertex message.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.JobVertex.FromProto(FlinkDotNet.Proto.Internal.JobVertex)">
+            <summary>
+            Creates a JobVertex model from its Protobuf representation.
+            </summary>
+            <param name="protoVertex">The Protobuf JobVertex message.</param>
+            <returns>A new JobVertex instance.</returns>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Models.JobGraph.KeyingInfo">
+            <summary>
+            Contains information about how the output of a specific JobEdge is keyed.
+            This is a refined version of OutputKeyingConfig, potentially specific to an edge if needed,
+            or can be a direct reference if KeyingInfo and OutputKeyingConfig are identical.
+            For now, let's assume it mirrors OutputKeyingConfig for simplicity in JobVertex.OutputEdgeKeying.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.KeyingInfo.KeySelectorTypeName">
+            <summary>
+            Assembly-qualified type name of the IKeySelector implementation.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.KeyingInfo.KeyTypeAssemblyName">
+            <summary>
+            Assembly-qualified type name of the key itself (TKey).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.KeyingInfo.ToProto">
+            <summary>
+            Converts this KeyingInfo to its Protobuf representation.
+            (Assuming it maps to the same Proto.Internal.OutputKeyingConfig for now)
+            </summary>
+            <returns>The Protobuf OutputKeyingConfig message.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.KeyingInfo.FromProto(FlinkDotNet.Proto.Internal.OutputKeyingConfig)">
+            <summary>
+            Creates a KeyingInfo from its Protobuf representation.
+            (Assuming it maps from Proto.Internal.OutputKeyingConfig for now)
+            </summary>
+            <param name="protoConfig">The Protobuf OutputKeyingConfig message.</param>
+            <returns>A new KeyingInfo instance.</returns>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.OperatorDefinition.FullyQualifiedName">
+            <summary>
+            Assembly-qualified class name of the user-defined function
+            (e.g., ISourceFunction, IMapOperator, IFilterOperator, ISinkFunction, etc.).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.OperatorDefinition.ConfigurationJson">
+            <summary>
+            Operator-specific configuration, stored as a JSON string.
+            This can include things like file paths for sources, or parameters for a map function.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.OperatorDefinition.ToProto">
+            <summary>
+            Converts this OperatorDefinition to its Protobuf representation.
+            </summary>
+            <returns>The Protobuf OperatorDefinition message.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.OperatorDefinition.FromProto(FlinkDotNet.Proto.Internal.OperatorDefinition)">
+            <summary>
+            Creates an OperatorDefinition from its Protobuf representation.
+            </summary>
+            <param name="protoOpDef">The Protobuf OperatorDefinition message.</param>
+            <returns>A new OperatorDefinition instance.</returns>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Models.JobGraph.OutputKeyingConfig">
+            <summary>
+            Configuration for how the output of a JobVertex should be keyed or partitioned
+            when being sent to a downstream JobVertex via a JobEdge.
+            This is typically relevant for Hash shuffle mode.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.OutputKeyingConfig.KeySelectorTypeName">
+            <summary>
+            Assembly-qualified type name of the IKeySelector implementation.
+            This selector is used to extract a key from an output record.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.JobGraph.OutputKeyingConfig.KeyTypeAssemblyName">
+            <summary>
+            Assembly-qualified type name of the key itself (TKey).
+            This is important for potentially finding appropriate serializers for the key.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.OutputKeyingConfig.ToProto">
+            <summary>
+            Converts this OutputKeyingConfig to its Protobuf representation.
+            </summary>
+            <returns>The Protobuf OutputKeyingConfig message.</returns>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Models.JobGraph.OutputKeyingConfig.FromProto(FlinkDotNet.Proto.Internal.OutputKeyingConfig)">
+            <summary>
+            Creates an OutputKeyingConfig from its Protobuf representation.
+            </summary>
+            <param name="protoConfig">The Protobuf OutputKeyingConfig message.</param>
+            <returns>A new OutputKeyingConfig instance.</returns>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.Name">
+            <summary>
+            Unique name for this operator step, used for defining connections.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.TypeName">
+            <summary>
+            Assembly-qualified class name of the user-defined function
+            (e.g., ISourceFunction, IMapOperator, IFlatMapOperator, ISinkFunction, IReduceOperator, etc.).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.OperatorType">
+            <summary>
+            Type of the operator, e.g., "Source", "Operator", "Sink".
+            Used by JobManager to determine VertexType and apply appropriate logic.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.Inputs">
+            <summary>
+            Names of upstream operators this operator consumes from.
+            For a source, this list would be empty or null.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.InputDataTypes">
+            <summary>
+            Assembly-qualified name(s) of the input data type(s) for this operator.
+            If multiple inputs, this list should correspond to the order in 'Inputs'.
+            For the head of a chain, this is the external input type.
+            For chained operators, this is the output type of the previous operator in the chain.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.OutputType">
+            <summary>
+            Assembly-qualified name of the output data type of this operator.
+            For a chain, this is the output type of the *last* operator in the chain.
+            For a sink, this might be null or the type it consumes.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.InputSerializerTypeName">
+            <summary>
+            Optional: Assembly-qualified type name of the ITypeSerializer for this operator's primary input.
+            Applies to the head operator of a chain.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.OutputSerializerTypeName">
+            <summary>
+            Optional: Assembly-qualified type name of the ITypeSerializer for this operator's primary output.
+            Applies to the output of the last operator in a chain.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.OutputKeying">
+            <summary>
+            Optional: Configuration for keying the output of this operator (or the last operator in its chain).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.ChainedOperators">
+            <summary>
+            Optional: A list of subsequent operator definitions to be chained to this operator.
+            The 'Inputs' and 'Parallelism' of these chained DTOs are ignored.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.Windowing">
+            <summary>
+            Optional: Windowing configuration if this operator is a windowed computation.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OperatorDefinitionDto.OperatorPropertiesJson">
+            <summary>
+            Generic properties for operator configuration, serialized as JSON string.
+            Specific operators can deserialize this to their own config objects.
+            Example: file path for a FileSource, or UDF constructor parameters.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OutputKeyingConfigDto.SerializedKeySelector">
+            <summary>
+            String representation of the key selector logic.
+            Examples: "prop:OrderId", "field:customerCategory", "type:MyProject.MyKeySelector, MyAssembly"
+            This string will be parsed by the TaskManager to activate the key selection.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.OutputKeyingConfigDto.KeyTypeName">
+            <summary>
+            Assembly-qualified name of the key's data type.
+            Example: "System.String", "System.Int32", "MyProject.Types.OrderKey, MyAssembly"
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Models.TaskMetrics">
+            <summary>
+            Basic metrics reported by a running task.
+            Mirrored from the TaskManager project to avoid a project dependency.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.WindowConfigDto.AssignerType">
+            <summary>
+            Type of window assigner. Case-insensitive.
+            Examples: "TumblingEventTime", "TumblingProcessingTime", "SlidingEventTime",
+            "SlidingProcessingTime", "EventTimeSession", "ProcessingTimeSession", "Global".
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.WindowConfigDto.TriggerType">
+            <summary>
+            Assembly-qualified type name of a custom ITrigger implementation.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Models.WindowConfigDto.EvictorType">
+            <summary>
+            Assembly-qualified type name of a custom IEvictor implementation.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator">
+            <summary>
+            Flink.Net style back pressure coordinator that monitors system pressure
+            and coordinates dynamic scaling of TaskManager instances to handle load fluctuations.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.MonitorBackPressure(System.Object)">
+            <summary>
+            Monitors system pressure and triggers scaling decisions
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.CalculateBackPressure(FlinkDotNet.JobManager.Services.StateManagement.StateMetrics,System.Collections.Generic.Dictionary{System.String,FlinkDotNet.JobManager.Services.BackPressure.TaskManagerMetrics})">
+            <summary>
+            Calculates back pressure level using Flink.Net heuristics including flow control
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.ApplyScalingDecision(System.String,FlinkDotNet.JobManager.Services.BackPressure.BackPressureMetrics)">
+            <summary>
+            Applies scaling decisions based on pressure levels
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.GetBackPressureMetrics">
+            <summary>
+            Gets current back pressure metrics for external monitoring
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.GetOverallSystemPressure">
+            <summary>
+            Gets overall system pressure level (0.0 to 1.0)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.RequestProcessingCredits(System.String,System.Int32)">
+            <summary>
+            Requests credits for an operator to process data (credit-based flow control).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.ReplenishProcessingCredits(System.String,System.Int32)">
+            <summary>
+            Replenishes credits when operator completes processing records.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.ShouldThrottleDataIntake">
+            <summary>
+            Determines if the system should throttle new data intake due to back pressure.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.BackPressureCoordinator.GetFlowControlInfo">
+            <summary>
+            Gets flow control information for all operators.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.BackPressureConfiguration">
+            <summary>
+            Configuration for back pressure monitoring and scaling
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.BackPressureMetrics">
+            <summary>
+            Back pressure metrics for system monitoring
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.BackPressureHostedService">
+            <summary>
+            Hosted service that ensures the BackPressureCoordinator is initialized and started
+            when the JobManager application starts, following Flink.Net patterns.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController">
+            <summary>
+            Flink.Net style credit-based flow control system that prevents
+            system overload by regulating data flow between operators and task managers.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController.RequestCredits(System.String,System.Int32)">
+            <summary>
+            Requests credits for an operator to send data downstream.
+            Returns the number of credits granted (may be less than requested).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController.ReplenishCredits(System.String,System.Int32)">
+            <summary>
+            Replenishes credits for an operator when downstream processing completes.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController.GetBackPressureLevel(System.String)">
+            <summary>
+            Gets the current back pressure level for an operator (0.0 to 1.0).
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController.GetSystemBackPressureLevel">
+            <summary>
+            Gets overall system back pressure level across all operators.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController.ShouldThrottle">
+            <summary>
+            Determines if the system should throttle new data intake.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.CreditBasedFlowController.GetAllOperatorCredits">
+            <summary>
+            Gets all operator credit information for monitoring.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.OperatorCredit">
+            <summary>
+            Credit management for a single operator in the flow control system.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.CreditFlowConfiguration">
+            <summary>
+            Configuration for credit-based flow control system.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Services.BackPressure.CreditFlowConfiguration.MaxBufferSize">
+            <summary>
+            Maximum buffer size per operator (number of records).
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Services.BackPressure.CreditFlowConfiguration.BackPressureThreshold">
+            <summary>
+            Back pressure threshold (0.0 to 1.0). When exceeded, system should throttle.
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.JobManager.Services.BackPressure.CreditFlowConfiguration.IdleReplenishInterval">
+            <summary>
+            How often to replenish credits for idle operators (to prevent starvation).
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.OperatorCreditInfo">
+            <summary>
+            Information about operator credit status for monitoring.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator">
+            <summary>
+            Flink.Net style TaskManager orchestrator that provides dynamic scaling
+            capabilities for TaskManager instances based on system pressure and workload.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.GetTaskManagerCount">
+            <summary>
+            Gets the current number of active TaskManager instances
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.GetAllTaskManagerMetrics">
+            <summary>
+            Gets all TaskManager metrics for back pressure calculation
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.ScaleUpAsync">
+            <summary>
+            Scales up TaskManager instances when system is under pressure
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.ScaleDownAsync">
+            <summary>
+            Scales down TaskManager instances when system pressure is low
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.CreateTaskManagerInstanceAsync(System.String)">
+            <summary>
+            Creates a new TaskManager instance using the configured deployment strategy
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.GetDotNetExecutablePath">
+            <summary>
+            Gets the full path to the dotnet executable for security compliance (S4036)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.GetDockerExecutablePath">
+            <summary>
+            Gets the full path to the docker executable for security compliance (S4036)
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.BackPressure.TaskManagerOrchestrator.GetKubectlExecutablePath">
+            <summary>
+            Gets the full path to the kubectl executable for security compliance (S4036)
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.HighAvailability.HighAvailabilityCoordinator">
+            <summary>
+            Minimal leader election coordinator for high availability tests.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.InMemoryJobRepository">
+            <summary>
+            Mock implementation of IJobRepository using in-memory ConcurrentDictionaries.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.JobManagerInternalApiService.ResolveTaskManagerAddress(FlinkDotNet.JobManager.Models.TaskManagerInfo)">
+            <summary>
+            Resolve TaskManager address using Aspire service discovery
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.StateManagement.StateCoordinator">
+            <summary>
+            Flink.Net style state coordinator that manages RocksDB state backends
+            across TaskManager instances, providing centralized state lifecycle management
+            and distributed checkpointing coordination.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.StateManagement.StateCoordinator.CreateStateBackendAsync(System.String,System.String,FlinkDotNet.JobManager.Services.StateManagement.StateBackendConfig)">
+            <summary>
+            Creates and manages a RocksDB state backend for a specific TaskManager instance.
+            This follows Flink.Net pattern of centralized state lifecycle management.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.StateManagement.StateCoordinator.RemoveStateBackendAsync(System.String)">
+            <summary>
+            Removes and properly disposes a state backend when TaskManager shuts down or job finishes.
+            Ensures proper cleanup of RocksDB resources.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.StateManagement.StateCoordinator.GetStateMetrics(System.String)">
+            <summary>
+            Gets state backend metrics for monitoring and back pressure detection.
+            Used by BackPressureCoordinator to make scaling decisions.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.StateManagement.StateCoordinator.GetAllStateMetrics">
+            <summary>
+            Gets all state backends for comprehensive monitoring.
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.StateManagement.StateCoordinator.TriggerCheckpointAsync(System.Int64)">
+            <summary>
+            Triggers a coordinated checkpoint across all managed state backends.
+            This is called by the CheckpointCoordinator for consistent distributed snapshots.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.StateManagement.StateBackendConfig">
+            <summary>
+            Configuration for RocksDB state backend creation
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Services.StateManagement.StateMetrics">
+            <summary>
+            Real-time metrics for state backend monitoring and back pressure detection
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Services.StateManagement.StateMetrics.IsUnderPressure">
+            <summary>
+            Determines if this state backend is under pressure and needs scaling.
+            Uses Flink.Net style heuristics.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.JobManager.Checkpointing.CheckpointCoordinator">
+            <summary>
+            Flink.Net enhanced checkpoint coordinator with RocksDB state backend management
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Checkpointing.CheckpointCoordinator.RegisterStateBackendAsync(System.String,FlinkDotNet.Storage.RocksDB.RocksDBStateBackend)">
+            <summary>
+            Registers a state backend for coordinated checkpointing
+            </summary>
+        </member>
+        <member name="M:FlinkDotNet.JobManager.Checkpointing.CheckpointCoordinator.UnregisterStateBackendAsync(System.String)">
+            <summary>
+            Unregisters a state backend from coordinated checkpointing
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.JobmanagerInternalReflection">
+            <summary>Holder for reflection information generated from Protos/jobmanager_internal.proto</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobmanagerInternalReflection.Descriptor">
+            <summary>File descriptor for Protos/jobmanager_internal.proto</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.VertexType">
+            <summary>
+            Enum for JobVertex type
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportTaskStartupFailureRequest.JobIdFieldNumber">
+            <summary>Field number for the "job_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportTaskStartupFailureRequest.JobVertexIdFieldNumber">
+            <summary>Field number for the "job_vertex_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportTaskStartupFailureRequest.SubtaskIndexFieldNumber">
+            <summary>Field number for the "subtask_index" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportTaskStartupFailureRequest.TaskManagerIdFieldNumber">
+            <summary>Field number for the "task_manager_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportTaskStartupFailureRequest.FailureReasonFieldNumber">
+            <summary>Field number for the "failure_reason" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportTaskStartupFailureResponse.AcknowledgedFieldNumber">
+            <summary>Field number for the "acknowledged" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointRequest.JobIdFieldNumber">
+            <summary>Field number for the "job_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointRequest.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpoint_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointRequest.JobVertexIdFieldNumber">
+            <summary>Field number for the "job_vertex_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointRequest.SubtaskIndexFieldNumber">
+            <summary>Field number for the "subtask_index" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointRequest.FailureReasonFieldNumber">
+            <summary>Field number for the "failure_reason" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointRequest.TaskManagerIdFieldNumber">
+            <summary>Field number for the "task_manager_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportFailedCheckpointResponse.AcknowledgedFieldNumber">
+            <summary>Field number for the "acknowledged" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportStateCompletionRequest.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpoint_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportStateCompletionRequest.OperatorInstanceIdFieldNumber">
+            <summary>Field number for the "operator_instance_id" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.ReportStateCompletionRequest.OperatorInstanceId">
+            <summary>
+            This might be more like "jobVertexId_subtaskIndex"
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportStateCompletionRequest.StateLocationFieldNumber">
+            <summary>Field number for the "state_location" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportStateCompletionRequest.InputOffsetsFieldNumber">
+            <summary>Field number for the "input_offsets" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.ReportStateCompletionRequest.InputOffsets">
+            <summary>
+            For sources
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ReportStateCompletionReply.AckFieldNumber">
+            <summary>Field number for the "ack" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RequestCheckpointRequest.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpoint_id" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.RequestCheckpointRequest.CheckpointId">
+            <summary>
+            int64 checkpoint_timestamp = 2; // This was in TriggerCheckpointRequest, not here.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RequestCheckpointReply.AcceptedFieldNumber">
+            <summary>Field number for the "accepted" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RequestRecoveryRequest.JobIdFieldNumber">
+            <summary>Field number for the "job_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RequestRecoveryRequest.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpoint_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RequestRecoveryReply.RecoveryInitiatedFieldNumber">
+            <summary>Field number for the "recovery_initiated" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RegisterTaskManagerRequest.TaskManagerIdFieldNumber">
+            <summary>Field number for the "taskManagerId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RegisterTaskManagerRequest.AddressFieldNumber">
+            <summary>Field number for the "address" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RegisterTaskManagerRequest.PortFieldNumber">
+            <summary>Field number for the "port" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RegisterTaskManagerResponse.SuccessFieldNumber">
+            <summary>Field number for the "success" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.RegisterTaskManagerResponse.JobManagerIdFieldNumber">
+            <summary>Field number for the "jobManagerId" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskMetricData">
+            <summary>
+            From 'main' branch for metrics
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskMetricData.TaskIdFieldNumber">
+            <summary>Field number for the "task_id" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskMetricData.TaskId">
+            <summary>
+            Format: JobVertexId_SubtaskIndex
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskMetricData.RecordsInFieldNumber">
+            <summary>Field number for the "records_in" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskMetricData.RecordsOutFieldNumber">
+            <summary>Field number for the "records_out" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.HeartbeatRequest">
+            <summary>
+            Merged version
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.HeartbeatRequest.TaskManagerIdFieldNumber">
+            <summary>Field number for the "taskManagerId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.HeartbeatRequest.TaskMetricsFieldNumber">
+            <summary>Field number for the "task_metrics" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.HeartbeatRequest.TaskMetrics">
+            <summary>
+            From 'main'
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.HeartbeatResponse">
+            <summary>
+            Merged version
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.HeartbeatResponse.AcknowledgedFieldNumber">
+            <summary>Field number for the "acknowledged" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.HeartbeatResponse.Acknowledged">
+            <summary>
+            Potentially commands from JM back to TM
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.CheckpointTaskInfo">
+            <summary>
+            ----- Checkpointing related messages (mostly from feature branch) -----
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.CheckpointTaskInfo.TaskManagerIdFieldNumber">
+            <summary>Field number for the "taskManagerId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.CheckpointTaskInfo.SnapshotPathFieldNumber">
+            <summary>Field number for the "snapshotPath" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TriggerCheckpointRequest">
+            <summary>
+            JM -> TM (for TaskManagerCheckpointing service)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TriggerCheckpointRequest.JobManagerIdFieldNumber">
+            <summary>Field number for the "jobManagerId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TriggerCheckpointRequest.JobIdFieldNumber">
+            <summary>Field number for the "jobId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TriggerCheckpointRequest.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpointId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TriggerCheckpointRequest.CheckpointTimestampFieldNumber">
+            <summary>Field number for the "checkpointTimestamp" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TriggerCheckpointResponse.AcknowledgedFieldNumber">
+            <summary>Field number for the "acknowledged" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest">
+            <summary>
+            TM -> JM (for TaskManagerRegistration service)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.JobManagerIdFieldNumber">
+            <summary>Field number for the "jobManagerId" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.JobManagerId">
+            <summary>
+            Should be ID of JM receiving this
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.JobIdFieldNumber">
+            <summary>Field number for the "jobId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpointId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.TaskManagerIdFieldNumber">
+            <summary>Field number for the "taskManagerId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.JobVertexIdFieldNumber">
+            <summary>Field number for the "jobVertexId" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.JobVertexId">
+            <summary>
+            Specific operator/vertex ID
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SubtaskIndexFieldNumber">
+            <summary>Field number for the "subtaskIndex" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SubtaskIndex">
+            <summary>
+            Specific subtask index
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SnapshotHandleFieldNumber">
+            <summary>Field number for the "snapshotHandle" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SourceOffsetsFieldNumber">
+            <summary>Field number for the "source_offsets" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SourceOffsets">
+            <summary>
+            For sources
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SnapshotSizeFieldNumber">
+            <summary>Field number for the "snapshotSize" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.SnapshotSize">
+            <summary>
+            Optional
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.DurationFieldNumber">
+            <summary>Field number for the "duration" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointRequest.Duration">
+            <summary>
+            Optional
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.AcknowledgeCheckpointResponse.SuccessFieldNumber">
+            <summary>Field number for the "success" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.OperatorInput">
+            <summary>
+            ----- Task Deployment messages (mostly from feature branch) -----
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorInput.SourceVertexIdFieldNumber">
+            <summary>Field number for the "sourceVertexId" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.OperatorInput.SourceVertexId">
+            <summary>
+            Original upstream vertex in JobGraph that this input edge comes from
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorInput.UpstreamJobVertexIdFieldNumber">
+            <summary>Field number for the "upstream_job_vertex_id" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.OperatorInput.UpstreamJobVertexId">
+            <summary>
+            Fields to identify the immediate sender if different from original source (e.g. after shuffles)
+            These are crucial for barrier alignment with multiple inputs.
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorInput.UpstreamSubtaskIndexFieldNumber">
+            <summary>Field number for the "upstream_subtask_index" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.OperatorInput.UpstreamSubtaskIndex">
+            <summary>
+            The SubtaskIndex of the task instance sending data
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.OperatorOutput">
+            <summary>
+            Defines a connection to a specific downstream subtask instance
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorOutput.TargetVertexIdFieldNumber">
+            <summary>Field number for the "targetVertexId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorOutput.TargetTaskEndpointFieldNumber">
+            <summary>Field number for the "target_task_endpoint" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.OperatorOutput.TargetTaskEndpoint">
+            <summary>
+            Host:Port of the TM running the target subtask
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorOutput.TargetSpecificSubtaskIndexFieldNumber">
+            <summary>Field number for the "target_specific_subtask_index" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.OutputEdgeKeyingInfo">
+            <summary>
+            For TDD, if an output is hash partitioned
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OutputEdgeKeyingInfo.TargetJobVertexIdFieldNumber">
+            <summary>Field number for the "target_job_vertex_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OutputEdgeKeyingInfo.SerializedKeySelectorFieldNumber">
+            <summary>Field number for the "serialized_key_selector" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OutputEdgeKeyingInfo.KeyTypeNameFieldNumber">
+            <summary>Field number for the "key_type_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OutputEdgeKeyingInfo.DownstreamParallelismFieldNumber">
+            <summary>Field number for the "downstream_parallelism" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.InputKeyingInfo">
+            <summary>
+            For TDD, if an input is expected to be keyed (for state access)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.InputKeyingInfo.SerializedKeySelectorFieldNumber">
+            <summary>Field number for the "serialized_key_selector" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.InputKeyingInfo.SerializedKeySelector">
+            <summary>
+            Selector used by upstream to partition to this task
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.InputKeyingInfo.KeyTypeNameFieldNumber">
+            <summary>Field number for the "key_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.InputKeyingInfo.KeyTypeName">
+            <summary>
+            Type of the key for this input stream
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.ChainedOperatorInfo">
+            <summary>
+            For TDD, for operators chained after the head operator
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.OriginalJobVertexIdFieldNumber">
+            <summary>Field number for the "original_job_vertex_id" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.OriginalJobVertexId">
+            <summary>
+            Original JobVertexId for this specific operator
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.FullyQualifiedOperatorNameFieldNumber">
+            <summary>Field number for the "fully_qualified_operator_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.OperatorConfigurationFieldNumber">
+            <summary>Field number for the "operator_configuration" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.InputTypeNameFieldNumber">
+            <summary>Field number for the "input_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.InputTypeName">
+            <summary>
+            Input type for this specific chained op           
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.OutputTypeNameFieldNumber">
+            <summary>Field number for the "output_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.ChainedOperatorInfo.OutputTypeName">
+            <summary>
+            Output type from this specific chained op           
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.JobGraphJobIdFieldNumber">
+            <summary>Field number for the "jobGraphJobId" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.JobVertexIdFieldNumber">
+            <summary>Field number for the "jobVertexId" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.JobVertexId">
+            <summary>
+            ID of the JobVertex for the *head* operator of this task/chain
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.SubtaskIndexFieldNumber">
+            <summary>Field number for the "subtaskIndex" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.TaskNameFieldNumber">
+            <summary>Field number for the "taskName" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.FullyQualifiedOperatorNameFieldNumber">
+            <summary>Field number for the "fullyQualifiedOperatorName" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.FullyQualifiedOperatorName">
+            <summary>
+            For the head operator
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OperatorConfigurationFieldNumber">
+            <summary>Field number for the "operatorConfiguration" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OperatorConfiguration">
+            <summary>
+            For the head operator (can include windowing config etc.)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.InputsFieldNumber">
+            <summary>Field number for the "inputs" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.Inputs">
+            <summary>
+            Inputs for the *head* operator
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OutputsFieldNumber">
+            <summary>Field number for the "outputs" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.Outputs">
+            <summary>
+            Outputs from the *last* operator in the chain
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.InputTypeNameFieldNumber">
+            <summary>Field number for the "inputTypeName" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.InputTypeName">
+            <summary>
+            Serializer/Type info for the overall task's network boundaries
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OutputTypeNameFieldNumber">
+            <summary>Field number for the "outputTypeName" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OutputTypeName">
+            <summary>
+            Output type from the *last* operator to network/sink
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.InputSerializerTypeNameFieldNumber">
+            <summary>Field number for the "inputSerializerTypeName" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OutputSerializerTypeNameFieldNumber">
+            <summary>Field number for the "outputSerializerTypeName" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OutputKeyingInfoFieldNumber">
+            <summary>Field number for the "output_keying_info" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.OutputKeyingInfo">
+            <summary>
+            For outputs of the *last* operator if keyed
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.IsRecoveryFieldNumber">
+            <summary>Field number for the "is_recovery" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.IsRecovery">
+            <summary>
+            Recovery fields
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.RecoveryCheckpointIdFieldNumber">
+            <summary>Field number for the "recovery_checkpoint_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.RecoverySnapshotHandleFieldNumber">
+            <summary>Field number for the "recovery_snapshot_handle" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.RecoverySourceOffsetsFieldNumber">
+            <summary>Field number for the "recovery_source_offsets" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.InputKeyingInfoFieldNumber">
+            <summary>Field number for the "input_keying_info" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.InputKeyingInfo">
+            <summary>
+            For inputs of the *head* operator if its state is keyed
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.ChainedOperatorInfoFieldNumber">
+            <summary>Field number for the "chained_operator_info" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskDeploymentDescriptor.ChainedOperatorInfo">
+            <summary>
+            Subsequent operators in the chain
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DeployTaskResponse.SuccessFieldNumber">
+            <summary>Field number for the "success" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DeployTaskResponse.MessageFieldNumber">
+            <summary>Field number for the "message" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.CheckpointBarrier">
+            <summary>
+            ----- Data Exchange messages (from feature branch, for credit control and new DataExchangeService) -----
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.CheckpointBarrier.CheckpointIdFieldNumber">
+            <summary>Field number for the "checkpoint_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.CheckpointBarrier.CheckpointTimestampFieldNumber">
+            <summary>Field number for the "checkpoint_timestamp" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.Watermark">
+            <summary>
+            NEW for windowing event time
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.Watermark.TimestampFieldNumber">
+            <summary>Field number for the "timestamp" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.TargetJobVertexIdFieldNumber">
+            <summary>Field number for the "targetJobVertexId" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.TargetJobVertexId">
+            <summary>
+            Target JobVertex on the receiving TM
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.TargetSubtaskIndexFieldNumber">
+            <summary>Field number for the "targetSubtaskIndex" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.TargetSubtaskIndex">
+            <summary>
+            Specific subtask index of the target operator
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.SourceJobVertexIdFieldNumber">
+            <summary>Field number for the "source_job_vertex_id" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.SourceJobVertexId">
+            <summary>
+            Sender identification for multi-input alignment (barriers, watermarks)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.SourceSubtaskIndexFieldNumber">
+            <summary>Field number for the "source_subtask_index" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.SourceSubtaskIndex">
+            <summary>
+            SubtaskIndex of the sending task
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.DataPayloadFieldNumber">
+            <summary>Field number for the "data_payload" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.DataPayload">
+            <summary>
+            Serialized user data record
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.HasDataPayload">
+            <summary>Gets whether the "data_payload" field is set</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataRecord.ClearDataPayload">
+            <summary> Clears the value of the oneof if it's currently set to "data_payload" </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.BarrierPayloadFieldNumber">
+            <summary>Field number for the "barrier_payload" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.BarrierPayload">
+            <summary>
+            Contains id and timestamp
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.WatermarkPayloadFieldNumber">
+            <summary>Field number for the "watermark_payload" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.IsCheckpointBarrierFieldNumber">
+            <summary>Field number for the "is_checkpoint_barrier" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.IsCheckpointBarrier">
+            <summary>
+            New fields for barrier indication and options
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DataRecord.CheckpointOptionsFieldNumber">
+            <summary>Field number for the "checkpoint_options" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataRecord.CheckpointOptions">
+            <summary>
+            If true, barrier_payload is expected to be set.
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.DataRecord.PayloadTypeOneofCase">
+            <summary>Enum of possible cases for the "payload_type" oneof.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.UpstreamPayload">
+            <summary>
+            For new ExchangeData RPC
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.UpstreamPayload.RecordFieldNumber">
+            <summary>Field number for the "record" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.UpstreamPayload.Record">
+            <summary>
+            Could add other control messages from sender here if needed
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.UpstreamPayload.PayloadOneofOneofCase">
+            <summary>Enum of possible cases for the "payload_oneof" oneof.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.CreditUpdate">
+            <summary>
+            For new ExchangeData RPC
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.CreditUpdate.CreditsGrantedFieldNumber">
+            <summary>Field number for the "credits_granted" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.DownstreamPayload">
+            <summary>
+            For new ExchangeData RPC
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.DownstreamPayload.CreditsFieldNumber">
+            <summary>Field number for the "credits" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DownstreamPayload.Credits">
+            <summary>
+            Could add other control messages from receiver here if needed
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.DownstreamPayload.PayloadOneofOneofCase">
+            <summary>Enum of possible cases for the "payload_oneof" oneof.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.OutputKeyingConfig">
+            <summary>
+            Message for KeyingInfo (maps to OutputKeyingConfig in C# model)
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OutputKeyingConfig.KeySelectorTypeNameFieldNumber">
+            <summary>Field number for the "key_selector_type_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OutputKeyingConfig.KeyTypeAssemblyNameFieldNumber">
+            <summary>Field number for the "key_type_assembly_name" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.OperatorDefinition">
+            <summary>
+            Message for OperatorDefinition
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorDefinition.FullyQualifiedNameFieldNumber">
+            <summary>Field number for the "fully_qualified_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.OperatorDefinition.ConfigurationFieldNumber">
+            <summary>Field number for the "configuration" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.OperatorDefinition.Configuration">
+            <summary>
+            Using Struct for flexible JSON-like configuration
+            </summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.JobVertex">
+            <summary>
+            Message for JobVertex
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.IdFieldNumber">
+            <summary>Field number for the "id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.NameFieldNumber">
+            <summary>Field number for the "name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.OperatorDefinitionFieldNumber">
+            <summary>Field number for the "operator_definition" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.ParallelismFieldNumber">
+            <summary>Field number for the "parallelism" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.VertexTypeFieldNumber">
+            <summary>Field number for the "vertex_type" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.InputTypeNameFieldNumber">
+            <summary>Field number for the "input_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobVertex.InputTypeName">
+            <summary>
+            Optional: field presence indicates if set
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.OutputTypeNameFieldNumber">
+            <summary>Field number for the "output_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobVertex.OutputTypeName">
+            <summary>
+            Optional: field presence indicates if set
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.InputSerializerTypeNameFieldNumber">
+            <summary>Field number for the "input_serializer_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobVertex.InputSerializerTypeName">
+            <summary>
+            Optional
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.OutputSerializerTypeNameFieldNumber">
+            <summary>Field number for the "output_serializer_type_name" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobVertex.OutputSerializerTypeName">
+            <summary>
+            Optional
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.InputEdgeIdsFieldNumber">
+            <summary>Field number for the "input_edge_ids" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.OutputEdgeIdsFieldNumber">
+            <summary>Field number for the "output_edge_ids" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.OutputEdgeKeyingFieldNumber">
+            <summary>Field number for the "output_edge_keying" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobVertex.ChainedOperatorsFieldNumber">
+            <summary>Field number for the "chained_operators" field.</summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobVertex.ChainedOperators">
+            <summary>
+            New field for chained operators
+            </summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.IdFieldNumber">
+            <summary>Field number for the "id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.SourceVertexIdFieldNumber">
+            <summary>Field number for the "source_vertex_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.TargetVertexIdFieldNumber">
+            <summary>Field number for the "target_vertex_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.ShuffleModeFieldNumber">
+            <summary>Field number for the "shuffle_mode" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.DataTypeNameFieldNumber">
+            <summary>Field number for the "data_type_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.SerializerTypeNameFieldNumber">
+            <summary>Field number for the "serializer_type_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobEdge.OutputKeyingConfigFieldNumber">
+            <summary>Field number for the "output_keying_config" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobGraph.JobNameFieldNumber">
+            <summary>Field number for the "job_name" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobGraph.StatusFieldNumber">
+            <summary>Field number for the "status" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobGraph.SubmissionTimeFieldNumber">
+            <summary>Field number for the "submission_time" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobGraph.VerticesFieldNumber">
+            <summary>Field number for the "vertices" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobGraph.EdgesFieldNumber">
+            <summary>Field number for the "edges" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobGraph.SerializerTypeRegistrationsFieldNumber">
+            <summary>Field number for the "serializer_type_registrations" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.SubmitJobRequest.JobGraphFieldNumber">
+            <summary>Field number for the "job_graph" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.SubmitJobReply.SuccessFieldNumber">
+            <summary>Field number for the "success" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.SubmitJobReply.JobIdFieldNumber">
+            <summary>Field number for the "job_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.SubmitJobReply.MessageFieldNumber">
+            <summary>Field number for the "message" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest.JobIdFieldNumber">
+            <summary>Field number for the "job_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest.OperatorInstanceIdFieldNumber">
+            <summary>Field number for the "operator_instance_id" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest.HealthStatusFieldNumber">
+            <summary>Field number for the "health_status" field.</summary>
+        </member>
+        <member name="F:FlinkDotNet.Proto.Internal.JobManagerHeartbeatReply.AckFieldNumber">
+            <summary>Field number for the "ack" field.</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.JobManagerInternalService">
+            <summary>
+            ----- JobManagerInternalService and related messages (mostly from feature branch) -----
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.JobManagerInternalService.Descriptor">
+            <summary>Service descriptor</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceBase">
+            <summary>Base class for server-side implementations of JobManagerInternalService</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceBase.Heartbeat(FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest,Grpc.Core.ServerCallContext)">
+            <summary>
+            Heartbeat was part of this service in one version, but seems to be part of TaskManagerRegistration in another.
+            Let's assume TaskManagerRegistration.SendHeartbeat is the one to keep, and JobManagerInternalService.Heartbeat might be deprecated or for a different purpose.
+            For this merge, I will OMIT JobManagerInternalService.Heartbeat if TaskManagerRegistration.SendHeartbeat exists and is more complete.
+            The provided diff for JobManagerController uses TaskManagerTracker, which is updated by TaskManagerRegistrationService.
+            </summary>
+            <param name="request">The request received from the client.</param>
+            <param name="context">The context of the server-side call handler being invoked.</param>
+            <returns>The response to send back to the client (wrapped by a task).</returns>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient">
+            <summary>Client for JobManagerInternalService</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.#ctor(Grpc.Core.ChannelBase)">
+            <summary>Creates a new client for JobManagerInternalService</summary>
+            <param name="channel">The channel to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.#ctor(Grpc.Core.CallInvoker)">
+            <summary>Creates a new client for JobManagerInternalService that uses a custom <c>CallInvoker</c>.</summary>
+            <param name="callInvoker">The callInvoker to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.#ctor">
+            <summary>Protected parameterless constructor to allow creation of test doubles.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Protected constructor to allow creation of configured clients.</summary>
+            <param name="configuration">The client configuration.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.Heartbeat(FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <summary>
+            Heartbeat was part of this service in one version, but seems to be part of TaskManagerRegistration in another.
+            Let's assume TaskManagerRegistration.SendHeartbeat is the one to keep, and JobManagerInternalService.Heartbeat might be deprecated or for a different purpose.
+            For this merge, I will OMIT JobManagerInternalService.Heartbeat if TaskManagerRegistration.SendHeartbeat exists and is more complete.
+            The provided diff for JobManagerController uses TaskManagerTracker, which is updated by TaskManagerRegistrationService.
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+            <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+            <param name="cancellationToken">An optional token for canceling the call.</param>
+            <returns>The response received from the server.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.Heartbeat(FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest,Grpc.Core.CallOptions)">
+            <summary>
+            Heartbeat was part of this service in one version, but seems to be part of TaskManagerRegistration in another.
+            Let's assume TaskManagerRegistration.SendHeartbeat is the one to keep, and JobManagerInternalService.Heartbeat might be deprecated or for a different purpose.
+            For this merge, I will OMIT JobManagerInternalService.Heartbeat if TaskManagerRegistration.SendHeartbeat exists and is more complete.
+            The provided diff for JobManagerController uses TaskManagerTracker, which is updated by TaskManagerRegistrationService.
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="options">The options for the call.</param>
+            <returns>The response received from the server.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.HeartbeatAsync(FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <summary>
+            Heartbeat was part of this service in one version, but seems to be part of TaskManagerRegistration in another.
+            Let's assume TaskManagerRegistration.SendHeartbeat is the one to keep, and JobManagerInternalService.Heartbeat might be deprecated or for a different purpose.
+            For this merge, I will OMIT JobManagerInternalService.Heartbeat if TaskManagerRegistration.SendHeartbeat exists and is more complete.
+            The provided diff for JobManagerController uses TaskManagerTracker, which is updated by TaskManagerRegistrationService.
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+            <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+            <param name="cancellationToken">An optional token for canceling the call.</param>
+            <returns>The call object.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.HeartbeatAsync(FlinkDotNet.Proto.Internal.JobManagerHeartbeatRequest,Grpc.Core.CallOptions)">
+            <summary>
+            Heartbeat was part of this service in one version, but seems to be part of TaskManagerRegistration in another.
+            Let's assume TaskManagerRegistration.SendHeartbeat is the one to keep, and JobManagerInternalService.Heartbeat might be deprecated or for a different purpose.
+            For this merge, I will OMIT JobManagerInternalService.Heartbeat if TaskManagerRegistration.SendHeartbeat exists and is more complete.
+            The provided diff for JobManagerController uses TaskManagerTracker, which is updated by TaskManagerRegistrationService.
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="options">The options for the call.</param>
+            <returns>The call object.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.BindService(FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceBase)">
+            <summary>Creates service definition that can be registered with a server</summary>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.JobManagerInternalService.BindService(Grpc.Core.ServiceBinderBase,FlinkDotNet.Proto.Internal.JobManagerInternalService.JobManagerInternalServiceBase)">
+            <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
+            Note: this method is part of an experimental API that can change or be removed without any prior notice.</summary>
+            <param name="serviceBinder">Service methods will be bound by calling <c>AddMethod</c> on this object.</param>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskManagerRegistration">
+            <summary>
+            ----- TaskManagerRegistration Service and related messages -----
+            (Combines elements from both, especially HeartbeatRequest)
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskManagerRegistration.Descriptor">
+            <summary>Service descriptor</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationBase">
+            <summary>Base class for server-side implementations of TaskManagerRegistration</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationBase.SendHeartbeat(FlinkDotNet.Proto.Internal.HeartbeatRequest,Grpc.Core.ServerCallContext)">
+            <summary>
+            This is the primary heartbeat
+            </summary>
+            <param name="request">The request received from the client.</param>
+            <param name="context">The context of the server-side call handler being invoked.</param>
+            <returns>The response to send back to the client (wrapped by a task).</returns>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient">
+            <summary>Client for TaskManagerRegistration</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.#ctor(Grpc.Core.ChannelBase)">
+            <summary>Creates a new client for TaskManagerRegistration</summary>
+            <param name="channel">The channel to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.#ctor(Grpc.Core.CallInvoker)">
+            <summary>Creates a new client for TaskManagerRegistration that uses a custom <c>CallInvoker</c>.</summary>
+            <param name="callInvoker">The callInvoker to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.#ctor">
+            <summary>Protected parameterless constructor to allow creation of test doubles.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Protected constructor to allow creation of configured clients.</summary>
+            <param name="configuration">The client configuration.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.SendHeartbeat(FlinkDotNet.Proto.Internal.HeartbeatRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <summary>
+            This is the primary heartbeat
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+            <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+            <param name="cancellationToken">An optional token for canceling the call.</param>
+            <returns>The response received from the server.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.SendHeartbeat(FlinkDotNet.Proto.Internal.HeartbeatRequest,Grpc.Core.CallOptions)">
+            <summary>
+            This is the primary heartbeat
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="options">The options for the call.</param>
+            <returns>The response received from the server.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.SendHeartbeatAsync(FlinkDotNet.Proto.Internal.HeartbeatRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <summary>
+            This is the primary heartbeat
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+            <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+            <param name="cancellationToken">An optional token for canceling the call.</param>
+            <returns>The call object.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.SendHeartbeatAsync(FlinkDotNet.Proto.Internal.HeartbeatRequest,Grpc.Core.CallOptions)">
+            <summary>
+            This is the primary heartbeat
+            </summary>
+            <param name="request">The request to send to the server.</param>
+            <param name="options">The options for the call.</param>
+            <returns>The call object.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.BindService(FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationBase)">
+            <summary>Creates service definition that can be registered with a server</summary>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerRegistration.BindService(Grpc.Core.ServiceBinderBase,FlinkDotNet.Proto.Internal.TaskManagerRegistration.TaskManagerRegistrationBase)">
+            <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
+            Note: this method is part of an experimental API that can change or be removed without any prior notice.</summary>
+            <param name="serviceBinder">Service methods will be bound by calling <c>AddMethod</c> on this object.</param>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing">
+            <summary>
+            TM hosts this, JM calls it
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.Descriptor">
+            <summary>Service descriptor</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingBase">
+            <summary>Base class for server-side implementations of TaskManagerCheckpointing</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingClient">
+            <summary>Client for TaskManagerCheckpointing</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingClient.#ctor(Grpc.Core.ChannelBase)">
+            <summary>Creates a new client for TaskManagerCheckpointing</summary>
+            <param name="channel">The channel to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingClient.#ctor(Grpc.Core.CallInvoker)">
+            <summary>Creates a new client for TaskManagerCheckpointing that uses a custom <c>CallInvoker</c>.</summary>
+            <param name="callInvoker">The callInvoker to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingClient.#ctor">
+            <summary>Protected parameterless constructor to allow creation of test doubles.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Protected constructor to allow creation of configured clients.</summary>
+            <param name="configuration">The client configuration.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.BindService(FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingBase)">
+            <summary>Creates service definition that can be registered with a server</summary>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.BindService(Grpc.Core.ServiceBinderBase,FlinkDotNet.Proto.Internal.TaskManagerCheckpointing.TaskManagerCheckpointingBase)">
+            <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
+            Note: this method is part of an experimental API that can change or be removed without any prior notice.</summary>
+            <param name="serviceBinder">Service methods will be bound by calling <c>AddMethod</c> on this object.</param>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskExecution">
+            <summary>
+            TM hosts this, JM calls it
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.TaskExecution.Descriptor">
+            <summary>Service descriptor</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionBase">
+            <summary>Base class for server-side implementations of TaskExecution</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionClient">
+            <summary>Client for TaskExecution</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionClient.#ctor(Grpc.Core.ChannelBase)">
+            <summary>Creates a new client for TaskExecution</summary>
+            <param name="channel">The channel to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionClient.#ctor(Grpc.Core.CallInvoker)">
+            <summary>Creates a new client for TaskExecution that uses a custom <c>CallInvoker</c>.</summary>
+            <param name="callInvoker">The callInvoker to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionClient.#ctor">
+            <summary>Protected parameterless constructor to allow creation of test doubles.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Protected constructor to allow creation of configured clients.</summary>
+            <param name="configuration">The client configuration.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.BindService(FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionBase)">
+            <summary>Creates service definition that can be registered with a server</summary>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.TaskExecution.BindService(Grpc.Core.ServiceBinderBase,FlinkDotNet.Proto.Internal.TaskExecution.TaskExecutionBase)">
+            <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
+            Note: this method is part of an experimental API that can change or be removed without any prior notice.</summary>
+            <param name="serviceBinder">Service methods will be bound by calling <c>AddMethod</c> on this object.</param>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.DataExchangeService">
+            <summary>
+            TM hosts this, other TMs call it
+            </summary>
+        </member>
+        <member name="P:FlinkDotNet.Proto.Internal.DataExchangeService.Descriptor">
+            <summary>Service descriptor</summary>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceBase">
+            <summary>Base class for server-side implementations of DataExchangeService</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceBase.ExchangeData(Grpc.Core.IAsyncStreamReader{FlinkDotNet.Proto.Internal.UpstreamPayload},Grpc.Core.IServerStreamWriter{FlinkDotNet.Proto.Internal.DownstreamPayload},Grpc.Core.ServerCallContext)">
+            <summary>
+            Bi-directional streaming RPC for data and credit exchange
+            </summary>
+            <param name="requestStream">Used for reading requests from the client.</param>
+            <param name="responseStream">Used for sending responses back to the client.</param>
+            <param name="context">The context of the server-side call handler being invoked.</param>
+            <returns>A task indicating completion of the handler.</returns>
+        </member>
+        <member name="T:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient">
+            <summary>Client for DataExchangeService</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.#ctor(Grpc.Core.ChannelBase)">
+            <summary>Creates a new client for DataExchangeService</summary>
+            <param name="channel">The channel to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.#ctor(Grpc.Core.CallInvoker)">
+            <summary>Creates a new client for DataExchangeService that uses a custom <c>CallInvoker</c>.</summary>
+            <param name="callInvoker">The callInvoker to use to make remote calls.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.#ctor">
+            <summary>Protected parameterless constructor to allow creation of test doubles.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Protected constructor to allow creation of configured clients.</summary>
+            <param name="configuration">The client configuration.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.ExchangeData(Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+            <summary>
+            Bi-directional streaming RPC for data and credit exchange
+            </summary>
+            <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+            <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+            <param name="cancellationToken">An optional token for canceling the call.</param>
+            <returns>The call object.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.ExchangeData(Grpc.Core.CallOptions)">
+            <summary>
+            Bi-directional streaming RPC for data and credit exchange
+            </summary>
+            <param name="options">The options for the call.</param>
+            <returns>The call object.</returns>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+            <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.BindService(FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceBase)">
+            <summary>Creates service definition that can be registered with a server</summary>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+        <member name="M:FlinkDotNet.Proto.Internal.DataExchangeService.BindService(Grpc.Core.ServiceBinderBase,FlinkDotNet.Proto.Internal.DataExchangeService.DataExchangeServiceBase)">
+            <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
+            Note: this method is part of an experimental API that can change or be removed without any prior notice.</summary>
+            <param name="serviceBinder">Service methods will be bound by calling <c>AddMethod</c> on this object.</param>
+            <param name="serviceImpl">An object implementing the server-side handling logic.</param>
+        </member>
+    </members>
+</doc>

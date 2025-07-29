@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "2I/UNEG9Ol1ldicvi+WaIX/OZXGqiqguHnIFsXG2bSA=",
+  "Source": "Flink.JobGateway",
+  "BasePath": "_content/Flink.JobGateway",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

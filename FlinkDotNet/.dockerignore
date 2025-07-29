@@ -1,0 +1,64 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Test files
+**/Tests/
+**/*Tests/
+**/TestResults/
+**/*.Test*/
+**/*.Tests*/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.pid
+*.bak
+*.orig
+*.rej
+*.swp
+*~
+
+# Environment and configuration files that might contain secrets
+.env
+.env.*
+appsettings.local.json
+appsettings.secrets.json
+secrets.json
+*.secrets.json
+*.local.json
+
+# Package manager files
+node_modules/
+packages/
+*.lock
+
+# Backup files
+*.backup
+*.old
