@@ -23,7 +23,7 @@
 
   <!-- SonarAnalyzer applied at repository level for systematic code quality analysis -->
   <ItemGroup Condition="'$(SonarQubeExclude)' != 'true'">
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.11.0.117924">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.15.0.120848">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
