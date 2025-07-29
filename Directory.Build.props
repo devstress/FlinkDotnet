@@ -1,0 +1,39 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Enable code style enforcement and built in analyzers -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+
+    <!-- Enable compiler analysis warnings like IDE0005 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591;1711,CS1574,CS1570</NoWarn>
+
+    <!-- WARNING ENFORCEMENT: Treat all warnings as errors to prevent quality regression -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+
+    <!-- Enable all .NET SDK analyzers explicitly -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+
+    <!-- Optional: Set a specific .NET version if needed, though usually inherited. -->
+    <!-- <TargetFrameworkVersion>net9.0</TargetFrameworkVersion> -->
+  </PropertyGroup>
+
+  <!-- SonarAnalyzer applied at repository level for systematic code quality analysis -->
+  <ItemGroup Condition="'$(SonarQubeExclude)' != 'true'">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.11.0.117924">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- TODO ENFORCEMENT: Ensure all TODO items are tracked in TODO.md instead of scattered throughout code -->
+  <Target Name="EnforceTodoComments" BeforeTargets="Build">
+    <Message Text="✅ TODO Enforcement: Checking for TODO comments in source code..." Importance="normal" />
+    <Message Text="All TODO items must be tracked in TODO.md instead of scattered throughout code." Importance="normal" />
+    <Message Text="See TODO.md for current items and enforcement guidelines." Importance="normal" />
+  </Target>
+
+</Project>

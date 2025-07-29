@@ -1,0 +1,14 @@
+<Project>
+  <!-- Import parent Directory.Build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  
+  <PropertyGroup>
+    <!-- SonarCloud exclusions for FlinkDotNetAspire projects -->
+    <!-- These are simulation, tooling, and integration test projects -->
+    <SonarQubeExclude>true</SonarQubeExclude>
+    <ExcludeFromCodeCoverage>true</ExcludeFromCodeCoverage>
+    
+    <!-- Additional SonarCloud properties to exclude from quality gates -->
+    <SonarQubeTestProject>true</SonarQubeTestProject>
+  </PropertyGroup>
+</Project>
