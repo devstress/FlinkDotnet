@@ -9,8 +9,8 @@ using System;
 namespace FlinkDotNet.Aspire.IntegrationTests.Unit;
 
 /// <summary>
-/// Unit tests for the improved async rate limiter patterns.
-/// Tests the v2.0 improvements including non-blocking AcquireAsync and JobManager integration.
+/// Unit tests for the simplified lag-based rate limiter.
+/// Tests the simple approach with consumer lag monitoring for natural backpressure.
 /// </summary>
 public class ImprovedRateLimiterAsyncTests
 {
@@ -22,11 +22,123 @@ public class ImprovedRateLimiterAsyncTests
     }
 
     [Fact]
+    public async Task LagBasedRateLimiter_ShouldPauseRefillWhenLagIsHigh()
+    {
+        // Arrange
+        _output.WriteLine("🚀 Testing lag-based rate limiter with simulated high lag");
+        
+        // Create a mock lag monitor that simulates high lag
+        var mockLagMonitor = new MockKafkaConsumerLagMonitor();
+        mockLagMonitor.SetLag("test-group", TimeSpan.FromSeconds(10)); // High lag
+        
+        var rateLimiter = RateLimiterFactory.CreateLagBasedBucket(
+            rateLimit: 10.0,
+            burstCapacity: 10.0,
+            consumerGroup: "test-group",
+            lagThreshold: TimeSpan.FromSeconds(5),
+            lagMonitor: mockLagMonitor);
+        
+        // Consume initial tokens
+        var initialSuccess = rateLimiter.TryAcquire(10);
+        _output.WriteLine($"📊 Initial token acquisition: {initialSuccess}");
+        Assert.True(initialSuccess);
+        
+        // Wait for lag check to pause refilling
+        await Task.Delay(1500); // Allow lag check timer to run
+        
+        // Act - Try to acquire more tokens (should fail since refilling is paused)
+        var afterLagSuccess = rateLimiter.TryAcquire(1);
+        _output.WriteLine($"📊 Token acquisition after high lag: {afterLagSuccess}");
+        _output.WriteLine($"📊 Current lag: {rateLimiter.CurrentLag.TotalSeconds}s");
+        _output.WriteLine($"📊 Is refill paused: {rateLimiter.IsRefillPaused}");
+        
+        // Assert
+        Assert.False(afterLagSuccess); // Should fail due to paused refilling
+        Assert.True(rateLimiter.IsRefillPaused);
+        
+        rateLimiter.Dispose();
+    }
+
+    [Fact]
+    public async Task LagBasedRateLimiter_ShouldResumeRefillWhenLagDecreases()
+    {
+        // Arrange
+        _output.WriteLine("🔄 Testing lag-based rate limiter recovery when lag decreases");
+        
+        var mockLagMonitor = new MockKafkaConsumerLagMonitor();
+        mockLagMonitor.SetLag("test-group", TimeSpan.FromSeconds(10)); // Start with high lag
+        
+        var rateLimiter = RateLimiterFactory.CreateLagBasedBucket(
+            rateLimit: 10.0,
+            burstCapacity: 10.0,
+            consumerGroup: "test-group",
+            lagThreshold: TimeSpan.FromSeconds(5),
+            lagMonitor: mockLagMonitor);
+        
+        // Consume initial tokens and wait for pause
+        rateLimiter.TryAcquire(10);
+        await Task.Delay(1500); // Allow lag check to pause refilling
+        
+        _output.WriteLine($"📊 Refill paused due to high lag: {rateLimiter.IsRefillPaused}");
+        Assert.True(rateLimiter.IsRefillPaused);
+        
+        // Act - Reduce lag below threshold
+        mockLagMonitor.SetLag("test-group", TimeSpan.FromSeconds(2)); // Low lag
+        await Task.Delay(1500); // Allow lag check to resume refilling
+        
+        // Wait a bit for tokens to refill
+        await Task.Delay(1000);
+        
+        // Try to acquire tokens (should succeed since refilling resumed)
+        var afterRecoverySuccess = rateLimiter.TryAcquire(5);
+        _output.WriteLine($"📊 Token acquisition after lag recovery: {afterRecoverySuccess}");
+        _output.WriteLine($"📊 Current lag: {rateLimiter.CurrentLag.TotalSeconds}s");
+        _output.WriteLine($"📊 Is refill paused: {rateLimiter.IsRefillPaused}");
+        _output.WriteLine($"📊 Current tokens: {rateLimiter.CurrentTokens:F1}");
+        
+        // Assert
+        Assert.False(rateLimiter.IsRefillPaused);
+        Assert.True(afterRecoverySuccess); // Should succeed due to resumed refilling
+        
+        rateLimiter.Dispose();
+    }
+
+    [Fact]
+    public void LagBasedRateLimiter_ShouldProvideProductionConfiguration()
+    {
+        // Arrange & Act
+        _output.WriteLine("📋 Testing production configuration for lag-based rate limiter");
+        var (rateLimiter, config) = RateLimiterFactory.CreateProductionConfiguration(
+            rateLimit: 1000.0,
+            burstCapacity: 2000.0,
+            consumerGroup: "production-group");
+        
+        // Assert
+        _output.WriteLine($"📊 Rate Limit: {rateLimiter.CurrentRateLimit} ops/sec");
+        _output.WriteLine($"📊 Max Tokens: {rateLimiter.MaxTokens}");
+        _output.WriteLine($"📊 Consumer Group: {rateLimiter.ConsumerGroup}");
+        _output.WriteLine($"📊 Lag Threshold: {rateLimiter.LagThreshold.TotalSeconds}s");
+        _output.WriteLine("📋 Configuration:");
+        _output.WriteLine(config);
+        
+        Assert.Equal(1000.0, rateLimiter.CurrentRateLimit);
+        Assert.Equal(2000.0, rateLimiter.MaxTokens);
+        Assert.Equal("production-group", rateLimiter.ConsumerGroup);
+        Assert.Equal(TimeSpan.FromSeconds(5), rateLimiter.LagThreshold);
+        Assert.False(string.IsNullOrEmpty(config));
+        
+        rateLimiter.Dispose();
+    }
+
+    [Fact]
     public async Task AcquireAsync_ShouldBeNonBlocking_WhenTokensAreNotAvailable()
     {
         // Arrange
         _output.WriteLine("🚀 Testing non-blocking AcquireAsync implementation");
-        var rateLimiter = new TokenBucketRateLimiter(rateLimit: 2.0, burstCapacity: 2.0);
+        var rateLimiter = RateLimiterFactory.CreateLagBasedBucket(
+            rateLimit: 2.0,
+            burstCapacity: 2.0,
+            consumerGroup: "test-group");
         
         // Consume initial tokens
         await rateLimiter.TryAcquireAsync(2);
@@ -65,57 +177,14 @@ public class ImprovedRateLimiterAsyncTests
     }
 
     [Fact]
-    public async Task JobManagerIntegration_ShouldCoordinateRateLimitUpdates()
-    {
-        // Arrange
-        _output.WriteLine("🔄 Testing JobManager integration for rate limit coordination");
-        var jobManagerCoordinator = new LocalJobManagerRateLimiterCoordinator();
-        var rateLimiter = new TokenBucketRateLimiter(
-            rateLimit: 10.0, 
-            burstCapacity: 20.0,
-            jobManagerCoordinator: jobManagerCoordinator);
-        
-        var initialRateLimit = rateLimiter.CurrentRateLimit;
-        _output.WriteLine($"📊 Initial rate limit: {initialRateLimit} ops/sec");
-        
-        // Act
-        rateLimiter.UpdateRateLimit(50.0);
-        
-        // Give time for coordination
-        await Task.Delay(100);
-        
-        // Assert
-        var updatedRateLimit = rateLimiter.CurrentRateLimit;
-        _output.WriteLine($"📊 Updated rate limit: {updatedRateLimit} ops/sec");
-        
-        Assert.Equal(50.0, updatedRateLimit);
-        Assert.NotEqual(initialRateLimit, updatedRateLimit);
-        
-        // Test operations with new rate limit
-        // NOTE: Using sync pattern for Flink JobManager compatibility
-        var successCount = 0;
-        for (int i = 0; i < 30; i++)
-        {
-            // FLINK JOBMANAGER COMPATIBLE: Use synchronous TryAcquire instead of async
-            // When jobs are submitted to Flink JobManager, async patterns may not work correctly
-            if (rateLimiter.TryAcquire())
-            {
-                successCount++;
-            }
-        }
-        
-        _output.WriteLine($"📊 Operations succeeded with new rate limit: {successCount}/30");
-        Assert.True(successCount >= 20, "Should succeed more operations with higher rate limit");
-        
-        rateLimiter.Dispose();
-    }
-
-    [Fact]
     public async Task ConcurrentAcquireAsync_ShouldHandleHighConcurrency()
     {
         // Arrange
-        _output.WriteLine("⚡ Testing concurrent AcquireAsync operations under high load");
-        var rateLimiter = new TokenBucketRateLimiter(rateLimit: 100.0, burstCapacity: 50.0);
+        _output.WriteLine("⚡ Testing concurrent operations under high load with lag-based limiting");
+        var rateLimiter = RateLimiterFactory.CreateLagBasedBucket(
+            rateLimit: 100.0,
+            burstCapacity: 50.0,
+            consumerGroup: "test-group");
         
         var concurrentOperations = 100;
         var successCount = 0;
@@ -131,8 +200,6 @@ public class ImprovedRateLimiterAsyncTests
             {
                 try
                 {
-                    // FLINK JOBMANAGER COMPATIBLE: Use synchronous TryAcquire instead of async
-                    // When jobs are submitted to Flink JobManager, async patterns may not work correctly
                     if (rateLimiter.TryAcquire())
                     {
                         Interlocked.Increment(ref successCount);
@@ -169,10 +236,12 @@ public class ImprovedRateLimiterAsyncTests
     {
         // Arrange
         _output.WriteLine("🛑 Testing cancellation token support in AcquireAsync");
-        var rateLimiter = new TokenBucketRateLimiter(rateLimit: 1.0, burstCapacity: 1.0);
+        var rateLimiter = RateLimiterFactory.CreateLagBasedBucket(
+            rateLimit: 1.0,
+            burstCapacity: 1.0,
+            consumerGroup: "test-group");
         
         // Consume initial token
-        // NOTE: Using sync pattern for Flink JobManager compatibility
         rateLimiter.TryAcquire(1);
         
         using var cts = new CancellationTokenSource();
@@ -188,24 +257,32 @@ public class ImprovedRateLimiterAsyncTests
         
         rateLimiter.Dispose();
     }
+}
 
-    [Fact]
-    public void TokenBucketRateLimiter_ShouldProvideJobManagerProperties()
+/// <summary>
+/// Mock implementation of Kafka consumer lag monitor for testing.
+/// </summary>
+public class MockKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
+{
+    private readonly Dictionary<string, TimeSpan> _lagData = new();
+
+    public void SetLag(string consumerGroup, TimeSpan lag)
     {
-        // Arrange & Act
-        _output.WriteLine("📋 Testing JobManager integration properties");
-        var rateLimiter = new TokenBucketRateLimiter(rateLimit: 10.0, burstCapacity: 20.0);
-        
-        // Assert
-        _output.WriteLine($"📊 Rate Limiter ID: {rateLimiter.RateLimiterId}");
-        _output.WriteLine($"📊 Storage Backend: {rateLimiter.StorageBackend.BackendType}");
-        _output.WriteLine($"📊 Is Distributed: {rateLimiter.IsDistributed}");
-        _output.WriteLine($"📊 Is Persistent: {rateLimiter.IsPersistent}");
-        
-        Assert.NotNull(rateLimiter.RateLimiterId);
-        Assert.NotEqual(string.Empty, rateLimiter.RateLimiterId);
-        Assert.NotNull(rateLimiter.StorageBackend);
-        
-        rateLimiter.Dispose();
+        _lagData[consumerGroup] = lag;
+    }
+
+    public TimeSpan GetCurrentLag(string consumerGroup)
+    {
+        return _lagData.GetValueOrDefault(consumerGroup, TimeSpan.Zero);
+    }
+
+    public Task<TimeSpan> GetCurrentLagAsync(string consumerGroup)
+    {
+        return Task.FromResult(GetCurrentLag(consumerGroup));
+    }
+
+    public void Dispose()
+    {
+        _lagData.Clear();
     }
 }
