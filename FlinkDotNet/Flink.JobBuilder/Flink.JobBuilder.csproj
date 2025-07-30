@@ -6,19 +6,19 @@
     <Nullable>enable</Nullable>
     <PackageId>Flink.JobBuilder</PackageId>
     <PackageVersion>1.0.0</PackageVersion>
-    <Authors>FLINK.NET Team</Authors>
+    <Authors>FlinkDotnet Team</Authors>
     <Description>.NET SDK for Apache Flink Job Submission - Fluent C# DSL for building streaming jobs that execute on Apache Flink cluster</Description>
     <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Kafka</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/devstress/FLINK.NET</RepositoryUrl>
+    <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-    <PackageReference Include="Confluent.Kafka" Version="2.5.3" />
+    <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
   </ItemGroup>
 
 </Project>

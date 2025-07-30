@@ -1,4 +1,4 @@
-# Getting Started with Flink.NET
+# Getting Started with FlinkDotnet
 
 This guide will walk you through setting up the Flink.JobBuilder SDK and deploying Apache Flink infrastructure to run your first streaming job.
 
@@ -86,8 +86,8 @@ Deploy the complete Flink.NET ecosystem to Kubernetes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/devstress/FLINK.NET.git
-cd FLINK.NET
+git clone https://github.com/devstress/FlinkDotnet.git
+cd FlinkDotnet
 
 # Deploy to Kubernetes
 kubectl apply -f k8s/

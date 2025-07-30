@@ -1,6 +1,6 @@
 # Flink Client-Side Functionality Coverage Analysis
 
-This document analyzes the Apache Flink client-side functionalities and demonstrates how our FLINK.NET implementation covers the essential patterns for production deployment.
+This document analyzes the Apache Flink client-side functionalities and demonstrates how our FlinkDotnet implementation covers the essential patterns for production deployment.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Based on the Apache Flink architecture, client-side components are responsible f
 5. **Resource Coordination** - Distributed coordination across JobManager instances
 6. **Error Handling and Recovery** - Fault tolerance patterns
 
-## FLINK.NET Coverage Analysis
+## FlinkDotnet Coverage Analysis
 
 ### ✅ 1. Job Submission and Management 
 **Status: IMPLEMENTED**
@@ -169,4 +169,4 @@ All sample code uses Flink JobManager-compatible patterns:
 - [Flink JobManager Documentation](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/concepts/flink-architecture/#jobmanager)
 - [Flink Backpressure Documentation](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/ops/monitoring/back_pressure/)
 
-Our FLINK.NET implementation provides comprehensive coverage of all essential Flink client-side patterns with enterprise-grade reliability and performance.
+Our FlinkDotnet implementation provides comprehensive coverage of all essential Flink client-side patterns with enterprise-grade reliability and performance.
