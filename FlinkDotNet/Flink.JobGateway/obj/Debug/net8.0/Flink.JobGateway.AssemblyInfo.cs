@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Flink.JobGateway")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e4421cbaa64f181bc05fd42acf7804881a69828")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3055abdcecfb08b212246fda5ad47b89b425168c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Flink.JobGateway")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Flink.JobGateway")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

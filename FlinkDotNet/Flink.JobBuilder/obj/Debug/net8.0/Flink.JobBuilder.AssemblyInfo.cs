@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyDescriptionAttribute(".NET SDK for Apache Flink Job Submission - Fluent C# DSL for building streaming j" +
     "obs that execute on Apache Flink cluster")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e4421cbaa64f181bc05fd42acf7804881a69828")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3055abdcecfb08b212246fda5ad47b89b425168c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Flink.JobBuilder")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Flink.JobBuilder")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

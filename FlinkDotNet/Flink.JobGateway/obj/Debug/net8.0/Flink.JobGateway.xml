@@ -46,8 +46,8 @@
         </member>
         <member name="T:Flink.JobGateway.Services.FlinkJobManager">
             <summary>
-            Implementation of Flink Job Manager that simulates Apache Flink integration
-            In a real implementation, this would interact with Flink REST API or DataStream API
+            Implementation of Flink Job Manager that integrates with real Apache Flink 2.0 cluster
+            Uses Flink REST API to submit, monitor, and manage jobs
             </summary>
         </member>
         <member name="T:Flink.JobGateway.Services.IFlinkJobManager">
