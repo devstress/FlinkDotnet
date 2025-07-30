@@ -266,35 +266,78 @@ public class AdaptiveRateLimiter : IRateLimitingStrategy
 - Åström, K., & Wittenmark, B. (1994). "Adaptive Control." *Addison-Wesley*.
 - Abdelzaher, T., Shin, K., & Bhatti, N. (2003). "Performance Control in Web Servers." *ACM Transactions on Computer Systems*, 21(3), 239-275.
 
-#### 8. **Credit-Based Flow Control** (Network Backpressure Strategy)
+#### 8. **Credit-Based Flow Control** (Apache Flink Buffer Management Strategy)
 
-**Academic Foundation**: **Ramakrishnan & Jain (1990)** in "A Binary Feedback Scheme for Congestion Avoidance in Computer Networks" and implemented in Apache Flink by **Carbone et al. (2015)**.
+**Academic Foundation**: **Apache Flink's credit-based flow control** is implemented for network buffer management between TaskManagers, as described by **Carbone et al. (2015)** in "Apache Flink: Stream and Batch Processing in a Single Engine."
+
+**🚨 IMPORTANT DISTINCTION**: Credit-based flow control is **fundamentally different** from token bucket rate limiting:
+
+| Aspect | Credit-Based Flow Control | Token Bucket Rate Limiting |
+|--------|---------------------------|----------------------------|
+| **Purpose** | **Buffer capacity management** | **Time-based rate limiting** |
+| **Credits/Tokens** | **Available buffer slots** | **Time-based permits** |
+| **Replenishment** | **When buffers are consumed** | **At fixed time intervals** |
+| **Scope** | **Network channel management** | **Application-level throttling** |
+| **Use Case** | **Flink internal communication** | **FlinkDotnet client applications** |
 
 **Technical Implementation**:
-- **Pattern Type**: Network flow control mechanism adapted for distributed streaming
-- **Application**: Downstream consumer capacity feedback to upstream producers  
-- **Credit System**: Each consumer maintains credit score representing processing capacity
+- **Pattern Type**: Buffer-based flow control for distributed streaming networks
+- **Application**: Downstream TaskManager buffer availability feedback to upstream TaskManagers
+- **Credit System**: Each network channel announces available buffer credits to upstream producers
+- **Buffer Management**: Credits represent actual memory buffer slots, not abstract rate limits
 
 ```csharp
-// Credit-based flow control following Ramakrishnan & Jain principles
-public class CreditControlledRateLimiter
+// Apache Flink Credit-Based Flow Control (conceptual representation)
+public class FlinkCreditBasedFlowController
 {
-    public bool TryProcessMessage(string consumerId, string message)
+    private readonly Dictionary<string, int> _channelCredits = new();
+    private readonly Dictionary<string, int> _bufferCapacity = new();
+    
+    // Downstream TaskManager announces available buffer credits
+    public void AnnounceCredits(string channelId, int availableBufferSlots)
     {
-        // Credit-based admission control (Ramakrishnan & Jain, 1990)
-        if (!HasSufficientCredits(consumerId)) return false;
-        
-        // Combined credit + token bucket control
-        if (!_rateLimiter.TryAcquire()) return false;
-        
-        return true; // Both credit and rate limit checks passed
+        _channelCredits[channelId] = availableBufferSlots;
+        Console.WriteLine($"Channel {channelId}: {availableBufferSlots} buffer credits available");
+    }
+    
+    // Upstream TaskManager checks buffer availability before sending
+    public bool CanSendRecord(string channelId, int recordSize = 1)
+    {
+        var availableCredits = _channelCredits.GetValueOrDefault(channelId, 0);
+        return availableCredits >= recordSize; // Check buffer capacity, not rate
+    }
+    
+    // When record is sent, consume buffer credit (not time-based token)
+    public void ConsumeBufferCredit(string channelId, int recordSize = 1)
+    {
+        if (_channelCredits.ContainsKey(channelId))
+        {
+            _channelCredits[channelId] -= recordSize; // Buffer slot consumed
+        }
+    }
+    
+    // When downstream TaskManager processes record, buffer credit is restored
+    public void RestoreCredit(string channelId, int freedBufferSlots = 1)
+    {
+        if (_channelCredits.ContainsKey(channelId))
+        {
+            var maxCapacity = _bufferCapacity.GetValueOrDefault(channelId, 1000);
+            _channelCredits[channelId] = Math.Min(maxCapacity, 
+                _channelCredits[channelId] + freedBufferSlots);
+        }
     }
 }
 ```
 
+**Key Implementation Notes**:
+- This mechanism operates **within Apache Flink's TaskManager network layer**
+- FlinkDotnet applications use **token bucket rate limiting** for client-side backpressure
+- The two mechanisms work together: Flink handles network flow, FlinkDotnet handles application flow
+- Credits are **buffer-based** (memory management), tokens are **time-based** (rate management)
+
 **Scholar References**:
-- Ramakrishnan, K., & Jain, R. (1990). "A Binary Feedback Scheme for Congestion Avoidance in Computer Networks." *ACM Transactions on Computer Systems*, 8(2), 158-181.
 - Carbone, P., Katsifodimos, A., Ewen, S., Markl, V., Haridi, S., & Tzoumas, K. (2015). "Apache Flink: Stream and Batch Processing in a Single Engine." *Bulletin of the IEEE Computer Society Technical Committee on Data Engineering*, 36(4).
+- Apache Flink Documentation: "Network Buffer and Back Pressure" - Official implementation guide for credit-based flow control in Flink's network stack.
 
 ### 🏭 Industry Best Practices Integration
 
@@ -395,34 +438,54 @@ public bool SimulateLagSpike(long lagAmount)
 private bool IsBacklogCleared() => GetConsumerLag() < 1000;
 ```
 
-### Credit Control & Load Balancing Integration
+### FlinkDotnet Backpressure Integration with Apache Flink
 
-**Credit-based flow control integrates with rate limiting for comprehensive backpressure:**
+**FlinkDotnet implements client-side backpressure that coordinates with Apache Flink's internal mechanisms:**
 
 ```csharp
-// FROM: TokenBucketRateLimiter.cs, lines 14-15
-// - Credit-based flow control integration
-// - JobManager integration for distributed coordination
-
-// CREDIT CONTROL MECHANISM:
-public class CreditBasedFlowController
+// FlinkDotnet Client-Side Backpressure (using Token Bucket)
+public class FlinkDotnetBackpressureController
 {
-    public bool HasSufficientCredits(string consumerId, int requestedMessages)
+    private readonly TokenBucketRateLimiter _clientRateLimiter;
+    
+    public bool TryProcessMessage(string message)
     {
-        var availableCredits = GetAvailableCredits(consumerId);
-        var rateLimitAllowed = rateLimiter.TryAcquire(requestedMessages);
+        // Client-side rate limiting (FlinkDotnet responsibility)
+        if (!_clientRateLimiter.TryAcquire())
+        {
+            return false; // Client-side backpressure applied
+        }
         
-        // BOTH credit control AND rate limiting must pass
-        return availableCredits >= requestedMessages && rateLimitAllowed;
+        // Send to Flink cluster (where credit-based flow control takes over)
+        return SendToFlinkCluster(message);
     }
     
-    public void ConsumeCredits(string consumerId, int messages)
+    private bool SendToFlinkCluster(string message)
     {
-        // Credits consumed, rate limiter tokens already consumed by TryAcquire
-        DeductCredits(consumerId, messages);
-        // NO rate limiter release - tokens auto-replenish
+        // At this point, Apache Flink's credit-based flow control
+        // manages buffer capacity between TaskManagers internally
+        // This is handled by Flink's network stack, not FlinkDotnet
+        return _flinkClient.SendMessage(message);
     }
 }
+```
+
+**Integration Architecture:**
+
+```
+┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
+│ FlinkDotnet Client  │    │ Apache Flink        │    │ Apache Flink        │
+│ (Token Bucket       │───▶│ Job Gateway         │───▶│ TaskManager Network │
+│ Rate Limiting)      │    │ (Receives msgs)     │    │ (Credit-Based Flow) │
+└─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+         │                           │                           │
+         │                           │                           │
+    Time-based                  Application               Buffer-based
+    rate control               message routing           flow control
+    
+• FlinkDotnet: Controls client application message rate using time-based tokens
+• Flink Gateway: Routes messages to appropriate TaskManagers  
+• Flink Network: Uses credit-based flow control for buffer management between TaskManagers
 ```
 
 **Load Balancing Trigger Points:**
@@ -932,57 +995,54 @@ private void StartBacklogClearanceMonitoring()
 }
 ```
 
-### Credit Control Integration
+### FlinkDotnet Integration with Apache Flink Flow Control
 
-**How credit-based flow control works with rate limiting:**
+**FlinkDotnet operates at the client application level, while Apache Flink manages internal flow control:**
 
 ```csharp
-// FROM: TokenBucketRateLimiter.cs comments - Credit-based flow control integration
-public class CreditControlledRateLimiter
+// FlinkDotnet Client Application Backpressure Strategy
+public class FlinkDotnetMessageProcessor
 {
-    private readonly TokenBucketRateLimiter _rateLimiter;
-    private readonly Dictionary<string, int> _consumerCredits;
+    private readonly TokenBucketRateLimiter _clientRateLimiter;
+    private readonly IFlinkJobGateway _flinkGateway;
     
-    public bool TryProcessMessage(string consumerId, string message)
+    public async Task<bool> TryProcessMessageAsync(string message)
     {
-        // STEP 1: Check if consumer has credits (Flink's credit system)
-        if (!HasSufficientCredits(consumerId))
+        // CLIENT-SIDE: FlinkDotnet rate limiting (time-based tokens)
+        if (!_clientRateLimiter.TryAcquire())
         {
-            return false; // No credits - backpressure from Flink
+            return false; // Client-side backpressure applied
         }
         
-        // STEP 2: Check rate limiter (our backpressure system)
-        if (!_rateLimiter.TryAcquire())
+        // SUBMIT TO FLINK: Where Apache Flink's credit-based flow control takes over
+        try 
         {
-            return false; // Rate limited - our backpressure
+            await _flinkGateway.SubmitMessageAsync(message);
+            
+            // Apache Flink internally handles:
+            // - Buffer credit management between TaskManagers
+            // - Network flow control using available buffer slots
+            // - Backpressure propagation through the task graph
+            
+            return true;
         }
-        
-        // STEP 3: Both passed - consume credit and process
-        ConsumeCredit(consumerId);
-        ProcessMessage(message);
-        
-        // ✅ IMPORTANT: NO rate limiter release needed!
-        // ✅ Credits are replenished by Flink's flow control
-        // ✅ Rate limiter tokens replenish automatically
-        
-        return true;
-    }
-    
-    private bool HasSufficientCredits(string consumerId)
-    {
-        // Flink's credit-based flow control
-        return _consumerCredits.GetValueOrDefault(consumerId, 0) > 0;
-    }
-    
-    private void ConsumeCredit(string consumerId)
-    {
-        if (_consumerCredits.ContainsKey(consumerId))
+        catch (FlinkBackpressureException)
         {
-            _consumerCredits[consumerId]--;
+            // Flink cluster is applying backpressure
+            // FlinkDotnet should reduce client-side rate
+            _clientRateLimiter.UpdateRateLimit(_clientRateLimiter.CurrentRateLimit * 0.8);
+            return false;
         }
     }
 }
 ```
+
+**Key Integration Points:**
+
+1. **FlinkDotnet Scope**: Client application rate limiting using token bucket algorithm
+2. **Apache Flink Scope**: Internal network buffer management using credit-based flow control  
+3. **Coordination**: FlinkDotnet responds to Flink cluster backpressure signals by adjusting client rates
+4. **No Direct Credit Management**: FlinkDotnet doesn't manage Flink's internal buffer credits directly
 
 ### Load Balancing Trigger Integration
 
@@ -1049,7 +1109,7 @@ public class LoadBalancingCoordinator
 | **Consumer Lag** | > 20,000 msgs | **Rate → 0.1 msg/sec** | Emergency zero-out |
 | **CPU Usage** | > 85% | Throttle requests | Resource-based backpressure |
 | **Rate Utilization** | > 90% | Reduce rate 10% | [`MultiTierRateLimiter.cs:442`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/MultiTierRateLimiter.cs#L442) |
-| **Credits Available** | < 10% | Block new requests | Credit-based flow control |
+| **Flink Cluster Backpressure** | Detected | Reduce client rate | Apache Flink internal flow control |
 
 ---
 

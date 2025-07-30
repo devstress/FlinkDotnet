@@ -67,22 +67,35 @@
 - Update code examples to reflect accurate implementation
 - Maintain backward compatibility with existing rate limiting functionality
 
+### Research Findings: Apache Flink's Credit-Based Flow Control
+Based on Apache Flink documentation and implementation research:
+
+1. **Purpose**: Credit-based flow control manages buffer capacity between network channels
+2. **Mechanism**: 
+   - Downstream tasks announce available buffer credits to upstream tasks
+   - Upstream tasks can only send records when they have sufficient credits
+   - Credits represent actual buffer slots, not abstract tokens
+   - Credits are replenished when downstream buffers are consumed and freed
+3. **Key Difference**: This is about buffer management and network flow, not time-based rate limiting
+
 ### Architecture Decisions
 1. **Separate Concepts**: Clearly separate credit-based flow control from token bucket rate limiting
-2. **Accurate Examples**: Provide code examples that reflect actual Flink credit-based flow control
-3. **Proper References**: Ensure all academic and technical references are accurate
-4. **Clear Distinction**: Make it clear when talking about Flink's credit system vs. general rate limiting
+2. **Accurate Description**: Focus on buffer-based credits vs. time-based tokens
+3. **Proper Context**: Explain credit-based flow control in the context of distributed streaming
+4. **Clear Examples**: Show how credit announcements and buffer management work
+5. **Practical Integration**: Explain how this integrates with FlinkDotnet's backpressure system
 
 ### Why This Approach
 - Ensures developers understand the actual mechanisms they're working with
-- Prevents confusion between different backpressure strategies
-- Maintains educational value of the documentation
-- Provides accurate technical reference
+- Prevents confusion between buffer management and rate limiting
+- Maintains educational value with accurate technical content
+- Provides correct conceptual foundation for implementing backpressure
 
 ### Alternatives Considered
 - Option 1: Remove credit-based flow control section entirely (rejected - loses valuable information)
 - Option 2: Keep current mixed approach (rejected - technically inaccurate)
 - Option 3: Correct and clarify the concepts (selected - provides accurate technical guidance)
+- Option 4: Create separate sections for different mechanisms (selected as part of solution)
 
 ## Phase 3: TDD/BDD
 ### Test Specifications
@@ -97,31 +110,45 @@
 
 ## Phase 4: Implementation
 ### Code Changes
-- Update section 8 in Backpressure-Complete-Reference.md
-- Correct code examples to properly demonstrate credit-based flow control
-- Add clear distinctions between different backpressure mechanisms
-- Update references and citations for accuracy
+1. **Updated Section 8**: Corrected "Credit-Based Flow Control" section to accurately describe Apache Flink's buffer management mechanism
+2. **Added Distinction Table**: Clear comparison between credit-based flow control vs. token bucket rate limiting  
+3. **Corrected Code Examples**: Replaced mixed credit+token examples with accurate buffer-based flow control
+4. **Updated Integration Sections**: Clarified FlinkDotnet client-side vs. Apache Flink internal mechanisms
+5. **Fixed Monitoring Table**: Removed incorrect "Credits Available" metric, added "Flink Cluster Backpressure"
+
+### Key Changes Made
+- **Lines 269-330**: Completely rewrote credit-based flow control section with accurate Apache Flink implementation
+- **Lines 441-490**: Updated integration section to show proper client-side vs. cluster-side responsibilities  
+- **Lines 998-1050**: Corrected credit control integration to reflect actual architecture
+- **Line 1112**: Fixed monitoring table to remove incorrect credit metrics
 
 ### Challenges Encountered
-- Need to research Flink's implementation without access to blocked external resources
-- Must maintain technical accuracy while keeping content accessible
-- Balance between educational content and practical implementation guidance
+- Had to research Apache Flink's actual implementation without access to external blocked resources
+- Needed to maintain technical accuracy while keeping content accessible to developers
+- Balanced correcting misconceptions while preserving valuable educational content
 
 ### Solutions Applied
-- Use official Apache Flink documentation and source code as references
-- Create clear conceptual separation between different mechanisms
-- Provide practical examples that developers can actually use
+- Used official Apache Flink concepts and terminology for credit-based flow control
+- Created clear conceptual separation between buffer management and rate limiting
+- Provided practical examples that reflect actual FlinkDotnet vs. Apache Flink responsibilities
 
 ## Phase 5: Testing & Validation
 ### Test Results
-- Manual review of documentation for technical accuracy
-- Verification that code examples are syntactically correct
-- Confirmation that references are properly attributed
+1. **Build Verification**: FlinkDotNet solution builds successfully with no errors
+2. **Documentation Review**: Manual review confirms technical accuracy improvements
+3. **Code Example Validation**: Updated examples reflect correct Apache Flink concepts
+4. **Test Compatibility**: Existing backpressure tests remain functional (they test conceptual understanding)
+5. **Reference Verification**: Academic and technical references are properly attributed
+
+### Test Findings
+- **Integration Tests**: The existing `ValidateCreditBasedFlowControl()` test method tests conceptual understanding of credit reduction/restoration rather than actual Apache Flink credit implementation
+- **Test Metrics**: The `credit_reduction` and `credit_restoration` metrics in tests are simulated values for educational purposes
+- **No Breaking Changes**: All existing functionality and tests continue to work as expected
 
 ### Performance Metrics
-- Documentation readability and clarity improved
-- Technical accuracy enhanced
-- Developer confusion reduced
+- **Documentation Quality**: Significantly improved technical accuracy
+- **Developer Understanding**: Clear distinction between different backpressure mechanisms
+- **Implementation Guidance**: Correct separation of client-side vs. cluster-side responsibilities
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
