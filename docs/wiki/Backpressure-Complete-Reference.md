@@ -58,27 +58,63 @@ Bucket (Capacity: 2000 tokens)     Rate: 1000 tokens/second
 | **Replenishment** | Manual release by consumer | **Automatic** at configured rate |
 | **Use Case** | Resource pooling | **Rate limiting throughput** |
 
-### Storage Backend Comparison: Redis vs Kafka vs In-Memory
+### Storage Backend Comparison: Kafka vs Redis vs In-Memory
 
-**🚀 RECOMMENDED: Redis Storage (New Default)**
+**🚀 RECOMMENDED: Kafka Storage (Production Default)**
 
-Flink.NET now recommends **Redis** as the primary storage backend for rate limiter state due to superior performance and fault tolerance characteristics:
+Flink.NET recommends **Kafka** as the primary storage backend for rate limiter state due to superior distributed scalability and fault tolerance through partitions:
 
-| Aspect | Redis (RECOMMENDED) | Kafka (Legacy) | In-Memory |
+| Aspect | Kafka (RECOMMENDED) | Redis (Alternative) | In-Memory |
 |--------|-------------------|----------------|-----------|
-| **Latency** | **Sub-millisecond (0.1-1ms)** | Higher (10-100ms) | Instant |
-| **Fault Tolerance** | **AOF + RDB persistence** | Complex broker management | None |
-| **Zero Message Loss** | **AOF fsync guarantees** | Eventual consistency | Not applicable |
-| **Operational Complexity** | **Simple (Redis + Sentinel)** | Complex (brokers, partitions) | None |
-| **Production Use** | **Recommended** | Legacy support | Development only |
-| **High Availability** | **Redis Sentinel/Cluster** | Kafka replication | Single instance |
-| **Memory Efficiency** | **Optimized for small state** | Designed for large logs | Most efficient |
+| **Horizontal Scaling** | **Built-in via partitions** | Requires clustering | Single instance |
+| **Fault Tolerance** | **Partition replication + leader election** | AOF + RDB persistence | None |
+| **Distributed Coordination** | **Native partition distribution** | Manual sharding required | Not applicable |
+| **Operational Complexity** | **Standard for Flink environments** | Additional infrastructure | None |
+| **Production Use** | **Recommended for distributed systems** | Good for low-latency scenarios | Development only |
+| **High Availability** | **Built-in with broker replication** | Redis Sentinel/Cluster | Single instance |
+| **Data Model** | **Optimized for partition-keyed state** | Key-value store | Most efficient |
+| **Latency** | Moderate (5-50ms) | **Sub-millisecond (0.1-1ms)** | Instant |
 
 **Professional References:**
+- **Kreps, J. et al. (2011). "Kafka: a Distributed Messaging System for Log Processing"** - Partition design and scalability patterns
+- **Hunt, P. et al. (2010). "ZooKeeper: Wait-free coordination for Internet-scale systems"** - Distributed coordination patterns
+- **Narkhede, N., Shapira, G., & Palino, T. (2017). "Kafka: The Definitive Guide" O'Reilly** - Production deployment patterns
+- **Gray, J. & Reuter, A. (1993). "Transaction Processing: Concepts and Techniques"** - Distributed system durability guarantees
+
+### Redis as Alternative Storage Option
+
+**Redis provides excellent performance for specific use cases** where ultra-low latency is more critical than horizontal scaling:
+
+```csharp
+// Redis Alternative Option - Ultra-Low Latency Scenarios
+var redisConfig = RateLimiterFactory.CreateProductionRedisConfig("redis:6379");
+var rateLimiter = RateLimiterFactory.CreateWithRedisStorage(1000.0, 2000.0, redisConfig);
+
+// Redis Configuration Examples:
+
+// 1. Maximum Durability (Financial Systems)
+var maxDurabilityConfig = RateLimiterFactory.CreateMaximumDurabilityRedisConfig("redis:6379");
+var financialRateLimiter = RateLimiterFactory.CreateWithRedisStorage(1000.0, 2000.0, maxDurabilityConfig);
+
+// 2. Production Balance (Recommended Redis setup)
+var productionConfig = RateLimiterFactory.CreateProductionRedisConfig("redis:6379");
+var productionRateLimiter = RateLimiterFactory.CreateWithRedisStorage(10000.0, 20000.0, productionConfig);
+
+// 3. High Performance Memory-Only with Recovery
+var highPerfConfig = RateLimiterFactory.CreateHighPerformanceRedisConfig("redis:6379");
+var highPerfRateLimiter = RateLimiterFactory.CreateWithRedisStorage(50000.0, 100000.0, highPerfConfig);
+```
+
+**Redis Use Cases:**
+- **Single-node high-performance scenarios** where sub-millisecond latency is critical
+- **Development and testing** environments requiring fast iteration
+- **Legacy systems** migrating from in-memory solutions
+- **Edge computing** deployments with limited infrastructure
+
+**Redis Professional References:**
 - **Carlson, J. (2019). "Redis in Action" Manning Publications** - Performance characteristics and persistence patterns
 - **Sanfilippo, S. & Noordhuis, P. (2018). "Redis Design and Implementation"** - AOF durability guarantees  
 - **Kamps, J. & Dooley, B. (2020). "Pro Redis" Apress** - High availability operational patterns
-- **Gray, J. & Reuter, A. (1993). "Transaction Processing: Concepts and Techniques"** - Write-ahead logging for durability
 
 ---
 
@@ -491,7 +527,7 @@ public class BackpressureConfiguration
 - **Primary Class**: [`TokenBucketRateLimiter`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/TokenBucketRateLimiter.cs)
 - **Interface**: [`IRateLimitingStrategy`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/IRateLimitingStrategy.cs)  
 - **Factory**: [`RateLimiterFactory`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/RateLimiterFactory.cs)
-- **Storage**: [`KafkaRateLimiterStateStorage`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/KafkaRateLimiterStateStorage.cs)
+- **Storage**: [`KafkaRateLimiterStateStorage`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/KafkaRateLimiterStateStorage.cs) (Primary), [`RedisRateLimiterStateStorage`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/RedisRateLimiterStateStorage.cs) (Alternative)
 - **Multi-Tier Controller**: [`MultiTierRateLimiter`](../../FlinkDotNet/Flink.JobBuilder/Backpressure/MultiTierRateLimiter.cs)
 - **Sample Code**: [`FlinkJobManagerCompatibilityExamples.cs`](../../Sample/FlinkJobBuilder.Sample/FlinkJobManagerCompatibilityExamples.cs)
 
@@ -656,12 +692,12 @@ public void TriggerLoadBalancing()
 
 ## Quick Start Guide
 
-### Basic Single Consumer Usage (Redis Storage - RECOMMENDED)
+### Basic Single Consumer Usage (Kafka Storage - RECOMMENDED)
 
 ```csharp
-// 1. Create Redis-based rate limiter (RECOMMENDED FOR PRODUCTION)
-var redisConfig = RateLimiterFactory.CreateProductionRedisConfig("localhost:6379");
-var rateLimiter = RateLimiterFactory.CreateWithRedisStorage(1000.0, 2000.0, redisConfig);
+// 1. Create Kafka-based rate limiter (RECOMMENDED FOR PRODUCTION)
+var kafkaConfig = RateLimiterFactory.CreateProductionKafkaConfig("localhost:9092");
+var rateLimiter = RateLimiterFactory.CreateWithKafkaStorage(1000.0, 2000.0, kafkaConfig);
 
 // 2. Use in your message processing loop
 public void ProcessMessage(string message)
