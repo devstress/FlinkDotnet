@@ -150,32 +150,32 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 19
     await testRunner.WhenAsync("I produce 1,000,000 messages to the input topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table50 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table52 = new global::Reqnroll.Table(new string[] {
                             "Step",
                             "Operation",
                             "Configuration"});
-                table50.AddRow(new string[] {
+                table52.AddRow(new string[] {
                             "1",
                             "KafkaSource",
                             "topic=reliability-input, fault-tolerance=enabled"});
-                table50.AddRow(new string[] {
+                table52.AddRow(new string[] {
                             "2",
                             "FaultInjector",
                             "failure-rate=10%, failure-type=random"});
-                table50.AddRow(new string[] {
+                table52.AddRow(new string[] {
                             "3",
                             "BackpressureProcessor",
                             "handle slow processing scenarios"});
-                table50.AddRow(new string[] {
+                table52.AddRow(new string[] {
                             "4",
                             "RebalancingProcessor",
                             "support consumer group rebalancing"});
-                table50.AddRow(new string[] {
+                table52.AddRow(new string[] {
                             "5",
                             "ConditionalSink",
                             "success→reliability-output, failure→reliability-dlq"});
 #line 20
-    await testRunner.AndAsync("I start the Flink streaming job with fault injection enabled:", ((string)(null)), table50, "And ");
+    await testRunner.AndAsync("I start the Flink streaming job with fault injection enabled:", ((string)(null)), table52, "And ");
 #line hidden
 #line 27
     await testRunner.ThenAsync("approximately 900,000 messages (90%) should be processed to output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -238,24 +238,24 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 39
     await testRunner.AndAsync("I configure processing to be slower than input rate (2,000 msg/sec)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-                global::Reqnroll.Table table51 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table53 = new global::Reqnroll.Table(new string[] {
                             "Action",
                             "Timing",
                             "Expected Behavior"});
-                table51.AddRow(new string[] {
+                table53.AddRow(new string[] {
                             "Add consumer instance",
                             "After 100K messages",
                             "Partition reassignment"});
-                table51.AddRow(new string[] {
+                table53.AddRow(new string[] {
                             "Remove consumer instance",
                             "After 500K messages",
                             "Partition rebalancing"});
-                table51.AddRow(new string[] {
+                table53.AddRow(new string[] {
                             "Network partition simulation",
                             "After 750K messages",
                             "Failover and recovery"});
 #line 40
-    await testRunner.AndAsync("I trigger consumer rebalancing during processing by:", ((string)(null)), table51, "And ");
+    await testRunner.AndAsync("I trigger consumer rebalancing during processing by:", ((string)(null)), table53, "And ");
 #line hidden
 #line 45
     await testRunner.ThenAsync("the system should handle backpressure gracefully", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -312,24 +312,24 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 55
     await testRunner.WhenAsync("I start processing 1,000,000 messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table52 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table54 = new global::Reqnroll.Table(new string[] {
                             "Fault Type",
                             "Timing",
                             "Recovery Expectation"});
-                table52.AddRow(new string[] {
+                table54.AddRow(new string[] {
                             "TaskManager failure",
                             "After 250K messages",
                             "Restart from last checkpoint"});
-                table52.AddRow(new string[] {
+                table54.AddRow(new string[] {
                             "Network partition",
                             "After 500K messages",
                             "Automatic reconnection"});
-                table52.AddRow(new string[] {
+                table54.AddRow(new string[] {
                             "Processing node failure",
                             "After 750K messages",
                             "Failover to healthy nodes"});
 #line 56
-    await testRunner.AndAsync("I introduce system faults at different stages:", ((string)(null)), table52, "And ");
+    await testRunner.AndAsync("I introduce system faults at different stages:", ((string)(null)), table54, "And ");
 #line hidden
 #line 61
     await testRunner.ThenAsync("the system should recover from each fault automatically", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
@@ -383,29 +383,29 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 70
     await testRunner.WhenAsync("I run the reliability test with 10% failures", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table53 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table55 = new global::Reqnroll.Table(new string[] {
                             "Metric",
                             "Expected Behavior"});
-                table53.AddRow(new string[] {
+                table55.AddRow(new string[] {
                             "Message processing rate",
                             "Maintains target rate despite failures"});
-                table53.AddRow(new string[] {
+                table55.AddRow(new string[] {
                             "Error rate",
                             "Stays around 10% as configured"});
-                table53.AddRow(new string[] {
+                table55.AddRow(new string[] {
                             "Backpressure indicators",
                             "Shows when processing lags behind input"});
-                table53.AddRow(new string[] {
+                table55.AddRow(new string[] {
                             "Consumer lag",
                             "Remains within acceptable bounds"});
-                table53.AddRow(new string[] {
+                table55.AddRow(new string[] {
                             "DLQ message count",
                             "Accumulates failed messages correctly"});
-                table53.AddRow(new string[] {
+                table55.AddRow(new string[] {
                             "System resource usage",
                             "Remains stable under fault conditions"});
 #line 71
-    await testRunner.ThenAsync("I should be able to monitor:", ((string)(null)), table53, "Then ");
+    await testRunner.ThenAsync("I should be able to monitor:", ((string)(null)), table55, "Then ");
 #line hidden
 #line 79
     await testRunner.AndAsync("alerts should trigger when error rates exceed thresholds", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -457,112 +457,112 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 87
     await testRunner.WhenAsync("I retrieve the first 10 successfully processed messages from the output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table54 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table56 = new global::Reqnroll.Table(new string[] {
                             "Message ID",
                             "Content",
                             "Headers"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "1",
                             "Reliability msg 1: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "2",
                             "Reliability msg 2: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "3",
                             "Reliability msg 3: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "4",
                             "Reliability msg 4: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "5",
                             "Reliability msg 5: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "6",
                             "Reliability msg 6: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "7",
                             "Reliability msg 7: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "8",
                             "Reliability msg 8: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "9",
                             "Reliability msg 9: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-                table54.AddRow(new string[] {
+                table56.AddRow(new string[] {
                             "10",
                             "Reliability msg 10: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
 #line 88
-    await testRunner.ThenAsync("I can display the top 10 first processed reliability messages table:", ((string)(null)), table54, "Then ");
+    await testRunner.ThenAsync("I can display the top 10 first processed reliability messages table:", ((string)(null)), table56, "Then ");
 #line hidden
 #line 100
     await testRunner.WhenAsync("I retrieve the last 10 successfully processed messages from the output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-                global::Reqnroll.Table table55 = new global::Reqnroll.Table(new string[] {
+                global::Reqnroll.Table table57 = new global::Reqnroll.Table(new string[] {
                             "Message ID",
                             "Content",
                             "Headers"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999991",
                             "Reliability msg 999991: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999992",
                             "Reliability msg 999992: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999993",
                             "Reliability msg 999993: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999994",
                             "Reliability msg 999994: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999995",
                             "Reliability msg 999995: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999996",
                             "Reliability msg 999996: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999997",
                             "Reliability msg 999997: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999998",
                             "Reliability msg 999998: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "999999",
                             "Reliability msg 999999: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-                table55.AddRow(new string[] {
+                table57.AddRow(new string[] {
                             "1000000",
                             "Reliability msg 1000000: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
 #line 101
-    await testRunner.ThenAsync("I can display the top 10 last processed reliability messages table:", ((string)(null)), table55, "Then ");
+    await testRunner.ThenAsync("I can display the top 10 last processed reliability messages table:", ((string)(null)), table57, "Then ");
 #line hidden
 #line 113
     await testRunner.AndAsync("all messages should contain reliability-specific content and headers", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

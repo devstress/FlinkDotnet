@@ -42,9 +42,55 @@ This generates IR and submits to the Flink Job Gateway:
 }
 ```
 
+## 📋 Dotnet Job Submission Guide
+
+**Complete guide for submitting .NET streaming jobs to Apache Flink** with step-by-step instructions, advanced examples, and production best practices.
+
+### 🚀 Key Features for Job Submission
+
+✅ **Fluent C# DSL**: Define streaming pipelines with intuitive .NET syntax  
+✅ **Automatic IR Generation**: Jobs automatically converted to Flink-compatible definitions  
+✅ **Job Validation**: Built-in validation before submission to prevent runtime errors  
+✅ **Status Monitoring**: Real-time job status tracking and performance metrics  
+✅ **Error Handling**: Comprehensive error handling with retry logic and clear messaging  
+✅ **Production Ready**: Enterprise-grade deployment patterns and configuration management  
+
+### 📋 Complete Documentation
+
+**📚 Comprehensive Guide**: [Dotnet Job Submission Guide](./docs/wiki/Dotnet-Job-Submission-Guide.md)
+- **Step-by-step submission process** with complete code examples
+- **Job configuration options** for different environments and use cases
+- **Monitoring and management** through Flink Web UI and programmatic APIs
+- **Advanced examples** including complex multi-stage pipelines and error handling
+- **Production deployment patterns** with savepoints, rollback, and health checks
+- **Troubleshooting guide** for common issues and performance optimization
+
+### 🎬 See Job Submission In Action
+
+Test the complete job submission workflow:
+
+```bash
+# Build all components
+./build-all.ps1    # Cross-platform build script
+
+# Start with Aspire (includes comprehensive monitoring)
+cd Sample/FlinkDotNet.Aspire.AppHost
+dotnet run
+
+# Run job submission integration tests
+cd Sample/FlinkDotNet.Aspire.IntegrationTests
+dotnet test --filter "Category=job_submission"
+```
+
+**Dashboard Access**: `http://localhost:15000`
+- **Flink Web UI**: Monitor submitted jobs and execution graphs
+- **Job Gateway API**: Submit jobs via REST API with Swagger UI
+- **Real-time Logs**: See job submission and execution events
+
 ## Table of Contents
 - [Apache Flink Integration Architecture](#apache-flink-integration-architecture)
 - [Quick Start with Flink.JobBuilder SDK](#quick-start-with-flinkjobbuilder-sdk)
+- [**📋 Dotnet Job Submission Guide**](#dotnet-job-submission-guide)
 - [**⭐ Backpressure Implementation Guide**](#backpressure-implementation-guide) 
 - [**🛟 Reliability & Fault Tolerance**](#reliability--fault-tolerance)
 - [**⚡ Stress Testing & Performance**](#stress-testing--performance)
