@@ -193,6 +193,7 @@ To add new test scenarios:
 
 ## Related Documentation
 
-- [Complex Logic Stress Tests Documentation](../../docs/wiki/Complex-Logic-Stress-Tests.md)
-- [Rate Limiting Implementation Tutorial](../../docs/wiki/Rate-Limiting-Implementation-Tutorial.md)
-- [Aspire Local Development Setup](../../docs/wiki/Aspire-Local-Development-Setup.md)
+- [**LocalTesting Interactive Environment - Complete UI Guide**](../docs/wiki/LocalTesting-Interactive-Environment.md) - ⭐ **Comprehensive guide with screenshots** of all monitoring interfaces and UI components
+- [Complex Logic Stress Tests Documentation](../docs/wiki/Complex-Logic-Stress-Tests.md)
+- [Rate Limiting Implementation Tutorial](../docs/wiki/Rate-Limiting-Implementation-Tutorial.md)
+- [Aspire Local Development Setup](../docs/wiki/Aspire-Local-Development-Setup.md)

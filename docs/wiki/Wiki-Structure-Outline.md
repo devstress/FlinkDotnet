@@ -79,6 +79,8 @@ This page provides a complete index of all available documentation for Flink.NET
 ## 8. Quality Assurance & Testing
 *   **[Stress Tests Overview](Stress-Tests-Overview.md)** - High-performance load testing
 *   **[Reliability Tests Overview](Reliability-Tests-Overview.md)** - Fault tolerance testing
+*   **[Complex Logic Stress Tests](Complex-Logic-Stress-Tests.md)** - Advanced integration testing scenarios
+*   **[LocalTesting Interactive Environment](LocalTesting-Interactive-Environment.md)** - ⭐ **Complete UI guide** with screenshots for interactive debugging and monitoring
 
 ---
 
