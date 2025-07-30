@@ -4,24 +4,209 @@ using System;
 namespace Flink.JobBuilder.Backpressure;
 
 /// <summary>
-/// Factory for creating rate limiters with appropriate storage backends.
-/// Provides easy configuration and best practice defaults.
+/// Factory for creating rate limiters with simple, operationally efficient approaches.
+/// Prioritizes simplicity and natural backpressure over complex distributed storage.
 /// </summary>
 public static class RateLimiterFactory
 {
     /// <summary>
-    /// Creates a TokenBucket rate limiter with Kafka-based storage (RECOMMENDED FOR PRODUCTION).
+    /// Creates a lag-based rate limiter that monitors consumer lag for natural backpressure (RECOMMENDED FOR PRODUCTION).
     /// 
-    /// Kafka provides superior characteristics for distributed rate limiting via partitions:
-    /// - Built-in horizontal scaling through partitions distributed across brokers
-    /// - Durable, replicated storage with automatic leader election and fault tolerance
-    /// - Each rate limiter can have dedicated partitions for parallel processing
-    /// - Excellent integration with existing Flink streaming infrastructure
-    /// - Handles millions of operations per second with linear scalability
+    /// SIMPLE APPROACH - Natural Backpressure:
+    /// - Basic token bucket with consumer lag monitoring
+    /// - When consumer lag > threshold → pause token refilling (automatic backpressure)
+    /// - When consumer lag decreases → resume token refilling
+    /// - Much simpler operationally than complex distributed state storage
+    /// - Reactive approach: responds to actual system load rather than trying to predict it
+    /// 
+    /// Benefits over complex approaches:
+    /// - No distributed state storage complexity (Kafka partitions, Redis clusters)
+    /// - Natural backpressure based on actual consumer performance
+    /// - Simple to operate, debug, and reason about
+    /// - Automatic adjustment to system load without manual configuration
+    /// - Follows reactive streams principles
     /// 
     /// Professional References:
-    /// - Kreps, J. et al. (2011) "Kafka: a Distributed Messaging System for Log Processing" - Partition design
-    /// - Hunt, P. et al. (2010) "ZooKeeper: Wait-free coordination for Internet-scale systems" - Coordination patterns
+    /// - Hohpe, G. & Woolf, B. (2003) "Enterprise Integration Patterns" - Backpressure patterns
+    /// - Reactive Streams Specification (2015) - Reactive backpressure handling
+    /// </summary>
+    /// <param name="rateLimit">Maximum sustained rate in operations per second</param>
+    /// <param name="burstCapacity">Maximum burst capacity (tokens that can accumulate)</param>
+    /// <param name="consumerGroup">Kafka consumer group to monitor for lag</param>
+    /// <param name="lagThreshold">Lag threshold to trigger backpressure (default: 5 seconds)</param>
+    /// <param name="lagMonitor">Consumer lag monitor (auto-created if not provided)</param>
+    /// <param name="logger">Logger instance</param>
+    /// <returns>Lag-based rate limiter with consumer lag monitoring</returns>
+    public static LagBasedRateLimiter CreateLagBasedBucket(
+        double rateLimit,
+        double burstCapacity,
+        string consumerGroup,
+        TimeSpan? lagThreshold = null,
+        IKafkaConsumerLagMonitor? lagMonitor = null,
+        ILogger<LagBasedRateLimiter>? logger = null)
+    {
+        return new LagBasedRateLimiter(rateLimit, burstCapacity, consumerGroup, lagThreshold, lagMonitor, logger);
+    }
+
+    /// <summary>
+    /// Creates a multi-tier rate limiter with Kafka-based storage (LEGACY).
+    /// 
+    /// NOTE: Consider using CreateLagBasedBucket() for simpler operational model.
+    /// See wiki for full documentation on multi-tier rate limiting patterns.
+    /// </summary>
+    /// <param name="kafkaConfig">Kafka configuration for state storage</param>
+    /// <param name="logger">Logger instance</param>
+    /// <returns>Multi-tier rate limiter with Kafka storage</returns>
+    public static MultiTierRateLimiter CreateMultiTierWithKafkaStorage(
+        KafkaConfig kafkaConfig,
+        ILogger<KafkaRateLimiterStateStorage>? logger = null)
+    {
+        var stateStorage = new KafkaRateLimiterStateStorage(kafkaConfig, logger: logger);
+        return new MultiTierRateLimiter(stateStorage);
+    }
+
+    /// <summary>
+    /// Creates a multi-tier rate limiter with in-memory storage (LEGACY).
+    /// 
+    /// NOTE: Consider using CreateLagBasedBucket() for simpler operational model.
+    /// See wiki for full documentation on multi-tier rate limiting patterns.
+    /// </summary>
+    /// <param name="logger">Logger instance</param>
+    /// <returns>Multi-tier rate limiter with in-memory storage</returns>
+    public static MultiTierRateLimiter CreateMultiTierWithInMemoryStorage(
+        ILogger<InMemoryRateLimiterStateStorage>? logger = null)
+    {
+        var stateStorage = new InMemoryRateLimiterStateStorage(logger);
+        return new MultiTierRateLimiter(stateStorage);
+    }
+
+    /// <summary>
+    /// Creates a production-ready lag-based rate limiter configuration with recommended settings.
+    /// 
+    /// This configuration provides simple, operationally efficient rate limiting:
+    /// - Natural backpressure based on actual consumer performance
+    /// - No complex distributed storage requirements
+    /// - Automatic adjustment to system load
+    /// - Simple to operate and debug
+    /// 
+    /// Professional References:
+    /// - Hohpe, G. & Woolf, B. (2003) "Enterprise Integration Patterns" - Backpressure patterns
+    /// - Reactive Streams Specification (2015) - Reactive backpressure handling
+    /// </summary>
+    /// <param name="rateLimit">Rate limit per second (default: 1000)</param>
+    /// <param name="burstCapacity">Maximum burst capacity (default: 2000)</param>
+    /// <param name="consumerGroup">Kafka consumer group to monitor</param>
+    /// <param name="lagThreshold">Lag threshold for backpressure (default: 5 seconds)</param>
+    /// <param name="logger">Logger instance</param>
+    /// <returns>Production-ready lag-based rate limiter</returns>
+    public static (LagBasedRateLimiter rateLimiter, string configuration) CreateProductionConfiguration(
+        double rateLimit = 1000.0,
+        double burstCapacity = 2000.0,
+        string consumerGroup = "default-consumer-group",
+        TimeSpan? lagThreshold = null,
+        ILogger<LagBasedRateLimiter>? logger = null)
+    {
+        var threshold = lagThreshold ?? TimeSpan.FromSeconds(5);
+        var rateLimiter = CreateLagBasedBucket(rateLimit, burstCapacity, consumerGroup, threshold, logger: logger);
+        
+        var config = $"""
+            Production Rate Limiter Configuration (Lag-Based):
+            - Approach: Simple lag-based backpressure (RECOMMENDED)
+            - Rate Limit: {rateLimit} ops/sec
+            - Burst Capacity: {burstCapacity} tokens
+            - Consumer Group: {consumerGroup}
+            - Lag Threshold: {threshold.TotalSeconds}s
+            - Backpressure: Automatic based on consumer lag
+            - Operational Complexity: LOW - no distributed storage required
+            - Recommended for: Production systems needing simple, effective rate limiting
+            
+            When consumer lag > {threshold.TotalSeconds}s → Rate limiter pauses token refilling
+            When consumer lag <= {threshold.TotalSeconds}s → Rate limiter resumes normal operation
+            
+            For alternative approaches (Kafka state storage, Redis), see wiki documentation.
+            """;
+
+        return (rateLimiter, config);
+    }
+
+    /// <summary>
+    /// Creates a development configuration with lag-based rate limiting and logging.
+    /// </summary>
+    /// <param name="rateLimit">Rate limit per second (default: 100)</param>
+    /// <param name="burstCapacity">Maximum burst capacity (default: 200)</param>
+    /// <param name="consumerGroup">Kafka consumer group to monitor (default: test-group)</param>
+    /// <param name="logger">Logger instance</param>
+    /// <returns>Development-friendly configuration</returns>
+    public static (LagBasedRateLimiter rateLimiter, string configuration) CreateDevelopmentConfiguration(
+        double rateLimit = 100.0,
+        double burstCapacity = 200.0,
+        string consumerGroup = "test-group",
+        ILogger<LagBasedRateLimiter>? logger = null)
+    {
+        var lagThreshold = TimeSpan.FromSeconds(2); // Shorter threshold for development
+        var rateLimiter = CreateLagBasedBucket(rateLimit, burstCapacity, consumerGroup, lagThreshold, logger: logger);
+        
+        var config = $"""
+            Development Rate Limiter Configuration (Lag-Based):
+            - Approach: Simple lag-based backpressure
+            - Rate Limit: {rateLimit} ops/sec
+            - Burst Capacity: {burstCapacity} tokens
+            - Consumer Group: {consumerGroup}
+            - Lag Threshold: {lagThreshold.TotalSeconds}s (shorter for development)
+            - Recommended for: Development, testing, local environments
+            
+            For production systems, use CreateProductionConfiguration() with higher thresholds.
+            For alternative approaches, see wiki documentation.
+            """;
+
+        return (rateLimiter, config);
+    }
+
+    // ========================================================================================
+    // LEGACY METHODS - Alternative Approaches (See Wiki for Full Documentation)
+    // ========================================================================================
+    // 
+    // The following methods provide alternative rate limiting approaches for specific use cases.
+    // For most scenarios, use CreateLagBasedBucket() instead.
+    // 
+    // See Wiki Documentation for:
+    // - Kafka state storage approach (complex distributed storage)
+    // - Redis storage approach (ultra-low latency)
+    // - In-memory approach (single-instance only)
+    // - Multi-tier approach (hierarchical rate limiting)
+    //
+    // These approaches require additional operational complexity and are only recommended
+    // for specific advanced use cases documented in the wiki.
+    // ========================================================================================
+
+    /// <summary>
+    /// [LEGACY] Creates a TokenBucket rate limiter with in-memory storage (development/testing only).
+    /// 
+    /// NOTE: Consider using CreateLagBasedBucket() for better production-ready patterns.
+    /// This method is provided for compatibility and specific testing scenarios.
+    /// See wiki for full documentation and alternative approaches.
+    /// </summary>
+    /// <param name="rateLimit">Maximum sustained rate in operations per second</param>
+    /// <param name="burstCapacity">Maximum burst capacity (tokens that can accumulate)</param>
+    /// <param name="rateLimiterId">Unique identifier (auto-generated if not provided)</param>
+    /// <param name="logger">Logger instance</param>
+    /// <returns>TokenBucket rate limiter with in-memory storage</returns>
+    public static TokenBucketRateLimiter CreateWithInMemoryStorage(
+        double rateLimit,
+        double burstCapacity,
+        string? rateLimiterId = null,
+        ILogger<InMemoryRateLimiterStateStorage>? logger = null)
+    {
+        var stateStorage = new InMemoryRateLimiterStateStorage(logger);
+        return new TokenBucketRateLimiter(rateLimit, burstCapacity, rateLimiterId, stateStorage);
+    }
+
+    /// <summary>
+    /// [LEGACY] Creates a TokenBucket rate limiter with Kafka-based storage.
+    /// 
+    /// NOTE: Consider using CreateLagBasedBucket() for simpler operational model.
+    /// This method provides complex distributed state storage for advanced use cases.
+    /// See wiki for full documentation on when to use this approach.
     /// </summary>
     /// <param name="rateLimit">Maximum sustained rate in operations per second</param>
     /// <param name="burstCapacity">Maximum burst capacity (tokens that can accumulate)</param>
@@ -41,68 +226,11 @@ public static class RateLimiterFactory
     }
 
     /// <summary>
-    /// Creates a TokenBucket rate limiter with in-memory storage (development/testing only).
-    /// </summary>
-    /// <param name="rateLimit">Maximum sustained rate in operations per second</param>
-    /// <param name="burstCapacity">Maximum burst capacity (tokens that can accumulate)</param>
-    /// <param name="rateLimiterId">Unique identifier (auto-generated if not provided)</param>
-    /// <param name="logger">Logger instance</param>
-    /// <returns>TokenBucket rate limiter with in-memory storage</returns>
-    public static TokenBucketRateLimiter CreateWithInMemoryStorage(
-        double rateLimit,
-        double burstCapacity,
-        string? rateLimiterId = null,
-        ILogger<InMemoryRateLimiterStateStorage>? logger = null)
-    {
-        var stateStorage = new InMemoryRateLimiterStateStorage(logger);
-        return new TokenBucketRateLimiter(rateLimit, burstCapacity, rateLimiterId, stateStorage);
-    }
-
-    /// <summary>
-    /// Creates a multi-tier rate limiter with Kafka-based storage (RECOMMENDED FOR PRODUCTION).
+    /// [LEGACY] Creates a production-ready Kafka configuration for distributed state storage.
     /// 
-    /// Provides enterprise-grade distributed rate limiting with:
-    /// - Kafka partition-based horizontal scaling and fault tolerance
-    /// - Built-in replication and leader election for high availability
-    /// - Linear scalability through partition distribution across brokers
-    /// - Excellent integration with Flink streaming infrastructure
-    /// </summary>
-    /// <param name="kafkaConfig">Kafka configuration for state storage</param>
-    /// <param name="logger">Logger instance</param>
-    /// <returns>Multi-tier rate limiter with Kafka storage</returns>
-    public static MultiTierRateLimiter CreateMultiTierWithKafkaStorage(
-        KafkaConfig kafkaConfig,
-        ILogger<KafkaRateLimiterStateStorage>? logger = null)
-    {
-        var stateStorage = new KafkaRateLimiterStateStorage(kafkaConfig, logger: logger);
-        return new MultiTierRateLimiter(stateStorage);
-    }
-
-    /// <summary>
-    /// Creates a multi-tier rate limiter with in-memory storage (development/testing only).
-    /// </summary>
-    /// <param name="logger">Logger instance</param>
-    /// <returns>Multi-tier rate limiter with in-memory storage</returns>
-    public static MultiTierRateLimiter CreateMultiTierWithInMemoryStorage(
-        ILogger<InMemoryRateLimiterStateStorage>? logger = null)
-    {
-        var stateStorage = new InMemoryRateLimiterStateStorage(logger);
-        return new MultiTierRateLimiter(stateStorage);
-    }
-
-    /// <summary>
-    /// Creates a production-ready configuration with Kafka storage and recommended settings.
-    /// 
-    /// This configuration provides enterprise-grade distributed rate limiting:
-    /// - Kafka partition-based horizontal scaling (12 partitions for parallelism)
-    /// - High availability through replication (3 replicas across brokers)
-    /// - Log compaction to retain only latest state per rate limiter
-    /// - Built-in leader election and automatic failover
-    /// - Linear scalability for millions of operations per second
-    /// 
-    /// Professional References:
-    /// - Kreps, J. et al. (2011) "Kafka: a Distributed Messaging System for Log Processing"
-    /// - Hunt, P. et al. (2010) "ZooKeeper: Wait-free coordination for Internet-scale systems"
+    /// NOTE: Consider using CreateProductionConfiguration() with lag-based approach instead.
+    /// This method provides complex Kafka partition configuration for advanced use cases.
+    /// See wiki for full documentation and operational considerations.
     /// </summary>
     /// <param name="bootstrapServers">Kafka bootstrap servers</param>
     /// <param name="topicName">Topic name for rate limiter state (default: rate-limiter-state)</param>
@@ -124,88 +252,4 @@ public static class RateLimiterFactory
         };
     }
 
-    /// <summary>
-    /// Creates a development configuration with Kafka storage and logging.
-    /// 
-    /// Provides developer-friendly Kafka configuration with:
-    /// - Simplified partition setup for fast iteration (single partition)
-    /// - Local Kafka instance connectivity (localhost:9092)
-    /// - Detailed logging for debugging partition behavior
-    /// - Production-like behavior in development environment
-    /// </summary>
-    /// <param name="rateLimit">Rate limit per second</param>
-    /// <param name="burstCapacity">Maximum burst capacity</param>
-    /// <param name="bootstrapServers">Kafka bootstrap servers (default: localhost:9092)</param>
-    /// <param name="logger">Logger instance</param>
-    /// <returns>Development-friendly Kafka configuration</returns>
-    public static (TokenBucketRateLimiter rateLimiter, string configuration) CreateDevelopmentKafkaConfiguration(
-        double rateLimit = 1000.0,
-        double burstCapacity = 2000.0,
-        string bootstrapServers = "localhost:9092",
-        ILogger<KafkaRateLimiterStateStorage>? logger = null)
-    {
-        var kafkaConfig = new KafkaConfig
-        {
-            BootstrapServers = bootstrapServers,
-            Performance = new KafkaPerformanceConfig
-            {
-                ReplicationFactor = 1,      // Single replica for development
-                PartitionCount = 1,         // Single partition for simplicity
-                RetentionTime = TimeSpan.FromHours(1), // Short retention for development
-                EnableCompaction = true
-            }
-        };
-
-        var rateLimiter = CreateWithKafkaStorage(rateLimit, burstCapacity, kafkaConfig, logger: logger);
-        
-        var config = $"""
-            Development Rate Limiter Configuration (Kafka):
-            - Storage: Kafka with single partition (development setup)
-            - Bootstrap Servers: {bootstrapServers}
-            - Rate Limit: {rateLimit} ops/sec
-            - Burst Capacity: {burstCapacity} tokens
-            - Persistence: Kafka log with 1-hour retention
-            - Fault Tolerance: Single replica (development mode)
-            - Distribution: Single partition for development simplicity
-            - Recommended for: Development, testing, Kafka integration testing
-            
-            For production, use CreateProductionKafkaConfig() with multiple partitions and replicas.
-            For ultra-low latency scenarios, consider Redis storage (see wiki for examples).
-            """;
-
-        return (rateLimiter, config);
-    }
-
-    /// <summary>
-    /// Creates a development configuration with in-memory storage and logging (LEGACY).
-    /// 
-    /// NOTE: Consider using CreateDevelopmentKafkaConfiguration() for better development experience
-    /// with Kafka-based storage that matches production patterns.
-    /// </summary>
-    /// <param name="rateLimit">Rate limit per second</param>
-    /// <param name="burstCapacity">Maximum burst capacity</param>
-    /// <param name="logger">Logger instance</param>
-    /// <returns>Development-friendly configuration</returns>
-    public static (TokenBucketRateLimiter rateLimiter, string configuration) CreateDevelopmentConfiguration(
-        double rateLimit = 1000.0,
-        double burstCapacity = 2000.0,
-        ILogger<InMemoryRateLimiterStateStorage>? logger = null)
-    {
-        var rateLimiter = CreateWithInMemoryStorage(rateLimit, burstCapacity, logger: logger);
-        
-        var config = $"""
-            Development Rate Limiter Configuration (In-Memory):
-            - Storage: In-Memory (not persistent)
-            - Rate Limit: {rateLimit} ops/sec
-            - Burst Capacity: {burstCapacity} tokens
-            - Distribution: Single instance only
-            - Recommended for: Development, testing, single-instance deployments
-            
-            For production distributed systems, use CreateWithKafkaStorage() instead.
-            For development with distributed patterns, use CreateDevelopmentKafkaConfiguration().
-            For ultra-low latency development, see Redis examples in the wiki.
-            """;
-
-        return (rateLimiter, config);
-    }
 }
