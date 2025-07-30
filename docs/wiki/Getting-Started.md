@@ -205,10 +205,114 @@ You should see the odd numbers (1, 3, 5, 7, 9) printed in the console output fro
 
 ## Testing Your Applications
 
-Flink.NET provides comprehensive testing capabilities:
+Flink.NET provides comprehensive testing capabilities with both BDD specifications and C# implementations:
 
-*   **Integration Tests**: For quick validation of AppHost structure and basic configuration (see `Sample.IntegrationTests`)
-*   **Stress Tests**: For high-throughput performance validation with full orchestration (see [[Sample Local High Throughput Test|Sample-Local-High-Throughput-Test]])
+### 🧪 BDD Testing Framework
+
+Our testing follows Behavior-Driven Development (BDD) patterns using SpecFlow/Reqnroll:
+
+**📁 Test Structure:**
+- **BDD Feature Files**: [`/Sample/FlinkDotNet.Aspire.IntegrationTests/Features/`](../../Sample/FlinkDotNet.Aspire.IntegrationTests/Features/)
+  - `StressTest.feature` - Basic performance testing scenarios
+  - `ComplexLogicStressTest.feature` - Advanced integration scenarios
+  - `BackpressureTest.feature` - Rate limiting and backpressure scenarios
+- **C# Step Definitions**: [`/Sample/FlinkDotNet.Aspire.IntegrationTests/StepDefinitions/`](../../Sample/FlinkDotNet.Aspire.IntegrationTests/StepDefinitions/)
+  - `StressTestStepDefinitions.cs` - Basic stress test implementations
+  - `ComplexLogicStressTestStepDefinitions.cs` - Complex logic implementations
+  - `BackpressureTestStepDefinitions.cs` - Backpressure implementations
+
+### 🔄 Example: BDD to C# Mapping
+
+**BDD Scenario Example:**
+```gherkin
+# From StressTest.feature
+Scenario: Basic Job Submission Test
+  Given the Flink cluster is running
+  When I create a simple streaming job:
+    | Source | Kafka topic "test-input" |
+    | Transform | Map each message to uppercase |
+    | Sink | Kafka topic "test-output" |
+  Then the job should be submitted successfully
+```
+
+**Corresponding C# Implementation:**
+```csharp
+// From StressTestStepDefinitions.cs
+[Given(@"the Flink cluster is running")]
+public void GivenTheFlinkClusterIsRunning()
+{
+    var clusterHealthy = ValidateFlinkCluster();
+    Assert.True(clusterHealthy, "Flink cluster should be running and healthy");
+}
+
+[When(@"I create a simple streaming job:")]
+public void WhenICreateASimpleStreamingJob(Table table)
+{
+    // Uses the main FlinkJobBuilder API:
+    _jobBuilder = FlinkJobBuilder
+        .FromKafka("test-input")
+        .Map("message => message.toUpperCase()")
+        .ToKafka("test-output");
+        
+    _jobDefinition = _jobBuilder.BuildJobDefinition();
+}
+
+[Then(@"the job should be submitted successfully")]
+public async Task ThenTheJobShouldBeSubmittedSuccessfully()
+{
+    var result = await _jobBuilder.Submit("TestJob");
+    Assert.True(result.IsSuccess, "Job submission should succeed");
+}
+```
+
+### 🎯 Test Categories
+
+*   **Integration Tests**: For quick validation of AppHost structure and basic configuration
+    - **Run**: `dotnet test --filter "Category=integration_test"`
+    - **Implementation**: Basic service connectivity and configuration validation
+
+*   **Stress Tests**: For high-throughput performance validation with full orchestration
+    - **Run**: `dotnet test --filter "Category=stress_test"`
+    - **Implementation**: Process 1M+ messages with performance validation
+    - **Guide**: [[Stress Tests Overview|Stress-Tests-Overview]] with complete C# implementations
+
+*   **Complex Logic Tests**: For advanced scenarios with correlation tracking and HTTP processing
+    - **Run**: `dotnet test --filter "Category=complex_logic_test"`
+    - **Implementation**: Security tokens, HTTP batching, correlation matching
+    - **Guide**: [[Complex Logic Stress Tests|Complex-Logic-Stress-Tests]] with detailed C# mappings
+
+*   **Backpressure Tests**: For rate limiting and flow control validation
+    - **Run**: `dotnet test --filter "Category=backpressure_test"`
+    - **Implementation**: Rate limiting, buffer pools, multi-tier enforcement
+    - **Guide**: [[Rate Limiting Implementation|Rate-Limiting-Implementation-Tutorial]]
+
+### 🚀 Running Tests
+
+```bash
+# Run all tests
+cd Sample/FlinkDotNet.Aspire.IntegrationTests
+dotnet test
+
+# Run specific test categories
+dotnet test --filter "Category=stress_test"
+dotnet test --filter "Category=complex_logic_test"
+dotnet test --filter "Category=backpressure_test"
+
+# Run with detailed output
+dotnet test --logger "console;verbosity=detailed"
+```
+
+### 🏗️ Understanding Test Implementation
+
+1. **Read BDD Scenarios**: Start with `.feature` files to understand business requirements
+2. **Examine Step Definitions**: Review corresponding `.cs` files to see C# implementations
+3. **Trace to Core Code**: Follow step definitions to main FlinkJobBuilder and related classes
+4. **Run and Debug**: Execute tests with debugger to see the full flow
+
+For complete examples of how BDD scenarios map to C# implementations, see:
+- **[[Stress Tests Overview|Stress-Tests-Overview]]** - Basic message processing examples
+- **[[Complex Logic Stress Tests|Complex-Logic-Stress-Tests]]** - Advanced integration patterns
+
 *   **Local Development**: Use the [[Deployment Local|Deployment-Local]] environment for interactive development and debugging
 
 **External References:**
