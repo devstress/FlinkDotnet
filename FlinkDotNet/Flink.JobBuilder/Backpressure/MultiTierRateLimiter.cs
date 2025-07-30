@@ -193,12 +193,7 @@ public class MultiTierRateLimiter : IDisposable
     public bool ValidateHierarchicalEnforcement()
     {
         // Check that child tiers respect parent limits
-        foreach (var tier in _tiers.Skip(1)) // Skip global tier
-        {
-            if (!ValidateTierHierarchy(tier))
-                return false;
-        }
-        return true;
+        return _tiers.Skip(1).All(ValidateTierHierarchy); // Skip global tier
     }
 
     /// <summary>

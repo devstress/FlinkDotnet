@@ -1,10 +1,10 @@
-# Flink.NET
+# FlinkDotnet
 
-**Flink.NET** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL.
+**FlinkDotnet** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL.
 
 ## Apache Flink Integration Architecture
 
-Flink.NET provides a complete integration solution for Apache Flink:
+FlinkDotnet provides a complete integration solution for Apache Flink:
 
 - **.NET SDK (Flink.JobBuilder)**: Fluent C# DSL for defining streaming pipelines
 - **Intermediate Representation (IR)**: JSON-based job definitions  
@@ -55,7 +55,7 @@ This generates IR and submits to the Flink Job Gateway:
 
 ## ⭐ Backpressure Implementation Guide
 
-**Backpressure is the most critical feature of Flink.NET** - it ensures your streaming applications remain stable under any load conditions and prevents system crashes due to resource exhaustion.
+**Backpressure is the most critical feature of FlinkDotnet** - it ensures your streaming applications remain stable under any load conditions and prevents system crashes due to resource exhaustion.
 
 ### 🎯 What is Backpressure?
 
@@ -157,7 +157,7 @@ public class KafkaProducerWithBackpressure
 
 ### 📚 Complete Reference Guide
 
-**🎯 Comprehensive Guide**: [Flink.NET Backpressure: Complete Reference Guide](./docs/wiki/Backpressure-Complete-Reference.md)
+**🎯 Comprehensive Guide**: [FlinkDotnet Backpressure: Complete Reference Guide](./docs/wiki/Backpressure-Complete-Reference.md)
 - **Comprehensive documentation** covering all backpressure features
 - **Performance guidance** - when to enable/disable rate limiting for optimal performance
 - **Scalability architecture** - multiple consumers, logical queues, partition limits explained
@@ -216,7 +216,7 @@ Our backpressure implementation follows **Apache Flink 2.0 AsyncSink patterns** 
 - **Reliability**: 10% fault injection with <2 minute recovery time
 - **Production Ready**: Thread-safe, performance optimized, fully tested
 
-**Why This Matters**: Traditional streaming systems crash when overloaded. Flink.NET automatically scales down instead of failing, ensuring 99.9%+ uptime even under extreme load conditions.
+**Why This Matters**: Traditional streaming systems crash when overloaded. FlinkDotnet automatically scales down instead of failing, ensuring 99.9%+ uptime even under extreme load conditions.
 
 ### 🛟 Need Help?
 
@@ -227,9 +227,9 @@ Our backpressure implementation follows **Apache Flink 2.0 AsyncSink patterns** 
 
 ## 🛟 Reliability & Fault Tolerance
 
-**Flink.NET implements comprehensive fault tolerance standards** with failure recovery and exactly-once processing guarantees that meet enterprise reliability requirements.
+**FlinkDotnet implements comprehensive fault tolerance standards** with failure recovery and exactly-once processing guarantees that meet enterprise reliability requirements.
 
-> **✅ Native Aspire Integration**: Flink.NET uses .NET Aspire for orchestration, providing comprehensive local development with Apache Flink, Kafka, and Redis containers managed automatically through the Aspire AppHost.
+> **✅ Native Aspire Integration**: FlinkDotnet uses .NET Aspire for orchestration, providing comprehensive local development with Apache Flink, Kafka, and Redis containers managed automatically through the Aspire AppHost.
 
 ### 🎯 Comprehensive Fault Tolerance
 
@@ -320,11 +320,11 @@ export RELIABILITY_TEST_MODE=true
 
 ## ⚡ Stress Testing & Performance
 
-**Flink.NET delivers high performance** with capacity for processing millions of messages per second under production load conditions.
+**FlinkDotnet delivers high performance** with capacity for processing millions of messages per second under production load conditions.
 
 ### 🚀 Comprehensive Stress Testing Approaches
 
-FLINK.NET provides two comprehensive stress testing methodologies:
+FlinkDotnet provides two comprehensive stress testing methodologies:
 
 1. **[Basic Stress Tests](./docs/wiki/Stress-Tests-Overview.md)** - Ultra-high throughput validation
    - 1 Million Messages processed in **<1 second** (MANDATORY)
@@ -459,11 +459,11 @@ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group fl
 - HTTP endpoint batch processing with Aspire Test infrastructure
 - Response verification and data integrity validation
 
-**Why This Matters**: Traditional streaming systems struggle with both high-volume processing AND complex enterprise integration scenarios. Flink.NET delivers million+ message per second capacity while maintaining complete data integrity and correlation tracking for production-grade requirements.
+**Why This Matters**: Traditional streaming systems struggle with both high-volume processing AND complex enterprise integration scenarios. FlinkDotnet delivers million+ message per second capacity while maintaining complete data integrity and correlation tracking for production-grade requirements.
 
 ## System Architecture
 
-Flink.NET supports **local development** with .NET Aspire orchestration:
+FlinkDotnet supports **local development** with .NET Aspire orchestration:
 
 #### Local Development with .NET Aspire
 ```
@@ -517,11 +517,11 @@ Flink.NET supports **local development** with .NET Aspire orchestration:
 
 # Local Development with Aspire
 
-Flink.NET uses .NET Aspire for comprehensive local orchestration with complete Apache Flink integration and world-class backpressure implementation.
+FlinkDotnet uses .NET Aspire for comprehensive local orchestration with complete Apache Flink integration and world-class backpressure implementation.
 
 ### Complete Environment Setup
 
-Start the entire Flink.NET ecosystem with one command using Aspire:
+Start the entire FlinkDotnet ecosystem with one command using Aspire:
 
 ```bash
 # Build all components
@@ -599,7 +599,7 @@ Monitor its activity through the Aspire dashboard.
 
 ## Running Tests
 
-Flink.NET includes comprehensive testing capabilities:
+FlinkDotnet includes comprehensive testing capabilities:
 
 ### Integration Tests
 ```bash
