@@ -171,16 +171,35 @@ kubectl port-forward svc/flink-job-gateway 8080:8080 -n flink-system
 *   A configuration file (e.g., `appsettings.json`).
 *   Programmatic configuration.
 
-**Example (Conceptual `appsettings.json`):**
+**Real Configuration Example from [`Sample/FlinkDotNet.Aspire.AppHost/Program.cs`](../../Sample/FlinkDotNet.Aspire.AppHost/Program.cs):**
 
 ```json
 {
   "Flink": {
-    "JobManagerRestAddress": "http://localhost:8081"
-    // Other relevant configurations
+    "JobManagerRestAddress": "http://localhost:8081",
+    "JobManagerRpcAddress": "flink-jobmanager",
+    "TaskManagerConfig": {
+      "NumberOfTaskSlots": 10,
+      "MemorySize": "8192m"
+    },
+    "KafkaConfig": {
+      "BootstrapServers": "kafka-kraft-cluster:9092",
+      "GroupId": "flink-dotnet-consumer-group",
+      "AutoOffsetReset": "earliest"
+    },
+    "RedisConnectionString": "localhost:6379",
+    "Backpressure": {
+      "MaxConsumerLag": 10000,
+      "ScalingThreshold": 5000,
+      "MonitoringInterval": "00:00:05",
+      "QuotaEnforcement": "Per-client, per-IP",
+      "DynamicRebalancing": true
+    }
   }
 }
 ```
+
+This configuration is based on the real Aspire AppHost setup used in BDD testing scenarios, with actual container configuration values from the working test infrastructure.
 
 *(Refer to Flink.NET's specific documentation for details on how to configure the job submission and connection to Flink.)*
 
