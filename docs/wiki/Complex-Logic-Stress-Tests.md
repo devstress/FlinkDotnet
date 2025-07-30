@@ -40,11 +40,15 @@ Complex Logic Stress Tests simulate real-world enterprise scenarios through Flin
 1. **Flink.Net Gateway**: ASP.NET Core service managing Apache Flink job submission and execution
 2. **Apache Flink Integration**: TaskManagers handle distributed message processing with correlation tracking
 3. **Security Token Service**: Renew tokens every 10,000 messages with thread-safe locking
-4. **Batch Processing**: Group 100 messages per HTTP request for optimal throughput through the gateway
-5. **HTTP Endpoint**: Aspire Test-based service that saves processed messages to memory (no immediate responses)
-6. **Memory Store**: Background processing storage where the HTTP endpoint saves processed messages
-7. **Flink Message Puller**: Apache Flink component that actively pulls processed messages from endpoint memory
-8. **Verification System**: Validate top 100 and last 100 messages for correctness
+4. **Lag-Based Backpressure System**: Advanced rate limiting that stops token bucket refilling when consumer lag exceeds threshold (5s default)
+5. **Batch Processing**: Group 100 messages per HTTP request for optimal throughput through the gateway
+6. **HTTP Endpoint**: Aspire Test-based service that saves processed messages to memory (no immediate responses)
+7. **Memory Store**: Background processing storage where the HTTP endpoint saves processed messages
+8. **Flink Message Puller**: Apache Flink component that actively pulls processed messages from endpoint memory
+9. **Verification System**: Validate top 100 and last 100 messages for correctness
+
+**🚀 Latest Backpressure Enhancement:**
+The system now includes **LagBasedRateLimiter** which monitors Kafka consumer lag in real-time and automatically stops token bucket refilling when lag exceeds configurable thresholds. This creates natural, reactive backpressure that adapts to actual system performance rather than using static rate limits.
 
 ## BDD Test Scenarios Explained
 
@@ -522,22 +526,44 @@ private List<ComplexLogicMessage> GetTopProcessedMessages(int count)
 
 ### Advanced BDD Scenarios
 
-#### Logical Queue Backpressure Handling
+#### Logical Queue Backpressure Handling with Lag-Based Rate Limiting
 ```gherkin
-Scenario: Handle Backpressure in Logical Queue Processing
-  Given the logical queue is configured with backpressure thresholds
-  When message processing rate exceeds consumption capacity
-  Then the system should apply backpressure automatically
+Scenario: Handle Backpressure in Logical Queue Processing with Consumer Lag Monitoring
+  Given the logical queue is configured with lag-based backpressure thresholds (5 seconds default)
+  And the token bucket rate limiter monitors Kafka consumer group lag
+  When message processing rate exceeds consumption capacity and lag threshold is reached
+  Then the system should stop refilling the token bucket automatically
   And message throughput should stabilize without data loss
   And queue depth should remain within configured limits
+  And token bucket refilling should resume when lag decreases below threshold
 ```
 
 **Explanation:**
-- **Backpressure Configuration**: Sets up Apache Flink backpressure mechanisms with specific thresholds
-- **Rate Exceeding**: Simulates conditions where message production exceeds processing capacity
-- **Automatic Backpressure**: Validates that the system automatically slows down production to match consumption
-- **Stabilization**: Ensures throughput reaches a sustainable level without dropping messages
-- **Queue Limits**: Verifies queue depth stays within configured boundaries to prevent memory issues
+- **Lag-Based Backpressure Configuration**: Sets up LagBasedRateLimiter that monitors Kafka consumer lag and stops token bucket refilling when lag exceeds threshold (default: 5 seconds)
+- **Automatic Token Bucket Control**: When consumer lag > threshold → pauses token refilling; when lag ≤ threshold → resumes normal refilling
+- **Consumer Lag Monitoring**: Real-time monitoring of Kafka consumer group lag for reactive backpressure
+- **Natural Backpressure**: Creates automatic slowdown based on actual system performance rather than arbitrary limits
+- **Threshold-Based Control**: Configurable lag threshold determines when backpressure activates
+- **Recovery Mechanism**: Automatically resumes normal operation when consumers catch up
+
+**🔧 Implementation Details:**
+```csharp
+// Lag-based rate limiter with threshold-controlled token bucket refilling
+var rateLimiter = new LagBasedRateLimiter(
+    rateLimit: 1000.0,              // Max 1000 ops/sec when no lag
+    burstCapacity: 5000.0,          // Allow bursts up to 5000 tokens
+    consumerGroup: "stress-test-group",
+    lagThreshold: TimeSpan.FromSeconds(5),  // Stop refilling when lag > 5s
+    lagMonitor: kafkaLagMonitor
+);
+
+// The rate limiter automatically:
+// 1. Monitors consumer lag every second
+// 2. When lag > 5s: _isRefillPaused = true (stops adding tokens)
+// 3. When lag ≤ 5s: _isRefillPaused = false (resumes token refilling)
+// 4. Operations continue consuming existing tokens until bucket is empty
+// 5. This creates natural backpressure without dropping messages
+```
 
 #### Security Token Synchronization
 ```gherkin

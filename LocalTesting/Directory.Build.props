@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <NoWarn>$(NoWarn);S4487;S1450;S3881;S1075;S2139;S1481;S6968;S6966;S6960;S6667;IDE0005;CS1998</NoWarn>
+  </PropertyGroup>
+</Project>
