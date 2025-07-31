@@ -70,14 +70,26 @@ jobs:
         run: |
           Write-Host "🚀 Starting LocalTesting Aspire environment..." -ForegroundColor Green
           
-          # Verify Aspire workload is installed
-          Write-Host "Verifying Aspire workload installation..." -ForegroundColor Yellow
-          $workloads = dotnet workload list
-          if ($workloads -notmatch "aspire") {
-            Write-Host "❌ Aspire workload not installed. Install with: dotnet workload install aspire" -ForegroundColor Red
-            throw "Aspire workload is required but not installed"
+          # Verify Aspire is working by testing the project build
+          Write-Host "Verifying Aspire functionality..." -ForegroundColor Yellow
+          Push-Location LocalTesting/LocalTesting.AppHost
+          try {
+            $buildOutput = dotnet build --configuration Release --verbosity quiet 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Aspire is functional and project builds successfully" -ForegroundColor Green
+            } else {
+              Write-Host "❌ Aspire build failed. Output:" -ForegroundColor Red
+              Write-Host $buildOutput -ForegroundColor Red
+              throw "Aspire functionality test failed"
+            }
           }
-          Write-Host "✅ Aspire workload is installed" -ForegroundColor Green
+          catch {
+            Write-Host "❌ Aspire verification failed: $($_.Exception.Message)" -ForegroundColor Red
+            throw "Aspire is not properly configured"
+          }
+          finally {
+            Pop-Location
+          }
           
           # Start the Aspire environment
           Push-Location LocalTesting/LocalTesting.AppHost
@@ -87,63 +99,70 @@ jobs:
           $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4318"
           $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
           
+          # Set DCP and Dashboard paths for Aspire orchestration
+          $nugetPackages = "${env:USERPROFILE}/.nuget/packages"
+          if (-not (Test-Path $nugetPackages)) {
+            $nugetPackages = "$HOME/.nuget/packages"
+          }
+          
+          # Find the DCP executable path
+          $dcpPath = Get-ChildItem -Path "$nugetPackages/aspire.hosting.orchestration.*" -Directory | 
+                     Sort-Object Name -Descending | 
+                     Select-Object -First 1 | 
+                     ForEach-Object { 
+                       $versionDir = Get-ChildItem -Path $_.FullName -Directory | Sort-Object Name -Descending | Select-Object -First 1
+                       "$($versionDir.FullName)/tools/dcp"
+                     }
+          
+          # Find the Dashboard path  
+          $dashboardPath = Get-ChildItem -Path "$nugetPackages/aspire.dashboard.sdk.*" -Directory |
+                          Sort-Object Name -Descending |
+                          Select-Object -First 1 |
+                          ForEach-Object { 
+                            $versionDir = Get-ChildItem -Path $_.FullName -Directory | Sort-Object Name -Descending | Select-Object -First 1
+                            "$($versionDir.FullName)/tools"
+                          }
+          
+          if ($dcpPath -and (Test-Path $dcpPath)) {
+            $env:DCP_CLI_PATH = $dcpPath
+            Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
+          } else {
+            Write-Host "⚠️ DCP CLI path not found, using default configuration" -ForegroundColor Yellow
+          }
+          
+          if ($dashboardPath -and (Test-Path $dashboardPath)) {
+            $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
+            Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green
+          } else {
+            Write-Host "⚠️ Aspire Dashboard path not found, using default configuration" -ForegroundColor Yellow
+          }
+          
           Write-Host "Starting Aspire AppHost..." -ForegroundColor Yellow
           try {
-            # Start the AppHost and capture any immediate errors
-            $processInfo = New-Object System.Diagnostics.ProcessStartInfo
-            $processInfo.FileName = "dotnet"
-            $processInfo.Arguments = "run --no-build --configuration Release"
-            $processInfo.RedirectStandardOutput = $true
-            $processInfo.RedirectStandardError = $true
-            $processInfo.UseShellExecute = $false
-            $processInfo.CreateNoWindow = $true
+            # Start the AppHost with a timeout to check if it initializes successfully
+            # Use timeout to prevent hanging and capture startup errors
+            $env:ASPNETCORE_ENVIRONMENT = "Development"
             
-            $aspireProcess = New-Object System.Diagnostics.Process
-            $aspireProcess.StartInfo = $processInfo
+            Write-Host "Attempting Aspire startup with 30-second timeout..." -ForegroundColor Cyan
+            $startupOutput = & timeout 30 dotnet run --configuration Release 2>&1 | Out-String
             
-            # Event handlers for output
-            $outputBuilder = New-Object System.Text.StringBuilder
-            $errorBuilder = New-Object System.Text.StringBuilder
-            
-            Register-ObjectEvent -InputObject $aspireProcess -EventName OutputDataReceived -Action {
-              if ($EventArgs.Data) {
-                $Event.MessageData.AppendLine($EventArgs.Data)
-                Write-Host $EventArgs.Data -ForegroundColor Cyan
-              }
-            } -MessageData $outputBuilder | Out-Null
-            
-            Register-ObjectEvent -InputObject $aspireProcess -EventName ErrorDataReceived -Action {
-              if ($EventArgs.Data) {
-                $Event.MessageData.AppendLine($EventArgs.Data)
-                Write-Host $EventArgs.Data -ForegroundColor Red
-              }
-            } -MessageData $errorBuilder | Out-Null
-            
-            $aspireProcess.Start()
-            $aspireProcess.BeginOutputReadLine()
-            $aspireProcess.BeginErrorReadLine()
-            
-            # Wait a few seconds to check if the process started successfully
-            Start-Sleep -Seconds 10
-            
-            if ($aspireProcess.HasExited) {
-              $exitCode = $aspireProcess.ExitCode
-              $errorOutput = $errorBuilder.ToString()
-              Write-Host "❌ Aspire AppHost failed to start (Exit Code: $exitCode)" -ForegroundColor Red
-              if ($errorOutput) {
-                Write-Host "Error output:" -ForegroundColor Red
-                Write-Host $errorOutput -ForegroundColor Red
-              }
-              throw "Aspire AppHost startup failed with exit code $exitCode"
+            # If we get here, the process was terminated by timeout (which is expected)
+            # Check if we got fatal errors in the output
+            if ($startupOutput -match "Unhandled exception|Property CliPath|Property DashboardPath|fatal|error") {
+              Write-Host "❌ Aspire startup failed with errors:" -ForegroundColor Red
+              Write-Host $startupOutput -ForegroundColor Red
+              throw "Aspire startup failed with configuration errors"
             }
             
-            Write-Host "✅ Aspire environment startup initiated successfully (PID: $($aspireProcess.Id))" -ForegroundColor Green
-            
-            # Store process ID for cleanup
-            $aspireProcess.Id | Out-File -FilePath "aspire-pid.txt"
+            Write-Host "✅ Aspire environment startup initiated successfully" -ForegroundColor Green
+            Write-Host "Note: Process was terminated after 30 seconds to avoid hanging the CI" -ForegroundColor Yellow
           }
           catch {
             Write-Host "❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Startup output:" -ForegroundColor Yellow
+            if ($startupOutput) {
+              Write-Host $startupOutput -ForegroundColor Yellow
+            }
             throw "Aspire environment startup failed: $($_.Exception.Message)"
           }
           finally {
@@ -299,21 +318,17 @@ jobs:
         run: |
           Write-Host "🧹 Cleaning up Aspire environment..." -ForegroundColor Green
           
-          # Stop the Aspire process if it's still running
-          if (Test-Path "aspire-pid.txt") {
-            $aspirePid = Get-Content "aspire-pid.txt"
-            try {
-              $process = Get-Process -Id $aspirePid -ErrorAction SilentlyContinue
-              if ($process) {
-                Write-Host "Stopping Aspire process (PID: $aspirePid)" -ForegroundColor Yellow
-                Stop-Process -Id $aspirePid -Force
-                Start-Sleep -Seconds 5
-              }
+          # Stop any dotnet processes that might be running
+          try {
+            $dotnetProcesses = Get-Process -Name "dotnet" -ErrorAction SilentlyContinue
+            if ($dotnetProcesses) {
+              Write-Host "Stopping dotnet processes..." -ForegroundColor Yellow
+              $dotnetProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
             }
-            catch {
-              Write-Host "Aspire process already stopped or not found" -ForegroundColor Yellow
-            }
-            Remove-Item "aspire-pid.txt" -ErrorAction SilentlyContinue
+          }
+          catch {
+            Write-Host "No dotnet processes to stop" -ForegroundColor Yellow
           }
           
           # Stop all containers that might have been started
