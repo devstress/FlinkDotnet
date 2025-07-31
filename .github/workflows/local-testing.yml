@@ -98,7 +98,8 @@ jobs:
           $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4319"
           $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4320"
           $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
-          $env:DEBUG_SESSION_PORT = "0"
+          $env:DEBUG_SESSION_PORT = "localhost:17001"
+          $env:DEBUG_SESSION_TOKEN = "ci-testing-token-$(Get-Random)"
           
           # Set DCP and Dashboard paths for Aspire orchestration
           $nugetPackages = "${env:USERPROFILE}/.nuget/packages"
@@ -143,6 +144,7 @@ jobs:
             # Start the AppHost with a timeout to check if it initializes successfully
             # Use timeout to prevent hanging and capture startup errors
             $env:ASPNETCORE_ENVIRONMENT = "Development"
+            $env:DOTNET_LAUNCH_PROFILE = ""
             
             Write-Host "Attempting Aspire startup with 30-second timeout..." -ForegroundColor Cyan
             $startupOutput = & timeout 30 dotnet run --configuration Release 2>&1 | Out-String
