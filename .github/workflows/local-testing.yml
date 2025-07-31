@@ -93,18 +93,8 @@ jobs:
           
           # Start the Aspire environment
           Push-Location LocalTesting/LocalTesting.AppHost
-          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-          $env:ASPNETCORE_URLS = "http://localhost:15000"
-          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324"
-          $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
-          # Remove DEBUG_SESSION variables to prevent IDE mode in CI
-          # $env:DEBUG_SESSION_PORT = ""
-          # $env:DEBUG_SESSION_TOKEN = ""
-          $env:ASPNETCORE_ENVIRONMENT = "Development"
-          $env:DOTNET_LAUNCH_PROFILE = ""
           
-          # Set DCP and Dashboard paths for Aspire orchestration
+          # Set DCP and Dashboard paths for Aspire orchestration first
           $nugetPackages = "$HOME/.nuget/packages"
           
           # Set DCP CLI path using the installed orchestration package
@@ -113,7 +103,8 @@ jobs:
             $env:DCP_CLI_PATH = $dcpPath
             Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
           } else {
-            Write-Host "⚠️ DCP CLI path not found at expected location" -ForegroundColor Yellow
+            Write-Host "❌ DCP CLI path not found at expected location: $dcpPath" -ForegroundColor Red
+            throw "DCP CLI path is required but not found"
           }
           
           # Set Aspire Dashboard path using the installed dashboard SDK
@@ -122,29 +113,41 @@ jobs:
             $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
             Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green
           } else {
-            Write-Host "⚠️ Aspire Dashboard path not found at expected location" -ForegroundColor Yellow
+            Write-Host "❌ Aspire Dashboard path not found at expected location: $dashboardPath" -ForegroundColor Red
+            throw "Aspire Dashboard path is required but not found"
           }
+          
+          # Set all required environment variables for Aspire
+          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
+          $env:ASPNETCORE_URLS = "http://localhost:15000"
+          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
+          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
+          $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
+          $env:ASPNETCORE_ENVIRONMENT = "Development"
+          $env:DOTNET_LAUNCH_PROFILE = ""
+          
+          Write-Host "Environment variables set:" -ForegroundColor Yellow
+          Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
+          Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor Cyan
           
           Write-Host "Starting Aspire AppHost..." -ForegroundColor Yellow
           try {
             # Start the AppHost with a timeout to check if it initializes successfully
-            # Use timeout to prevent hanging and capture startup errors
-            $env:ASPNETCORE_ENVIRONMENT = "Development"
-            $env:DOTNET_LAUNCH_PROFILE = ""
-            
             Write-Host "Attempting Aspire startup with 30-second timeout..." -ForegroundColor Cyan
             $startupOutput = & timeout 30 dotnet run --configuration Release 2>&1 | Out-String
             
-            # If we get here, the process was terminated by timeout (which is expected)
-            # Check if we got fatal errors in the output
-            if ($startupOutput -match "Unhandled exception|Property CliPath|Property DashboardPath|fatal|error") {
-              Write-Host "❌ Aspire startup failed with errors:" -ForegroundColor Red
+            # Check for startup success indicators
+            if ($startupOutput -match "Distributed application starting" -and $startupOutput -match "Aspire version") {
+              Write-Host "✅ Aspire environment startup initiated successfully" -ForegroundColor Green
+              Write-Host "Note: Process was terminated after 30 seconds to avoid hanging the CI" -ForegroundColor Yellow
+            } else {
+              Write-Host "❌ Aspire startup failed - missing expected startup messages:" -ForegroundColor Red
               Write-Host $startupOutput -ForegroundColor Red
               throw "Aspire startup failed with configuration errors"
             }
-            
-            Write-Host "✅ Aspire environment startup initiated successfully" -ForegroundColor Green
-            Write-Host "Note: Process was terminated after 30 seconds to avoid hanging the CI" -ForegroundColor Yellow
           }
           catch {
             Write-Host "❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
