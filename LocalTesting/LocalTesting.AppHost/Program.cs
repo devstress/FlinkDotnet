@@ -229,11 +229,15 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("POSTGRES_PWD", "temporal")
     .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
     .WithEnvironment("POSTGRES_DB", "temporal")
+    .WithEnvironment("DBNAME", "temporal")
+    .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")
     .WithEnvironment("SQL_USER", "temporal")
     .WithEnvironment("SQL_PASSWORD", "temporal")
     .WithEnvironment("DYNAMIC_CONFIG_FILE_PATH", "config/dynamicconfig/development.yaml")
     .WithEnvironment("SKIP_DB_CREATE", "false")
     .WithEnvironment("SKIP_SCHEMA_SETUP", "false")
+    .WithEnvironment("ENABLE_ES", "false")
+    .WithEnvironment("LOG_LEVEL", "info")
     .WaitFor(temporalPostgres);
 
 // Temporal UI for workflow monitoring (depends on Temporal server)

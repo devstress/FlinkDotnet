@@ -184,7 +184,14 @@ jobs:
           Write-Host "⏳ Waiting for services to start and become healthy..." -ForegroundColor Green
           
           # Wait for services to start (give them more time to initialize, especially Temporal)
-          Start-Sleep -Seconds 90
+          Write-Host "Waiting for basic containers to start..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 60
+          
+          Write-Host "Checking initial container status..." -ForegroundColor Yellow
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          Write-Host "Waiting additional time for Temporal stack to initialize..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 120
           
           Write-Host "Checking Docker containers..." -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -276,6 +283,23 @@ jobs:
             $missingServices += "Temporal (PostgreSQL, Server, UI)"
           }
           
+          # Show detailed container information for debugging
+          Write-Host "`n🔍 All running containers for debugging:" -ForegroundColor Yellow
+          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+          
+          # Check for failed containers that might give us clues
+          $failedContainers = docker ps -a --filter "status=exited" --format "{{.Names}}"
+          if ($failedContainers) {
+            Write-Host "`n⚠️ Failed containers found:" -ForegroundColor Yellow
+            $failedContainers | ForEach-Object { 
+              Write-Host "  - $_" -ForegroundColor Red
+              Write-Host "    Exit status and logs:" -ForegroundColor Yellow
+              docker inspect $_ --format "{{.State.ExitCode}}: {{.State.Error}}"
+              Write-Host "    Last 5 log lines:" -ForegroundColor Yellow
+              docker logs --tail 5 $_ 2>&1 | ForEach-Object { Write-Host "      $_" -ForegroundColor Cyan }
+            }
+          }
+          
           # Test API endpoint accessibility for all services including LocalTesting API
           Write-Host "`n🌐 Testing API and UI endpoint accessibility..." -ForegroundColor Green
           
@@ -290,7 +314,7 @@ jobs:
           
           $accessibleEndpoints = @()
           $failedEndpoints = @()
-          $inaccessibleCriticalServices = @()
+          $endpointMissingServices = @()
           
           foreach ($endpoint in $testEndpoints) {
             try {
@@ -306,15 +330,17 @@ jobs:
               Write-Host "❌ $($endpoint.Name) not accessible: $($_.Exception.Message)" -ForegroundColor Red
               $failedEndpoints += $endpoint.Name
               if ($endpoint.Critical) {
-                $inaccessibleCriticalServices += $endpoint.Name
-                $missingServices += $endpoint.Name
+                $endpointMissingServices += $endpoint.Name
               }
             }
           }
           
+          # Combine container validation failures with endpoint failures (avoiding duplicates)
+          $allMissingServices = $missingServices + $endpointMissingServices | Select-Object -Unique
+          
           # Combined validation: fail if either containers are missing OR critical APIs are inaccessible
-          if ($missingServices.Count -gt 0) {
-            Write-Host "`n❌ Missing critical infrastructure services: $($missingServices -join ', ')" -ForegroundColor Red
+          if ($allMissingServices.Count -gt 0) {
+            Write-Host "`n❌ Missing critical infrastructure services: $($allMissingServices -join ', ')" -ForegroundColor Red
             Write-Host "This indicates that the Aspire environment failed to start all required services." -ForegroundColor Red
             
             if ($accessibleEndpoints.Count -gt 0) {
@@ -324,7 +350,7 @@ jobs:
               Write-Host "❌ Failed services: $($failedEndpoints -join ', ')" -ForegroundColor Red
             }
             
-            throw "Critical infrastructure services are missing: $($missingServices -join ', '). Aspire environment startup failed."
+            throw "Critical infrastructure services are missing: $($allMissingServices -join ', '). Aspire environment startup failed."
           }
           
           Write-Host "`n✅ All critical infrastructure components and APIs are running and accessible" -ForegroundColor Green
