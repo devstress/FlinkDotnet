@@ -183,8 +183,8 @@ jobs:
         run: |
           Write-Host "⏳ Waiting for services to start and become healthy..." -ForegroundColor Green
           
-          # Wait for services to start (give them more time to initialize)
-          Start-Sleep -Seconds 60
+          # Wait for services to start (give them more time to initialize, especially Temporal)
+          Start-Sleep -Seconds 90
           
           Write-Host "Checking Docker containers..." -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -192,6 +192,17 @@ jobs:
           # Check if we have some containers running
           $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
           Write-Host "Found $containerCount running containers" -ForegroundColor Cyan
+          
+          # Show any containers that failed to start
+          $failedContainers = docker ps -a --filter "status=exited" --format "{{.Names}}"
+          if ($failedContainers) {
+            Write-Host "⚠️ Containers that failed to start:" -ForegroundColor Yellow
+            $failedContainers | ForEach-Object { 
+              Write-Host "  - $_" -ForegroundColor Red
+              Write-Host "    Last few log lines:" -ForegroundColor Yellow
+              docker logs --tail 10 $_ 2>&1 | ForEach-Object { Write-Host "      $_" -ForegroundColor Cyan }
+            }
+          }
           
           if ($containerCount -eq 0) {
             Write-Host "❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
@@ -245,8 +256,8 @@ jobs:
             
             # Verify we have all required Temporal components
             $hasPostgres = $temporalContainers | Where-Object { $_ -match "postgres" }
-            $hasServer = $temporalContainers | Where-Object { $_ -match "server" }
-            $hasUI = $temporalContainers | Where-Object { $_ -match "ui" }
+            $hasServer = $temporalContainers | Where-Object { $_ -match "server" -and $_ -notmatch "postgres" }
+            $hasUI = $temporalContainers | Where-Object { $_ -match "ui" -and $_ -notmatch "server" }
             
             if (-not $hasPostgres) {
               Write-Host "❌ Temporal PostgreSQL container missing" -ForegroundColor Red
@@ -271,9 +282,7 @@ jobs:
           if ($missingServices.Count -gt 0) {
             Write-Host "❌ Missing critical infrastructure services: $($missingServices -join ', ')" -ForegroundColor Red
             Write-Host "This indicates that the Aspire environment failed to start all required services." -ForegroundColor Red
-            
-            # Don't fail immediately - let's continue to test what is available
-            Write-Host "⚠️ Continuing with available services for testing..." -ForegroundColor Yellow
+            throw "Critical infrastructure services are missing: $($missingServices -join ', '). Aspire environment startup failed."
           } else {
             Write-Host "✅ All critical infrastructure components are running" -ForegroundColor Green
           }
@@ -289,7 +298,7 @@ jobs:
           
           # Check if we can reach the LocalTesting API and other UI endpoints
           $testEndpoints = @(
-            @{Port=5000; Name="LocalTesting API"; Path="/swagger"},
+            @{Port=5000; Name="LocalTesting API"; Path="/"},
             @{Port=8082; Name="Kafka UI"; Path="/"},
             @{Port=8084; Name="Temporal UI"; Path="/"},
             @{Port=3000; Name="Grafana"; Path="/"},
@@ -320,9 +329,28 @@ jobs:
             throw "No services are accessible on any of the expected endpoints"
           }
           
+          # Check for critical services that must be accessible
+          $criticalServices = @("LocalTesting API", "Temporal UI")
+          $missingCriticalEndpoints = @()
+          
+          foreach ($criticalService in $criticalServices) {
+            if ($criticalService -notin $accessibleEndpoints) {
+              $missingCriticalEndpoints += $criticalService
+            }
+          }
+          
+          if ($missingCriticalEndpoints.Count -gt 0) {
+            Write-Host "❌ Critical services are not accessible: $($missingCriticalEndpoints -join ', ')" -ForegroundColor Red
+            Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
+            if ($failedEndpoints.Count -gt 0) {
+              Write-Host "❌ Failed services: $($failedEndpoints -join ', ')" -ForegroundColor Red
+            }
+            throw "Critical services not accessible: $($missingCriticalEndpoints -join ', ')"
+          }
+          
           Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
           if ($failedEndpoints.Count -gt 0) {
-            Write-Host "⚠️ Inaccessible services: $($failedEndpoints -join ', ')" -ForegroundColor Yellow
+            Write-Host "⚠️ Inaccessible non-critical services: $($failedEndpoints -join ', ')" -ForegroundColor Yellow
           }
 
       - name: Validate Aspire Environment Health
