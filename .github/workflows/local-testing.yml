@@ -211,10 +211,10 @@ jobs:
           
           Write-Host "✅ $containerCount containers are running" -ForegroundColor Green
 
-      - name: Validate Infrastructure Components
-        timeout-minutes: 5
+      - name: Validate Infrastructure Components and API Accessibility
+        timeout-minutes: 8
         run: |
-          Write-Host "🔍 Validating infrastructure components..." -ForegroundColor Green
+          Write-Host "🔍 Validating infrastructure components and API accessibility..." -ForegroundColor Green
           
           $missingServices = @()
           
@@ -276,37 +276,21 @@ jobs:
             $missingServices += "Temporal (PostgreSQL, Server, UI)"
           }
           
-          # Note: LocalTesting API is an Aspire service, not a container, so we don't check docker for it
-          Write-Host "ℹ️ LocalTesting API is an Aspire service (not a container) - will test endpoint connectivity separately" -ForegroundColor Blue
-          
-          if ($missingServices.Count -gt 0) {
-            Write-Host "❌ Missing critical infrastructure services: $($missingServices -join ', ')" -ForegroundColor Red
-            Write-Host "This indicates that the Aspire environment failed to start all required services." -ForegroundColor Red
-            throw "Critical infrastructure services are missing: $($missingServices -join ', '). Aspire environment startup failed."
-          } else {
-            Write-Host "✅ All critical infrastructure components are running" -ForegroundColor Green
-          }
-
-      - name: Test LocalTesting API Accessibility
-        timeout-minutes: 3
-        run: |
-          Write-Host "🌐 Testing LocalTesting API accessibility..." -ForegroundColor Green
-          
-          # The LocalTesting API is an Aspire service, not a Docker container
-          # So we test endpoint accessibility directly
-          Write-Host "ℹ️ LocalTesting API runs as Aspire service on port 5000" -ForegroundColor Blue
+          # Test API endpoint accessibility for all services including LocalTesting API
+          Write-Host "`n🌐 Testing API and UI endpoint accessibility..." -ForegroundColor Green
           
           # Check if we can reach the LocalTesting API and other UI endpoints
           $testEndpoints = @(
-            @{Port=5000; Name="LocalTesting API"; Path="/"},
-            @{Port=8082; Name="Kafka UI"; Path="/"},
-            @{Port=8084; Name="Temporal UI"; Path="/"},
-            @{Port=3000; Name="Grafana"; Path="/"},
-            @{Port=8081; Name="Flink JobManager UI"; Path="/"}
+            @{Port=5000; Name="LocalTesting API"; Path="/"; Critical=$true},
+            @{Port=8082; Name="Kafka UI"; Path="/"; Critical=$false},
+            @{Port=8084; Name="Temporal UI"; Path="/"; Critical=$true},
+            @{Port=3000; Name="Grafana"; Path="/"; Critical=$false},
+            @{Port=8081; Name="Flink JobManager UI"; Path="/"; Critical=$false}
           )
           
           $accessibleEndpoints = @()
           $failedEndpoints = @()
+          $inaccessibleCriticalServices = @()
           
           foreach ($endpoint in $testEndpoints) {
             try {
@@ -321,33 +305,29 @@ jobs:
             catch {
               Write-Host "❌ $($endpoint.Name) not accessible: $($_.Exception.Message)" -ForegroundColor Red
               $failedEndpoints += $endpoint.Name
+              if ($endpoint.Critical) {
+                $inaccessibleCriticalServices += $endpoint.Name
+                $missingServices += $endpoint.Name
+              }
             }
           }
           
-          if ($accessibleEndpoints.Count -eq 0) {
-            Write-Host "❌ No services are accessible. Aspire environment failed to start properly." -ForegroundColor Red
-            throw "No services are accessible on any of the expected endpoints"
-          }
-          
-          # Check for critical services that must be accessible
-          $criticalServices = @("LocalTesting API", "Temporal UI")
-          $missingCriticalEndpoints = @()
-          
-          foreach ($criticalService in $criticalServices) {
-            if ($criticalService -notin $accessibleEndpoints) {
-              $missingCriticalEndpoints += $criticalService
+          # Combined validation: fail if either containers are missing OR critical APIs are inaccessible
+          if ($missingServices.Count -gt 0) {
+            Write-Host "`n❌ Missing critical infrastructure services: $($missingServices -join ', ')" -ForegroundColor Red
+            Write-Host "This indicates that the Aspire environment failed to start all required services." -ForegroundColor Red
+            
+            if ($accessibleEndpoints.Count -gt 0) {
+              Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
             }
-          }
-          
-          if ($missingCriticalEndpoints.Count -gt 0) {
-            Write-Host "❌ Critical services are not accessible: $($missingCriticalEndpoints -join ', ')" -ForegroundColor Red
-            Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
             if ($failedEndpoints.Count -gt 0) {
               Write-Host "❌ Failed services: $($failedEndpoints -join ', ')" -ForegroundColor Red
             }
-            throw "Critical services not accessible: $($missingCriticalEndpoints -join ', ')"
+            
+            throw "Critical infrastructure services are missing: $($missingServices -join ', '). Aspire environment startup failed."
           }
           
+          Write-Host "`n✅ All critical infrastructure components and APIs are running and accessible" -ForegroundColor Green
           Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
           if ($failedEndpoints.Count -gt 0) {
             Write-Host "⚠️ Inaccessible non-critical services: $($failedEndpoints -join ', ')" -ForegroundColor Yellow
