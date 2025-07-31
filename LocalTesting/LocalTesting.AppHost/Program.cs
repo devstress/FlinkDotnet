@@ -191,8 +191,8 @@ var flinkSqlGateway = builder.AddContainer("flink-sql-gateway", "flink:2.0.0")
 
 // OpenTelemetry Collector for observability
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
-    .WithHttpEndpoint(4319, 4317, "otlp-grpc")
-    .WithHttpEndpoint(4320, 4318, "otlp-http")
+    .WithHttpEndpoint(4321, 4317, "otlp-grpc")
+    .WithHttpEndpoint(4322, 4318, "otlp-http")
     .WithHttpEndpoint(8888, 8888, "metrics")
     .WithHttpEndpoint(8889, 8889, "prometheus")
     .WithBindMount("./otel-config.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml", isReadOnly: true)
@@ -240,7 +240,7 @@ var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("FLINK_SQL_GATEWAY_URL", "http://flink-sql-gateway:8083")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4320")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4322")
     .WithHttpEndpoint(port: 5000, name: "http");
 
 builder.Build().Run();
