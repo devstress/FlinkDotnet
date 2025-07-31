@@ -27,6 +27,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Install .NET Aspire workload
+        run: |
+          Write-Host "📦 Installing .NET Aspire workload..." -ForegroundColor Green
+          dotnet workload install aspire
+          Write-Host "✅ Aspire workload installed successfully" -ForegroundColor Green
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -64,20 +70,85 @@ jobs:
         run: |
           Write-Host "🚀 Starting LocalTesting Aspire environment..." -ForegroundColor Green
           
-          # Start the Aspire environment in background
+          # Verify Aspire workload is installed
+          Write-Host "Verifying Aspire workload installation..." -ForegroundColor Yellow
+          $workloads = dotnet workload list
+          if ($workloads -notmatch "aspire") {
+            Write-Host "❌ Aspire workload not installed. Install with: dotnet workload install aspire" -ForegroundColor Red
+            throw "Aspire workload is required but not installed"
+          }
+          Write-Host "✅ Aspire workload is installed" -ForegroundColor Green
+          
+          # Start the Aspire environment
           Push-Location LocalTesting/LocalTesting.AppHost
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
+          $env:ASPNETCORE_URLS = "http://localhost:15000"
+          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4317"
+          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4318"
+          $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
           
-          # Start the AppHost in background
           Write-Host "Starting Aspire AppHost..." -ForegroundColor Yellow
-          $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--no-build", "--configuration", "Release" -PassThru -NoNewWindow
-          
-          Pop-Location
-          
-          Write-Host "Aspire environment startup initiated (PID: $($aspireProcess.Id))" -ForegroundColor Cyan
-          
-          # Store process ID for cleanup
-          $aspireProcess.Id | Out-File -FilePath "aspire-pid.txt"
+          try {
+            # Start the AppHost and capture any immediate errors
+            $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+            $processInfo.FileName = "dotnet"
+            $processInfo.Arguments = "run --no-build --configuration Release"
+            $processInfo.RedirectStandardOutput = $true
+            $processInfo.RedirectStandardError = $true
+            $processInfo.UseShellExecute = $false
+            $processInfo.CreateNoWindow = $true
+            
+            $aspireProcess = New-Object System.Diagnostics.Process
+            $aspireProcess.StartInfo = $processInfo
+            
+            # Event handlers for output
+            $outputBuilder = New-Object System.Text.StringBuilder
+            $errorBuilder = New-Object System.Text.StringBuilder
+            
+            Register-ObjectEvent -InputObject $aspireProcess -EventName OutputDataReceived -Action {
+              if ($EventArgs.Data) {
+                $Event.MessageData.AppendLine($EventArgs.Data)
+                Write-Host $EventArgs.Data -ForegroundColor Cyan
+              }
+            } -MessageData $outputBuilder | Out-Null
+            
+            Register-ObjectEvent -InputObject $aspireProcess -EventName ErrorDataReceived -Action {
+              if ($EventArgs.Data) {
+                $Event.MessageData.AppendLine($EventArgs.Data)
+                Write-Host $EventArgs.Data -ForegroundColor Red
+              }
+            } -MessageData $errorBuilder | Out-Null
+            
+            $aspireProcess.Start()
+            $aspireProcess.BeginOutputReadLine()
+            $aspireProcess.BeginErrorReadLine()
+            
+            # Wait a few seconds to check if the process started successfully
+            Start-Sleep -Seconds 10
+            
+            if ($aspireProcess.HasExited) {
+              $exitCode = $aspireProcess.ExitCode
+              $errorOutput = $errorBuilder.ToString()
+              Write-Host "❌ Aspire AppHost failed to start (Exit Code: $exitCode)" -ForegroundColor Red
+              if ($errorOutput) {
+                Write-Host "Error output:" -ForegroundColor Red
+                Write-Host $errorOutput -ForegroundColor Red
+              }
+              throw "Aspire AppHost startup failed with exit code $exitCode"
+            }
+            
+            Write-Host "✅ Aspire environment startup initiated successfully (PID: $($aspireProcess.Id))" -ForegroundColor Green
+            
+            # Store process ID for cleanup
+            $aspireProcess.Id | Out-File -FilePath "aspire-pid.txt"
+          }
+          catch {
+            Write-Host "❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
+            throw "Aspire environment startup failed: $($_.Exception.Message)"
+          }
+          finally {
+            Pop-Location
+          }
 
       - name: Wait for Services to Start
         timeout-minutes: 5
@@ -93,11 +164,20 @@ jobs:
           # Check if we have some containers running
           $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
           Write-Host "Found $containerCount running containers" -ForegroundColor Cyan
+          
+          if ($containerCount -eq 0) {
+            Write-Host "❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
+            throw "Aspire environment startup failed - no containers are running"
+          }
+          
+          Write-Host "✅ $containerCount containers are running" -ForegroundColor Green
 
       - name: Validate Infrastructure Components
         timeout-minutes: 3
         run: |
           Write-Host "🔍 Validating infrastructure components..." -ForegroundColor Green
+          
+          $missingServices = @()
           
           # Check for Kafka containers
           $kafkaContainers = docker ps --filter "name=kafka" --format "{{.Names}}"
@@ -105,7 +185,8 @@ jobs:
             Write-Host "✅ Kafka containers found:" -ForegroundColor Green
             $kafkaContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
           } else {
-            Write-Host "⚠️ No Kafka containers found" -ForegroundColor Yellow
+            Write-Host "❌ No Kafka containers found" -ForegroundColor Red
+            $missingServices += "Kafka"
           }
           
           # Check for Flink containers
@@ -114,7 +195,8 @@ jobs:
             Write-Host "✅ Flink containers found:" -ForegroundColor Green
             $flinkContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
           } else {
-            Write-Host "⚠️ No Flink containers found" -ForegroundColor Yellow
+            Write-Host "❌ No Flink containers found" -ForegroundColor Red
+            $missingServices += "Flink"
           }
           
           # Check for Redis containers
@@ -123,8 +205,27 @@ jobs:
             Write-Host "✅ Redis containers found:" -ForegroundColor Green
             $redisContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
           } else {
-            Write-Host "⚠️ No Redis containers found" -ForegroundColor Yellow
+            Write-Host "❌ No Redis containers found" -ForegroundColor Red
+            $missingServices += "Redis"
           }
+          
+          # Check for API containers
+          $apiContainers = docker ps --filter "name=localtesting" --format "{{.Names}}"
+          if ($apiContainers) {
+            Write-Host "✅ LocalTesting API containers found:" -ForegroundColor Green
+            $apiContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
+          } else {
+            Write-Host "❌ No LocalTesting API containers found" -ForegroundColor Red
+            $missingServices += "LocalTesting API"
+          }
+          
+          if ($missingServices.Count -gt 0) {
+            Write-Host "❌ Missing critical infrastructure services: $($missingServices -join ', ')" -ForegroundColor Red
+            Write-Host "This indicates that the Aspire environment failed to start all required services." -ForegroundColor Red
+            throw "Critical infrastructure services are missing: $($missingServices -join ', ')"
+          }
+          
+          Write-Host "✅ All critical infrastructure components are running" -ForegroundColor Green
 
       - name: Test LocalTesting API Accessibility
         timeout-minutes: 2
@@ -136,23 +237,33 @@ jobs:
           if ($apiContainers) {
             Write-Host "✅ LocalTesting WebApi container found: $apiContainers" -ForegroundColor Green
           } else {
-            Write-Host "⚠️ LocalTesting WebApi container not found in expected format" -ForegroundColor Yellow
+            Write-Host "❌ LocalTesting WebApi container not found in expected format" -ForegroundColor Red
           }
           
           # Check if we can reach any HTTP endpoints on common ports
           $commonPorts = @(5000, 8080, 8081)
+          $accessiblePorts = @()
+          
           foreach ($port in $commonPorts) {
             try {
               Write-Host "Testing port $port..." -ForegroundColor Yellow
               $response = Invoke-WebRequest -Uri "http://localhost:$port" -TimeoutSec 5 -ErrorAction SilentlyContinue
               if ($response.StatusCode -eq 200) {
                 Write-Host "✅ Port $port is accessible (Status: $($response.StatusCode))" -ForegroundColor Green
+                $accessiblePorts += $port
               }
             }
             catch {
-              Write-Host "⚠️ Port $port not accessible: $($_.Exception.Message)" -ForegroundColor Yellow
+              Write-Host "❌ Port $port not accessible: $($_.Exception.Message)" -ForegroundColor Red
             }
           }
+          
+          if ($accessiblePorts.Count -eq 0) {
+            Write-Host "❌ No API endpoints are accessible on common ports. LocalTesting API is not running properly." -ForegroundColor Red
+            throw "LocalTesting API is not accessible on any of the expected ports: $($commonPorts -join ', ')"
+          }
+          
+          Write-Host "✅ LocalTesting API is accessible on ports: $($accessiblePorts -join ', ')" -ForegroundColor Green
 
       - name: Validate Aspire Environment Health
         run: |
