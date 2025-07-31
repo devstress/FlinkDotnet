@@ -211,12 +211,36 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
     .WithBindMount("./grafana-datasources.yml", "/etc/grafana/provisioning/datasources/datasources.yml", isReadOnly: true);
 
+// Temporal Server for durable execution workflows
+var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
+    .WithHttpEndpoint(7233, 7233, "temporal-server")
+    .WithHttpEndpoint(8080, 8080, "temporal-ui")
+    .WithEnvironment("DB", "postgresql")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PWD", "temporal")
+    .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
+    .WithEnvironment("DYNAMIC_CONFIG_FILE_PATH", "config/dynamicconfig/development.yaml");
+
+// PostgreSQL for Temporal storage
+var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
+    .WithEnvironment("POSTGRES_DB", "temporal")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PASSWORD", "temporal")
+    .WithBindMount("temporal-postgres-data", "/var/lib/postgresql/data");
+
+// Temporal UI for workflow monitoring
+var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
+    .WithHttpEndpoint(8081, 8080, "temporal-ui")
+    .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
+    .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8081");
+
 // LocalTesting Web API with Swagger
 var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting.WebApi/LocalTesting.WebApi.csproj")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("FLINK_SQL_GATEWAY_URL", "http://flink-sql-gateway:8083")
+    .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WithHttpEndpoint(port: 5000, name: "http");
 

@@ -1,4 +1,5 @@
 using LocalTesting.WebApi.Services;
+using LocalTesting.WebApi.Services.Temporal;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -52,6 +53,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 builder.Services.AddSingleton<AspireHealthCheckService>();
 builder.Services.AddSingleton<ComplexLogicStressTestService>();
 builder.Services.AddSingleton<SecurityTokenManagerService>();
+builder.Services.AddSingleton<TemporalSecurityTokenService>();
 builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddSingleton<FlinkJobManagementService>();
 builder.Services.AddSingleton<BackpressureMonitoringService>();
