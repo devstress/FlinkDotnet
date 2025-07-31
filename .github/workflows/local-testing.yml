@@ -137,7 +137,22 @@ jobs:
           try {
             # Start the AppHost with a timeout to check if it initializes successfully
             Write-Host "Attempting Aspire startup with 30-second timeout..." -ForegroundColor Cyan
-            $startupOutput = & timeout 30 dotnet run --configuration Release 2>&1 | Out-String
+            
+            # Use start-process with timeout to handle exit codes properly
+            $startupProcess = Start-Process -FilePath "timeout" -ArgumentList "30", "dotnet", "run", "--configuration", "Release" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow -Wait
+            
+            # Read the output files
+            $startupOutput = ""
+            if (Test-Path "aspire_output.log") {
+              $startupOutput += Get-Content "aspire_output.log" -Raw
+            }
+            if (Test-Path "aspire_error.log") {
+              $startupOutput += Get-Content "aspire_error.log" -Raw
+            }
+            
+            # The timeout command returns 124 when it times out, which is expected
+            # We want to check if Aspire started successfully before the timeout
+            Write-Host "Process exit code: $($startupProcess.ExitCode)" -ForegroundColor Cyan
             
             # Check for startup success indicators
             if ($startupOutput -match "Distributed application starting" -and $startupOutput -match "Aspire version") {
@@ -148,6 +163,10 @@ jobs:
               Write-Host $startupOutput -ForegroundColor Red
               throw "Aspire startup failed with configuration errors"
             }
+            
+            # Clean up log files
+            if (Test-Path "aspire_output.log") { Remove-Item "aspire_output.log" -Force }
+            if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
           }
           catch {
             Write-Host "❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
@@ -155,11 +174,16 @@ jobs:
             if ($startupOutput) {
               Write-Host $startupOutput -ForegroundColor Yellow
             }
+            
+            # Clean up log files on error too
+            if (Test-Path "aspire_output.log") { Remove-Item "aspire_output.log" -Force }
+            if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
+            
+            Pop-Location
             throw "Aspire environment startup failed: $($_.Exception.Message)"
           }
-          finally {
-            Pop-Location
-          }
+          
+          Pop-Location
 
       - name: Wait for Services to Start
         timeout-minutes: 5
