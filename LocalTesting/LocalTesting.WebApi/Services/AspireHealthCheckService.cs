@@ -41,6 +41,7 @@ public class AspireHealthCheckService
         tasks.Add(CheckPrometheusAsync().ContinueWith(t => results["prometheus"] = t.Result));
         tasks.Add(CheckGrafanaAsync().ContinueWith(t => results["grafana"] = t.Result));
         tasks.Add(CheckTemporalAsync().ContinueWith(t => results["temporal"] = t.Result));
+        tasks.Add(CheckTemporalUIAsync().ContinueWith(t => results["temporalUI"] = t.Result));
 
         await Task.WhenAll(tasks);
 
@@ -48,7 +49,7 @@ public class AspireHealthCheckService
         var healthyCount = results.Values.Count(r => r is ServiceHealthStatus status && status.IsHealthy);
         var totalCount = results.Count;
 
-        _logger.LogInformation("✅ Service health check completed: {HealthyCount}/{TotalCount} services healthy", 
+        _logger.LogInformation("✅ Service health check completed: {HealthyCount}/{TotalCount} services healthy (includes all infrastructure + monitoring services)", 
             healthyCount, totalCount);
 
         return new Dictionary<string, object>
@@ -444,6 +445,41 @@ public class AspireHealthCheckService
             return new ServiceHealthStatus
             {
                 ServiceName = "Temporal Server",
+                IsHealthy = false,
+                ErrorMessage = ex.Message,
+                LastCheck = DateTime.UtcNow
+            };
+        }
+    }
+
+    private async Task<ServiceHealthStatus> CheckTemporalUIAsync()
+    {
+        try
+        {
+            var startTime = DateTime.UtcNow;
+            var response = await _httpClient.GetAsync("http://localhost:8081");
+            var responseTime = DateTime.UtcNow - startTime;
+            
+            return new ServiceHealthStatus
+            {
+                ServiceName = "Temporal UI",
+                IsHealthy = response.IsSuccessStatusCode,
+                Details = new Dictionary<string, object>
+                {
+                    ["statusCode"] = (int)response.StatusCode,
+                    ["endpoint"] = "http://localhost:8081",
+                    ["description"] = "Temporal Web UI for workflow monitoring and debugging"
+                },
+                ResponseTime = responseTime,
+                LastCheck = DateTime.UtcNow,
+                ErrorMessage = response.IsSuccessStatusCode ? null : $"HTTP {response.StatusCode}"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceHealthStatus
+            {
+                ServiceName = "Temporal UI",
                 IsHealthy = false,
                 ErrorMessage = ex.Message,
                 LastCheck = DateTime.UtcNow
