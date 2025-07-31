@@ -211,23 +211,26 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
     .WithBindMount("./grafana-datasources.yml", "/etc/grafana/provisioning/datasources/datasources.yml", isReadOnly: true);
 
-// Temporal Server for durable execution workflows
+// PostgreSQL for Temporal storage (defined first to establish dependency order)
+var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
+    .WithEnvironment("POSTGRES_DB", "temporal")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PASSWORD", "temporal")
+    .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")
+    .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data");
+
+// Temporal Server for durable execution workflows (depends on PostgreSQL)
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
     .WithHttpEndpoint(7233, 7233, "temporal-server")
     .WithEnvironment("DB", "postgresql")
     .WithEnvironment("POSTGRES_USER", "temporal")
     .WithEnvironment("POSTGRES_PWD", "temporal")
     .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
+    .WithEnvironment("SQL_USER", "temporal")
+    .WithEnvironment("SQL_PASSWORD", "temporal")
     .WithEnvironment("DYNAMIC_CONFIG_FILE_PATH", "config/dynamicconfig/development.yaml");
 
-// PostgreSQL for Temporal storage
-var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
-    .WithEnvironment("POSTGRES_DB", "temporal")
-    .WithEnvironment("POSTGRES_USER", "temporal")
-    .WithEnvironment("POSTGRES_PASSWORD", "temporal")
-    .WithBindMount("temporal-postgres-data", "/var/lib/postgresql/data");
-
-// Temporal UI for workflow monitoring
+// Temporal UI for workflow monitoring (depends on Temporal server)
 var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
     .WithHttpEndpoint(8084, 8080, "temporal-ui")
     .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
