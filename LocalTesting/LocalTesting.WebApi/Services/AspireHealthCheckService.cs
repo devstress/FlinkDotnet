@@ -320,7 +320,7 @@ public class AspireHealthCheckService
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:8080/actuator/health");
+            var response = await _httpClient.GetAsync("http://localhost:8082/actuator/health");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -330,7 +330,7 @@ public class AspireHealthCheckService
                 Details = new Dictionary<string, object>
                 {
                     ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:8080"
+                    ["endpoint"] = "http://localhost:8082"
                 },
                 ResponseTime = responseTime,
                 LastCheck = DateTime.UtcNow,
@@ -457,7 +457,7 @@ public class AspireHealthCheckService
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:8081");
+            var response = await _httpClient.GetAsync("http://localhost:8084");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -467,7 +467,7 @@ public class AspireHealthCheckService
                 Details = new Dictionary<string, object>
                 {
                     ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:8081",
+                    ["endpoint"] = "http://localhost:8084",
                     ["description"] = "Temporal Web UI for workflow monitoring and debugging"
                 },
                 ResponseTime = responseTime,

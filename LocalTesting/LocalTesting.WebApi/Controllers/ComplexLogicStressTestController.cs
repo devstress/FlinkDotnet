@@ -569,7 +569,7 @@ public class ComplexLogicStressTestController : ControllerBase
                 MonitoringEndpoints = new
                 {
                     Status = $"/api/ComplexLogicStressTest/test-status/{testId}",
-                    KafkaUI = "http://localhost:8080",
+                    KafkaUI = "http://localhost:8082",
                     FlinkUI = "http://localhost:8081",
                     Grafana = "http://localhost:3000"
                 },

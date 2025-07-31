@@ -95,9 +95,10 @@ jobs:
           Push-Location LocalTesting/LocalTesting.AppHost
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
           $env:ASPNETCORE_URLS = "http://localhost:15000"
-          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4317"
-          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4318"
+          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4319"
+          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4320"
           $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
+          $env:DEBUG_SESSION_PORT = "0"
           
           # Set DCP and Dashboard paths for Aspire orchestration
           $nugetPackages = "${env:USERPROFILE}/.nuget/packages"
@@ -260,7 +261,7 @@ jobs:
           }
           
           # Check if we can reach any HTTP endpoints on common ports
-          $commonPorts = @(5000, 8080, 8081)
+          $commonPorts = @(5000, 8082, 8084)
           $accessiblePorts = @()
           
           foreach ($port in $commonPorts) {

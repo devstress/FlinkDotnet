@@ -118,7 +118,7 @@ var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "bitnami/kafka:latest"
 
 // Kafka UI for management and monitoring
 var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
-    .WithHttpEndpoint(8080, 8080, "kafka-ui")
+    .WithHttpEndpoint(8082, 8080, "kafka-ui")
     .WithEnvironment("KAFKA_CLUSTERS_0_NAME", "local-testing-3-broker-cluster")
     .WithEnvironment("KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
@@ -191,8 +191,8 @@ var flinkSqlGateway = builder.AddContainer("flink-sql-gateway", "flink:2.0.0")
 
 // OpenTelemetry Collector for observability
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
-    .WithHttpEndpoint(4317, 4317, "otlp-grpc")
-    .WithHttpEndpoint(4318, 4318, "otlp-http")
+    .WithHttpEndpoint(4319, 4317, "otlp-grpc")
+    .WithHttpEndpoint(4320, 4318, "otlp-http")
     .WithHttpEndpoint(8888, 8888, "metrics")
     .WithHttpEndpoint(8889, 8889, "prometheus")
     .WithBindMount("./otel-config.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml", isReadOnly: true)
@@ -214,7 +214,6 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
 // Temporal Server for durable execution workflows
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
     .WithHttpEndpoint(7233, 7233, "temporal-server")
-    .WithHttpEndpoint(8080, 8080, "temporal-ui")
     .WithEnvironment("DB", "postgresql")
     .WithEnvironment("POSTGRES_USER", "temporal")
     .WithEnvironment("POSTGRES_PWD", "temporal")
@@ -230,9 +229,9 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
 
 // Temporal UI for workflow monitoring
 var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
-    .WithHttpEndpoint(8081, 8080, "temporal-ui")
+    .WithHttpEndpoint(8084, 8080, "temporal-ui")
     .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
-    .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8081");
+    .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084");
 
 // LocalTesting Web API with Swagger
 var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting.WebApi/LocalTesting.WebApi.csproj")
@@ -241,7 +240,7 @@ var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("FLINK_SQL_GATEWAY_URL", "http://flink-sql-gateway:8083")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4320")
     .WithHttpEndpoint(port: 5000, name: "http");
 
 builder.Build().Run();
