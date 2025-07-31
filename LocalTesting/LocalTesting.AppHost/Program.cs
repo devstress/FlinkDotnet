@@ -217,7 +217,8 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
     .WithEnvironment("POSTGRES_USER", "temporal")
     .WithEnvironment("POSTGRES_PASSWORD", "temporal")
     .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")
-    .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data");
+    .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data")
+    .WithEndpoint(5432, 5432, "postgres");
 
 // Temporal Server for durable execution workflows (depends on PostgreSQL)
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
@@ -228,13 +229,15 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
     .WithEnvironment("SQL_USER", "temporal")
     .WithEnvironment("SQL_PASSWORD", "temporal")
-    .WithEnvironment("DYNAMIC_CONFIG_FILE_PATH", "config/dynamicconfig/development.yaml");
+    .WithEnvironment("DYNAMIC_CONFIG_FILE_PATH", "config/dynamicconfig/development.yaml")
+    .WaitFor(temporalPostgres);
 
 // Temporal UI for workflow monitoring (depends on Temporal server)
 var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
     .WithHttpEndpoint(8084, 8080, "temporal-ui")
     .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
-    .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084");
+    .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084")
+    .WaitFor(temporalServer);
 
 // LocalTesting Web API with Swagger
 var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting.WebApi/LocalTesting.WebApi.csproj")
