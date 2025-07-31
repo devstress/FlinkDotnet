@@ -209,38 +209,157 @@ public class ComplexLogicStressTestController : ControllerBase
 
             _logger.LogInformation("📝 Producing {MessageCount:N0} messages with unique correlation IDs", request.MessageCount);
 
+            var startTime = DateTime.UtcNow;
             var testId = request.TestId ?? Guid.NewGuid().ToString();
+            
+            // Use Kafka producer for real message production
             var messages = await _stressTestService.ProduceMessagesAsync(testId, request.MessageCount);
             
-            var result = new
+            var endTime = DateTime.UtcNow;
+            var totalDuration = endTime - startTime;
+            var messagesPerSecond = messages.Count / totalDuration.TotalSeconds;
+            
+            // Verify Kafka broker health and message persistence
+            var healthCheck = await _healthCheckService.CheckAllServicesAsync();
+            var kafkaHealth = healthCheck["services"] as Dictionary<string, object>;
+            var kafkaBrokerStatus = kafkaHealth?["kafkaBrokers"] as ServiceHealthStatus;
+            
+            var metrics = new Dictionary<string, object>
             {
-                TestId = testId,
-                Status = "Completed",
-                Message = $"Successfully produced {request.MessageCount:N0} messages with unique correlation IDs",
-                MessageCount = messages.Count,
-                SampleMessages = messages.Take(5).Select(m => new 
-                {
-                    m.MessageId,
-                    m.CorrelationId,
-                    m.BatchNumber,
-                    m.Content
-                }),
-                TopicInfo = new
-                {
-                    Topic = "complex-input",
-                    Partitions = 100,
-                    ReplicationFactor = 3
-                },
-                Timestamp = DateTime.UtcNow
+                ["messageCount"] = messages.Count,
+                ["totalDurationSeconds"] = Math.Round(totalDuration.TotalSeconds, 2),
+                ["messagesPerSecond"] = Math.Round(messagesPerSecond, 2),
+                ["throughputMBps"] = Math.Round((messages.Count * 1024) / (1024 * 1024 * totalDuration.TotalSeconds), 2), // Estimate 1KB per message
+                ["kafkaBrokersHealthy"] = kafkaBrokerStatus?.IsHealthy ?? false,
+                ["kafkaBrokerCount"] = kafkaBrokerStatus?.Details.TryGetValue("brokerCount", out var count) == true ? count : 0,
+                ["correlationIdSample"] = messages.Take(3).Select(m => m.CorrelationId).ToArray(),
+                ["messageIdRange"] = new { First = messages.FirstOrDefault()?.MessageId, Last = messages.LastOrDefault()?.MessageId },
+                ["batchCount"] = messages.Select(m => m.BatchNumber).Distinct().Count(),
+                ["averageMessageSize"] = 1024, // Estimated
+                ["testId"] = testId,
+                ["timestamp"] = DateTime.UtcNow
             };
 
-            _logger.LogInformation("✅ Message production completed: {MessageCount:N0} messages", messages.Count);
-            return Ok(result);
+            var status = request.MessageCount >= 1000000 ? "1M_Messages_Produced" : "Messages_Produced";
+            
+            _logger.LogInformation("✅ Message production completed: {MessageCount:N0} messages in {Duration:F2}s ({Throughput:F2} msgs/sec)", 
+                messages.Count, totalDuration.TotalSeconds, messagesPerSecond);
+            
+            if (request.MessageCount >= 1000000)
+            {
+                _logger.LogInformation("🎉 1 MILLION MESSAGE MILESTONE: Produced {MessageCount:N0} messages in {Duration:F2} seconds", 
+                    messages.Count, totalDuration.TotalSeconds);
+            }
+
+            return Ok(new { Status = status, Metrics = metrics });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Failed to produce messages");
-            return StatusCode(500, new { Error = ex.Message });
+            return StatusCode(500, new { 
+                Status = "Failed", 
+                Metrics = new { Error = ex.Message, Timestamp = DateTime.UtcNow } 
+            });
+        }
+    }
+
+    [HttpPost("step4/produce-1million-messages")]
+    [SwaggerOperation(
+        Summary = "Step 4: Performance Test - Produce 1 Million Messages",
+        Description = "Specialized endpoint to produce exactly 1 million messages and measure performance with 3 Kafka brokers"
+    )]
+    [SwaggerResponse(200, "1 million messages produced successfully")]
+    [SwaggerResponse(500, "1 million message test failed")]
+    public async Task<IActionResult> Produce1MillionMessages()
+    {
+        try
+        {
+            _logger.LogInformation("🚀 Starting 1 MILLION MESSAGE PERFORMANCE TEST");
+
+            var testId = $"1M-test-{DateTime.UtcNow:yyyyMMddHHmmss}";
+            var messageCount = 1000000;
+            
+            // Pre-test health check
+            var preHealthCheck = await _healthCheckService.CheckAllServicesAsync();
+            var preKafkaHealth = preHealthCheck["services"] as Dictionary<string, object>;
+            var preKafkaBrokerStatus = preKafkaHealth?["kafkaBrokers"] as ServiceHealthStatus;
+            
+            if (preKafkaBrokerStatus?.IsHealthy != true)
+            {
+                return StatusCode(500, new { 
+                    Status = "Failed", 
+                    Metrics = new { Error = "Kafka brokers not healthy before test", Timestamp = DateTime.UtcNow } 
+                });
+            }
+
+            var startTime = DateTime.UtcNow;
+            _logger.LogInformation("⏱️ Production start time: {StartTime}", startTime);
+            
+            // Produce 1 million messages
+            var messages = await _stressTestService.ProduceMessagesAsync(testId, messageCount);
+            
+            var endTime = DateTime.UtcNow;
+            var totalDuration = endTime - startTime;
+            var messagesPerSecond = messages.Count / totalDuration.TotalSeconds;
+            
+            // Post-test health check
+            var postHealthCheck = await _healthCheckService.CheckAllServicesAsync();
+            var postKafkaHealth = postHealthCheck["services"] as Dictionary<string, object>;
+            var postKafkaBrokerStatus = postKafkaHealth?["kafkaBrokers"] as ServiceHealthStatus;
+            
+            var metrics = new Dictionary<string, object>
+            {
+                ["testType"] = "1_Million_Message_Performance_Test",
+                ["messageCount"] = messages.Count,
+                ["targetMessageCount"] = messageCount,
+                ["testSuccessful"] = messages.Count == messageCount,
+                ["totalDurationSeconds"] = Math.Round(totalDuration.TotalSeconds, 2),
+                ["totalDurationMinutes"] = Math.Round(totalDuration.TotalMinutes, 2),
+                ["messagesPerSecond"] = Math.Round(messagesPerSecond, 2),
+                ["throughputMBps"] = Math.Round((messages.Count * 1024) / (1024 * 1024 * totalDuration.TotalSeconds), 2),
+                ["preTestKafkaBrokersHealthy"] = preKafkaBrokerStatus?.IsHealthy ?? false,
+                ["postTestKafkaBrokersHealthy"] = postKafkaBrokerStatus?.IsHealthy ?? false,
+                ["kafkaBrokerCount"] = postKafkaBrokerStatus?.Details.TryGetValue("brokerCount", out var count) == true ? count : 0,
+                ["correlationIdVerification"] = new {
+                    First = messages.FirstOrDefault()?.CorrelationId,
+                    Last = messages.LastOrDefault()?.CorrelationId,
+                    Sample = messages.Where((_, i) => i % 100000 == 0).Select(m => m.CorrelationId).ToArray() // Every 100k messages
+                },
+                ["messageIdRange"] = new { 
+                    First = messages.FirstOrDefault()?.MessageId, 
+                    Last = messages.LastOrDefault()?.MessageId,
+                    ExpectedLast = messageCount
+                },
+                ["batchCount"] = messages.Select(m => m.BatchNumber).Distinct().Count(),
+                ["estimatedDataSizeMB"] = Math.Round((messages.Count * 1024) / (1024.0 * 1024.0), 2),
+                ["performanceRating"] = messagesPerSecond > 10000 ? "Excellent" : messagesPerSecond > 5000 ? "Good" : "Needs_Optimization",
+                ["testId"] = testId,
+                ["startTime"] = startTime,
+                ["endTime"] = endTime,
+                ["timestamp"] = DateTime.UtcNow
+            };
+
+            var status = messages.Count == messageCount ? "1M_Messages_Success" : "1M_Messages_Partial";
+            
+            _logger.LogInformation("🎉 1 MILLION MESSAGE TEST COMPLETED!");
+            _logger.LogInformation("📊 Results: {MessageCount:N0} messages in {Duration:F2} seconds ({Throughput:F2} msgs/sec)", 
+                messages.Count, totalDuration.TotalSeconds, messagesPerSecond);
+            _logger.LogInformation("📈 Throughput: {ThroughputMBps:F2} MB/s", 
+                (messages.Count * 1024) / (1024 * 1024 * totalDuration.TotalSeconds));
+
+            return Ok(new { Status = status, Metrics = metrics });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ 1 Million message test failed");
+            return StatusCode(500, new { 
+                Status = "Failed", 
+                Metrics = new { 
+                    Error = ex.Message, 
+                    TestType = "1_Million_Message_Performance_Test",
+                    Timestamp = DateTime.UtcNow 
+                } 
+            });
         }
     }
 

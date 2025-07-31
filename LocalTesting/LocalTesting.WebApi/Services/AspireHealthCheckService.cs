@@ -40,6 +40,7 @@ public class AspireHealthCheckService
         tasks.Add(CheckKafkaUIAsync().ContinueWith(t => results["kafkaUI"] = t.Result));
         tasks.Add(CheckPrometheusAsync().ContinueWith(t => results["prometheus"] = t.Result));
         tasks.Add(CheckGrafanaAsync().ContinueWith(t => results["grafana"] = t.Result));
+        tasks.Add(CheckTemporalAsync().ContinueWith(t => results["temporal"] = t.Result));
 
         await Task.WhenAll(tasks);
 
@@ -408,6 +409,41 @@ public class AspireHealthCheckService
             return new ServiceHealthStatus
             {
                 ServiceName = "Grafana",
+                IsHealthy = false,
+                ErrorMessage = ex.Message,
+                LastCheck = DateTime.UtcNow
+            };
+        }
+    }
+
+    private async Task<ServiceHealthStatus> CheckTemporalAsync()
+    {
+        try
+        {
+            var startTime = DateTime.UtcNow;
+            var response = await _httpClient.GetAsync("http://localhost:7233/api/v1/namespaces");
+            var responseTime = DateTime.UtcNow - startTime;
+            
+            return new ServiceHealthStatus
+            {
+                ServiceName = "Temporal Server",
+                IsHealthy = response.IsSuccessStatusCode,
+                Details = new Dictionary<string, object>
+                {
+                    ["statusCode"] = (int)response.StatusCode,
+                    ["endpoint"] = "http://localhost:7233",
+                    ["uiEndpoint"] = "http://localhost:8081"
+                },
+                ResponseTime = responseTime,
+                LastCheck = DateTime.UtcNow,
+                ErrorMessage = response.IsSuccessStatusCode ? null : $"HTTP {response.StatusCode}"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceHealthStatus
+            {
+                ServiceName = "Temporal Server",
                 IsHealthy = false,
                 ErrorMessage = ex.Message,
                 LastCheck = DateTime.UtcNow
