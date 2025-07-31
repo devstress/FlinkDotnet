@@ -95,8 +95,8 @@ jobs:
           Push-Location LocalTesting/LocalTesting.AppHost
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
           $env:ASPNETCORE_URLS = "http://localhost:15000"
-          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4321"
-          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4322"
+          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
+          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324"
           $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
           # Remove DEBUG_SESSION variables to prevent IDE mode in CI
           # $env:DEBUG_SESSION_PORT = ""
