@@ -15,6 +15,7 @@ public class ComplexLogicStressTestController : ControllerBase
     private readonly KafkaProducerService _kafkaProducer;
     private readonly FlinkJobManagementService _flinkJobService;
     private readonly BackpressureMonitoringService _backpressureService;
+    private readonly AspireHealthCheckService _healthCheckService;
     private readonly ILogger<ComplexLogicStressTestController> _logger;
 
     public ComplexLogicStressTestController(
@@ -23,6 +24,7 @@ public class ComplexLogicStressTestController : ControllerBase
         KafkaProducerService kafkaProducer,
         FlinkJobManagementService flinkJobService,
         BackpressureMonitoringService backpressureService,
+        AspireHealthCheckService healthCheckService,
         ILogger<ComplexLogicStressTestController> logger)
     {
         _stressTestService = stressTestService;
@@ -30,6 +32,7 @@ public class ComplexLogicStressTestController : ControllerBase
         _kafkaProducer = kafkaProducer;
         _flinkJobService = flinkJobService;
         _backpressureService = backpressureService;
+        _healthCheckService = healthCheckService;
         _logger = logger;
     }
 
@@ -48,34 +51,33 @@ public class ComplexLogicStressTestController : ControllerBase
         {
             _logger.LogInformation("🚀 Setting up Aspire test environment...");
             
-            // Simulate environment validation
-            await Task.Delay(1000);
+            // Real health check of all Aspire services
+            var healthCheckResults = await _healthCheckService.CheckAllServicesAsync();
             
-            var result = new
-            {
-                Status = "Ready",
-                Message = "Aspire test environment is running with all required services",
-                Services = new
-                {
-                    KafkaBrokers = new[] { "kafka-broker-1:9092", "kafka-broker-2:9092", "kafka-broker-3:9092" },
-                    Redis = "redis:6379",
-                    FlinkJobManager = "flink-jobmanager:8081",
-                    FlinkTaskManagers = new[] { "flink-taskmanager-1:6122", "flink-taskmanager-2:6122", "flink-taskmanager-3:6122" },
-                    KafkaUI = "http://localhost:8080",
-                    FlinkUI = "http://localhost:8081",
-                    Grafana = "http://localhost:3000",
-                    Prometheus = "http://localhost:9090"
-                },
-                Timestamp = DateTime.UtcNow
-            };
+            var overallHealth = healthCheckResults["overallHealth"] as dynamic;
+            var isHealthy = overallHealth?.IsHealthy ?? false;
+            
+            var status = isHealthy ? "Ready" : "Degraded";
+            var metrics = healthCheckResults;
 
-            _logger.LogInformation("✅ Aspire test environment setup completed");
-            return Ok(result);
+            if (isHealthy)
+            {
+                _logger.LogInformation("✅ Aspire test environment setup completed - all services healthy");
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ Aspire test environment setup completed with issues - some services unhealthy");
+            }
+
+            return Ok(new { Status = status, Metrics = metrics });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Failed to setup Aspire test environment");
-            return StatusCode(500, new { Error = ex.Message });
+            return StatusCode(500, new { 
+                Status = "Failed", 
+                Metrics = new { Error = ex.Message, Timestamp = DateTime.UtcNow } 
+            });
         }
     }
 
@@ -184,7 +186,9 @@ public class ComplexLogicStressTestController : ControllerBase
         var status = _backpressureService.GetBackpressureStatus();
         var metrics = _backpressureService.GetMetrics();
         
-        return Ok(new { Status = status, Metrics = metrics });
+        var statusValue = status.IsBackpressureActive ? "Active" : "Inactive";
+        
+        return Ok(new { Status = statusValue, Metrics = metrics });
     }
 
     // ========== STEP 4: Message Production ==========

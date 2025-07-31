@@ -49,6 +49,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 });
 
 // Add custom services
+builder.Services.AddSingleton<AspireHealthCheckService>();
 builder.Services.AddSingleton<ComplexLogicStressTestService>();
 builder.Services.AddSingleton<SecurityTokenManagerService>();
 builder.Services.AddSingleton<KafkaProducerService>();
