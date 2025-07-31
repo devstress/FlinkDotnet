@@ -187,7 +187,7 @@ var flinkSqlGateway = builder.AddContainer("flink-sql-gateway", "flink:2.0.0")
         sql-gateway.endpoint.rest.address: 0.0.0.0
         sql-gateway.endpoint.rest.port: 8083
         """)
-    .WithArgs("sql-gateway");
+    .WithArgs("sql-gateway.sh", "start-foreground");
 
 // OpenTelemetry Collector for observability
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
@@ -223,7 +223,7 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
 // Temporal Server for durable execution workflows (depends on PostgreSQL)
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
     .WithHttpEndpoint(7233, 7233, "temporal-server")
-    .WithEnvironment("DB", "postgresql")
+    .WithEnvironment("DB", "postgres12")
     .WithEnvironment("DB_PORT", "5432")
     .WithEnvironment("POSTGRES_USER", "temporal")
     .WithEnvironment("POSTGRES_PWD", "temporal")
