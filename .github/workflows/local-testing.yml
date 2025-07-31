@@ -105,41 +105,24 @@ jobs:
           $env:DOTNET_LAUNCH_PROFILE = ""
           
           # Set DCP and Dashboard paths for Aspire orchestration
-          $nugetPackages = "${env:USERPROFILE}/.nuget/packages"
-          if (-not (Test-Path $nugetPackages)) {
-            $nugetPackages = "$HOME/.nuget/packages"
-          }
+          $nugetPackages = "$HOME/.nuget/packages"
           
-          # Find the DCP executable path
-          $dcpPath = Get-ChildItem -Path "$nugetPackages/aspire.hosting.orchestration.*" -Directory | 
-                     Sort-Object Name -Descending | 
-                     Select-Object -First 1 | 
-                     ForEach-Object { 
-                       $versionDir = Get-ChildItem -Path $_.FullName -Directory | Sort-Object Name -Descending | Select-Object -First 1
-                       "$($versionDir.FullName)/tools/dcp"
-                     }
-          
-          # Find the Dashboard path  
-          $dashboardPath = Get-ChildItem -Path "$nugetPackages/aspire.dashboard.sdk.*" -Directory |
-                          Sort-Object Name -Descending |
-                          Select-Object -First 1 |
-                          ForEach-Object { 
-                            $versionDir = Get-ChildItem -Path $_.FullName -Directory | Sort-Object Name -Descending | Select-Object -First 1
-                            "$($versionDir.FullName)/tools"
-                          }
-          
-          if ($dcpPath -and (Test-Path $dcpPath)) {
+          # Set DCP CLI path using the installed orchestration package
+          $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.3.1/tools/dcp"
+          if (Test-Path $dcpPath) {
             $env:DCP_CLI_PATH = $dcpPath
             Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
           } else {
-            Write-Host "⚠️ DCP CLI path not found, using default configuration" -ForegroundColor Yellow
+            Write-Host "⚠️ DCP CLI path not found at expected location" -ForegroundColor Yellow
           }
           
-          if ($dashboardPath -and (Test-Path $dashboardPath)) {
+          # Set Aspire Dashboard path using the installed dashboard SDK
+          $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.3.1/tools"  
+          if (Test-Path $dashboardPath) {
             $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
             Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green
           } else {
-            Write-Host "⚠️ Aspire Dashboard path not found, using default configuration" -ForegroundColor Yellow
+            Write-Host "⚠️ Aspire Dashboard path not found at expected location" -ForegroundColor Yellow
           }
           
           Write-Host "Starting Aspire AppHost..." -ForegroundColor Yellow
