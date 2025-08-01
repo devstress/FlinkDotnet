@@ -406,7 +406,7 @@ jobs:
             }
             $productionResponse = Invoke-RestMethod -Uri "$apiBase/step4/produce-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
             Write-Host "✅ Message production: $($productionResponse.Status)" -ForegroundColor Green
-            Write-Host "   Messages: $($productionResponse.Metrics.messageCount:N0), Throughput: $($productionResponse.Metrics.messagesPerSecond:F0) msgs/sec" -ForegroundColor Cyan
+            Write-Host "   Messages: $($productionResponse.Metrics.messageCount.ToString('N0')), Throughput: $($productionResponse.Metrics.messagesPerSecond.ToString('F0')) msgs/sec" -ForegroundColor Cyan
             $testResults += @{Step="4-Production"; Status=$productionResponse.Status; Success=$true; MessageCount=$productionResponse.Metrics.messageCount}
             
             # Step 5: Start Flink Job
@@ -433,7 +433,7 @@ jobs:
             }
             $batchResponse = Invoke-RestMethod -Uri "$apiBase/step6/process-batches" -Method POST -Body ($batchConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
             Write-Host "✅ Batch processing: $($batchResponse.Status)" -ForegroundColor Green
-            Write-Host "   Batches: $($batchResponse.TotalBatches), Messages: $($batchResponse.TotalMessages:N0)" -ForegroundColor Cyan
+            Write-Host "   Batches: $($batchResponse.TotalBatches), Messages: $($batchResponse.TotalMessages.ToString('N0'))" -ForegroundColor Cyan
             $testResults += @{Step="6-Batches"; Status=$batchResponse.Status; Success=$true; TotalBatches=$batchResponse.TotalBatches}
             
             # Step 7: Verify Messages
@@ -445,7 +445,7 @@ jobs:
             }
             $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step7/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
             Write-Host "✅ Message verification: $($verificationResponse.Status)" -ForegroundColor Green
-            Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate:P1)" -ForegroundColor Cyan
+            Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate.ToString('P1'))" -ForegroundColor Cyan
             $testResults += @{Step="7-Verification"; Status=$verificationResponse.Status; Success=$true; SuccessRate=$verificationResponse.VerificationResult.SuccessRate}
             
             # Test Status Monitoring
