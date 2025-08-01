@@ -1,21 +1,13 @@
 using Aspire.Hosting;
-using InfinityFlow.Aspire.Temporal;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Configure Aspire environment variables for proper OTLP and Dashboard operation
-Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:4324");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:18888");
-
-// Redis with IPv4 configuration
+// Start with minimal configuration to test Aspire orchestration
 var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_MAXMEMORY", "256mb")
-    .WithEnvironment("REDIS_MAXMEMORY_POLICY", "allkeys-lru")
-    .WithEnvironment("REDIS_BIND", "0.0.0.0"); // Force IPv4
+    .WithEnvironment("REDIS_MAXMEMORY_POLICY", "allkeys-lru");
 
-// Kafka broker with IPv4 configuration
+// Add a single Kafka broker with minimal configuration
 var kafkaBroker = builder.AddContainer("kafka-broker", "bitnami/kafka:latest")
     .WithEndpoint(9092, 9092, "kafka")
     .WithEnvironment("KAFKA_ENABLE_KRAFT", "yes")
@@ -33,7 +25,7 @@ var kafkaBroker = builder.AddContainer("kafka-broker", "bitnami/kafka:latest")
     .WithEnvironment("KAFKA_CFG_DEFAULT_REPLICATION_FACTOR", "1")
     .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
 
-// Kafka UI with IPv4
+// Add Kafka UI
 var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithHttpEndpoint(8082, 8080, "kafka-ui")
     .WithEnvironment("KAFKA_CLUSTERS_0_NAME", "local-testing-cluster")
@@ -41,7 +33,7 @@ var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
     .WithEnvironment("AUTH_TYPE", "disabled");
 
-// Flink JobManager with IPv4
+// Add simple Flink JobManager
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
     .WithHttpEndpoint(8081, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
@@ -52,11 +44,10 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
         taskmanager.memory.process.size: 1024m
         taskmanager.numberOfTaskSlots: 2
         parallelism.default: 2
-        rest.bind-address: 0.0.0.0
         """)
     .WithArgs("jobmanager");
 
-// Flink TaskManager with IPv4
+// Add one TaskManager
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.0.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
@@ -67,32 +58,47 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.0.0")
         """)
     .WithArgs("taskmanager");
 
-// Temporal server using InfinityFlow.Aspire.Temporal package
-var temporal = await builder.AddTemporalServerContainer("temporal", config => config
-    .WithPort(7233)
-    .WithHttpPort(7234)
-    .WithMetricsPort(7235)
-    .WithUiPort(8084)
-    .WithIp("0.0.0.0")      // Force IPv4
-    .WithUiIp("0.0.0.0")    // Force IPv4 for UI
-    .WithLogLevel(LogLevel.Info)
-    .WithLogFormat(LogFormat.Json)
-    .WithNamespace("default"));
+// Simple PostgreSQL for Temporal (minimal setup)
+var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
+    .WithEnvironment("POSTGRES_DB", "temporal")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PASSWORD", "temporal")
+    .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")
+    .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data")
+    .WithEndpoint(5432, 5432, "postgres");
 
-// Grafana with IPv4
+// Temporal Server (simplified)
+var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
+    .WithHttpEndpoint(7233, 7233, "temporal-server")
+    .WithEnvironment("DB", "postgres12")
+    .WithEnvironment("DB_PORT", "5432")
+    .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PWD", "temporal")
+    .WithEnvironment("DBNAME", "temporal")
+    .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")
+    .WithEnvironment("TEMPORAL_CLI_ADDRESS", "temporal-server:7233")
+    .WithEnvironment("SERVICES", "history,matching,worker,frontend")
+    .WaitFor(temporalPostgres);
+
+// Temporal UI
+var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
+    .WithHttpEndpoint(8084, 8080, "temporal-ui")
+    .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
+    .WaitFor(temporalServer);
+
+// Grafana (simple setup)
 var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithHttpEndpoint(3000, 3000, "grafana")
     .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
-    .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
-    .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0"); // Force IPv4
+    .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false");
 
-// LocalTesting Web API with IPv4 configuration
+// LocalTesting Web API
 var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting.WebApi/LocalTesting.WebApi.csproj")
     .WithReference(redis)
-    .WithReference(temporal)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker:9092")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
-    .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:5000") // Force IPv4
+    .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithHttpEndpoint(port: 5000, name: "http");
 
 builder.Build().Run();

@@ -22,10 +22,10 @@ jobs:
       - name: Ensure Docker is running
         run: docker info
 
-      - name: Set up .NET 8.0
+      - name: Set up .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Install .NET Aspire workload
         run: |
@@ -48,8 +48,8 @@ jobs:
         run: |
           Write-Host "🔍 Verifying LocalTesting build artifacts..." -ForegroundColor Green
           
-          $appHostDll = "LocalTesting/LocalTesting.AppHost/bin/Release/net8.0/LocalTesting.AppHost.dll"
-          $webApiDll = "LocalTesting/LocalTesting.WebApi/bin/Release/net8.0/LocalTesting.WebApi.dll"
+          $appHostDll = "LocalTesting/LocalTesting.AppHost/bin/Release/net9.0/LocalTesting.AppHost.dll"
+          $webApiDll = "LocalTesting/LocalTesting.WebApi/bin/Release/net9.0/LocalTesting.WebApi.dll"
           
           if (Test-Path $appHostDll) {
             Write-Host "✅ AppHost build artifact found: $appHostDll" -ForegroundColor Green
@@ -120,8 +120,8 @@ jobs:
           # Set all required environment variables for Aspire
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
           $env:ASPNETCORE_URLS = "http://localhost:15000"
-          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
+          $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
+          $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
           $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
           $env:ASPNETCORE_ENVIRONMENT = "Development"
           $env:DOTNET_LAUNCH_PROFILE = ""
@@ -573,5 +573,5 @@ jobs:
           path: |
             **/*.log
             **/*.txt
-            LocalTesting/**/bin/Release/net8.0/**
+            LocalTesting/**/bin/Release/net9.0/**
           retention-days: 7
