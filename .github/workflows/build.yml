@@ -27,7 +27,7 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Set up .NET 8.0
+      - name: Set up .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'

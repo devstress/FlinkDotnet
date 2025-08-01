@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up .NET 8.0
+      - name: Set up .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
@@ -38,7 +38,7 @@ jobs:
       - name: Ensure build assemblies
         shell: bash
         run: |
-          if [ ! -f FlinkDotNet/*/bin/Release/net8.0/*.dll ]; then
+          if [ ! -f FlinkDotNet/*/bin/Release/net9.0/*.dll ]; then
             echo "Build artifacts missing. Building solutions..."
             dotnet restore FlinkDotNet/FlinkDotNet.sln
             dotnet restore Sample/Sample.sln

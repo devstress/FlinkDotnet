@@ -26,7 +26,7 @@ jobs:
       - name: Ensure Docker is running
         run: docker info
 
-      - name: Set up .NET 8.0
+      - name: Set up .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
@@ -39,7 +39,7 @@ jobs:
       - name: Ensure build assemblies
         shell: bash
         run: |
-          if [ ! -f Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net8.0/FlinkDotNet.Aspire.IntegrationTests.dll ]; then
+          if [ ! -f Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/FlinkDotNet.Aspire.IntegrationTests.dll ]; then
             echo "Build artifacts missing. Building solutions..."
             dotnet restore FlinkDotNet/FlinkDotNet.sln
             dotnet restore Sample/Sample.sln
@@ -94,5 +94,5 @@ jobs:
             **/*.trx
             **/allure-results/**
             **/allure-report/**
-            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net8.0/allure-results/**
-            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net8.0/allure-report/**
+            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
+            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
