@@ -43,11 +43,11 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         public static async System.Threading.Tasks.Task FeatureSetupAsync()
         {
             testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
-                    "cessing", "  As a Flink.NET enterprise user\n  I want to process 1 million messages with corr" +
+            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", ("Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
+                    "cessing"), ("  As a Flink.NET enterprise user\n  I want to process 1 million messages with corr" +
                     "elation ID tracking, security token management, batch HTTP processing, and respo" +
                     "nse verification\n  So that I can validate complex real-world enterprise streamin" +
-                    "g scenarios", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+                    "g scenarios"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
             await testRunner.OnFeatureStartAsync(featureInfo);
         }
         
@@ -115,8 +115,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Process 1 Million Messages with Complete Integration Pipeline")]
-        [Xunit.TraitAttribute("FeatureTitle", "Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
-            "cessing")]
+        [Xunit.TraitAttribute("FeatureTitle", ("Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
+            "cessing"))]
         [Xunit.TraitAttribute("Description", "Process 1 Million Messages with Complete Integration Pipeline")]
         [Xunit.TraitAttribute("Category", "complex_logic")]
         [Xunit.TraitAttribute("Category", "correlation_id_test")]
@@ -154,8 +154,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("I have a security token service running with 10000 message renewal interval", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 19
-    await testRunner.AndAsync("I have an HTTP endpoint running on Aspire Test infrastructure at \"/api/batch/proc" +
-                        "ess\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("I have an HTTP endpoint running on Aspire Test infrastructure at \"/api/batch/proc" +
+                        "ess\""), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 20
     await testRunner.AndAsync("correlation ID tracking is initialized for 1000000 messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -216,8 +216,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("security tokens should be renewed exactly 100 times during processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 36
-    await testRunner.AndAsync("all 10000 batches should be successfully sent to the HTTP endpoint for background" +
-                        " processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("all 10000 batches should be successfully sent to the HTTP endpoint for background" +
+                        " processing"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 37
     await testRunner.AndAsync("Flink should successfully pull all processed messages from the endpoint memory", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -237,53 +237,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table48.AddRow(new string[] {
                             "1",
-                            "Complex logic msg 1: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 1: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000001; batch.number=1"});
                 table48.AddRow(new string[] {
                             "2",
-                            "Complex logic msg 2: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 2: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000002; batch.number=1"});
                 table48.AddRow(new string[] {
                             "3",
-                            "Complex logic msg 3: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 3: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000003; batch.number=1"});
                 table48.AddRow(new string[] {
                             "4",
-                            "Complex logic msg 4: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 4: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000004; batch.number=1"});
                 table48.AddRow(new string[] {
                             "5",
-                            "Complex logic msg 5: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 5: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000005; batch.number=1"});
                 table48.AddRow(new string[] {
                             "6",
-                            "Complex logic msg 6: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 6: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000006; batch.number=1"});
                 table48.AddRow(new string[] {
                             "7",
-                            "Complex logic msg 7: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 7: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000007; batch.number=1"});
                 table48.AddRow(new string[] {
                             "8",
-                            "Complex logic msg 8: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 8: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000008; batch.number=1"});
                 table48.AddRow(new string[] {
                             "9",
-                            "Complex logic msg 9: Correlation tracked, security token renewed, HTTP batch proc" +
-                                "essed",
+                            ("Complex logic msg 9: Correlation tracked, security token renewed, HTTP batch proc" +
+                                "essed"),
                             "kafka.topic=complex-input; correlation.id=corr-000009; batch.number=1"});
                 table48.AddRow(new string[] {
                             "10",
-                            "Complex logic msg 10: Correlation tracked, security token renewed, HTTP batch pro" +
-                                "cessed",
+                            ("Complex logic msg 10: Correlation tracked, security token renewed, HTTP batch pro" +
+                                "cessed"),
                             "kafka.topic=complex-input; correlation.id=corr-000010; batch.number=1"});
 #line 41
     await testRunner.AndAsync("I can verify the top 10 processed messages with their correlation data:", ((string)(null)), table48, "And ");
@@ -343,8 +343,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Handle Backpressure in Logical Queue Processing")]
-        [Xunit.TraitAttribute("FeatureTitle", "Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
-            "cessing")]
+        [Xunit.TraitAttribute("FeatureTitle", ("Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
+            "cessing"))]
         [Xunit.TraitAttribute("Description", "Handle Backpressure in Logical Queue Processing")]
         [Xunit.TraitAttribute("Category", "complex_logic")]
         [Xunit.TraitAttribute("Category", "backpressure_handling")]
@@ -402,8 +402,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Validate Complete Integration Performance")]
-        [Xunit.TraitAttribute("FeatureTitle", "Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
-            "cessing")]
+        [Xunit.TraitAttribute("FeatureTitle", ("Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
+            "cessing"))]
         [Xunit.TraitAttribute("Description", "Validate Complete Integration Performance")]
         [Xunit.TraitAttribute("Category", "complex_logic")]
         [Xunit.TraitAttribute("Category", "performance_verification")]
@@ -458,8 +458,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Verify Top and Last 100 Messages for Data Integrity")]
-        [Xunit.TraitAttribute("FeatureTitle", "Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
-            "cessing")]
+        [Xunit.TraitAttribute("FeatureTitle", ("Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
+            "cessing"))]
         [Xunit.TraitAttribute("Description", "Verify Top and Last 100 Messages for Data Integrity")]
         [Xunit.TraitAttribute("Category", "complex_logic")]
         [Xunit.TraitAttribute("Category", "message_verification")]
@@ -501,8 +501,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.ThenAsync("I should see messages with IDs 1 through 100 in sequential order", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 99
-    await testRunner.AndAsync("each message should have the correct correlation ID (corr-000001 through corr-000" +
-                        "100)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("each message should have the correct correlation ID (corr-000001 through corr-000" +
+                        "100)"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 100
     await testRunner.AndAsync("each message should have a valid SendingID assigned", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -517,8 +517,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.ThenAsync("I should see messages with IDs 999901 through 1000000 in sequential order", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 104
-    await testRunner.AndAsync("each message should have the correct correlation ID (corr-999901 through corr-100" +
-                        "0000)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("each message should have the correct correlation ID (corr-999901 through corr-100" +
+                        "0000)"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 105
     await testRunner.AndAsync("each message should have a valid SendingID assigned", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

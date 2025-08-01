@@ -43,8 +43,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         public static async System.Threading.Tasks.Task FeatureSetupAsync()
         {
             testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery", "  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure and " +
-                    "rebalancing\n  So that I can ensure system reliability under adverse conditions", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery", ("  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure and " +
+                    "rebalancing\n  So that I can ensure system reliability under adverse conditions"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
             await testRunner.OnFeatureStartAsync(featureInfo);
         }
         
@@ -448,8 +448,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 85
-    await testRunner.GivenAsync("I have processed 1,000,000 messages through the reliability pipeline with 10% fai" +
-                        "lures", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync(("I have processed 1,000,000 messages through the reliability pipeline with 10% fai" +
+                        "lures"), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 86
     await testRunner.AndAsync("all messages have been properly routed to success or DLQ topics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -514,53 +514,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table55.AddRow(new string[] {
                             "999991",
                             "Reliability msg 999991: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999992",
                             "Reliability msg 999992: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999993",
                             "Reliability msg 999993: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999994",
                             "Reliability msg 999994: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999995",
                             "Reliability msg 999995: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999996",
                             "Reliability msg 999996: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999997",
                             "Reliability msg 999997: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999998",
                             "Reliability msg 999998: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "999999",
                             "Reliability msg 999999: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
                 table55.AddRow(new string[] {
                             "1000000",
                             "Reliability msg 1000000: Final success after complete fault tolerance testing",
-                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e"});
+                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e")});
 #line 101
     await testRunner.ThenAsync("I can display the top 10 last processed reliability messages table:", ((string)(null)), table55, "Then ");
 #line hidden

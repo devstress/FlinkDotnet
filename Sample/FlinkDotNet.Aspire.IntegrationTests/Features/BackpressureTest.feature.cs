@@ -43,9 +43,9 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         public static async System.Threading.Tasks.Task FeatureSetupAsync()
         {
             testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)", "  As a Flink.NET user\n  I want to implement consumer lag-based backpressure follo" +
+            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)", ("  As a Flink.NET user\n  I want to implement consumer lag-based backpressure follo" +
                     "wing LinkedIn\'s proven best practices\n  So that I can achieve reliable, scalable" +
-                    " stream processing at production scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+                    " stream processing at production scale"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
             await testRunner.OnFeatureStartAsync(featureInfo);
         }
         
@@ -1687,53 +1687,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table46.AddRow(new string[] {
                             "999991",
-                            "Backpressure msg 999991: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999991: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=50; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999992",
-                            "Backpressure msg 999992: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999992: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=45; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999993",
-                            "Backpressure msg 999993: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999993: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=40; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999994",
-                            "Backpressure msg 999994: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999994: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=35; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999995",
-                            "Backpressure msg 999995: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999995: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=30; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999996",
-                            "Backpressure msg 999996: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999996: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=25; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999997",
-                            "Backpressure msg 999997: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999997: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=20; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999998",
-                            "Backpressure msg 999998: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999998: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=15; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999999",
-                            "Backpressure msg 999999: Final message after complete lag-based backpressure cycl" +
-                                "e",
+                            ("Backpressure msg 999999: Final message after complete lag-based backpressure cycl" +
+                                "e"),
                             "kafka.topic=backpressure-output; consumer.lag=10; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "1000000",
-                            "Backpressure msg 1000000: Final message after complete lag-based backpressure cyc" +
-                                "le",
+                            ("Backpressure msg 1000000: Final message after complete lag-based backpressure cyc" +
+                                "le"),
                             "kafka.topic=backpressure-output; consumer.lag=0; backpressure.applied=false"});
 #line 364
     await testRunner.ThenAsync("I can display the top 10 last processed backpressure messages table:", ((string)(null)), table46, "Then ");

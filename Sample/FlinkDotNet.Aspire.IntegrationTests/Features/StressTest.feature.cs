@@ -43,9 +43,9 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         public static async System.Threading.Tasks.Task FeatureSetupAsync()
         {
             testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing", "  As a Flink.NET user\n  I want to process 1 million messages through 100 partitio" +
+            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing", ("  As a Flink.NET user\n  I want to process 1 million messages through 100 partitio" +
                     "ns with FIFO guarantees\n  So that I can validate high-throughput streaming perfo" +
-                    "rmance", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+                    "rmance"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
             await testRunner.OnFeatureStartAsync(featureInfo);
         }
         
@@ -336,8 +336,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("I can verify the first 10 messages have IDs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 58
-    await testRunner.AndAsync("I can verify the last 10 messages have IDs: 999991, 999992, 999993, 999994, 99999" +
-                        "5, 999996, 999997, 999998, 999999, 1000000", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("I can verify the last 10 messages have IDs: 999991, 999992, 999993, 999994, 99999" +
+                        "5, 999996, 999997, 999998, 999999, 1000000"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 59
     await testRunner.WhenAsync("I submit the Flink job for FIFO processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -357,53 +357,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table57.AddRow(new string[] {
                             "1",
-                            "Message content for ID 1: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 1: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=0; correlation.id=corr-000001"});
                 table57.AddRow(new string[] {
                             "2",
-                            "Message content for ID 2: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 2: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=1; correlation.id=corr-000002"});
                 table57.AddRow(new string[] {
                             "3",
-                            "Message content for ID 3: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 3: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=2; correlation.id=corr-000003"});
                 table57.AddRow(new string[] {
                             "4",
-                            "Message content for ID 4: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 4: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=3; correlation.id=corr-000004"});
                 table57.AddRow(new string[] {
                             "5",
-                            "Message content for ID 5: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 5: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=4; correlation.id=corr-000005"});
                 table57.AddRow(new string[] {
                             "6",
-                            "Message content for ID 6: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 6: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=5; correlation.id=corr-000006"});
                 table57.AddRow(new string[] {
                             "7",
-                            "Message content for ID 7: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 7: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=6; correlation.id=corr-000007"});
                 table57.AddRow(new string[] {
                             "8",
-                            "Message content for ID 8: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 8: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=7; correlation.id=corr-000008"});
                 table57.AddRow(new string[] {
                             "9",
-                            "Message content for ID 9: Sample streaming data payload with business logic appli" +
-                                "ed",
+                            ("Message content for ID 9: Sample streaming data payload with business logic appli" +
+                                "ed"),
                             "kafka.topic=stress-input; kafka.partition=8; correlation.id=corr-000009"});
                 table57.AddRow(new string[] {
                             "10",
-                            "Message content for ID 10: Sample streaming data payload with business logic appl" +
-                                "ied",
+                            ("Message content for ID 10: Sample streaming data payload with business logic appl" +
+                                "ied"),
                             "kafka.topic=stress-input; kafka.partition=9; correlation.id=corr-000010"});
 #line 63
     await testRunner.AndAsync("I can display the top 10 first processed stress messages table:", ((string)(null)), table57, "And ");
@@ -414,53 +414,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table58.AddRow(new string[] {
                             "999991",
-                            "Message content for ID 999991: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999991: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=90; correlation.id=corr-999991"});
                 table58.AddRow(new string[] {
                             "999992",
-                            "Message content for ID 999992: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999992: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=91; correlation.id=corr-999992"});
                 table58.AddRow(new string[] {
                             "999993",
-                            "Message content for ID 999993: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999993: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=92; correlation.id=corr-999993"});
                 table58.AddRow(new string[] {
                             "999994",
-                            "Message content for ID 999994: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999994: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=93; correlation.id=corr-999994"});
                 table58.AddRow(new string[] {
                             "999995",
-                            "Message content for ID 999995: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999995: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=94; correlation.id=corr-999995"});
                 table58.AddRow(new string[] {
                             "999996",
-                            "Message content for ID 999996: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999996: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=95; correlation.id=corr-999996"});
                 table58.AddRow(new string[] {
                             "999997",
-                            "Message content for ID 999997: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999997: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=96; correlation.id=corr-999997"});
                 table58.AddRow(new string[] {
                             "999998",
-                            "Message content for ID 999998: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999998: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=97; correlation.id=corr-999998"});
                 table58.AddRow(new string[] {
                             "999999",
-                            "Message content for ID 999999: Final streaming data payload processed through com" +
-                                "plete pipeline",
+                            ("Message content for ID 999999: Final streaming data payload processed through com" +
+                                "plete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=98; correlation.id=corr-999999"});
                 table58.AddRow(new string[] {
                             "1000000",
-                            "Message content for ID 1000000: Final streaming data payload processed through co" +
-                                "mplete pipeline",
+                            ("Message content for ID 1000000: Final streaming data payload processed through co" +
+                                "mplete pipeline"),
                             "kafka.topic=stress-output; kafka.partition=99; correlation.id=corr-1000000"});
 #line 75
     await testRunner.AndAsync("I can display the top 10 last processed stress messages table:", ((string)(null)), table58, "And ");
