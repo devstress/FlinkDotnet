@@ -3,12 +3,6 @@ using InfinityFlow.Aspire.Temporal;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Configure Aspire environment variables for proper OTLP and Dashboard operation
-Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:4324");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:18888");
-
 // Redis with IPv4 configuration
 var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_MAXMEMORY", "256mb")
@@ -41,14 +35,17 @@ var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
     .WithEnvironment("AUTH_TYPE", "disabled");
 
-// Flink JobManager with IPv4
+// Flink JobManager with IPv4 and proper memory configuration
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
     .WithHttpEndpoint(8081, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        jobmanager.memory.process.size: 512m
+        jobmanager.memory.process.size: 1024m
+        jobmanager.memory.flink.size: 768m
+        jobmanager.memory.jvm-overhead.max: 256m
+        jobmanager.memory.jvm-overhead.min: 192m
         taskmanager.memory.process.size: 1024m
         taskmanager.numberOfTaskSlots: 2
         parallelism.default: 2
@@ -67,14 +64,8 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.0.0")
         """)
     .WithArgs("taskmanager");
 
-// Temporal server using InfinityFlow.Aspire.Temporal package
+// Temporal server using InfinityFlow.Aspire.Temporal package - simplified configuration
 var temporal = await builder.AddTemporalServerContainer("temporal", config => config
-    .WithPort(7233)
-    .WithHttpPort(7234)
-    .WithMetricsPort(7235)
-    .WithUiPort(8084)
-    .WithIp("0.0.0.0")      // Force IPv4
-    .WithUiIp("0.0.0.0")    // Force IPv4 for UI
     .WithLogLevel(LogLevel.Info)
     .WithLogFormat(LogFormat.Json)
     .WithNamespace("default"));
