@@ -4,6 +4,7 @@
 
 param(
     [switch]$StopOnly,
+    [switch]$NonInteractive,
     [int]$MessageCount = 1000,
     [int]$TimeoutMinutes = 20
 )
@@ -373,19 +374,24 @@ try {
     Write-Host "  - Flink JobManager: http://localhost:8081" -ForegroundColor $Cyan
     Write-Host "  - Grafana: http://localhost:3000" -ForegroundColor $Cyan
     Write-Host "  - Health Check: http://localhost:5000/health" -ForegroundColor $Cyan
-    Write-Host "`nPress Ctrl+C to stop or run with -StopOnly to clean up." -ForegroundColor $Yellow
     
-    # Keep running for manual testing
-    Write-Host "Keeping Docker Compose environment running for manual testing..." -ForegroundColor $Cyan
-    
-    # Wait for user interrupt
-    try {
-        while ($true) {
-            Start-Sleep -Seconds 30
-            Write-Host "." -NoNewline -ForegroundColor $Green
+    if (-not $NonInteractive) {
+        Write-Host "`nPress Ctrl+C to stop or run with -StopOnly to clean up." -ForegroundColor $Yellow
+        
+        # Keep running for manual testing
+        Write-Host "Keeping Docker Compose environment running for manual testing..." -ForegroundColor $Cyan
+        
+        # Wait for user interrupt
+        try {
+            while ($true) {
+                Start-Sleep -Seconds 30
+                Write-Host "." -NoNewline -ForegroundColor $Green
+            }
+        } catch {
+            Write-Host "`nReceived interrupt signal" -ForegroundColor $Yellow
         }
-    } catch {
-        Write-Host "`nReceived interrupt signal" -ForegroundColor $Yellow
+    } else {
+        Write-Host "`nRunning in non-interactive mode - environment is ready for testing" -ForegroundColor $Cyan
     }
     
 } catch {
