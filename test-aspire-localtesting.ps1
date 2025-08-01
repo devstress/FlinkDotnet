@@ -102,14 +102,14 @@ function Test-Prerequisites {
         return $false
     }
     
-    # Test .NET 8
-    Write-Step "Testing .NET 8..."
+    # Test .NET 9
+    Write-Step "Testing .NET 9..."
     try {
         $dotnetVersion = dotnet --version 2>&1
-        if ($LASTEXITCODE -eq 0 -and $dotnetVersion -like "8.*") {
-            Write-Success ".NET 8 is available: $dotnetVersion"
+        if ($LASTEXITCODE -eq 0 -and $dotnetVersion -like "9.*") {
+            Write-Success ".NET 9 is available: $dotnetVersion"
         } else {
-            Write-Error ".NET 8 is not available. Found: $dotnetVersion"
+            Write-Error ".NET 9 is not available. Found: $dotnetVersion"
             return $false
         }
     } catch {
@@ -173,21 +173,21 @@ function Start-AspireEnvironment {
         Write-Step "Setting up Aspire environment variables..."
         $nugetPackages = if ($IsWindows) { "$env:USERPROFILE\.nuget\packages" } else { "$env:HOME/.nuget/packages" }
         
-        # Set required Aspire paths
-        $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.3.1/tools/dcp"
-        $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.3.1/tools"
+        # Set required Aspire paths (updated for .NET 9 and Aspire 9.1.0)
+        $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.1.0/tools/dcp"
+        $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.1.0/tools"
         
         if ($IsWindows) {
-            $dcpPath = "$nugetPackages/aspire.hosting.orchestration.win-x64/9.3.1/tools/dcp.exe"
-            $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.win-x64/9.3.1/tools"
+            $dcpPath = "$nugetPackages/aspire.hosting.orchestration.win-x64/9.1.0/tools/dcp.exe"
+            $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.win-x64/9.1.0/tools"
         }
         
         $env:DCP_CLI_PATH = $dcpPath
         $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
         $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
         $env:ASPNETCORE_URLS = "http://localhost:15000"
-        $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-        $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324"
+        $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
+        $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324"
         $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
         $env:ASPNETCORE_ENVIRONMENT = "Development"
         

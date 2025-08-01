@@ -12,7 +12,7 @@ The Flink.NET Aspire setup provides a complete local development environment wit
 
 ## Prerequisites
 
-- .NET 8 SDK
+- .NET 9 SDK
 - Docker Desktop
 - 8GB+ RAM recommended for testing
 - Aspire tooling

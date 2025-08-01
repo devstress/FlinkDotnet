@@ -11,7 +11,7 @@
     
     The script:
     - Detects the operating system and adjusts accordingly
-    - Sets up .NET 8.0 and Java 17 requirements
+    - Sets up .NET 9.0 and Java 17 requirements
     - Installs required .NET Aspire workload
     - Restores all workloads and dependencies
     - Builds all main solutions:
@@ -46,7 +46,7 @@
 .NOTES
     Requirements:
     - PowerShell Core 7.0 or higher
-    - .NET 8.0 SDK
+    - .NET 9.0 SDK
     - Java 17 JDK (for Flink components)
     - Git (for version information)
     
@@ -304,14 +304,14 @@ function Test-Prerequisites {
     # Check .NET SDK
     Write-Progress "Checking .NET SDK"
     if (-not (Test-CommandExists "dotnet")) {
-        throw ".NET SDK not found. Please install .NET 8.0 SDK from https://dotnet.microsoft.com/download"
+        throw ".NET SDK not found. Please install .NET 9.0 SDK from https://dotnet.microsoft.com/download"
     }
     
     $dotnetInfo = dotnet --info | Out-String
     if ($dotnetInfo -match "8\.0\.\d+") {
-        Write-Success ".NET 8.0 SDK found"
+        Write-Success ".NET 9.0 SDK found"
     } else {
-        Write-Warning ".NET 8.0 SDK not detected. Some features may not work correctly."
+        Write-Warning ".NET 9.0 SDK not detected. Some features may not work correctly."
         Write-Info "Installed .NET versions:"
         dotnet --list-sdks | ForEach-Object { Write-Info "  $_" }
     }
@@ -449,7 +449,7 @@ function Show-BuildSummary {
         Write-Info "To troubleshoot:"
         Write-Info "  1. Run with -VerboseOutput flag for detailed output"
         Write-Info "  2. Check that all prerequisites are installed"
-        Write-Info "  3. Ensure all solutions are compatible with .NET 8.0"
+        Write-Info "  3. Ensure all solutions are compatible with .NET 9.0"
         Write-Info "  4. Try cleaning and rebuilding: dotnet clean && ./build-all.ps1"
     }
     
@@ -483,7 +483,7 @@ function Show-Help {
     Write-Info ""
     Write-Info "Requirements:"
     Write-Info "  • PowerShell Core 7.0+"
-    Write-Info "  • .NET 8.0 SDK"
+    Write-Info "  • .NET 9.0 SDK"
     Write-Info "  • Java 17 JDK (for Flink components)"
 }
 

@@ -102,7 +102,7 @@ The system now includes **LagBasedRateLimiter** which implements the "stops refi
 
 ### Prerequisites
 
-- .NET 8.0 SDK
+- .NET 9.0 SDK
 - Docker Desktop
 - At least 16GB RAM (for all containers)
 

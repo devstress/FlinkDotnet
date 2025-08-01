@@ -4,7 +4,7 @@ This guide will walk you through setting up the Flink.JobBuilder SDK and deployi
 
 ## Prerequisites
 
-*   **.NET SDK:** Ensure you have .NET 8.0 SDK or higher installed. You can download it from [here](https://dotnet.microsoft.com/download).
+*   **.NET SDK:** Ensure you have .NET 9.0 SDK or higher installed. You can download it from [here](https://dotnet.microsoft.com/download).
 *   **IDE (Optional but Recommended):** An IDE like Visual Studio, JetBrains Rider, or VS Code can greatly improve your development experience.
 *   **Docker and Kubernetes:** For deploying Apache Flink cluster infrastructure.
 *   **Apache Flink Cluster:** You'll need either:
