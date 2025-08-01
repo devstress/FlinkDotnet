@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_SYSTEM_NET_DISABLEIPV6": "true",
+        "ASPIRE_PREFER_IPV4": "true",
+        "DOCKER_DEFAULT_PLATFORM": "linux/amd64",
+        "ASPNETCORE_URLS": "http://127.0.0.1:15000",
+        "ASPIRE_DASHBOARD_URL": "http://127.0.0.1:18888"
+      }
+    }
+  }
+}

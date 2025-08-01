@@ -119,12 +119,17 @@ jobs:
           
           # Set all required environment variables for Aspire
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-          $env:ASPNETCORE_URLS = "http://localhost:15000"
-          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
-          $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
+          $env:ASPNETCORE_URLS = "http://127.0.0.1:15000"
+          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://127.0.0.1:4323"
+          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://127.0.0.1:4324" 
+          $env:ASPIRE_DASHBOARD_URL = "http://127.0.0.1:18888"
           $env:ASPNETCORE_ENVIRONMENT = "Development"
           $env:DOTNET_LAUNCH_PROFILE = ""
+          
+          # Force IPv4 usage for .NET and Docker
+          $env:DOTNET_SYSTEM_NET_DISABLEIPV6 = "true"
+          $env:ASPIRE_PREFER_IPV4 = "true"
+          $env:DOCKER_DEFAULT_PLATFORM = "linux/amd64"
           
           Write-Host "Environment variables set:" -ForegroundColor Yellow
           Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor Cyan
@@ -132,6 +137,7 @@ jobs:
           Write-Host "  ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
           Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor Cyan
           Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor Cyan
+          Write-Host "  IPv4 Only: DOTNET_SYSTEM_NET_DISABLEIPV6=$env:DOTNET_SYSTEM_NET_DISABLEIPV6" -ForegroundColor Cyan
           
           Write-Host "Starting Aspire AppHost as background process..." -ForegroundColor Yellow
           try {
@@ -319,7 +325,7 @@ jobs:
           foreach ($endpoint in $testEndpoints) {
             try {
               Write-Host "Testing $($endpoint.Name) on port $($endpoint.Port)..." -ForegroundColor Yellow
-              $uri = "http://localhost:$($endpoint.Port)$($endpoint.Path)"
+              $uri = "http://127.0.0.1:$($endpoint.Port)$($endpoint.Path)"
               $response = Invoke-WebRequest -Uri $uri -TimeoutSec 10 -ErrorAction SilentlyContinue
               if ($response.StatusCode -eq 200) {
                 Write-Host "✅ $($endpoint.Name) is accessible (Status: $($response.StatusCode))" -ForegroundColor Green
@@ -365,7 +371,7 @@ jobs:
           Write-Host "🧪 Executing Complex Logic Stress Test Business Flows..." -ForegroundColor Green
           Write-Host "This validates the actual business functionality rather than just container startup" -ForegroundColor Cyan
           
-          $apiBase = "http://localhost:5000/api/ComplexLogicStressTest"
+          $apiBase = "http://127.0.0.1:5000/api/ComplexLogicStressTest"
           $testResults = @()
           $overallSuccess = $true
           

@@ -173,7 +173,7 @@ function Start-AspireEnvironment {
         Write-Step "Setting up Aspire environment variables..."
         $nugetPackages = if ($IsWindows) { "$env:USERPROFILE\.nuget\packages" } else { "$env:HOME/.nuget/packages" }
         
-        # Set required Aspire paths
+        # Set required Aspire paths and IPv4 environment variables
         $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.3.1/tools/dcp"
         $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.3.1/tools"
         
@@ -185,17 +185,23 @@ function Start-AspireEnvironment {
         $env:DCP_CLI_PATH = $dcpPath
         $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
         $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-        $env:ASPNETCORE_URLS = "http://localhost:15000"
-        $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-        $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324"
-        $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
+        $env:ASPNETCORE_URLS = "http://127.0.0.1:15000"
+        $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://127.0.0.1:4323"
+        $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://127.0.0.1:4324"
+        $env:ASPIRE_DASHBOARD_URL = "http://127.0.0.1:18888"
         $env:ASPNETCORE_ENVIRONMENT = "Development"
+        
+        # Force IPv4 usage for .NET and Docker
+        $env:DOTNET_SYSTEM_NET_DISABLEIPV6 = "true"
+        $env:ASPIRE_PREFER_IPV4 = "true"
+        $env:DOCKER_DEFAULT_PLATFORM = "linux/amd64"
         
         Write-Info "Aspire environment variables configured:"
         Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor $Cyan
         Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor $Cyan
         Write-Host "  ASPIRE_DASHBOARD_URL: $env:ASPIRE_DASHBOARD_URL" -ForegroundColor $Cyan
         Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor $Cyan
+        Write-Host "  IPv4 Only: DOTNET_SYSTEM_NET_DISABLEIPV6=$env:DOTNET_SYSTEM_NET_DISABLEIPV6" -ForegroundColor $Cyan
         
         # Verify required paths exist
         if (Test-Path $env:DCP_CLI_PATH) {
@@ -213,10 +219,48 @@ function Start-AspireEnvironment {
         }
         
         # Start Aspire as background process
-        Write-Step "Starting Aspire AppHost with dashboard..."
-        $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
+        Write-Step "Starting Aspire AppHost with dashboard and IPv4 environment..."
+        
+        # Create process start info with explicit IPv4 environment
+        $processStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $processStartInfo.FileName = "dotnet"
+        $processStartInfo.Arguments = "run --configuration Release"
+        $processStartInfo.WorkingDirectory = (Get-Location)
+        $processStartInfo.UseShellExecute = $false
+        $processStartInfo.RedirectStandardOutput = $true
+        $processStartInfo.RedirectStandardError = $true
+        $processStartInfo.CreateNoWindow = $true
+        
+        # Copy all current environment variables and add IPv4 specific ones
+        foreach($envVar in [System.Environment]::GetEnvironmentVariables().Keys) {
+            $processStartInfo.EnvironmentVariables[$envVar] = [System.Environment]::GetEnvironmentVariable($envVar)
+        }
+        
+        # Override with IPv4 specific settings
+        $processStartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_DISABLEIPV6"] = "true"
+        $processStartInfo.EnvironmentVariables["ASPIRE_PREFER_IPV4"] = "true"
+        $processStartInfo.EnvironmentVariables["DOCKER_DEFAULT_PLATFORM"] = "linux/amd64"
+        
+        $aspireProcess = [System.Diagnostics.Process]::Start($processStartInfo)
         $global:AspirePID = $aspireProcess.Id
-        Write-Success "Aspire AppHost started with PID: $global:AspirePID"
+        Write-Success "Aspire AppHost started with PID: $global:AspirePID (IPv4 forced)"
+        
+        # Handle output redirection manually
+        Start-Job -ScriptBlock {
+            param($process)
+            try {
+                $output = $process.StandardOutput.ReadToEnd()
+                $output | Out-File "aspire_output.log" -Encoding UTF8 -Force
+            } catch {}
+        } -ArgumentList $aspireProcess | Out-Null
+        
+        Start-Job -ScriptBlock {
+            param($process)
+            try {
+                $error = $process.StandardError.ReadToEnd()
+                $error | Out-File "aspire_error.log" -Encoding UTF8 -Force
+            } catch {}
+        } -ArgumentList $aspireProcess | Out-Null
         
         # Wait for startup
         Write-Step "Waiting for Aspire environment to initialize (90 seconds)..."
@@ -268,9 +312,9 @@ function Test-AspireDashboard {
     
     while ($retryCount -lt $maxRetries -and -not $dashboardReady) {
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:18888" -TimeoutSec 5 -ErrorAction Stop
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:18888" -TimeoutSec 5 -ErrorAction Stop
             if ($response.StatusCode -eq 200) {
-                Write-Success "Aspire dashboard is accessible at http://localhost:18888"
+                Write-Success "Aspire dashboard is accessible at http://127.0.0.1:18888"
                 $dashboardReady = $true
             } else {
                 Write-Warning "Dashboard returned status: $($response.StatusCode)"
@@ -338,7 +382,7 @@ function Test-LocalTestingAPI {
     
     while ($retryCount -lt $maxRetries -and -not $apiReady) {
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:5000/health" -TimeoutSec 5 -ErrorAction Stop
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:5000/health" -TimeoutSec 5 -ErrorAction Stop
             if ($response.StatusCode -eq 200) {
                 Write-Success "LocalTesting API is accessible and healthy through Aspire"
                 $apiReady = $true
@@ -358,7 +402,7 @@ function Test-LocalTestingAPI {
 function Test-BusinessFlows {
     Write-Section "🧪 Testing Complex Logic Stress Test Business Flows"
     
-    $apiBase = "http://localhost:5000/api/ComplexLogicStressTest"
+    $apiBase = "http://127.0.0.1:5000/api/ComplexLogicStressTest"
     $testResults = @()
     $overallSuccess = $true
     
@@ -366,7 +410,7 @@ function Test-BusinessFlows {
         # Test basic health first
         Write-Step "Testing API health..."
         try {
-            $healthResponse = Invoke-RestMethod -Uri "http://localhost:5000/health" -Method GET -TimeoutSec 10
+            $healthResponse = Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method GET -TimeoutSec 10
             Write-Success "Health check: API is healthy"
             $testResults += @{Step="Health Check"; Status="Healthy"; Success=$true}
         } catch {
@@ -474,7 +518,7 @@ function Test-BusinessFlows {
         
         foreach ($endpoint in $endpointTests) {
             try {
-                $uri = "http://localhost:$($endpoint.Port)$($endpoint.Path)"
+                $uri = "http://127.0.0.1:$($endpoint.Port)$($endpoint.Path)"
                 $response = Invoke-WebRequest -Uri $uri -TimeoutSec 10 -ErrorAction Stop
                 if ($response.StatusCode -eq 200) {
                     Write-Success "$($endpoint.Name): Accessible (Status: $($response.StatusCode))"
@@ -573,10 +617,10 @@ try {
     
     Write-Section "🎉 Aspire LocalTesting Completed Successfully" $Green
     Write-Host "Environment is running with full Aspire orchestration. Available endpoints:" -ForegroundColor $Yellow
-    Write-Host "  - Aspire Dashboard: http://localhost:18888" -ForegroundColor $Cyan
-    Write-Host "  - LocalTesting API: http://localhost:5000" -ForegroundColor $Cyan
-    Write-Host "  - Swagger UI: http://localhost:5000/swagger" -ForegroundColor $Cyan
-    Write-Host "  - Health Check: http://localhost:5000/health" -ForegroundColor $Cyan
+    Write-Host "  - Aspire Dashboard: http://127.0.0.1:18888" -ForegroundColor $Cyan
+    Write-Host "  - LocalTesting API: http://127.0.0.1:5000" -ForegroundColor $Cyan
+    Write-Host "  - Swagger UI: http://127.0.0.1:5000/swagger" -ForegroundColor $Cyan
+    Write-Host "  - Health Check: http://127.0.0.1:5000/health" -ForegroundColor $Cyan
     Write-Host "`nPress Ctrl+C to stop or run with -StopOnly to clean up." -ForegroundColor $Yellow
     
     # Keep running for manual testing
