@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # Redis
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_MAXMEMORY=256mb
+      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka (single broker for CI)
+  kafka-broker:
+    image: bitnami/kafka:latest
+    container_name: kafka-broker
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-broker:9092
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-broker:9093
+      - KAFKA_KRAFT_CLUSTER_ID=LOCAL_TESTING_KRAFT_CLUSTER_2024
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_NUM_PARTITIONS=10
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_HEAP_OPTS=-Xmx512M -Xms256M
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kafka UI
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8082:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local-testing-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-broker:9092
+      - DYNAMIC_CONFIG_ENABLED=true
+      - AUTH_TYPE=disabled
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+
+  # PostgreSQL for Temporal
+  temporal-postgres:
+    image: postgres:13
+    container_name: temporal-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=temporal
+      - POSTGRES_USER=temporal
+      - POSTGRES_PASSWORD=temporal
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - temporal-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Temporal Server
+  temporal-server:
+    image: temporalio/auto-setup:latest
+    container_name: temporal-server
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_SEEDS=temporal-postgres
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - DBNAME=temporal
+      - VISIBILITY_DBNAME=temporal_visibility
+      - TEMPORAL_CLI_ADDRESS=temporal-server:7233
+      - SERVICES=history,matching,worker,frontend
+    depends_on:
+      temporal-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal-server:7233", "cluster", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  # Temporal UI
+  temporal-ui:
+    image: temporalio/ui:latest
+    container_name: temporal-ui
+    ports:
+      - "8084:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal-server:7233
+    depends_on:
+      temporal-server:
+        condition: service_healthy
+
+  # Flink JobManager
+  flink-jobmanager:
+    image: flink:2.0.0
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081"
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+      - FLINK_PROPERTIES=jobmanager.rpc.address:flink-jobmanager
+    command: jobmanager
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Flink TaskManager
+  flink-taskmanager:
+    image: flink:2.0.0
+    container_name: flink-taskmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+      - FLINK_PROPERTIES=jobmanager.rpc.address:flink-jobmanager
+    command: taskmanager
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  temporal-postgres-data:
