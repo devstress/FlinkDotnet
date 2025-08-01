@@ -27,6 +27,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Install .NET Aspire workload
+        run: |
+          Write-Host "📦 Installing .NET Aspire workload..." -ForegroundColor Green
+          dotnet workload install aspire
+          Write-Host "✅ Aspire workload installed successfully" -ForegroundColor Green
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -60,32 +66,132 @@ jobs:
           }
 
       - name: Start LocalTesting Aspire Environment
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           Write-Host "🚀 Starting LocalTesting Aspire environment..." -ForegroundColor Green
           
-          # Start the Aspire environment in background
+          # Verify Aspire is working by testing the project build
+          Write-Host "Verifying Aspire functionality..." -ForegroundColor Yellow
           Push-Location LocalTesting/LocalTesting.AppHost
-          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
+          try {
+            $buildOutput = dotnet build --configuration Release --verbosity quiet 2>&1
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ Aspire is functional and project builds successfully" -ForegroundColor Green
+            } else {
+              Write-Host "❌ Aspire build failed. Output:" -ForegroundColor Red
+              Write-Host $buildOutput -ForegroundColor Red
+              throw "Aspire functionality test failed"
+            }
+          }
+          catch {
+            Write-Host "❌ Aspire verification failed: $($_.Exception.Message)" -ForegroundColor Red
+            throw "Aspire is not properly configured"
+          }
+          finally {
+            Pop-Location
+          }
           
-          # Start the AppHost in background
-          Write-Host "Starting Aspire AppHost..." -ForegroundColor Yellow
-          $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--no-build", "--configuration", "Release" -PassThru -NoNewWindow
+          # Start the Aspire environment as a background process
+          Push-Location LocalTesting/LocalTesting.AppHost
+          
+          # Set DCP and Dashboard paths for Aspire orchestration first
+          $nugetPackages = "$HOME/.nuget/packages"
+          
+          # Set DCP CLI path using the installed orchestration package
+          $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.3.1/tools/dcp"
+          if (Test-Path $dcpPath) {
+            $env:DCP_CLI_PATH = $dcpPath
+            Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
+          } else {
+            Write-Host "❌ DCP CLI path not found at expected location: $dcpPath" -ForegroundColor Red
+            throw "DCP CLI path is required but not found"
+          }
+          
+          # Set Aspire Dashboard path using the installed dashboard SDK
+          $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.3.1/tools"  
+          if (Test-Path $dashboardPath) {
+            $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
+            Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green
+          } else {
+            Write-Host "❌ Aspire Dashboard path not found at expected location: $dashboardPath" -ForegroundColor Red
+            throw "Aspire Dashboard path is required but not found"
+          }
+          
+          # Set all required environment variables for Aspire
+          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
+          $env:ASPNETCORE_URLS = "http://localhost:15000"
+          $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
+          $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
+          $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
+          $env:ASPNETCORE_ENVIRONMENT = "Development"
+          $env:DOTNET_LAUNCH_PROFILE = ""
+          
+          Write-Host "Environment variables set:" -ForegroundColor Yellow
+          Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
+          Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor Cyan
+          
+          Write-Host "Starting Aspire AppHost as background process..." -ForegroundColor Yellow
+          try {
+            # Start Aspire as a background process and capture the process ID
+            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
+            $global:AspirePID = $aspireProcess.Id
+            Write-Host "✅ Aspire AppHost started in background (PID: $global:AspirePID)" -ForegroundColor Green
+            
+            # Wait for initial startup and check for startup success
+            Write-Host "Waiting for Aspire to initialize..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 45
+            
+            # Check startup output
+            $startupOutput = ""
+            if (Test-Path "aspire_output.log") {
+              $startupOutput += Get-Content "aspire_output.log" -Raw
+            }
+            if (Test-Path "aspire_error.log") {
+              $errorOutput = Get-Content "aspire_error.log" -Raw
+              if ($errorOutput) {
+                $startupOutput += "`nErrors: $errorOutput"
+              }
+            }
+            
+            # Check for startup success indicators
+            if ($startupOutput -match "Distributed application starting" -and $startupOutput -match "Aspire version") {
+              Write-Host "✅ Aspire environment startup successful" -ForegroundColor Green
+            } else {
+              Write-Host "❌ Aspire startup may have failed - missing expected startup messages:" -ForegroundColor Red
+              Write-Host $startupOutput -ForegroundColor Red
+              throw "Aspire startup failed with configuration errors"
+            }
+          }
+          catch {
+            Write-Host "❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
+            if ($startupOutput) {
+              Write-Host "Startup output:" -ForegroundColor Yellow
+              Write-Host $startupOutput -ForegroundColor Yellow
+            }
+            
+            Pop-Location
+            throw "Aspire environment startup failed: $($_.Exception.Message)"
+          }
           
           Pop-Location
-          
-          Write-Host "Aspire environment startup initiated (PID: $($aspireProcess.Id))" -ForegroundColor Cyan
-          
-          # Store process ID for cleanup
-          $aspireProcess.Id | Out-File -FilePath "aspire-pid.txt"
 
       - name: Wait for Services to Start
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: |
           Write-Host "⏳ Waiting for services to start and become healthy..." -ForegroundColor Green
           
-          # Wait for services to start (give them time to initialize)
-          Start-Sleep -Seconds 30
+          # Wait for services to start (give them more time to initialize, especially Temporal)
+          Write-Host "Waiting for basic containers to start..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 60
+          
+          Write-Host "Checking initial container status..." -ForegroundColor Yellow
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          Write-Host "Waiting additional time for Temporal stack to initialize..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 120
           
           Write-Host "Checking Docker containers..." -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -93,11 +199,31 @@ jobs:
           # Check if we have some containers running
           $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
           Write-Host "Found $containerCount running containers" -ForegroundColor Cyan
+          
+          # Show any containers that failed to start
+          $failedContainers = docker ps -a --filter "status=exited" --format "{{.Names}}"
+          if ($failedContainers) {
+            Write-Host "⚠️ Containers that failed to start:" -ForegroundColor Yellow
+            $failedContainers | ForEach-Object { 
+              Write-Host "  - $_" -ForegroundColor Red
+              Write-Host "    Last few log lines:" -ForegroundColor Yellow
+              docker logs --tail 10 $_ 2>&1 | ForEach-Object { Write-Host "      $_" -ForegroundColor Cyan }
+            }
+          }
+          
+          if ($containerCount -eq 0) {
+            Write-Host "❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
+            throw "Aspire environment startup failed - no containers are running"
+          }
+          
+          Write-Host "✅ $containerCount containers are running" -ForegroundColor Green
 
-      - name: Validate Infrastructure Components
-        timeout-minutes: 3
+      - name: Validate Infrastructure Components and API Accessibility
+        timeout-minutes: 8
         run: |
-          Write-Host "🔍 Validating infrastructure components..." -ForegroundColor Green
+          Write-Host "🔍 Validating infrastructure components and API accessibility..." -ForegroundColor Green
+          
+          $missingServices = @()
           
           # Check for Kafka containers
           $kafkaContainers = docker ps --filter "name=kafka" --format "{{.Names}}"
@@ -105,7 +231,8 @@ jobs:
             Write-Host "✅ Kafka containers found:" -ForegroundColor Green
             $kafkaContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
           } else {
-            Write-Host "⚠️ No Kafka containers found" -ForegroundColor Yellow
+            Write-Host "❌ No Kafka containers found" -ForegroundColor Red
+            $missingServices += "Kafka"
           }
           
           # Check for Flink containers
@@ -114,7 +241,8 @@ jobs:
             Write-Host "✅ Flink containers found:" -ForegroundColor Green
             $flinkContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
           } else {
-            Write-Host "⚠️ No Flink containers found" -ForegroundColor Yellow
+            Write-Host "❌ No Flink containers found" -ForegroundColor Red
+            $missingServices += "Flink"
           }
           
           # Check for Redis containers
@@ -123,40 +251,242 @@ jobs:
             Write-Host "✅ Redis containers found:" -ForegroundColor Green
             $redisContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
           } else {
-            Write-Host "⚠️ No Redis containers found" -ForegroundColor Yellow
+            Write-Host "❌ No Redis containers found" -ForegroundColor Red
+            $missingServices += "Redis"
           }
-
-      - name: Test LocalTesting API Accessibility
-        timeout-minutes: 2
-        run: |
-          Write-Host "🌐 Testing LocalTesting API accessibility..." -ForegroundColor Green
           
-          # Try to find the API endpoint from Docker networks
-          $apiContainers = docker ps --filter "name=localtesting-webapi" --format "{{.Names}}"
-          if ($apiContainers) {
-            Write-Host "✅ LocalTesting WebApi container found: $apiContainers" -ForegroundColor Green
+          # Check for Temporal containers (all three: postgres, server, ui)
+          $temporalContainers = docker ps --filter "name=temporal" --format "{{.Names}}"
+          if ($temporalContainers) {
+            Write-Host "✅ Temporal containers found:" -ForegroundColor Green
+            $temporalContainers | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
+            
+            # Verify we have all required Temporal components
+            $hasPostgres = $temporalContainers | Where-Object { $_ -match "postgres" }
+            $hasServer = $temporalContainers | Where-Object { $_ -match "server" -and $_ -notmatch "postgres" }
+            $hasUI = $temporalContainers | Where-Object { $_ -match "ui" -and $_ -notmatch "server" }
+            
+            if (-not $hasPostgres) {
+              Write-Host "❌ Temporal PostgreSQL container missing" -ForegroundColor Red
+              $missingServices += "Temporal PostgreSQL"
+            }
+            if (-not $hasServer) {
+              Write-Host "❌ Temporal Server container missing" -ForegroundColor Red
+              $missingServices += "Temporal Server"
+            }
+            if (-not $hasUI) {
+              Write-Host "❌ Temporal UI container missing" -ForegroundColor Red
+              $missingServices += "Temporal UI"
+            }
           } else {
-            Write-Host "⚠️ LocalTesting WebApi container not found in expected format" -ForegroundColor Yellow
+            Write-Host "❌ No Temporal containers found" -ForegroundColor Red
+            $missingServices += "Temporal (PostgreSQL, Server, UI)"
           }
           
-          # Check if we can reach any HTTP endpoints on common ports
-          $commonPorts = @(5000, 8080, 8081)
-          foreach ($port in $commonPorts) {
+          # Show detailed container information for debugging
+          Write-Host "`n🔍 All running containers for debugging:" -ForegroundColor Yellow
+          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+          
+          # Check for failed containers that might give us clues
+          $failedContainers = docker ps -a --filter "status=exited" --format "{{.Names}}"
+          if ($failedContainers) {
+            Write-Host "`n⚠️ Failed containers found:" -ForegroundColor Yellow
+            $failedContainers | ForEach-Object { 
+              Write-Host "  - $_" -ForegroundColor Red
+              Write-Host "    Exit status and logs:" -ForegroundColor Yellow
+              docker inspect $_ --format "{{.State.ExitCode}}: {{.State.Error}}"
+              Write-Host "    Last 5 log lines:" -ForegroundColor Yellow
+              docker logs --tail 5 $_ 2>&1 | ForEach-Object { Write-Host "      $_" -ForegroundColor Cyan }
+            }
+          }
+          
+          # Test API endpoint accessibility for all services including LocalTesting API
+          Write-Host "`n🌐 Testing API and UI endpoint accessibility..." -ForegroundColor Green
+          
+          # Check if we can reach the LocalTesting API and other UI endpoints
+          $testEndpoints = @(
+            @{Port=5000; Name="LocalTesting API"; Path="/"; Critical=$true},
+            @{Port=8082; Name="Kafka UI"; Path="/"; Critical=$false},
+            @{Port=8084; Name="Temporal UI"; Path="/"; Critical=$true},
+            @{Port=3000; Name="Grafana"; Path="/"; Critical=$false},
+            @{Port=8081; Name="Flink JobManager UI"; Path="/"; Critical=$false}
+          )
+          
+          $accessibleEndpoints = @()
+          $failedEndpoints = @()
+          $endpointMissingServices = @()
+          
+          foreach ($endpoint in $testEndpoints) {
             try {
-              Write-Host "Testing port $port..." -ForegroundColor Yellow
-              $response = Invoke-WebRequest -Uri "http://localhost:$port" -TimeoutSec 5 -ErrorAction SilentlyContinue
+              Write-Host "Testing $($endpoint.Name) on port $($endpoint.Port)..." -ForegroundColor Yellow
+              $uri = "http://localhost:$($endpoint.Port)$($endpoint.Path)"
+              $response = Invoke-WebRequest -Uri $uri -TimeoutSec 10 -ErrorAction SilentlyContinue
               if ($response.StatusCode -eq 200) {
-                Write-Host "✅ Port $port is accessible (Status: $($response.StatusCode))" -ForegroundColor Green
+                Write-Host "✅ $($endpoint.Name) is accessible (Status: $($response.StatusCode))" -ForegroundColor Green
+                $accessibleEndpoints += $endpoint.Name
               }
             }
             catch {
-              Write-Host "⚠️ Port $port not accessible: $($_.Exception.Message)" -ForegroundColor Yellow
+              Write-Host "❌ $($endpoint.Name) not accessible: $($_.Exception.Message)" -ForegroundColor Red
+              $failedEndpoints += $endpoint.Name
+              if ($endpoint.Critical) {
+                $endpointMissingServices += $endpoint.Name
+              }
             }
           }
+          
+          # Combine container validation failures with endpoint failures (avoiding duplicates)
+          $allMissingServices = $missingServices + $endpointMissingServices | Select-Object -Unique
+          
+          # Combined validation: fail if either containers are missing OR critical APIs are inaccessible
+          if ($allMissingServices.Count -gt 0) {
+            Write-Host "`n❌ Missing critical infrastructure services: $($allMissingServices -join ', ')" -ForegroundColor Red
+            Write-Host "This indicates that the Aspire environment failed to start all required services." -ForegroundColor Red
+            
+            if ($accessibleEndpoints.Count -gt 0) {
+              Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
+            }
+            if ($failedEndpoints.Count -gt 0) {
+              Write-Host "❌ Failed services: $($failedEndpoints -join ', ')" -ForegroundColor Red
+            }
+            
+            throw "Critical infrastructure services are missing: $($allMissingServices -join ', '). Aspire environment startup failed."
+          }
+          
+          Write-Host "`n✅ All critical infrastructure components and APIs are running and accessible" -ForegroundColor Green
+          Write-Host "✅ Accessible services: $($accessibleEndpoints -join ', ')" -ForegroundColor Green
+          if ($failedEndpoints.Count -gt 0) {
+            Write-Host "⚠️ Inaccessible non-critical services: $($failedEndpoints -join ', ')" -ForegroundColor Yellow
+          }
 
-      - name: Validate Aspire Environment Health
+      - name: Execute Complex Logic Stress Test Business Flows
+        timeout-minutes: 20
         run: |
-          Write-Host "🔍 Validating Aspire environment health..." -ForegroundColor Green
+          Write-Host "🧪 Executing Complex Logic Stress Test Business Flows..." -ForegroundColor Green
+          Write-Host "This validates the actual business functionality rather than just container startup" -ForegroundColor Cyan
+          
+          $apiBase = "http://localhost:5000/api/ComplexLogicStressTest"
+          $testResults = @()
+          $overallSuccess = $true
+          
+          try {
+            # Step 1: Setup Environment
+            Write-Host "`n🚀 Step 1: Setting up Aspire test environment..." -ForegroundColor Yellow
+            $setupResponse = Invoke-RestMethod -Uri "$apiBase/step1/setup-environment" -Method POST -ContentType "application/json" -TimeoutSec 30
+            Write-Host "✅ Environment setup: $($setupResponse.Status)" -ForegroundColor Green
+            Write-Host "   Services Health: $($setupResponse.Metrics | ConvertTo-Json -Depth 2)" -ForegroundColor Cyan
+            $testResults += @{Step="1-Setup"; Status=$setupResponse.Status; Success=$true}
+            
+            # Step 2: Configure Security Tokens  
+            Write-Host "`n🔑 Step 2: Configuring security tokens..." -ForegroundColor Yellow
+            $tokenConfig = 1000  # Smaller interval for faster testing
+            $tokenResponse = Invoke-RestMethod -Uri "$apiBase/step2/configure-security-tokens" -Method POST -Body ($tokenConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+            Write-Host "✅ Token configuration: $($tokenResponse.Status)" -ForegroundColor Green
+            Write-Host "   Renewal Interval: $($tokenResponse.TokenInfo.RenewalInterval) messages" -ForegroundColor Cyan
+            $testResults += @{Step="2-Tokens"; Status=$tokenResponse.Status; Success=$true}
+            
+            # Step 3: Configure Backpressure
+            Write-Host "`n⚡ Step 3: Configuring lag-based backpressure..." -ForegroundColor Yellow
+            $backpressureConfig = @{
+              ConsumerGroup = "stress-test-group"
+              LagThresholdSeconds = 5.0
+              RateLimit = 1000.0
+              BurstCapacity = 5000.0
+            }
+            $backpressureResponse = Invoke-RestMethod -Uri "$apiBase/step3/configure-backpressure" -Method POST -Body ($backpressureConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+            Write-Host "✅ Backpressure configuration: $($backpressureResponse.Status)" -ForegroundColor Green
+            Write-Host "   Lag Threshold: $($backpressureResponse.Configuration.LagThresholdSeconds)s" -ForegroundColor Cyan
+            $testResults += @{Step="3-Backpressure"; Status=$backpressureResponse.Status; Success=$true}
+            
+            # Step 4: Produce Messages (smaller batch for CI testing)
+            Write-Host "`n📝 Step 4: Producing messages with correlation IDs..." -ForegroundColor Yellow
+            $messageConfig = @{
+              TestId = "ci-test-$(Get-Date -Format 'yyyyMMddHHmmss')"
+              MessageCount = 10000  # 10K messages for faster CI testing
+            }
+            $productionResponse = Invoke-RestMethod -Uri "$apiBase/step4/produce-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
+            Write-Host "✅ Message production: $($productionResponse.Status)" -ForegroundColor Green
+            Write-Host "   Messages: $($productionResponse.Metrics.messageCount.ToString('N0')), Throughput: $($productionResponse.Metrics.messagesPerSecond.ToString('F0')) msgs/sec" -ForegroundColor Cyan
+            $testResults += @{Step="4-Production"; Status=$productionResponse.Status; Success=$true; MessageCount=$productionResponse.Metrics.messageCount}
+            
+            # Step 5: Start Flink Job
+            Write-Host "`n🚀 Step 5: Starting Flink streaming job..." -ForegroundColor Yellow
+            $flinkConfig = @{
+              ConsumerGroup = "stress-test-group"
+              InputTopic = "complex-input"
+              OutputTopic = "complex-output"
+              EnableCorrelationTracking = $true
+              BatchSize = 100
+              Parallelism = 10
+              CheckpointingInterval = 10000
+            }
+            $flinkResponse = Invoke-RestMethod -Uri "$apiBase/step5/start-flink-job" -Method POST -Body ($flinkConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 45
+            Write-Host "✅ Flink job: $($flinkResponse.Status)" -ForegroundColor Green
+            Write-Host "   Job ID: $($flinkResponse.JobId)" -ForegroundColor Cyan
+            $testResults += @{Step="5-Flink"; Status=$flinkResponse.Status; Success=$true; JobId=$flinkResponse.JobId}
+            
+            # Step 6: Process Batches
+            Write-Host "`n🔄 Step 6: Processing message batches..." -ForegroundColor Yellow
+            $batchConfig = @{
+              TestId = $messageConfig.TestId
+              BatchSize = 100
+            }
+            $batchResponse = Invoke-RestMethod -Uri "$apiBase/step6/process-batches" -Method POST -Body ($batchConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
+            Write-Host "✅ Batch processing: $($batchResponse.Status)" -ForegroundColor Green
+            Write-Host "   Batches: $($batchResponse.TotalBatches), Messages: $($batchResponse.TotalMessages.ToString('N0'))" -ForegroundColor Cyan
+            $testResults += @{Step="6-Batches"; Status=$batchResponse.Status; Success=$true; TotalBatches=$batchResponse.TotalBatches}
+            
+            # Step 7: Verify Messages
+            Write-Host "`n🔍 Step 7: Verifying message processing..." -ForegroundColor Yellow
+            $verificationConfig = @{
+              TestId = $messageConfig.TestId
+              TopCount = 10   # Smaller counts for CI
+              LastCount = 10
+            }
+            $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step7/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+            Write-Host "✅ Message verification: $($verificationResponse.Status)" -ForegroundColor Green
+            Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate.ToString('P1'))" -ForegroundColor Cyan
+            $testResults += @{Step="7-Verification"; Status=$verificationResponse.Status; Success=$true; SuccessRate=$verificationResponse.VerificationResult.SuccessRate}
+            
+            # Test Status Monitoring
+            Write-Host "`n📊 Testing stress test status monitoring..." -ForegroundColor Yellow
+            $allTestsResponse = Invoke-RestMethod -Uri "$apiBase/test-status" -Method GET -TimeoutSec 15
+            Write-Host "✅ Active tests monitoring: $($allTestsResponse.Count) active tests" -ForegroundColor Green
+            
+          }
+          catch {
+            Write-Host "❌ Business flow test failed: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Response details: $($_.Exception.Response | Out-String)" -ForegroundColor Yellow
+            $testResults += @{Step="Error"; Status="Failed"; Success=$false; Error=$_.Exception.Message}
+            $overallSuccess = $false
+          }
+          
+          # Summary Report
+          Write-Host "`n📋 Complex Logic Stress Test Business Flow Results:" -ForegroundColor Green
+          Write-Host "=" * 60 -ForegroundColor Green
+          
+          $successfulSteps = ($testResults | Where-Object { $_.Success -eq $true }).Count
+          $totalSteps = $testResults.Count
+          
+          foreach ($result in $testResults) {
+            $status = if ($result.Success) { "✅ PASSED" } else { "❌ FAILED" }
+            Write-Host "  $($result.Step): $status - $($result.Status)" -ForegroundColor $(if ($result.Success) { "Green" } else { "Red" })
+          }
+          
+          Write-Host "=" * 60 -ForegroundColor Green
+          Write-Host "Overall Result: $successfulSteps/$totalSteps steps passed" -ForegroundColor $(if ($overallSuccess) { "Green" } else { "Red" })
+          
+          if ($overallSuccess) {
+            Write-Host "🎉 ALL BUSINESS FLOWS COMPLETED SUCCESSFULLY!" -ForegroundColor Green
+            Write-Host "The LocalTesting environment successfully executed complex logic stress test scenarios" -ForegroundColor Cyan
+          } else {
+            Write-Host "❌ SOME BUSINESS FLOWS FAILED" -ForegroundColor Red
+            throw "Business flow validation failed - see test results above"
+          }
+
+      - name: Validate Aspire Environment Health and Performance
+        run: |
+          Write-Host "🔍 Final validation of Aspire environment health and performance..." -ForegroundColor Green
           
           # Show all running containers
           Write-Host "All running containers:" -ForegroundColor Yellow
@@ -170,39 +500,48 @@ jobs:
           Write-Host "`nDocker system info:" -ForegroundColor Yellow
           docker system info --format "{{.ServerVersion}}"
           
-          Write-Host "✅ LocalTesting environment health check completed!" -ForegroundColor Green
+          Write-Host "✅ LocalTesting environment validation completed successfully!" -ForegroundColor Green
+          Write-Host "🎉 Both infrastructure containers AND business flows are working correctly!" -ForegroundColor Green
 
-      - name: Test LocalTesting Solution Startup
+      - name: Summary Report
         run: |
-          Write-Host "🧪 Testing LocalTesting solution startup capability..." -ForegroundColor Green
-          
-          # This validates that the Aspire environment can start successfully
-          # Even if all services don't fully initialize in CI, we can verify the configuration
-          Write-Host "✅ LocalTesting solution startup test completed!" -ForegroundColor Green
-          Write-Host "  📊 Solution builds successfully" -ForegroundColor Cyan
-          Write-Host "  📊 Aspire configuration is valid" -ForegroundColor Cyan
-          Write-Host "  📊 Container orchestration works" -ForegroundColor Cyan
+          Write-Host "📋 LocalTesting Workflow Summary Report" -ForegroundColor Green
+          Write-Host "=" * 50 -ForegroundColor Green
+          Write-Host "✅ Aspire environment startup: SUCCESS" -ForegroundColor Green
+          Write-Host "✅ Infrastructure container validation: SUCCESS" -ForegroundColor Green  
+          Write-Host "✅ Business flow execution: SUCCESS" -ForegroundColor Green
+          Write-Host "✅ Complex Logic Stress Test API: FUNCTIONAL" -ForegroundColor Green
+          Write-Host "=" * 50 -ForegroundColor Green
+          Write-Host "🎯 LocalTesting environment is production-ready for development and testing!" -ForegroundColor Green
 
       - name: Cleanup Aspire Environment
         if: always()
         run: |
           Write-Host "🧹 Cleaning up Aspire environment..." -ForegroundColor Green
           
-          # Stop the Aspire process if it's still running
-          if (Test-Path "aspire-pid.txt") {
-            $aspirePid = Get-Content "aspire-pid.txt"
-            try {
-              $process = Get-Process -Id $aspirePid -ErrorAction SilentlyContinue
-              if ($process) {
-                Write-Host "Stopping Aspire process (PID: $aspirePid)" -ForegroundColor Yellow
-                Stop-Process -Id $aspirePid -Force
-                Start-Sleep -Seconds 5
-              }
+          # Stop the Aspire background process if it's still running
+          try {
+            if ($global:AspirePID) {
+              Write-Host "Stopping Aspire process (PID: $global:AspirePID)..." -ForegroundColor Yellow
+              Stop-Process -Id $global:AspirePID -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
             }
-            catch {
-              Write-Host "Aspire process already stopped or not found" -ForegroundColor Yellow
+          }
+          catch {
+            Write-Host "Aspire process may have already stopped" -ForegroundColor Yellow
+          }
+          
+          # Stop any remaining dotnet processes that might be running
+          try {
+            $dotnetProcesses = Get-Process -Name "dotnet" -ErrorAction SilentlyContinue
+            if ($dotnetProcesses) {
+              Write-Host "Stopping remaining dotnet processes..." -ForegroundColor Yellow
+              $dotnetProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
             }
-            Remove-Item "aspire-pid.txt" -ErrorAction SilentlyContinue
+          }
+          catch {
+            Write-Host "No additional dotnet processes to stop" -ForegroundColor Yellow
           }
           
           # Stop all containers that might have been started
@@ -212,6 +551,17 @@ jobs:
           # Clean up any dangling containers
           Write-Host "Cleaning up containers..." -ForegroundColor Yellow
           docker container prune -f 2>$null
+          
+          # Clean up any log files
+          try {
+            Push-Location LocalTesting/LocalTesting.AppHost -ErrorAction SilentlyContinue
+            if (Test-Path "aspire_output.log") { Remove-Item "aspire_output.log" -Force }
+            if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
+            Pop-Location
+          }
+          catch {
+            Write-Host "No log files to clean up" -ForegroundColor Yellow
+          }
           
           Write-Host "✅ Cleanup completed!" -ForegroundColor Green
 

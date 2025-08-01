@@ -19,10 +19,15 @@ The LocalTesting solution transforms the BDD test scenarios from `docs/wiki/Comp
 - **Apache Flink Cluster**: JobManager + 3 TaskManagers with 10 slots each
 - **Flink SQL Gateway**: Interactive SQL query interface
 - **Redis**: Caching and state management
+- **Temporal Server + UI**: Durable workflow execution for long-running processes
 - **OpenTelemetry Collector**: Distributed tracing and metrics collection
 - **Prometheus**: Metrics storage and querying
 - **Grafana**: Visualization dashboards
 - **Kafka UI**: Cluster management and monitoring
+
+### Technology Decision Guide
+
+For guidance on when to use Flink vs Temporal for different processing requirements, see our comprehensive [Flink vs Temporal Decision Guide](../docs/flink-vs-temporal-decision-guide.md).
 
 ### API Endpoints
 

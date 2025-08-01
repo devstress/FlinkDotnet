@@ -21,29 +21,25 @@ processors:
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
-  logging:
-    loglevel: info
-  otlp/jaeger:
-    endpoint: http://jaeger:14250
-    tls:
-      insecure: true
+  debug:
+    verbosity: detailed
 
 service:
   pipelines:
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [prometheus, logging]
+      exporters: [prometheus, debug]
     traces:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [logging]
+      exporters: [debug]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [logging]
+      exporters: [debug]
 
   extensions: []
   telemetry:
     metrics:
-      address: 0.0.0.0:8888
+      level: detailed
