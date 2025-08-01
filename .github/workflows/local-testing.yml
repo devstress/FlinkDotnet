@@ -98,7 +98,7 @@ jobs:
           $nugetPackages = "$HOME/.nuget/packages"
           
           # Set DCP CLI path using the installed orchestration package
-          $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.3.1/tools/dcp"
+          $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.1.0/tools/dcp"
           if (Test-Path $dcpPath) {
             $env:DCP_CLI_PATH = $dcpPath
             Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
@@ -108,7 +108,7 @@ jobs:
           }
           
           # Set Aspire Dashboard path using the installed dashboard SDK
-          $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.3.1/tools"  
+          $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.1.0/tools"  
           if (Test-Path $dashboardPath) {
             $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
             Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green

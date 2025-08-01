@@ -80,7 +80,7 @@ Think of this system like a **smart restaurant** that never gets overwhelmed:
 ```bash
 # You need these installed on your computer:
 # - Docker Desktop (like a container for all the restaurant parts)
-# - .NET 8 (the language everything is written in)
+# - .NET 9 (the language everything is written in)
 ```
 
 **Step 2: Get the Code**

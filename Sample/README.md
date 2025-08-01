@@ -84,7 +84,7 @@ builder.Services.AddFlinkJobBuilder(config =>
 ## 🚀 Getting Started
 
 ### Prerequisites
-- .NET 8.0 SDK
+- .NET 9.0 SDK
 - Apache Flink 2.0 cluster (JobManager + TaskManager)
 - Flink Job Gateway service
 - Kafka cluster for data streaming

@@ -37,7 +37,7 @@ Distributed tracing and telemetry collection interfaces.
 ## Getting Started
 
 ### Prerequisites
-- .NET 8.0 SDK
+- .NET 9.0 SDK
 - Docker Desktop (minimum 16GB RAM allocated)
 - Available ports: 5000, 8080, 8081, 8083, 3000, 9090, 8888, 8889
 
