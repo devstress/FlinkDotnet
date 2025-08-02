@@ -1,5 +1,13 @@
 using Aspire.Hosting;
 
+// Configure Aspire dashboard and OTLP environment variables
+// These settings eliminate the need for manual environment variable setup
+Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:4324");
+Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:18888");
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Redis with IPv4 configuration

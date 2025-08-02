@@ -129,31 +129,9 @@ dotnet --version  # Must return 9.0.x
 dotnet workload list  # Must show aspire workload installed
 ```
 
-### Environment Variables
-
-Before running the Aspire environment, set these required environment variables:
-
-```bash
-export ASPIRE_ALLOW_UNSECURED_TRANSPORT=true
-export DOTNET_DASHBOARD_OTLP_ENDPOINT_URL=http://localhost:4323
-export DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:4324
-export ASPIRE_DASHBOARD_URL=http://localhost:18888
-export ASPNETCORE_URLS=http://localhost:18888
-```
-
 ### Running the Environment
 
-1. **Set Environment Variables**:
-   ```bash
-   # Set required Aspire environment variables
-   export ASPIRE_ALLOW_UNSECURED_TRANSPORT=true
-   export DOTNET_DASHBOARD_OTLP_ENDPOINT_URL=http://localhost:4323
-   export DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:4324
-   export ASPIRE_DASHBOARD_URL=http://localhost:18888
-   export ASPNETCORE_URLS=http://localhost:18888
-   ```
-
-2. **Start Aspire Host**:
+1. **Start Aspire Host**:
    ```bash
    cd LocalTesting/LocalTesting.AppHost
    dotnet run

@@ -169,8 +169,8 @@ function Start-AspireEnvironment {
             return $false
         }
         
-        # Set up environment variables for Aspire
-        Write-Step "Setting up Aspire environment variables..."
+        # Set up environment variables for Aspire paths (updated for .NET 9 and Aspire 9.1.0)
+        Write-Step "Setting up Aspire CLI paths..."
         $nugetPackages = if ($IsWindows) { "$env:USERPROFILE\.nuget\packages" } else { "$env:HOME/.nuget/packages" }
         
         # Set required Aspire paths (updated for .NET 9 and Aspire 9.1.0)
@@ -184,18 +184,13 @@ function Start-AspireEnvironment {
         
         $env:DCP_CLI_PATH = $dcpPath
         $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
-        $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-        $env:ASPNETCORE_URLS = "http://localhost:15000"
-        $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-        $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324"
-        $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
         $env:ASPNETCORE_ENVIRONMENT = "Development"
         
-        Write-Info "Aspire environment variables configured:"
+        Write-Info "Aspire environment paths configured:"
         Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor $Cyan
         Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor $Cyan
-        Write-Host "  ASPIRE_DASHBOARD_URL: $env:ASPIRE_DASHBOARD_URL" -ForegroundColor $Cyan
-        Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor $Cyan
+        
+        Write-Info "Dashboard and OTLP environment variables are now automatically configured in AppHost"
         
         # Verify required paths exist
         if (Test-Path $env:DCP_CLI_PATH) {
