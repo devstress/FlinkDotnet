@@ -21,9 +21,9 @@
     </PackageReference>
     
     <!-- BDD Testing with Reqnroll -->
-    <PackageReference Include="Reqnroll" Version="2.1.0" />
-    <PackageReference Include="Reqnroll.xUnit" Version="2.1.0" />
-    <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" Version="2.1.0" />
+    <PackageReference Include="Reqnroll" Version="2.4.1" />
+    <PackageReference Include="Reqnroll.xUnit" Version="2.4.1" />
+    <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" Version="2.4.1" />
     
     <!-- Microsoft Aspire Integration Testing -->
     <PackageReference Include="Aspire.Hosting.Testing" Version="9.4.0" />
