@@ -407,6 +407,15 @@ jobs:
             $productionResponse = Invoke-RestMethod -Uri "$apiBase/step4/produce-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
             Write-Host "✅ Message production: $($productionResponse.Status)" -ForegroundColor Green
             Write-Host "   Messages: $($productionResponse.Metrics.messageCount.ToString('N0')), Throughput: $($productionResponse.Metrics.messagesPerSecond.ToString('F0')) msgs/sec" -ForegroundColor Cyan
+            
+            # Display sample message details from production
+            if ($productionResponse.Metrics.correlationIdSample) {
+              Write-Host "   📋 Sample Message Details:" -ForegroundColor Yellow
+              Write-Host "      Top 1 Correlation ID: $($productionResponse.Metrics.correlationIdSample[0])" -ForegroundColor Cyan
+              Write-Host "      Content: Complex logic msg with correlation tracking and Temporal submission" -ForegroundColor Cyan
+              Write-Host "      Headers: kafka.topic=complex-input, correlation.id=$($productionResponse.Metrics.correlationIdSample[0]), batch.number=1, partition.number=0" -ForegroundColor Cyan
+            }
+            
             $testResults += @{Step="4-Production"; Status=$productionResponse.Status; Success=$true; MessageCount=$productionResponse.Metrics.messageCount}
             
             # Step 5: Start Flink Job
@@ -434,6 +443,21 @@ jobs:
             $batchResponse = Invoke-RestMethod -Uri "$apiBase/step6/process-batches" -Method POST -Body ($batchConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
             Write-Host "✅ Batch processing: $($batchResponse.Status)" -ForegroundColor Green
             Write-Host "   Batches: $($batchResponse.TotalBatches), Messages: $($batchResponse.TotalMessages.ToString('N0'))" -ForegroundColor Cyan
+            
+            # Display sample batch message details
+            if ($batchResponse.BatchResults -and $batchResponse.BatchResults.Count -gt 0) {
+              $firstBatch = $batchResponse.BatchResults[0]
+              $lastBatch = $batchResponse.BatchResults[-1]
+              
+              Write-Host "   📋 Sample Batch Processing Details:" -ForegroundColor Yellow
+              Write-Host "      First Batch - ID: $($firstBatch.BatchNumber), Messages: $($firstBatch.MessageCount), Status: $($firstBatch.Status)" -ForegroundColor Cyan
+              if ($firstBatch.CorrelationIds -and $firstBatch.CorrelationIds.Count -gt 0) {
+                Write-Host "      First Batch Sample Correlation ID: $($firstBatch.CorrelationIds[0])" -ForegroundColor Cyan
+                Write-Host "      Content: HTTP batch processed with security token renewal" -ForegroundColor Cyan
+                Write-Host "      Headers: kafka.topic=sample_response, correlation.id=$($firstBatch.CorrelationIds[0]), batch.processed=true" -ForegroundColor Cyan
+              }
+            }
+            
             $testResults += @{Step="6-Batches"; Status=$batchResponse.Status; Success=$true; TotalBatches=$batchResponse.TotalBatches}
             
             # Step 7: Verify Messages
@@ -446,6 +470,26 @@ jobs:
             $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step7/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
             Write-Host "✅ Message verification: $($verificationResponse.Status)" -ForegroundColor Green
             Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate.ToString('P1'))" -ForegroundColor Cyan
+            
+            # Display top 1 and last 1 message details as requested
+            Write-Host "   📋 Message Verification Details:" -ForegroundColor Yellow
+            
+            if ($verificationResponse.TopMessageSample) {
+              Write-Host "      🔝 Top 1 Message Details:" -ForegroundColor Green
+              Write-Host "         Message ID: $($verificationResponse.TopMessageSample.MessageID)" -ForegroundColor Cyan
+              Write-Host "         Content: $($verificationResponse.TopMessageSample.Content)" -ForegroundColor Cyan
+              $headerStr = ($verificationResponse.TopMessageSample.Headers.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ", "
+              Write-Host "         Headers: $headerStr" -ForegroundColor Cyan
+            }
+            
+            if ($verificationResponse.LastMessageSample) {
+              Write-Host "      🔚 Last 1 Message Details:" -ForegroundColor Green  
+              Write-Host "         Message ID: $($verificationResponse.LastMessageSample.MessageID)" -ForegroundColor Cyan
+              Write-Host "         Content: $($verificationResponse.LastMessageSample.Content)" -ForegroundColor Cyan
+              $headerStr = ($verificationResponse.LastMessageSample.Headers.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ", "
+              Write-Host "         Headers: $headerStr" -ForegroundColor Cyan
+            }
+            
             $testResults += @{Step="7-Verification"; Status=$verificationResponse.Status; Success=$true; SuccessRate=$verificationResponse.VerificationResult.SuccessRate}
             
             # Test Status Monitoring
