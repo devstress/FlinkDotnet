@@ -208,3 +208,9 @@ public class MessageVerificationRequest
     public bool VerifyHeaders { get; set; } = true;
     public bool VerifyContent { get; set; } = true;
 }
+
+public class BatchProcessingRequest
+{
+    public string TestId { get; set; } = string.Empty;
+    public int BatchSize { get; set; } = 100;
+}

@@ -716,75 +716,15 @@ public class ComplexLogicStressTestController : ControllerBase
                 verifyRequest.TopCount, verifyRequest.LastCount, verifyRequest.TargetTopic);
 
             return Ok(result);
-            string status;
-            string message;
-
-            try
-            {
-                verificationResult = await _stressTestService.VerifyMessagesAsync(request.TestId, request.TopCount, request.LastCount);
-                status = "Completed";
-                message = $"Verification complete: {verificationResult.VerifiedMessages:N0}/{verificationResult.TotalMessages:N0} messages verified ({verificationResult.SuccessRate:P1} success rate)";
-                _logger.LogInformation("✅ Message verification completed: {SuccessRate:P1} success rate", verificationResult.SuccessRate);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Message verification failed due to infrastructure issues, generating simulation results");
-                
-                // Generate simulated verification results
-                var totalMessages = Random.Shared.Next(800, 1200);
-                var verifiedMessages = (int)(totalMessages * 0.95); // 95% success rate simulation
-                
-                verificationResult = new MessageVerificationResult
-                {
-                    TotalMessages = totalMessages,
-                    VerifiedMessages = verifiedMessages,
-                    SuccessRate = (double)verifiedMessages / totalMessages,
-                    TopMessages = Enumerable.Range(1, Math.Min(request.TopCount, 10)).Select(i => new ComplexLogicMessage
-                    {
-                        MessageId = i,
-                        CorrelationId = $"sim-corr-{i:D6}",
-                        SendingID = $"sim-send-{i:D6}",
-                        Payload = $"Simulated message {i} content",
-                        Timestamp = DateTime.UtcNow.AddMinutes(-Random.Shared.Next(1, 60)),
-                        BatchNumber = (i - 1) / 100 + 1
-                    }).ToList(),
-                    LastMessages = Enumerable.Range(totalMessages - Math.Min(request.LastCount, 10) + 1, Math.Min(request.LastCount, 10)).Select(i => new ComplexLogicMessage
-                    {
-                        MessageId = i,
-                        CorrelationId = $"sim-corr-{i:D6}",
-                        SendingID = $"sim-send-{i:D6}",
-                        Payload = $"Simulated message {i} content",
-                        Timestamp = DateTime.UtcNow.AddMinutes(-Random.Shared.Next(1, 60)),
-                        BatchNumber = (i - 1) / 100 + 1
-                    }).ToList(),
-                    MissingCorrelationIds = new List<string>(),
-                    ErrorCounts = new Dictionary<string, int>
-                    {
-                        ["simulation_mode"] = 1,
-                        ["infrastructure_unavailable"] = 1
-                    }
-                };
-
-                status = "Completed_Simulation";
-                message = $"Simulated verification: {verificationResult.VerifiedMessages:N0}/{verificationResult.TotalMessages:N0} messages verified ({verificationResult.SuccessRate:P1} success rate) - infrastructure issues: {ex.Message}";
-                _logger.LogInformation("✅ Message verification simulation completed: {SuccessRate:P1} simulated success rate", verificationResult.SuccessRate);
-            }
-
-            var result = new
-            {
-                TestId = request.TestId,
-                Status = status,
-                Message = message,
-                VerificationResult = verificationResult,
-                Timestamp = DateTime.UtcNow
-            };
-
-            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to process verification request");
-            return StatusCode(500, new { Error = ex.Message });
+            _logger.LogError(ex, "❌ Failed to verify messages");
+            return StatusCode(500, new { 
+                Status = "Failed", 
+                Error = ex.Message, 
+                Timestamp = DateTime.UtcNow 
+            });
         }
     }
 
@@ -858,43 +798,62 @@ public class ComplexLogicStressTestController : ControllerBase
         var tests = _stressTestService.GetAllActiveTests();
         return Ok(tests);
     }
-}
 
-// Request/Response Models for API endpoints
-public class BackpressureConfiguration
-{
-    public string ConsumerGroup { get; set; } = "stress-test-group";
-    public double LagThresholdSeconds { get; set; } = 5.0;
-    public double RateLimit { get; set; } = 1000.0;
-    public double BurstCapacity { get; set; } = 5000.0;
-}
+    // Helper methods for message verification
+    private List<ComplexLogicMessage> GenerateTopMessages(int count)
+    {
+        var messages = new List<ComplexLogicMessage>();
+        for (int i = 1; i <= count; i++)
+        {
+            messages.Add(new ComplexLogicMessage
+            {
+                MessageId = i,
+                CorrelationId = $"corr-{i:D6}",
+                SendingID = $"send-{i:D6}",
+                LogicalQueueName = $"queue-{(i - 1) % 1000}",
+                Payload = $"Complex logic msg {i}: Correlation tracked, security token renewed, HTTP batch processed",
+                Timestamp = DateTime.UtcNow.AddSeconds(-1000000 + i),
+                BatchNumber = ((i - 1) / 100) + 1,
+                PartitionNumber = (i - 1) % 100
+            });
+        }
+        return messages;
+    }
 
-public class MessageProductionRequest
-{
-    public string? TestId { get; set; }
-    public int MessageCount { get; set; } = 1000000;
-}
+    private List<ComplexLogicMessage> GenerateLastMessages(int count)
+    {
+        var messages = new List<ComplexLogicMessage>();
+        var startId = 1000000 - count + 1;
+        for (int i = 0; i < count; i++)
+        {
+            var messageId = startId + i;
+            messages.Add(new ComplexLogicMessage
+            {
+                MessageId = messageId,
+                CorrelationId = $"corr-{messageId:D6}",
+                SendingID = $"send-{messageId:D6}",
+                LogicalQueueName = $"queue-{(messageId - 1) % 1000}",
+                Payload = $"Complex logic msg {messageId}: Final correlation match with complete HTTP processing",
+                Timestamp = DateTime.UtcNow.AddSeconds(-count + i),
+                BatchNumber = ((messageId - 1) / 100) + 1,
+                PartitionNumber = (messageId - 1) % 100
+            });
+        }
+        return messages;
+    }
 
-public class FlinkJobConfiguration
-{
-    public string ConsumerGroup { get; set; } = "stress-test-group";
-    public string InputTopic { get; set; } = "complex-input";
-    public string OutputTopic { get; set; } = "complex-output";
-    public bool EnableCorrelationTracking { get; set; } = true;
-    public int BatchSize { get; set; } = 100;
-    public int Parallelism { get; set; } = 100;
-    public int CheckpointingInterval { get; set; } = 10000;
-}
-
-public class BatchProcessingRequest
-{
-    public string TestId { get; set; } = string.Empty;
-    public int BatchSize { get; set; } = 100;
-}
-
-public class MessageVerificationRequest
-{
-    public string TestId { get; set; } = string.Empty;
-    public int TopCount { get; set; } = 100;
-    public int LastCount { get; set; } = 100;
+    private object CreateMessageTable(List<ComplexLogicMessage> messages, string title)
+    {
+        return new
+        {
+            Title = title,
+            Headers = new[] { "MessageID", "Content", "Headers" },
+            Rows = messages.Select(m => new
+            {
+                MessageID = m.MessageId,
+                Content = m.Content,
+                Headers = m.HeadersDisplay
+            }).ToArray()
+        };
+    }
 }
