@@ -118,9 +118,16 @@ The system now includes **LagBasedRateLimiter** which implements the "stops refi
 
 ### Prerequisites
 
-- .NET 9.0 SDK
-- Docker Desktop
-- At least 16GB RAM (for all containers)
+- **.NET 9.0 SDK** (Required for Aspire workload and local testing)
+- **Docker Desktop** (Required for container orchestration)
+- **Aspire Workload** (`dotnet workload install aspire`)
+- **At least 16GB RAM** (for all containers - 3 Kafka brokers, 3 TaskManagers, etc.)
+
+**⚠️ Important**: Local testing GitHub workflow requires .NET 9.0.303 or later. Verify your local environment matches CI requirements:
+```bash
+dotnet --version  # Must return 9.0.x
+dotnet workload list  # Must show aspire workload installed
+```
 
 ### Environment Variables
 
@@ -864,6 +871,40 @@ dotnet run
    - Fine-tune lag thresholds based on system capacity
    - Adjust rate limits for optimal throughput
    - Monitor token bucket utilization
+
+## Local Testing & GitHub Workflow Requirements
+
+To ensure the LocalTesting GitHub workflow passes in your local environment:
+
+### Environment Setup
+1. **Install .NET 9.0 SDK** (9.0.303 or later)
+2. **Install Aspire workload**: `dotnet workload install aspire`
+3. **Start Docker Desktop** with adequate resources (16GB+ RAM)
+4. **Verify prerequisites**:
+   ```bash
+   dotnet --version  # Should return 9.0.x
+   dotnet workload list  # Should show aspire
+   docker info  # Should show Docker running
+   ```
+
+### Local Testing Commands
+```bash
+# Navigate to AppHost directory
+cd LocalTesting/LocalTesting.AppHost
+
+# Start Aspire environment
+dotnet run
+
+# Run the LocalTesting GitHub workflow simulation
+./test-aspire-localtesting.ps1 -MessageCount 1000
+```
+
+### Expected Results
+- **Step 1**: Status "Ready" (API functional with infrastructure health details)
+- **Step 2-7**: All steps should pass with proper 3-broker, 3-TaskManager configuration
+- **Infrastructure**: 3 Kafka brokers + 3 TaskManagers (30 total slots) + Temporal + monitoring
+
+The workflow validates business logic even if some infrastructure services are degraded, but optimal performance requires all services healthy.
 
 ## Related Documentation
 
