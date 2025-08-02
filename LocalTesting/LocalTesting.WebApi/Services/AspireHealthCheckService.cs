@@ -90,11 +90,11 @@ public class AspireHealthCheckService
             return new ServiceHealthStatus
             {
                 ServiceName = "Kafka Brokers",
-                IsHealthy = brokers.Count >= 1, // Single broker setup
+                IsHealthy = brokers.Count >= 3, // 3-broker KRaft cluster setup
                 Details = new Dictionary<string, object>
                 {
                     ["brokerCount"] = brokers.Count,
-                    ["expectedBrokers"] = 1, // Simple single broker
+                    ["expectedBrokers"] = 3, // 3-broker KRaft cluster
                     ["brokers"] = brokerStatuses,
                     ["topicCount"] = metadata.Topics.Count
                 },
@@ -234,12 +234,13 @@ public class AspireHealthCheckService
                 return new ServiceHealthStatus
                 {
                     ServiceName = "Flink TaskManagers",
-                    IsHealthy = runningCount >= 1, // Single TaskManager setup
+                    IsHealthy = runningCount >= 3, // 3 TaskManager setup (10 slots each = 30 total)
                     Details = new Dictionary<string, object>
                     {
                         ["totalTaskManagers"] = taskManagerArray.Count,
                         ["runningTaskManagers"] = runningCount,
-                        ["expectedTaskManagers"] = 1, // Simple single TaskManager
+                        ["expectedTaskManagers"] = 3, // 3 TaskManagers with 10 slots each
+                        ["expectedTotalSlots"] = 30, // 3 x 10 slots
                         ["taskManagers"] = taskManagerArray.Select(tm => new
                         {
                             Id = tm.TryGetProperty("id", out var id) ? id.GetString() : "Unknown",

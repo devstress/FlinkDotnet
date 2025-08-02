@@ -4,7 +4,7 @@ This solution provides an interactive Swagger-based API for debugging and execut
 
 ## Overview
 
-The LocalTesting solution transforms the BDD test scenarios from `docs/wiki/Complex-Logic-Stress-Tests.md` into executable API endpoints while providing real-time visibility into system behavior through multiple specialized interfaces, allowing developers to:
+The LocalTesting solution provides executable API endpoints for complex logic stress testing scenarios while offering real-time visibility into system behavior through multiple specialized interfaces, allowing developers to:
 
 - Debug each step of the stress test individually
 - Monitor real-time system behavior through comprehensive dashboards
@@ -16,8 +16,8 @@ The LocalTesting solution transforms the BDD test scenarios from `docs/wiki/Comp
 
 ### Infrastructure Components
 
-- **3 Kafka Brokers**: Full KRaft cluster for production-like testing
-- **Apache Flink Cluster**: JobManager + 3 TaskManagers with 10 slots each
+- **3 Kafka Brokers (KRaft)**: Full KRaft cluster for production-like testing
+- **Apache Flink Cluster**: JobManager + 3 TaskManagers with 10 slots each (30 total slots)
 - **Flink SQL Gateway**: Interactive SQL query interface
 - **Redis**: Caching and state management
 - **Temporal Server + UI**: Durable workflow execution for long-running processes
