@@ -6,34 +6,49 @@ namespace LocalTesting.WebApi.Services;
 
 public class KafkaProducerService : IDisposable
 {
-    private readonly IProducer<string, string> _producer;
+    private IProducer<string, string>? _producer;
     private readonly ILogger<KafkaProducerService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly object _lock = new object();
 
     public KafkaProducerService(ILogger<KafkaProducerService> logger, IConfiguration configuration)
     {
         _logger = logger;
         _configuration = configuration;
+        _logger.LogInformation("KafkaProducerService created (producer will be initialized on first use)");
+    }
 
-        var config = new ProducerConfig
+    private IProducer<string, string> GetOrCreateProducer()
+    {
+        if (_producer == null)
         {
-            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092,localhost:9093,localhost:9094",
-            ClientId = "LocalTesting.WebApi.Producer",
-            Acks = Acks.All,
-            MessageTimeoutMs = 30000,
-            RequestTimeoutMs = 30000,
-            EnableIdempotence = true,
-            CompressionType = CompressionType.Snappy,
-            BatchSize = 32768,
-            LingerMs = 5
-        };
+            lock (_lock)
+            {
+                if (_producer == null)
+                {
+                    var config = new ProducerConfig
+                    {
+                        BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
+                        ClientId = "LocalTesting.WebApi.Producer",
+                        Acks = Acks.All,
+                        MessageTimeoutMs = 30000,
+                        RequestTimeoutMs = 30000,
+                        EnableIdempotence = true,
+                        CompressionType = CompressionType.Snappy,
+                        BatchSize = 32768,
+                        LingerMs = 5
+                    };
 
-        _producer = new ProducerBuilder<string, string>(config)
-            .SetErrorHandler((_, e) => _logger.LogError("Kafka producer error: {Error}", e.Reason))
-            .SetLogHandler((_, log) => _logger.LogDebug("Kafka producer log: {Message}", log.Message))
-            .Build();
+                    _producer = new ProducerBuilder<string, string>(config)
+                        .SetErrorHandler((_, e) => _logger.LogError("Kafka producer error: {Error}", e.Reason))
+                        .SetLogHandler((_, log) => _logger.LogDebug("Kafka producer log: {Message}", log.Message))
+                        .Build();
 
-        _logger.LogInformation("KafkaProducerService initialized with bootstrap servers: {BootstrapServers}", config.BootstrapServers);
+                    _logger.LogInformation("Kafka producer initialized with bootstrap servers: {BootstrapServers}", config.BootstrapServers);
+                }
+            }
+        }
+        return _producer;
     }
 
     public async Task ProduceMessagesAsync(string topic, List<ComplexLogicMessage> messages)
@@ -43,6 +58,8 @@ public class KafkaProducerService : IDisposable
         var failureCount = 0;
 
         _logger.LogInformation("Producing {MessageCount} messages to topic '{Topic}'", messages.Count, topic);
+
+        var producer = GetOrCreateProducer(); // Lazy initialization
 
         foreach (var message in messages)
         {
@@ -60,7 +77,7 @@ public class KafkaProducerService : IDisposable
                 }
             };
 
-            var task = _producer.ProduceAsync(topic, kafkaMessage)
+            var task = producer.ProduceAsync(topic, kafkaMessage)
                 .ContinueWith(deliveryReport =>
                 {
                     if (deliveryReport.Result.Status == PersistenceStatus.Persisted)
@@ -79,7 +96,7 @@ public class KafkaProducerService : IDisposable
         }
 
         await Task.WhenAll(tasks);
-        _producer.Flush(TimeSpan.FromSeconds(30));
+        producer.Flush(TimeSpan.FromSeconds(30));
 
         _logger.LogInformation("Message production completed: {SuccessCount} successful, {FailureCount} failed", 
             successCount, failureCount);
@@ -89,7 +106,7 @@ public class KafkaProducerService : IDisposable
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092,localhost:9093,localhost:9094",
+            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
             GroupId = consumerGroup,
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false,

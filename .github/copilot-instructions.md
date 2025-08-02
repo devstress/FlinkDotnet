@@ -1,6 +1,6 @@
 # # GitHub Copilot Guidelines
 
-This document defines the coding standards and best practices that GitHub Copilot should enforce during code reviews for this .NET project. These guidelines ensure adherence to SOLID principles and .NET best practices, with specialized guidance for BizTalk to Inobiz migrations using .NET 8 and direct XSLT mapping.
+This document defines the coding standards and best practices that GitHub Copilot should enforce during code reviews for this .NET project. These guidelines ensure adherence to SOLID principles and .NET best practices, with specialized guidance for BizTalk to Inobiz migrations using .NET 9 and direct XSLT mapping.
 
 ## SOLID Principles Enforcement
 
@@ -776,3 +776,45 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - **Identify root causes** rather than applying quick fixes
   - **Test environment consistency** between local and CI must be maintained
 - **Failure to fix all tests is a MAJOR violation** requiring immediate attention and resolution
+
+## .NET 9.0 Local Development Environment Enforcement (MANDATORY)
+
+### Rule 13: .NET 9.0 Environment Requirements (CRITICAL)
+- **MANDATORY .NET 9.0 SDK**: All local development must use .NET 9.0.303 or later
+- **Before submitting any GitHub workflow or PR**, developers MUST verify:
+  - Local environment has .NET 9.0 SDK installed (`dotnet --version` returns 9.0.x)
+  - Aspire workload is installed and functional (`dotnet workload list` shows aspire)
+  - All solutions build successfully locally with .NET 9.0
+  - LocalTesting workflow executes successfully locally
+- **Local environment setup requirements**:
+  - .NET 9.0 SDK installation using official Microsoft installer
+  - Aspire workload installation (`dotnet workload install aspire`)
+  - Docker Desktop running for Aspire orchestration
+  - LocalTesting solution builds and runs without errors
+- **GitHub workflow local validation**:
+  - ALL GitHub workflows must pass locally before submission for review
+  - No version compatibility issues between local and CI environments
+  - LocalTesting workflow must execute successfully with Aspire dashboard accessible
+  - Integration tests must pass locally with same results as CI
+- **Environment consistency enforcement**:
+  - Local development environment must match CI environment (.NET 9.0)
+  - global.json version must be respected locally
+  - No .NET version downgrades or workarounds permitted
+  - Aspire orchestration must work locally before CI submission
+- **Verification commands required before PR submission**:
+  ```bash
+  # Verify .NET version
+  dotnet --version  # Must return 9.0.x
+  
+  # Verify Aspire workload
+  dotnet workload list  # Must show aspire installed
+  
+  # Build all solutions
+  dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
+  dotnet build Sample/Sample.sln --configuration Release  
+  dotnet build LocalTesting/LocalTesting.sln --configuration Release
+  
+  # Test LocalTesting workflow
+  ./test-aspire-localtesting.ps1 -MessageCount 1000
+  ```
+- **Failure to verify .NET 9.0 environment is a MAJOR violation** requiring complete environment setup before work can proceed

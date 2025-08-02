@@ -106,20 +106,43 @@ The system now includes **LagBasedRateLimiter** which implements the "stops refi
 - Docker Desktop
 - At least 16GB RAM (for all containers)
 
+### Environment Variables
+
+Before running the Aspire environment, set these required environment variables:
+
+```bash
+export ASPIRE_ALLOW_UNSECURED_TRANSPORT=true
+export DOTNET_DASHBOARD_OTLP_ENDPOINT_URL=http://localhost:4323
+export DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:4324
+export ASPIRE_DASHBOARD_URL=http://localhost:18888
+export ASPNETCORE_URLS=http://localhost:18888
+```
+
 ### Running the Environment
 
-1. **Start Aspire Host**:
+1. **Set Environment Variables**:
+   ```bash
+   # Set required Aspire environment variables
+   export ASPIRE_ALLOW_UNSECURED_TRANSPORT=true
+   export DOTNET_DASHBOARD_OTLP_ENDPOINT_URL=http://localhost:4323
+   export DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:4324
+   export ASPIRE_DASHBOARD_URL=http://localhost:18888
+   export ASPNETCORE_URLS=http://localhost:18888
+   ```
+
+2. **Start Aspire Host**:
    ```bash
    cd LocalTesting/LocalTesting.AppHost
    dotnet run
    ```
 
 2. **Access Dashboards**:
+   - **Aspire Dashboard**: http://localhost:18888 (login required - see startup output for token)
    - **Swagger API**: http://localhost:5000
-   - **Kafka UI**: http://localhost:8080
+   - **Kafka UI**: http://localhost:8082
    - **Flink UI**: http://localhost:8081
    - **Grafana**: http://localhost:3000 (admin/admin)
-   - **Prometheus**: http://localhost:9090
+   - **Temporal UI**: http://localhost:8084
 
 3. **Execute Tests**:
    - Open Swagger UI at http://localhost:5000
