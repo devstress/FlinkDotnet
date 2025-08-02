@@ -1,5 +1,4 @@
 using Aspire.Hosting;
-using InfinityFlow.Aspire.Temporal;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -35,7 +34,7 @@ var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
     .WithEnvironment("AUTH_TYPE", "disabled");
 
-// Flink JobManager with IPv4 and proper memory configuration
+// Flink JobManager with proper memory configuration - fixed off-heap memory settings
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
     .WithHttpEndpoint(8081, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
@@ -46,6 +45,7 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
         jobmanager.memory.flink.size: 768m
         jobmanager.memory.jvm-overhead.max: 256m
         jobmanager.memory.jvm-overhead.min: 192m
+        jobmanager.memory.off-heap.size: 64m
         taskmanager.memory.process.size: 1024m
         taskmanager.numberOfTaskSlots: 2
         parallelism.default: 2
@@ -64,11 +64,40 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.0.0")
         """)
     .WithArgs("taskmanager");
 
-// Temporal server using InfinityFlow.Aspire.Temporal package - simplified configuration
-var temporal = await builder.AddTemporalServerContainer("temporal", config => config
-    .WithLogLevel(LogLevel.Info)
-    .WithLogFormat(LogFormat.Json)
-    .WithNamespace("default"));
+// PostgreSQL for Temporal storage
+var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
+    .WithEnvironment("POSTGRES_DB", "temporal")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PASSWORD", "temporal")
+    .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")
+    .WithEnvironment("POSTGRES_INITDB_ARGS", "--auth-host=trust")
+    .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data")
+    .WithEndpoint(5432, 5432, "postgres");
+
+// Temporal Server for durable execution workflows
+var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
+    .WithHttpEndpoint(7233, 7233, "temporal-server")
+    .WithEnvironment("DB", "postgres12")
+    .WithEnvironment("DB_PORT", "5432")
+    .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
+    .WithEnvironment("POSTGRES_USER", "temporal")
+    .WithEnvironment("POSTGRES_PWD", "temporal")
+    .WithEnvironment("DBNAME", "temporal")
+    .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")
+    .WithEnvironment("TEMPORAL_CLI_ADDRESS", "temporal-server:7233")
+    .WithEnvironment("SERVICES", "history,matching,worker,frontend")
+    .WithEnvironment("SKIP_DB_CREATE", "false")
+    .WithEnvironment("SKIP_SCHEMA_SETUP", "false")
+    .WithEnvironment("ENABLE_ES", "false")
+    .WithEnvironment("LOG_LEVEL", "info")
+    .WaitFor(temporalPostgres);
+
+// Temporal UI for workflow monitoring
+var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
+    .WithHttpEndpoint(8084, 8080, "temporal-ui")
+    .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
+    .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084")
+    .WaitFor(temporalServer);
 
 // Grafana with IPv4
 var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
@@ -80,9 +109,9 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
 // LocalTesting Web API with IPv4 configuration
 var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting.WebApi/LocalTesting.WebApi.csproj")
     .WithReference(redis)
-    .WithReference(temporal)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker:9092")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
+    .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:5000") // Force IPv4
     .WithHttpEndpoint(port: 5000, name: "http");
 

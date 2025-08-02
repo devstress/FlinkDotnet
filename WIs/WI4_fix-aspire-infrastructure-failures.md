@@ -132,6 +132,8 @@ Expected behavior after fixes:
 ## Phase 4: Implementation
 
 ### Code Changes
+
+#### First Iteration: Simplified InfinityFlow.Aspire.Temporal Configuration (PREVIOUS)
 1. **Fixed Flink Memory Configuration**:
    - Increased JobManager process memory from 512m to 1024m
    - Added explicit flink memory size (768m) to prevent allocation conflicts
@@ -146,15 +148,40 @@ Expected behavior after fixes:
    - Removed internal environment variable settings that weren't working
    - Simplified configuration following reference implementation patterns
 
+#### Second Iteration: Manual Container Configuration (CURRENT)
+After analyzing the user feedback and comments, completely replaced the InfinityFlow.Aspire.Temporal package approach with manual container definitions following established patterns:
+
+**Program.cs Changes**:
+1. **Removed InfinityFlow.Aspire.Temporal dependency** - Package was only creating admin-tools container instead of full stack
+2. **Added explicit Flink off-heap memory setting** - Added `jobmanager.memory.off-heap.size: 64m` to prevent allocation conflicts
+3. **Added complete Temporal container stack**:
+   - `temporal-postgres` (postgres:13) for persistence
+   - `temporal-server` (temporalio/auto-setup:latest) for workflows
+   - `temporal-ui` (temporalio/ui:latest) for monitoring
+4. **Fixed container dependencies** - Added proper `WaitFor()` chains
+5. **Removed complex package configuration** - Simplified to direct container approach
+
+**LocalTesting.AppHost.csproj Changes**:
+- Removed `InfinityFlow.Aspire.Temporal` package reference
+- Kept standard Aspire packages for Redis, Kafka hosting
+
 ### Challenges Encountered
-- Environment variables for Aspire dashboard needed to be set externally
-- Complex Temporal configuration was preventing proper container creation
-- Flink memory settings required explicit configuration for container limits
+1. **Flink Memory Error Persistence**: Even after previous memory increases, JobManager was still calculating 64mb total vs 128mb off-heap
+2. **InfinityFlow.Aspire.Temporal Package Limitations**: Package only created single admin-tools container instead of complete Temporal infrastructure  
+3. **Complex Configuration Conflicts**: Over-configured approach was creating conflicts rather than working infrastructure
+4. **Environment variables for Aspire dashboard needed to be set externally**
+5. **Complex Temporal configuration was preventing proper container creation**
+6. **Flink memory settings required explicit configuration for container limits**
 
 ### Solutions Applied
-- Used external environment variable setup for Aspire dashboard
-- Followed aspire-temporal reference repository patterns exactly
-- Added proper Flink memory boundaries to prevent allocation conflicts
+1. **Explicit Off-heap Memory Configuration**: Added specific `jobmanager.memory.off-heap.size: 64m` setting to prevent default 128mb allocation
+2. **Manual Container Approach**: Switched from package-based to explicit container definitions following reference patterns
+3. **Proper Container Dependencies**: Used `WaitFor()` to ensure PostgreSQL starts before Temporal server, and server starts before UI
+4. **Simplified Configuration**: Removed complex networking and port configurations that were conflicting with defaults
+5. **Complete Infrastructure Stack**: Now defines all required containers explicitly rather than relying on package automation
+6. **Used external environment variable setup for Aspire dashboard**
+7. **Followed aspire-temporal reference repository patterns exactly**
+8. **Added proper Flink memory boundaries to prevent allocation conflicts**
 
 ## Phase 5: Testing & Validation
 
