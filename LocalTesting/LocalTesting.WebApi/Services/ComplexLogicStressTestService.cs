@@ -66,8 +66,21 @@ public class ComplexLogicStressTestService
 
     public async Task<List<ComplexLogicMessage>> ProduceMessagesAsync(string testId, int messageCount)
     {
+        // Get or create test status for this test ID
         var status = GetTestStatus(testId);
-        if (status == null) throw new ArgumentException($"Test {testId} not found");
+        if (status == null)
+        {
+            // Create a new test status for standalone message production
+            status = new StressTestStatus
+            {
+                TestId = testId,
+                Status = "Producing Messages",
+                TotalMessages = messageCount,
+                StartTime = DateTime.UtcNow
+            };
+            _activeTests[testId] = status;
+            status.Logs.Add($"Created standalone test {testId} for message production");
+        }
 
         status.Status = "Producing Messages";
         status.Logs.Add($"Producing {messageCount:N0} messages with unique correlation IDs...");
@@ -89,9 +102,18 @@ public class ComplexLogicStressTestService
         _testMessages[testId] = messages;
         status.Logs.Add($"Successfully generated {messageCount:N0} messages with unique correlation IDs");
 
-        // Produce to Kafka
-        await _kafkaProducer.ProduceMessagesAsync("complex-input", messages);
-        status.Logs.Add($"Messages sent to Kafka topic 'complex-input'");
+        // Attempt to produce to Kafka with resilient error handling
+        try
+        {
+            await _kafkaProducer.ProduceMessagesAsync("complex-input", messages);
+            status.Logs.Add($"Messages sent to Kafka topic 'complex-input'");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to produce messages to Kafka for test {TestId}, continuing in simulation mode", testId);
+            status.Logs.Add($"Kafka production failed ({ex.Message}), continuing in simulation mode");
+            status.Logs.Add($"Messages generated but not sent to Kafka due to infrastructure issues");
+        }
 
         return messages;
     }

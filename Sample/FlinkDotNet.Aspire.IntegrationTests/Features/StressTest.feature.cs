@@ -10,25 +10,27 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
+using Reqnroll;
 namespace FlinkDotNet.Aspire.IntegrationTests.Features
 {
-    using Reqnroll;
-    using System;
-    using System.Linq;
     
     
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
-    [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
+    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "stress_test")]
     [Xunit.TraitAttribute("Category", "high_throughput")]
     public partial class StressTest_HighThroughputMessageProcessingFeature : object, Xunit.IClassFixture<StressTest_HighThroughputMessageProcessingFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
-        private static global::Reqnroll.ITestRunner testRunner;
+        private global::Reqnroll.ITestRunner testRunner;
         
         private static string[] featureTags = new string[] {
                 "stress_test",
                 "high_throughput"};
+        
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing", "  As a Flink.NET user\n  I want to process 1 million messages through 100 partitio" +
+                "ns with FIFO guarantees\n  So that I can validate high-throughput streaming perfo" +
+                "rmance", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -40,29 +42,54 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             this._testOutputHelper = testOutputHelper;
         }
         
-        public static async System.Threading.Tasks.Task FeatureSetupAsync()
-        {
-            testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing", ("  As a Flink.NET user\n  I want to process 1 million messages through 100 partitio" +
-                    "ns with FIFO guarantees\n  So that I can validate high-throughput streaming perfo" +
-                    "rmance"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
-            await testRunner.OnFeatureStartAsync(featureInfo);
-        }
-        
-        public static async System.Threading.Tasks.Task FeatureTearDownAsync()
-        {
-            await testRunner.OnFeatureEndAsync();
-            global::Reqnroll.TestRunnerManager.ReleaseTestRunner(testRunner);
-            testRunner = null;
-        }
-        
-        public async System.Threading.Tasks.Task TestInitializeAsync()
+        public static async global::System.Threading.Tasks.Task FeatureSetupAsync()
         {
         }
         
-        public async System.Threading.Tasks.Task TestTearDownAsync()
+        public static async global::System.Threading.Tasks.Task FeatureTearDownAsync()
         {
-            await testRunner.OnScenarioEndAsync();
+        }
+        
+        public async global::System.Threading.Tasks.Task TestInitializeAsync()
+        {
+            testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly(featureHint: featureInfo);
+            try
+            {
+                if (((testRunner.FeatureContext != null) 
+                            && (testRunner.FeatureContext.FeatureInfo.Equals(featureInfo) == false)))
+                {
+                    await testRunner.OnFeatureEndAsync();
+                }
+            }
+            finally
+            {
+                if (((testRunner.FeatureContext != null) 
+                            && testRunner.FeatureContext.BeforeFeatureHookFailed))
+                {
+                    throw new global::Reqnroll.ReqnrollException("Scenario skipped because of previous before feature hook error");
+                }
+                if ((testRunner.FeatureContext == null))
+                {
+                    await testRunner.OnFeatureStartAsync(featureInfo);
+                }
+            }
+        }
+        
+        public async global::System.Threading.Tasks.Task TestTearDownAsync()
+        {
+            if ((testRunner == null))
+            {
+                return;
+            }
+            try
+            {
+                await testRunner.OnScenarioEndAsync();
+            }
+            finally
+            {
+                global::Reqnroll.TestRunnerManager.ReleaseTestRunner(testRunner);
+                testRunner = null;
+            }
         }
         
         public void ScenarioInitialize(global::Reqnroll.ScenarioInfo scenarioInfo)
@@ -71,17 +98,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             testRunner.ScenarioContext.ScenarioContainer.RegisterInstanceAs<Xunit.Abstractions.ITestOutputHelper>(_testOutputHelper);
         }
         
-        public async System.Threading.Tasks.Task ScenarioStartAsync()
+        public async global::System.Threading.Tasks.Task ScenarioStartAsync()
         {
             await testRunner.OnScenarioStartAsync();
         }
         
-        public async System.Threading.Tasks.Task ScenarioCleanupAsync()
+        public async global::System.Threading.Tasks.Task ScenarioCleanupAsync()
         {
             await testRunner.CollectScenarioErrorsAsync();
         }
         
-        public virtual async System.Threading.Tasks.Task FeatureBackgroundAsync()
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
         {
 #line 7
   #line hidden
@@ -99,12 +126,27 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line hidden
         }
         
-        async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
+        async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
         {
-            await this.TestInitializeAsync();
+            try
+            {
+                await this.TestInitializeAsync();
+            }
+            catch (System.Exception e1)
+            {
+                try
+                {
+                    ((Xunit.IAsyncLifetime)(this)).DisposeAsync();
+                }
+                catch (System.Exception e2)
+                {
+                    throw new System.AggregateException("Test initialization failed", e1, e2);
+                }
+                throw;
+            }
         }
         
-        async System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
+        async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
         {
             await this.TestTearDownAsync();
         }
@@ -115,13 +157,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "fifo")]
         [Xunit.TraitAttribute("Category", "exactly_once")]
-        public async System.Threading.Tasks.Task Process1MillionMessagesWithFIFOAndExactly_OnceSemantics()
+        public async global::System.Threading.Tasks.Task Process1MillionMessagesWithFIFOAndExactly_OnceSemantics()
         {
             string[] tagsOfScenario = new string[] {
                     "stress",
                     "fifo",
                     "exactly_once"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Process 1 Million Messages with FIFO and Exactly-Once Semantics", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 14
   this.ScenarioInitialize(scenarioInfo);
@@ -203,13 +245,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "throughput")]
         [Xunit.TraitAttribute("Category", "performance")]
-        public async System.Threading.Tasks.Task ValidateHigh_ThroughputPerformanceMetrics()
+        public async global::System.Threading.Tasks.Task ValidateHigh_ThroughputPerformanceMetrics()
         {
             string[] tagsOfScenario = new string[] {
                     "stress",
                     "throughput",
                     "performance"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Validate High-Throughput Performance Metrics", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 34
   this.ScenarioInitialize(scenarioInfo);
@@ -254,12 +296,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Description", "Verify Equal Distribution Across Partitions")]
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "partition_distribution")]
-        public async System.Threading.Tasks.Task VerifyEqualDistributionAcrossPartitions()
+        public async global::System.Threading.Tasks.Task VerifyEqualDistributionAcrossPartitions()
         {
             string[] tagsOfScenario = new string[] {
                     "stress",
                     "partition_distribution"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verify Equal Distribution Across Partitions", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 44
   this.ScenarioInitialize(scenarioInfo);
@@ -305,13 +347,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "concrete_fifo_verification")]
         [Xunit.TraitAttribute("Category", "message_verification")]
-        public async System.Threading.Tasks.Task ConcreteFIFOMessageProcessingWithDataVerification()
+        public async global::System.Threading.Tasks.Task ConcreteFIFOMessageProcessingWithDataVerification()
         {
             string[] tagsOfScenario = new string[] {
                     "stress",
                     "concrete_fifo_verification",
                     "message_verification"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Concrete FIFO Message Processing with Data Verification", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 54
   this.ScenarioInitialize(scenarioInfo);
@@ -336,8 +378,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("I can verify the first 10 messages have IDs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 58
-    await testRunner.AndAsync(("I can verify the last 10 messages have IDs: 999991, 999992, 999993, 999994, 99999" +
-                        "5, 999996, 999997, 999998, 999999, 1000000"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("I can verify the last 10 messages have IDs: 999991, 999992, 999993, 999994, 99999" +
+                        "5, 999996, 999997, 999998, 999999, 1000000", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 59
     await testRunner.WhenAsync("I submit the Flink job for FIFO processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -357,53 +399,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table57.AddRow(new string[] {
                             "1",
-                            ("Message content for ID 1: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 1: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=0; correlation.id=corr-000001"});
                 table57.AddRow(new string[] {
                             "2",
-                            ("Message content for ID 2: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 2: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=1; correlation.id=corr-000002"});
                 table57.AddRow(new string[] {
                             "3",
-                            ("Message content for ID 3: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 3: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=2; correlation.id=corr-000003"});
                 table57.AddRow(new string[] {
                             "4",
-                            ("Message content for ID 4: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 4: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=3; correlation.id=corr-000004"});
                 table57.AddRow(new string[] {
                             "5",
-                            ("Message content for ID 5: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 5: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=4; correlation.id=corr-000005"});
                 table57.AddRow(new string[] {
                             "6",
-                            ("Message content for ID 6: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 6: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=5; correlation.id=corr-000006"});
                 table57.AddRow(new string[] {
                             "7",
-                            ("Message content for ID 7: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 7: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=6; correlation.id=corr-000007"});
                 table57.AddRow(new string[] {
                             "8",
-                            ("Message content for ID 8: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 8: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=7; correlation.id=corr-000008"});
                 table57.AddRow(new string[] {
                             "9",
-                            ("Message content for ID 9: Sample streaming data payload with business logic appli" +
-                                "ed"),
+                            "Message content for ID 9: Sample streaming data payload with business logic appli" +
+                                "ed",
                             "kafka.topic=stress-input; kafka.partition=8; correlation.id=corr-000009"});
                 table57.AddRow(new string[] {
                             "10",
-                            ("Message content for ID 10: Sample streaming data payload with business logic appl" +
-                                "ied"),
+                            "Message content for ID 10: Sample streaming data payload with business logic appl" +
+                                "ied",
                             "kafka.topic=stress-input; kafka.partition=9; correlation.id=corr-000010"});
 #line 63
     await testRunner.AndAsync("I can display the top 10 first processed stress messages table:", ((string)(null)), table57, "And ");
@@ -414,53 +456,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table58.AddRow(new string[] {
                             "999991",
-                            ("Message content for ID 999991: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999991: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=90; correlation.id=corr-999991"});
                 table58.AddRow(new string[] {
                             "999992",
-                            ("Message content for ID 999992: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999992: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=91; correlation.id=corr-999992"});
                 table58.AddRow(new string[] {
                             "999993",
-                            ("Message content for ID 999993: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999993: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=92; correlation.id=corr-999993"});
                 table58.AddRow(new string[] {
                             "999994",
-                            ("Message content for ID 999994: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999994: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=93; correlation.id=corr-999994"});
                 table58.AddRow(new string[] {
                             "999995",
-                            ("Message content for ID 999995: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999995: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=94; correlation.id=corr-999995"});
                 table58.AddRow(new string[] {
                             "999996",
-                            ("Message content for ID 999996: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999996: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=95; correlation.id=corr-999996"});
                 table58.AddRow(new string[] {
                             "999997",
-                            ("Message content for ID 999997: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999997: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=96; correlation.id=corr-999997"});
                 table58.AddRow(new string[] {
                             "999998",
-                            ("Message content for ID 999998: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999998: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=97; correlation.id=corr-999998"});
                 table58.AddRow(new string[] {
                             "999999",
-                            ("Message content for ID 999999: Final streaming data payload processed through com" +
-                                "plete pipeline"),
+                            "Message content for ID 999999: Final streaming data payload processed through com" +
+                                "plete pipeline",
                             "kafka.topic=stress-output; kafka.partition=98; correlation.id=corr-999999"});
                 table58.AddRow(new string[] {
                             "1000000",
-                            ("Message content for ID 1000000: Final streaming data payload processed through co" +
-                                "mplete pipeline"),
+                            "Message content for ID 1000000: Final streaming data payload processed through co" +
+                                "mplete pipeline",
                             "kafka.topic=stress-output; kafka.partition=99; correlation.id=corr-1000000"});
 #line 75
     await testRunner.AndAsync("I can display the top 10 last processed stress messages table:", ((string)(null)), table58, "And ");
@@ -472,17 +514,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
-        [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, Xunit.IAsyncLifetime
         {
             
-            async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
+            async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
             {
                 await StressTest_HighThroughputMessageProcessingFeature.FeatureSetupAsync();
             }
             
-            async System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
+            async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
             {
                 await StressTest_HighThroughputMessageProcessingFeature.FeatureTearDownAsync();
             }

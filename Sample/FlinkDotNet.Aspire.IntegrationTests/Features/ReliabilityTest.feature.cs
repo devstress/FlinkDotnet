@@ -10,25 +10,26 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
+using Reqnroll;
 namespace FlinkDotNet.Aspire.IntegrationTests.Features
 {
-    using Reqnroll;
-    using System;
-    using System.Linq;
     
     
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
-    [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
+    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "reliability_test")]
     [Xunit.TraitAttribute("Category", "fault_tolerance")]
     public partial class ReliabilityTest_FaultToleranceAndRecoveryFeature : object, Xunit.IClassFixture<ReliabilityTest_FaultToleranceAndRecoveryFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
-        private static global::Reqnroll.ITestRunner testRunner;
+        private global::Reqnroll.ITestRunner testRunner;
         
         private static string[] featureTags = new string[] {
                 "reliability_test",
                 "fault_tolerance"};
+        
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery", "  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure and " +
+                "rebalancing\n  So that I can ensure system reliability under adverse conditions", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -40,28 +41,54 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             this._testOutputHelper = testOutputHelper;
         }
         
-        public static async System.Threading.Tasks.Task FeatureSetupAsync()
-        {
-            testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery", ("  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure and " +
-                    "rebalancing\n  So that I can ensure system reliability under adverse conditions"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
-            await testRunner.OnFeatureStartAsync(featureInfo);
-        }
-        
-        public static async System.Threading.Tasks.Task FeatureTearDownAsync()
-        {
-            await testRunner.OnFeatureEndAsync();
-            global::Reqnroll.TestRunnerManager.ReleaseTestRunner(testRunner);
-            testRunner = null;
-        }
-        
-        public async System.Threading.Tasks.Task TestInitializeAsync()
+        public static async global::System.Threading.Tasks.Task FeatureSetupAsync()
         {
         }
         
-        public async System.Threading.Tasks.Task TestTearDownAsync()
+        public static async global::System.Threading.Tasks.Task FeatureTearDownAsync()
         {
-            await testRunner.OnScenarioEndAsync();
+        }
+        
+        public async global::System.Threading.Tasks.Task TestInitializeAsync()
+        {
+            testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly(featureHint: featureInfo);
+            try
+            {
+                if (((testRunner.FeatureContext != null) 
+                            && (testRunner.FeatureContext.FeatureInfo.Equals(featureInfo) == false)))
+                {
+                    await testRunner.OnFeatureEndAsync();
+                }
+            }
+            finally
+            {
+                if (((testRunner.FeatureContext != null) 
+                            && testRunner.FeatureContext.BeforeFeatureHookFailed))
+                {
+                    throw new global::Reqnroll.ReqnrollException("Scenario skipped because of previous before feature hook error");
+                }
+                if ((testRunner.FeatureContext == null))
+                {
+                    await testRunner.OnFeatureStartAsync(featureInfo);
+                }
+            }
+        }
+        
+        public async global::System.Threading.Tasks.Task TestTearDownAsync()
+        {
+            if ((testRunner == null))
+            {
+                return;
+            }
+            try
+            {
+                await testRunner.OnScenarioEndAsync();
+            }
+            finally
+            {
+                global::Reqnroll.TestRunnerManager.ReleaseTestRunner(testRunner);
+                testRunner = null;
+            }
         }
         
         public void ScenarioInitialize(global::Reqnroll.ScenarioInfo scenarioInfo)
@@ -70,17 +97,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             testRunner.ScenarioContext.ScenarioContainer.RegisterInstanceAs<Xunit.Abstractions.ITestOutputHelper>(_testOutputHelper);
         }
         
-        public async System.Threading.Tasks.Task ScenarioStartAsync()
+        public async global::System.Threading.Tasks.Task ScenarioStartAsync()
         {
             await testRunner.OnScenarioStartAsync();
         }
         
-        public async System.Threading.Tasks.Task ScenarioCleanupAsync()
+        public async global::System.Threading.Tasks.Task ScenarioCleanupAsync()
         {
             await testRunner.CollectScenarioErrorsAsync();
         }
         
-        public virtual async System.Threading.Tasks.Task FeatureBackgroundAsync()
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
         {
 #line 7
   #line hidden
@@ -98,12 +125,27 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line hidden
         }
         
-        async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
+        async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
         {
-            await this.TestInitializeAsync();
+            try
+            {
+                await this.TestInitializeAsync();
+            }
+            catch (System.Exception e1)
+            {
+                try
+                {
+                    ((Xunit.IAsyncLifetime)(this)).DisposeAsync();
+                }
+                catch (System.Exception e2)
+                {
+                    throw new System.AggregateException("Test initialization failed", e1, e2);
+                }
+                throw;
+            }
         }
         
-        async System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
+        async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
         {
             await this.TestTearDownAsync();
         }
@@ -114,13 +156,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "failure_injection")]
         [Xunit.TraitAttribute("Category", "dlq")]
-        public async System.Threading.Tasks.Task Handle10MessageFailuresWithDLQProcessing()
+        public async global::System.Threading.Tasks.Task Handle10MessageFailuresWithDLQProcessing()
         {
             string[] tagsOfScenario = new string[] {
                     "reliability",
                     "failure_injection",
                     "dlq"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Handle 10% Message Failures with DLQ Processing", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 14
   this.ScenarioInitialize(scenarioInfo);
@@ -202,13 +244,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "rebalancing")]
-        public async System.Threading.Tasks.Task HandleBackpressureWithConsumerRebalancing()
+        public async global::System.Threading.Tasks.Task HandleBackpressureWithConsumerRebalancing()
         {
             string[] tagsOfScenario = new string[] {
                     "reliability",
                     "backpressure",
                     "rebalancing"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Handle Backpressure with Consumer Rebalancing", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 34
   this.ScenarioInitialize(scenarioInfo);
@@ -282,13 +324,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "fault_recovery")]
         [Xunit.TraitAttribute("Category", "checkpoint")]
-        public async System.Threading.Tasks.Task ValidateFaultRecoveryFromCheckpoints()
+        public async global::System.Threading.Tasks.Task ValidateFaultRecoveryFromCheckpoints()
         {
             string[] tagsOfScenario = new string[] {
                     "reliability",
                     "fault_recovery",
                     "checkpoint"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Validate Fault Recovery from Checkpoints", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 52
   this.ScenarioInitialize(scenarioInfo);
@@ -356,13 +398,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "monitoring")]
         [Xunit.TraitAttribute("Category", "metrics")]
-        public async System.Threading.Tasks.Task MonitorSystemHealthDuringReliabilityTesting()
+        public async global::System.Threading.Tasks.Task MonitorSystemHealthDuringReliabilityTesting()
         {
             string[] tagsOfScenario = new string[] {
                     "reliability",
                     "monitoring",
                     "metrics"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Monitor System Health During Reliability Testing", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 68
   this.ScenarioInitialize(scenarioInfo);
@@ -426,13 +468,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "message_verification")]
         [Xunit.TraitAttribute("Category", "content_headers")]
-        public async System.Threading.Tasks.Task VerifyTop10AndLast10MessagesWithContentAndHeaders_ReliabilityTest()
+        public async global::System.Threading.Tasks.Task VerifyTop10AndLast10MessagesWithContentAndHeaders_ReliabilityTest()
         {
             string[] tagsOfScenario = new string[] {
                     "reliability",
                     "message_verification",
                     "content_headers"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verify Top 10 and Last 10 Messages with Content and Headers - Reliability Test", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 84
   this.ScenarioInitialize(scenarioInfo);
@@ -448,8 +490,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 85
-    await testRunner.GivenAsync(("I have processed 1,000,000 messages through the reliability pipeline with 10% fai" +
-                        "lures"), ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("I have processed 1,000,000 messages through the reliability pipeline with 10% fai" +
+                        "lures", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 86
     await testRunner.AndAsync("all messages have been properly routed to success or DLQ topics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -514,53 +556,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table55.AddRow(new string[] {
                             "999991",
                             "Reliability msg 999991: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999992",
                             "Reliability msg 999992: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999993",
                             "Reliability msg 999993: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999994",
                             "Reliability msg 999994: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999995",
                             "Reliability msg 999995: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999996",
                             "Reliability msg 999996: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999997",
                             "Reliability msg 999997: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999998",
                             "Reliability msg 999998: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "999999",
                             "Reliability msg 999999: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
                 table55.AddRow(new string[] {
                             "1000000",
                             "Reliability msg 1000000: Final success after complete fault tolerance testing",
-                            ("kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
-                                "e")});
+                            "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
+                                "e"});
 #line 101
     await testRunner.ThenAsync("I can display the top 10 last processed reliability messages table:", ((string)(null)), table55, "Then ");
 #line hidden
@@ -574,17 +616,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
-        [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, Xunit.IAsyncLifetime
         {
             
-            async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
+            async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
             {
                 await ReliabilityTest_FaultToleranceAndRecoveryFeature.FeatureSetupAsync();
             }
             
-            async System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
+            async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
             {
                 await ReliabilityTest_FaultToleranceAndRecoveryFeature.FeatureTearDownAsync();
             }

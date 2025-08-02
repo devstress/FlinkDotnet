@@ -10,25 +10,27 @@
 // ------------------------------------------------------------------------------
 #region Designer generated code
 #pragma warning disable
+using Reqnroll;
 namespace FlinkDotNet.Aspire.IntegrationTests.Features
 {
-    using Reqnroll;
-    using System;
-    using System.Linq;
     
     
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
-    [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
+    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "backpressure_test")]
     [Xunit.TraitAttribute("Category", "flow_control")]
     public partial class BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature : object, Xunit.IClassFixture<BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
-        private static global::Reqnroll.ITestRunner testRunner;
+        private global::Reqnroll.ITestRunner testRunner;
         
         private static string[] featureTags = new string[] {
                 "backpressure_test",
                 "flow_control"};
+        
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)", "  As a Flink.NET user\n  I want to implement consumer lag-based backpressure follo" +
+                "wing LinkedIn\'s proven best practices\n  So that I can achieve reliable, scalable" +
+                " stream processing at production scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
@@ -40,29 +42,54 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             this._testOutputHelper = testOutputHelper;
         }
         
-        public static async System.Threading.Tasks.Task FeatureSetupAsync()
-        {
-            testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly();
-            global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new System.Globalization.CultureInfo("en-US"), "Features", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)", ("  As a Flink.NET user\n  I want to implement consumer lag-based backpressure follo" +
-                    "wing LinkedIn\'s proven best practices\n  So that I can achieve reliable, scalable" +
-                    " stream processing at production scale"), global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
-            await testRunner.OnFeatureStartAsync(featureInfo);
-        }
-        
-        public static async System.Threading.Tasks.Task FeatureTearDownAsync()
-        {
-            await testRunner.OnFeatureEndAsync();
-            global::Reqnroll.TestRunnerManager.ReleaseTestRunner(testRunner);
-            testRunner = null;
-        }
-        
-        public async System.Threading.Tasks.Task TestInitializeAsync()
+        public static async global::System.Threading.Tasks.Task FeatureSetupAsync()
         {
         }
         
-        public async System.Threading.Tasks.Task TestTearDownAsync()
+        public static async global::System.Threading.Tasks.Task FeatureTearDownAsync()
         {
-            await testRunner.OnScenarioEndAsync();
+        }
+        
+        public async global::System.Threading.Tasks.Task TestInitializeAsync()
+        {
+            testRunner = global::Reqnroll.TestRunnerManager.GetTestRunnerForAssembly(featureHint: featureInfo);
+            try
+            {
+                if (((testRunner.FeatureContext != null) 
+                            && (testRunner.FeatureContext.FeatureInfo.Equals(featureInfo) == false)))
+                {
+                    await testRunner.OnFeatureEndAsync();
+                }
+            }
+            finally
+            {
+                if (((testRunner.FeatureContext != null) 
+                            && testRunner.FeatureContext.BeforeFeatureHookFailed))
+                {
+                    throw new global::Reqnroll.ReqnrollException("Scenario skipped because of previous before feature hook error");
+                }
+                if ((testRunner.FeatureContext == null))
+                {
+                    await testRunner.OnFeatureStartAsync(featureInfo);
+                }
+            }
+        }
+        
+        public async global::System.Threading.Tasks.Task TestTearDownAsync()
+        {
+            if ((testRunner == null))
+            {
+                return;
+            }
+            try
+            {
+                await testRunner.OnScenarioEndAsync();
+            }
+            finally
+            {
+                global::Reqnroll.TestRunnerManager.ReleaseTestRunner(testRunner);
+                testRunner = null;
+            }
         }
         
         public void ScenarioInitialize(global::Reqnroll.ScenarioInfo scenarioInfo)
@@ -71,17 +98,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             testRunner.ScenarioContext.ScenarioContainer.RegisterInstanceAs<Xunit.Abstractions.ITestOutputHelper>(_testOutputHelper);
         }
         
-        public async System.Threading.Tasks.Task ScenarioStartAsync()
+        public async global::System.Threading.Tasks.Task ScenarioStartAsync()
         {
             await testRunner.OnScenarioStartAsync();
         }
         
-        public async System.Threading.Tasks.Task ScenarioCleanupAsync()
+        public async global::System.Threading.Tasks.Task ScenarioCleanupAsync()
         {
             await testRunner.CollectScenarioErrorsAsync();
         }
         
-        public virtual async System.Threading.Tasks.Task FeatureBackgroundAsync()
+        public virtual async global::System.Threading.Tasks.Task FeatureBackgroundAsync()
         {
 #line 7
   #line hidden
@@ -102,12 +129,27 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line hidden
         }
         
-        async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
+        async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
         {
-            await this.TestInitializeAsync();
+            try
+            {
+                await this.TestInitializeAsync();
+            }
+            catch (System.Exception e1)
+            {
+                try
+                {
+                    ((Xunit.IAsyncLifetime)(this)).DisposeAsync();
+                }
+                catch (System.Exception e2)
+                {
+                    throw new System.AggregateException("Test initialization failed", e1, e2);
+                }
+                throw;
+            }
         }
         
-        async System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
+        async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
         {
             await this.TestTearDownAsync();
         }
@@ -118,13 +160,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "consumer_lag")]
         [Xunit.TraitAttribute("Category", "linkedin_approach")]
-        public async System.Threading.Tasks.Task ConsumerLag_BasedBackpressureWithDynamicScalingLinkedInBestPractices()
+        public async global::System.Threading.Tasks.Task ConsumerLag_BasedBackpressureWithDynamicScalingLinkedInBestPractices()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "consumer_lag",
                     "linkedin_approach"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consumer Lag-Based Backpressure with Dynamic Scaling (LinkedIn Best Practices)", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 15
   this.ScenarioInitialize(scenarioInfo);
@@ -252,13 +294,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "dashboard_monitoring")]
         [Xunit.TraitAttribute("Category", "kafka_management")]
-        public async System.Threading.Tasks.Task DashboardMonitoringAndKafkaTopicManagement()
+        public async global::System.Threading.Tasks.Task DashboardMonitoringAndKafkaTopicManagement()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "dashboard_monitoring",
                     "kafka_management"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Dashboard Monitoring and Kafka Topic Management", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 49
   this.ScenarioInitialize(scenarioInfo);
@@ -379,13 +421,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "dlq_management")]
         [Xunit.TraitAttribute("Category", "rebalancing")]
-        public async System.Threading.Tasks.Task DLQManagementAndConsumerRebalancingStrategies()
+        public async global::System.Threading.Tasks.Task DLQManagementAndConsumerRebalancingStrategies()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "dlq_management",
                     "rebalancing"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("DLQ Management and Consumer Rebalancing Strategies", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 76
   this.ScenarioInitialize(scenarioInfo);
@@ -525,13 +567,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "network_bottlenecks")]
         [Xunit.TraitAttribute("Category", "external_services")]
-        public async System.Threading.Tasks.Task Network_BoundConsumerBottleneckHandlingSFTPFTPHTTP()
+        public async global::System.Threading.Tasks.Task Network_BoundConsumerBottleneckHandlingSFTPFTPHTTP()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "network_bottlenecks",
                     "external_services"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Network-Bound Consumer Bottleneck Handling (SFTP/FTP/HTTP)", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 111
   this.ScenarioInitialize(scenarioInfo);
@@ -686,13 +728,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "rate_limiting")]
         [Xunit.TraitAttribute("Category", "finite_resources")]
-        public async System.Threading.Tasks.Task RateLimitingWithFinitePartitionAndClusterResources()
+        public async global::System.Threading.Tasks.Task RateLimitingWithFinitePartitionAndClusterResources()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "rate_limiting",
                     "finite_resources"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Rate Limiting with Finite Partition and Cluster Resources", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 145
   this.ScenarioInitialize(scenarioInfo);
@@ -884,13 +926,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "integration_test")]
         [Xunit.TraitAttribute("Category", "production_ready")]
-        public async System.Threading.Tasks.Task CompleteBackpressureIntegrationTestWithWorld_ClassBestPractices()
+        public async global::System.Threading.Tasks.Task CompleteBackpressureIntegrationTestWithWorld_ClassBestPractices()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "integration_test",
                     "production_ready"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Complete Backpressure Integration Test with World-Class Best Practices", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 188
   this.ScenarioInitialize(scenarioInfo);
@@ -1062,13 +1104,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "token_workflow")]
         [Xunit.TraitAttribute("Category", "http_endpoint_failure")]
-        public async System.Threading.Tasks.Task Token_BasedHTTPWorkflowWithEndpointFailureRecovery()
+        public async global::System.Threading.Tasks.Task Token_BasedHTTPWorkflowWithEndpointFailureRecovery()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "token_workflow",
                     "http_endpoint_failure"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Token-Based HTTP Workflow with Endpoint Failure Recovery", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 226
   this.ScenarioInitialize(scenarioInfo);
@@ -1247,13 +1289,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "partition_strategy")]
         [Xunit.TraitAttribute("Category", "space_vs_time")]
-        public async System.Threading.Tasks.Task KafkaPartitioningStrategyAnalysis_StandardVsMillion_PlusPartitions()
+        public async global::System.Threading.Tasks.Task KafkaPartitioningStrategyAnalysis_StandardVsMillion_PlusPartitions()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "partition_strategy",
                     "space_vs_time"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Kafka Partitioning Strategy Analysis - Standard vs Million-Plus Partitions", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 269
   this.ScenarioInitialize(scenarioInfo);
@@ -1372,14 +1414,14 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "million_partitions")]
         [Xunit.TraitAttribute("Category", "noisy_neighbor")]
         [Xunit.TraitAttribute("Category", "not_recommended")]
-        public async System.Threading.Tasks.Task Million_PlusPartitionStrategyAnalysisNotRecommendedForProduction()
+        public async global::System.Threading.Tasks.Task Million_PlusPartitionStrategyAnalysisNotRecommendedForProduction()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "million_partitions",
                     "noisy_neighbor",
                     "not_recommended"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Million-Plus Partition Strategy Analysis (Not Recommended for Production)", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 298
   this.ScenarioInitialize(scenarioInfo);
@@ -1472,13 +1514,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "production_recommendation")]
         [Xunit.TraitAttribute("Category", "world_class_practices")]
-        public async System.Threading.Tasks.Task ProductionPartitioningStrategyRecommendation()
+        public async global::System.Threading.Tasks.Task ProductionPartitioningStrategyRecommendation()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "production_recommendation",
                     "world_class_practices"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Production Partitioning Strategy Recommendation", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 319
   this.ScenarioInitialize(scenarioInfo);
@@ -1601,13 +1643,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "message_verification")]
         [Xunit.TraitAttribute("Category", "content_headers")]
-        public async System.Threading.Tasks.Task VerifyTop10AndLast10MessagesWithContentAndHeaders_BackpressureTest()
+        public async global::System.Threading.Tasks.Task VerifyTop10AndLast10MessagesWithContentAndHeaders_BackpressureTest()
         {
             string[] tagsOfScenario = new string[] {
                     "backpressure",
                     "message_verification",
                     "content_headers"};
-            System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verify Top 10 and Last 10 Messages with Content and Headers - Backpressure Test", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 347
   this.ScenarioInitialize(scenarioInfo);
@@ -1687,53 +1729,53 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Headers"});
                 table46.AddRow(new string[] {
                             "999991",
-                            ("Backpressure msg 999991: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999991: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=50; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999992",
-                            ("Backpressure msg 999992: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999992: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=45; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999993",
-                            ("Backpressure msg 999993: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999993: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=40; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999994",
-                            ("Backpressure msg 999994: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999994: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=35; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999995",
-                            ("Backpressure msg 999995: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999995: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=30; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999996",
-                            ("Backpressure msg 999996: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999996: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=25; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999997",
-                            ("Backpressure msg 999997: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999997: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=20; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999998",
-                            ("Backpressure msg 999998: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999998: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=15; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "999999",
-                            ("Backpressure msg 999999: Final message after complete lag-based backpressure cycl" +
-                                "e"),
+                            "Backpressure msg 999999: Final message after complete lag-based backpressure cycl" +
+                                "e",
                             "kafka.topic=backpressure-output; consumer.lag=10; backpressure.applied=false"});
                 table46.AddRow(new string[] {
                             "1000000",
-                            ("Backpressure msg 1000000: Final message after complete lag-based backpressure cyc" +
-                                "le"),
+                            "Backpressure msg 1000000: Final message after complete lag-based backpressure cyc" +
+                                "le",
                             "kafka.topic=backpressure-output; consumer.lag=0; backpressure.applied=false"});
 #line 364
     await testRunner.ThenAsync("I can display the top 10 last processed backpressure messages table:", ((string)(null)), table46, "Then ");
@@ -1748,17 +1790,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
-        [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, Xunit.IAsyncLifetime
         {
             
-            async System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
+            async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
             {
                 await BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FeatureSetupAsync();
             }
             
-            async System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
+            async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
             {
                 await BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FeatureTearDownAsync();
             }

@@ -572,12 +572,57 @@ try {
     }
     
     Write-Section "🎉 Aspire LocalTesting Completed Successfully" $Green
-    Write-Host "Environment is running with full Aspire orchestration. Available endpoints:" -ForegroundColor $Yellow
-    Write-Host "  - Aspire Dashboard: http://localhost:18888" -ForegroundColor $Cyan
-    Write-Host "  - LocalTesting API: http://localhost:5000" -ForegroundColor $Cyan
-    Write-Host "  - Swagger UI: http://localhost:5000/swagger" -ForegroundColor $Cyan
-    Write-Host "  - Health Check: http://localhost:5000/health" -ForegroundColor $Cyan
-    Write-Host "`nPress Ctrl+C to stop or run with -StopOnly to clean up." -ForegroundColor $Yellow
+    Write-Host "Environment is running with full Aspire orchestration. Available monitoring endpoints:" -ForegroundColor $Yellow
+    Write-Host "`n📊 MONITORING DASHBOARDS AND UIs:" -ForegroundColor $Green
+    Write-Host "  🎛️  Aspire Dashboard: http://localhost:18888" -ForegroundColor $Cyan
+    Write-Host "       • View all services, containers, and resource usage" -ForegroundColor $Yellow
+    Write-Host "       • Monitor application logs and distributed tracing" -ForegroundColor $Yellow
+    Write-Host "       • Real-time performance metrics and health status" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "  🚀 LocalTesting API & Swagger: http://localhost:5000/swagger" -ForegroundColor $Cyan
+    Write-Host "       • Interactive API documentation and testing interface" -ForegroundColor $Yellow
+    Write-Host "       • Execute stress test steps manually and view responses" -ForegroundColor $Yellow
+    Write-Host "       • Monitor test status: http://localhost:5000/api/ComplexLogicStressTest/test-status" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "  📝 Kafka UI: http://localhost:8082" -ForegroundColor $Cyan
+    Write-Host "       • View topics, messages, and consumer groups" -ForegroundColor $Yellow
+    Write-Host "       • Monitor message throughput and lag metrics" -ForegroundColor $Yellow
+    Write-Host "       • Inspect message content and correlation IDs" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "  ⚡ Flink Dashboard: http://localhost:8081" -ForegroundColor $Cyan
+    Write-Host "       • Monitor running jobs and task managers" -ForegroundColor $Yellow
+    Write-Host "       • View job execution graphs and checkpoint status" -ForegroundColor $Yellow
+    Write-Host "       • Performance metrics and backpressure monitoring" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "  📈 Grafana Dashboards: http://localhost:3000" -ForegroundColor $Cyan
+    Write-Host "       • System metrics and custom performance dashboards" -ForegroundColor $Yellow
+    Write-Host "       • Login: admin/admin (default credentials)" -ForegroundColor $Yellow
+    Write-Host "       • Real-time charts and alerting capabilities" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "  🔄 Temporal UI: http://localhost:8084" -ForegroundColor $Cyan
+    Write-Host "       • Monitor workflows and activities execution" -ForegroundColor $Yellow
+    Write-Host "       • View workflow history and task queues" -ForegroundColor $Yellow
+    Write-Host "       • Debug workflow failures and retry policies" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "  ❤️  Health Check: http://localhost:5000/health" -ForegroundColor $Cyan
+    Write-Host "       • Overall system health status and service availability" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "💡 MONITORING EACH STEP:" -ForegroundColor $Green
+    Write-Host "  Step 1 (Environment): Monitor service health in Aspire Dashboard" -ForegroundColor $Yellow
+    Write-Host "  Step 2 (Security): Check token renewal logs in LocalTesting API logs" -ForegroundColor $Yellow
+    Write-Host "  Step 3 (Backpressure): Monitor consumer lag in Kafka UI" -ForegroundColor $Yellow
+    Write-Host "  Step 4 (Messages): Watch topic growth in Kafka UI + Grafana charts" -ForegroundColor $Yellow
+    Write-Host "  Step 5 (Flink): Monitor job execution in Flink Dashboard" -ForegroundColor $Yellow
+    Write-Host "  Step 6 (Batches): Track processing progress in Temporal UI" -ForegroundColor $Yellow
+    Write-Host "  Step 7 (Verification): View final results in API responses" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "📸 SCREENSHOT LOCATIONS:" -ForegroundColor $Green
+    Write-Host "  • Aspire Dashboard: Shows all container status and metrics" -ForegroundColor $Yellow
+    Write-Host "  • Kafka UI Topics: Displays message count and throughput" -ForegroundColor $Yellow  
+    Write-Host "  • Flink Job Graph: Visualizes data flow and processing stages" -ForegroundColor $Yellow
+    Write-Host "  • Swagger UI: Interactive API testing and response viewing" -ForegroundColor $Yellow
+    Write-Host ""
+    Write-Host "Press Ctrl+C to stop or run with -StopOnly to clean up." -ForegroundColor $Yellow
     
     # Keep running for manual testing
     Write-Host "Keeping Aspire environment running for manual testing..." -ForegroundColor $Cyan
