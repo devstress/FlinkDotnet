@@ -904,6 +904,16 @@ dotnet run
 - **Step 2-7**: All steps should pass with proper 3-broker, 3-TaskManager configuration
 - **Infrastructure**: 3 Kafka brokers + 3 TaskManagers (30 total slots) + Temporal + monitoring
 
+### Troubleshooting
+If you see **"Degraded" status** instead of "Ready":
+1. **Check all services are running**: `docker ps` should show 10+ containers
+2. **Wait for full startup**: Infrastructure needs 2-3 minutes to initialize 
+3. **Verify Kafka cluster**: All 3 brokers should be running and connected
+4. **Check Flink cluster**: All 3 TaskManagers should be connected to JobManager
+5. **Review logs**: Check Aspire Dashboard for service startup issues
+
+**⚠️ Note**: With the new 3-broker + 3-TaskManager setup, infrastructure takes longer to initialize. The API returns "Ready" when functional, with detailed health metrics showing individual service status.
+
 The workflow validates business logic even if some infrastructure services are degraded, but optimal performance requires all services healthy.
 
 ## Related Documentation
