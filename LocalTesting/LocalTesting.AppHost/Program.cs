@@ -34,23 +34,11 @@ var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
     .WithEnvironment("AUTH_TYPE", "disabled");
 
-// Flink JobManager with proper memory configuration - fixed off-heap memory settings
+// Flink JobManager with proper memory configuration - fixed with simple memory settings
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
     .WithHttpEndpoint(8081, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("FLINK_PROPERTIES", """
-        jobmanager.rpc.address: flink-jobmanager
-        jobmanager.rpc.port: 6123
-        jobmanager.memory.process.size: 1024m
-        jobmanager.memory.flink.size: 768m
-        jobmanager.memory.jvm-overhead.max: 256m
-        jobmanager.memory.jvm-overhead.min: 192m
-        jobmanager.memory.off-heap.size: 64m
-        taskmanager.memory.process.size: 1024m
-        taskmanager.numberOfTaskSlots: 2
-        parallelism.default: 2
-        rest.bind-address: 0.0.0.0
-        """)
+    .WithEnvironment("FLINK_PROPERTIES", "jobmanager.rpc.address: flink-jobmanager\njobmanager.rpc.port: 6123\njobmanager.memory.process.size: 1536m\njobmanager.memory.flink.size: 1024m\njobmanager.memory.jvm-overhead.fraction: 0.1\ntaskmanager.memory.process.size: 1024m\ntaskmanager.numberOfTaskSlots: 2\nparallelism.default: 2\nrest.bind-address: 0.0.0.0")
     .WithArgs("jobmanager");
 
 // Flink TaskManager with IPv4
@@ -113,6 +101,9 @@ var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:5000") // Force IPv4
-    .WithHttpEndpoint(port: 5000, name: "http");
+    .WithHttpEndpoint(port: 5000, name: "http")
+    .WaitFor(flinkJobManager)
+    .WaitFor(temporalServer)
+    .WaitFor(kafkaBroker);
 
 builder.Build().Run();
