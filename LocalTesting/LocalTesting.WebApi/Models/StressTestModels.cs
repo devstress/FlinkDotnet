@@ -24,6 +24,9 @@ public class ComplexLogicMessage
         ["backpressure.rate"] = "100.0"
     };
     public string HeadersDisplay => string.Join(", ", Headers.Select(kv => $"{kv.Key}={kv.Value}"));
+    
+    // PowerShell-compatible headers string for workflow display
+    public string HeadersString => string.Join(", ", Headers.Select(kv => $"{kv.Key}={kv.Value}"));
 }
 
 public class StressTestConfiguration
@@ -139,14 +142,14 @@ public class LogicalQueueConfiguration
 public class FlinkConcatJobConfiguration
 {
     public int BatchSize { get; set; } = 100;
-    public string SecurityTokenSource { get; set; } = string.Empty;
+    public string SecurityTokenSource { get; set; } = "saved_token_service";
     public string LocalTestingApiEndpoint { get; set; } = "/api/batch/process";
     public string OutputTopic { get; set; } = "concat-output";
 }
 
 public class FlinkSplitJobConfiguration
 {
-    public string InputTopic { get; set; } = "split-input";
+    public string InputTopic { get; set; } = "api-retrieved-messages";
     public string OutputTopic { get; set; } = "sample_response";
     public bool AddSendingId { get; set; } = true;
     public bool AddLogicalQueueName { get; set; } = true;
