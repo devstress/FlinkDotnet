@@ -31,14 +31,12 @@ public class AspireHealthCheckService
         var results = new Dictionary<string, object>();
         var tasks = new List<Task>();
 
-        // Check all services in parallel
+        // Check core services only - matching our simple Aspire setup
         tasks.Add(CheckKafkaBrokersAsync().ContinueWith(t => results["kafkaBrokers"] = t.Result));
         tasks.Add(CheckRedisAsync().ContinueWith(t => results["redis"] = t.Result));
         tasks.Add(CheckFlinkJobManagerAsync().ContinueWith(t => results["flinkJobManager"] = t.Result));
         tasks.Add(CheckFlinkTaskManagersAsync().ContinueWith(t => results["flinkTaskManagers"] = t.Result));
-        tasks.Add(CheckFlinkSqlGatewayAsync().ContinueWith(t => results["flinkSqlGateway"] = t.Result));
         tasks.Add(CheckKafkaUIAsync().ContinueWith(t => results["kafkaUI"] = t.Result));
-        tasks.Add(CheckPrometheusAsync().ContinueWith(t => results["prometheus"] = t.Result));
         tasks.Add(CheckGrafanaAsync().ContinueWith(t => results["grafana"] = t.Result));
         tasks.Add(CheckTemporalAsync().ContinueWith(t => results["temporal"] = t.Result));
         tasks.Add(CheckTemporalUIAsync().ContinueWith(t => results["temporalUI"] = t.Result));
@@ -71,7 +69,7 @@ public class AspireHealthCheckService
     {
         try
         {
-            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092,localhost:9093,localhost:9094";
+            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092";
             
             using var adminClient = new AdminClientBuilder(new AdminClientConfig
             {
@@ -92,11 +90,11 @@ public class AspireHealthCheckService
             return new ServiceHealthStatus
             {
                 ServiceName = "Kafka Brokers",
-                IsHealthy = brokers.Count >= 3,
+                IsHealthy = brokers.Count >= 1, // Single broker setup
                 Details = new Dictionary<string, object>
                 {
                     ["brokerCount"] = brokers.Count,
-                    ["expectedBrokers"] = 3,
+                    ["expectedBrokers"] = 1, // Simple single broker
                     ["brokers"] = brokerStatuses,
                     ["topicCount"] = metadata.Topics.Count
                 },
@@ -236,12 +234,12 @@ public class AspireHealthCheckService
                 return new ServiceHealthStatus
                 {
                     ServiceName = "Flink TaskManagers",
-                    IsHealthy = runningCount >= 3,
+                    IsHealthy = runningCount >= 1, // Single TaskManager setup
                     Details = new Dictionary<string, object>
                     {
                         ["totalTaskManagers"] = taskManagerArray.Count,
                         ["runningTaskManagers"] = runningCount,
-                        ["expectedTaskManagers"] = 3,
+                        ["expectedTaskManagers"] = 1, // Simple single TaskManager
                         ["taskManagers"] = taskManagerArray.Select(tm => new
                         {
                             Id = tm.TryGetProperty("id", out var id) ? id.GetString() : "Unknown",
@@ -278,49 +276,12 @@ public class AspireHealthCheckService
         }
     }
 
-    private async Task<ServiceHealthStatus> CheckFlinkSqlGatewayAsync()
-    {
-        try
-        {
-            var sqlGatewayUrl = _configuration["FLINK_SQL_GATEWAY_URL"] ?? "http://localhost:8083";
-            var startTime = DateTime.UtcNow;
-            
-            var response = await _httpClient.GetAsync($"{sqlGatewayUrl}/v1/info");
-            var responseTime = DateTime.UtcNow - startTime;
-            
-            return new ServiceHealthStatus
-            {
-                ServiceName = "Flink SQL Gateway",
-                IsHealthy = response.IsSuccessStatusCode,
-                Details = new Dictionary<string, object>
-                {
-                    ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = sqlGatewayUrl
-                },
-                ResponseTime = responseTime,
-                LastCheck = DateTime.UtcNow,
-                ErrorMessage = response.IsSuccessStatusCode ? null : $"HTTP {response.StatusCode}"
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("❌ Flink SQL Gateway health check failed: {Error}", ex.Message);
-            return new ServiceHealthStatus
-            {
-                ServiceName = "Flink SQL Gateway",
-                IsHealthy = false,
-                ErrorMessage = ex.Message,
-                LastCheck = DateTime.UtcNow
-            };
-        }
-    }
-
     private async Task<ServiceHealthStatus> CheckKafkaUIAsync()
     {
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:8082/actuator/health");
+            var response = await _httpClient.GetAsync("http://localhost:8082");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -349,46 +310,12 @@ public class AspireHealthCheckService
         }
     }
 
-    private async Task<ServiceHealthStatus> CheckPrometheusAsync()
-    {
-        try
-        {
-            var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:9090/-/healthy");
-            var responseTime = DateTime.UtcNow - startTime;
-            
-            return new ServiceHealthStatus
-            {
-                ServiceName = "Prometheus",
-                IsHealthy = response.IsSuccessStatusCode,
-                Details = new Dictionary<string, object>
-                {
-                    ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:9090"
-                },
-                ResponseTime = responseTime,
-                LastCheck = DateTime.UtcNow,
-                ErrorMessage = response.IsSuccessStatusCode ? null : $"HTTP {response.StatusCode}"
-            };
-        }
-        catch (Exception ex)
-        {
-            return new ServiceHealthStatus
-            {
-                ServiceName = "Prometheus",
-                IsHealthy = false,
-                ErrorMessage = ex.Message,
-                LastCheck = DateTime.UtcNow
-            };
-        }
-    }
-
     private async Task<ServiceHealthStatus> CheckGrafanaAsync()
     {
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:3000/api/health");
+            var response = await _httpClient.GetAsync("http://localhost:3000/login");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus

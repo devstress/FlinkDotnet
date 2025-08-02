@@ -17,7 +17,7 @@ public class KafkaProducerService : IDisposable
 
         var config = new ProducerConfig
         {
-            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092,localhost:9093,localhost:9094",
+            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
             ClientId = "LocalTesting.WebApi.Producer",
             Acks = Acks.All,
             MessageTimeoutMs = 30000,
@@ -89,7 +89,7 @@ public class KafkaProducerService : IDisposable
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092,localhost:9093,localhost:9094",
+            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
             GroupId = consumerGroup,
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false,

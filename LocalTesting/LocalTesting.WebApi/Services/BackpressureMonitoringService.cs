@@ -196,7 +196,7 @@ public class RealKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
     {
         try
         {
-            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092,localhost:9093,localhost:9094";
+            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092";
             
             // Simplified lag monitoring - connect to Kafka to verify it's working
             using var consumer = new ConsumerBuilder<string, string>(new ConsumerConfig
