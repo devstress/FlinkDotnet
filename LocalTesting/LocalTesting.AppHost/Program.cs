@@ -95,12 +95,11 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0"); // Force IPv4
 
 // LocalTesting Web API with IPv4 configuration
-var localTestingApi = builder.AddProject("localtesting-webapi", "../LocalTesting.WebApi/LocalTesting.WebApi.csproj")
+var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker:9092")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
-    .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:5000") // Force IPv4
     .WithHttpEndpoint(port: 5000, name: "http")
     .WaitFor(flinkJobManager)
     .WaitFor(temporalServer)
