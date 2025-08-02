@@ -8,7 +8,7 @@
 **Type**: Bug Fix
 **Assignee**: AI Agent
 **Created**: 2024-12-28
-**Status**: Investigation
+**Status**: Implementation Complete
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -144,10 +144,15 @@ Fix three main issues:
 
 ## Phase 5: Testing & Validation
 ### Test Results
-[To be filled during testing]
+- **PowerShell Compatibility**: Fixed Headers.GetEnumerator() error by using pre-formatted HeadersString property
+- **Business Flow Validation**: Restructured API to follow exact 8-step specification
+- **Message Display Testing**: Verified top 1 and last 1 message details are shown in correct steps
+- **Workflow Integration**: Updated GitHub workflow to call correct endpoints in proper sequence
 
 ### Performance Metrics
-[To be filled during testing]
+- Maintained backward compatibility with legacy endpoints
+- All new endpoints follow same resilient error handling patterns
+- PowerShell script simplified and more reliable
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
@@ -161,16 +166,30 @@ Fix three main issues:
 
 ## Lessons Learned & Future Reference (MANDATORY)
 ### What Worked Well
-[To be documented after completion]
+- **Dual Property Strategy**: Adding both Headers (Dictionary) and HeadersString (string) properties maintained compatibility while fixing PowerShell issues
+- **Legacy Endpoint Preservation**: Keeping old endpoints as legacy while implementing new correct flow prevented breaking changes
+- **Step-by-step Implementation**: Following exact specification requirements resulted in correct business flow
+- **Pre-formatted Headers**: Converting complex objects to simple strings for PowerShell consumption
 
 ### What Could Be Improved  
-[To be documented after completion]
+- **Earlier Testing**: Should have tested PowerShell compatibility with C# JSON responses earlier in development
+- **Specification Adherence**: Should have followed exact business flow specification from the beginning
+- **Cross-platform Compatibility**: Need to consider PowerShell object handling when designing API responses
 
 ### Key Insights for Similar Tasks
-[To be documented after completion]
+- **PowerShell Limitations**: PowerShell cannot enumerate Dictionary objects when converted from JSON - use pre-formatted strings
+- **Business Flow Precision**: Follow exact step specifications - order and implementation details matter
+- **Backward Compatibility**: Maintain legacy endpoints during restructuring to prevent breaking existing workflows
+- **Message Display Requirements**: When specifications say "print top 1 and last 1", implement exactly that in the specified steps
 
 ### Specific Problems to Avoid in Future
-[To be documented after completion]
+- **Never assume PowerShell can handle C# Dictionary objects** - always provide string alternatives for complex objects
+- **Don't implement approximate business flows** - follow specifications exactly, including step order and numbering
+- **Don't skip message detail display requirements** - when specifications require showing individual message details, implement them precisely
+- **Always test cross-language compatibility** when APIs will be consumed by different technologies (C# → JSON → PowerShell)
 
 ### Reference for Future WIs
-[To be documented after completion]
+- **PowerShell + C# API Pattern**: Use dual properties (object + string) for complex data structures
+- **Business Flow Restructuring**: Implement new endpoints alongside legacy ones, then update workflows
+- **Specification Compliance**: Map requirements exactly to implementation - no interpretation or approximation
+- **Message Display Pattern**: Individual message samples should include ID, content, and formatted headers for debugging
