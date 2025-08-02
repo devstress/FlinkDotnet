@@ -370,88 +370,190 @@ jobs:
           $overallSuccess = $true
           
           try {
-            # Step 1: Setup Environment
-            Write-Host "`n🚀 Step 1: Setting up Aspire test environment..." -ForegroundColor Yellow
-            $setupResponse = Invoke-RestMethod -Uri "$apiBase/step1/setup-environment" -Method POST -ContentType "application/json" -TimeoutSec 30
-            Write-Host "✅ Environment setup: $($setupResponse.Status)" -ForegroundColor Green
-            Write-Host "   Services Health: $($setupResponse.Metrics | ConvertTo-Json -Depth 2)" -ForegroundColor Cyan
-            $testResults += @{Step="1-Setup"; Status=$setupResponse.Status; Success=$true}
+            # CORRECT 8-STEP BUSINESS FLOW
             
-            # Step 2: Configure Security Tokens  
-            Write-Host "`n🔑 Step 2: Configuring security tokens..." -ForegroundColor Yellow
-            $tokenConfig = 1000  # Smaller interval for faster testing
-            $tokenResponse = Invoke-RestMethod -Uri "$apiBase/step2/configure-security-tokens" -Method POST -Body ($tokenConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
-            Write-Host "✅ Token configuration: $($tokenResponse.Status)" -ForegroundColor Green
-            Write-Host "   Renewal Interval: $($tokenResponse.TokenInfo.RenewalInterval) messages" -ForegroundColor Cyan
-            $testResults += @{Step="2-Tokens"; Status=$tokenResponse.Status; Success=$true}
-            
-            # Step 3: Configure Backpressure
-            Write-Host "`n⚡ Step 3: Configuring lag-based backpressure..." -ForegroundColor Yellow
-            $backpressureConfig = @{
-              ConsumerGroup = "stress-test-group"
-              LagThresholdSeconds = 5.0
-              RateLimit = 1000.0
-              BurstCapacity = 5000.0
+            # Step 1: Configure Backpressure (100 msg/sec per logical queue)
+            Write-Host "`n⚡ Step 1: Configuring backpressure (100 msg/sec per logical queue)..." -ForegroundColor Yellow
+            try {
+              $backpressureConfig = @{
+                PartitionCount = 100
+                LogicalQueueCount = 1000
+                MessagesPerSecondPerQueue = 100.0
+              }
+              $backpressureResponse = Invoke-RestMethod -Uri "$apiBase/step1/configure-backpressure" -Method POST -Body ($backpressureConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 1: Backpressure configuration: $($backpressureResponse.Status)" -ForegroundColor Green
+              Write-Host "   Rate: $($backpressureResponse.Configuration.MessagesPerSecondPerQueue) msg/sec per queue, Total: $($backpressureResponse.TotalRateLimit) msg/sec" -ForegroundColor Cyan
+              $testResults += @{Step="1-Backpressure"; Status=$backpressureResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 1 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="1-Backpressure"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
             }
-            $backpressureResponse = Invoke-RestMethod -Uri "$apiBase/step3/configure-backpressure" -Method POST -Body ($backpressureConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
-            Write-Host "✅ Backpressure configuration: $($backpressureResponse.Status)" -ForegroundColor Green
-            Write-Host "   Lag Threshold: $($backpressureResponse.Configuration.LagThresholdSeconds)s" -ForegroundColor Cyan
-            $testResults += @{Step="3-Backpressure"; Status=$backpressureResponse.Status; Success=$true}
             
-            # Step 4: Produce Messages (smaller batch for CI testing)
-            Write-Host "`n📝 Step 4: Producing messages with correlation IDs..." -ForegroundColor Yellow
-            $messageConfig = @{
-              TestId = "ci-test-$(Get-Date -Format 'yyyyMMddHHmmss')"
-              MessageCount = 10000  # 10K messages for faster CI testing
+            # Step 2: Temporal Job Submission for 1M Messages (with top 1 and last 1 display)
+            Write-Host "`n📝 Step 2: Temporal job submission for 1M messages..." -ForegroundColor Yellow
+            try {
+              $messageConfig = @{
+                MessageCount = 10000  # 10K for CI testing
+                UseTemporalSubmission = $true
+                PartitionCount = 100
+                LogicalQueueCount = 1000
+              }
+              $productionResponse = Invoke-RestMethod -Uri "$apiBase/step2/temporal-submit-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
+              Write-Host "✅ Step 2: Message submission: $($productionResponse.Status)" -ForegroundColor Green
+              Write-Host "   Messages: $($productionResponse.Metrics.messageCount.ToString('N0'))" -ForegroundColor Cyan
+              
+              # Display top 1 and last 1 message details as required
+              if ($productionResponse.TopMessageSample) {
+                Write-Host "   📋 Top 1 Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($productionResponse.TopMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($productionResponse.TopMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($productionResponse.TopMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($productionResponse.LastMessageSample) {
+                Write-Host "   📋 Last 1 Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($productionResponse.LastMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($productionResponse.LastMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($productionResponse.LastMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              $testResults += @{Step="2-Temporal_Submit"; Status=$productionResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 2 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="2-Temporal_Submit"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
             }
-            $productionResponse = Invoke-RestMethod -Uri "$apiBase/step4/produce-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
-            Write-Host "✅ Message production: $($productionResponse.Status)" -ForegroundColor Green
-            Write-Host "   Messages: $($productionResponse.Metrics.messageCount.ToString('N0')), Throughput: $($productionResponse.Metrics.messagesPerSecond.ToString('F0')) msgs/sec" -ForegroundColor Cyan
-            $testResults += @{Step="4-Production"; Status=$productionResponse.Status; Success=$true; MessageCount=$productionResponse.Metrics.messageCount}
             
-            # Step 5: Start Flink Job
-            Write-Host "`n🚀 Step 5: Starting Flink streaming job..." -ForegroundColor Yellow
-            $flinkConfig = @{
-              ConsumerGroup = "stress-test-group"
-              InputTopic = "complex-input"
-              OutputTopic = "complex-output"
-              EnableCorrelationTracking = $true
-              BatchSize = 100
-              Parallelism = 10
-              CheckpointingInterval = 10000
+            # Step 3: Temporal Job - Process Messages with Security Token
+            Write-Host "`n🔑 Step 3: Temporal job to process messages with security token..." -ForegroundColor Yellow
+            try {
+              $processConfig = @{
+                TestId = "ci-test-$(Get-Date -Format 'yyyyMMddHHmmss')"
+                BatchSize = 100
+              }
+              $processResponse = Invoke-RestMethod -Uri "$apiBase/step3/temporal-process-messages" -Method POST -Body ($processConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 3: Temporal processing: $($processResponse.Status)" -ForegroundColor Green
+              Write-Host "   Job ID: $($processResponse.TemporalJobId)" -ForegroundColor Cyan
+              $testResults += @{Step="3-Temporal_Process"; Status=$processResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 3 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="3-Temporal_Process"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
             }
-            $flinkResponse = Invoke-RestMethod -Uri "$apiBase/step5/start-flink-job" -Method POST -Body ($flinkConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 45
-            Write-Host "✅ Flink job: $($flinkResponse.Status)" -ForegroundColor Green
-            Write-Host "   Job ID: $($flinkResponse.JobId)" -ForegroundColor Cyan
-            $testResults += @{Step="5-Flink"; Status=$flinkResponse.Status; Success=$true; JobId=$flinkResponse.JobId}
             
-            # Step 6: Process Batches
-            Write-Host "`n🔄 Step 6: Processing message batches..." -ForegroundColor Yellow
-            $batchConfig = @{
-              TestId = $messageConfig.TestId
-              BatchSize = 100
+            # Step 4: Flink Job - Concat 100 Messages
+            Write-Host "`n🔗 Step 4: Flink job to concat 100 messages..." -ForegroundColor Yellow
+            try {
+              $concatConfig = @{
+                BatchSize = 100
+                SecurityTokenSource = "saved_token_service"
+                LocalTestingApiEndpoint = "/api/batch/process"
+                OutputTopic = "concat-output"
+              }
+              $concatResponse = Invoke-RestMethod -Uri "$apiBase/step4/flink-concat-job" -Method POST -Body ($concatConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 4: Flink concat job: $($concatResponse.Status)" -ForegroundColor Green
+              Write-Host "   Job ID: $($concatResponse.JobId)" -ForegroundColor Cyan
+              $testResults += @{Step="4-Flink_Concat"; Status=$concatResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 4 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="4-Flink_Concat"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
             }
-            $batchResponse = Invoke-RestMethod -Uri "$apiBase/step6/process-batches" -Method POST -Body ($batchConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
-            Write-Host "✅ Batch processing: $($batchResponse.Status)" -ForegroundColor Green
-            Write-Host "   Batches: $($batchResponse.TotalBatches), Messages: $($batchResponse.TotalMessages.ToString('N0'))" -ForegroundColor Cyan
-            $testResults += @{Step="6-Batches"; Status=$batchResponse.Status; Success=$true; TotalBatches=$batchResponse.TotalBatches}
             
-            # Step 7: Verify Messages
-            Write-Host "`n🔍 Step 7: Verifying message processing..." -ForegroundColor Yellow
-            $verificationConfig = @{
-              TestId = $messageConfig.TestId
-              TopCount = 10   # Smaller counts for CI
-              LastCount = 10
+            # Step 5: Kafka In Sink - Retrieve from LocalTesting API
+            Write-Host "`n📥 Step 5: Create Kafka in sink to retrieve from LocalTesting API..." -ForegroundColor Yellow
+            try {
+              $sinkConfig = @{
+                LocalTestingApiEndpoint = "/api/batch/process"
+                PollIntervalMs = 1000
+                OutputTopic = "api-retrieved-messages"
+              }
+              $sinkResponse = Invoke-RestMethod -Uri "$apiBase/step5/kafka-in-sink" -Method POST -Body ($sinkConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 5: Kafka in sink: $($sinkResponse.Status)" -ForegroundColor Green
+              Write-Host "   Sink ID: $($sinkResponse.SinkId)" -ForegroundColor Cyan
+              $testResults += @{Step="5-Kafka_InSink"; Status=$sinkResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 5 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="5-Kafka_InSink"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
             }
-            $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step7/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
-            Write-Host "✅ Message verification: $($verificationResponse.Status)" -ForegroundColor Green
-            Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate.ToString('P1'))" -ForegroundColor Cyan
-            $testResults += @{Step="7-Verification"; Status=$verificationResponse.Status; Success=$true; SuccessRate=$verificationResponse.VerificationResult.SuccessRate}
             
-            # Test Status Monitoring
-            Write-Host "`n📊 Testing stress test status monitoring..." -ForegroundColor Yellow
-            $allTestsResponse = Invoke-RestMethod -Uri "$apiBase/test-status" -Method GET -TimeoutSec 15
-            Write-Host "✅ Active tests monitoring: $($allTestsResponse.Count) active tests" -ForegroundColor Green
+            # Step 6: Flink Job - Split Messages
+            Write-Host "`n✂️ Step 6: Flink job to split messages and add sending ID + logical queue name..." -ForegroundColor Yellow
+            try {
+              $splitConfig = @{
+                InputTopic = "api-retrieved-messages"
+                OutputTopic = "sample_response"
+                AddSendingId = $true
+                AddLogicalQueueName = $true
+                UseCorrelationMatching = $true
+              }
+              $splitResponse = Invoke-RestMethod -Uri "$apiBase/step6/flink-split-job" -Method POST -Body ($splitConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 6: Flink split job: $($splitResponse.Status)" -ForegroundColor Green
+              Write-Host "   Job ID: $($splitResponse.JobId)" -ForegroundColor Cyan
+              $testResults += @{Step="6-Flink_Split"; Status=$splitResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 6 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="6-Flink_Split"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
+            }
+            
+            # Step 7: Write to sample_response Topic
+            Write-Host "`n📤 Step 7: Write messages to sample_response topic..." -ForegroundColor Yellow
+            try {
+              $writeConfig = @{
+                TargetTopic = "sample_response"
+                TopMessageCount = 10
+                LastMessageCount = 10
+              }
+              $writeResponse = Invoke-RestMethod -Uri "$apiBase/step7/write-to-sample-response" -Method POST -Body ($writeConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 7: Write to sample_response: $($writeResponse.Status)" -ForegroundColor Green
+              Write-Host "   Written messages: $($writeResponse.WrittenMessages.ToString('N0'))" -ForegroundColor Cyan
+              $testResults += @{Step="7-Write_SampleResponse"; Status=$writeResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 7 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="7-Write_SampleResponse"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
+            }
+            
+            # Step 8: Verify Top 10 and Last 10 Messages
+            Write-Host "`n🔍 Step 8: Verifying top 10 and last 10 messages from sample_response topic..." -ForegroundColor Yellow
+            try {
+              $verificationConfig = @{
+                TargetTopic = "sample_response"
+                TopCount = 10
+                LastCount = 10
+                VerifyHeaders = $true
+                VerifyContent = $true
+              }
+              $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step8/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              Write-Host "✅ Step 8: Message verification: $($verificationResponse.Status)" -ForegroundColor Green
+              Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate.ToString('P1'))" -ForegroundColor Cyan
+              
+              # Display top 1 and last 1 message details as requested
+              Write-Host "   📋 Message Verification Details:" -ForegroundColor Yellow
+              
+              if ($verificationResponse.TopMessageSample) {
+                Write-Host "      🔝 Top 1 Message Details:" -ForegroundColor Green
+                Write-Host "         Message ID: $($verificationResponse.TopMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "         Content: $($verificationResponse.TopMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "         Headers: $($verificationResponse.TopMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($verificationResponse.LastMessageSample) {
+                Write-Host "      🔚 Last 1 Message Details:" -ForegroundColor Green  
+                Write-Host "         Message ID: $($verificationResponse.LastMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "         Content: $($verificationResponse.LastMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "         Headers: $($verificationResponse.LastMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              $testResults += @{Step="8-Verify_Messages"; Status=$verificationResponse.Status; Success=$true}
+            } catch {
+              Write-Host "❌ Step 8 failed: $($_.Exception.Message)" -ForegroundColor Red
+              $testResults += @{Step="8-Verify_Messages"; Status="Failed"; Success=$false}
+              $overallSuccess = $false
+            }
             
           }
           catch {
