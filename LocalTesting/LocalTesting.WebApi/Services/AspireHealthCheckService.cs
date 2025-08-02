@@ -177,7 +177,7 @@ public class AspireHealthCheckService
                     IsHealthy = true,
                     Details = new Dictionary<string, object>
                     {
-                        ["version"] = overview.TryGetProperty("flink-version", out var v) ? v.GetString() : "Unknown",
+                        ["version"] = overview.TryGetProperty("flink-version", out var v) ? v.GetString() ?? "Unknown" : "Unknown",
                         ["taskManagers"] = overview.TryGetProperty("taskmanagers", out var tm) ? tm.GetInt32() : 0,
                         ["slotsTotal"] = overview.TryGetProperty("slots-total", out var st) ? st.GetInt32() : 0,
                         ["slotsAvailable"] = overview.TryGetProperty("slots-available", out var sa) ? sa.GetInt32() : 0,

@@ -56,8 +56,8 @@ public class ComplexLogicStressTestController : ControllerBase
             
             var overallHealth = healthCheckResults["overallHealth"] as dynamic;
             var isHealthy = overallHealth?.IsHealthy ?? false;
-            var healthyServices = overallHealth?.HealthyServices ?? 0;
-            var totalServices = overallHealth?.TotalServices ?? 0;
+            var healthyServices = (int)(overallHealth?.HealthyServices ?? 0);
+            var totalServices = (int)(overallHealth?.TotalServices ?? 0);
             
             // API is considered "Ready" if this controller is responding (which it is)
             // Infrastructure health is reported separately in metrics for transparency
