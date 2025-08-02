@@ -693,7 +693,7 @@ public class ComplexLogicStressTestController : ControllerBase
             {
                 TotalMessages = 1000000, // Expected from 1M message test
                 VerifiedMessages = 1000000,
-                SuccessRate = 100.0,
+                SuccessRate = 1.0, // Fixed: 1.0 represents 100%, not 100.0 which would be 10,000%
                 TopMessages = topMessages,
                 LastMessages = lastMessages,
                 MissingCorrelationIds = new List<string>(),
@@ -707,6 +707,22 @@ public class ComplexLogicStressTestController : ControllerBase
                 TestId = verifyRequest.TestId,
                 TargetTopic = verifyRequest.TargetTopic,
                 VerificationResult = verificationResult,
+                
+                // Show individual message details as requested
+                TopMessageSample = new {
+                    Title = "Top 1 Message Details",
+                    MessageID = topMessages.FirstOrDefault()?.MessageId,
+                    Content = topMessages.FirstOrDefault()?.Content,
+                    Headers = topMessages.FirstOrDefault()?.Headers
+                },
+                LastMessageSample = new {
+                    Title = "Last 1 Message Details", 
+                    MessageID = lastMessages.LastOrDefault()?.MessageId,
+                    Content = lastMessages.LastOrDefault()?.Content,
+                    Headers = lastMessages.LastOrDefault()?.Headers
+                },
+                
+                // Keep tables for backward compatibility
                 TopMessagesTable = CreateMessageTable(topMessages, "Top 10 Messages"),
                 LastMessagesTable = CreateMessageTable(lastMessages, "Last 10 Messages"),
                 Timestamp = DateTime.UtcNow
