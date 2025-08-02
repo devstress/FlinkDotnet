@@ -66,8 +66,21 @@ public class ComplexLogicStressTestService
 
     public async Task<List<ComplexLogicMessage>> ProduceMessagesAsync(string testId, int messageCount)
     {
+        // Get or create test status for this test ID
         var status = GetTestStatus(testId);
-        if (status == null) throw new ArgumentException($"Test {testId} not found");
+        if (status == null)
+        {
+            // Create a new test status for standalone message production
+            status = new StressTestStatus
+            {
+                TestId = testId,
+                Status = "Producing Messages",
+                TotalMessages = messageCount,
+                StartTime = DateTime.UtcNow
+            };
+            _activeTests[testId] = status;
+            status.Logs.Add($"Created standalone test {testId} for message production");
+        }
 
         status.Status = "Producing Messages";
         status.Logs.Add($"Producing {messageCount:N0} messages with unique correlation IDs...");
