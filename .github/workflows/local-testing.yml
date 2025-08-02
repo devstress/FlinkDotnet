@@ -382,7 +382,7 @@ jobs:
               }
               $backpressureResponse = Invoke-RestMethod -Uri "$apiBase/step1/configure-backpressure" -Method POST -Body ($backpressureConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
               Write-Host "✅ Step 1: Backpressure configuration: $($backpressureResponse.Status)" -ForegroundColor Green
-              Write-Host "   Rate: $($backpressureResponse.Configuration.MessagesPerSecondPerQueue) msg/sec per queue, Total: $($backpressureResponse.TotalRateLimit) msg/sec" -ForegroundColor Cyan
+              Write-Host "   $($backpressureResponse.Rate)" -ForegroundColor Cyan
               $testResults += @{Step="1-Backpressure"; Status=$backpressureResponse.Status; Success=$true}
             } catch {
               Write-Host "❌ Step 1 failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -400,8 +400,9 @@ jobs:
                 LogicalQueueCount = 1000
               }
               $productionResponse = Invoke-RestMethod -Uri "$apiBase/step2/temporal-submit-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
-              Write-Host "✅ Step 2: Message submission: $($productionResponse.Status)" -ForegroundColor Green
-              Write-Host "   Messages: $($productionResponse.Metrics.messageCount.ToString('N0'))" -ForegroundColor Cyan
+              Write-Host "✅ Step 2: Submitted Job for producing 1 million Messages: $($productionResponse.Status)" -ForegroundColor Green
+              Write-Host "   Messages: $($productionResponse.Messages)" -ForegroundColor Cyan
+              Write-Host "   ($($productionResponse.BackpressureEffect))" -ForegroundColor Yellow
               
               # Display top 1 and last 1 message details as required
               if ($productionResponse.TopMessageSample) {
@@ -435,6 +436,21 @@ jobs:
               $processResponse = Invoke-RestMethod -Uri "$apiBase/step3/temporal-process-messages" -Method POST -Body ($processConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
               Write-Host "✅ Step 3: Temporal processing: $($processResponse.Status)" -ForegroundColor Green
               Write-Host "   Job ID: $($processResponse.TemporalJobId)" -ForegroundColor Cyan
+              
+              # Display top 1 and last 1 processed message details with security tokens
+              if ($processResponse.TopMessageSample) {
+                Write-Host "   📋 Top 1 Processed Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($processResponse.TopMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($processResponse.TopMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($processResponse.TopMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($processResponse.LastMessageSample) {
+                Write-Host "   📋 Last 1 Processed Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($processResponse.LastMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($processResponse.LastMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($processResponse.LastMessageSample.Headers)" -ForegroundColor Cyan
+              }
               $testResults += @{Step="3-Temporal_Process"; Status=$processResponse.Status; Success=$true}
             } catch {
               Write-Host "❌ Step 3 failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -454,6 +470,21 @@ jobs:
               $concatResponse = Invoke-RestMethod -Uri "$apiBase/step4/flink-concat-job" -Method POST -Body ($concatConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
               Write-Host "✅ Step 4: Flink concat job: $($concatResponse.Status)" -ForegroundColor Green
               Write-Host "   Job ID: $($concatResponse.JobId)" -ForegroundColor Cyan
+              
+              # Display concat message details
+              if ($concatResponse.TopConcatMessageSample) {
+                Write-Host "   📋 Top 1 Concat Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($concatResponse.TopConcatMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($concatResponse.TopConcatMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($concatResponse.TopConcatMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($concatResponse.LastConcatMessageSample) {
+                Write-Host "   📋 Last 1 Concat Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($concatResponse.LastConcatMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($concatResponse.LastConcatMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($concatResponse.LastConcatMessageSample.Headers)" -ForegroundColor Cyan
+              }
               $testResults += @{Step="4-Flink_Concat"; Status=$concatResponse.Status; Success=$true}
             } catch {
               Write-Host "❌ Step 4 failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -472,6 +503,21 @@ jobs:
               $sinkResponse = Invoke-RestMethod -Uri "$apiBase/step5/kafka-in-sink" -Method POST -Body ($sinkConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
               Write-Host "✅ Step 5: Kafka in sink: $($sinkResponse.Status)" -ForegroundColor Green
               Write-Host "   Sink ID: $($sinkResponse.SinkId)" -ForegroundColor Cyan
+              
+              # Display retrieved message details
+              if ($sinkResponse.TopRetrievedMessageSample) {
+                Write-Host "   📋 Top 1 Retrieved Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($sinkResponse.TopRetrievedMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($sinkResponse.TopRetrievedMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($sinkResponse.TopRetrievedMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($sinkResponse.LastRetrievedMessageSample) {
+                Write-Host "   📋 Last 1 Retrieved Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($sinkResponse.LastRetrievedMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($sinkResponse.LastRetrievedMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($sinkResponse.LastRetrievedMessageSample.Headers)" -ForegroundColor Cyan
+              }
               $testResults += @{Step="5-Kafka_InSink"; Status=$sinkResponse.Status; Success=$true}
             } catch {
               Write-Host "❌ Step 5 failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -492,6 +538,21 @@ jobs:
               $splitResponse = Invoke-RestMethod -Uri "$apiBase/step6/flink-split-job" -Method POST -Body ($splitConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
               Write-Host "✅ Step 6: Flink split job: $($splitResponse.Status)" -ForegroundColor Green
               Write-Host "   Job ID: $($splitResponse.JobId)" -ForegroundColor Cyan
+              
+              # Display split message details
+              if ($splitResponse.TopSplitMessageSample) {
+                Write-Host "   📋 Top 1 Split Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($splitResponse.TopSplitMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($splitResponse.TopSplitMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($splitResponse.TopSplitMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($splitResponse.LastSplitMessageSample) {
+                Write-Host "   📋 Last 1 Split Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($splitResponse.LastSplitMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($splitResponse.LastSplitMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($splitResponse.LastSplitMessageSample.Headers)" -ForegroundColor Cyan
+              }
               $testResults += @{Step="6-Flink_Split"; Status=$splitResponse.Status; Success=$true}
             } catch {
               Write-Host "❌ Step 6 failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -510,6 +571,21 @@ jobs:
               $writeResponse = Invoke-RestMethod -Uri "$apiBase/step7/write-to-sample-response" -Method POST -Body ($writeConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
               Write-Host "✅ Step 7: Write to sample_response: $($writeResponse.Status)" -ForegroundColor Green
               Write-Host "   Written messages: $($writeResponse.WrittenMessages.ToString('N0'))" -ForegroundColor Cyan
+              
+              # Display written message details
+              if ($writeResponse.TopWrittenMessageSample) {
+                Write-Host "   📋 Top 1 Written Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($writeResponse.TopWrittenMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($writeResponse.TopWrittenMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($writeResponse.TopWrittenMessageSample.Headers)" -ForegroundColor Cyan
+              }
+              
+              if ($writeResponse.LastWrittenMessageSample) {
+                Write-Host "   📋 Last 1 Written Message Details:" -ForegroundColor Yellow
+                Write-Host "      Message ID: $($writeResponse.LastWrittenMessageSample.MessageID)" -ForegroundColor Cyan
+                Write-Host "      Content: $($writeResponse.LastWrittenMessageSample.Content)" -ForegroundColor Cyan
+                Write-Host "      Headers: $($writeResponse.LastWrittenMessageSample.Headers)" -ForegroundColor Cyan
+              }
               $testResults += @{Step="7-Write_SampleResponse"; Status=$writeResponse.Status; Success=$true}
             } catch {
               Write-Host "❌ Step 7 failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -565,7 +641,6 @@ jobs:
           
           # Summary Report
           Write-Host "`n📋 Complex Logic Stress Test Business Flow Results:" -ForegroundColor Green
-          Write-Host "=" * 60 -ForegroundColor Green
           
           $successfulSteps = ($testResults | Where-Object { $_.Success -eq $true }).Count
           $totalSteps = $testResults.Count
@@ -575,7 +650,6 @@ jobs:
             Write-Host "  $($result.Step): $status - $($result.Status)" -ForegroundColor $(if ($result.Success) { "Green" } else { "Red" })
           }
           
-          Write-Host "=" * 60 -ForegroundColor Green
           Write-Host "Overall Result: $successfulSteps/$totalSteps steps passed" -ForegroundColor $(if ($overallSuccess) { "Green" } else { "Red" })
           
           if ($overallSuccess) {
@@ -608,12 +682,10 @@ jobs:
       - name: Summary Report
         run: |
           Write-Host "📋 LocalTesting Workflow Summary Report" -ForegroundColor Green
-          Write-Host "=" * 50 -ForegroundColor Green
           Write-Host "✅ Aspire environment startup: SUCCESS" -ForegroundColor Green
           Write-Host "✅ Infrastructure container validation: SUCCESS" -ForegroundColor Green  
           Write-Host "✅ Business flow execution: SUCCESS" -ForegroundColor Green
           Write-Host "✅ Complex Logic Stress Test API: FUNCTIONAL" -ForegroundColor Green
-          Write-Host "=" * 50 -ForegroundColor Green
           Write-Host "🎯 LocalTesting environment is production-ready for development and testing!" -ForegroundColor Green
 
       - name: Cleanup Aspire Environment

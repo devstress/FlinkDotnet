@@ -10,19 +10,76 @@ public class ComplexLogicMessage
     public DateTime Timestamp { get; set; }
     public int BatchNumber { get; set; }
     public int PartitionNumber { get; set; }
+    public string? SecurityToken { get; set; }
+    public string? ProcessingStage { get; set; } = "initial";
+    public bool IsConcatenated { get; set; } = false;
+    public bool IsSplit { get; set; } = false;
     
-    // Display properties for debugging
-    public string Content => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed, HTTP batch processed";
-    public Dictionary<string, string> Headers => new Dictionary<string, string>
+    // Display properties for debugging - updated format per requirements
+    public string Content => ProcessingStage switch
     {
-        ["kafka.topic"] = BatchNumber == 1 ? "complex-input" : "sample_response",
-        ["correlation.id"] = CorrelationId,
-        ["batch.number"] = BatchNumber.ToString(),
-        ["sending.id"] = SendingID ?? "pending",
-        ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
-        ["partition.number"] = PartitionNumber.ToString(),
-        ["backpressure.rate"] = "100.0"
+        "initial" => $"message content {MessageId}",
+        "processed" => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed",
+        "concatenated" => $"Concat msg {MessageId}: Combined from 100 messages with security token",
+        "split" => $"Split msg {MessageId}: Restored with sending ID and logical queue",
+        "final" => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed, HTTP batch processed",
+        _ => $"message content {MessageId}"
     };
+    
+    public Dictionary<string, string> Headers => ProcessingStage switch
+    {
+        "initial" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "complex-input",
+            ["sender.id"] = "Darren",
+            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
+            ["partition.number"] = PartitionNumber.ToString()
+        },
+        "processed" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "complex-input",
+            ["correlation.id"] = CorrelationId,
+            ["security.token"] = SecurityToken ?? "token-" + MessageId,
+            ["sender.id"] = "Darren",
+            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
+            ["partition.number"] = PartitionNumber.ToString()
+        },
+        "concatenated" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "concat-output",
+            ["correlation.id"] = CorrelationId,
+            ["security.token"] = SecurityToken ?? "token-" + MessageId,
+            ["batch.size"] = "100",
+            ["logical.queue"] = "concat-queue-" + (MessageId % 10),
+            ["partition.number"] = PartitionNumber.ToString()
+        },
+        "split" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "api-retrieved-messages", 
+            ["correlation.id"] = CorrelationId,
+            ["sending.id"] = SendingID ?? $"send-{MessageId:D6}",
+            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
+            ["partition.number"] = PartitionNumber.ToString()
+        },
+        "final" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "sample_response",
+            ["correlation.id"] = CorrelationId,
+            ["batch.number"] = BatchNumber.ToString(),
+            ["sending.id"] = SendingID ?? $"send-{MessageId:D6}",
+            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
+            ["partition.number"] = PartitionNumber.ToString(),
+            ["backpressure.rate"] = "100.0"
+        },
+        _ => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "complex-input",
+            ["sender.id"] = "Darren",
+            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
+            ["partition.number"] = PartitionNumber.ToString()
+        }
+    };
+    
     public string HeadersDisplay => string.Join(", ", Headers.Select(kv => $"{kv.Key}={kv.Value}"));
     
     // PowerShell-compatible headers string for workflow display
