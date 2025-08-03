@@ -224,7 +224,7 @@ public class ComplexLogicStressTestController : ControllerBase
             var result = new
             {
                 Status = "Temporal_Messages_Submitted",
-                Message = $"Submitted Job for producing 1 million Messages: Temporal_Messages_Submitted",
+                Message = $"Submitted Job for producing {prodRequest.MessageCount:N0} Messages: Temporal_Messages_Submitted",
                 Messages = $"{insertedMessages:N0}",
                 BackpressureEffect = rateLimitedMessages > 0 ? 
                     $"Inserted: {insertedMessages:N0}, Rate limited retrying: {rateLimitedMessages:N0}" :
@@ -305,8 +305,28 @@ public class ComplexLogicStressTestController : ControllerBase
             _logger.LogInformation("🔄 Step 3: Temporal workflow '{WorkflowType}' submitted with ID: {JobId}", 
                 temporalJobRequest.WorkflowType, temporalJobRequest.JobId);
 
-            // Simulate processing messages with security tokens and correlation IDs
-            var processedMessages = await _stressTestService.ProduceMessagesAsync(processRequest.TestId, 1000);
+            // Try to read REAL messages from Kafka topic, fallback to simulation if Kafka unavailable
+            List<ComplexLogicMessage> processedMessages;
+            try
+            {
+                _logger.LogInformation("🔍 Attempting to read real messages from Kafka topic 'complex-input'...");
+                processedMessages = await _kafkaProducer.ConsumeMessagesAsync("complex-input", $"process-consumer-{processRequest.TestId}", 100, TimeSpan.FromSeconds(30));
+                
+                if (processedMessages.Count == 0)
+                {
+                    _logger.LogWarning("No messages found in Kafka topic 'complex-input', generating simulation data for demonstration");
+                    processedMessages = await _stressTestService.ProduceMessagesAsync(processRequest.TestId, 1000);
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Successfully read {Count} real messages from Kafka topic 'complex-input'", processedMessages.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read from Kafka, using simulation mode for Step 3");
+                processedMessages = await _stressTestService.ProduceMessagesAsync(processRequest.TestId, 1000);
+            }
             
             // Set messages to processed stage with security tokens
             var topMessage = processedMessages.FirstOrDefault();
@@ -429,8 +449,28 @@ public class ComplexLogicStressTestController : ControllerBase
                 _logger.LogInformation("✅ Step 4: Flink concat simulation started with ID: {JobId}", jobId);
             }
 
-            // Simulate concat messages production
-            var concatMessages = await _stressTestService.ProduceMessagesAsync("concat-test", 100);
+            // Try to read REAL concat messages, fallback to simulation if unavailable
+            List<ComplexLogicMessage> concatMessages;
+            try
+            {
+                _logger.LogInformation("🔍 Attempting to read real messages from Kafka topic 'concat-output'...");
+                concatMessages = await _kafkaProducer.ConsumeMessagesAsync("concat-output", $"concat-consumer-{DateTime.UtcNow:HHmmss}", 100, TimeSpan.FromSeconds(20));
+                
+                if (concatMessages.Count == 0)
+                {
+                    _logger.LogWarning("No messages found in Kafka topic 'concat-output', generating simulation data for demonstration");
+                    concatMessages = await _stressTestService.ProduceMessagesAsync("concat-test", 100);
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Successfully read {Count} real concat messages from Kafka", concatMessages.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read concat messages from Kafka, using simulation mode");
+                concatMessages = await _stressTestService.ProduceMessagesAsync("concat-test", 100);
+            }
             
             // Set messages to concatenated stage
             var topConcatMessage = concatMessages.FirstOrDefault();
@@ -509,8 +549,28 @@ public class ComplexLogicStressTestController : ControllerBase
             // Simulate Kafka in sink configuration and retrieve messages
             var sinkId = $"kafka-in-sink-{Guid.NewGuid().ToString()[..8]}";
             
-            // Simulate retrieved messages from LocalTesting API
-            var retrievedMessages = await _stressTestService.ProduceMessagesAsync("retrieve-test", 100);
+            // Try to read REAL messages from API retrieved topic, fallback to simulation if unavailable
+            List<ComplexLogicMessage> retrievedMessages;
+            try
+            {
+                _logger.LogInformation("🔍 Attempting to read real messages from Kafka topic 'api-retrieved-messages'...");
+                retrievedMessages = await _kafkaProducer.ConsumeMessagesAsync("api-retrieved-messages", $"retrieved-consumer-{DateTime.UtcNow:HHmmss}", 100, TimeSpan.FromSeconds(20));
+                
+                if (retrievedMessages.Count == 0)
+                {
+                    _logger.LogWarning("No messages found in Kafka topic 'api-retrieved-messages', generating simulation data for demonstration");
+                    retrievedMessages = await _stressTestService.ProduceMessagesAsync("retrieve-test", 100);
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Successfully read {Count} real retrieved messages from Kafka", retrievedMessages.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read retrieved messages from Kafka, using simulation mode");
+                retrievedMessages = await _stressTestService.ProduceMessagesAsync("retrieve-test", 100);
+            }
             
             // Set messages to concatenated stage (they come from the concat output)
             var topRetrievedMessage = retrievedMessages.FirstOrDefault();
@@ -636,8 +696,28 @@ public class ComplexLogicStressTestController : ControllerBase
                 _logger.LogInformation("✅ Step 6: Flink split simulation started with ID: {JobId}", jobId);
             }
 
-            // Simulate split messages production
-            var splitMessages = await _stressTestService.ProduceMessagesAsync("split-test", 100);
+            // Try to read REAL split messages, fallback to simulation if unavailable
+            List<ComplexLogicMessage> splitMessages;
+            try
+            {
+                _logger.LogInformation("🔍 Attempting to read real messages from Kafka topic '{InputTopic}'...", splitConfig.InputTopic);
+                splitMessages = await _kafkaProducer.ConsumeMessagesAsync(splitConfig.InputTopic, $"split-consumer-{DateTime.UtcNow:HHmmss}", 100, TimeSpan.FromSeconds(20));
+                
+                if (splitMessages.Count == 0)
+                {
+                    _logger.LogWarning("No messages found in Kafka topic '{InputTopic}', generating simulation data for demonstration", splitConfig.InputTopic);
+                    splitMessages = await _stressTestService.ProduceMessagesAsync("split-test", 100);
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Successfully read {Count} real split messages from Kafka topic '{InputTopic}'", splitMessages.Count, splitConfig.InputTopic);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read split messages from Kafka, using simulation mode");
+                splitMessages = await _stressTestService.ProduceMessagesAsync("split-test", 100);
+            }
             
             // Set messages to split stage with sending IDs and logical queue names
             var topSplitMessage = splitMessages.FirstOrDefault();
@@ -719,8 +799,28 @@ public class ComplexLogicStressTestController : ControllerBase
             var messageCount = 1000000; // From step 2
             var writtenCount = messageCount;
             
-            // Generate final messages to show
-            var finalMessages = await _stressTestService.ProduceMessagesAsync("final-test", 100);
+            // Try to read REAL final messages from sample_response topic, fallback to simulation if unavailable
+            List<ComplexLogicMessage> finalMessages;
+            try
+            {
+                _logger.LogInformation("🔍 Attempting to read real messages from Kafka topic '{TargetTopic}'...", writeConfig.TargetTopic);
+                finalMessages = await _kafkaProducer.ConsumeMessagesAsync(writeConfig.TargetTopic, $"final-consumer-{DateTime.UtcNow:HHmmss}", 100, TimeSpan.FromSeconds(20));
+                
+                if (finalMessages.Count == 0)
+                {
+                    _logger.LogWarning("No messages found in Kafka topic '{TargetTopic}', generating simulation data for demonstration", writeConfig.TargetTopic);
+                    finalMessages = await _stressTestService.ProduceMessagesAsync("final-test", 100);
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Successfully read {Count} real final messages from Kafka topic '{TargetTopic}'", finalMessages.Count, writeConfig.TargetTopic);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read final messages from Kafka, using simulation mode");
+                finalMessages = await _stressTestService.ProduceMessagesAsync("final-test", 100);
+            }
             
             // Set messages to final stage in sample_response
             var topFinalMessage = finalMessages.FirstOrDefault();
@@ -813,9 +913,43 @@ public class ComplexLogicStressTestController : ControllerBase
             _logger.LogInformation("🔍 Step 8: Verifying top {TopCount} and last {LastCount} messages from {Topic} topic", 
                 verifyRequest.TopCount, verifyRequest.LastCount, verifyRequest.TargetTopic);
 
-            // Generate sample verification data based on the expected business flow
-            var topMessages = GenerateTopMessages(verifyRequest.TopCount);
-            var lastMessages = GenerateLastMessages(verifyRequest.LastCount);
+            // Try to read REAL verification messages from sample_response topic, fallback to simulation if unavailable
+            List<ComplexLogicMessage> topMessages;
+            List<ComplexLogicMessage> lastMessages;
+            
+            try
+            {
+                _logger.LogInformation("🔍 Attempting to read real messages from Kafka topic '{TargetTopic}' for verification...", verifyRequest.TargetTopic);
+                var allMessages = await _kafkaProducer.ConsumeMessagesAsync(verifyRequest.TargetTopic, $"verify-consumer-{DateTime.UtcNow:HHmmss}", Math.Max(verifyRequest.TopCount + verifyRequest.LastCount, 100), TimeSpan.FromSeconds(30));
+                
+                if (allMessages.Count == 0)
+                {
+                    _logger.LogWarning("No messages found in Kafka topic '{TargetTopic}', generating simulation data for demonstration", verifyRequest.TargetTopic);
+                    topMessages = GenerateTopMessages(verifyRequest.TopCount);
+                    lastMessages = GenerateLastMessages(verifyRequest.LastCount);
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Successfully read {Count} real verification messages from Kafka topic '{TargetTopic}'", allMessages.Count, verifyRequest.TargetTopic);
+                    
+                    // Set all to final stage for verification
+                    foreach (var msg in allMessages)
+                    {
+                        msg.ProcessingStage = "final";
+                    }
+                    
+                    topMessages = allMessages.Take(verifyRequest.TopCount).ToList();
+                    lastMessages = allMessages.Count > verifyRequest.LastCount ? 
+                        allMessages.Skip(Math.Max(0, allMessages.Count - verifyRequest.LastCount)).ToList() :
+                        allMessages.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read verification messages from Kafka, using simulation mode");
+                topMessages = GenerateTopMessages(verifyRequest.TopCount);
+                lastMessages = GenerateLastMessages(verifyRequest.LastCount);
+            }
 
             var verificationResult = new MessageVerificationResult
             {

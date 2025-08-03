@@ -99,13 +99,46 @@ Fix multiple critical issues identified by Darren:
 
 ## Phase 4: Implementation
 ### Code Changes
-[To be filled during implementation]
+**Program.cs**:
+- Extended HTTP client timeout from default 30 seconds to 3 minutes for complex operations
+- Ensures long-running operations don't timeout prematurely
+
+**StressTestModels.cs**:
+- Added proper hash-based logical queue distribution (`GetLogicalQueueName()`)
+- Added hash-based partition calculation (`GetPartitionNumber()`)  
+- Fixed message distribution to spread across all 1000 logical queues (queue-0 to queue-999)
+- Updated Headers property to use calculated distributions
+
+**ComplexLogicStressTestController.cs**:
+- **Step 1**: Added explicit logical queue count display showing calculation "100 msg/sec * 1,000 logical queues = 100,000 msg/sec"
+- **Step 2**: Fixed backpressure effect calculation and message distribution  
+- **Step 3-8**: Added real Kafka message consumption with graceful fallback to simulation
+- **All Steps**: Implemented proper error handling and logging for Kafka connectivity issues
+
+**local-testing.yml**:
+- Extended PowerShell timeout from 30 to 120 seconds for all API calls in Steps 2-8
+- Prevents timeout errors during complex operations
+
+### Real Kafka Integration Implementation
+Each step now attempts to read actual messages from appropriate Kafka topics:
+- **Step 3**: Reads from 'complex-input' topic for processing messages
+- **Step 4**: Reads from 'concat-output' topic for concatenated messages  
+- **Step 5**: Reads from 'api-retrieved-messages' topic for retrieved messages
+- **Step 6**: Reads from input topic (configurable) for split messages
+- **Step 7**: Reads from 'sample_response' topic for final messages
+- **Step 8**: Reads from 'sample_response' topic for verification
+
+Graceful fallback to simulation mode when Kafka topics are empty or unavailable.
 
 ### Challenges Encountered
-[To be filled during implementation]
+- Balancing real Kafka integration with CI environment constraints
+- Ensuring timeout configurations are consistent across API and workflow
+- Maintaining backward compatibility while adding real message consumption
 
 ### Solutions Applied
-[To be filled during implementation]
+- Implemented try-catch blocks for Kafka operations with simulation fallbacks
+- Added comprehensive logging to track real vs simulated message usage
+- Extended timeouts appropriately without making CI too slow
 
 ## Phase 5: Testing & Validation
 ### Test Results
