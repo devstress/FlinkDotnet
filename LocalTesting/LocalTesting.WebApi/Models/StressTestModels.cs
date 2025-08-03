@@ -5,20 +5,100 @@ public class ComplexLogicMessage
     public long MessageId { get; set; }
     public string CorrelationId { get; set; } = string.Empty;
     public string? SendingID { get; set; }
+    public string? LogicalQueueName { get; set; }
     public string Payload { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
     public int BatchNumber { get; set; }
+    public int PartitionNumber { get; set; }
+    public string? SecurityToken { get; set; }
+    public string? ProcessingStage { get; set; } = "initial";
+    public bool IsConcatenated { get; set; } = false;
+    public bool IsSplit { get; set; } = false;
     
-    // Display properties for debugging
-    public string Content => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed, HTTP batch processed";
-    public Dictionary<string, string> Headers => new Dictionary<string, string>
+    // Display properties for debugging - updated format per requirements
+    public string Content => ProcessingStage switch
     {
-        ["kafka.topic"] = BatchNumber == 1 ? "complex-input" : "complex-output",
-        ["correlation.id"] = CorrelationId,
-        ["batch.number"] = BatchNumber.ToString(),
-        ["sending.id"] = SendingID ?? "pending"
+        "initial" => $"message content {MessageId}",
+        "processed" => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed",
+        "concatenated" => $"Concat msg {MessageId}: Combined from 100 messages with security token",
+        "split" => $"Split msg {MessageId}: Restored with sending ID and logical queue",
+        "final" => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed, HTTP batch processed",
+        _ => $"message content {MessageId}"
     };
+    
+    // Calculate proper logical queue based on MessageId for even distribution across 1000 queues
+    private string GetLogicalQueueName()
+    {
+        // Use hash-based distribution to ensure messages spread across all 1000 logical queues
+        var queueIndex = MessageId % 1000;
+        return $"queue-{queueIndex}";
+    }
+    
+    // Calculate partition number using hash for proper load balancing across 100 partitions
+    private int GetPartitionNumber()
+    {
+        // Use message ID hash to distribute across 100 partitions
+        return (int)(MessageId % 100);
+    }
+    
+    public Dictionary<string, string> Headers => ProcessingStage switch
+    {
+        "initial" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "complex-input",
+            ["sender.id"] = "Darren",
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
+        },
+        "processed" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "complex-input",
+            ["correlation.id"] = CorrelationId,
+            ["security.token"] = SecurityToken ?? "token-" + MessageId,
+            ["sender.id"] = "Darren",
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
+        },
+        "concatenated" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "concat-output",
+            ["correlation.id"] = CorrelationId,
+            ["security.token"] = SecurityToken ?? "token-" + MessageId,
+            ["batch.size"] = "100",
+            ["logical.queue"] = "concat-queue-" + (MessageId % 10),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
+        },
+        "split" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "api-retrieved-messages", 
+            ["correlation.id"] = CorrelationId,
+            ["sending.id"] = SendingID ?? $"send-{MessageId:D6}",
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
+        },
+        "final" => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "sample_response",
+            ["correlation.id"] = CorrelationId,
+            ["batch.number"] = BatchNumber.ToString(),
+            ["sending.id"] = SendingID ?? $"send-{MessageId:D6}",
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString(),
+            ["backpressure.rate"] = "100.0"
+        },
+        _ => new Dictionary<string, string>
+        {
+            ["kafka.topic"] = "complex-input",
+            ["sender.id"] = "Darren",
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
+        }
+    };
+    
     public string HeadersDisplay => string.Join(", ", Headers.Select(kv => $"{kv.Key}={kv.Value}"));
+    
+    // PowerShell-compatible headers string for workflow display
+    public string HeadersString => string.Join(", ", Headers.Select(kv => $"{kv.Key}={kv.Value}"));
 }
 
 public class StressTestConfiguration
@@ -28,8 +108,12 @@ public class StressTestConfiguration
     public int TokenRenewalInterval { get; set; } = 10000;
     public string ConsumerGroup { get; set; } = "stress-test-group";
     public TimeSpan LagThreshold { get; set; } = TimeSpan.FromSeconds(5);
-    public double RateLimit { get; set; } = 1000.0;
+    public double RateLimit { get; set; } = 100.0; // Changed from 1000 to 100 per logical queue
     public double BurstCapacity { get; set; } = 5000.0;
+    public int PartitionCount { get; set; } = 100;
+    public int LogicalQueueCount { get; set; } = 1000;
+    public bool UseTemporalJobs { get; set; } = true;
+    public string SampleResponseTopic { get; set; } = "sample_response";
 }
 
 public class StressTestStatus
@@ -108,4 +192,100 @@ public class MessageVerificationResult
     public List<ComplexLogicMessage> LastMessages { get; set; } = new();
     public List<string> MissingCorrelationIds { get; set; } = new();
     public Dictionary<string, int> ErrorCounts { get; set; } = new();
+}
+
+// New models for the updated business flow
+public class TemporalJobRequest
+{
+    public string JobId { get; set; } = string.Empty;
+    public string WorkflowType { get; set; } = string.Empty;
+    public Dictionary<string, object> Parameters { get; set; } = new();
+    public int RetryPolicy { get; set; } = 3;
+}
+
+public class LogicalQueueConfiguration
+{
+    public int PartitionCount { get; set; } = 100;
+    public int LogicalQueueCount { get; set; } = 1000;
+    public double MessagesPerSecondPerQueue { get; set; } = 100.0;
+    public Dictionary<string, string> KafkaHeaders { get; set; } = new();
+}
+
+public class FlinkConcatJobConfiguration
+{
+    public int BatchSize { get; set; } = 100;
+    public string SecurityTokenSource { get; set; } = "saved_token_service";
+    public string LocalTestingApiEndpoint { get; set; } = "/api/batch/process";
+    public string OutputTopic { get; set; } = "concat-output";
+}
+
+public class FlinkSplitJobConfiguration
+{
+    public string InputTopic { get; set; } = "api-retrieved-messages";
+    public string OutputTopic { get; set; } = "sample_response";
+    public bool AddSendingId { get; set; } = true;
+    public bool AddLogicalQueueName { get; set; } = true;
+    public bool UseCorrelationMatching { get; set; } = true;
+}
+
+public class KafkaInSinkConfiguration
+{
+    public string LocalTestingApiEndpoint { get; set; } = "/api/batch/process";
+    public int PollIntervalMs { get; set; } = 1000;
+    public string OutputTopic { get; set; } = "api-retrieved-messages";
+}
+
+public class MessageVerificationConfiguration
+{
+    public string TargetTopic { get; set; } = "sample_response";
+    public int TopMessageCount { get; set; } = 10;
+    public int LastMessageCount { get; set; } = 10;
+    public bool VerifyHeaders { get; set; } = true;
+    public bool VerifyContent { get; set; } = true;
+}
+
+// Additional request/response models needed for the API
+public class BackpressureConfiguration
+{
+    public string ConsumerGroup { get; set; } = "stress-test-group";
+    public double LagThresholdSeconds { get; set; } = 5.0;
+    public double RateLimit { get; set; } = 100.0; // 100 messages/second per logical queue
+    public double BurstCapacity { get; set; } = 5000.0;
+}
+
+public class MessageProductionRequest
+{
+    public int MessageCount { get; set; } = 1000000;
+    public string? TestId { get; set; }
+    public bool UseTemporalSubmission { get; set; } = true;
+    public int PartitionCount { get; set; } = 100;
+    public int LogicalQueueCount { get; set; } = 1000;
+}
+
+public class FlinkJobConfiguration
+{
+    public string JobName { get; set; } = "ComplexLogicStressJob";
+    public string ConsumerGroup { get; set; } = "complex-logic-group";
+    public string InputTopic { get; set; } = "complex-input";
+    public string OutputTopic { get; set; } = "complex-output";
+    public bool EnableCorrelationTracking { get; set; } = true;
+    public int BatchSize { get; set; } = 100;
+    public int Parallelism { get; set; } = 10;
+    public int CheckpointingInterval { get; set; } = 60000;
+}
+
+public class MessageVerificationRequest
+{
+    public string TestId { get; set; } = string.Empty;
+    public string TargetTopic { get; set; } = "sample_response";
+    public int TopCount { get; set; } = 10;
+    public int LastCount { get; set; } = 10;
+    public bool VerifyHeaders { get; set; } = true;
+    public bool VerifyContent { get; set; } = true;
+}
+
+public class BatchProcessingRequest
+{
+    public string TestId { get; set; } = string.Empty;
+    public int BatchSize { get; set; } = 100;
 }

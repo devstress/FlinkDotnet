@@ -58,8 +58,14 @@ builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddSingleton<FlinkJobManagementService>();
 builder.Services.AddSingleton<BackpressureMonitoringService>();
 
-// Add HTTP client for external calls
-builder.Services.AddHttpClient();
+// Add HTTP client for external calls with extended timeout for complex operations
+builder.Services.AddHttpClient().ConfigureHttpClientDefaults(clientBuilder =>
+{
+    clientBuilder.ConfigureHttpClient(client =>
+    {
+        client.Timeout = TimeSpan.FromMinutes(3); // 3 minutes for complex operations
+    });
+});
 
 var app = builder.Build();
 
