@@ -26,14 +26,29 @@ public class ComplexLogicMessage
         _ => $"message content {MessageId}"
     };
     
+    // Calculate proper logical queue based on MessageId for even distribution across 1000 queues
+    private string GetLogicalQueueName()
+    {
+        // Use hash-based distribution to ensure messages spread across all 1000 logical queues
+        var queueIndex = MessageId % 1000;
+        return $"queue-{queueIndex}";
+    }
+    
+    // Calculate partition number using hash for proper load balancing across 100 partitions
+    private int GetPartitionNumber()
+    {
+        // Use message ID hash to distribute across 100 partitions
+        return (int)(MessageId % 100);
+    }
+    
     public Dictionary<string, string> Headers => ProcessingStage switch
     {
         "initial" => new Dictionary<string, string>
         {
             ["kafka.topic"] = "complex-input",
             ["sender.id"] = "Darren",
-            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
-            ["partition.number"] = PartitionNumber.ToString()
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
         },
         "processed" => new Dictionary<string, string>
         {
@@ -41,8 +56,8 @@ public class ComplexLogicMessage
             ["correlation.id"] = CorrelationId,
             ["security.token"] = SecurityToken ?? "token-" + MessageId,
             ["sender.id"] = "Darren",
-            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
-            ["partition.number"] = PartitionNumber.ToString()
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
         },
         "concatenated" => new Dictionary<string, string>
         {
@@ -51,15 +66,15 @@ public class ComplexLogicMessage
             ["security.token"] = SecurityToken ?? "token-" + MessageId,
             ["batch.size"] = "100",
             ["logical.queue"] = "concat-queue-" + (MessageId % 10),
-            ["partition.number"] = PartitionNumber.ToString()
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
         },
         "split" => new Dictionary<string, string>
         {
             ["kafka.topic"] = "api-retrieved-messages", 
             ["correlation.id"] = CorrelationId,
             ["sending.id"] = SendingID ?? $"send-{MessageId:D6}",
-            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
-            ["partition.number"] = PartitionNumber.ToString()
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
         },
         "final" => new Dictionary<string, string>
         {
@@ -67,16 +82,16 @@ public class ComplexLogicMessage
             ["correlation.id"] = CorrelationId,
             ["batch.number"] = BatchNumber.ToString(),
             ["sending.id"] = SendingID ?? $"send-{MessageId:D6}",
-            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
-            ["partition.number"] = PartitionNumber.ToString(),
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString(),
             ["backpressure.rate"] = "100.0"
         },
         _ => new Dictionary<string, string>
         {
             ["kafka.topic"] = "complex-input",
             ["sender.id"] = "Darren",
-            ["logical.queue"] = LogicalQueueName ?? $"queue-{PartitionNumber % 1000}",
-            ["partition.number"] = PartitionNumber.ToString()
+            ["logical.queue"] = LogicalQueueName ?? GetLogicalQueueName(),
+            ["partition.number"] = PartitionNumber > 0 ? PartitionNumber.ToString() : GetPartitionNumber().ToString()
         }
     };
     

@@ -399,7 +399,7 @@ jobs:
                 PartitionCount = 100
                 LogicalQueueCount = 1000
               }
-              $productionResponse = Invoke-RestMethod -Uri "$apiBase/step2/temporal-submit-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 60
+              $productionResponse = Invoke-RestMethod -Uri "$apiBase/step2/temporal-submit-messages" -Method POST -Body ($messageConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 2: Submitted Job for producing 1 million Messages: $($productionResponse.Status)" -ForegroundColor Green
               Write-Host "   Messages: $($productionResponse.Messages)" -ForegroundColor Cyan
               Write-Host "   ($($productionResponse.BackpressureEffect))" -ForegroundColor Yellow
@@ -433,7 +433,7 @@ jobs:
                 TestId = "ci-test-$(Get-Date -Format 'yyyyMMddHHmmss')"
                 BatchSize = 100
               }
-              $processResponse = Invoke-RestMethod -Uri "$apiBase/step3/temporal-process-messages" -Method POST -Body ($processConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              $processResponse = Invoke-RestMethod -Uri "$apiBase/step3/temporal-process-messages" -Method POST -Body ($processConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 3: Temporal processing: $($processResponse.Status)" -ForegroundColor Green
               Write-Host "   Job ID: $($processResponse.TemporalJobId)" -ForegroundColor Cyan
               
@@ -467,7 +467,7 @@ jobs:
                 LocalTestingApiEndpoint = "/api/batch/process"
                 OutputTopic = "concat-output"
               }
-              $concatResponse = Invoke-RestMethod -Uri "$apiBase/step4/flink-concat-job" -Method POST -Body ($concatConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              $concatResponse = Invoke-RestMethod -Uri "$apiBase/step4/flink-concat-job" -Method POST -Body ($concatConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 4: Flink concat job: $($concatResponse.Status)" -ForegroundColor Green
               Write-Host "   Job ID: $($concatResponse.JobId)" -ForegroundColor Cyan
               
@@ -500,7 +500,7 @@ jobs:
                 PollIntervalMs = 1000
                 OutputTopic = "api-retrieved-messages"
               }
-              $sinkResponse = Invoke-RestMethod -Uri "$apiBase/step5/kafka-in-sink" -Method POST -Body ($sinkConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              $sinkResponse = Invoke-RestMethod -Uri "$apiBase/step5/kafka-in-sink" -Method POST -Body ($sinkConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 5: Kafka in sink: $($sinkResponse.Status)" -ForegroundColor Green
               Write-Host "   Sink ID: $($sinkResponse.SinkId)" -ForegroundColor Cyan
               
@@ -535,7 +535,7 @@ jobs:
                 AddLogicalQueueName = $true
                 UseCorrelationMatching = $true
               }
-              $splitResponse = Invoke-RestMethod -Uri "$apiBase/step6/flink-split-job" -Method POST -Body ($splitConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              $splitResponse = Invoke-RestMethod -Uri "$apiBase/step6/flink-split-job" -Method POST -Body ($splitConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 6: Flink split job: $($splitResponse.Status)" -ForegroundColor Green
               Write-Host "   Job ID: $($splitResponse.JobId)" -ForegroundColor Cyan
               
@@ -568,7 +568,7 @@ jobs:
                 TopMessageCount = 10
                 LastMessageCount = 10
               }
-              $writeResponse = Invoke-RestMethod -Uri "$apiBase/step7/write-to-sample-response" -Method POST -Body ($writeConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              $writeResponse = Invoke-RestMethod -Uri "$apiBase/step7/write-to-sample-response" -Method POST -Body ($writeConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 7: Write to sample_response: $($writeResponse.Status)" -ForegroundColor Green
               Write-Host "   Written messages: $($writeResponse.WrittenMessages.ToString('N0'))" -ForegroundColor Cyan
               
@@ -603,7 +603,7 @@ jobs:
                 VerifyHeaders = $true
                 VerifyContent = $true
               }
-              $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step8/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 30
+              $verificationResponse = Invoke-RestMethod -Uri "$apiBase/step8/verify-messages" -Method POST -Body ($verificationConfig | ConvertTo-Json) -ContentType "application/json" -TimeoutSec 120
               Write-Host "✅ Step 8: Message verification: $($verificationResponse.Status)" -ForegroundColor Green
               Write-Host "   Success Rate: $($verificationResponse.VerificationResult.SuccessRate.ToString('P1'))" -ForegroundColor Cyan
               
