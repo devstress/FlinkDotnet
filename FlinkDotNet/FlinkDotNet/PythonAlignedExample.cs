@@ -15,11 +15,8 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using FlinkDotNet;
 using FlinkDotNet.Common;
-using FlinkDotNet.DataStream;
 
 namespace FlinkDotNet.Examples
 {
@@ -27,7 +24,7 @@ namespace FlinkDotNet.Examples
     /// Example demonstrating the new Python-aligned API structure.
     /// This shows how FlinkDotNet now matches PyFlink patterns.
     /// </summary>
-    public class PythonAlignedExample
+    public static class PythonAlignedExample
     {
         /// <summary>
         /// Python equivalent:
@@ -110,12 +107,12 @@ namespace FlinkDotNet.Examples
             var execConfig = new ExecutionConfig(config);
             execConfig.SetParallelism(4);
 
-            // FlinkDotNet.DataStream usage
-            var env = new StreamExecutionEnvironment(config);
-            var stream = env.FromCollection(new[] { "a", "b", "c" });
+            // FlinkDotNet.DataStream usage - using factory method instead of constructor
+            _ = Flink.GetExecutionEnvironment(config);
             
             // Each module has its own namespace and functionality
             Console.WriteLine($"Parallelism: {execConfig.Parallelism}");
+            Console.WriteLine("Environment configured successfully");
         }
     }
 }
