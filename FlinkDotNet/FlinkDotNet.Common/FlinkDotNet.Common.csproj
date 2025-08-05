@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageId>FlinkDotNet.Common</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>FlinkDotnet Team</Authors>
+    <Description>.NET Common Components for Apache Flink - Configuration, types, and core abstractions matching PyFlink common module</Description>
+    <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Common</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

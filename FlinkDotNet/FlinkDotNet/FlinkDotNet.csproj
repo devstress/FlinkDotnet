@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageId>FlinkDotNet</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>FlinkDotnet Team</Authors>
+    <Description>.NET SDK for Apache Flink - Complete streaming API matching Python Flink structure with backward compatibility</Description>
+    <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Python-Compatible</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" />
+    <ProjectReference Include="../FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj" />
+    <ProjectReference Include="../FlinkDotNet.Table/FlinkDotNet.Table.csproj" />
+    <ProjectReference Include="../FlinkDotNet.Testing/FlinkDotNet.Testing.csproj" />
+    <ProjectReference Include="../FlinkDotNet.Util/FlinkDotNet.Util.csproj" />
+    <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" />
+  </ItemGroup>
+
+</Project>

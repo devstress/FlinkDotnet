@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageId>FlinkDotNet.Testing</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>FlinkDotnet Team</Authors>
+    <Description>.NET Testing utilities for Apache Flink - Test helpers and utilities matching PyFlink testing module</Description>
+    <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Testing</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" />
+    <ProjectReference Include="../FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj" />
+  </ItemGroup>
+
+</Project>

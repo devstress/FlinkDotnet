@@ -1,31 +1,80 @@
 # FlinkDotnet
 
-**FlinkDotnet** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL.
+**FlinkDotnet** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL. **Now restructured to match Python Flink (PyFlink) organization!**
 
-## Apache Flink Integration Architecture
+## 🐍 Python Flink Compatibility
 
-FlinkDotnet provides a complete integration solution for Apache Flink:
+FlinkDotnet now follows the **exact same structure as Python Flink** for seamless migration between languages:
 
-- **.NET SDK (Flink.JobBuilder)**: Fluent C# DSL for defining streaming pipelines
-- **Intermediate Representation (IR)**: JSON-based job definitions  
-- **Flink Job Gateway**: .NET ASP.NET Core Web API that translates IR to Flink jobs
-- **.NET Aspire**: Local development orchestration and deployment tooling
+### Python → C# API Mapping
 
-## Quick Start with Flink.JobBuilder SDK
+| Python Flink | FlinkDotnet |
+|--------------|-------------|
+| `from pyflink.datastream import StreamExecutionEnvironment` | `using FlinkDotNet.DataStream;` |
+| `env = StreamExecutionEnvironment.get_execution_environment()` | `var env = Flink.GetExecutionEnvironment();` |
+| `config = Configuration()` | `var config = Flink.CreateConfiguration();` |
+| `ds = env.from_collection([1, 2, 3])` | `var ds = env.FromCollection(new[] { 1, 2, 3 });` |
+| `ds.map(lambda x: x * 2).print()` | `ds.Map(x => x * 2).Print();` |
+| `env.execute("Job Name")` | `await env.ExecuteAsync("Job Name");` |
+
+### Modular Structure (Matching PyFlink)
+
+```
+FlinkDotNet/
+├── FlinkDotNet.Common/           # Like pyflink.common
+│   ├── Configuration             # Configuration, ExecutionConfig
+│   ├── TypeInfo                  # Types, TypeInformation  
+│   └── JobManagement            # JobClient, JobExecutionResult
+├── FlinkDotNet.DataStream/       # Like pyflink.datastream
+│   ├── StreamExecutionEnvironment # Main entry point
+│   ├── DataStream                # Core streaming API
+│   ├── Functions                 # User functions
+│   └── Connectors               # Sources and sinks
+├── FlinkDotNet.Table/           # Like pyflink.table
+├── FlinkDotNet.Testing/         # Like pyflink.testing
+├── FlinkDotNet.Util/            # Like pyflink.util
+└── FlinkDotNet/                 # Main unified API
+```
+
+## Quick Start with Python-Aligned API
 
 ```csharp
-using Flink.JobBuilder;
+using FlinkDotNet;
+using FlinkDotNet.DataStream;
 
-// Create a streaming job with fluent API
-var job = FlinkJobBuilder
+// Python: env = StreamExecutionEnvironment.get_execution_environment()
+var env = Flink.GetExecutionEnvironment();
+
+// Python: env.set_parallelism(4)
+env.SetParallelism(4);
+
+// Python: ds = env.from_collection([1, 2, 3, 4, 5])
+var dataStream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+
+// Python: ds.map(lambda x: x * 2).filter(lambda x: x > 5).print()
+dataStream
+    .Map(x => x * 2)
+    .Filter(x => x > 5)
+    .Print();
+
+// Python: env.execute("My Job")
+await env.ExecuteAsync("My Job");
+```
+
+## Backward Compatibility
+
+**All existing FlinkJobBuilder functionality is preserved!** Your existing code continues to work:
+
+```csharp
+// Existing FlinkJobBuilder API still works
+var job = Flink.JobBuilder
     .FromKafka("orders")
     .Where("Amount > 100")
     .GroupBy("Region")
     .Aggregate("SUM", "Amount")
     .ToKafka("high-value-orders");
 
-// Submit to Apache Flink cluster
-await job.Submit();
+await job.Submit("Legacy Job");
 ```
 
 This generates IR and submits to the Flink Job Gateway:
@@ -42,9 +91,20 @@ This generates IR and submits to the Flink Job Gateway:
 }
 ```
 
+## Apache Flink Integration Architecture
+
+FlinkDotnet provides a complete integration solution for Apache Flink:
+
+- **.NET SDK (FlinkDotNet.DataStream)**: Python-aligned streaming API
+- **Legacy SDK (Flink.JobBuilder)**: Original fluent C# DSL (maintained for compatibility)
+- **Intermediate Representation (IR)**: JSON-based job definitions  
+- **Flink Job Gateway**: .NET ASP.NET Core Web API that translates IR to Flink jobs
+- **.NET Aspire**: Local development orchestration and deployment tooling
+
 ## Table of Contents
+- [🐍 Python Flink Compatibility](#-python-flink-compatibility)
 - [Apache Flink Integration Architecture](#apache-flink-integration-architecture)
-- [Quick Start with Flink.JobBuilder SDK](#quick-start-with-flinkjobbuilder-sdk)
+- [Backward Compatibility](#backward-compatibility)
 - [**⭐ Backpressure Implementation Guide**](#backpressure-implementation-guide) 
 - [**🛟 Reliability & Fault Tolerance**](#reliability--fault-tolerance)
 - [**⚡ Stress Testing & Performance**](#stress-testing--performance)
