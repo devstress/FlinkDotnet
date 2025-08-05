@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageId>FlinkDotNet.DataStream</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>FlinkDotnet Team</Authors>
+    <Description>.NET DataStream API for Apache Flink - Core streaming APIs, state management, and connectors matching PyFlink datastream module</Description>
+    <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;DataStream</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
+  </ItemGroup>
+
+</Project>
