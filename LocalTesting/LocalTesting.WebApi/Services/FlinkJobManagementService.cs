@@ -80,19 +80,16 @@ public class FlinkJobManagementService
             var correlationTracking = pipelineConfig.TryGetValue("correlationTracking", out var ct) && (bool)ct;
             var batchSize = pipelineConfig.TryGetValue("batchSize", out var bs) ? Convert.ToInt32(bs) : 100;
 
-            // Build the Flink job using the fluent API
-            var jobBuilder = FlinkJobBuilder
-                .FromKafka(inputTopic ?? "complex-input", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
-                .Where(correlationTracking ? "correlationId IS NOT NULL" : "TRUE") // Conditional filtering
-                .Map(correlationTracking 
-                    ? "CONCAT(payload, ' - processed by Flink') as payload, correlationId, CONCAT('send-', LPAD(CAST(messageId AS STRING), 6, '0')) as sendingId"
-                    : "CONCAT(payload, ' - processed by Flink') as payload, CONCAT('corr-', LPAD(CAST(messageId AS STRING), 6, '0')) as correlationId, CONCAT('send-', LPAD(CAST(messageId AS STRING), 6, '0')) as sendingId")
-                .WithState("messageCounter", "value", ttlMs: 300000) // 5 minutes TTL for state
-                .Window("TUMBLING", 5, "SECONDS") // 5-second tumbling window for batch processing
-                .ToKafka(outputTopic ?? "complex-output", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092");
+            // Build the Flink job using the correct FlinkDotNet fluent API as shown in README.md
+            var job = FlinkJobBuilder
+                .FromKafka(inputTopic ?? "complex-input")
+                .Where(correlationTracking ? "correlationId IS NOT NULL" : "Amount > 0") // Simple filter expression
+                .GroupBy("messageId") // Group by message ID for aggregation
+                .Aggregate("COUNT", "*") // Count messages per group
+                .ToKafka(outputTopic ?? "complex-output");
 
-            // Submit the job
-            var result = await jobBuilder.Submit($"ComplexLogicJob-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
+            // Submit the job to Apache Flink cluster
+            var result = await job.Submit($"ComplexLogicJob-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
             
             if (result.IsSuccess)
             {
