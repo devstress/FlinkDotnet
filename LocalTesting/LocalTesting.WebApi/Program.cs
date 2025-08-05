@@ -8,6 +8,9 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Flink job management defaults
+builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
+
 // Configure OpenTelemetry
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource

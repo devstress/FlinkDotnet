@@ -1,6 +1,9 @@
 using LocalTesting.WebApi.Models;
 using System.Text.Json;
 using System.Text;
+using Flink.JobBuilder;
+using Flink.JobBuilder.Services;
+using Flink.JobBuilder.Models;
 
 namespace LocalTesting.WebApi.Services;
 
@@ -11,6 +14,8 @@ public class FlinkJobManagementService
     private readonly IConfiguration _configuration;
     private readonly string _flinkJobManagerUrl;
     private readonly string _flinkSqlGatewayUrl;
+    private readonly IFlinkJobGatewayService _flinkJobGatewayService;
+    private readonly bool _useFlinkDotNet;
 
     public FlinkJobManagementService(HttpClient httpClient, ILogger<FlinkJobManagementService> logger, IConfiguration configuration)
     {
@@ -19,11 +24,95 @@ public class FlinkJobManagementService
         _configuration = configuration;
         _flinkJobManagerUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? "http://localhost:8081";
         _flinkSqlGatewayUrl = _configuration["FLINK_SQL_GATEWAY_URL"] ?? "http://localhost:8083";
+        
+        // Initialize FlinkDotNet services
+        _flinkJobGatewayService = new FlinkJobGatewayService();
+        
+        // Configuration switch: Default to FlinkDotNet (true), fallback to SQL (false)
+        _useFlinkDotNet = _configuration.GetValue("Flink:UseFlinkDotNet", true);
+        
+        _logger.LogInformation("FlinkJobManagementService initialized with mode: {Mode}", 
+            _useFlinkDotNet ? "FlinkDotNet" : "SQL");
     }
 
     public async Task<string> StartComplexLogicJobAsync(Dictionary<string, object> pipelineConfig)
     {
-        _logger.LogInformation("Starting real Flink job with complex logic pipeline configuration");
+        _logger.LogInformation("Starting Flink job with complex logic pipeline configuration using {Mode} approach", 
+            _useFlinkDotNet ? "FlinkDotNet" : "SQL");
+
+        try
+        {
+            if (_useFlinkDotNet)
+            {
+                return await StartComplexLogicJobWithFlinkDotNetAsync(pipelineConfig);
+            }
+            else
+            {
+                return await StartComplexLogicJobWithSqlAsync(pipelineConfig);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start Flink job using {Mode} approach", 
+                _useFlinkDotNet ? "FlinkDotNet" : "SQL");
+            
+            // Fallback to alternative approach if the primary one fails
+            if (_useFlinkDotNet)
+            {
+                _logger.LogInformation("Falling back to SQL approach after FlinkDotNet failure");
+                return await StartComplexLogicJobWithSqlAsync(pipelineConfig);
+            }
+            
+            throw;
+        }
+    }
+
+    private async Task<string> StartComplexLogicJobWithFlinkDotNetAsync(Dictionary<string, object> pipelineConfig)
+    {
+        _logger.LogInformation("Starting Flink job using FlinkDotNet fluent API");
+
+        try
+        {
+            // Extract configuration parameters
+            var consumerGroup = pipelineConfig.TryGetValue("consumerGroup", out var cg) ? cg.ToString() : "stress-test-group";
+            var inputTopic = pipelineConfig.TryGetValue("inputTopic", out var it) ? it.ToString() : "complex-input";
+            var outputTopic = pipelineConfig.TryGetValue("outputTopic", out var ot) ? ot.ToString() : "complex-output";
+            var correlationTracking = pipelineConfig.TryGetValue("correlationTracking", out var ct) && (bool)ct;
+            var batchSize = pipelineConfig.TryGetValue("batchSize", out var bs) ? Convert.ToInt32(bs) : 100;
+
+            // Build the Flink job using the correct FlinkDotNet fluent API as shown in README.md
+            var job = FlinkJobBuilder
+                .FromKafka(inputTopic ?? "complex-input")
+                .Where(correlationTracking ? "correlationId IS NOT NULL" : "Amount > 0") // Simple filter expression
+                .GroupBy("messageId") // Group by message ID for aggregation
+                .Aggregate("COUNT", "*") // Count messages per group
+                .ToKafka(outputTopic ?? "complex-output");
+
+            // Submit the job to Apache Flink cluster
+            var result = await job.Submit($"ComplexLogicJob-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
+            
+            if (result.IsSuccess)
+            {
+                _logger.LogInformation("FlinkDotNet job submitted successfully with ID: {JobId}, Flink Job ID: {FlinkJobId}", 
+                    result.JobId, result.FlinkJobId);
+                return result.FlinkJobId;
+            }
+            else
+            {
+                _logger.LogError("FlinkDotNet job submission failed: {ErrorMessage}", result.ErrorMessage);
+                throw new InvalidOperationException($"FlinkDotNet job submission failed: {result.ErrorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start Flink job with FlinkDotNet");
+            throw;
+        }
+    }
+
+    private async Task<string> StartComplexLogicJobWithSqlAsync(Dictionary<string, object> pipelineConfig)
+    {
+        _logger.LogInformation("Starting Flink job using traditional SQL approach");
 
         try
         {
@@ -33,12 +122,12 @@ public class FlinkJobManagementService
             // Submit the job to Flink via REST API
             var jobId = await SubmitSqlJobAsync(sqlJobDefinition);
             
-            _logger.LogInformation("Flink job started successfully with ID: {JobId}", jobId);
+            _logger.LogInformation("SQL-based Flink job started successfully with ID: {JobId}", jobId);
             return jobId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start Flink job");
+            _logger.LogError(ex, "Failed to start Flink job with SQL approach");
             throw;
         }
     }
