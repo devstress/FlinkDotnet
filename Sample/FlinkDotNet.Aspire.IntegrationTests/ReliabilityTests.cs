@@ -25,16 +25,11 @@ public class ReliabilityTests
     }
 
     /// <summary>
-    /// DEPRECATED: Traditional xUnit reliability tests - replaced by ReqNRoll BDD scenarios
-    /// These tests are disabled to allow BDD scenarios from ReliabilityTest.feature to run natively
-    /// The BDD scenarios provide better readability with scenario names like:
-    /// - "Handle Back Pressure with Graceful Degradation"
-    /// - "Consumer Rebalancing with Zero Message Loss"
-    /// - "Fault Recovery with Exactly-Once Semantics"
+    /// Reliability test for back pressure handling
+    /// Validates graceful degradation under load and proper back pressure mechanisms
     /// </summary>
-    [System.Obsolete("Replaced by BDD scenarios in ReliabilityTest.feature - use ReqNRoll scenarios instead", false)]
-    [Fact(Skip = "Replaced by ReqNRoll BDD scenarios in ReliabilityTest.feature")]
-    //[Trait("Category", "ReliabilityTest")] // Commented out to avoid conflicts with BDD scenarios
+    [Fact]
+    [Trait("Category", "ReliabilityTest")]
     public async Task ReliabilityTest_BackPressure_Handling()
     {
         var messageCount = GetReliabilityTestMessageCount();
@@ -86,8 +81,8 @@ public class ReliabilityTests
         }
     }
 
-    [Fact(Skip = "Replaced by ReqNRoll BDD scenarios in ReliabilityTest.feature")]
-    //[Trait("Category", "ReliabilityTest")] // Commented out to avoid conflicts with BDD scenarios
+    [Fact]
+    [Trait("Category", "ReliabilityTest")]
     public async Task ReliabilityTest_Consumer_Rebalancing()
     {
         var testName = "Consumer_Rebalancing_Test";
@@ -133,8 +128,8 @@ public class ReliabilityTests
         }
     }
 
-    [Fact(Skip = "Replaced by ReqNRoll BDD scenarios in ReliabilityTest.feature")]
-    //[Trait("Category", "ReliabilityTest")] // Commented out to avoid conflicts with BDD scenarios
+    [Fact]
+    [Trait("Category", "ReliabilityTest")]
     public async Task ReliabilityTest_Fault_Tolerance_Recovery()
     {
         var testName = "Fault_Tolerance_Recovery_Test";

@@ -25,17 +25,11 @@ public class StressTests
     }
 
     /// <summary>
-    /// DEPRECATED: Traditional xUnit stress tests - replaced by ReqNRoll BDD scenarios
-    /// These tests are disabled to allow BDD scenarios from StressTest.feature to run natively
-    /// The BDD scenarios provide better readability with scenario names like:
-    /// - "Process 1 Million Messages with FIFO and Exactly-Once Semantics" 
-    /// - "Validate High-Throughput Performance Metrics"
-    /// - "Verify Equal Distribution Across Partitions"
-    /// - "Concrete FIFO Message Processing with Data Verification"
+    /// Stress test for 1 Million Message FIFO Processing
+    /// Validates high-throughput FIFO processing capabilities with exact order preservation
     /// </summary>
-    [System.Obsolete("Replaced by BDD scenarios in StressTest.feature - use ReqNRoll scenarios instead", false)]
-    [Fact(Skip = "Replaced by ReqNRoll BDD scenarios in StressTest.feature")]
-    //[Trait("Category", "StressTest")] // Commented out to avoid conflicts with BDD scenarios
+    [Fact]
+    [Trait("Category", "StressTest")]
     public async Task StressTest_1MillionMessage_FIFO_Processing()
     {
         var messageCount = GetStressTestMessageCount();
@@ -92,8 +86,8 @@ public class StressTests
         }
     }
 
-    [Fact(Skip = "Replaced by ReqNRoll BDD scenarios in StressTest.feature")]
-    //[Trait("Category", "StressTest")] // Commented out to avoid conflicts with BDD scenarios
+    [Fact]
+    [Trait("Category", "StressTest")]
     public async Task StressTest_HighThroughput_Performance_Benchmarking()
     {
         var messageCount = GetStressTestMessageCount();
