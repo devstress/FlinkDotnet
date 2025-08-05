@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\FlinkDotNet.JobManager.props" />
-</Project>

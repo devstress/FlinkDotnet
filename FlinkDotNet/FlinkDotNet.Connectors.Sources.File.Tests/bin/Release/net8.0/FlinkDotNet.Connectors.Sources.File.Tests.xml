@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<doc>
-    <assembly>
-        <name>FlinkDotNet.Connectors.Sources.File.Tests</name>
-    </assembly>
-    <members>
-    </members>
-</doc>
