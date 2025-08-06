@@ -12,6 +12,7 @@ processors:
     send_batch_size: 1024
   memory_limiter:
     limit_mib: 512
+    check_interval: 1s
   resource:
     attributes:
       - key: deployment.environment
