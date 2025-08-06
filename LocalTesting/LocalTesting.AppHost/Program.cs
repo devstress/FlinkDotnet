@@ -8,6 +8,10 @@ Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "h
 Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:18888");
 Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
 
+// Configure OpenTelemetry endpoints for applications
+Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318");
+Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Redis with IPv4 configuration
@@ -154,12 +158,33 @@ var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
     .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084")
     .WaitFor(temporalServer);
 
-// Grafana with IPv4
+// Prometheus for metrics collection
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
+    .WithHttpEndpoint(9090, 9090, "prometheus")
+    .WithBindMount("./prometheus.yml", "/etc/prometheus/prometheus.yml")
+    .WithArgs("--config.file=/etc/prometheus/prometheus.yml", 
+              "--storage.tsdb.path=/prometheus", 
+              "--web.console.libraries=/etc/prometheus/console_libraries",
+              "--web.console.templates=/etc/prometheus/consoles",
+              "--web.enable-lifecycle");
+
+// OpenTelemetry Collector for telemetry processing
+var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
+    .WithHttpEndpoint(4317, 4317, "otlp-grpc")
+    .WithHttpEndpoint(4318, 4318, "otlp-http")
+    .WithHttpEndpoint(8889, 8889, "prometheus-metrics")
+    .WithBindMount("./otel-config.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
+    .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml");
+
+// Grafana with IPv4 and datasources configuration
 var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithHttpEndpoint(3000, 3000, "grafana")
     .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
     .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
-    .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0"); // Force IPv4
+    .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0") // Force IPv4
+    .WithBindMount("./grafana-datasources.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
+    .WaitFor(prometheus)
+    .WaitFor(otelCollector);
 
 // LocalTesting Web API with IPv4 configuration
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
@@ -167,6 +192,8 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
     .WithHttpEndpoint(port: 5000, name: "http")
     .WaitFor(flinkJobManager)
     .WaitFor(flinkTaskManager1)
@@ -175,6 +202,9 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WaitFor(temporalServer)
     .WaitFor(kafkaBroker1)
     .WaitFor(kafkaBroker2)
-    .WaitFor(kafkaBroker3);
+    .WaitFor(kafkaBroker3)
+    .WaitFor(prometheus)
+    .WaitFor(otelCollector)
+    .WaitFor(grafana);
 
 builder.Build().Run();
