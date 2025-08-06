@@ -1,27 +1,27 @@
 namespace FlinkDotNet.Resilience;
 
 // Placeholder resilience components - will be implemented in next phase
-public class CircuitBreaker
+public static class CircuitBreaker
 {
-    public void ExecuteWithCircuitBreaker(Action action)
+    public static void ExecuteWithCircuitBreaker(Action action)
     {
         // Circuit breaker implementation for cluster resilience
         action();
     }
 }
 
-public class RetryPolicy
+public static class RetryPolicy
 {
-    public void ExecuteWithRetry(Action action, int maxRetries = 3)
+    public static void ExecuteWithRetry(Action action, int maxRetries = 3)
     {
         // Retry policy implementation for failed operations
         action();
     }
 }
 
-public class HealthChecker
+public static class HealthChecker
 {
-    public bool CheckHealth(string endpoint)
+    public static bool CheckHealth(string endpoint)
     {
         // Health checking implementation for cluster monitoring
         return true;

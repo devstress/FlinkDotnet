@@ -1,3 +1,5 @@
+using FlinkDotNet.ClusterManager.Models;
+
 namespace FlinkDotNet.Temporal.Models;
 
 /// <summary>
