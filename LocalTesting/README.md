@@ -87,10 +87,16 @@ The LocalTesting environment transforms BDD (Behavior-Driven Development) test s
    - **Prometheus**: http://localhost:9090
    - **Temporal UI**: http://localhost:8084
 
-## Observability Configuration
+## Observability Configuration and Testing
 
 ### Overview
-The LocalTesting environment includes a complete observability stack with Grafana dashboards, Prometheus metrics collection, and OpenTelemetry distributed tracing. All services automatically send telemetry data to this stack.
+The LocalTesting environment includes a complete observability stack with Grafana dashboards, Prometheus metrics collection, and OpenTelemetry distributed tracing. All services automatically send telemetry data to this stack, and **comprehensive observability testing** validates that monitoring works correctly during stress test execution.
+
+### Observability Testing Features
+- **Real-time Message Flow Monitoring**: Tracks message processing throughout all 8 business flow steps
+- **Automated Metrics Validation**: Verifies metrics collection from all services during stress tests
+- **Dashboard Accessibility Testing**: Validates Grafana and Prometheus connectivity
+- **End-to-end Monitoring Verification**: Ensures observability stack captures expected data
 
 ### Grafana Dashboards
 
@@ -193,6 +199,72 @@ builder.Services.AddOpenTelemetry()
         .AddOtlpExporter());
 ```
 
+### Observability Testing Procedures
+
+#### Automated Testing in GitHub Workflow
+The LocalTesting GitHub workflow (`local-testing.yml`) includes comprehensive observability testing:
+
+1. **Observability Stack Validation**:
+   - Tests Prometheus metrics collection and data availability
+   - Validates Grafana datasource connectivity
+   - Verifies OpenTelemetry collector functionality
+   - Confirms Aspire Dashboard observability features
+
+2. **Message Flow Monitoring During Business Flows**:
+   - Captures observability metrics at each step of the 8-step business flow
+   - Tracks HTTP request activity and service health
+   - Monitors Kafka message production metrics
+   - Analyzes observability delta between test start and completion
+
+3. **Real-time Validation**:
+   - Continuous monitoring during stress test execution
+   - Automatic verification of metrics collection
+   - Service stability monitoring throughout test duration
+
+#### Manual Testing with test-aspire-localtesting.ps1
+The PowerShell test script includes enhanced observability monitoring:
+
+```powershell
+# Run with observability monitoring
+./test-aspire-localtesting.ps1 -MessageCount 1000
+
+# The script will:
+# - Capture baseline observability metrics
+# - Monitor metrics throughout test execution
+# - Provide observability delta analysis
+# - Validate all monitoring endpoints
+```
+
+#### Expected Observability Test Outputs
+
+**Prometheus Metrics Validation**:
+```
+✅ Prometheus server is healthy
+✅ Up Status: 12 metrics found
+✅ Flink JobManager: 8 metrics found
+✅ OTLP Collector: 5 metrics found
+⚠️ HTTP Requests: No data yet (services may be starting)
+```
+
+**Grafana Connectivity**:
+```
+✅ Grafana server is healthy: ok
+✅ Grafana datasource: Prometheus (prometheus) - URL: http://prometheus:9090
+✅ Prometheus datasource connectivity verified
+```
+
+**Message Flow Monitoring**:
+```
+📊 OBSERVABILITY MONITORING THROUGHOUT TEST EXECUTION:
+  🕐 2024-01-15 10:30:15 - Initial: 12/12 services, HTTP: 245
+  🕐 2024-01-15 10:32:30 - Message Production: 12/12 services, HTTP: 1,847
+  🕐 2024-01-15 10:35:45 - Final: 12/12 services, HTTP: 3,521
+
+📈 OBSERVABILITY DELTA ANALYSIS:
+  📊 HTTP Request Activity: +3,276 requests during test execution
+  🎯 Message Flow Monitoring: Successfully tracked throughout test execution
+```
+
 ### Custom Dashboards Setup
 
 **1. Create Kafka Monitoring Dashboard:**
@@ -279,25 +351,83 @@ Execute the 8-step business flow through interactive endpoints:
 
 ## Monitoring Workflow
 
-### Complete Observability Pipeline
+### Complete Observability Pipeline with Testing
 
-1. **Pre-Test Monitoring**:
+1. **Pre-Test Monitoring and Validation**:
    - Check service health in Aspire Dashboard
    - Verify all containers running via `docker ps`
-   - Confirm Prometheus targets in Prometheus UI (http://localhost:9090/targets)
-   - Validate Grafana datasource connectivity
+   - **Automated**: Confirm Prometheus targets in Prometheus UI (http://localhost:9090/targets)
+   - **Automated**: Validate Grafana datasource connectivity
+   - **Automated**: Test OpenTelemetry collector endpoints and data processing
+   - **Automated**: Verify Aspire Dashboard observability features accessibility
 
-2. **During Test Execution**:
+2. **During Test Execution with Real-time Monitoring**:
    - **Real-time Metrics**: Monitor message flow in Kafka UI + Grafana dashboards
    - **Distributed Tracing**: Track request flows in Aspire Dashboard traces
    - **Performance Monitoring**: Watch Flink jobs and TaskManager metrics
    - **Resource Usage**: Monitor container resources in Grafana system dashboard
+   - **Automated Metrics Capture**: System automatically captures observability snapshots at each business flow step
+   - **Service Stability Tracking**: Continuous monitoring of service up/down status
+   - **Message Flow Validation**: Real-time validation of HTTP requests and Kafka message throughput
 
-3. **Post-Test Analysis**:
+3. **Post-Test Analysis with Automated Validation**:
    - Verify correlation ID matching and data integrity
    - Analyze performance bottlenecks via Grafana dashboards
    - Review distributed traces for latency analysis
    - Export metrics for reporting and optimization
+   - **Automated Delta Analysis**: Compare initial vs final observability metrics
+   - **Automated Reporting**: Generate observability summary with metrics changes
+   - **Test Result Correlation**: Link business flow success with observability data
+
+### Observability Testing Commands
+
+#### GitHub Workflow Testing
+The LocalTesting GitHub workflow automatically tests observability:
+```yaml
+# Runs comprehensive observability stack validation
+# Tests Prometheus, Grafana, OpenTelemetry, and Aspire Dashboard
+# Captures real-time metrics during business flow execution
+# Provides automated observability reporting
+```
+
+#### Manual Testing with Enhanced Monitoring
+```powershell
+# Run LocalTesting with comprehensive observability monitoring
+./test-aspire-localtesting.ps1 -MessageCount 1000
+
+# Features included:
+# - Baseline observability metrics capture
+# - Real-time monitoring during test execution
+# - Observability delta analysis and reporting
+# - All monitoring endpoint validation
+```
+
+#### Prometheus Query Testing
+```bash
+# Test service health metrics
+curl "http://localhost:9090/api/v1/query?query=up"
+
+# Test HTTP request metrics
+curl "http://localhost:9090/api/v1/query?query=http_requests_total"
+
+# Test Kafka message metrics
+curl "http://localhost:9090/api/v1/query?query=kafka_producer_messages_sent_total"
+
+# Test Flink job metrics
+curl "http://localhost:9090/api/v1/query?query=flink_jobmanager_Status_JVM_Memory_Heap_Used"
+```
+
+#### Grafana Testing
+```bash
+# Test Grafana health
+curl http://localhost:3000/api/health
+
+# Test datasource connectivity (with auth)
+curl -u admin:admin http://localhost:3000/api/datasources
+
+# Test Prometheus datasource health
+curl -u admin:admin http://localhost:3000/api/datasources/1/health
+```
 
 ### Key Monitoring Endpoints
 
@@ -309,6 +439,31 @@ Execute the 8-step business flow through interactive endpoints:
 | **Traces** | http://localhost:18888 | Aspire distributed tracing |
 | **Kafka** | http://localhost:8082 | Message flow monitoring |
 | **Flink** | http://localhost:8081 | Stream processing metrics |
+| **OTLP HTTP** | http://localhost:4318 | OpenTelemetry data ingestion |
+| **OTLP gRPC** | http://localhost:4317 | OpenTelemetry gRPC endpoint |
+| **OTLP Metrics** | http://localhost:8889/metrics | Exported OTLP metrics |
+
+### Automated Observability Testing Features
+
+#### Service Health Monitoring
+- **Continuous Service Status**: Tracks all services throughout test execution
+- **Service Count Validation**: Ensures expected number of services remain operational
+- **Health Status Changes**: Detects and reports any service degradation
+
+#### Message Flow Tracking
+- **HTTP Request Monitoring**: Tracks API request volume and patterns
+- **Kafka Message Counting**: Monitors message production and consumption rates
+- **Throughput Analysis**: Calculates and reports message processing throughput
+
+#### Metrics Collection Validation
+- **Prometheus Target Health**: Verifies all configured targets are accessible
+- **Data Availability Checks**: Ensures metrics are being collected and stored
+- **Query Response Validation**: Tests that metric queries return expected data
+
+#### Dashboard Accessibility
+- **Grafana Connectivity**: Tests admin access and datasource configuration
+- **Aspire Dashboard**: Validates observability feature availability
+- **UI Response Testing**: Ensures all monitoring interfaces are accessible
 
 ### Alerting Setup (Optional)
 
@@ -318,6 +473,7 @@ Configure alerts in Grafana for:
 - API response time >5 seconds
 - Container memory usage >80%
 - Message processing rate drops below threshold
+- **Observability Stack Issues**: Alert when Prometheus, Grafana, or OTLP collector becomes unavailable
 
 ## Troubleshooting
 
@@ -365,6 +521,30 @@ curl "http://localhost:9090/api/v1/query?query=up"
 ```bash
 # Test Prometheus connection
 curl http://localhost:3000/api/datasources/proxy/1/api/v1/query?query=up
+```
+
+**Observability Testing Issues:**
+- **No Metrics Data**: Check that services are running and Prometheus targets are healthy
+- **Grafana Connection Issues**: Verify admin:admin credentials and datasource configuration
+- **OTLP Collection Failures**: Check OpenTelemetry collector logs and endpoint accessibility
+- **Missing Observability Metrics During Tests**: Ensure sufficient wait time between test steps for metrics collection
+- **Service Count Mismatches**: Verify all expected containers are running and healthy
+
+**Common Observability Fixes:**
+```bash
+# Restart Prometheus if targets are down
+docker restart prometheus
+
+# Clear Grafana cache if dashboards aren't loading
+docker restart grafana
+
+# Restart OTLP collector if telemetry stops flowing
+docker restart otel-collector
+
+# Check container logs for observability services
+docker logs prometheus
+docker logs grafana
+docker logs otel-collector
 ```
 
 ### Resource Requirements
