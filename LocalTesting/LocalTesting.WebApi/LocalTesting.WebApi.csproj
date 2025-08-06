@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="7.2.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="9.1.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
@@ -19,11 +19,15 @@
     <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.7" />
-    <PackageReference Include="Temporalio" Version="1.1.0" />
+    <PackageReference Include="Temporalio" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Orchestra\FlinkDotNet.Orchestra.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.ClusterManager\FlinkDotNet.ClusterManager.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Temporal\FlinkDotNet.Temporal.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Resilience\FlinkDotNet.Resilience.csproj" />
   </ItemGroup>
 
 </Project>

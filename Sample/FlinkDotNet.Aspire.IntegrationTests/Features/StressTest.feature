@@ -1,14 +1,16 @@
 @stress_test @high_throughput
-Feature: Stress Test - High Throughput Message Processing
+Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration
   As a Flink.NET user
-  I want to process 1 million messages through 100 partitions with FIFO guarantees
-  So that I can validate high-throughput streaming performance
+  I want to process 1 million messages through both single clusters and multi-cluster orchestration
+  So that I can validate high-throughput streaming performance at Netflix scale
 
   Background:
     Given the Flink cluster is running
     And Redis is available for counters
     And Kafka topics are configured with 100 partitions
     And the FlinkConsumerGroup is ready
+    And the FlinkDotNet Orchestra is available for multi-cluster orchestration
+    And multiple Flink clusters are registered with the Orchestra
 
   @stress @fifo @exactly_once
   Scenario: Process 1 Million Messages with FIFO and Exactly-Once Semantics
@@ -85,3 +87,77 @@ Feature: Stress Test - High Throughput Message Processing
       | 999999     | Message content for ID 999999: Final streaming data payload processed through complete pipeline | kafka.topic=stress-output; kafka.partition=98; correlation.id=corr-999999 |
       | 1000000    | Message content for ID 1000000: Final streaming data payload processed through complete pipeline | kafka.topic=stress-output; kafka.partition=99; correlation.id=corr-1000000 |
     And the FIFO order verification should show 100% sequential order compliance
+
+  @stress @multi_cluster @orchestra @netflix_scale
+  Scenario: Multi-Cluster Job Distribution with Intelligent Placement
+    Given I have 100 Flink clusters registered with the Orchestra
+    And each cluster has different resource capacity and health status
+    When I submit 10,000 jobs using BestFit placement strategy
+    Then jobs should be distributed optimally based on cluster capacity
+    And no cluster should be overloaded beyond 80% capacity
+    And job placement should minimize resource waste
+    And all jobs should complete successfully within SLA
+    And Orchestra health aggregation should show all clusters healthy
+
+  @stress @multi_cluster @massive_scale @netflix_architecture
+  Scenario: Netflix-Scale Orchestration with 1000 Clusters
+    Given I have 1000 Flink clusters in the Orchestra
+    And clusters are distributed across multiple availability zones
+    When I submit 1,000,000 messages for processing across all clusters
+    And use LeastLoaded placement strategy for optimal distribution
+    Then all messages should be processed successfully
+    And cluster health should remain stable throughout processing
+    And system should maintain 99.999% availability
+    And no cascade failures should occur
+    And Orchestra should demonstrate auto-scaling capabilities
+
+  @stress @multi_cluster @placement_strategies
+  Scenario Outline: Test Different Job Placement Strategies Under Load
+    Given I have 50 Flink clusters with varied resource profiles
+    And clusters have different CPU, memory, and network capabilities
+    When I submit 5,000 jobs using <strategy> placement strategy
+    And apply sustained load for 10 minutes
+    Then jobs should be distributed according to <strategy> algorithm
+    And cluster utilization should be <expected_pattern>
+    And system throughput should remain stable
+    And no cluster should experience resource starvation
+
+    Examples:
+      | strategy      | expected_pattern                    |
+      | BestFit       | Optimal resource utilization       |
+      | LeastLoaded   | Even distribution across clusters  |
+      | RoundRobin    | Sequential cluster assignment       |
+      | LocalityFirst | Geographically optimized placement |
+
+  @stress @multi_cluster @actor_resilience
+  Scenario: Actor-Based Cluster Failure Recovery Under Load
+    Given I have 200 cluster actors managing individual clusters
+    And sustained processing load of 100,000 messages per minute
+    When 10% of cluster actors simulate unexpected failures
+    Then remaining actors should detect failures within 5 seconds
+    And failed clusters should be isolated to prevent cascade effects
+    And jobs should be automatically redistributed to healthy clusters
+    And overall system throughput should degrade by less than 15%
+    And failed cluster actors should recover automatically within 2 minutes
+
+  @stress @multi_cluster @temporal_workflows
+  Scenario: Long-Running Temporal Orchestration Workflows
+    Given I have multiple Temporal workflows managing cluster orchestration
+    And workflows are processing continuous job distribution requests
+    When workflows run continuously for 30 minutes
+    And handle 50,000 job distribution decisions
+    Then all workflows should maintain state consistency
+    And workflow execution should be durable across service restarts
+    And workflow performance should remain stable under load
+    And no workflow should enter deadlock or infinite retry states
+
+  @stress @multi_cluster @backpressure_coordination
+  Scenario: Multi-Cluster Backpressure Coordination at Scale
+    Given I have 300 clusters with different processing capabilities
+    And message volume exceeds total cluster capacity by 50%
+    When sustained high-volume load is applied
+    Then backpressure should be coordinated across all clusters
+    And load should be intelligently redistributed to available clusters
+    And no messages should be lost during redistribution
+    And system should maintain optimal throughput despite overload
+    And Orchestra should trigger auto-scaling for additional capacity
