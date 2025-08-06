@@ -262,9 +262,103 @@ The optimal architecture for the LocalTesting environment is a **hybrid approach
 
 This combination leverages the strengths of both systems while minimizing their respective weaknesses, providing a robust, scalable, and maintainable solution for complex event processing requirements.
 
+## Detailed Integration Patterns for .NET Developers
+
+### What Flink (and Flink.NET) Do Well
+
+**Stream transformations:** Flink is excellent at ingesting, processing, and transforming large data streams with low latency and high throughput.
+
+**Complex event processing:** It can handle stateful computations, windowing, aggregations, joins, pattern detection, etc.
+
+**With Java/Scala,** you can implement very complex logic, including custom operators, stateful functions, and async IO.
+
+**But:**
+
+- **.NET Flink connectors/adapters (like FlinkDotnet):** Typically focus on data transport, SQL job submission, or acting as a client for Flink's REST API.
+- **You can't natively run .NET code inside Flink JVM operators.** So "complex business logic in .NET" can't live *inside* the Flink dataflow unless you run it as an external service, which brings us to the next point.
+
+### When to Add Temporal in the Mix
+
+**Temporal** is an orchestration/workflow engine designed to coordinate distributed, long-running, reliable business processes, including:
+
+- Multi-step, async, or human-in-the-loop logic
+- Durable timers, retries, compensation, error handling
+- Fan-in/fan-out, saga, state machine patterns
+
+**Using Flink → Temporal → Flink (or other sinks):**
+
+- Flink ingests and processes events in real-time.
+- For simple transformations, stay in Flink.
+- For "complex logic" (multi-step, external service calls, approvals, compensating actions, retries), Flink sends the event to a Temporal workflow.
+- Temporal runs your .NET/Java/Go code (natively!) for orchestration.
+- Workflow can emit events/results back to Flink or downstream systems.
+
+### Integration Patterns & Use Cases
+
+#### **Good for Flink:**
+
+- ETL
+- Realtime analytics
+- Filtering, enrichment, stateless logic
+- Stateful pattern detection
+
+#### **Good for Temporal:**
+
+- Chained business logic across services
+- Calls to external APIs (with retries, backoff, etc.)
+- Orchestrating human/automated steps
+- Any "workflow" with compensation, rollbacks, idempotence, deadlines, etc.
+
+#### **Pattern: Flink → Temporal**
+
+- Flink Operator detects an event needing complex orchestration.
+- Publishes event (Kafka, HTTP, etc.) to trigger a Temporal workflow.
+- Temporal executes the business process, storing progress/durability.
+- Once done, emits output event (to another stream, database, or back to Flink for further processing).
+
+### How to Wire This Up in .NET
+
+- .NET Flink: use it as a data mover, to filter, pre-process, and route.
+- Temporal: run your .NET workflow code using [Temporal .NET SDK](https://docs.temporal.io/docs/dotnet/introduction).
+- Use Kafka (or any message bus) as the bridge.
+  - Flink sends events to Kafka topic.
+  - Temporal worker consumes from topic, starts workflows.
+  - Temporal workflows output to another topic, which Flink can pick up again.
+
+### Example Integration Flow
+
+```plaintext
+1. [Flink] Reads raw events, parses, basic validation.
+2. [Flink] For events needing complex business process:
+     → Produce to Kafka "complex-process" topic.
+3. [Temporal Worker, in .NET] Consumes topic, starts workflow.
+4. [Temporal Workflow] Runs multi-step process (calls APIs, waits, compensates, etc.).
+5. [Temporal Workflow] On completion/failure, produces output to another Kafka topic.
+6. [Flink] Picks up result for further streaming, reporting, etc.
+```
+
+### Integration Summary Table
+
+| Concern          | Flink        | Temporal       | Combo                    |
+| ---------------- | ------------ | -------------- | ------------------------ |
+| Realtime ingest  | ✅            | ❌              | Flink handles            |
+| Simple logic     | ✅            | ❌              | Flink handles            |
+| Complex workflow | 🚫 (in .NET) | ✅ (.NET, Java) | Flink routes to Temporal |
+| Durable steps    | 🚫           | ✅              | Temporal handles         |
+| Human/async      | 🚫           | ✅              | Temporal handles         |
+
+### TL;DR
+
+**Yes:**
+
+- If your business logic is too complex for Flink.NET (and can't run as Java inside Flink), inserting Temporal for orchestration is a **proven pattern**.
+- Flink for streaming; Temporal for orchestration and long-running, stateful, multi-step .NET logic.
+- Use a message broker (Kafka, etc.) as the glue.
+
 ## References
 
 - [Apache Flink Documentation](https://flink.apache.org/docs/)
 - [Temporal Documentation](https://docs.temporal.io/)
+- [Temporal .NET SDK](https://docs.temporal.io/docs/dotnet/introduction)
 - [Event-Driven Architecture with Temporal](https://www.kai-waehner.de/blog/2025/06/05/the-rise-of-the-durable-execution-engine-temporal-restate-in-an-event-driven-architecture-apache-kafka/amp/)
 - [Flink SQL Reference](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/dev/table/sql/overview/)
