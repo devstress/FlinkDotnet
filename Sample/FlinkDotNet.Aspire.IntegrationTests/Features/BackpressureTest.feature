@@ -1,8 +1,8 @@
 @backpressure_test @flow_control
-Feature: Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)
+Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + LinkedIn Best Practices)
   As a Flink.NET user
-  I want to implement consumer lag-based backpressure following LinkedIn's proven best practices
-  So that I can achieve reliable, scalable stream processing at production scale
+  I want to implement multi-cluster consumer lag-based backpressure following Netflix and LinkedIn best practices
+  So that I can achieve reliable, scalable stream processing at Netflix scale with intelligent cluster coordination
 
   Background:
     Given the Flink cluster is running with backpressure monitoring enabled
@@ -10,6 +10,8 @@ Feature: Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Prac
     And Consumer lag monitoring is configured with 5-second intervals
     And Dead Letter Queue (DLQ) topics are configured
     And Kafka Dashboard is available for monitoring
+    And FlinkDotNet Orchestra is configured for multi-cluster backpressure coordination
+    And multiple Flink clusters are available for load distribution
 
   @backpressure @consumer_lag @linkedin_approach
   Scenario: Consumer Lag-Based Backpressure with Dynamic Scaling (LinkedIn Best Practices)
@@ -375,3 +377,79 @@ Feature: Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Prac
       | 1000000    | Backpressure msg 1000000: Final message after complete lag-based backpressure cycle | kafka.topic=backpressure-output; consumer.lag=0; backpressure.applied=false |
     And all messages should contain backpressure-specific content and headers
     And all headers should include consumer lag and backpressure application status
+
+  @backpressure @multi_cluster @orchestra_coordination
+  Scenario: Multi-Cluster Backpressure Coordination via Orchestra
+    Given I have 50 Flink clusters registered with the Orchestra
+    And each cluster has different processing capabilities and current load
+    When message volume exceeds total cluster capacity by 30%
+    And sustained high-volume load is applied across all clusters
+    Then Orchestra should detect cluster-level backpressure conditions
+    And load should be intelligently redistributed to available clusters
+    And clusters near capacity should signal backpressure to Orchestra
+    And Orchestra should route new jobs to clusters with available capacity
+    And no messages should be lost during load redistribution
+    And system should maintain optimal overall throughput
+    And cluster isolation should prevent cascade backpressure effects
+
+  @backpressure @actor_based @cluster_isolation
+  Scenario: Actor-Based Cluster Backpressure Isolation
+    Given I have 100 cluster actors managing individual cluster backpressure
+    And each actor monitors its cluster's processing capacity independently
+    When 20 clusters experience high backpressure due to downstream bottlenecks
+    Then affected cluster actors should apply local backpressure controls
+    And unaffected cluster actors should continue normal processing
+    And no backpressure should propagate between isolated cluster actors
+    And Orchestra should detect per-cluster backpressure status
+    And job placement should avoid clusters under backpressure
+    And backpressure recovery should be independent per cluster
+    And system-wide throughput should degrade gracefully
+
+  @backpressure @intelligent_placement @capacity_aware
+  Scenario: Intelligent Job Placement Based on Cluster Capacity and Backpressure
+    Given I have clusters with varying processing capacities and current loads
+    And Orchestra has real-time visibility into cluster backpressure metrics
+    When new jobs are submitted for processing
+    Then Orchestra should evaluate cluster capacity before job placement
+    And jobs should be placed on clusters with available headroom
+    And clusters under backpressure should be avoided for new job placement
+    And placement strategy should minimize risk of additional backpressure
+    And cluster capacity utilization should remain balanced across all clusters
+    And job placement decisions should consider both current load and trend analysis
+
+  @backpressure @auto_scaling @demand_based
+  Scenario: Auto-Scaling Clusters Based on Backpressure Patterns
+    Given I have auto-scaling enabled for cluster capacity management
+    And Orchestra monitors backpressure patterns across all clusters
+    When sustained backpressure is detected across multiple clusters
+    Then Orchestra should trigger auto-scaling workflows via Temporal
+    And additional cluster capacity should be provisioned automatically
+    And new clusters should be integrated into the Orchestra seamlessly
+    And load should be redistributed to include new cluster capacity
+    And backpressure conditions should be resolved through increased capacity
+    And auto-scaling should prevent over-provisioning through intelligent thresholds
+
+  @backpressure @temporal_workflows @backpressure_orchestration
+  Scenario: Temporal Workflows for Long-Running Backpressure Management
+    Given I have Temporal workflows managing cluster backpressure orchestration
+    And workflows maintain state for backpressure patterns and resolutions
+    When complex backpressure scenarios occur requiring multi-step resolution
+    Then Temporal workflows should orchestrate the complete resolution process
+    And workflow state should be persisted throughout long-running operations
+    And workflows should coordinate between multiple clusters for load balancing
+    And workflow retry policies should handle transient backpressure spikes
+    And workflow execution should be durable across system restarts
+    And backpressure resolution should be completed reliably via workflow orchestration
+
+  @backpressure @netflix_scale @massive_cluster_coordination
+  Scenario: Netflix-Scale Backpressure Management Across 1000+ Clusters
+    Given I have 1000+ Flink clusters distributed across multiple data centers
+    And Orchestra coordinates backpressure management at massive scale
+    When global message volume creates complex backpressure patterns
+    Then backpressure coordination should scale to Netflix-level cluster counts
+    And regional backpressure patterns should be managed independently
+    And cross-region load balancing should consider backpressure status
+    And no single point of failure should exist in backpressure management
+    And backpressure resolution should complete within Netflix SLA requirements
+    And system should maintain 99.999% availability during backpressure events
+    And massive scale coordination should demonstrate sub-linear complexity growth

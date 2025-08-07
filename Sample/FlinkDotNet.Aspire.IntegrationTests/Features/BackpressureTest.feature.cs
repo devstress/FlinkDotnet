@@ -19,7 +19,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "backpressure_test")]
     [Xunit.TraitAttribute("Category", "flow_control")]
-    public partial class BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature : object, Xunit.IClassFixture<BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class BackpressureTest_Multi_ClusterConsumerLag_BasedFlowControlNetflixLinkedInBestPracticesFeature : object, Xunit.IClassFixture<BackpressureTest_Multi_ClusterConsumerLag_BasedFlowControlNetflixLinkedInBestPracticesFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -28,16 +28,18 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 "backpressure_test",
                 "flow_control"};
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)", "  As a Flink.NET user\n  I want to implement consumer lag-based backpressure follo" +
-                "wing LinkedIn\'s proven best practices\n  So that I can achieve reliable, scalable" +
-                " stream processing at production scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+                "edIn Best Practices)", "  As a Flink.NET user\n  I want to implement multi-cluster consumer lag-based back" +
+                "pressure following Netflix and LinkedIn best practices\n  So that I can achieve r" +
+                "eliable, scalable stream processing at Netflix scale with intelligent cluster co" +
+                "ordination", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
 #line 1 "BackpressureTest.feature"
 #line hidden
         
-        public BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature(BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FixtureData fixtureData, Xunit.Abstractions.ITestOutputHelper testOutputHelper)
+        public BackpressureTest_Multi_ClusterConsumerLag_BasedFlowControlNetflixLinkedInBestPracticesFeature(BackpressureTest_Multi_ClusterConsumerLag_BasedFlowControlNetflixLinkedInBestPracticesFeature.FixtureData fixtureData, Xunit.Abstractions.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -127,6 +129,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 12
     await testRunner.AndAsync("Kafka Dashboard is available for monitoring", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
+#line 13
+    await testRunner.AndAsync("FlinkDotNet Orchestra is configured for multi-cluster backpressure coordination", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 14
+    await testRunner.AndAsync("multiple Flink clusters are available for load distribution", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
         }
         
         async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
@@ -155,7 +163,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Consumer Lag-Based Backpressure with Dynamic Scaling (LinkedIn Best Practices)")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Consumer Lag-Based Backpressure with Dynamic Scaling (LinkedIn Best Practices)")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "consumer_lag")]
@@ -168,7 +177,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "linkedin_approach"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Consumer Lag-Based Backpressure with Dynamic Scaling (LinkedIn Best Practices)", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 15
+#line 17
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -181,7 +190,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 16
+#line 18
     await testRunner.GivenAsync("I have a Kafka setup with multiple clusters for different business domains", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
                 global::Reqnroll.Table table1 = new global::Reqnroll.Table(new string[] {
@@ -202,10 +211,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table1.AddRow(new string[] {
                             "MonitoringInterval",
                             "5 seconds"});
-#line 17
+#line 19
     await testRunner.AndAsync("I configure consumer lag-based backpressure following LinkedIn best practices:", ((string)(null)), table1, "And ");
 #line hidden
-#line 24
+#line 26
     await testRunner.WhenAsync("I produce 1,000,000 messages with varying consumer processing speeds", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table2 = new global::Reqnroll.Table(new string[] {
@@ -233,19 +242,19 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "5 consumers",
                             "60k msg/sec each",
                             "Catch-up processing"});
-#line 25
+#line 27
     await testRunner.AndAsync("I simulate different consumer scenarios:", ((string)(null)), table2, "And ");
 #line hidden
-#line 31
+#line 33
     await testRunner.ThenAsync("the system should monitor consumer lag continuously", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 32
+#line 34
     await testRunner.AndAsync("dynamic rebalancing should occur when lag exceeds 5000 messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 33
+#line 35
     await testRunner.AndAsync("producer quotas should throttle fast producers when lag builds up", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 34
+#line 36
     await testRunner.AndAsync("auto-scaling should add consumers when sustained lag is detected", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
                 global::Reqnroll.Table table3 = new global::Reqnroll.Table(new string[] {
@@ -263,7 +272,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table3.AddRow(new string[] {
                             "Mature operations",
                             "Established procedures for lag resolution"});
-#line 35
+#line 37
     await testRunner.AndAsync("I should observe the following advantages:", ((string)(null)), table3, "And ");
 #line hidden
                 global::Reqnroll.Table table4 = new global::Reqnroll.Table(new string[] {
@@ -281,7 +290,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table4.AddRow(new string[] {
                             "Scalability",
                             "Linear scaling with consumer additions"});
-#line 41
+#line 43
     await testRunner.AndAsync("the system should demonstrate production-ready characteristics:", ((string)(null)), table4, "And ");
 #line hidden
             }
@@ -289,7 +298,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Dashboard Monitoring and Kafka Topic Management")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Dashboard Monitoring and Kafka Topic Management")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "dashboard_monitoring")]
@@ -302,7 +312,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "kafka_management"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Dashboard Monitoring and Kafka Topic Management", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 49
+#line 51
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -315,13 +325,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 50
+#line 52
     await testRunner.GivenAsync("I have Kafka dashboards configured for consumer lag monitoring", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 51
+#line 53
     await testRunner.AndAsync("I have DLQ topics configured for failed message handling", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 52
+#line 54
     await testRunner.WhenAsync("I run consumer lag-based backpressure tests with monitoring enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table5 = new global::Reqnroll.Table(new string[] {
@@ -348,7 +358,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "DLQ Metrics",
                             "Failed message count, Retry attempts, Error patterns",
                             "Error Management"});
-#line 53
+#line 55
     await testRunner.ThenAsync("I should be able to monitor the following metrics in real-time:", ((string)(null)), table5, "Then ");
 #line hidden
                 global::Reqnroll.Table table6 = new global::Reqnroll.Table(new string[] {
@@ -375,7 +385,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Alert operators",
                             "Critical lag thresholds exceeded",
                             "Notifications sent"});
-#line 60
+#line 62
     await testRunner.AndAsync("I should be able to trigger the following management actions:", ((string)(null)), table6, "And ");
 #line hidden
                 global::Reqnroll.Table table7 = new global::Reqnroll.Table(new string[] {
@@ -408,7 +418,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "4",
                             "3",
                             "1 day"});
-#line 67
+#line 69
     await testRunner.AndAsync("I should be able to design optimal Kafka topics following LinkedIn practices:", ((string)(null)), table7, "And ");
 #line hidden
             }
@@ -416,7 +426,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="DLQ Management and Consumer Rebalancing Strategies")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "DLQ Management and Consumer Rebalancing Strategies")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "dlq_management")]
@@ -429,7 +440,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "rebalancing"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("DLQ Management and Consumer Rebalancing Strategies", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 76
+#line 78
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -462,7 +473,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Permanent failures",
                             "30 days",
                             "Manual intervention required"});
-#line 77
+#line 79
     await testRunner.GivenAsync("I have a multi-tier DLQ strategy configured:", ((string)(null)), table8, "Given ");
 #line hidden
                 global::Reqnroll.Table table9 = new global::Reqnroll.Table(new string[] {
@@ -485,7 +496,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Rebalance strategy",
                             "CooperativeSticky",
                             "Minimize partition movement"});
-#line 82
+#line 84
     await testRunner.AndAsync("I have consumer rebalancing configured with LinkedIn best practices:", ((string)(null)), table9, "And ");
 #line hidden
                 global::Reqnroll.Table table10 = new global::Reqnroll.Table(new string[] {
@@ -512,7 +523,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Processing overload",
                             "Capacity",
                             "Apply backpressure, delay processing"});
-#line 88
+#line 90
     await testRunner.WhenAsync("I simulate various failure scenarios:", ((string)(null)), table10, "When ");
 #line hidden
                 global::Reqnroll.Table table11 = new global::Reqnroll.Table(new string[] {
@@ -533,7 +544,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table11.AddRow(new string[] {
                             "Capacity management",
                             "Monitor DLQ growth and alert on capacity issues"});
-#line 95
+#line 97
     await testRunner.ThenAsync("the DLQ management should:", ((string)(null)), table11, "Then ");
 #line hidden
                 global::Reqnroll.Table table12 = new global::Reqnroll.Table(new string[] {
@@ -554,7 +565,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table12.AddRow(new string[] {
                             "Load distribution",
                             "Ensure even partition distribution after rebalancing"});
-#line 102
+#line 104
     await testRunner.AndAsync("consumer rebalancing should:", ((string)(null)), table12, "And ");
 #line hidden
             }
@@ -562,7 +573,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Network-Bound Consumer Bottleneck Handling (SFTP/FTP/HTTP)")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Network-Bound Consumer Bottleneck Handling (SFTP/FTP/HTTP)")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "network_bottlenecks")]
@@ -575,7 +587,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "external_services"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Network-Bound Consumer Bottleneck Handling (SFTP/FTP/HTTP)", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 111
+#line 113
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -612,7 +624,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "15 seconds",
                             "3 failures in 30s opens for 120s",
                             "2 concurrent"});
-#line 112
+#line 114
     await testRunner.GivenAsync("I have external service dependencies configured:", ((string)(null)), table13, "Given ");
 #line hidden
                 global::Reqnroll.Table table14 = new global::Reqnroll.Table(new string[] {
@@ -635,7 +647,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "50 messages",
                             "40 messages",
                             "Apply backpressure to consumer"});
-#line 117
+#line 119
     await testRunner.AndAsync("I have ordered processing queues configured per partition:", ((string)(null)), table14, "And ");
 #line hidden
                 global::Reqnroll.Table table15 = new global::Reqnroll.Table(new string[] {
@@ -668,7 +680,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "SFTP slow, HTTP down",
                             "1000 msg/sec",
                             "Independent bulkhead isolation"});
-#line 122
+#line 124
     await testRunner.WhenAsync("I simulate consumer scenarios with external service bottlenecks:", ((string)(null)), table15, "When ");
 #line hidden
                 global::Reqnroll.Table table16 = new global::Reqnroll.Table(new string[] {
@@ -692,7 +704,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table16.AddRow(new string[] {
                             "Fallback handling",
                             "Route failed messages to appropriate DLQ tier"});
-#line 129
+#line 131
     await testRunner.ThenAsync("the network-bound backpressure should:", ((string)(null)), table16, "Then ");
 #line hidden
                 global::Reqnroll.Table table17 = new global::Reqnroll.Table(new string[] {
@@ -715,7 +727,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Order preservation",
                             "100% within partition",
                             "No message reordering within partition"});
-#line 137
+#line 139
     await testRunner.AndAsync("the system should maintain processing characteristics:", ((string)(null)), table17, "And ");
 #line hidden
             }
@@ -723,7 +735,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Rate Limiting with Finite Partition and Cluster Resources")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Rate Limiting with Finite Partition and Cluster Resources")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "rate_limiting")]
@@ -736,7 +749,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "finite_resources"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Rate Limiting with Finite Partition and Cluster Resources", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 145
+#line 147
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -774,7 +787,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "10 Gbps",
                             "1 Gbps max",
                             "QoS-based allocation"});
-#line 146
+#line 148
     await testRunner.GivenAsync("I have finite resource constraints configured:", ((string)(null)), table18, "Given ");
 #line hidden
                 global::Reqnroll.Table table19 = new global::Reqnroll.Table(new string[] {
@@ -807,7 +820,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "10K msg/sec",
                             "15K msg/sec for 2s",
                             "Circuit breaker"});
-#line 152
+#line 154
     await testRunner.AndAsync("I have multi-tier rate limiting configured:", ((string)(null)), table19, "And ");
 #line hidden
                 global::Reqnroll.Table table20 = new global::Reqnroll.Table(new string[] {
@@ -840,7 +853,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "50% consumers crash",
                             "N/A",
                             "Automatic rebalancing and rate adjustment"});
-#line 158
+#line 160
     await testRunner.WhenAsync("I simulate load scenarios with resource constraints:", ((string)(null)), table20, "When ");
 #line hidden
                 global::Reqnroll.Table table21 = new global::Reqnroll.Table(new string[] {
@@ -868,7 +881,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "New consumers join",
                             "Recalculate rate limits",
                             "Redistribute partitions"});
-#line 165
+#line 167
     await testRunner.AndAsync("I have adaptive rate limiting configured with rebalancing integration:", ((string)(null)), table21, "And ");
 #line hidden
                 global::Reqnroll.Table table22 = new global::Reqnroll.Table(new string[] {
@@ -892,7 +905,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table22.AddRow(new string[] {
                             "Fair allocation",
                             "Resources distributed fairly among equal-priority consumers"});
-#line 171
+#line 173
     await testRunner.ThenAsync("the rate limiting should demonstrate:", ((string)(null)), table22, "Then ");
 #line hidden
                 global::Reqnroll.Table table23 = new global::Reqnroll.Table(new string[] {
@@ -913,7 +926,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table23.AddRow(new string[] {
                             "System stability",
                             "No resource starvation or cascading failures"});
-#line 179
+#line 181
     await testRunner.AndAsync("the finite resource management should achieve:", ((string)(null)), table23, "And ");
 #line hidden
             }
@@ -921,7 +934,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Complete Backpressure Integration Test with World-Class Best Practices")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Complete Backpressure Integration Test with World-Class Best Practices")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "integration_test")]
@@ -934,7 +948,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "production_ready"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Complete Backpressure Integration Test with World-Class Best Practices", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 188
+#line 190
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -971,7 +985,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Monitoring",
                             "Real-time dashboards",
                             "Google SRE observability"});
-#line 189
+#line 191
     await testRunner.GivenAsync("I have a production-ready backpressure system configured with:", ((string)(null)), table24, "Given ");
 #line hidden
                 global::Reqnroll.Table table25 = new global::Reqnroll.Table(new string[] {
@@ -994,7 +1008,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "File system",
                             "10ms average, disk I/O bound",
                             "Disk full, permission errors"});
-#line 196
+#line 198
     await testRunner.AndAsync("I have external dependencies that represent real-world bottlenecks:", ((string)(null)), table25, "And ");
 #line hidden
                 global::Reqnroll.Table table26 = new global::Reqnroll.Table(new string[] {
@@ -1033,7 +1047,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "100K msg/sec",
                             "Services recover",
                             "Quick return to normal"});
-#line 202
+#line 204
     await testRunner.WhenAsync("I execute a comprehensive load test simulating production conditions:", ((string)(null)), table26, "When ");
 #line hidden
                 global::Reqnroll.Table table27 = new global::Reqnroll.Table(new string[] {
@@ -1060,7 +1074,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Industry latency",
                             "<150ms p99",
                             "End-to-end processing"});
-#line 209
+#line 211
     await testRunner.ThenAsync("the integrated backpressure system should achieve world-class standards:", ((string)(null)), table27, "Then ");
 #line hidden
                 global::Reqnroll.Table table28 = new global::Reqnroll.Table(new string[] {
@@ -1091,7 +1105,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Production readiness",
                             "Industry standards",
                             "Full integration testing"});
-#line 216
+#line 218
     await testRunner.AndAsync("the system should demonstrate comprehensive coverage:", ((string)(null)), table28, "And ");
 #line hidden
             }
@@ -1099,7 +1113,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Token-Based HTTP Workflow with Endpoint Failure Recovery")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Token-Based HTTP Workflow with Endpoint Failure Recovery")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "token_workflow")]
@@ -1112,7 +1127,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "http_endpoint_failure"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Token-Based HTTP Workflow with Endpoint Failure Recovery", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 226
+#line 228
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1145,7 +1160,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Backpressure Monitor",
                             "Credit-based flow control",
                             "Monitor and control request flow"});
-#line 227
+#line 229
     await testRunner.GivenAsync("I have a token-based HTTP workflow configured with:", ((string)(null)), table29, "Given ");
 #line hidden
                 global::Reqnroll.Table table30 = new global::Reqnroll.Table(new string[] {
@@ -1164,7 +1179,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Secured Endpoint Requests",
                             "10 concurrent",
                             "Rate limiter"});
-#line 233
+#line 235
     await testRunner.AndAsync("I have concurrency constraints configured:", ((string)(null)), table30, "And ");
 #line hidden
                 global::Reqnroll.Table table31 = new global::Reqnroll.Table(new string[] {
@@ -1199,7 +1214,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "7. Resume",
                             "System detects recovery and resumes processing",
                             "Normal flow restored"});
-#line 238
+#line 240
     await testRunner.WhenAsync("I submit a dotnet job to Flink.net that:", ((string)(null)), table31, "When ");
 #line hidden
                 global::Reqnroll.Table table32 = new global::Reqnroll.Table(new string[] {
@@ -1226,7 +1241,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Recovery detection",
                             "System automatically resumes when endpoint recovers",
                             "Verify automatic flow restoration"});
-#line 247
+#line 249
     await testRunner.ThenAsync("the token-based workflow should demonstrate proper backpressure handling:", ((string)(null)), table32, "Then ");
 #line hidden
                 global::Reqnroll.Table table33 = new global::Reqnroll.Table(new string[] {
@@ -1249,7 +1264,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "State recovery",
                             "Proper state restoration after endpoint recovery",
                             "Verify processing continuation"});
-#line 254
+#line 256
     await testRunner.AndAsync("the system should maintain data consistency:", ((string)(null)), table33, "And ");
 #line hidden
                 global::Reqnroll.Table table34 = new global::Reqnroll.Table(new string[] {
@@ -1276,7 +1291,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Flink.NET job processing",
                             "Applies backpressure to input streams",
                             "Resumes normal processing throughput"});
-#line 260
+#line 262
     await testRunner.AndAsync("I should observe the following architecture behavior:", ((string)(null)), table34, "And ");
 #line hidden
             }
@@ -1284,7 +1299,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Kafka Partitioning Strategy Analysis - Standard vs Million-Plus Partitions")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Kafka Partitioning Strategy Analysis - Standard vs Million-Plus Partitions")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "partition_strategy")]
@@ -1297,7 +1313,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "space_vs_time"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Kafka Partitioning Strategy Analysis - Standard vs Million-Plus Partitions", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 269
+#line 271
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1310,7 +1326,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 270
+#line 272
     await testRunner.GivenAsync("I have standard partitioning configured with 128 partitions per topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
                 global::Reqnroll.Table table35 = new global::Reqnroll.Table(new string[] {
@@ -1338,10 +1354,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "50,000",
                             "CircuitBreaker",
                             "Per-IP protection"});
-#line 271
+#line 273
     await testRunner.AndAsync("I have quota enforcement configured at multiple levels:", ((string)(null)), table35, "And ");
 #line hidden
-#line 277
+#line 279
     await testRunner.WhenAsync("I validate space versus time trade-offs for partition strategies", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table36 = new global::Reqnroll.Table(new string[] {
@@ -1362,7 +1378,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table36.AddRow(new string[] {
                             "Dynamic scaling",
                             "Consumer lag monitoring triggers automatic rebalancing within 30 seconds"});
-#line 278
+#line 280
     await testRunner.ThenAsync("standard partitioning should demonstrate these advantages:", ((string)(null)), table36, "Then ");
 #line hidden
                 global::Reqnroll.Table table37 = new global::Reqnroll.Table(new string[] {
@@ -1377,7 +1393,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table37.AddRow(new string[] {
                             "Short-term noisy neighbor impact",
                             "Burst traffic can temporarily impact other logical queues before mitigation"});
-#line 285
+#line 287
     await testRunner.AndAsync("standard partitioning should have these limitations:", ((string)(null)), table37, "And ");
 #line hidden
                 global::Reqnroll.Table table38 = new global::Reqnroll.Table(new string[] {
@@ -1400,7 +1416,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "IP",
                             "50,000",
                             "Circuit breaker prevents abuse"});
-#line 290
+#line 292
     await testRunner.AndAsync("I should observe quota enforcement at these levels:", ((string)(null)), table38, "And ");
 #line hidden
             }
@@ -1408,7 +1424,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Million-Plus Partition Strategy Analysis (Not Recommended for Production)")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Million-Plus Partition Strategy Analysis (Not Recommended for Production)")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "million_partitions")]
@@ -1423,7 +1440,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "not_recommended"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Million-Plus Partition Strategy Analysis (Not Recommended for Production)", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 298
+#line 300
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1436,7 +1453,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 299
+#line 301
     await testRunner.GivenAsync("I have million-plus partitioning configured with 1,000,000 partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
                 global::Reqnroll.Table table39 = new global::Reqnroll.Table(new string[] {
@@ -1454,16 +1471,16 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table39.AddRow(new string[] {
                             "Cluster limits",
                             "LinkedIn/Confluent recommend <300K partitions per cluster"});
-#line 300
+#line 302
     await testRunner.AndAsync("I acknowledge this approach is not recommended for production due to:", ((string)(null)), table39, "And ");
 #line hidden
-#line 306
+#line 308
     await testRunner.WhenAsync("I validate space versus time trade-offs for partition strategies", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 307
+#line 309
     await testRunner.ThenAsync("million-plus partitioning should show noisy neighbor isolation", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 308
+#line 310
     await testRunner.AndAsync("million-plus partitioning should demonstrate resource inefficiency", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
                 global::Reqnroll.Table table40 = new global::Reqnroll.Table(new string[] {
@@ -1501,7 +1518,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Excellent",
                             "Poor",
                             "Standard"});
-#line 309
+#line 311
     await testRunner.AndAsync("the analysis should show:", ((string)(null)), table40, "And ");
 #line hidden
             }
@@ -1509,7 +1526,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Production Partitioning Strategy Recommendation")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Production Partitioning Strategy Recommendation")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "production_recommendation")]
@@ -1522,7 +1540,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "world_class_practices"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Production Partitioning Strategy Recommendation", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 319
+#line 321
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1535,7 +1553,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 320
+#line 322
     await testRunner.GivenAsync("I am designing a production Kafka system following world-class practices", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
                 global::Reqnroll.Table table41 = new global::Reqnroll.Table(new string[] {
@@ -1556,7 +1574,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "One",
                             "10x+",
                             "Extremely High"});
-#line 321
+#line 323
     await testRunner.AndAsync("I need to choose between partitioning strategies:", ((string)(null)), table41, "And ");
 #line hidden
                 global::Reqnroll.Table table42 = new global::Reqnroll.Table(new string[] {
@@ -1594,7 +1612,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "10%",
                             "9.5/10",
                             "2.0/10"});
-#line 325
+#line 327
     await testRunner.WhenAsync("I evaluate the strategies against production requirements:", ((string)(null)), table42, "When ");
 #line hidden
                 global::Reqnroll.Table table43 = new global::Reqnroll.Table(new string[] {
@@ -1615,7 +1633,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table43.AddRow(new string[] {
                             "Apply LinkedIn/Confluent best practices",
                             "Proven patterns from world-class deployments"});
-#line 333
+#line 335
     await testRunner.ThenAsync("the analysis should recommend standard partitioning with:", ((string)(null)), table43, "Then ");
 #line hidden
                 global::Reqnroll.Table table44 = new global::Reqnroll.Table(new string[] {
@@ -1630,7 +1648,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table44.AddRow(new string[] {
                             "Custom tooling ecosystem",
                             "Built entirely custom monitoring/management tools"});
-#line 340
+#line 342
     await testRunner.AndAsync("I should avoid million-plus partitioning unless:", ((string)(null)), table44, "And ");
 #line hidden
             }
@@ -1638,7 +1656,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Verify Top 10 and Last 10 Messages with Content and Headers - Backpressure Test")]
-        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Consumer Lag-Based Flow Control (LinkedIn Best Practices)")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
         [Xunit.TraitAttribute("Description", "Verify Top 10 and Last 10 Messages with Content and Headers - Backpressure Test")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "message_verification")]
@@ -1651,7 +1670,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "content_headers"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verify Top 10 and Last 10 Messages with Content and Headers - Backpressure Test", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 347
+#line 349
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1664,13 +1683,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 348
+#line 350
     await testRunner.GivenAsync("I have processed 1,000,000 messages through the backpressure pipeline", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 349
+#line 351
     await testRunner.AndAsync("all messages have been successfully handled with consumer lag-based backpressure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 350
+#line 352
     await testRunner.WhenAsync("I retrieve the first 10 processed messages from the output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table45 = new global::Reqnroll.Table(new string[] {
@@ -1717,10 +1736,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "10",
                             "Backpressure msg 10: Consumer lag-based flow control applied successfully",
                             "kafka.topic=backpressure-input; consumer.lag=800; backpressure.applied=true"});
-#line 351
+#line 353
     await testRunner.ThenAsync("I can display the top 10 first processed backpressure messages table:", ((string)(null)), table45, "Then ");
 #line hidden
-#line 363
+#line 365
     await testRunner.WhenAsync("I retrieve the last 10 processed messages from the output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table46 = new global::Reqnroll.Table(new string[] {
@@ -1777,14 +1796,380 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Backpressure msg 1000000: Final message after complete lag-based backpressure cyc" +
                                 "le",
                             "kafka.topic=backpressure-output; consumer.lag=0; backpressure.applied=false"});
-#line 364
+#line 366
     await testRunner.ThenAsync("I can display the top 10 last processed backpressure messages table:", ((string)(null)), table46, "Then ");
 #line hidden
-#line 376
+#line 378
     await testRunner.AndAsync("all messages should contain backpressure-specific content and headers", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 377
+#line 379
     await testRunner.AndAsync("all headers should include consumer lag and backpressure application status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Multi-Cluster Backpressure Coordination via Orchestra")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
+        [Xunit.TraitAttribute("Description", "Multi-Cluster Backpressure Coordination via Orchestra")]
+        [Xunit.TraitAttribute("Category", "backpressure")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "orchestra_coordination")]
+        public async global::System.Threading.Tasks.Task Multi_ClusterBackpressureCoordinationViaOrchestra()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "backpressure",
+                    "multi_cluster",
+                    "orchestra_coordination"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-Cluster Backpressure Coordination via Orchestra", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 382
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 383
+    await testRunner.GivenAsync("I have 50 Flink clusters registered with the Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 384
+    await testRunner.AndAsync("each cluster has different processing capabilities and current load", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 385
+    await testRunner.WhenAsync("message volume exceeds total cluster capacity by 30%", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 386
+    await testRunner.AndAsync("sustained high-volume load is applied across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 387
+    await testRunner.ThenAsync("Orchestra should detect cluster-level backpressure conditions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 388
+    await testRunner.AndAsync("load should be intelligently redistributed to available clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 389
+    await testRunner.AndAsync("clusters near capacity should signal backpressure to Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 390
+    await testRunner.AndAsync("Orchestra should route new jobs to clusters with available capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 391
+    await testRunner.AndAsync("no messages should be lost during load redistribution", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 392
+    await testRunner.AndAsync("system should maintain optimal overall throughput", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 393
+    await testRunner.AndAsync("cluster isolation should prevent cascade backpressure effects", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Actor-Based Cluster Backpressure Isolation")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
+        [Xunit.TraitAttribute("Description", "Actor-Based Cluster Backpressure Isolation")]
+        [Xunit.TraitAttribute("Category", "backpressure")]
+        [Xunit.TraitAttribute("Category", "actor_based")]
+        [Xunit.TraitAttribute("Category", "cluster_isolation")]
+        public async global::System.Threading.Tasks.Task Actor_BasedClusterBackpressureIsolation()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "backpressure",
+                    "actor_based",
+                    "cluster_isolation"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Actor-Based Cluster Backpressure Isolation", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 396
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 397
+    await testRunner.GivenAsync("I have 100 cluster actors managing individual cluster backpressure", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 398
+    await testRunner.AndAsync("each actor monitors its cluster\'s processing capacity independently", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 399
+    await testRunner.WhenAsync("20 clusters experience high backpressure due to downstream bottlenecks", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 400
+    await testRunner.ThenAsync("affected cluster actors should apply local backpressure controls", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 401
+    await testRunner.AndAsync("unaffected cluster actors should continue normal processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 402
+    await testRunner.AndAsync("no backpressure should propagate between isolated cluster actors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 403
+    await testRunner.AndAsync("Orchestra should detect per-cluster backpressure status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 404
+    await testRunner.AndAsync("job placement should avoid clusters under backpressure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 405
+    await testRunner.AndAsync("backpressure recovery should be independent per cluster", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 406
+    await testRunner.AndAsync("system-wide throughput should degrade gracefully", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Intelligent Job Placement Based on Cluster Capacity and Backpressure")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
+        [Xunit.TraitAttribute("Description", "Intelligent Job Placement Based on Cluster Capacity and Backpressure")]
+        [Xunit.TraitAttribute("Category", "backpressure")]
+        [Xunit.TraitAttribute("Category", "intelligent_placement")]
+        [Xunit.TraitAttribute("Category", "capacity_aware")]
+        public async global::System.Threading.Tasks.Task IntelligentJobPlacementBasedOnClusterCapacityAndBackpressure()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "backpressure",
+                    "intelligent_placement",
+                    "capacity_aware"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Intelligent Job Placement Based on Cluster Capacity and Backpressure", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 409
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 410
+    await testRunner.GivenAsync("I have clusters with varying processing capacities and current loads", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 411
+    await testRunner.AndAsync("Orchestra has real-time visibility into cluster backpressure metrics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 412
+    await testRunner.WhenAsync("new jobs are submitted for processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 413
+    await testRunner.ThenAsync("Orchestra should evaluate cluster capacity before job placement", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 414
+    await testRunner.AndAsync("jobs should be placed on clusters with available headroom", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 415
+    await testRunner.AndAsync("clusters under backpressure should be avoided for new job placement", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 416
+    await testRunner.AndAsync("placement strategy should minimize risk of additional backpressure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 417
+    await testRunner.AndAsync("cluster capacity utilization should remain balanced across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 418
+    await testRunner.AndAsync("job placement decisions should consider both current load and trend analysis", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Auto-Scaling Clusters Based on Backpressure Patterns")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
+        [Xunit.TraitAttribute("Description", "Auto-Scaling Clusters Based on Backpressure Patterns")]
+        [Xunit.TraitAttribute("Category", "backpressure")]
+        [Xunit.TraitAttribute("Category", "auto_scaling")]
+        [Xunit.TraitAttribute("Category", "demand_based")]
+        public async global::System.Threading.Tasks.Task Auto_ScalingClustersBasedOnBackpressurePatterns()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "backpressure",
+                    "auto_scaling",
+                    "demand_based"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Auto-Scaling Clusters Based on Backpressure Patterns", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 421
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 422
+    await testRunner.GivenAsync("I have auto-scaling enabled for cluster capacity management", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 423
+    await testRunner.AndAsync("Orchestra monitors backpressure patterns across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 424
+    await testRunner.WhenAsync("sustained backpressure is detected across multiple clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 425
+    await testRunner.ThenAsync("Orchestra should trigger auto-scaling workflows via Temporal", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 426
+    await testRunner.AndAsync("additional cluster capacity should be provisioned automatically", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 427
+    await testRunner.AndAsync("new clusters should be integrated into the Orchestra seamlessly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 428
+    await testRunner.AndAsync("load should be redistributed to include new cluster capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 429
+    await testRunner.AndAsync("backpressure conditions should be resolved through increased capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 430
+    await testRunner.AndAsync("auto-scaling should prevent over-provisioning through intelligent thresholds", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Temporal Workflows for Long-Running Backpressure Management")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
+        [Xunit.TraitAttribute("Description", "Temporal Workflows for Long-Running Backpressure Management")]
+        [Xunit.TraitAttribute("Category", "backpressure")]
+        [Xunit.TraitAttribute("Category", "temporal_workflows")]
+        [Xunit.TraitAttribute("Category", "backpressure_orchestration")]
+        public async global::System.Threading.Tasks.Task TemporalWorkflowsForLong_RunningBackpressureManagement()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "backpressure",
+                    "temporal_workflows",
+                    "backpressure_orchestration"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Temporal Workflows for Long-Running Backpressure Management", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 433
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 434
+    await testRunner.GivenAsync("I have Temporal workflows managing cluster backpressure orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 435
+    await testRunner.AndAsync("workflows maintain state for backpressure patterns and resolutions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 436
+    await testRunner.WhenAsync("complex backpressure scenarios occur requiring multi-step resolution", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 437
+    await testRunner.ThenAsync("Temporal workflows should orchestrate the complete resolution process", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 438
+    await testRunner.AndAsync("workflow state should be persisted throughout long-running operations", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 439
+    await testRunner.AndAsync("workflows should coordinate between multiple clusters for load balancing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 440
+    await testRunner.AndAsync("workflow retry policies should handle transient backpressure spikes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 441
+    await testRunner.AndAsync("workflow execution should be durable across system restarts", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 442
+    await testRunner.AndAsync("backpressure resolution should be completed reliably via workflow orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Netflix-Scale Backpressure Management Across 1000+ Clusters")]
+        [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + Link" +
+            "edIn Best Practices)")]
+        [Xunit.TraitAttribute("Description", "Netflix-Scale Backpressure Management Across 1000+ Clusters")]
+        [Xunit.TraitAttribute("Category", "backpressure")]
+        [Xunit.TraitAttribute("Category", "netflix_scale")]
+        [Xunit.TraitAttribute("Category", "massive_cluster_coordination")]
+        public async global::System.Threading.Tasks.Task Netflix_ScaleBackpressureManagementAcross1000Clusters()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "backpressure",
+                    "netflix_scale",
+                    "massive_cluster_coordination"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Netflix-Scale Backpressure Management Across 1000+ Clusters", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 445
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 446
+    await testRunner.GivenAsync("I have 1000+ Flink clusters distributed across multiple data centers", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 447
+    await testRunner.AndAsync("Orchestra coordinates backpressure management at massive scale", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 448
+    await testRunner.WhenAsync("global message volume creates complex backpressure patterns", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 449
+    await testRunner.ThenAsync("backpressure coordination should scale to Netflix-level cluster counts", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 450
+    await testRunner.AndAsync("regional backpressure patterns should be managed independently", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 451
+    await testRunner.AndAsync("cross-region load balancing should consider backpressure status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 452
+    await testRunner.AndAsync("no single point of failure should exist in backpressure management", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 453
+    await testRunner.AndAsync("backpressure resolution should complete within Netflix SLA requirements", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 454
+    await testRunner.AndAsync("system should maintain 99.999% availability during backpressure events", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 455
+    await testRunner.AndAsync("massive scale coordination should demonstrate sub-linear complexity growth", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -1797,12 +2182,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             
             async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FeatureSetupAsync();
+                await BackpressureTest_Multi_ClusterConsumerLag_BasedFlowControlNetflixLinkedInBestPracticesFeature.FeatureSetupAsync();
             }
             
             async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
             {
-                await BackpressureTest_ConsumerLag_BasedFlowControlLinkedInBestPracticesFeature.FeatureTearDownAsync();
+                await BackpressureTest_Multi_ClusterConsumerLag_BasedFlowControlNetflixLinkedInBestPracticesFeature.FeatureTearDownAsync();
             }
         }
     }

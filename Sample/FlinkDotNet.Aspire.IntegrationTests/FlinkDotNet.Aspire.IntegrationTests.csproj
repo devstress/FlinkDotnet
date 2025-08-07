@@ -43,6 +43,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Orchestra\FlinkDotNet.Orchestra.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.ClusterManager\FlinkDotNet.ClusterManager.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Temporal\FlinkDotNet.Temporal.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Resilience\FlinkDotNet.Resilience.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
