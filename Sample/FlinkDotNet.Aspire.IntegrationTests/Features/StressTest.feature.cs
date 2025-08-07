@@ -19,7 +19,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "stress_test")]
     [Xunit.TraitAttribute("Category", "high_throughput")]
-    public partial class StressTest_HighThroughputMessageProcessingFeature : object, Xunit.IClassFixture<StressTest_HighThroughputMessageProcessingFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class StressTest_HighThroughputMessageProcessingWithMulti_ClusterOrchestrationFeature : object, Xunit.IClassFixture<StressTest_HighThroughputMessageProcessingWithMulti_ClusterOrchestrationFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -28,16 +28,17 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 "stress_test",
                 "high_throughput"};
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing", "  As a Flink.NET user\n  I want to process 1 million messages through 100 partitio" +
-                "ns with FIFO guarantees\n  So that I can validate high-throughput streaming perfo" +
-                "rmance", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+                "", "  As a Flink.NET user\n  I want to process 1 million messages through both single " +
+                "clusters and multi-cluster orchestration\n  So that I can validate high-throughpu" +
+                "t streaming performance at Netflix scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
 #line 1 "StressTest.feature"
 #line hidden
         
-        public StressTest_HighThroughputMessageProcessingFeature(StressTest_HighThroughputMessageProcessingFeature.FixtureData fixtureData, Xunit.Abstractions.ITestOutputHelper testOutputHelper)
+        public StressTest_HighThroughputMessageProcessingWithMulti_ClusterOrchestrationFeature(StressTest_HighThroughputMessageProcessingWithMulti_ClusterOrchestrationFeature.FixtureData fixtureData, Xunit.Abstractions.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -124,6 +125,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 11
     await testRunner.AndAsync("the FlinkConsumerGroup is ready", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
+#line 12
+    await testRunner.AndAsync("the FlinkDotNet Orchestra is available for multi-cluster orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 13
+    await testRunner.AndAsync("multiple Flink clusters are registered with the Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
         }
         
         async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
@@ -152,7 +159,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Process 1 Million Messages with FIFO and Exactly-Once Semantics")]
-        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
         [Xunit.TraitAttribute("Description", "Process 1 Million Messages with FIFO and Exactly-Once Semantics")]
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "fifo")]
@@ -165,7 +173,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "exactly_once"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Process 1 Million Messages with FIFO and Exactly-Once Semantics", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 14
+#line 16
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -178,16 +186,16 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 15
+#line 17
     await testRunner.GivenAsync("I have a Kafka input topic \"stress-input\" with 100 partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 16
+#line 18
     await testRunner.AndAsync("I have a Kafka output topic \"stress-output\" with 100 partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 17
+#line 19
     await testRunner.AndAsync("Redis counters are initialized", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 18
+#line 20
     await testRunner.WhenAsync("I produce 1,000,000 messages to the input topic across all partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table56 = new global::Reqnroll.Table(new string[] {
@@ -214,25 +222,25 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "5",
                             "KafkaSink",
                             "topic=stress-output, partitions=100"});
-#line 19
+#line 21
     await testRunner.AndAsync("I start the Flink streaming job with the following pipeline:", ((string)(null)), table56, "And ");
 #line hidden
-#line 26
+#line 28
     await testRunner.ThenAsync("all 1,000,000 messages should be processed successfully", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 27
+#line 29
     await testRunner.AndAsync("all messages should maintain FIFO order within each partition", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 28
+#line 30
     await testRunner.AndAsync("each message should have exactly one Redis counter appended", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 29
+#line 31
     await testRunner.AndAsync("all output messages should be distributed across 100 output partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 30
+#line 32
     await testRunner.AndAsync("no messages should be duplicated or lost", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 31
+#line 33
     await testRunner.AndAsync("the processing should complete within 30 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -240,7 +248,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Validate High-Throughput Performance Metrics")]
-        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
         [Xunit.TraitAttribute("Description", "Validate High-Throughput Performance Metrics")]
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "throughput")]
@@ -253,7 +262,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "performance"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Validate High-Throughput Performance Metrics", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 34
+#line 36
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -266,25 +275,25 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 35
+#line 37
     await testRunner.GivenAsync("I have the stress test pipeline configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 36
+#line 38
     await testRunner.WhenAsync("I process 1,000,000 messages through the pipeline", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 37
+#line 39
     await testRunner.ThenAsync("the throughput should be at least 1,000 messages per second", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 38
+#line 40
     await testRunner.AndAsync("the end-to-end latency should be less than 10 seconds per message batch", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 39
+#line 41
     await testRunner.AndAsync("memory usage should remain stable throughout processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 40
+#line 42
     await testRunner.AndAsync("CPU utilization should not exceed 80% sustained", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 41
+#line 43
     await testRunner.AndAsync("Redis counter operations should complete within 50ms per message", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -292,7 +301,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Verify Equal Distribution Across Partitions")]
-        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
         [Xunit.TraitAttribute("Description", "Verify Equal Distribution Across Partitions")]
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "partition_distribution")]
@@ -303,7 +313,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "partition_distribution"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verify Equal Distribution Across Partitions", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 44
+#line 46
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -316,25 +326,25 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 45
+#line 47
     await testRunner.GivenAsync("I have 100 input partitions and 100 output partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 46
+#line 48
     await testRunner.WhenAsync("I produce 1,000,000 messages evenly distributed across input partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 47
+#line 49
     await testRunner.AndAsync("the Flink job processes all messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 48
+#line 50
     await testRunner.ThenAsync("each input partition should receive approximately 10,000 messages (±5%)", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 49
+#line 51
     await testRunner.AndAsync("each output partition should receive approximately 10,000 messages (±5%)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 50
+#line 52
     await testRunner.AndAsync("message distribution should be balanced across all partitions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 51
+#line 53
     await testRunner.AndAsync("no partition should be empty or significantly over/under utilized", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -342,7 +352,8 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Concrete FIFO Message Processing with Data Verification")]
-        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
         [Xunit.TraitAttribute("Description", "Concrete FIFO Message Processing with Data Verification")]
         [Xunit.TraitAttribute("Category", "stress")]
         [Xunit.TraitAttribute("Category", "concrete_fifo_verification")]
@@ -355,7 +366,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "message_verification"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Concrete FIFO Message Processing with Data Verification", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 54
+#line 56
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -368,29 +379,29 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 55
+#line 57
     await testRunner.GivenAsync("I produce 1,000,000 messages with sequential IDs to the input topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 56
+#line 58
     await testRunner.ThenAsync("I should see 1,000,000 messages in Kafka input topic \"stress-input\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 57
+#line 59
     await testRunner.AndAsync("I can verify the first 10 messages have IDs: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 58
+#line 60
     await testRunner.AndAsync("I can verify the last 10 messages have IDs: 999991, 999992, 999993, 999994, 99999" +
                         "5, 999996, 999997, 999998, 999999, 1000000", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 59
+#line 61
     await testRunner.WhenAsync("I submit the Flink job for FIFO processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 60
+#line 62
     await testRunner.AndAsync("I wait for the job to process all messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 61
+#line 63
     await testRunner.ThenAsync("I should see 1,000,000 messages processed with FIFO order maintained", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 62
+#line 64
     await testRunner.AndAsync("the output topic should contain messages in the same sequential order", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
                 global::Reqnroll.Table table57 = new global::Reqnroll.Table(new string[] {
@@ -447,7 +458,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Message content for ID 10: Sample streaming data payload with business logic appl" +
                                 "ied",
                             "kafka.topic=stress-input; kafka.partition=9; correlation.id=corr-000010"});
-#line 63
+#line 65
     await testRunner.AndAsync("I can display the top 10 first processed stress messages table:", ((string)(null)), table57, "And ");
 #line hidden
                 global::Reqnroll.Table table58 = new global::Reqnroll.Table(new string[] {
@@ -504,11 +515,365 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Message content for ID 1000000: Final streaming data payload processed through co" +
                                 "mplete pipeline",
                             "kafka.topic=stress-output; kafka.partition=99; correlation.id=corr-1000000"});
-#line 75
+#line 77
     await testRunner.AndAsync("I can display the top 10 last processed stress messages table:", ((string)(null)), table58, "And ");
 #line hidden
-#line 87
+#line 89
     await testRunner.AndAsync("the FIFO order verification should show 100% sequential order compliance", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Multi-Cluster Job Distribution with Intelligent Placement")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
+        [Xunit.TraitAttribute("Description", "Multi-Cluster Job Distribution with Intelligent Placement")]
+        [Xunit.TraitAttribute("Category", "stress")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "orchestra")]
+        [Xunit.TraitAttribute("Category", "netflix_scale")]
+        public async global::System.Threading.Tasks.Task Multi_ClusterJobDistributionWithIntelligentPlacement()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "stress",
+                    "multi_cluster",
+                    "orchestra",
+                    "netflix_scale"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-Cluster Job Distribution with Intelligent Placement", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 92
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 93
+    await testRunner.GivenAsync("I have 100 Flink clusters registered with the Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 94
+    await testRunner.AndAsync("each cluster has different resource capacity and health status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 95
+    await testRunner.WhenAsync("I submit 10,000 jobs using BestFit placement strategy", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 96
+    await testRunner.ThenAsync("jobs should be distributed optimally based on cluster capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 97
+    await testRunner.AndAsync("no cluster should be overloaded beyond 80% capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 98
+    await testRunner.AndAsync("job placement should minimize resource waste", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 99
+    await testRunner.AndAsync("all jobs should complete successfully within SLA", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 100
+    await testRunner.AndAsync("Orchestra health aggregation should show all clusters healthy", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Netflix-Scale Orchestration with 1000 Clusters")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
+        [Xunit.TraitAttribute("Description", "Netflix-Scale Orchestration with 1000 Clusters")]
+        [Xunit.TraitAttribute("Category", "stress")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "massive_scale")]
+        [Xunit.TraitAttribute("Category", "netflix_architecture")]
+        public async global::System.Threading.Tasks.Task Netflix_ScaleOrchestrationWith1000Clusters()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "stress",
+                    "multi_cluster",
+                    "massive_scale",
+                    "netflix_architecture"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Netflix-Scale Orchestration with 1000 Clusters", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 103
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 104
+    await testRunner.GivenAsync("I have 1000 Flink clusters in the Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 105
+    await testRunner.AndAsync("clusters are distributed across multiple availability zones", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 106
+    await testRunner.WhenAsync("I submit 1,000,000 messages for processing across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 107
+    await testRunner.AndAsync("use LeastLoaded placement strategy for optimal distribution", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 108
+    await testRunner.ThenAsync("all messages should be processed successfully", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 109
+    await testRunner.AndAsync("cluster health should remain stable throughout processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 110
+    await testRunner.AndAsync("system should maintain 99.999% availability", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 111
+    await testRunner.AndAsync("no cascade failures should occur", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 112
+    await testRunner.AndAsync("Orchestra should demonstrate auto-scaling capabilities", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableTheoryAttribute(DisplayName="Test Different Job Placement Strategies Under Load")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
+        [Xunit.TraitAttribute("Description", "Test Different Job Placement Strategies Under Load")]
+        [Xunit.TraitAttribute("Category", "stress")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "placement_strategies")]
+        [Xunit.InlineDataAttribute("BestFit", "Optimal resource utilization", new string[0])]
+        [Xunit.InlineDataAttribute("LeastLoaded", "Even distribution across clusters", new string[0])]
+        [Xunit.InlineDataAttribute("RoundRobin", "Sequential cluster assignment", new string[0])]
+        [Xunit.InlineDataAttribute("LocalityFirst", "Geographically optimized placement", new string[0])]
+        public async global::System.Threading.Tasks.Task TestDifferentJobPlacementStrategiesUnderLoad(string strategy, string expected_Pattern, string[] exampleTags)
+        {
+            string[] @__tags = new string[] {
+                    "stress",
+                    "multi_cluster",
+                    "placement_strategies"};
+            if ((exampleTags != null))
+            {
+                @__tags = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(@__tags, exampleTags));
+            }
+            string[] tagsOfScenario = @__tags;
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            argumentsOfScenario.Add("strategy", strategy);
+            argumentsOfScenario.Add("expected_pattern", expected_Pattern);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Test Different Job Placement Strategies Under Load", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 115
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 116
+    await testRunner.GivenAsync("I have 50 Flink clusters with varied resource profiles", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 117
+    await testRunner.AndAsync("clusters have different CPU, memory, and network capabilities", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 118
+    await testRunner.WhenAsync(string.Format("I submit 5,000 jobs using {0} placement strategy", strategy), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 119
+    await testRunner.AndAsync("apply sustained load for 10 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 120
+    await testRunner.ThenAsync(string.Format("jobs should be distributed according to {0} algorithm", strategy), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 121
+    await testRunner.AndAsync(string.Format("cluster utilization should be {0}", expected_Pattern), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 122
+    await testRunner.AndAsync("system throughput should remain stable", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 123
+    await testRunner.AndAsync("no cluster should experience resource starvation", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Actor-Based Cluster Failure Recovery Under Load")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
+        [Xunit.TraitAttribute("Description", "Actor-Based Cluster Failure Recovery Under Load")]
+        [Xunit.TraitAttribute("Category", "stress")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "actor_resilience")]
+        public async global::System.Threading.Tasks.Task Actor_BasedClusterFailureRecoveryUnderLoad()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "stress",
+                    "multi_cluster",
+                    "actor_resilience"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Actor-Based Cluster Failure Recovery Under Load", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 133
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 134
+    await testRunner.GivenAsync("I have 200 cluster actors managing individual clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 135
+    await testRunner.AndAsync("sustained processing load of 100,000 messages per minute", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 136
+    await testRunner.WhenAsync("10% of cluster actors simulate unexpected failures", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 137
+    await testRunner.ThenAsync("remaining actors should detect failures within 5 seconds", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 138
+    await testRunner.AndAsync("failed clusters should be isolated to prevent cascade effects", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 139
+    await testRunner.AndAsync("jobs should be automatically redistributed to healthy clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 140
+    await testRunner.AndAsync("overall system throughput should degrade by less than 15%", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 141
+    await testRunner.AndAsync("failed cluster actors should recover automatically within 2 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Long-Running Temporal Orchestration Workflows")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
+        [Xunit.TraitAttribute("Description", "Long-Running Temporal Orchestration Workflows")]
+        [Xunit.TraitAttribute("Category", "stress")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "temporal_workflows")]
+        public async global::System.Threading.Tasks.Task Long_RunningTemporalOrchestrationWorkflows()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "stress",
+                    "multi_cluster",
+                    "temporal_workflows"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Long-Running Temporal Orchestration Workflows", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 144
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 145
+    await testRunner.GivenAsync("I have multiple Temporal workflows managing cluster orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 146
+    await testRunner.AndAsync("workflows are processing continuous job distribution requests", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 147
+    await testRunner.WhenAsync("workflows run continuously for 30 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 148
+    await testRunner.AndAsync("handle 50,000 job distribution decisions", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 149
+    await testRunner.ThenAsync("all workflows should maintain state consistency", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 150
+    await testRunner.AndAsync("workflow execution should be durable across service restarts", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 151
+    await testRunner.AndAsync("workflow performance should remain stable under load", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 152
+    await testRunner.AndAsync("no workflow should enter deadlock or infinite retry states", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Multi-Cluster Backpressure Coordination at Scale")]
+        [Xunit.TraitAttribute("FeatureTitle", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
+            "")]
+        [Xunit.TraitAttribute("Description", "Multi-Cluster Backpressure Coordination at Scale")]
+        [Xunit.TraitAttribute("Category", "stress")]
+        [Xunit.TraitAttribute("Category", "multi_cluster")]
+        [Xunit.TraitAttribute("Category", "backpressure_coordination")]
+        public async global::System.Threading.Tasks.Task Multi_ClusterBackpressureCoordinationAtScale()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "stress",
+                    "multi_cluster",
+                    "backpressure_coordination"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-Cluster Backpressure Coordination at Scale", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 155
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 156
+    await testRunner.GivenAsync("I have 300 clusters with different processing capabilities", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 157
+    await testRunner.AndAsync("message volume exceeds total cluster capacity by 50%", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 158
+    await testRunner.WhenAsync("sustained high-volume load is applied", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 159
+    await testRunner.ThenAsync("backpressure should be coordinated across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 160
+    await testRunner.AndAsync("load should be intelligently redistributed to available clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 161
+    await testRunner.AndAsync("no messages should be lost during redistribution", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 162
+    await testRunner.AndAsync("system should maintain optimal throughput despite overload", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 163
+    await testRunner.AndAsync("Orchestra should trigger auto-scaling for additional capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -521,12 +886,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             
             async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await StressTest_HighThroughputMessageProcessingFeature.FeatureSetupAsync();
+                await StressTest_HighThroughputMessageProcessingWithMulti_ClusterOrchestrationFeature.FeatureSetupAsync();
             }
             
             async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
             {
-                await StressTest_HighThroughputMessageProcessingFeature.FeatureTearDownAsync();
+                await StressTest_HighThroughputMessageProcessingWithMulti_ClusterOrchestrationFeature.FeatureTearDownAsync();
             }
         }
     }

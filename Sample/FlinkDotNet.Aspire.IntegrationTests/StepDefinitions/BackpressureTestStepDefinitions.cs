@@ -5307,6 +5307,8 @@ public class BackpressureMessage
     public bool BackpressureApplied { get; set; }
 }
 
+#endregion
+
 #region Netflix Architecture Testing Support Classes
 
 // Orchestra Backpressure Manager for multi-cluster coordination
@@ -5325,6 +5327,9 @@ public class OrchestraBackpressureManager
 
     public bool RegisterClusters(int clusterCount)
     {
+        if (!_backpressureCoordinationConfigured)
+            return false;
+            
         _registeredClusterCount = clusterCount;
         for (int i = 0; i < clusterCount; i++)
         {

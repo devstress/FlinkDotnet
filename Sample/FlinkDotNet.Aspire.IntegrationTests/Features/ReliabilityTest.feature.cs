@@ -19,7 +19,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [Xunit.TraitAttribute("Category", "reliability_test")]
     [Xunit.TraitAttribute("Category", "fault_tolerance")]
-    public partial class ReliabilityTest_FaultToleranceAndRecoveryFeature : object, Xunit.IClassFixture<ReliabilityTest_FaultToleranceAndRecoveryFeature.FixtureData>, Xunit.IAsyncLifetime
+    public partial class ReliabilityTest_FaultToleranceAndRecoveryWithActor_BasedResilienceFeature : object, Xunit.IClassFixture<ReliabilityTest_FaultToleranceAndRecoveryWithActor_BasedResilienceFeature.FixtureData>, Xunit.IAsyncLifetime
     {
         
         private global::Reqnroll.ITestRunner testRunner;
@@ -28,15 +28,16 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 "reliability_test",
                 "fault_tolerance"};
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery", "  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure and " +
-                "rebalancing\n  So that I can ensure system reliability under adverse conditions", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience", "  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure, reb" +
+                "alancing, and multi-cluster actor resilience\n  So that I can ensure system relia" +
+                "bility under adverse conditions at Netflix scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
 #line 1 "ReliabilityTest.feature"
 #line hidden
         
-        public ReliabilityTest_FaultToleranceAndRecoveryFeature(ReliabilityTest_FaultToleranceAndRecoveryFeature.FixtureData fixtureData, Xunit.Abstractions.ITestOutputHelper testOutputHelper)
+        public ReliabilityTest_FaultToleranceAndRecoveryWithActor_BasedResilienceFeature(ReliabilityTest_FaultToleranceAndRecoveryWithActor_BasedResilienceFeature.FixtureData fixtureData, Xunit.Abstractions.ITestOutputHelper testOutputHelper)
         {
             this._testOutputHelper = testOutputHelper;
         }
@@ -123,6 +124,15 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 11
     await testRunner.AndAsync("Consumer group rebalancing is enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
+#line 12
+    await testRunner.AndAsync("FlinkDotNet ClusterManager actors are running for resilience", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 13
+    await testRunner.AndAsync("FlinkDotNet Resilience components are configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 14
+    await testRunner.AndAsync("Temporal workflows are available for failure recovery", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
         }
         
         async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
@@ -151,7 +161,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Handle 10% Message Failures with DLQ Processing")]
-        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
         [Xunit.TraitAttribute("Description", "Handle 10% Message Failures with DLQ Processing")]
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "failure_injection")]
@@ -164,7 +174,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "dlq"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Handle 10% Message Failures with DLQ Processing", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 14
+#line 17
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -177,19 +187,19 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 15
+#line 18
     await testRunner.GivenAsync("I have a Kafka input topic \"reliability-input\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 16
+#line 19
     await testRunner.AndAsync("I have a Kafka output topic \"reliability-output\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 17
+#line 20
     await testRunner.AndAsync("I have a Dead Letter Queue topic \"reliability-dlq\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 18
+#line 21
     await testRunner.AndAsync("I configure a 10% artificial failure rate in message processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 19
+#line 22
     await testRunner.WhenAsync("I produce 1,000,000 messages to the input topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table50 = new global::Reqnroll.Table(new string[] {
@@ -216,22 +226,22 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "5",
                             "ConditionalSink",
                             "success→reliability-output, failure→reliability-dlq"});
-#line 20
+#line 23
     await testRunner.AndAsync("I start the Flink streaming job with fault injection enabled:", ((string)(null)), table50, "And ");
 #line hidden
-#line 27
+#line 30
     await testRunner.ThenAsync("approximately 900,000 messages (90%) should be processed to output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 28
+#line 31
     await testRunner.AndAsync("approximately 100,000 messages (10%) should be sent to DLQ topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 29
+#line 32
     await testRunner.AndAsync("the total message count should equal 1,000,000 (no lost messages)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 30
+#line 33
     await testRunner.AndAsync("processing should complete despite failures", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 31
+#line 34
     await testRunner.AndAsync("system should maintain stability throughout the test", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -239,7 +249,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Handle Backpressure with Consumer Rebalancing")]
-        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
         [Xunit.TraitAttribute("Description", "Handle Backpressure with Consumer Rebalancing")]
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "backpressure")]
@@ -252,7 +262,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "rebalancing"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Handle Backpressure with Consumer Rebalancing", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 34
+#line 37
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -265,19 +275,19 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 35
+#line 38
     await testRunner.GivenAsync("I have a multi-partition Kafka setup", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 36
+#line 39
     await testRunner.AndAsync("I configure slow processing to induce backpressure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 37
+#line 40
     await testRunner.AndAsync("Consumer group has multiple consumers for rebalancing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 38
+#line 41
     await testRunner.WhenAsync("I start producing messages at high rate (5,000 msg/sec)", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 39
+#line 42
     await testRunner.AndAsync("I configure processing to be slower than input rate (2,000 msg/sec)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
                 global::Reqnroll.Table table51 = new global::Reqnroll.Table(new string[] {
@@ -296,22 +306,22 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Network partition simulation",
                             "After 750K messages",
                             "Failover and recovery"});
-#line 40
+#line 43
     await testRunner.AndAsync("I trigger consumer rebalancing during processing by:", ((string)(null)), table51, "And ");
 #line hidden
-#line 45
+#line 48
     await testRunner.ThenAsync("the system should handle backpressure gracefully", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 46
+#line 49
     await testRunner.AndAsync("consumer rebalancing should occur without message loss", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 47
+#line 50
     await testRunner.AndAsync("processing should resume after each rebalancing event", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 48
+#line 51
     await testRunner.AndAsync("end-to-end message delivery should be maintained", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 49
+#line 52
     await testRunner.AndAsync("no duplicate processing should occur during rebalancing", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -319,7 +329,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Validate Fault Recovery from Checkpoints")]
-        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
         [Xunit.TraitAttribute("Description", "Validate Fault Recovery from Checkpoints")]
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "fault_recovery")]
@@ -332,7 +342,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "checkpoint"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Validate Fault Recovery from Checkpoints", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 52
+#line 55
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -345,13 +355,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 53
+#line 56
     await testRunner.GivenAsync("I have checkpointing enabled with 30-second intervals", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 54
+#line 57
     await testRunner.AndAsync("I have a long-running processing job configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 55
+#line 58
     await testRunner.WhenAsync("I start processing 1,000,000 messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table52 = new global::Reqnroll.Table(new string[] {
@@ -370,22 +380,22 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Processing node failure",
                             "After 750K messages",
                             "Failover to healthy nodes"});
-#line 56
+#line 59
     await testRunner.AndAsync("I introduce system faults at different stages:", ((string)(null)), table52, "And ");
 #line hidden
-#line 61
+#line 64
     await testRunner.ThenAsync("the system should recover from each fault automatically", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 62
+#line 65
     await testRunner.AndAsync("processing should resume from the last successful checkpoint", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 63
+#line 66
     await testRunner.AndAsync("no messages should be lost during fault recovery", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 64
+#line 67
     await testRunner.AndAsync("the final output count should match input count (accounting for DLQ)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 65
+#line 68
     await testRunner.AndAsync("recovery time should be less than 2 minutes per fault", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -393,7 +403,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Monitor System Health During Reliability Testing")]
-        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
         [Xunit.TraitAttribute("Description", "Monitor System Health During Reliability Testing")]
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "monitoring")]
@@ -406,7 +416,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "metrics"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Monitor System Health During Reliability Testing", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 68
+#line 71
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -419,10 +429,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 69
+#line 72
     await testRunner.GivenAsync("I have monitoring and metrics collection enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 70
+#line 73
     await testRunner.WhenAsync("I run the reliability test with 10% failures", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table53 = new global::Reqnroll.Table(new string[] {
@@ -446,16 +456,16 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 table53.AddRow(new string[] {
                             "System resource usage",
                             "Remains stable under fault conditions"});
-#line 71
+#line 74
     await testRunner.ThenAsync("I should be able to monitor:", ((string)(null)), table53, "Then ");
 #line hidden
-#line 79
+#line 82
     await testRunner.AndAsync("alerts should trigger when error rates exceed thresholds", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 80
+#line 83
     await testRunner.AndAsync("dashboards should show real-time processing health", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 81
+#line 84
     await testRunner.AndAsync("historical metrics should be preserved for analysis", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -463,7 +473,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
         }
         
         [Xunit.SkippableFactAttribute(DisplayName="Verify Top 10 and Last 10 Messages with Content and Headers - Reliability Test")]
-        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
         [Xunit.TraitAttribute("Description", "Verify Top 10 and Last 10 Messages with Content and Headers - Reliability Test")]
         [Xunit.TraitAttribute("Category", "reliability")]
         [Xunit.TraitAttribute("Category", "message_verification")]
@@ -476,7 +486,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "content_headers"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Verify Top 10 and Last 10 Messages with Content and Headers - Reliability Test", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 84
+#line 87
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -489,14 +499,14 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
 #line 7
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 85
+#line 88
     await testRunner.GivenAsync("I have processed 1,000,000 messages through the reliability pipeline with 10% fai" +
                         "lures", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 86
+#line 89
     await testRunner.AndAsync("all messages have been properly routed to success or DLQ topics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 87
+#line 90
     await testRunner.WhenAsync("I retrieve the first 10 successfully processed messages from the output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table54 = new global::Reqnroll.Table(new string[] {
@@ -543,10 +553,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "10",
                             "Reliability msg 10: Successfully processed through fault-tolerant pipeline",
                             "kafka.topic=reliability-output; fault.injected=false; dlq.routed=false"});
-#line 88
+#line 91
     await testRunner.ThenAsync("I can display the top 10 first processed reliability messages table:", ((string)(null)), table54, "Then ");
 #line hidden
-#line 100
+#line 103
     await testRunner.WhenAsync("I retrieve the last 10 successfully processed messages from the output topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
                 global::Reqnroll.Table table55 = new global::Reqnroll.Table(new string[] {
@@ -603,14 +613,420 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                             "Reliability msg 1000000: Final success after complete fault tolerance testing",
                             "kafka.topic=reliability-output; fault.recovery=completed; checkpoint.restored=tru" +
                                 "e"});
-#line 101
+#line 104
     await testRunner.ThenAsync("I can display the top 10 last processed reliability messages table:", ((string)(null)), table55, "Then ");
 #line hidden
-#line 113
+#line 116
     await testRunner.AndAsync("all messages should contain reliability-specific content and headers", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 114
+#line 117
     await testRunner.AndAsync("all headers should include fault injection and recovery status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Actor-Based Cluster Failure Detection and Recovery")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Actor-Based Cluster Failure Detection and Recovery")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "actor_resilience")]
+        [Xunit.TraitAttribute("Category", "cluster_failure")]
+        public async global::System.Threading.Tasks.Task Actor_BasedClusterFailureDetectionAndRecovery()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "actor_resilience",
+                    "cluster_failure"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Actor-Based Cluster Failure Detection and Recovery", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 120
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 121
+    await testRunner.GivenAsync("I have 50 cluster actors managing individual Flink clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 122
+    await testRunner.AndAsync("each actor monitors cluster health with exponential backoff", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 123
+    await testRunner.WhenAsync("5 clusters fail unexpectedly due to infrastructure issues", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 124
+    await testRunner.ThenAsync("cluster actors should detect failures within 30 seconds", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 125
+    await testRunner.AndAsync("failed cluster actors should initiate immediate isolation procedures", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 126
+    await testRunner.AndAsync("healthy cluster actors should remain unaffected", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 127
+    await testRunner.AndAsync("failed clusters should be marked as unhealthy in Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 128
+    await testRunner.AndAsync("automatic recovery workflows should be triggered via Temporal", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 129
+    await testRunner.AndAsync("failed clusters should be restored within 5 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 130
+    await testRunner.AndAsync("no cascade failures should propagate to other clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Circuit Breaker Activation Under Sustained Failures")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Circuit Breaker Activation Under Sustained Failures")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "circuit_breaker")]
+        [Xunit.TraitAttribute("Category", "resilience_patterns")]
+        public async global::System.Threading.Tasks.Task CircuitBreakerActivationUnderSustainedFailures()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "circuit_breaker",
+                    "resilience_patterns"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Circuit Breaker Activation Under Sustained Failures", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 133
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 134
+    await testRunner.GivenAsync("I have FlinkDotNet Resilience circuit breakers configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 135
+    await testRunner.AndAsync("circuit breakers monitor all external service calls", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 136
+    await testRunner.WhenAsync("external service failure rate exceeds 20% for 2 minutes", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 137
+    await testRunner.ThenAsync("circuit breakers should transition to Open state", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 138
+    await testRunner.AndAsync("subsequent calls should be fast-failed without attempting connection", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 139
+    await testRunner.AndAsync("circuit breakers should periodically test service recovery", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 140
+    await testRunner.AndAsync("when service recovers, circuit breakers should transition to Closed state", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 141
+    await testRunner.AndAsync("normal operation should resume automatically", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 142
+    await testRunner.AndAsync("no resource exhaustion should occur during failure periods", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Exponential Backoff Retry Policies for Transient Failures")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Exponential Backoff Retry Policies for Transient Failures")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "retry_policies")]
+        [Xunit.TraitAttribute("Category", "exponential_backoff")]
+        public async global::System.Threading.Tasks.Task ExponentialBackoffRetryPoliciesForTransientFailures()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "retry_policies",
+                    "exponential_backoff"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Exponential Backoff Retry Policies for Transient Failures", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 145
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 146
+    await testRunner.GivenAsync("I have Polly-based retry policies configured for cluster operations", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 147
+    await testRunner.AndAsync("retry policies use exponential backoff with jitter", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 148
+    await testRunner.WhenAsync("cluster operations encounter transient network failures", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 149
+    await testRunner.ThenAsync("first retry should occur after 1 second", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 150
+    await testRunner.AndAsync("subsequent retries should follow exponential backoff: 2s, 4s, 8s, 16s", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 151
+    await testRunner.AndAsync("jitter should be applied to prevent thundering herd effects", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 152
+    await testRunner.AndAsync("operations should eventually succeed when service recovers", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 153
+    await testRunner.AndAsync("excessive retry attempts should be prevented with max retry limits", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 154
+    await testRunner.AndAsync("retry statistics should be collected for monitoring", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Temporal Workflow Resilience and State Persistence")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Temporal Workflow Resilience and State Persistence")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "temporal_workflow_resilience")]
+        [Xunit.TraitAttribute("Category", "durable_execution")]
+        public async global::System.Threading.Tasks.Task TemporalWorkflowResilienceAndStatePersistence()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "temporal_workflow_resilience",
+                    "durable_execution"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Temporal Workflow Resilience and State Persistence", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 157
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 158
+    await testRunner.GivenAsync("I have long-running Temporal workflows managing cluster orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 159
+    await testRunner.AndAsync("workflows maintain state for cluster lifecycle management", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 160
+    await testRunner.WhenAsync("Temporal worker processes are restarted during workflow execution", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 161
+    await testRunner.ThenAsync("workflows should resume from their last persisted state", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 162
+    await testRunner.AndAsync("no workflow state should be lost during restarts", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 163
+    await testRunner.AndAsync("workflow execution should continue seamlessly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 164
+    await testRunner.AndAsync("workflow history should be preserved for debugging", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 165
+    await testRunner.AndAsync("workflow timers and scheduled activities should be restored correctly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 166
+    await testRunner.AndAsync("overall cluster orchestration should remain uninterrupted", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Proactive Health Monitoring and Failure Prevention")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Proactive Health Monitoring and Failure Prevention")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "health_monitoring")]
+        [Xunit.TraitAttribute("Category", "proactive_failure_detection")]
+        public async global::System.Threading.Tasks.Task ProactiveHealthMonitoringAndFailurePrevention()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "health_monitoring",
+                    "proactive_failure_detection"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Proactive Health Monitoring and Failure Prevention", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 169
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 170
+    await testRunner.GivenAsync("I have continuous health monitoring across all cluster actors", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 171
+    await testRunner.AndAsync("health checkers validate cluster responsiveness every 10 seconds", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 172
+    await testRunner.WhenAsync("cluster performance degrades but hasn\'t failed completely", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 173
+    await testRunner.ThenAsync("health monitoring should detect degradation patterns", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 174
+    await testRunner.AndAsync("proactive alerts should be triggered before complete failure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 175
+    await testRunner.AndAsync("preventive actions should be taken to avoid total failure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 176
+    await testRunner.AndAsync("cluster capacity should be adjusted based on health metrics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 177
+    await testRunner.AndAsync("health trends should be analyzed for predictive maintenance", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Actor Isolation Prevents Cascade Failures")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Actor Isolation Prevents Cascade Failures")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "actor_isolation")]
+        [Xunit.TraitAttribute("Category", "failure_containment")]
+        public async global::System.Threading.Tasks.Task ActorIsolationPreventsCascadeFailures()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "actor_isolation",
+                    "failure_containment"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Actor Isolation Prevents Cascade Failures", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 180
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 181
+    await testRunner.GivenAsync("I have 100 cluster actors in a fully connected mesh", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 182
+    await testRunner.AndAsync("each actor manages an independent cluster lifecycle", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 183
+    await testRunner.WhenAsync("one cluster actor encounters a critical error", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 184
+    await testRunner.ThenAsync("the error should be contained within that specific actor", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 185
+    await testRunner.AndAsync("other actors should continue normal operation", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 186
+    await testRunner.AndAsync("no error propagation should occur across the actor system", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 187
+    await testRunner.AndAsync("failed actor should be quarantined and restarted independently", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 188
+    await testRunner.AndAsync("Orchestra should route traffic away from the failed cluster", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 189
+    await testRunner.AndAsync("system-wide availability should be maintained above 99%", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Multi-Cluster Failover with Automatic Job Migration")]
+        [Xunit.TraitAttribute("FeatureTitle", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience")]
+        [Xunit.TraitAttribute("Description", "Multi-Cluster Failover with Automatic Job Migration")]
+        [Xunit.TraitAttribute("Category", "reliability")]
+        [Xunit.TraitAttribute("Category", "multi_cluster_failover")]
+        [Xunit.TraitAttribute("Category", "automatic_recovery")]
+        public async global::System.Threading.Tasks.Task Multi_ClusterFailoverWithAutomaticJobMigration()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "reliability",
+                    "multi_cluster_failover",
+                    "automatic_recovery"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-Cluster Failover with Automatic Job Migration", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 192
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 7
+  await this.FeatureBackgroundAsync();
+#line hidden
+#line 193
+    await testRunner.GivenAsync("I have active jobs running on 20 different clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 194
+    await testRunner.AndAsync("jobs are configured with failover capabilities", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 195
+    await testRunner.WhenAsync("3 clusters fail simultaneously due to infrastructure issues", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 196
+    await testRunner.ThenAsync("affected jobs should be automatically detected", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 197
+    await testRunner.AndAsync("job state should be saved to persistent storage", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 198
+    await testRunner.AndAsync("jobs should be migrated to healthy clusters within 60 seconds", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 199
+    await testRunner.AndAsync("migrated jobs should resume from their last checkpoint", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 200
+    await testRunner.AndAsync("no job state or progress should be lost during migration", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 201
+    await testRunner.AndAsync("end-to-end processing should continue with minimal disruption", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -623,12 +1039,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             
             async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.InitializeAsync()
             {
-                await ReliabilityTest_FaultToleranceAndRecoveryFeature.FeatureSetupAsync();
+                await ReliabilityTest_FaultToleranceAndRecoveryWithActor_BasedResilienceFeature.FeatureSetupAsync();
             }
             
             async global::System.Threading.Tasks.Task Xunit.IAsyncLifetime.DisposeAsync()
             {
-                await ReliabilityTest_FaultToleranceAndRecoveryFeature.FeatureTearDownAsync();
+                await ReliabilityTest_FaultToleranceAndRecoveryWithActor_BasedResilienceFeature.FeatureTearDownAsync();
             }
         }
     }
