@@ -1,8 +1,8 @@
 @backpressure_test @flow_control
-Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netflix + LinkedIn Best Practices)
+Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Enterprise + LinkedIn Best Practices)
   As a Flink.NET user
-  I want to implement multi-cluster consumer lag-based backpressure following Netflix and LinkedIn best practices
-  So that I can achieve reliable, scalable stream processing at Netflix scale with intelligent cluster coordination
+  I want to implement multi-cluster consumer lag-based backpressure following enterprise and LinkedIn best practices
+  So that I can achieve reliable, scalable stream processing at enterprise scale with intelligent cluster coordination
 
   Background:
     Given the Flink cluster is running with backpressure monitoring enabled
@@ -191,7 +191,7 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netf
     Given I have a production-ready backpressure system configured with:
       | Component | Configuration | World-Class Standard |
       | Consumer lag monitoring | 5-second intervals | LinkedIn production standard |
-      | Network-bound handling | Circuit breakers + bulkheads | Netflix resilience patterns |
+      | Network-bound handling | Circuit breakers + bulkheads | Enterprise resilience patterns |
       | Rate limiting | Multi-tier with adaptation | LinkedIn finite resource management |
       | DLQ management | 3-tier strategy | Uber error handling patterns |
       | Monitoring | Real-time dashboards | Google SRE observability |
@@ -211,14 +211,14 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netf
     Then the integrated backpressure system should achieve world-class standards:
       | World-Class Standard | Target | Actual Achievement |
       | LinkedIn throughput | >900K msg/sec sustained | Measured during test |
-      | Netflix availability | >99.9% uptime | No service interruptions |
+      | Enterprise availability | >99.9% uptime | No service interruptions |
       | Uber recovery time | <60 seconds | Failure detection and recovery |
       | Google observability | Real-time metrics | Full system visibility |
       | Industry latency | <150ms p99 | End-to-end processing |
     And the system should demonstrate comprehensive coverage:
       | Coverage Area | Implementation | Validation Method |
       | Consumer lag backpressure | LinkedIn patterns | Traditional lag monitoring |
-      | Network bottleneck handling | Netflix resilience | External service simulation |
+      | Network bottleneck handling | Enterprise resilience | External service simulation |
       | Rate limiting integration | Multi-tier enforcement | Resource constraint testing |
       | DLQ error management | 3-tier strategy | Failure injection testing |
       | Monitoring and alerting | SRE practices | Dashboard and alert verification |
@@ -441,15 +441,15 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Netf
     And workflow execution should be durable across system restarts
     And backpressure resolution should be completed reliably via workflow orchestration
 
-  @backpressure @netflix_scale @massive_cluster_coordination
-  Scenario: Netflix-Scale Backpressure Management Across 1000+ Clusters
+  @backpressure @enterprise_scale @massive_cluster_coordination
+  Scenario: Enterprise-Scale Backpressure Management Across 1000+ Clusters
     Given I have 1000+ Flink clusters distributed across multiple data centers
     And Orchestra coordinates backpressure management at massive scale
     When global message volume creates complex backpressure patterns
-    Then backpressure coordination should scale to Netflix-level cluster counts
+    Then backpressure coordination should scale to enterprise-level cluster counts
     And regional backpressure patterns should be managed independently
     And cross-region load balancing should consider backpressure status
     And no single point of failure should exist in backpressure management
-    And backpressure resolution should complete within Netflix SLA requirements
+    And backpressure resolution should complete within enterprise SLA requirements
     And system should maintain 99.999% availability during backpressure events
     And massive scale coordination should demonstrate sub-linear complexity growth
