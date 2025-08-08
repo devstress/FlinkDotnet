@@ -1373,6 +1373,42 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ Jobs successfully distributed according to LeastLoaded algorithm");
     }
 
+    [Then(@"jobs should be distributed according to RoundRobin algorithm")]
+    public void ThenJobsShouldBeDistributedAccordingToRoundRobinAlgorithm()
+    {
+        _output.WriteLine("🔄 Verifying jobs are distributed according to RoundRobin algorithm...");
+        
+        var roundRobinDistribution = ValidateRoundRobinAlgorithmDistribution();
+        Assert.True(roundRobinDistribution, "Jobs should be distributed according to RoundRobin algorithm");
+        
+        _testData["RoundRobinDistributionValidated"] = true;
+        _output.WriteLine("✅ Jobs successfully distributed according to RoundRobin algorithm");
+    }
+
+    [Then(@"jobs should be distributed according to BestFit algorithm")]
+    public void ThenJobsShouldBeDistributedAccordingToBestFitAlgorithm()
+    {
+        _output.WriteLine("🎯 Verifying jobs are distributed according to BestFit algorithm...");
+        
+        var bestFitDistribution = ValidateBestFitAlgorithmDistribution();
+        Assert.True(bestFitDistribution, "Jobs should be distributed according to BestFit algorithm");
+        
+        _testData["BestFitDistributionValidated"] = true;
+        _output.WriteLine("✅ Jobs successfully distributed according to BestFit algorithm");
+    }
+
+    [Then(@"jobs should be distributed according to LocalityFirst algorithm")]
+    public void ThenJobsShouldBeDistributedAccordingToLocalityFirstAlgorithm()
+    {
+        _output.WriteLine("🌍 Verifying jobs are distributed according to LocalityFirst algorithm...");
+        
+        var localityFirstDistribution = ValidateLocalityFirstAlgorithmDistribution();
+        Assert.True(localityFirstDistribution, "Jobs should be distributed according to LocalityFirst algorithm");
+        
+        _testData["LocalityFirstDistributionValidated"] = true;
+        _output.WriteLine("✅ Jobs successfully distributed according to LocalityFirst algorithm");
+    }
+
     [Then(@"cluster utilization should be Even distribution across clusters")]
     public void ThenClusterUtilizationShouldBeEvenDistributionAcrossClusters()
     {
@@ -1383,6 +1419,42 @@ public class StressTestStepDefinitions
         
         _testData["EvenDistributionValidated"] = true;
         _output.WriteLine("✅ Cluster utilization shows even distribution across clusters");
+    }
+
+    [Then(@"cluster utilization should be Sequential cluster assignment")]
+    public void ThenClusterUtilizationShouldBeSequentialClusterAssignment()
+    {
+        _output.WriteLine("📊 Verifying cluster utilization shows sequential cluster assignment...");
+        
+        var sequentialAssignment = ValidateSequentialClusterAssignment();
+        Assert.True(sequentialAssignment, "Cluster utilization should be sequential cluster assignment");
+        
+        _testData["SequentialAssignmentValidated"] = true;
+        _output.WriteLine("✅ Cluster utilization shows sequential cluster assignment");
+    }
+
+    [Then(@"cluster utilization should be Optimal resource utilization")]
+    public void ThenClusterUtilizationShouldBeOptimalResourceUtilization()
+    {
+        _output.WriteLine("📊 Verifying cluster utilization shows optimal resource utilization...");
+        
+        var optimalUtilization = ValidateOptimalResourceUtilization();
+        Assert.True(optimalUtilization, "Cluster utilization should be optimal resource utilization");
+        
+        _testData["OptimalUtilizationValidated"] = true;
+        _output.WriteLine("✅ Cluster utilization shows optimal resource utilization");
+    }
+
+    [Then(@"cluster utilization should be Geographically optimized placement")]
+    public void ThenClusterUtilizationShouldBeGeographicallyOptimizedPlacement()
+    {
+        _output.WriteLine("🌍 Verifying cluster utilization shows geographically optimized placement...");
+        
+        var geographicallyOptimized = ValidateGeographicallyOptimizedPlacement();
+        Assert.True(geographicallyOptimized, "Cluster utilization should be geographically optimized placement");
+        
+        _testData["GeographicallyOptimizedValidated"] = true;
+        _output.WriteLine("✅ Cluster utilization shows geographically optimized placement");
     }
 
     [Then(@"system throughput should remain stable")]
