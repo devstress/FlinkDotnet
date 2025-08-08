@@ -6,12 +6,12 @@ namespace LocalTesting.WebApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class NetflixArchitectureTestController : ControllerBase
+public class TemporalArchitectureTestController : ControllerBase
 {
-    private readonly ILogger<NetflixArchitectureTestController> _logger;
+    private readonly ILogger<TemporalArchitectureTestController> _logger;
 
-    public NetflixArchitectureTestController(
-        ILogger<NetflixArchitectureTestController> logger)
+    public TemporalArchitectureTestController(
+        ILogger<TemporalArchitectureTestController> logger)
     {
         _logger = logger;
     }
@@ -291,27 +291,27 @@ public class NetflixArchitectureTestController : ControllerBase
         }
     }
 
-    // ========== Netflix Scale Testing ==========
+    // ========== Enterprise Scale Testing ==========
 
-    [HttpPost("netflix-scale/simulate-massive-orchestration")]
+    [HttpPost("enterprise-scale/simulate-massive-orchestration")]
     [SwaggerOperation(
-        Summary = "Simulate Netflix-Scale Multi-Cluster Orchestration",
+        Summary = "Simulate Enterprise-Scale Multi-Cluster Orchestration",
         Description = "Simulate orchestration across thousands of clusters with intelligent placement"
     )]
-    [SwaggerResponse(200, "Netflix-scale simulation completed")]
+    [SwaggerResponse(200, "Enterprise-scale simulation completed")]
     [SwaggerResponse(400, "Invalid scale parameters")]
-    public async Task<IActionResult> SimulateNetflixScaleOrchestration([FromBody] NetflixScaleRequest request)
+    public async Task<IActionResult> SimulateEnterpriseScaleOrchestration([FromBody] EnterpriseScaleRequest request)
     {
         try
         {
-            _logger.LogInformation("Simulating Netflix-scale orchestration with {ClusterCount} clusters and {JobCount} jobs",
+            _logger.LogInformation("Simulating enterprise-scale orchestration with {ClusterCount} clusters and {JobCount} jobs",
                 request.ClusterCount, request.JobCount);
 
             await Task.Delay(1000); // Simulate massive scale orchestration
 
             var simulationResults = new
             {
-                Status = "Netflix-scale simulation completed successfully",
+                Status = "Enterprise-scale simulation completed successfully",
                 Scale = new
                 {
                     TotalClusters = request.ClusterCount,
@@ -335,14 +335,14 @@ public class NetflixArchitectureTestController : ControllerBase
                     AutoRecoveredClusters = Math.Max(1, request.ClusterCount / 1000),
                     ThroughputMessages = request.JobCount * 10000 // 10k messages per job
                 },
-                Message = "Successfully demonstrated Netflix-scale orchestration capabilities (simulation)"
+                Message = "Successfully demonstrated enterprise-scale orchestration capabilities (simulation)"
             };
 
             return Ok(simulationResults);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating Netflix-scale orchestration");
+            _logger.LogError(ex, "Error simulating enterprise-scale orchestration");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
@@ -352,7 +352,7 @@ public class NetflixArchitectureTestController : ControllerBase
     }
 }
 
-// Request/Response Models for Netflix Architecture Testing
+// Request/Response Models for Temporal Durable Workflow Architecture Testing
 
 public class JobSubmissionRequest
 {
@@ -386,7 +386,7 @@ public class CircuitBreakerTestRequest
     public int? TestDurationSeconds { get; set; } = 30;
 }
 
-public class NetflixScaleRequest
+public class EnterpriseScaleRequest
 {
     public int ClusterCount { get; set; } = 1000;
     public int JobCount { get; set; } = 100000;

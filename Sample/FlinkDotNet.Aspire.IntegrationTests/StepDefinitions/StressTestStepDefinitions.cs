@@ -1074,18 +1074,18 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ Orchestra health aggregation confirms all clusters healthy");
     }
 
-    // ========== Netflix Scale Step Definitions ==========
+    // ========== Enterprise Scale Step Definitions ==========
 
     [Given(@"I have (\d+) Flink clusters in the Orchestra")]
     public void GivenIHaveFlinkClustersInTheOrchestra(int clusterCount)
     {
-        _output.WriteLine($"🏭 Setting up Netflix-scale deployment with {clusterCount} clusters...");
+        _output.WriteLine($"🏭 Setting up enterprise-scale deployment with {clusterCount} clusters...");
         
-        var netflixScaleSetup = SetupNetflixScaleClusters(clusterCount);
-        Assert.True(netflixScaleSetup, $"Should setup Netflix-scale deployment with {clusterCount} clusters");
+        var enterpriseScaleSetup = SetupEnterpriseScaleClusters(clusterCount);
+        Assert.True(enterpriseScaleSetup, $"Should setup enterprise-scale deployment with {clusterCount} clusters");
         
-        _testData["NetflixScaleClusterCount"] = clusterCount;
-        _output.WriteLine($"✅ Netflix-scale deployment setup with {clusterCount} clusters");
+        _testData["EnterpriseScaleClusterCount"] = clusterCount;
+        _output.WriteLine($"✅ Enterprise-scale deployment setup with {clusterCount} clusters");
     }
 
     [Given(@"clusters are distributed across multiple availability zones")]
@@ -1104,12 +1104,12 @@ public class StressTestStepDefinitions
     public async Task WhenISubmitMessagesForProcessingAcrossAllClusters(string messageCountStr)
     {
         var messageCount = int.Parse(messageCountStr.Replace(",", ""));
-        _output.WriteLine($"📨 Submitting {messageCount:N0} messages for Netflix-scale processing...");
+        _output.WriteLine($"📨 Submitting {messageCount:N0} messages for enterprise-scale processing...");
         
         var messagesSubmitted = await SubmitMessagesAcrossAllClusters(messageCount);
         Assert.Equal(messageCount, messagesSubmitted);
         
-        _testData["NetflixScaleMessages"] = messagesSubmitted;
+        _testData["EnterpriseScaleMessages"] = messagesSubmitted;
         _output.WriteLine($"✅ Successfully submitted {messagesSubmitted:N0} messages across all clusters");
     }
 
@@ -1128,12 +1128,12 @@ public class StressTestStepDefinitions
     [Then(@"all messages should be processed successfully")]
     public async Task ThenAllMessagesShouldBeProcessedSuccessfully()
     {
-        _output.WriteLine("🔍 Verifying all messages processed successfully at Netflix scale...");
+        _output.WriteLine("🔍 Verifying all messages processed successfully at enterprise scale...");
         
         var allProcessed = await ValidateAllMessagesProcessed();
         Assert.True(allProcessed, "All messages should be processed successfully");
         
-        _output.WriteLine("✅ All messages processed successfully at Netflix scale");
+        _output.WriteLine("✅ All messages processed successfully at enterprise scale");
     }
 
     [Then(@"cluster health should remain stable throughout processing")]
@@ -1186,7 +1186,7 @@ public class StressTestStepDefinitions
     private bool RegisterClustersWithOrchestra(int count) => true;
     private bool SetupMultipleClusters(int count) => true;
     private bool ConfigureVariedResourceProfiles() => true;
-    private bool SetupNetflixScaleClusters(int count) => true;
+    private bool SetupEnterpriseScaleClusters(int count) => true;
     private bool ConfigureMultiAvailabilityZoneDistribution() => true;
     private bool ApplyOptimalPlacementStrategy(string strategy) => true;
     private bool ValidateOptimalJobDistribution() => true;

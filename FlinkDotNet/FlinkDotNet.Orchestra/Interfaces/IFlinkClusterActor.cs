@@ -4,7 +4,7 @@ namespace FlinkDotNet.Orchestra.Interfaces;
 
 /// <summary>
 /// Represents a Flink cluster actor that manages the lifecycle and operations of a single Flink cluster.
-/// Based on Netflix's actor model for cluster orchestration.
+/// Based on enterprise actor model for cluster orchestration.
 /// </summary>
 public interface IFlinkClusterActor
 {
@@ -66,7 +66,7 @@ public interface IFlinkClusterActor
 
 /// <summary>
 /// Main orchestration service that manages multiple Flink clusters and distributes jobs.
-/// Implements Netflix's multi-cluster orchestration patterns.
+/// Implements enterprise multi-cluster orchestration patterns.
 /// </summary>
 public interface IFlinkOrchestra
 {

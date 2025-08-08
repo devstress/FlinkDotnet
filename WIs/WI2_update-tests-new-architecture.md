@@ -1,7 +1,7 @@
-# WI2: Update All Testing Infrastructure for Netflix Architecture
+# WI2: Update All Testing Infrastructure for Temporal Durable Workflow Architecture
 
 **File**: `WIs/WI2_update-tests-new-architecture.md`
-**Title**: [Testing] Update all stress tests, reliability tests, backpressure tests, local testing, and GitHub workflows for new Netflix architecture  
+**Title**: [Testing] Update all stress tests, reliability tests, backpressure tests, local testing, and GitHub workflows for new Temporal durable workflow architecture  
 **Description**: Comprehensive update of testing infrastructure to support multi-cluster orchestration, actor-based resilience, and Temporal workflow testing
 **Priority**: High
 **Component**: Testing Infrastructure
@@ -20,7 +20,7 @@
 
 ## Phase 1: Investigation
 ### Requirements
-Update all testing components to support the new Netflix-style architecture with multi-cluster orchestration, actor-based cluster management, Temporal workflows, and resilience patterns.
+Update all testing components to support the new Temporal durable workflow architecture with multi-cluster orchestration, actor-based cluster management, Temporal workflows, and resilience patterns.
 
 ### Debug Information (MANDATORY - Update this section for every investigation)
 - **Current State**: Tests focus on single-cluster scenarios using JobBuilder
@@ -56,12 +56,12 @@ Update all testing components to support the new Netflix-style architecture with
    - Health checkers for continuous validation
 
 ### Findings
-The current testing infrastructure needs comprehensive updates to support Netflix-scale multi-cluster scenarios while maintaining backward compatibility with existing JobBuilder/DataStream APIs.
+The current testing infrastructure needs comprehensive updates to support enterprise-scale multi-cluster scenarios while maintaining backward compatibility with existing JobBuilder/DataStream APIs.
 
 ### Lessons Learned
 - New architecture extends rather than replaces existing functionality
 - Need to test both individual job development and massive scale orchestration
-- Must maintain incremental adoption path (single cluster → Netflix scale)
+- Must maintain incremental adoption path (single cluster → enterprise scale)
 
 ## Phase 2: Design  
 ### Requirements
@@ -74,7 +74,7 @@ Design comprehensive testing architecture that validates all new components whil
    - **Unit Layer**: Test individual components (Orchestra, ClusterManager, Temporal, Resilience)
    - **Integration Layer**: Test component interactions and workflows
    - **System Layer**: Test full multi-cluster scenarios
-   - **Stress Layer**: Test Netflix-scale capabilities (thousands of clusters)
+   - **Stress Layer**: Test enterprise-scale capabilities (thousands of clusters)
 
 2. **Backward Compatibility Testing**:
    - Ensure JobBuilder/DataStream APIs still work
@@ -90,12 +90,12 @@ Design comprehensive testing architecture that validates all new components whil
 ### Why This Approach
 - Comprehensive coverage of new architecture components
 - Maintains existing functionality validation
-- Supports Netflix-scale testing scenarios
+- Supports enterprise-scale testing scenarios
 - Provides clear migration path validation
 
 ### Alternatives Considered
 - **Option 1**: Replace all existing tests → Rejected (breaks backward compatibility)
-- **Option 2**: Add minimal new tests → Rejected (insufficient coverage for Netflix scale)
+- **Option 2**: Add minimal new tests → Rejected (insufficient coverage for enterprise scale)
 - **Option 3**: Comprehensive multi-layer approach → **Selected** (best coverage and compatibility)
 
 ## Phase 3: TDD/BDD
@@ -106,7 +106,7 @@ Design comprehensive testing architecture that validates all new components whil
 1. **StressTest.feature**: Add multi-cluster orchestration scenarios
 2. **ReliabilityTest.feature**: Add actor-based resilience scenarios  
 3. **BackpressureTest.feature**: Add multi-cluster backpressure scenarios
-4. **ComplexLogicStressTest.feature**: Add Netflix-scale end-to-end scenarios
+4. **ComplexLogicStressTest.feature**: Add enterprise-scale end-to-end scenarios
 
 **New Test Categories:**
 
@@ -146,7 +146,7 @@ Scenario: Multi-cluster job distribution with BestFit strategy
   And no cluster should be overloaded
   And job placement should minimize resource waste
 
-Scenario: Netflix-scale orchestration with 5000 clusters
+Scenario: Enterprise-scale orchestration with 5000 clusters
   Given I have 5000 Flink clusters in the orchestra
   When I submit 1 million jobs concurrently
   Then all jobs should be processed successfully
@@ -190,7 +190,7 @@ Scenario: Multi-cluster backpressure coordination
 
 1. **StressTest.feature**:
    - Added multi-cluster orchestration scenarios
-   - Netflix-scale testing with 1000+ clusters  
+   - Enterprise-scale testing with 1000+ clusters  
    - Intelligent job placement strategies (BestFit, LeastLoaded, RoundRobin, LocalityFirst)
    - Actor-based cluster failure recovery testing
    - Temporal workflow orchestration scenarios
@@ -210,7 +210,7 @@ Scenario: Multi-cluster backpressure coordination
    - Intelligent job placement based on cluster capacity
    - Auto-scaling based on backpressure patterns
    - Temporal workflows for backpressure orchestration
-   - Netflix-scale backpressure management across 1000+ clusters
+   - Enterprise-scale backpressure management across 1000+ clusters
 
 **Enhanced Step Definitions:**
 
@@ -218,7 +218,7 @@ Scenario: Multi-cluster backpressure coordination
    - Added 60+ new step definitions for multi-cluster testing
    - Orchestra availability and cluster registration steps
    - Multi-cluster job submission and placement validation
-   - Netflix-scale orchestration testing with availability checks
+   - Enterprise-scale orchestration testing with availability checks
    - Health aggregation and auto-scaling capability testing
 
 **Updated LocalTesting Infrastructure:**
@@ -231,20 +231,20 @@ Scenario: Multi-cluster backpressure coordination
      - FlinkDotNet.Resilience
    - Updated package versions to resolve conflicts (Swashbuckle.AspNetCore 9.0.3, Temporalio 1.1.1)
 
-6. **NetflixArchitectureTestController.cs** (New):
-   - Created comprehensive API controller for testing Netflix architecture
+6. **TemporalArchitectureTestController.cs** (New):
+   - Created comprehensive API controller for testing Temporal durable workflow architecture
    - Orchestra job submission with intelligent placement strategies
    - Cluster actor creation and health monitoring
    - Temporal workflow orchestration testing
    - Circuit breaker and resilience pattern testing
-   - Netflix-scale simulation endpoints (1000+ clusters, 100K+ jobs)
+   - Enterprise-scale simulation endpoints (1000+ clusters, 100K+ jobs)
    - All endpoints return structured JSON responses with detailed metrics
 
 **Build System Updates:**
 
 7. **Solution Build Verification**:
    - FlinkDotNet.sln builds successfully with all new architecture projects
-   - LocalTesting.sln builds successfully with Netflix architecture integration
+   - LocalTesting.sln builds successfully with Temporal durable workflow architecture integration
    - All project references and dependencies resolved correctly
    - .NET 9.0 SDK compatibility confirmed
 
@@ -278,7 +278,7 @@ Scenario: Multi-cluster backpressure coordination
 3. **Incremental Adoption Strategy**:
    - Existing JobBuilder/DataStream APIs remain fully supported
    - New Orchestra/ClusterManager components extend functionality
-   - Clear migration path from single-cluster to Netflix-scale deployments
+   - Clear migration path from single-cluster to enterprise-scale deployments
 
 ## Phase 5: Testing & Validation
 ### Test Results

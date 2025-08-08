@@ -1,8 +1,8 @@
-# WI49: Restructure FlinkDotNet with Netflix Temporal + Flink Architecture
+# WI49: Restructure FlinkDotNet with Temporal Durable Workflow + Flink Architecture
 
-**File**: `WIs/WI49_restructure-flinkdotnet-netflix-temporal-flink-architecture.md`
-**Title**: [Architecture] Restructure FlinkDotNet using Netflix Temporal + Flink Actor Workflows Architecture  
-**Description**: Redesign FlinkDotNet using Netflix's "Actor Workflows: Reliably orchestrating thousands of Flink clusters" architecture with Temporal and Apache Flink for full fault tolerance, massive scale, exactly-once processing, no data loss, resilience, and 99.999% availability.
+**File**: `WIs/WI49_restructure-flinkdotnet-temporal-durable-workflow-flink-architecture.md`
+**Title**: [Architecture] Restructure FlinkDotNet using Temporal Durable Workflow + Flink Actor Workflows Architecture  
+**Description**: Redesign FlinkDotNet using enterprise-scale "Actor Workflows: Reliably orchestrating thousands of Flink clusters" architecture with Temporal and Apache Flink for full fault tolerance, massive scale, exactly-once processing, no data loss, resilience, and 99.999% availability.
 **Priority**: High
 **Component**: Core Architecture
 **Type**: Enhancement/Restructuring
@@ -31,13 +31,13 @@
 
 ## Phase 1: Investigation
 ### Requirements
-Analyze Netflix's Temporal + Flink architecture and current FlinkDotNet implementation to design a restructuring plan that adds massive scale orchestration capabilities while preserving existing functionality.
+Analyze enterprise-scale Temporal + Flink architecture and current FlinkDotNet implementation to design a restructuring plan that adds massive scale orchestration capabilities while preserving existing functionality.
 
 ### Debug Information (MANDATORY - Update this section for every investigation)
 - **Error Messages**: No current errors - this is enhancement work
 - **Log Locations**: N/A - architectural enhancement
 - **System State**: Current FlinkDotNet works with single-cluster Flink deployments
-- **Reproduction Steps**: Review video https://youtu.be/ybm86vpkpyo?si=qud4ixJctAebeZXQ for Netflix architecture
+- **Reproduction Steps**: Review enterprise-scale patterns for Temporal + Flink architecture
 - **Evidence**: Current architecture supports single Flink cluster, needs multi-cluster orchestration
 
 ### Current Architecture Analysis
@@ -61,16 +61,16 @@ Analyze Netflix's Temporal + Flink architecture and current FlinkDotNet implemen
 - No actor-based cluster orchestration
 - Basic Temporal integration (simulation only)
 
-### Netflix Temporal + Flink Architecture Analysis
+### Temporal + Flink Architecture Analysis
 
-**Netflix Architecture Principles** (from video reference):
+**Enterprise Architecture Principles**:
 - **Actor Workflows**: Each Flink cluster managed as an actor with lifecycle
 - **Temporal Orchestration**: Durable workflows for cluster management
 - **Massive Scale**: Orchestrate thousands of Flink clusters
 - **Resilience**: Exactly-once processing, no data loss, 99.999% availability
 - **Fault Recovery**: Automatic cluster failure detection and recovery
 
-**Key Netflix Components:**
+**Key Enterprise Components:**
 1. **Temporal Workflows** - Cluster lifecycle management
 2. **Actor System** - Individual cluster actors
 3. **Cluster Autoscaler** - Dynamic provisioning
@@ -107,7 +107,7 @@ Analyze Netflix's Temporal + Flink architecture and current FlinkDotNet implemen
 
 ## Phase 2: Design  
 ### Requirements
-Design new architecture components that add Netflix-style orchestration while preserving existing functionality.
+Design new architecture components that add enterprise-style orchestration while preserving existing functionality.
 
 ### Architecture Decisions
 
@@ -158,7 +158,7 @@ public interface IFlinkOrchestra
 
 ### Why This Approach
 - **Minimal Disruption**: Existing APIs continue to work
-- **Scalability**: Can orchestrate thousands of clusters like Netflix
+- **Scalability**: Can orchestrate thousands of clusters at enterprise scale
 - **Fault Tolerance**: Temporal provides durable execution
 - **Observability**: Enhanced monitoring across all clusters
 - **Performance**: Intelligent job placement and load balancing

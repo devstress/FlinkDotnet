@@ -8,7 +8,7 @@ namespace FlinkDotNet.ClusterManager.Actors;
 
 /// <summary>
 /// Implementation of a Flink cluster actor that manages the lifecycle and operations of a single Flink cluster.
-/// Based on Netflix's actor model for massive scale cluster orchestration.
+/// Based on enterprise actor model for massive scale cluster orchestration.
 /// </summary>
 public class FlinkClusterActor : IFlinkClusterActor, IDisposable
 {
