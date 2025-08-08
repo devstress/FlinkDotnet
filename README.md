@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL. It now includes Netflix-style multi-cluster orchestration capabilities for massive scale deployments with 99.999% availability.
+**FlinkDotNet** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL. It now includes Temporal multi-cluster orchestration capabilities for durable storage, durable workflow, resilience, reliability, exactly one semantic, scalability to billion messages per second and 99,999% availability.
 
 ## 🚀 Netflix Architecture Integration
 
