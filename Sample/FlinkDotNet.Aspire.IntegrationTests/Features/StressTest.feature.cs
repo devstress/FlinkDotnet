@@ -556,7 +556,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 93
-    await testRunner.GivenAsync("I have 100 Flink clusters registered with the Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("I have 100 Flink clusters registered with the Orchestra for stress testing", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 94
     await testRunner.AndAsync("each cluster has different resource capacity and health status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

@@ -981,8 +981,8 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ Multiple Flink clusters successfully registered with Orchestra");
     }
 
-    [Given(@"I have (\d+) Flink clusters registered with the Orchestra")]
-    public void GivenIHaveFlinkClustersRegisteredWithTheOrchestra(int clusterCount)
+    [Given(@"I have (\d+) Flink clusters registered with the Orchestra for stress testing")]
+    public void GivenIHaveFlinkClustersRegisteredWithTheOrchestraForStressTesting(int clusterCount)
     {
         _output.WriteLine($"🏗️ Setting up {clusterCount} Flink clusters with Orchestra...");
         

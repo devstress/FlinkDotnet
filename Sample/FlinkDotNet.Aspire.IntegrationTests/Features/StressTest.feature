@@ -90,7 +90,7 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
 
   @stress @multi_cluster @orchestra @netflix_scale
   Scenario: Multi-Cluster Job Distribution with Intelligent Placement
-    Given I have 100 Flink clusters registered with the Orchestra
+    Given I have 100 Flink clusters registered with the Orchestra for stress testing
     And each cluster has different resource capacity and health status
     When I submit 10,000 jobs using BestFit placement strategy
     Then jobs should be distributed optimally based on cluster capacity
