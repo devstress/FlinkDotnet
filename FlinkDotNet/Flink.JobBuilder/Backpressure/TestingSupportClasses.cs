@@ -74,7 +74,7 @@ public static class NetworkBoundBackpressureController
     public static bool ValidateAdaptiveTimeout() => true;
     public static bool ValidateOrderedProcessing() => true;
     public static bool ValidateFallbackHandling() => true;
-    public static bool ValidateNetflixPatterns() => true;
+    public static bool ValidateEnterprisePatterns() => true;
 }
 
 public class FiniteResourceManager

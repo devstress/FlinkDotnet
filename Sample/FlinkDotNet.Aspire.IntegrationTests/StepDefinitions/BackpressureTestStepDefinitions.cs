@@ -1859,7 +1859,7 @@ public class BackpressureTestStepDefinitions
                 
             case "Network bottleneck handling":
                 var networkCoverage = ValidateNetworkBottleneckCoverage();
-                _output.WriteLine($"  📊 Netflix resilience patterns: {networkCoverage}");
+                _output.WriteLine($"  📊 Enterprise resilience patterns: {networkCoverage}");
                 return networkCoverage;
                 
             case "Rate limiting integration":
@@ -1928,7 +1928,7 @@ public class BackpressureTestStepDefinitions
         var networkController = new NetworkBoundBackpressureController();
         var noisyNeighborManager = new NoisyNeighborManager();
         
-        return networkController.ValidateNetflixPatterns() && 
+        return networkController.ValidateEnterprisePatterns() && 
                noisyNeighborManager.ValidateResourceIsolation();
     }
 
@@ -3658,7 +3658,7 @@ public class NetworkBoundBackpressureController
     public bool ValidateAdaptiveTimeout() => true;
     public bool ValidateOrderedProcessing() => true;
     public bool ValidateFallbackHandling() => true;
-    public bool ValidateNetflixPatterns() => true;
+    public bool ValidateEnterprisePatterns() => true;
 }
 
 public class FiniteResourceManager
@@ -5306,7 +5306,7 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
     return messages;
 }
 
-    #region Netflix-Scale Testing Step Definitions
+    #region Enterprise-Scale Testing Step Definitions
 
     [Given(@"I have (\d+)\+ Flink clusters distributed across multiple data centers")]
     public void GivenIHaveFlinkClustersDistributedAcrossMultipleDataCenters(int clusterCount)
@@ -5323,10 +5323,10 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
             _testData["OrchestraManager"] = orchestraManager;
         }
         
-        // Setup Netflix-scale cluster distribution
+        // Setup enterprise-scale cluster distribution
         orchestraManager.SetupMassiveClusterDistribution(clusterCount);
         
-        _testData["NetflixScaleClusterCount"] = clusterCount;
+        _testData["EnterpriseScaleClusterCount"] = clusterCount;
         
         _output.WriteLine($"✅ {clusterCount}+ Flink clusters distributed across multiple data centers configured");
     }
@@ -5357,17 +5357,17 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Complex backpressure patterns simulated globally");
     }
 
-    [Then(@"backpressure coordination should scale to Netflix-level cluster counts")]
-    public void ThenBackpressureCoordinationShouldScaleToNetflixLevelClusterCounts()
+    [Then(@"backpressure coordination should scale to enterprise-level cluster counts")]
+    public void ThenBackpressureCoordinationShouldScaleToEnterpriseLevelClusterCounts()
     {
-        _output.WriteLine("📊 Validating backpressure coordination scales to Netflix-level cluster counts...");
+        _output.WriteLine("📊 Validating backpressure coordination scales to enterprise-level cluster counts...");
         
         var orchestraManager = _testData["OrchestraManager"] as OrchestraBackpressureManager;
-        var scalingResult = orchestraManager?.ValidateNetflixScaleCoordination();
+        var scalingResult = orchestraManager?.ValidateEnterpriseScaleCoordination();
         
-        Assert.True(scalingResult, "Backpressure coordination should scale to Netflix-level cluster counts");
+        Assert.True(scalingResult, "Backpressure coordination should scale to enterprise-level cluster counts");
         
-        _output.WriteLine("✅ Backpressure coordination successfully scales to Netflix-level cluster counts");
+        _output.WriteLine("✅ Backpressure coordination successfully scales to enterprise-level cluster counts");
     }
 
     [Then(@"regional backpressure patterns should be managed independently")]
@@ -5409,17 +5409,17 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ No single point of failure exists in backpressure management");
     }
 
-    [Then(@"backpressure resolution should complete within Netflix SLA requirements")]
-    public void ThenBackpressureResolutionShouldCompleteWithinNetflixSLARequirements()
+    [Then(@"backpressure resolution should complete within enterprise SLA requirements")]
+    public void ThenBackpressureResolutionShouldCompleteWithinEnterpriseSLARequirements()
     {
-        _output.WriteLine("⏱️ Validating backpressure resolution completes within Netflix SLA requirements...");
+        _output.WriteLine("⏱️ Validating backpressure resolution completes within enterprise SLA requirements...");
         
         var orchestraManager = _testData["OrchestraManager"] as OrchestraBackpressureManager;
-        var slaResult = orchestraManager?.ValidateNetflixSLACompliance();
+        var slaResult = orchestraManager?.ValidateEnterpriseSLACompliance();
         
-        Assert.True(slaResult, "Backpressure resolution should complete within Netflix SLA requirements");
+        Assert.True(slaResult, "Backpressure resolution should complete within enterprise SLA requirements");
         
-        _output.WriteLine("✅ Backpressure resolution completes within Netflix SLA requirements");
+        _output.WriteLine("✅ Backpressure resolution completes within enterprise SLA requirements");
     }
 
     [Then(@"system should maintain (\d+\.\d+)% availability during backpressure events")]
@@ -6057,7 +6057,7 @@ public class BackpressureMessage
 
 #endregion
 
-#region Netflix Architecture Testing Support Classes
+#region Enterprise Architecture Testing Support Classes
 
 // Orchestra Backpressure Manager for multi-cluster coordination
 public class OrchestraBackpressureManager
@@ -6255,7 +6255,7 @@ public class OrchestraBackpressureManager
         return true;
     }
 
-    // Netflix-Scale Testing Methods
+    // Enterprise-Scale Testing Methods
     public void SetupMassiveClusterDistribution(int clusterCount)
     {
         RegisterClusters(clusterCount);
@@ -6322,7 +6322,7 @@ public class OrchestraBackpressureManager
         }
     }
 
-    public bool ValidateNetflixScaleCoordination()
+    public bool ValidateEnterpriseScaleCoordination()
     {
         // Validate that coordination can handle thousands of clusters
         return _registeredClusterCount >= 1000 && _backpressureCoordinationConfigured;
@@ -6363,9 +6363,9 @@ public class OrchestraBackpressureManager
         return healthyClusters >= (totalClusters * 0.3);
     }
 
-    public bool ValidateNetflixSLACompliance()
+    public bool ValidateEnterpriseSLACompliance()
     {
-        // Validate response times meet Netflix SLA requirements (< 100ms)
+        // Validate response times meet enterprise SLA requirements (< 100ms)
         var avgResponseTime = _clusterStates.Values.Average(c => c.ResponseTimeMs);
         return avgResponseTime < 100;
     }
@@ -6740,7 +6740,7 @@ public class IntelligentJobPlacementManager
     }
 }
 
-// Supporting data classes for Netflix architecture testing
+// Supporting data classes for enterprise architecture testing
 public class ClusterBackpressureState
 {
     public string ClusterId { get; set; } = "";
@@ -6757,7 +6757,7 @@ public class ClusterBackpressureState
     public int MaxThroughput { get; set; } = 1500;
     public TimeSpan MetricsUpdateInterval { get; set; } = TimeSpan.FromSeconds(5);
     
-    // Netflix-Scale Properties
+    // Enterprise-Scale Properties
     public string DataCenter { get; set; } = "";
     public string Region { get; set; } = "";
     public bool MassiveScaleCoordinationEnabled { get; set; } = false;

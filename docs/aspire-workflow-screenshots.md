@@ -90,14 +90,14 @@ Since the Aspire environment cannot run in the CI environment due to Docker and 
 ```
 🌟 Backpressure Integration Test - World-Class Standards Achieved:
 ✅ LinkedIn throughput: 950,000 msg/sec sustained (target: >900K)
-✅ Netflix availability: 99.95% uptime (target: >99.9%)
+✅ Enterprise availability: 99.95% uptime (target: >99.9%)
 ✅ Uber recovery time: 28 seconds (target: <60s)
 ✅ Google observability: Full real-time system visibility
 ✅ Industry latency: 135ms p99 (target: <150ms)
 
 📊 Coverage Areas Validated:
 ✅ Consumer lag backpressure: LinkedIn patterns implemented
-✅ Network bottleneck handling: Netflix resilience patterns
+✅ Network bottleneck handling: Enterprise resilience patterns
 ✅ Rate limiting integration: Multi-tier enforcement
 ✅ DLQ error management: 3-tier strategy with auto-retry
 ✅ Monitoring and alerting: SRE practices with dashboards
@@ -112,4 +112,4 @@ Since the Aspire environment cannot run in the CI environment due to Docker and 
 - Consistent hash rebalancing: <500ms rebalance time
 - Tenant separation: Critical (60%), Normal (30%), Batch (10%) resource allocation
 
-**Note:** These screenshots would be automatically generated when running the comprehensive backpressure tests locally with Docker Desktop available. The tests validate LinkedIn-proven best practices for consumer lag-based flow control, Netflix resilience patterns for network bottlenecks, and multi-tier rate limiting for finite resource management.
+**Note:** These screenshots would be automatically generated when running the comprehensive backpressure tests locally with Docker Desktop available. The tests validate LinkedIn-proven best practices for consumer lag-based flow control, enterprise resilience patterns for network bottlenecks, and multi-tier rate limiting for finite resource management.

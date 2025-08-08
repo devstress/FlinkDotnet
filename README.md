@@ -2,9 +2,9 @@
 
 **FlinkDotNet** is a comprehensive solution that enables .NET developers to build and submit streaming jobs to Apache Flink clusters using a fluent C# DSL. It now includes Temporal multi-cluster orchestration capabilities for durable storage, durable workflow, resilience, reliability, exactly one semantic, scalability to billion messages per second and 99,999% availability.
 
-## 🚀 Netflix Architecture Integration
+## 🚀 Temporal Durable Workflow Architecture
 
-FlinkDotNet now implements Netflix's "Actor Workflows: Reliably orchestrating thousands of Flink clusters" architecture, enabling:
+FlinkDotNet implements enterprise-scale "Actor Workflows" for reliably orchestrating thousands of Flink clusters using Temporal durable workflows, enabling:
 
 - **Massive Scale**: Orchestrate thousands of Flink clusters simultaneously
 - **99.999% Availability**: Actor-based isolation prevents cascade failures  
@@ -14,7 +14,7 @@ FlinkDotNet now implements Netflix's "Actor Workflows: Reliably orchestrating th
 
 ## Multi-Scale Architecture
 
-FlinkDotNet provides a comprehensive, multi-layered architecture supporting everything from single jobs to Netflix-scale orchestration:
+FlinkDotNet provides a comprehensive, multi-layered architecture supporting everything from single jobs to enterprise-scale orchestration:
 
 ### Individual Job Development
 ```csharp
@@ -43,7 +43,7 @@ await job.Submit("Processing Job");
 
 ### Multi-Cluster Orchestration
 ```csharp
-// Netflix-style Orchestra for thousands of clusters
+// Enterprise-scale Orchestra for thousands of clusters
 var orchestra = new FlinkOrchestra(logger);
 
 // Provision clusters with auto-scaling
@@ -68,7 +68,7 @@ await orchestra.StartOrchestrationWorkflowAsync(new OrchestrationRequest
 
 ## Architecture Overview
 
-FlinkDotNet provides a complete Netflix-scale integration solution with multi-layered architecture:
+FlinkDotNet provides a complete enterprise-scale integration solution with multi-layered architecture:
 
 ### Core Components
 
@@ -84,7 +84,7 @@ FlinkDotNet provides a complete Netflix-scale integration solution with multi-la
 - **FlinkDotNet.Temporal**: Temporal.io workflow definitions for durable orchestration
 - **FlinkDotNet.Resilience**: Circuit breakers, retry policies, and health checkers
 
-### Netflix Architecture Implementation
+### Temporal Durable Workflow Implementation
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -135,7 +135,7 @@ The FlinkDotNet.Gateway acts as a bridge between .NET applications and Apache Fl
 3. **Cluster Communication**: Gateway communicates with Flink JobManager via REST API
 4. **Status Monitoring**: Gateway provides job status and metrics back to .NET applications
 
-#### Multi-Cluster Orchestration (Netflix Architecture)
+#### Multi-Cluster Orchestration (Temporal Durable Workflow Architecture)
 1. **Orchestra Coordination**: FlinkOrchestra manages job distribution across thousands of clusters
 2. **Actor-based Management**: Each cluster is managed by an independent ClusterActor
 3. **Temporal Workflows**: Long-running orchestration processes with exactly-once guarantees
@@ -178,7 +178,7 @@ FlinkDotNet/
 │   ├── DataStream                # Core streaming API
 │   ├── Functions                 # User functions
 │   └── Connectors               # Sources and sinks
-├── FlinkDotNet.Orchestra/        # Multi-cluster orchestration (Netflix architecture)
+├── FlinkDotNet.Orchestra/        # Multi-cluster orchestration (Temporal architecture)
 │   ├── Services                  # FlinkOrchestra, ClusterActorBridge
 │   ├── Models                    # ClusterStatus, JobSubmissionResult
 │   └── Interfaces               # IFlinkOrchestra, IFlinkClusterActor
@@ -248,7 +248,7 @@ var job = Flink.JobBuilder
 await job.Submit("User Activity");
 ```
 
-### Multi-Cluster Orchestration (Netflix Architecture)
+### Multi-Cluster Orchestration (Temporal Durable Workflow Architecture)
 
 #### Cluster Provisioning and Management
 ```csharp
@@ -421,7 +421,7 @@ builder.Build().Run();
    await job.Submit("My First JobBuilder Job");
    ```
 
-### Netflix-Scale Multi-Cluster Setup
+### Enterprise-Scale Multi-Cluster Setup
 
 1. **Install additional orchestration packages**
    ```bash
@@ -471,7 +471,7 @@ builder.Build().Run();
 - [Performance Tuning](./docs/performance.md)
 - [Troubleshooting](./docs/troubleshooting.md)
 
-### Netflix Architecture Documentation
+### Temporal Durable Workflow Architecture Documentation
 - [Flink vs Temporal Decision Guide](./docs/flink-vs-temporal-decision-guide.md)
 - [Multi-Cluster Orchestration Patterns](./docs/orchestration-patterns.md)
 - [Temporal Workflow Setup](./docs/temporal-setup.md)
@@ -484,7 +484,7 @@ builder.Build().Run();
 
 **Yes! JobBuilder is still fully supported and recommended for many use cases.**
 
-The new Netflix architecture operates at a different level:
+The new Temporal durable workflow architecture operates at a different level:
 
 - **JobBuilder/DataStream APIs**: Create individual job definitions 
 - **Orchestra/ClusterManager**: Orchestrate where those jobs run across thousands of clusters
@@ -509,9 +509,9 @@ var result = await orchestra.SubmitJobAsync(jobDef, SubmissionStrategy.BestFit);
 
 **When to use each approach:**
 - **Single cluster, simple deployments**: Use DataStream or JobBuilder directly
-- **Multiple clusters, Netflix-scale**: Use Orchestra + your preferred job definition API
+- **Multiple clusters, enterprise-scale**: Use Orchestra + your preferred job definition API
 - **Complex business workflows**: Add Temporal workflows for coordination
-- **High availability requirements**: Use the full Netflix architecture stack
+- **High availability requirements**: Use the full Temporal durable workflow architecture stack
 
 ### Migration Path
 
@@ -520,7 +520,7 @@ var result = await orchestra.SubmitJobAsync(jobDef, SubmissionStrategy.BestFit);
 3. **Scale horizontally**: Add more clusters through Orchestra as needed
 4. **Add Temporal**: Implement complex workflows when business requirements demand it
 
-The architecture is designed for **incremental adoption** - you can start simple and scale to Netflix levels as needed.
+The architecture is designed for **incremental adoption** - you can start simple and scale to enterprise levels as needed.
 
 ## Contributing
 

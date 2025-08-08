@@ -7,7 +7,7 @@ namespace FlinkDotNet.Orchestra.Services;
 
 /// <summary>
 /// Main orchestration service that manages multiple Flink clusters and distributes jobs.
-/// Implements Netflix's multi-cluster orchestration patterns.
+/// Implements enterprise multi-cluster orchestration patterns.
 /// </summary>
 public class FlinkOrchestra : IFlinkOrchestra
 {

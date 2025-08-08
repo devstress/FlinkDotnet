@@ -2,7 +2,7 @@
 Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration
   As a Flink.NET user
   I want to process 1 million messages through both single clusters and multi-cluster orchestration
-  So that I can validate high-throughput streaming performance at Netflix scale
+  So that I can validate high-throughput streaming performance at enterprise scale
 
   Background:
     Given the Flink cluster is running
@@ -88,7 +88,7 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
       | 1000000    | Message content for ID 1000000: Final streaming data payload processed through complete pipeline | kafka.topic=stress-output; kafka.partition=99; correlation.id=corr-1000000 |
     And the FIFO order verification should show 100% sequential order compliance
 
-  @stress @multi_cluster @orchestra @netflix_scale
+  @stress @multi_cluster @orchestra @enterprise_scale
   Scenario: Multi-Cluster Job Distribution with Intelligent Placement
     Given I have 100 Flink clusters registered with the Orchestra for stress testing
     And each cluster has different resource capacity and health status
@@ -99,8 +99,8 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
     And all jobs should complete successfully within SLA
     And Orchestra health aggregation should show all clusters healthy
 
-  @stress @multi_cluster @massive_scale @netflix_architecture
-  Scenario: Netflix-Scale Orchestration with 1000 Clusters
+  @stress @multi_cluster @massive_scale @temporal_architecture
+  Scenario: Enterprise-Scale Orchestration with 1000 Clusters
     Given I have 1000 Flink clusters in the Orchestra
     And clusters are distributed across multiple availability zones
     When I submit 1,000,000 messages for processing across all clusters

@@ -510,7 +510,7 @@ public class BackpressureConfiguration
 
 ### 🏭 Industry Best Practices Integration
 
-**Netflix**: Hystrix circuit breaker patterns (Fowler, 2014)  
+**Enterprise**: Hystrix circuit breaker patterns (Fowler, 2014)  
 **Google**: SRE error budget and load shedding strategies (Beyer et al., 2016)  
 **LinkedIn**: Kafka backpressure and consumer lag monitoring (Kreps et al., 2011)  
 **Uber**: Dynamic rate limiting for microservices (Ranganathan et al., 2018)

@@ -2,7 +2,7 @@
 Feature: Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience
   As a Flink.NET user
   I want to handle 10% failure rates with backpressure, rebalancing, and multi-cluster actor resilience
-  So that I can ensure system reliability under adverse conditions at Netflix scale
+  So that I can ensure system reliability under adverse conditions at enterprise scale
 
   Background:
     Given the Flink cluster is running with fault tolerance enabled

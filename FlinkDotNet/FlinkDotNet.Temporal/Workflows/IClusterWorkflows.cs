@@ -5,7 +5,7 @@ namespace FlinkDotNet.Temporal.Workflows;
 
 /// <summary>
 /// Main Temporal workflow for orchestrating multiple Flink clusters.
-/// Implements Netflix's actor workflow patterns for massive scale cluster management.
+/// Implements enterprise actor workflow patterns for massive scale cluster management.
 /// Note: Temporal attributes will be added when implementing actual workflows
 /// </summary>
 public interface IClusterOrchestratorWorkflow
