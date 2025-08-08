@@ -6,7 +6,7 @@
 
 FlinkDotNet implements enterprise-scale "Actor Workflows" for reliably orchestrating thousands of Flink clusters using Temporal durable workflows, enabling:
 
-- **Massive Scale**: Orchestrate thousands of Flink clusters simultaneously
+- **Scale**: Orchestrate thousands of Flink clusters simultaneously
 - **99.999% Availability**: Actor-based isolation prevents cascade failures  
 - **Intelligent Job Placement**: Smart distribution across clusters based on capacity and health
 - **Temporal Workflows**: Durable orchestration with exactly-once execution guarantees
