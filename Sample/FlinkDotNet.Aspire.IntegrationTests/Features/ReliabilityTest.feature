@@ -124,7 +124,7 @@ Feature: Reliability Test - Fault Tolerance and Recovery with Actor-Based Resili
     Then cluster actors should detect failures within 30 seconds
     And failed cluster actors should initiate immediate isolation procedures
     And healthy cluster actors should remain unaffected
-    And failed clusters should be marked as unhealthy in Orchestra
+    And failed clusters should be marked as unhealthy in FlinkDotNet.Orchestra
     And automatic recovery workflows should be triggered via Temporal
     And failed clusters should be restored within 5 minutes
     And no cascade failures should propagate to other clusters
@@ -185,7 +185,7 @@ Feature: Reliability Test - Fault Tolerance and Recovery with Actor-Based Resili
     And other actors should continue normal operation
     And no error propagation should occur across the actor system
     And failed actor should be quarantined and restarted independently
-    And Orchestra should route traffic away from the failed cluster
+    And FlinkDotNet.Orchestra should route traffic away from the failed cluster
     And system-wide availability should be maintained above 99%
 
   @reliability @multi_cluster_failover @automatic_recovery

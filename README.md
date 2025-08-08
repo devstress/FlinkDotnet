@@ -41,9 +41,9 @@ var job = Flink.JobBuilder
 await job.Submit("Processing Job");
 ```
 
-### Multi-Cluster Orchestration
+### Multi-Cluster FlinkDotNet.Orchestra
 ```csharp
-// Enterprise-scale Orchestra for thousands of clusters
+// Enterprise-scale FlinkDotNet.Orchestra for thousands of clusters
 var orchestra = new FlinkOrchestra(logger);
 
 // Provision clusters with auto-scaling
@@ -57,7 +57,7 @@ await orchestra.ProvisionClusterAsync(new ClusterConfiguration
 // Submit jobs with intelligent placement
 var result = await orchestra.SubmitJobAsync(jobDefinition, SubmissionStrategy.BestFit);
 
-// Start Temporal orchestration workflows
+// Start Temporal FlinkDotNet.Orchestra workflows
 await orchestra.StartOrchestrationWorkflowAsync(new OrchestrationRequest
 {
     TargetClusters = 1000,
@@ -78,7 +78,7 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
 - **Intermediate Representation (IR)**: JSON-based job definitions
 - **Job Gateway**: HTTP service that bridges .NET applications with Apache Flink clusters
 
-#### Orchestration Layer  
+#### FlinkDotNet.Orchestra Layer  
 - **FlinkDotNet.Orchestra**: Multi-cluster job orchestration with intelligent placement strategies
 - **FlinkDotNet.ClusterManager**: Actor-based cluster lifecycle management  
 - **FlinkDotNet.Temporal**: Temporal.io workflow definitions for durable orchestration
