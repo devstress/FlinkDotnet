@@ -729,20 +729,7 @@ public class BatchProcessingService : IBatchProcessingService
         
         return pulledMessages.ToArray();
     }
-
-    // ========== Missing Step Definitions for Backpressure and Integration Tests ==========
-
-    [Given(@"the logical queue ""([^""]*)"" is configured with backpressure thresholds")]
-    public void GivenTheLogicalQueueIsConfiguredWithBackpressureThresholds(string queueName)
-    {
-        _output.WriteLine($"⚙️ Configuring logical queue '{queueName}' with backpressure thresholds...");
-        
-        var queueConfigured = ConfigureLogicalQueueWithBackpressure(queueName);
-        Assert.True(queueConfigured, $"Logical queue '{queueName}' should be configured with backpressure thresholds");
-        
-        _testData["LogicalQueueWithBackpressure"] = queueName;
-        _output.WriteLine($"✅ Logical queue '{queueName}' configured with backpressure thresholds");
-    }
+}
 
     [Given(@"the processing capacity is limited to simulate backpressure conditions")]
     public void GivenTheProcessingCapacityIsLimitedToSimulateBackpressureConditions()
@@ -925,6 +912,20 @@ public class BatchProcessingService : IBatchProcessingService
         
         _testData["DataStructureConsistent"] = true;
         _output.WriteLine("✅ All messages have consistent data structure and formatting");
+    }
+
+    // ========== Missing Step Definitions for Backpressure and Integration Tests ==========
+
+    [Given(@"the logical queue ""([^""]*)"" is configured with backpressure thresholds")]
+    public void GivenTheLogicalQueueIsConfiguredWithBackpressureThresholds(string queueName)
+    {
+        _output.WriteLine($"⚙️ Configuring logical queue '{queueName}' with backpressure thresholds...");
+        
+        var queueConfigured = ConfigureLogicalQueueWithBackpressure(queueName);
+        Assert.True(queueConfigured, $"Logical queue '{queueName}' should be configured with backpressure thresholds");
+        
+        _testData["LogicalQueueWithBackpressure"] = queueName;
+        _output.WriteLine($"✅ Logical queue '{queueName}' configured with backpressure thresholds");
     }
 
     // Helper methods for missing step definitions
