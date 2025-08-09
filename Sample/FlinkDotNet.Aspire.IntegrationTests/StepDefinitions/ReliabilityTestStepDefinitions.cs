@@ -1485,16 +1485,16 @@ public class ReliabilityTestStepDefinitions
         _output.WriteLine("✅ Failed actor successfully quarantined and restarted independently");
     }
 
-    [Then(@"Orchestra should route traffic away from the failed cluster")]
-    public void ThenOrchestraShouldRouteTrafficAwayFromTheFailedCluster()
+    [Then(@"FlinkDotNet\.Orchestration should route traffic away from the failed cluster")]
+    public void ThenFlinkDotNetOrchestrationShouldRouteTrafficAwayFromTheFailedCluster()
     {
-        _output.WriteLine("🎼 Verifying Orchestra routes traffic away from failed cluster...");
+        _output.WriteLine("🎼 Verifying FlinkDotNet.Orchestration routes traffic away from failed cluster...");
         
         var trafficRerouted = ValidateTrafficRerouting();
-        Assert.True(trafficRerouted, "Orchestra should route traffic away from the failed cluster");
+        Assert.True(trafficRerouted, "FlinkDotNet.Orchestration should route traffic away from the failed cluster");
         
         _testData["TrafficRerouted"] = true;
-        _output.WriteLine("✅ Orchestra successfully routed traffic away from failed cluster");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration successfully routed traffic away from failed cluster");
     }
 
     [Then(@"system-wide availability should be maintained above (\d+)%")]
@@ -1695,16 +1695,16 @@ public class ReliabilityTestStepDefinitions
         _output.WriteLine("✅ Healthy cluster actors successfully remained unaffected");
     }
 
-    [Then(@"failed clusters should be marked as unhealthy in Orchestra")]
-    public void ThenFailedClustersShouldBeMarkedAsUnhealthyInOrchestra()
+    [Then(@"failed clusters should be marked as unhealthy in FlinkDotNet\.Orchestration")]
+    public void ThenFailedClustersShouldBeMarkedAsUnhealthyInFlinkDotNetOrchestration()
     {
-        _output.WriteLine("🎼 Verifying failed clusters are marked as unhealthy in Orchestra...");
+        _output.WriteLine("🎼 Verifying failed clusters are marked as unhealthy in FlinkDotNet.Orchestration...");
         
         var clustersMarkedUnhealthy = ValidateOrchestraUnhealthyMarking();
-        Assert.True(clustersMarkedUnhealthy, "Failed clusters should be marked as unhealthy in Orchestra");
+        Assert.True(clustersMarkedUnhealthy, "Failed clusters should be marked as unhealthy in FlinkDotNet.Orchestration");
         
         _testData["ClustersMarkedUnhealthyInOrchestra"] = true;
-        _output.WriteLine("✅ Failed clusters successfully marked as unhealthy in Orchestra");
+        _output.WriteLine("✅ Failed clusters successfully marked as unhealthy in FlinkDotNet.Orchestration");
     }
 
     [Then(@"automatic recovery workflows should be triggered via Temporal")]
