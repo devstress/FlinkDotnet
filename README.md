@@ -465,18 +465,25 @@ builder.Build().Run();
 ## Documentation
 
 ### Core Documentation
-- [API Documentation](./docs/api/)
-- [Gateway Setup Guide](./docs/gateway-setup.md)
-- [Integration Examples](./docs/examples/)
-- [Performance Tuning](./docs/performance.md)
-- [Troubleshooting](./docs/troubleshooting.md)
+- [Getting Started Guide](./docs/wiki/Getting-Started.md)
+- [Complete Usage Example](./docs/wiki/Complete-Usage-Example.md)
+- [Gateway Communication Guide](./docs/wiki/flinkdotnet-gateway-communication.md)
+- [Local Development Setup](./docs/wiki/Aspire-Local-Development-Setup.md)
+- [Contributing Guidelines](./CONTRIBUTING.md)
 
 ### Temporal Durable Workflow Architecture Documentation
 - [Flink vs Temporal Decision Guide](./docs/flink-vs-temporal-decision-guide.md)
-- [Multi-Cluster Orchestration Patterns](./docs/orchestration-patterns.md)
-- [Temporal Workflow Setup](./docs/temporal-setup.md)
-- [Auto-scaling Configuration](./docs/auto-scaling.md)
-- [Resilience Patterns](./docs/resilience-patterns.md)
+- [Backpressure Complete Reference](./docs/wiki/Backpressure-Complete-Reference.md)
+- [Aspire Container Architecture](./docs/wiki/Backpressure-Aspire-Container-Architecture.md)
+- [Rate Limiting Implementation](./docs/wiki/Rate-Limiting-Implementation-Tutorial.md)
+- [Local Testing Setup](./docs/local-testing-setup.md)
+
+### Testing and Quality Assurance
+- [Stress Tests Overview](./docs/wiki/Stress-Tests-Overview.md)
+- [Reliability Tests Overview](./docs/wiki/Reliability-Tests-Overview.md)
+- [Complex Logic Stress Tests](./docs/wiki/Complex-Logic-Stress-Tests.md)
+- [Observability and Monitoring](./docs/observability/README.md)
+- [Monitoring Best Practices](./docs/observability/monitoring-best-practices.md)
 
 ## Frequently Asked Questions
 
