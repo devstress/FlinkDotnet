@@ -957,19 +957,19 @@ public class StressTestStepDefinitions
 
     // ========== Multi-Cluster Orchestra Step Definitions ==========
 
-    [Given(@"the FlinkDotNet Orchestra is available for multi-cluster orchestration")]
+    [Given(@"the FlinkDotNet\.Orchestration is available for multi-cluster orchestration")]
     public void GivenTheFlinkDotNetOrchestraIsAvailableForMultiClusterOrchestration()
     {
-        _output.WriteLine("🎼 Verifying FlinkDotNet Orchestra availability for multi-cluster orchestration...");
+        _output.WriteLine("🎼 Verifying FlinkDotNet.Orchestration availability for multi-cluster orchestration...");
         
         var orchestraAvailable = ValidateOrchestraAvailability();
-        Assert.True(orchestraAvailable, "FlinkDotNet Orchestra should be available for multi-cluster orchestration");
+        Assert.True(orchestraAvailable, "FlinkDotNet.Orchestration should be available for multi-cluster orchestration");
         
         _testData["OrchestraStatus"] = "Available";
-        _output.WriteLine("✅ FlinkDotNet Orchestra is available for multi-cluster orchestration");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration is available for multi-cluster orchestration");
     }
 
-    [Given(@"multiple Flink clusters are registered with the Orchestra")]
+    [Given(@"multiple Flink clusters are registered with the FlinkDotNet\.Orchestration")]
     public void GivenMultipleFlinkClustersAreRegisteredWithTheOrchestra()
     {
         _output.WriteLine("🔗 Verifying multiple Flink clusters are registered with Orchestra...");
@@ -1076,7 +1076,7 @@ public class StressTestStepDefinitions
 
     // ========== Enterprise Scale Step Definitions ==========
 
-    [Given(@"I have (\d+) Flink clusters in the Orchestra")]
+    [Given(@"I have (\d+) Flink clusters in the FlinkDotNet\.Orchestration")]
     public void GivenIHaveFlinkClustersInTheOrchestra(int clusterCount)
     {
         _output.WriteLine($"🏭 Setting up enterprise-scale deployment with {clusterCount} clusters...");
@@ -1170,7 +1170,7 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ No cascade failures detected - system isolation working correctly");
     }
 
-    [Then(@"Orchestra should demonstrate auto-scaling capabilities")]
+    [Then(@"FlinkDotNet\.Orchestration should demonstrate auto-scaling capabilities")]
     public void ThenOrchestraShouldDemonstrateAutoScalingCapabilities()
     {
         _output.WriteLine("📈 Verifying Orchestra auto-scaling capabilities...");

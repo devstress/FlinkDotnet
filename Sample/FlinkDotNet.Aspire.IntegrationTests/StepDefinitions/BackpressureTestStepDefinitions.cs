@@ -1116,7 +1116,7 @@ public class BackpressureTestStepDefinitions
 
     #region Multi-Cluster Orchestra Steps
 
-    [Given(@"I have (\d+) Flink clusters registered with the Orchestration")]
+    [Given(@"I have (\d+) Flink clusters registered with the FlinkDotNet\.Orchestration")]
     public void GivenIHaveFlinkClustersRegisteredWithTheOrchestra(int clusterCount)
     {
         _output.WriteLine($"🎼 Registering {clusterCount} Flink clusters with the Orchestration...");
@@ -1164,7 +1164,7 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Sustained high-volume load applied across all clusters");
     }
 
-    [Then(@"Orchestration should detect cluster-level backpressure conditions")]
+    [Then(@"FlinkDotNet\.Orchestration should detect cluster-level backpressure conditions")]
     public void ThenOrchestraShouldDetectClusterLevelBackpressureConditions()
     {
         _output.WriteLine("🔍 Validating Orchestration detects cluster-level backpressure conditions...");
@@ -1186,7 +1186,7 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Load intelligently redistributed to available clusters");
     }
 
-    [Then(@"clusters near capacity should signal backpressure to Orchestration")]
+    [Then(@"clusters near capacity should signal backpressure to FlinkDotNet\.Orchestration")]
     public void ThenClustersNearCapacityShouldSignalBackpressureToOrchestra()
     {
         _output.WriteLine("📡 Validating clusters signal backpressure to Orchestration when near capacity...");
@@ -1197,7 +1197,7 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Clusters near capacity signal backpressure to Orchestration");
     }
 
-    [Then(@"Orchestration should route new jobs to clusters with available capacity")]
+    [Then(@"FlinkDotNet\.Orchestration should route new jobs to clusters with available capacity")]
     public void ThenOrchestraShouldRouteNewJobsToClustersWithAvailableCapacity()
     {
         _output.WriteLine("🚦 Validating Orchestration routes new jobs to clusters with available capacity...");
@@ -5640,7 +5640,7 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Additional cluster capacity provisioned automatically");
     }
 
-    [Then(@"new clusters should be integrated into the Orchestration seamlessly")]
+    [Then(@"new clusters should be integrated into the FlinkDotNet\.Orchestration seamlessly")]
     public void ThenNewClustersShouldBeIntegratedIntoTheOrchestraSeamlessly()
     {
         _output.WriteLine("🎼 Verifying new clusters are integrated into Orchestration seamlessly...");
