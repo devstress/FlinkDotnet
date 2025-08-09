@@ -91,13 +91,13 @@ public class BackpressureTestStepDefinitions
     [Given(@"FlinkDotNet\.Orchestra is configured for multi-cluster backpressure coordination")]
     public void GivenFlinkDotNetOrchestraIsConfiguredForMultiClusterBackpressureCoordination()
     {
-        _output.WriteLine("🎼 Configuring FlinkDotNet.Orchestra for multi-cluster backpressure coordination...");
+        _output.WriteLine("🎼 Configuring FlinkDotNet.Orchestration for multi-cluster backpressure coordination...");
         
         var orchestraManager = new OrchestraBackpressureManager();
         var orchestraConfigured = ConfigureOrchestraForBackpressure();
         orchestraManager.ConfigureBackpressureCoordination();
         
-        Assert.True(orchestraConfigured, "FlinkDotNet.Orchestra should be configured for multi-cluster backpressure coordination");
+        Assert.True(orchestraConfigured, "FlinkDotNet.Orchestration should be configured for multi-cluster backpressure coordination");
         
         _testData["OrchestraConfigured"] = true;
         _testData["OrchestraManager"] = orchestraManager; // Store the manager for later use

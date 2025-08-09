@@ -1,4 +1,4 @@
-namespace FlinkDotNet.Orchestra.Models;
+namespace FlinkDotNet.Orchestration.Models;
 
 /// <summary>
 /// Represents the current status and health of a Flink cluster.

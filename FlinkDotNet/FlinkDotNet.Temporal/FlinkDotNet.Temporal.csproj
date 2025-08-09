@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
-    <ProjectReference Include="..\FlinkDotNet.Orchestra\FlinkDotNet.Orchestra.csproj" />
+    <ProjectReference Include="..\FlinkDotNet.Orchestration\FlinkDotNet.Orchestration.csproj" />
     <ProjectReference Include="..\FlinkDotNet.ClusterManager\FlinkDotNet.ClusterManager.csproj" />
   </ItemGroup>
 

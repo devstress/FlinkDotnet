@@ -126,10 +126,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("the FlinkConsumerGroup is ready", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 12
-    await testRunner.AndAsync("the FlinkDotNet.Orchestra is available for multi-cluster orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("the FlinkDotNet.Orchestrationtion is available for multi-cluster orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 13
-    await testRunner.AndAsync("multiple Flink clusters are registered with the FlinkDotNet.Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("multiple Flink clusters are registered with the FlinkDotNet.Orchestrationtion", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
         }
         
@@ -556,7 +556,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 93
-    await testRunner.GivenAsync("I have 100 Flink clusters registered with the FlinkDotNet.Orchestra for stress te" +
+    await testRunner.GivenAsync("I have 100 Flink clusters registered with the FlinkDotNet.Orchestrationtion for stress te" +
                         "sting", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 94
@@ -578,7 +578,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("all jobs should complete successfully within SLA", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 100
-    await testRunner.AndAsync("FlinkDotNet.Orchestra health aggregation should show all clusters healthy", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion health aggregation should show all clusters healthy", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -615,7 +615,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 104
-    await testRunner.GivenAsync("I have 1000 Flink clusters in the FlinkDotNet.Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("I have 1000 Flink clusters in the FlinkDotNet.Orchestrationtion", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 105
     await testRunner.AndAsync("clusters are distributed across multiple availability zones", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -639,7 +639,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("no cascade failures should occur", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 112
-    await testRunner.AndAsync("FlinkDotNet.Orchestra should demonstrate auto-scaling capabilities", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion should demonstrate auto-scaling capabilities", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();
@@ -874,7 +874,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("system should maintain optimal throughput despite overload", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 163
-    await testRunner.AndAsync("FlinkDotNet.Orchestra should trigger auto-scaling for additional capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion should trigger auto-scaling for additional capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

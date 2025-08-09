@@ -1,9 +1,9 @@
-using FlinkDotNet.Orchestra.Interfaces;
-using FlinkDotNet.Orchestra.Models;
+using FlinkDotNet.Orchestration.Interfaces;
+using FlinkDotNet.Orchestration.Models;
 using Microsoft.Extensions.Logging;
 using ClusterManagerModels = FlinkDotNet.ClusterManager.Models;
 
-namespace FlinkDotNet.Orchestra.Services;
+namespace FlinkDotNet.Orchestration.Services;
 
 /// <summary>
 /// Main orchestration service that manages multiple Flink clusters and distributes jobs.

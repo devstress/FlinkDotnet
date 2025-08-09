@@ -129,7 +129,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("Kafka Dashboard is available for monitoring", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 13
-    await testRunner.AndAsync("FlinkDotNet.Orchestra is configured for multi-cluster backpressure coordination", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion is configured for multi-cluster backpressure coordination", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 14
     await testRunner.AndAsync("multiple Flink clusters are available for load distribution", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1808,10 +1808,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             await this.ScenarioCleanupAsync();
         }
         
-        [Xunit.SkippableFactAttribute(DisplayName="Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestra")]
+        [Xunit.SkippableFactAttribute(DisplayName="Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestrationtion")]
         [Xunit.TraitAttribute("FeatureTitle", "Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Enterprise + L" +
             "inkedIn Best Practices)")]
-        [Xunit.TraitAttribute("Description", "Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestra")]
+        [Xunit.TraitAttribute("Description", "Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestrationtion")]
         [Xunit.TraitAttribute("Category", "backpressure")]
         [Xunit.TraitAttribute("Category", "multi_cluster")]
         [Xunit.TraitAttribute("Category", "orchestra_coordination")]
@@ -1822,7 +1822,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                     "multi_cluster",
                     "orchestra_coordination"};
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestra", null, tagsOfScenario, argumentsOfScenario, featureTags);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestrationtion", null, tagsOfScenario, argumentsOfScenario, featureTags);
 #line 382
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
@@ -1837,7 +1837,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
   await this.FeatureBackgroundAsync();
 #line hidden
 #line 383
-    await testRunner.GivenAsync("I have 50 Flink clusters registered with the FlinkDotNet.Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+    await testRunner.GivenAsync("I have 50 Flink clusters registered with the FlinkDotNet.Orchestrationtion", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 384
     await testRunner.AndAsync("each cluster has different processing capabilities and current load", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1849,16 +1849,16 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("sustained high-volume load is applied across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 387
-    await testRunner.ThenAsync("FlinkDotNet.Orchestra should detect cluster-level backpressure conditions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("FlinkDotNet.Orchestrationtion should detect cluster-level backpressure conditions", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 388
     await testRunner.AndAsync("load should be intelligently redistributed to available clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 389
-    await testRunner.AndAsync("clusters near capacity should signal backpressure to FlinkDotNet.Orchestra", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("clusters near capacity should signal backpressure to FlinkDotNet.Orchestrationtion", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 390
-    await testRunner.AndAsync("FlinkDotNet.Orchestra should route new jobs to clusters with available capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion should route new jobs to clusters with available capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 391
     await testRunner.AndAsync("no messages should be lost during load redistribution", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1920,7 +1920,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("no backpressure should propagate between isolated cluster actors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 403
-    await testRunner.AndAsync("FlinkDotNet.Orchestra should detect per-cluster backpressure status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion should detect per-cluster backpressure status", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 404
     await testRunner.AndAsync("job placement should avoid clusters under backpressure", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -1967,13 +1967,13 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.GivenAsync("I have clusters with varying processing capacities and current loads", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 411
-    await testRunner.AndAsync("FlinkDotNet.Orchestra has real-time visibility into cluster backpressure metrics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion has real-time visibility into cluster backpressure metrics", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 412
     await testRunner.WhenAsync("new jobs are submitted for processing", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 413
-    await testRunner.ThenAsync("FlinkDotNet.Orchestra should evaluate cluster capacity before job placement", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("FlinkDotNet.Orchestrationtion should evaluate cluster capacity before job placement", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 414
     await testRunner.AndAsync("jobs should be placed on clusters with available headroom", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -2026,19 +2026,19 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.GivenAsync("I have auto-scaling enabled for cluster capacity management", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 423
-    await testRunner.AndAsync("FlinkDotNet.Orchestra monitors backpressure patterns across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion monitors backpressure patterns across all clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 424
     await testRunner.WhenAsync("sustained backpressure is detected across multiple clusters", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 425
-    await testRunner.ThenAsync("FlinkDotNet.Orchestra should trigger auto-scaling workflows via Temporal", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+    await testRunner.ThenAsync("FlinkDotNet.Orchestrationtion should trigger auto-scaling workflows via Temporal", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 426
     await testRunner.AndAsync("additional cluster capacity should be provisioned automatically", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 427
-    await testRunner.AndAsync("new clusters should be integrated into the FlinkDotNet.Orchestra seamlessly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("new clusters should be integrated into the FlinkDotNet.Orchestrationtion seamlessly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 428
     await testRunner.AndAsync("load should be redistributed to include new cluster capacity", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -2144,7 +2144,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.GivenAsync("I have 1000+ Flink clusters distributed across multiple data centers", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 447
-    await testRunner.AndAsync("FlinkDotNet.Orchestra coordinates backpressure management at massive scale", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion coordinates backpressure management at massive scale", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 448
     await testRunner.WhenAsync("global message volume creates complex backpressure patterns", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");

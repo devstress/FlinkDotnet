@@ -1,9 +1,9 @@
-using FlinkDotNet.Orchestra.Interfaces;
-using FlinkDotNet.Orchestra.Models;
+using FlinkDotNet.Orchestration.Interfaces;
+using FlinkDotNet.Orchestration.Models;
 using ClusterManagerModels = FlinkDotNet.ClusterManager.Models;
 using ClusterManagerInterfaces = FlinkDotNet.ClusterManager.Interfaces;
 
-namespace FlinkDotNet.Orchestra.Services;
+namespace FlinkDotNet.Orchestration.Services;
 
 /// <summary>
 /// Bridge between Orchestra and ClusterManager interfaces to avoid circular dependencies.
