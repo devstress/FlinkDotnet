@@ -1,5 +1,7 @@
 using LocalTesting.WebApi.Services;
 using LocalTesting.WebApi.Services.Temporal;
+using FlinkDotNet.Orchestration.Interfaces;
+using FlinkDotNet.Orchestration.Services;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -60,6 +62,9 @@ builder.Services.AddSingleton<TemporalSecurityTokenService>();
 builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddSingleton<FlinkJobManagementService>();
 builder.Services.AddSingleton<BackpressureMonitoringService>();
+
+// Add orchestration services for latest architecture
+builder.Services.AddSingleton<IFlinkOrchestra, FlinkOrchestra>();
 
 // Add HTTP client for external calls with extended timeout for complex operations
 builder.Services.AddHttpClient().ConfigureHttpClientDefaults(clientBuilder =>

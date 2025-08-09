@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using FlinkDotNet.Orchestration.Interfaces;
+using FlinkDotNet.Orchestration.Models;
 
 namespace LocalTesting.WebApi.Controllers;
 
@@ -9,11 +11,14 @@ namespace LocalTesting.WebApi.Controllers;
 public class TemporalArchitectureTestController : ControllerBase
 {
     private readonly ILogger<TemporalArchitectureTestController> _logger;
+    private readonly IFlinkOrchestra _flinkOrchestra;
 
     public TemporalArchitectureTestController(
-        ILogger<TemporalArchitectureTestController> logger)
+        ILogger<TemporalArchitectureTestController> logger,
+        IFlinkOrchestra flinkOrchestra)
     {
         _logger = logger;
+        _flinkOrchestra = flinkOrchestra;
     }
 
     // ========== Multi-Cluster FlinkDotNet.Orchestration Testing ==========
@@ -30,31 +35,65 @@ public class TemporalArchitectureTestController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Simulating job submission to FlinkDotNet.Orchestration with strategy: {Strategy}", request.Strategy);
+            _logger.LogInformation("Submitting job to FlinkDotNet.Orchestration with strategy: {Strategy}", request.Strategy);
 
-            await Task.Delay(100); // Simulate processing
-
-            var jobId = $"test-job-{Guid.NewGuid():N}";
-            var clusterId = $"cluster-{Random.Shared.Next(1, 100)}";
-
-            return Ok(new
+            // Create FlinkJobDefinition from request
+            var jobDefinition = new FlinkJobDefinition
             {
-                Status = "Job submitted successfully (simulated)",
-                JobId = jobId,
-                ClusterId = clusterId,
-                Strategy = request.Strategy,
-                SubmissionTime = DateTime.UtcNow,
-                Message = $"Job placed using {request.Strategy} strategy (simulation)"
-            });
+                JobId = $"test-job-{Guid.NewGuid():N}",
+                JobName = request.JobName ?? "LocalTesting Job",
+                JobGraph = request.JobGraph ?? "{ \"vertices\": [], \"edges\": [] }", // Empty job graph for testing
+                Parallelism = 4,
+                Priority = JobPriority.Normal,
+                ResourceRequirements = new JobResourceRequirements
+                {
+                    CpuCores = request.CpuCores ?? 2,
+                    MemoryMB = request.MemoryMb ?? 1024
+                }
+            };
+
+            // Parse strategy enum
+            if (!Enum.TryParse<SubmissionStrategy>(request.Strategy, true, out var strategy))
+            {
+                strategy = SubmissionStrategy.BestFit;
+            }
+
+            // Submit job using real orchestration service
+            var result = await _flinkOrchestra.SubmitJobAsync(jobDefinition, strategy, HttpContext.RequestAborted);
+
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    Status = "Job submitted successfully",
+                    JobId = result.JobId,
+                    ClusterId = result.ClusterId,
+                    FlinkJobId = result.FlinkJobId,
+                    Strategy = strategy.ToString(),
+                    SubmissionTime = result.SubmissionTime,
+                    PlacementInfo = result.PlacementInfo,
+                    Message = $"Job placed using {strategy} strategy"
+                });
+            }
+            else
+            {
+                return StatusCode(503, new
+                {
+                    Status = "Job submission failed",
+                    JobId = result.JobId,
+                    Error = result.ErrorMessage,
+                    Message = "FlinkDotNet.Orchestration could not place the job"
+                });
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating job submission to FlinkDotNet.Orchestration");
+            _logger.LogError(ex, "Error submitting job to FlinkDotNet.Orchestration");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
                 Error = ex.Message,
-                Message = "FlinkDotNet.Orchestration job submission simulation failed"
+                Message = "FlinkDotNet.Orchestration job submission failed"
             });
         }
     }
@@ -70,35 +109,136 @@ public class TemporalArchitectureTestController : ControllerBase
     {
         try
         {
-            await Task.Delay(50); // Simulate processing
+            _logger.LogInformation("Retrieving available clusters from FlinkDotNet.Orchestration");
 
-            var clusters = Enumerable.Range(1, 10).Select(i => new
-            {
-                ClusterId = $"cluster-{i}",
-                Health = Random.Shared.Next(0, 100) > 10 ? "Healthy" : "Warning",
-                AvailableSlots = Random.Shared.Next(50, 200),
-                UsedSlots = Random.Shared.Next(0, 50),
-                LastHealthCheck = DateTime.UtcNow.AddMinutes(-Random.Shared.Next(0, 30))
-            }).ToArray();
+            // Get clusters using real orchestration service
+            var clusters = await _flinkOrchestra.GetAvailableClustersAsync(HttpContext.RequestAborted);
 
             return Ok(new
             {
-                Status = "Clusters retrieved successfully (simulated)",
+                Status = "Clusters retrieved successfully",
                 ClusterCount = clusters.Length,
                 Clusters = clusters.Select(c => new
                 {
                     c.ClusterId,
-                    c.Health,
-                    c.AvailableSlots,
-                    c.UsedSlots,
-                    UtilizationPercentage = c.UsedSlots > 0 ? (double)c.UsedSlots / (c.AvailableSlots + c.UsedSlots) * 100 : 0,
-                    c.LastHealthCheck
+                    c.Name,
+                    Health = c.Status.Health.ToString(),
+                    AvailableSlots = c.Status.AvailableSlots,
+                    TotalSlots = c.Status.TotalSlots,
+                    UsedSlots = c.Status.TotalSlots - c.Status.AvailableSlots,
+                    UtilizationPercentage = c.Status.TotalSlots > 0 
+                        ? (double)(c.Status.TotalSlots - c.Status.AvailableSlots) / c.Status.TotalSlots * 100 
+                        : 0,
+                    RunningJobs = c.Status.RunningJobs,
+                    LastHealthCheck = c.Status.LastHealthCheck,
+                    Region = c.Region,
+                    Zone = c.Zone,
+                    CreatedAt = c.CreatedAt
                 }).ToArray()
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating cluster retrieval from FlinkDotNet.Orchestration");
+            _logger.LogError(ex, "Error retrieving clusters from FlinkDotNet.Orchestration");
+            return StatusCode(500, new
+            {
+                Status = "Internal server error",
+                Error = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("orchestra/health")]
+    [SwaggerOperation(
+        Summary = "Get FlinkDotNet.Orchestration Health Report",
+        Description = "Retrieve comprehensive health report for all clusters in the orchestration"
+    )]
+    [SwaggerResponse(200, "Health report retrieved successfully")]
+    [SwaggerResponse(503, "FlinkDotNet.Orchestration service unavailable")]
+    public async Task<IActionResult> GetOrchestraHealthReport()
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving orchestra health report");
+
+            var healthReport = await _flinkOrchestra.GetClusterHealthAsync(HttpContext.RequestAborted);
+
+            return Ok(new
+            {
+                Status = "Health report retrieved successfully",
+                OverallHealthScore = healthReport.OverallHealthScore,
+                Summary = new
+                {
+                    TotalClusters = healthReport.TotalClusters,
+                    HealthyClusters = healthReport.HealthyClusters,
+                    WarningClusters = healthReport.WarningClusters,
+                    CriticalClusters = healthReport.CriticalClusters,
+                    OfflineClusters = healthReport.OfflineClusters
+                },
+                Resources = new
+                {
+                    TotalAvailableSlots = healthReport.TotalAvailableSlots,
+                    TotalRunningJobs = healthReport.TotalRunningJobs
+                },
+                GeneratedAt = healthReport.GeneratedAt,
+                Issues = healthReport.Issues.Select(issue => new
+                {
+                    issue.ClusterId,
+                    issue.Issue,
+                    issue.Severity,
+                    issue.DetectedAt,
+                    issue.Resolution
+                }).ToArray()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving orchestra health report");
+            return StatusCode(500, new
+            {
+                Status = "Internal server error",
+                Error = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("orchestra/provision-cluster")]
+    [SwaggerOperation(
+        Summary = "Provision New Cluster in Orchestra",
+        Description = "Provision a new Flink cluster with specified configuration and add it to the orchestra"
+    )]
+    [SwaggerResponse(200, "Cluster provisioned successfully")]
+    [SwaggerResponse(400, "Invalid cluster configuration")]
+    [SwaggerResponse(503, "FlinkDotNet.Orchestration service unavailable")]
+    public async Task<IActionResult> ProvisionCluster([FromBody] CreateClusterActorRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Provisioning new cluster: {ClusterId}", request.ClusterId);
+
+            var clusterConfig = new ClusterConfiguration
+            {
+                Name = request.ClusterId ?? $"cluster-{Guid.NewGuid():N}",
+                TaskSlots = request.SlotsPerTaskManager ?? 4,
+                TaskManagers = request.TaskManagerCount ?? 1,
+                Region = "local-testing",
+                Zone = "default",
+                HighAvailability = true
+            };
+
+            var clusterActor = await _flinkOrchestra.ProvisionClusterAsync(clusterConfig, HttpContext.RequestAborted);
+
+            return Ok(new
+            {
+                Status = "Cluster provisioned successfully",
+                ClusterId = clusterActor.ClusterId,
+                Configuration = clusterConfig,
+                Message = "Cluster actor is now monitoring cluster health"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error provisioning cluster");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
@@ -204,32 +344,46 @@ public class TemporalArchitectureTestController : ControllerBase
     )]
     [SwaggerResponse(200, "Workflow started successfully")]
     [SwaggerResponse(400, "Invalid workflow configuration")]
-    public async Task<IActionResult> StartOrchestrationWorkflow([FromBody] OrchestrationRequest request)
+    public async Task<IActionResult> StartOrchestrationWorkflow([FromBody] OrchestrationWorkflowRequest request)
     {
         try
         {
-            _logger.LogInformation("Simulating Temporal FlinkDotNet.Orchestration workflow start for {TargetClusters} clusters", request.TargetClusters);
+            _logger.LogInformation("Starting Temporal FlinkDotNet.Orchestration workflow for {TargetClusters} clusters", request.TargetClusters);
 
-            await Task.Delay(300); // Simulate workflow start
-
-            var workflowId = $"orchestration-{Guid.NewGuid():N}";
-            var simulatedResponse = new
+            // Create OrchestrationRequest from the workflow request
+            var orchestrationRequest = new OrchestrationRequest
             {
-                Status = "Workflow started successfully (simulated)",
+                RequestId = $"workflow-{Guid.NewGuid():N}",
+                TargetClusters = request.TargetClusters,
+                MinClusters = request.MinClusters,
+                MaxClusters = request.MaxClusters,
+                DefaultClusterConfig = new ClusterConfiguration
+                {
+                    Name = "default-cluster",
+                    TaskSlots = 4,
+                    TaskManagers = 2,
+                    Region = "local-testing",
+                    Zone = "default"
+                }
+            };
+
+            // Start orchestration workflow using real service
+            var workflowId = await _flinkOrchestra.StartOrchestrationWorkflowAsync(orchestrationRequest, HttpContext.RequestAborted);
+
+            return Ok(new
+            {
+                Status = "Workflow started successfully",
                 WorkflowId = workflowId,
                 request.TargetClusters,
                 request.MinClusters,
                 request.MaxClusters,
                 StartTime = DateTime.UtcNow,
-                Message = "Temporal workflow for FlinkDotNet.Orchestration cluster orchestration is now running (simulation)",
-                Note = "This is a simulated response. Full Temporal integration will be implemented in the next phase."
-            };
-
-            return Ok(simulatedResponse);
+                Message = "Temporal workflow for FlinkDotNet.Orchestration cluster orchestration is now running"
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating Temporal FlinkDotNet.Orchestration workflow start");
+            _logger.LogError(ex, "Error starting Temporal FlinkDotNet.Orchestration workflow");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
@@ -373,7 +527,7 @@ public class CreateClusterActorRequest
     public int? HealthCheckIntervalSeconds { get; set; }
 }
 
-public class OrchestrationRequest
+public class OrchestrationWorkflowRequest
 {
     public int TargetClusters { get; set; } = 10;
     public int MinClusters { get; set; } = 1;
