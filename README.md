@@ -41,9 +41,9 @@ var job = Flink.JobBuilder
 await job.Submit("Processing Job");
 ```
 
-### Multi-Cluster Orchestration
+### Multi-Cluster FlinkDotNet.Orchestration
 ```csharp
-// Enterprise-scale Orchestra for thousands of clusters
+// Enterprise-scale FlinkDotNet.Orchestration for thousands of clusters
 var orchestra = new FlinkOrchestra(logger);
 
 // Provision clusters with auto-scaling
@@ -57,7 +57,7 @@ await orchestra.ProvisionClusterAsync(new ClusterConfiguration
 // Submit jobs with intelligent placement
 var result = await orchestra.SubmitJobAsync(jobDefinition, SubmissionStrategy.BestFit);
 
-// Start Temporal orchestration workflows
+// Start Temporal FlinkDotNet.Orchestration workflows
 await orchestra.StartOrchestrationWorkflowAsync(new OrchestrationRequest
 {
     TargetClusters = 1000,
@@ -78,8 +78,8 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
 - **Intermediate Representation (IR)**: JSON-based job definitions
 - **Job Gateway**: HTTP service that bridges .NET applications with Apache Flink clusters
 
-#### Orchestration Layer  
-- **FlinkDotNet.Orchestra**: Multi-cluster job orchestration with intelligent placement strategies
+#### FlinkDotNet.Orchestration Layer  
+- **FlinkDotNet.Orchestration**: Multi-cluster job orchestration with intelligent placement strategies
 - **FlinkDotNet.ClusterManager**: Actor-based cluster lifecycle management  
 - **FlinkDotNet.Temporal**: Temporal.io workflow definitions for durable orchestration
 - **FlinkDotNet.Resilience**: Circuit breakers, retry policies, and health checkers
@@ -88,7 +88,7 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           FlinkDotNet.Orchestra                             │
+│                           FlinkDotNet.Orchestration                             │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │
 │  │   Cluster A     │  │   Cluster B     │  │   Cluster N     │    ...    │
 │  │  (Actor-based)  │  │  (Actor-based)  │  │  (Actor-based)  │           │
@@ -178,7 +178,7 @@ FlinkDotNet/
 │   ├── DataStream                # Core streaming API
 │   ├── Functions                 # User functions
 │   └── Connectors               # Sources and sinks
-├── FlinkDotNet.Orchestra/        # Multi-cluster orchestration (Temporal architecture)
+├── FlinkDotNet.Orchestration/        # Multi-cluster orchestration (Temporal architecture)
 │   ├── Services                  # FlinkOrchestra, ClusterActorBridge
 │   ├── Models                    # ClusterStatus, JobSubmissionResult
 │   └── Interfaces               # IFlinkOrchestra, IFlinkClusterActor
@@ -425,7 +425,7 @@ builder.Build().Run();
 
 1. **Install additional orchestration packages**
    ```bash
-   dotnet add package FlinkDotNet.Orchestra
+   dotnet add package FlinkDotNet.Orchestration
    dotnet add package FlinkDotNet.ClusterManager
    dotnet add package FlinkDotNet.Temporal
    dotnet add package FlinkDotNet.Resilience

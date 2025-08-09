@@ -16,21 +16,21 @@ public class TemporalArchitectureTestController : ControllerBase
         _logger = logger;
     }
 
-    // ========== Multi-Cluster Orchestra Testing ==========
+    // ========== Multi-Cluster FlinkDotNet.Orchestration Testing ==========
 
     [HttpPost("orchestra/submit-job")]
     [SwaggerOperation(
-        Summary = "Test Orchestra Job Submission with Intelligent Placement",
-        Description = "Submit a job to the Orchestra using various placement strategies (BestFit, LeastLoaded, RoundRobin, LocalityFirst)"
+        Summary = "Test FlinkDotNet.Orchestration Job Submission with Intelligent Placement",
+        Description = "Submit a job to the FlinkDotNet.Orchestration using various placement strategies (BestFit, LeastLoaded, RoundRobin, LocalityFirst)"
     )]
     [SwaggerResponse(200, "Job submitted successfully")]
     [SwaggerResponse(400, "Invalid job submission")]
-    [SwaggerResponse(503, "Orchestra service unavailable")]
+    [SwaggerResponse(503, "FlinkDotNet.Orchestration service unavailable")]
     public async Task<IActionResult> SubmitJobToOrchestra([FromBody] JobSubmissionRequest request)
     {
         try
         {
-            _logger.LogInformation("Simulating job submission to Orchestra with strategy: {Strategy}", request.Strategy);
+            _logger.LogInformation("Simulating job submission to FlinkDotNet.Orchestration with strategy: {Strategy}", request.Strategy);
 
             await Task.Delay(100); // Simulate processing
 
@@ -49,23 +49,23 @@ public class TemporalArchitectureTestController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating job submission to Orchestra");
+            _logger.LogError(ex, "Error simulating job submission to FlinkDotNet.Orchestration");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
                 Error = ex.Message,
-                Message = "Orchestra job submission simulation failed"
+                Message = "FlinkDotNet.Orchestration job submission simulation failed"
             });
         }
     }
 
     [HttpGet("orchestra/clusters")]
     [SwaggerOperation(
-        Summary = "Get Available Clusters from Orchestra",
-        Description = "Retrieve list of all clusters registered with the Orchestra and their health status"
+        Summary = "Get Available Clusters from FlinkDotNet.Orchestration",
+        Description = "Retrieve list of all clusters registered with the FlinkDotNet.Orchestration and their health status"
     )]
     [SwaggerResponse(200, "Cluster list retrieved successfully")]
-    [SwaggerResponse(503, "Orchestra service unavailable")]
+    [SwaggerResponse(503, "FlinkDotNet.Orchestration service unavailable")]
     public async Task<IActionResult> GetAvailableClusters()
     {
         try
@@ -98,7 +98,7 @@ public class TemporalArchitectureTestController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating cluster retrieval from Orchestra");
+            _logger.LogError(ex, "Error simulating cluster retrieval from FlinkDotNet.Orchestration");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
@@ -199,7 +199,7 @@ public class TemporalArchitectureTestController : ControllerBase
 
     [HttpPost("temporal/start-orchestration")]
     [SwaggerOperation(
-        Summary = "Start Temporal Orchestration Workflow",
+        Summary = "Start Temporal FlinkDotNet.Orchestration Workflow",
         Description = "Start a Temporal workflow for cluster orchestration and auto-scaling"
     )]
     [SwaggerResponse(200, "Workflow started successfully")]
@@ -208,7 +208,7 @@ public class TemporalArchitectureTestController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Simulating Temporal orchestration workflow start for {TargetClusters} clusters", request.TargetClusters);
+            _logger.LogInformation("Simulating Temporal FlinkDotNet.Orchestration workflow start for {TargetClusters} clusters", request.TargetClusters);
 
             await Task.Delay(300); // Simulate workflow start
 
@@ -221,7 +221,7 @@ public class TemporalArchitectureTestController : ControllerBase
                 request.MinClusters,
                 request.MaxClusters,
                 StartTime = DateTime.UtcNow,
-                Message = "Temporal workflow for cluster orchestration is now running (simulation)",
+                Message = "Temporal workflow for FlinkDotNet.Orchestration cluster orchestration is now running (simulation)",
                 Note = "This is a simulated response. Full Temporal integration will be implemented in the next phase."
             };
 
@@ -229,7 +229,7 @@ public class TemporalArchitectureTestController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating Temporal orchestration workflow start");
+            _logger.LogError(ex, "Error simulating Temporal FlinkDotNet.Orchestration workflow start");
             return StatusCode(500, new
             {
                 Status = "Internal server error",
@@ -295,8 +295,8 @@ public class TemporalArchitectureTestController : ControllerBase
 
     [HttpPost("enterprise-scale/simulate-massive-orchestration")]
     [SwaggerOperation(
-        Summary = "Simulate Enterprise-Scale Multi-Cluster Orchestration",
-        Description = "Simulate orchestration across thousands of clusters with intelligent placement"
+        Summary = "Simulate Enterprise-Scale Multi-Cluster FlinkDotNet.Orchestration",
+        Description = "Simulate FlinkDotNet.Orchestration orchestration across thousands of clusters with intelligent placement"
     )]
     [SwaggerResponse(200, "Enterprise-scale simulation completed")]
     [SwaggerResponse(400, "Invalid scale parameters")]
@@ -304,7 +304,7 @@ public class TemporalArchitectureTestController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Simulating enterprise-scale orchestration with {ClusterCount} clusters and {JobCount} jobs",
+            _logger.LogInformation("Simulating enterprise-scale FlinkDotNet.Orchestration with {ClusterCount} clusters and {JobCount} jobs",
                 request.ClusterCount, request.JobCount);
 
             await Task.Delay(1000); // Simulate massive scale orchestration
@@ -335,14 +335,14 @@ public class TemporalArchitectureTestController : ControllerBase
                     AutoRecoveredClusters = Math.Max(1, request.ClusterCount / 1000),
                     ThroughputMessages = request.JobCount * 10000 // 10k messages per job
                 },
-                Message = "Successfully demonstrated enterprise-scale orchestration capabilities (simulation)"
+                Message = "Successfully demonstrated enterprise-scale FlinkDotNet.Orchestration capabilities (simulation)"
             };
 
             return Ok(simulationResults);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error simulating enterprise-scale orchestration");
+            _logger.LogError(ex, "Error simulating enterprise-scale FlinkDotNet.Orchestration");
             return StatusCode(500, new
             {
                 Status = "Internal server error",

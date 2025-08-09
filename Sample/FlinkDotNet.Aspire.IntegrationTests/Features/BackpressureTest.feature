@@ -10,7 +10,7 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Ente
     And Consumer lag monitoring is configured with 5-second intervals
     And Dead Letter Queue (DLQ) topics are configured
     And Kafka Dashboard is available for monitoring
-    And FlinkDotNet Orchestra is configured for multi-cluster backpressure coordination
+    And FlinkDotNet.Orchestration is configured for multi-cluster backpressure coordination
     And multiple Flink clusters are available for load distribution
 
   @backpressure @consumer_lag @linkedin_approach
@@ -379,15 +379,15 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Ente
     And all headers should include consumer lag and backpressure application status
 
   @backpressure @multi_cluster @orchestra_coordination
-  Scenario: Multi-Cluster Backpressure Coordination via Orchestra
-    Given I have 50 Flink clusters registered with the Orchestra
+  Scenario: Multi-Cluster Backpressure Coordination via FlinkDotNet.Orchestration
+    Given I have 50 Flink clusters registered with the FlinkDotNet.Orchestration
     And each cluster has different processing capabilities and current load
     When message volume exceeds total cluster capacity by 30%
     And sustained high-volume load is applied across all clusters
-    Then Orchestra should detect cluster-level backpressure conditions
+    Then FlinkDotNet.Orchestration should detect cluster-level backpressure conditions
     And load should be intelligently redistributed to available clusters
-    And clusters near capacity should signal backpressure to Orchestra
-    And Orchestra should route new jobs to clusters with available capacity
+    And clusters near capacity should signal backpressure to FlinkDotNet.Orchestration
+    And FlinkDotNet.Orchestration should route new jobs to clusters with available capacity
     And no messages should be lost during load redistribution
     And system should maintain optimal overall throughput
     And cluster isolation should prevent cascade backpressure effects
@@ -400,7 +400,7 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Ente
     Then affected cluster actors should apply local backpressure controls
     And unaffected cluster actors should continue normal processing
     And no backpressure should propagate between isolated cluster actors
-    And Orchestra should detect per-cluster backpressure status
+    And FlinkDotNet.Orchestration should detect per-cluster backpressure status
     And job placement should avoid clusters under backpressure
     And backpressure recovery should be independent per cluster
     And system-wide throughput should degrade gracefully
@@ -408,9 +408,9 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Ente
   @backpressure @intelligent_placement @capacity_aware
   Scenario: Intelligent Job Placement Based on Cluster Capacity and Backpressure
     Given I have clusters with varying processing capacities and current loads
-    And Orchestra has real-time visibility into cluster backpressure metrics
+    And FlinkDotNet.Orchestration has real-time visibility into cluster backpressure metrics
     When new jobs are submitted for processing
-    Then Orchestra should evaluate cluster capacity before job placement
+    Then FlinkDotNet.Orchestration should evaluate cluster capacity before job placement
     And jobs should be placed on clusters with available headroom
     And clusters under backpressure should be avoided for new job placement
     And placement strategy should minimize risk of additional backpressure
@@ -420,11 +420,11 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Ente
   @backpressure @auto_scaling @demand_based
   Scenario: Auto-Scaling Clusters Based on Backpressure Patterns
     Given I have auto-scaling enabled for cluster capacity management
-    And Orchestra monitors backpressure patterns across all clusters
+    And FlinkDotNet.Orchestration monitors backpressure patterns across all clusters
     When sustained backpressure is detected across multiple clusters
-    Then Orchestra should trigger auto-scaling workflows via Temporal
+    Then FlinkDotNet.Orchestration should trigger auto-scaling workflows via Temporal
     And additional cluster capacity should be provisioned automatically
-    And new clusters should be integrated into the Orchestra seamlessly
+    And new clusters should be integrated into the FlinkDotNet.Orchestration seamlessly
     And load should be redistributed to include new cluster capacity
     And backpressure conditions should be resolved through increased capacity
     And auto-scaling should prevent over-provisioning through intelligent thresholds
@@ -444,7 +444,7 @@ Feature: Backpressure Test - Multi-Cluster Consumer Lag-Based Flow Control (Ente
   @backpressure @enterprise_scale @massive_cluster_coordination
   Scenario: Enterprise-Scale Backpressure Management Across 1000+ Clusters
     Given I have 1000+ Flink clusters distributed across multiple data centers
-    And Orchestra coordinates backpressure management at massive scale
+    And FlinkDotNet.Orchestration coordinates backpressure management at massive scale
     When global message volume creates complex backpressure patterns
     Then backpressure coordination should scale to enterprise-level cluster counts
     And regional backpressure patterns should be managed independently

@@ -957,19 +957,19 @@ public class StressTestStepDefinitions
 
     // ========== Multi-Cluster Orchestra Step Definitions ==========
 
-    [Given(@"the FlinkDotNet Orchestra is available for multi-cluster orchestration")]
+    [Given(@"the FlinkDotNet\.Orchestration is available for multi-cluster orchestration")]
     public void GivenTheFlinkDotNetOrchestraIsAvailableForMultiClusterOrchestration()
     {
-        _output.WriteLine("🎼 Verifying FlinkDotNet Orchestra availability for multi-cluster orchestration...");
+        _output.WriteLine("🎼 Verifying FlinkDotNet.Orchestration availability for multi-cluster orchestration...");
         
         var orchestraAvailable = ValidateOrchestraAvailability();
-        Assert.True(orchestraAvailable, "FlinkDotNet Orchestra should be available for multi-cluster orchestration");
+        Assert.True(orchestraAvailable, "FlinkDotNet.Orchestration should be available for multi-cluster orchestration");
         
         _testData["OrchestraStatus"] = "Available";
-        _output.WriteLine("✅ FlinkDotNet Orchestra is available for multi-cluster orchestration");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration is available for multi-cluster orchestration");
     }
 
-    [Given(@"multiple Flink clusters are registered with the Orchestra")]
+    [Given(@"multiple Flink clusters are registered with the FlinkDotNet\.Orchestration")]
     public void GivenMultipleFlinkClustersAreRegisteredWithTheOrchestra()
     {
         _output.WriteLine("🔗 Verifying multiple Flink clusters are registered with Orchestra...");
@@ -981,16 +981,16 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ Multiple Flink clusters successfully registered with Orchestra");
     }
 
-    [Given(@"I have (\d+) Flink clusters registered with the Orchestra for stress testing")]
-    public void GivenIHaveFlinkClustersRegisteredWithTheOrchestraForStressTesting(int clusterCount)
+    [Given(@"I have (\d+) Flink clusters registered with the FlinkDotNet\.Orchestration for stress testing")]
+    public void GivenIHaveFlinkClustersRegisteredWithTheFlinkDotNetOrchestrationForStressTesting(int clusterCount)
     {
-        _output.WriteLine($"🏗️ Setting up {clusterCount} Flink clusters with Orchestra...");
+        _output.WriteLine($"🏗️ Setting up {clusterCount} Flink clusters with FlinkDotNet.Orchestration...");
         
         var clustersSetup = SetupMultipleClusters(clusterCount);
         Assert.True(clustersSetup, $"Should setup {clusterCount} Flink clusters successfully");
         
         _testData["OrchestraClusterCount"] = clusterCount;
-        _output.WriteLine($"✅ Successfully setup {clusterCount} Flink clusters with Orchestra");
+        _output.WriteLine($"✅ Successfully setup {clusterCount} Flink clusters with FlinkDotNet.Orchestration");
     }
 
     [Given(@"each cluster has different resource capacity and health status")]
@@ -1063,20 +1063,20 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ All jobs completed successfully within SLA");
     }
 
-    [Then(@"Orchestra health aggregation should show all clusters healthy")]
-    public void ThenOrchestraHealthAggregationShouldShowAllClustersHealthy()
+    [Then(@"FlinkDotNet\.Orchestration health aggregation should show all clusters healthy")]
+    public void ThenFlinkDotNetOrchestrationHealthAggregationShouldShowAllClustersHealthy()
     {
-        _output.WriteLine("🏥 Verifying Orchestra health aggregation shows all clusters healthy...");
+        _output.WriteLine("🏥 Verifying FlinkDotNet.Orchestration health aggregation shows all clusters healthy...");
         
         var allClustersHealthy = ValidateOrchestraHealthAggregation();
-        Assert.True(allClustersHealthy, "Orchestra health aggregation should show all clusters healthy");
+        Assert.True(allClustersHealthy, "FlinkDotNet.Orchestration health aggregation should show all clusters healthy");
         
-        _output.WriteLine("✅ Orchestra health aggregation confirms all clusters healthy");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration health aggregation confirms all clusters healthy");
     }
 
     // ========== Enterprise Scale Step Definitions ==========
 
-    [Given(@"I have (\d+) Flink clusters in the Orchestra")]
+    [Given(@"I have (\d+) Flink clusters in the FlinkDotNet\.Orchestration")]
     public void GivenIHaveFlinkClustersInTheOrchestra(int clusterCount)
     {
         _output.WriteLine($"🏭 Setting up enterprise-scale deployment with {clusterCount} clusters...");
@@ -1170,7 +1170,7 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ No cascade failures detected - system isolation working correctly");
     }
 
-    [Then(@"Orchestra should demonstrate auto-scaling capabilities")]
+    [Then(@"FlinkDotNet\.Orchestration should demonstrate auto-scaling capabilities")]
     public void ThenOrchestraShouldDemonstrateAutoScalingCapabilities()
     {
         _output.WriteLine("📈 Verifying Orchestra auto-scaling capabilities...");
@@ -1298,16 +1298,16 @@ public class StressTestStepDefinitions
         _output.WriteLine("✅ System successfully maintained optimal throughput despite overload");
     }
 
-    [Then(@"Orchestra should trigger auto-scaling for additional capacity")]
-    public void ThenOrchestraShouldTriggerAutoScalingForAdditionalCapacity()
+    [Then(@"FlinkDotNet\.Orchestration should trigger auto-scaling for additional capacity")]
+    public void ThenFlinkDotNetOrchestrationShouldTriggerAutoScalingForAdditionalCapacity()
     {
-        _output.WriteLine("📈 Verifying Orchestra triggers auto-scaling for additional capacity...");
+        _output.WriteLine("📈 Verifying FlinkDotNet.Orchestration triggers auto-scaling for additional capacity...");
         
         var autoScalingTriggered = ValidateOrchestraAutoScalingTrigger();
-        Assert.True(autoScalingTriggered, "Orchestra should trigger auto-scaling for additional capacity");
+        Assert.True(autoScalingTriggered, "FlinkDotNet.Orchestration should trigger auto-scaling for additional capacity");
         
         _testData["AutoScalingTriggered"] = true;
-        _output.WriteLine("✅ Orchestra successfully triggered auto-scaling for additional capacity");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration successfully triggered auto-scaling for additional capacity");
     }
 
     // Helper methods for the new step definitions

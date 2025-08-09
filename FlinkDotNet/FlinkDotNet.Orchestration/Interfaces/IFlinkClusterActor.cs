@@ -1,6 +1,6 @@
-using FlinkDotNet.Orchestra.Models;
+using FlinkDotNet.Orchestration.Models;
 
-namespace FlinkDotNet.Orchestra.Interfaces;
+namespace FlinkDotNet.Orchestration.Interfaces;
 
 /// <summary>
 /// Represents a Flink cluster actor that manages the lifecycle and operations of a single Flink cluster.

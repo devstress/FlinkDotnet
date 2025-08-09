@@ -88,21 +88,21 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Kafka Dashboard is available for monitoring");
     }
 
-    [Given(@"FlinkDotNet Orchestra is configured for multi-cluster backpressure coordination")]
-    public void GivenFlinkDotNetOrchestraIsConfiguredForMultiClusterBackpressureCoordination()
+    [Given(@"FlinkDotNet\.Orchestration is configured for multi-cluster backpressure coordination")]
+    public void GivenFlinkDotNetOrchestrationIsConfiguredForMultiClusterBackpressureCoordination()
     {
-        _output.WriteLine("🎼 Configuring FlinkDotNet Orchestra for multi-cluster backpressure coordination...");
+        _output.WriteLine("🎼 Configuring FlinkDotNet.Orchestration for multi-cluster backpressure coordination...");
         
         var orchestraManager = new OrchestraBackpressureManager();
         var orchestraConfigured = ConfigureOrchestraForBackpressure();
         orchestraManager.ConfigureBackpressureCoordination();
         
-        Assert.True(orchestraConfigured, "FlinkDotNet Orchestra should be configured for multi-cluster backpressure coordination");
+        Assert.True(orchestraConfigured, "FlinkDotNet.Orchestration should be configured for multi-cluster backpressure coordination");
         
         _testData["OrchestraConfigured"] = true;
         _testData["OrchestraManager"] = orchestraManager; // Store the manager for later use
         
-        _output.WriteLine("✅ FlinkDotNet Orchestra configured for multi-cluster backpressure coordination");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration configured for multi-cluster backpressure coordination");
     }
 
     [Given(@"multiple Flink clusters are available for load distribution")]
@@ -1116,16 +1116,16 @@ public class BackpressureTestStepDefinitions
 
     #region Multi-Cluster Orchestra Steps
 
-    [Given(@"I have (\d+) Flink clusters registered with the Orchestra")]
-    public void GivenIHaveFlinkClustersRegisteredWithTheOrchestra(int clusterCount)
+    [Given(@"I have (\d+) Flink clusters registered with the FlinkDotNet\.Orchestration")]
+    public void GivenIHaveFlinkClustersRegisteredWithTheFlinkDotNetOrchestration(int clusterCount)
     {
-        _output.WriteLine($"🎼 Registering {clusterCount} Flink clusters with the Orchestra...");
+        _output.WriteLine($"🎼 Registering {clusterCount} Flink clusters with the FlinkDotNet.Orchestration...");
         
         var clustersRegistered = RegisterClustersWithOrchestra(clusterCount);
-        Assert.True(clustersRegistered, $"Should be able to register {clusterCount} clusters with the Orchestra");
+        Assert.True(clustersRegistered, $"Should be able to register {clusterCount} clusters with the FlinkDotNet.Orchestration");
         
         _testData["RegisteredClusterCount"] = clusterCount;
-        _output.WriteLine($"✅ {clusterCount} Flink clusters registered with the Orchestra");
+        _output.WriteLine($"✅ {clusterCount} Flink clusters registered with the FlinkDotNet.Orchestration");
     }
 
     [Given(@"each cluster has different processing capabilities and current load")]
@@ -1164,15 +1164,15 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Sustained high-volume load applied across all clusters");
     }
 
-    [Then(@"Orchestra should detect cluster-level backpressure conditions")]
+    [Then(@"FlinkDotNet\.Orchestration should detect cluster-level backpressure conditions")]
     public void ThenOrchestraShouldDetectClusterLevelBackpressureConditions()
     {
-        _output.WriteLine("🔍 Validating Orchestra detects cluster-level backpressure conditions...");
+        _output.WriteLine("🔍 Validating Orchestration detects cluster-level backpressure conditions...");
         
         var backpressureDetected = ValidateOrchestraBackpressureDetection();
-        Assert.True(backpressureDetected, "Orchestra should detect cluster-level backpressure conditions");
+        Assert.True(backpressureDetected, "Orchestration should detect cluster-level backpressure conditions");
         
-        _output.WriteLine("✅ Orchestra successfully detects cluster-level backpressure conditions");
+        _output.WriteLine("✅ Orchestration successfully detects cluster-level backpressure conditions");
     }
 
     [Then(@"load should be intelligently redistributed to available clusters")]
@@ -1186,26 +1186,26 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Load intelligently redistributed to available clusters");
     }
 
-    [Then(@"clusters near capacity should signal backpressure to Orchestra")]
-    public void ThenClustersNearCapacityShouldSignalBackpressureToOrchestra()
+    [Then(@"clusters near capacity should signal backpressure to FlinkDotNet\.Orchestration")]
+    public void ThenClustersNearCapacityShouldSignalBackpressureToFlinkDotNetOrchestration()
     {
-        _output.WriteLine("📡 Validating clusters signal backpressure to Orchestra when near capacity...");
+        _output.WriteLine("📡 Validating clusters signal backpressure to FlinkDotNet.Orchestration when near capacity...");
         
         var backpressureSignaled = ValidateClusterBackpressureSignaling();
-        Assert.True(backpressureSignaled, "Clusters near capacity should signal backpressure to Orchestra");
+        Assert.True(backpressureSignaled, "Clusters near capacity should signal backpressure to FlinkDotNet.Orchestration");
         
-        _output.WriteLine("✅ Clusters near capacity signal backpressure to Orchestra");
+        _output.WriteLine("✅ Clusters near capacity signal backpressure to FlinkDotNet.Orchestration");
     }
 
-    [Then(@"Orchestra should route new jobs to clusters with available capacity")]
+    [Then(@"FlinkDotNet\.Orchestration should route new jobs to clusters with available capacity")]
     public void ThenOrchestraShouldRouteNewJobsToClustersWithAvailableCapacity()
     {
-        _output.WriteLine("🚦 Validating Orchestra routes new jobs to clusters with available capacity...");
+        _output.WriteLine("🚦 Validating Orchestration routes new jobs to clusters with available capacity...");
         
         var jobsRoutedCorrectly = ValidateOrchestraJobRouting();
-        Assert.True(jobsRoutedCorrectly, "Orchestra should route new jobs to clusters with available capacity");
+        Assert.True(jobsRoutedCorrectly, "Orchestration should route new jobs to clusters with available capacity");
         
-        _output.WriteLine("✅ Orchestra routes new jobs to clusters with available capacity");
+        _output.WriteLine("✅ Orchestration routes new jobs to clusters with available capacity");
     }
 
     [Then(@"no messages should be lost during load redistribution")]
@@ -5331,17 +5331,17 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine($"✅ {clusterCount}+ Flink clusters distributed across multiple data centers configured");
     }
 
-    [Given(@"Orchestra coordinates backpressure management at massive scale")]
-    public void GivenOrchestraCoordinatesBackpressureManagementAtMassiveScale()
+    [Given(@"FlinkDotNet\.Orchestration coordinates backpressure management at massive scale")]
+    public void GivenFlinkDotNetOrchestrationCoordinatesBackpressureManagementAtMassiveScale()
     {
-        _output.WriteLine("🎼 Configuring Orchestra for massive scale backpressure coordination...");
+        _output.WriteLine("🎼 Configuring FlinkDotNet.Orchestration for massive scale backpressure coordination...");
         
         var orchestraManager = _testData["OrchestraManager"] as OrchestraBackpressureManager;
         orchestraManager?.EnableMassiveScaleCoordination();
         
         _testData["MassiveScaleCoordinationEnabled"] = true;
         
-        _output.WriteLine("✅ Orchestra configured for massive scale backpressure coordination");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration configured for massive scale backpressure coordination");
     }
 
     [When(@"global message volume creates complex backpressure patterns")]
@@ -5592,16 +5592,16 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Auto-scaling enabled for cluster capacity management");
     }
 
-    [Given(@"Orchestra monitors backpressure patterns across all clusters")]
-    public void GivenOrchestraMonitorsBackpressurePatternsAcrossAllClusters()
+    [Given(@"FlinkDotNet\.Orchestration monitors backpressure patterns across all clusters")]
+    public void GivenFlinkDotNetOrchestrationMonitorsBackpressurePatternsAcrossAllClusters()
     {
-        _output.WriteLine("👁️ Configuring Orchestra to monitor backpressure patterns across all clusters...");
+        _output.WriteLine("👁️ Configuring FlinkDotNet.Orchestration to monitor backpressure patterns across all clusters...");
         
         var monitoringEnabled = EnableOrchestraBackpressurePatternMonitoring();
-        Assert.True(monitoringEnabled, "Orchestra should monitor backpressure patterns across all clusters");
+        Assert.True(monitoringEnabled, "FlinkDotNet.Orchestration should monitor backpressure patterns across all clusters");
         
         _testData["OrchestraBackpressureMonitoring"] = "Enabled";
-        _output.WriteLine("✅ Orchestra monitoring backpressure patterns across all clusters");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration monitoring backpressure patterns across all clusters");
     }
 
     [When(@"sustained backpressure is detected across multiple clusters")]
@@ -5616,16 +5616,16 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Sustained backpressure detected across multiple clusters");
     }
 
-    [Then(@"Orchestra should trigger auto-scaling workflows via Temporal")]
-    public void ThenOrchestraShouldTriggerAutoScalingWorkflowsViaTemporal()
+    [Then(@"FlinkDotNet\.Orchestration should trigger auto-scaling workflows via Temporal")]
+    public void ThenFlinkDotNetOrchestrationShouldTriggerAutoScalingWorkflowsViaTemporal()
     {
-        _output.WriteLine("⏳ Verifying Orchestra triggers auto-scaling workflows via Temporal...");
+        _output.WriteLine("⏳ Verifying FlinkDotNet.Orchestration triggers auto-scaling workflows via Temporal...");
         
         var autoScalingTriggered = ValidateTemporalAutoScalingWorkflowTrigger();
-        Assert.True(autoScalingTriggered, "Orchestra should trigger auto-scaling workflows via Temporal");
+        Assert.True(autoScalingTriggered, "FlinkDotNet.Orchestration should trigger auto-scaling workflows via Temporal");
         
         _testData["TemporalAutoScalingTriggered"] = true;
-        _output.WriteLine("✅ Orchestra successfully triggered auto-scaling workflows via Temporal");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration successfully triggered auto-scaling workflows via Temporal");
     }
 
     [Then(@"additional cluster capacity should be provisioned automatically")]
@@ -5640,16 +5640,16 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Additional cluster capacity provisioned automatically");
     }
 
-    [Then(@"new clusters should be integrated into the Orchestra seamlessly")]
-    public void ThenNewClustersShouldBeIntegratedIntoTheOrchestraSeamlessly()
+    [Then(@"new clusters should be integrated into the FlinkDotNet\.Orchestration seamlessly")]
+    public void ThenNewClustersShouldBeIntegratedIntoTheFlinkDotNetOrchestrationSeamlessly()
     {
-        _output.WriteLine("🎼 Verifying new clusters are integrated into Orchestra seamlessly...");
+        _output.WriteLine("🎼 Verifying new clusters are integrated into FlinkDotNet.Orchestration seamlessly...");
         
         var seamlessIntegration = ValidateSeamlessOrchestraIntegration();
-        Assert.True(seamlessIntegration, "New clusters should be integrated into the Orchestra seamlessly");
+        Assert.True(seamlessIntegration, "New clusters should be integrated into the FlinkDotNet.Orchestration seamlessly");
         
         _testData["SeamlessOrchestraIntegration"] = true;
-        _output.WriteLine("✅ New clusters integrated into Orchestra seamlessly");
+        _output.WriteLine("✅ New clusters integrated into FlinkDotNet.Orchestration seamlessly");
     }
 
     [Then(@"load should be redistributed to include new cluster capacity")]
@@ -5700,16 +5700,16 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Clusters with varying processing capacities and current loads configured");
     }
 
-    [Given(@"Orchestra has real-time visibility into cluster backpressure metrics")]
-    public void GivenOrchestraHasRealTimeVisibilityIntoClusterBackpressureMetrics()
+    [Given(@"FlinkDotNet\.Orchestration has real-time visibility into cluster backpressure metrics")]
+    public void GivenFlinkDotNetOrchestrationHasRealTimeVisibilityIntoClusterBackpressureMetrics()
     {
-        _output.WriteLine("👁️ Configuring Orchestra real-time visibility into cluster backpressure metrics...");
+        _output.WriteLine("👁️ Configuring FlinkDotNet.Orchestration real-time visibility into cluster backpressure metrics...");
         
         var realTimeVisibilityEnabled = EnableOrchestraRealTimeBackpressureVisibility();
-        Assert.True(realTimeVisibilityEnabled, "Orchestra should have real-time visibility into cluster backpressure metrics");
+        Assert.True(realTimeVisibilityEnabled, "FlinkDotNet.Orchestration should have real-time visibility into cluster backpressure metrics");
         
         _testData["OrchestraRealTimeVisibility"] = "Enabled";
-        _output.WriteLine("✅ Orchestra real-time visibility into cluster backpressure metrics enabled");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration real-time visibility into cluster backpressure metrics enabled");
     }
 
     [When(@"new jobs are submitted for processing")]
@@ -5724,16 +5724,16 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ New jobs submitted for processing");
     }
 
-    [Then(@"Orchestra should evaluate cluster capacity before job placement")]
-    public void ThenOrchestraShouldEvaluateClusterCapacityBeforeJobPlacement()
+    [Then(@"FlinkDotNet\.Orchestration should evaluate cluster capacity before job placement")]
+    public void ThenFlinkDotNetOrchestrationShouldEvaluateClusterCapacityBeforeJobPlacement()
     {
-        _output.WriteLine("🔍 Verifying Orchestra evaluates cluster capacity before job placement...");
+        _output.WriteLine("🔍 Verifying FlinkDotNet.Orchestration evaluates cluster capacity before job placement...");
         
         var capacityEvaluated = ValidateOrchestraCapacityEvaluationBeforePlacement();
-        Assert.True(capacityEvaluated, "Orchestra should evaluate cluster capacity before job placement");
+        Assert.True(capacityEvaluated, "FlinkDotNet.Orchestration should evaluate cluster capacity before job placement");
         
         _testData["CapacityEvaluatedBeforePlacement"] = true;
-        _output.WriteLine("✅ Orchestra successfully evaluates cluster capacity before job placement");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration successfully evaluates cluster capacity before job placement");
     }
 
     [Then(@"jobs should be placed on clusters with available headroom")]
@@ -5868,16 +5868,16 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ No backpressure propagates between isolated cluster actors");
     }
 
-    [Then(@"Orchestra should detect per-cluster backpressure status")]
-    public void ThenOrchestraShouldDetectPerClusterBackpressureStatus()
+    [Then(@"FlinkDotNet\.Orchestration should detect per-cluster backpressure status")]
+    public void ThenFlinkDotNetOrchestrationShouldDetectPerClusterBackpressureStatus()
     {
-        _output.WriteLine("🔍 Verifying Orchestra detects per-cluster backpressure status...");
+        _output.WriteLine("🔍 Verifying FlinkDotNet.Orchestration detects per-cluster backpressure status...");
         
         var perClusterDetection = ValidateOrchestraPerClusterBackpressureDetection();
-        Assert.True(perClusterDetection, "Orchestra should detect per-cluster backpressure status");
+        Assert.True(perClusterDetection, "FlinkDotNet.Orchestration should detect per-cluster backpressure status");
         
         _testData["PerClusterBackpressureDetection"] = true;
-        _output.WriteLine("✅ Orchestra successfully detects per-cluster backpressure status");
+        _output.WriteLine("✅ FlinkDotNet.Orchestration successfully detects per-cluster backpressure status");
     }
 
     [Then(@"job placement should avoid clusters under backpressure")]

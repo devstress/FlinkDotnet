@@ -9,8 +9,8 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
     And Redis is available for counters
     And Kafka topics are configured with 100 partitions
     And the FlinkConsumerGroup is ready
-    And the FlinkDotNet Orchestra is available for multi-cluster orchestration
-    And multiple Flink clusters are registered with the Orchestra
+    And the FlinkDotNet.Orchestration is available for multi-cluster orchestration
+    And multiple Flink clusters are registered with the FlinkDotNet.Orchestration
 
   @stress @fifo @exactly_once
   Scenario: Process 1 Million Messages with FIFO and Exactly-Once Semantics
@@ -90,18 +90,18 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
 
   @stress @multi_cluster @orchestra @enterprise_scale
   Scenario: Multi-Cluster Job Distribution with Intelligent Placement
-    Given I have 100 Flink clusters registered with the Orchestra for stress testing
+    Given I have 100 Flink clusters registered with the FlinkDotNet.Orchestration for stress testing
     And each cluster has different resource capacity and health status
     When I submit 10,000 jobs using BestFit placement strategy
     Then jobs should be distributed optimally based on cluster capacity
     And no cluster should be overloaded beyond 80% capacity
     And job placement should minimize resource waste
     And all jobs should complete successfully within SLA
-    And Orchestra health aggregation should show all clusters healthy
+    And FlinkDotNet.Orchestration health aggregation should show all clusters healthy
 
   @stress @multi_cluster @massive_scale @temporal_architecture
   Scenario: Enterprise-Scale Orchestration with 1000 Clusters
-    Given I have 1000 Flink clusters in the Orchestra
+    Given I have 1000 Flink clusters in the FlinkDotNet.Orchestration
     And clusters are distributed across multiple availability zones
     When I submit 1,000,000 messages for processing across all clusters
     And use LeastLoaded placement strategy for optimal distribution
@@ -109,7 +109,7 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
     And cluster health should remain stable throughout processing
     And system should maintain 99.999% availability
     And no cascade failures should occur
-    And Orchestra should demonstrate auto-scaling capabilities
+    And FlinkDotNet.Orchestration should demonstrate auto-scaling capabilities
 
   @stress @multi_cluster @placement_strategies
   Scenario Outline: Test Different Job Placement Strategies Under Load
@@ -160,4 +160,4 @@ Feature: Stress Test - High Throughput Message Processing with Multi-Cluster Orc
     And load should be intelligently redistributed to available clusters
     And no messages should be lost during redistribution
     And system should maintain optimal throughput despite overload
-    And Orchestra should trigger auto-scaling for additional capacity
+    And FlinkDotNet.Orchestration should trigger auto-scaling for additional capacity

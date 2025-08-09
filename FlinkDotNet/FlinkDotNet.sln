@@ -24,7 +24,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Util", "FlinkDo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet", "FlinkDotNet\FlinkDotNet.csproj", "{F6A7B8C9-D0E1-2F3A-4B5C-6D7E8F9A0B1C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Orchestra", "FlinkDotNet.Orchestra\FlinkDotNet.Orchestra.csproj", "{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Orchestration", "FlinkDotNet.Orchestration\FlinkDotNet.Orchestration.csproj", "{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Temporal", "FlinkDotNet.Temporal\FlinkDotNet.Temporal.csproj", "{B2C3D4E5-F6A7-8901-2345-6789ABCDEF01}"
 EndProject

@@ -1,4 +1,4 @@
-using FlinkDotNet.Orchestra.Models;
+using FlinkDotNet.Orchestration.Models;
 using FlinkDotNet.Temporal.Models;
 
 namespace FlinkDotNet.Temporal.Workflows;
