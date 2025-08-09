@@ -672,7 +672,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("healthy cluster actors should remain unaffected", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 127
-    await testRunner.AndAsync("failed clusters should be marked as unhealthy in FlinkDotNet.Orchestrationtion", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("failed clusters should be marked as unhealthy in FlinkDotNet.Orchestration", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 128
     await testRunner.AndAsync("automatic recovery workflows should be triggered via Temporal", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -965,7 +965,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.AndAsync("failed actor should be quarantined and restarted independently", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 188
-    await testRunner.AndAsync("FlinkDotNet.Orchestrationtion should route traffic away from the failed cluster", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("FlinkDotNet.Orchestration should route traffic away from the failed cluster", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 189
     await testRunner.AndAsync("system-wide availability should be maintained above 99%", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

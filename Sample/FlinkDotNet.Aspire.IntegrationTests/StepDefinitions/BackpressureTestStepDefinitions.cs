@@ -88,7 +88,7 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Kafka Dashboard is available for monitoring");
     }
 
-    [Given(@"FlinkDotNet\.Orchestra is configured for multi-cluster backpressure coordination")]
+    [Given(@"FlinkDotNet\.Orchestration is configured for multi-cluster backpressure coordination")]
     public void GivenFlinkDotNetOrchestraIsConfiguredForMultiClusterBackpressureCoordination()
     {
         _output.WriteLine("🎼 Configuring FlinkDotNet.Orchestration for multi-cluster backpressure coordination...");
@@ -1116,16 +1116,16 @@ public class BackpressureTestStepDefinitions
 
     #region Multi-Cluster Orchestra Steps
 
-    [Given(@"I have (\d+) Flink clusters registered with the Orchestra")]
+    [Given(@"I have (\d+) Flink clusters registered with the Orchestration")]
     public void GivenIHaveFlinkClustersRegisteredWithTheOrchestra(int clusterCount)
     {
-        _output.WriteLine($"🎼 Registering {clusterCount} Flink clusters with the Orchestra...");
+        _output.WriteLine($"🎼 Registering {clusterCount} Flink clusters with the Orchestration...");
         
         var clustersRegistered = RegisterClustersWithOrchestra(clusterCount);
-        Assert.True(clustersRegistered, $"Should be able to register {clusterCount} clusters with the Orchestra");
+        Assert.True(clustersRegistered, $"Should be able to register {clusterCount} clusters with the Orchestration");
         
         _testData["RegisteredClusterCount"] = clusterCount;
-        _output.WriteLine($"✅ {clusterCount} Flink clusters registered with the Orchestra");
+        _output.WriteLine($"✅ {clusterCount} Flink clusters registered with the Orchestration");
     }
 
     [Given(@"each cluster has different processing capabilities and current load")]
@@ -1164,15 +1164,15 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Sustained high-volume load applied across all clusters");
     }
 
-    [Then(@"Orchestra should detect cluster-level backpressure conditions")]
+    [Then(@"Orchestration should detect cluster-level backpressure conditions")]
     public void ThenOrchestraShouldDetectClusterLevelBackpressureConditions()
     {
-        _output.WriteLine("🔍 Validating Orchestra detects cluster-level backpressure conditions...");
+        _output.WriteLine("🔍 Validating Orchestration detects cluster-level backpressure conditions...");
         
         var backpressureDetected = ValidateOrchestraBackpressureDetection();
-        Assert.True(backpressureDetected, "Orchestra should detect cluster-level backpressure conditions");
+        Assert.True(backpressureDetected, "Orchestration should detect cluster-level backpressure conditions");
         
-        _output.WriteLine("✅ Orchestra successfully detects cluster-level backpressure conditions");
+        _output.WriteLine("✅ Orchestration successfully detects cluster-level backpressure conditions");
     }
 
     [Then(@"load should be intelligently redistributed to available clusters")]
@@ -1186,26 +1186,26 @@ public class BackpressureTestStepDefinitions
         _output.WriteLine("✅ Load intelligently redistributed to available clusters");
     }
 
-    [Then(@"clusters near capacity should signal backpressure to Orchestra")]
+    [Then(@"clusters near capacity should signal backpressure to Orchestration")]
     public void ThenClustersNearCapacityShouldSignalBackpressureToOrchestra()
     {
-        _output.WriteLine("📡 Validating clusters signal backpressure to Orchestra when near capacity...");
+        _output.WriteLine("📡 Validating clusters signal backpressure to Orchestration when near capacity...");
         
         var backpressureSignaled = ValidateClusterBackpressureSignaling();
-        Assert.True(backpressureSignaled, "Clusters near capacity should signal backpressure to Orchestra");
+        Assert.True(backpressureSignaled, "Clusters near capacity should signal backpressure to Orchestration");
         
-        _output.WriteLine("✅ Clusters near capacity signal backpressure to Orchestra");
+        _output.WriteLine("✅ Clusters near capacity signal backpressure to Orchestration");
     }
 
-    [Then(@"Orchestra should route new jobs to clusters with available capacity")]
+    [Then(@"Orchestration should route new jobs to clusters with available capacity")]
     public void ThenOrchestraShouldRouteNewJobsToClustersWithAvailableCapacity()
     {
-        _output.WriteLine("🚦 Validating Orchestra routes new jobs to clusters with available capacity...");
+        _output.WriteLine("🚦 Validating Orchestration routes new jobs to clusters with available capacity...");
         
         var jobsRoutedCorrectly = ValidateOrchestraJobRouting();
-        Assert.True(jobsRoutedCorrectly, "Orchestra should route new jobs to clusters with available capacity");
+        Assert.True(jobsRoutedCorrectly, "Orchestration should route new jobs to clusters with available capacity");
         
-        _output.WriteLine("✅ Orchestra routes new jobs to clusters with available capacity");
+        _output.WriteLine("✅ Orchestration routes new jobs to clusters with available capacity");
     }
 
     [Then(@"no messages should be lost during load redistribution")]
@@ -5640,13 +5640,13 @@ private async Task<List<BackpressureMessage>> GetLastBackpressureMessages(int co
         _output.WriteLine("✅ Additional cluster capacity provisioned automatically");
     }
 
-    [Then(@"new clusters should be integrated into the Orchestra seamlessly")]
+    [Then(@"new clusters should be integrated into the Orchestration seamlessly")]
     public void ThenNewClustersShouldBeIntegratedIntoTheOrchestraSeamlessly()
     {
-        _output.WriteLine("🎼 Verifying new clusters are integrated into Orchestra seamlessly...");
+        _output.WriteLine("🎼 Verifying new clusters are integrated into Orchestration seamlessly...");
         
         var seamlessIntegration = ValidateSeamlessOrchestraIntegration();
-        Assert.True(seamlessIntegration, "New clusters should be integrated into the Orchestra seamlessly");
+        Assert.True(seamlessIntegration, "New clusters should be integrated into the Orchestration seamlessly");
         
         _testData["SeamlessOrchestraIntegration"] = true;
         _output.WriteLine("✅ New clusters integrated into Orchestra seamlessly");
