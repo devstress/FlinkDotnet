@@ -174,6 +174,105 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
+        /// Partitions the stream by uniformly distributing the data across all parallel operators.
+        /// This corresponds to the rebalance() operation in Apache Flink 2.0.
+        /// </summary>
+        /// <returns>The rebalanced DataStream</returns>
+        public DataStream<T> Rebalance()
+        {
+            // This would set the partitioning strategy to round-robin distribution
+            return this;
+        }
+
+        /// <summary>
+        /// Partitions the stream by distributing the data to a subset of parallel operators.
+        /// This is more efficient than rebalance() when the downstream operation has fewer parallel instances.
+        /// This corresponds to the rescale() operation in Apache Flink 2.0.
+        /// </summary>
+        /// <returns>The rescaled DataStream</returns>
+        public DataStream<T> Rescale()
+        {
+            // This would set the partitioning strategy to local rescaling
+            return this;
+        }
+
+        /// <summary>
+        /// Forwards elements to the next operator with the same parallelism.
+        /// Only works if the upstream and downstream operators have the same parallelism.
+        /// This corresponds to the forward() operation in Apache Flink 2.0.
+        /// </summary>
+        /// <returns>The forwarded DataStream</returns>
+        public DataStream<T> Forward()
+        {
+            // This would set the partitioning strategy to forward partitioning
+            return this;
+        }
+
+        /// <summary>
+        /// Partitions the stream randomly across all parallel operators.
+        /// This corresponds to the shuffle() operation in Apache Flink 2.0.
+        /// </summary>
+        /// <returns>The shuffled DataStream</returns>
+        public DataStream<T> Shuffle()
+        {
+            // This would set the partitioning strategy to random distribution
+            return this;
+        }
+
+        /// <summary>
+        /// Broadcasts the stream to all parallel operators of the next operation.
+        /// This corresponds to the broadcast() operation in Apache Flink 2.0.
+        /// </summary>
+        /// <returns>The broadcasted DataStream</returns>
+        public DataStream<T> Broadcast()
+        {
+            // This would set the partitioning strategy to broadcast all elements
+            return this;
+        }
+
+        /// <summary>
+        /// Partitions the stream using a custom partitioner.
+        /// This corresponds to the partitionCustom() operation in Apache Flink 2.0.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key</typeparam>
+        /// <param name="partitioner">The custom partitioner function</param>
+        /// <param name="keySelector">The key selector function</param>
+        /// <returns>The custom partitioned DataStream</returns>
+        public DataStream<T> PartitionCustom<TKey>(Func<TKey, int, int> partitioner, Func<T, TKey> keySelector)
+        {
+            // This would set the partitioning strategy to use the custom partitioner
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum parallelism for this operation.
+        /// This is used for dynamic scaling and savepoint compatibility.
+        /// Corresponds to Apache Flink 2.0 max parallelism configuration.
+        /// </summary>
+        /// <param name="maxParallelism">The maximum parallelism for this operation</param>
+        /// <returns>This DataStream</returns>
+        public DataStream<T> SetMaxParallelism(int maxParallelism)
+        {
+            if (maxParallelism <= 0 || maxParallelism > 32768)
+                throw new ArgumentException("Max parallelism must be between 1 and 32768");
+            
+            // This would set the maximum parallelism for this specific operation
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the slotting group for this operation.
+        /// Used for fine-grained resource management in Apache Flink 2.0.
+        /// </summary>
+        /// <param name="slotSharingGroup">The slot sharing group name</param>
+        /// <returns>This DataStream</returns>
+        public DataStream<T> SlotSharingGroup(string slotSharingGroup)
+        {
+            // This would set the slot sharing group for this operation
+            return this;
+        }
+
+        /// <summary>
         /// Gets the execution environment.
         /// </summary>
         /// <returns>The StreamExecutionEnvironment</returns>

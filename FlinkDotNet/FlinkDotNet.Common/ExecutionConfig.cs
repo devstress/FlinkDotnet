@@ -70,6 +70,30 @@ namespace FlinkDotNet.Common
         public bool ClosureCleanerEnabled { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the restart strategy for failed jobs.
+        /// Supports Apache Flink 2.0 advanced restart strategies.
+        /// </summary>
+        public string RestartStrategy { get; set; } = "exponential-delay";
+
+        /// <summary>
+        /// Gets or sets the task slot sharing configuration.
+        /// Used for fine-grained resource management in Apache Flink 2.0.
+        /// </summary>
+        public bool SlotSharingEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the adaptive scheduler configuration.
+        /// The adaptive scheduler is a key Apache Flink 2.0 feature for intelligent scaling.
+        /// </summary>
+        public bool AdaptiveSchedulerEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets reactive mode configuration.
+        /// Reactive mode automatically adapts to available cluster resources.
+        /// </summary>
+        public bool ReactiveModeEnabled { get; set; } = false;
+
+        /// <summary>
         /// Sets the parallelism for operations executed through this environment.
         /// </summary>
         /// <param name="parallelism">The parallelism</param>
@@ -140,6 +164,56 @@ namespace FlinkDotNet.Common
         public ExecutionConfig DisableClosureCleaner()
         {
             return EnableClosureCleaner(false);
+        }
+
+        /// <summary>
+        /// Sets the restart strategy for failed jobs.
+        /// Apache Flink 2.0 supports various restart strategies for enhanced fault tolerance.
+        /// </summary>
+        /// <param name="strategy">The restart strategy (e.g., "exponential-delay", "fixed-delay", "failure-rate")</param>
+        /// <returns>This ExecutionConfig instance for method chaining</returns>
+        public ExecutionConfig SetRestartStrategy(string strategy)
+        {
+            RestartStrategy = strategy;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables or disables slot sharing.
+        /// Slot sharing allows different operators to share the same task slot.
+        /// </summary>
+        /// <param name="enabled">True to enable slot sharing</param>
+        /// <returns>This ExecutionConfig instance for method chaining</returns>
+        public ExecutionConfig EnableSlotSharing(bool enabled = true)
+        {
+            SlotSharingEnabled = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables the Adaptive Scheduler for intelligent resource management.
+        /// The Adaptive Scheduler is a key Apache Flink 2.0 feature that automatically
+        /// adjusts parallelism based on workload characteristics and available resources.
+        /// </summary>
+        /// <param name="enabled">True to enable adaptive scheduler</param>
+        /// <returns>This ExecutionConfig instance for method chaining</returns>
+        public ExecutionConfig EnableAdaptiveScheduler(bool enabled = true)
+        {
+            AdaptiveSchedulerEnabled = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables Reactive Mode for automatic scaling based on cluster resources.
+        /// In Reactive Mode, Flink automatically adapts the parallelism to the available resources
+        /// without requiring manual intervention. This is an Apache Flink 2.0 feature.
+        /// </summary>
+        /// <param name="enabled">True to enable reactive mode</param>
+        /// <returns>This ExecutionConfig instance for method chaining</returns>
+        public ExecutionConfig EnableReactiveMode(bool enabled = true)
+        {
+            ReactiveModeEnabled = enabled;
+            return this;
         }
 
         /// <summary>
