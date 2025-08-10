@@ -340,7 +340,7 @@ public class TemporalArchitectureTestController : ControllerBase
     [HttpPost("temporal/start-orchestration")]
     [SwaggerOperation(
         Summary = "Start Temporal FlinkDotNet.Orchestration Workflow",
-        Description = "Start a Temporal workflow for cluster orchestration and auto-scaling"
+        Description = "Start a Temporal workflow for cluster orchestration and auto-scaling using real Temporal workflows"
     )]
     [SwaggerResponse(200, "Workflow started successfully")]
     [SwaggerResponse(400, "Invalid workflow configuration")]
@@ -363,27 +363,208 @@ public class TemporalArchitectureTestController : ControllerBase
                     TaskSlots = 4,
                     TaskManagers = 2,
                     Region = "local-testing",
-                    Zone = "default"
+                    Zone = "default",
+                    HighAvailability = true
                 }
             };
 
-            // Start orchestration workflow using real service
+            // Start orchestration workflow using real Temporal service
             var workflowId = await _flinkOrchestra.StartOrchestrationWorkflowAsync(orchestrationRequest, HttpContext.RequestAborted);
 
             return Ok(new
             {
-                Status = "Workflow started successfully",
+                Status = "Temporal workflow started successfully",
                 WorkflowId = workflowId,
                 request.TargetClusters,
                 request.MinClusters,
                 request.MaxClusters,
                 StartTime = DateTime.UtcNow,
-                Message = "Temporal workflow for FlinkDotNet.Orchestration cluster orchestration is now running"
+                OrchestrationRequest = orchestrationRequest,
+                Message = "Real Temporal workflow for FlinkDotNet.Orchestration cluster orchestration is now running"
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error starting Temporal FlinkDotNet.Orchestration workflow");
+            return StatusCode(500, new
+            {
+                Status = "Internal server error",
+                Error = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("temporal/start-job-distribution")]
+    [SwaggerOperation(
+        Summary = "Start Temporal Job Distribution Workflow", 
+        Description = "Start a Temporal workflow for intelligent job distribution across multiple clusters"
+    )]
+    [SwaggerResponse(200, "Job distribution workflow started successfully")]
+    [SwaggerResponse(400, "Invalid job distribution configuration")]
+    public async Task<IActionResult> StartJobDistributionWorkflow([FromBody] JobDistributionWorkflowRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Starting Temporal job distribution workflow for {JobCount} jobs using {Strategy} strategy", 
+                request.Jobs.Count, request.Strategy);
+
+            // Create job definitions from request
+            var jobDefinitions = request.Jobs.Select((job, index) => new FlinkJobDefinition
+            {
+                JobId = job.JobId ?? $"job-{Guid.NewGuid():N}",
+                JobName = job.JobName ?? $"Job {index + 1}",
+                JobGraph = job.JobGraph ?? "{ \"vertices\": [], \"edges\": [] }",
+                Parallelism = job.Parallelism ?? 4,
+                Priority = JobPriority.Normal,
+                ResourceRequirements = new JobResourceRequirements
+                {
+                    CpuCores = job.CpuCores ?? 2,
+                    MemoryMB = job.MemoryMb ?? 1024
+                }
+            }).ToList();
+
+            // Parse strategy enum
+            if (!Enum.TryParse<SubmissionStrategy>(request.Strategy, true, out var strategy))
+            {
+                strategy = SubmissionStrategy.BestFit;
+            }
+
+            // Get the enhanced Temporal service (requires dependency injection enhancement)
+            var temporalService = HttpContext.RequestServices.GetService<LocalTesting.WebApi.Services.Temporal.TemporalSecurityTokenService>();
+            if (temporalService == null)
+            {
+                return StatusCode(500, new
+                {
+                    Status = "Service unavailable",
+                    Error = "Temporal service not available"
+                });
+            }
+
+            // Start job distribution workflow using enhanced Temporal service
+            var workflowId = await temporalService.StartJobDistributionWorkflowAsync(jobDefinitions, strategy);
+
+            return Ok(new
+            {
+                Status = "Temporal job distribution workflow started successfully",
+                WorkflowId = workflowId,
+                JobCount = jobDefinitions.Count,
+                Strategy = strategy.ToString(),
+                StartTime = DateTime.UtcNow,
+                Jobs = jobDefinitions.Select(j => new { j.JobId, j.JobName, j.Parallelism }).ToArray(),
+                Message = "Real Temporal workflow for intelligent job distribution is now running"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting Temporal job distribution workflow");
+            return StatusCode(500, new
+            {
+                Status = "Internal server error",
+                Error = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("temporal/workflow-status/{workflowId}")]
+    [SwaggerOperation(
+        Summary = "Get Temporal Workflow Status",
+        Description = "Get the current status and execution details of a Temporal workflow"
+    )]
+    [SwaggerResponse(200, "Workflow status retrieved successfully")]
+    [SwaggerResponse(404, "Workflow not found")]
+    public async Task<IActionResult> GetWorkflowStatus(string workflowId)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving Temporal workflow status for {WorkflowId}", workflowId);
+
+            // Get the enhanced Temporal service
+            var temporalService = HttpContext.RequestServices.GetService<LocalTesting.WebApi.Services.Temporal.TemporalSecurityTokenService>();
+            if (temporalService == null)
+            {
+                return StatusCode(500, new
+                {
+                    Status = "Service unavailable",
+                    Error = "Temporal service not available"
+                });
+            }
+
+            var workflowStatus = await temporalService.GetWorkflowStatusAsync(workflowId);
+
+            return Ok(new
+            {
+                Status = "Workflow status retrieved successfully",
+                WorkflowId = workflowId,
+                WorkflowStatus = workflowStatus.Status,
+                StartTime = workflowStatus.StartTime,
+                CloseTime = workflowStatus.CloseTime,
+                RunId = workflowStatus.RunId,
+                IsRunning = workflowStatus.CloseTime == null,
+                Duration = workflowStatus.CloseTime?.Subtract(workflowStatus.StartTime) ?? 
+                          DateTime.UtcNow.Subtract(workflowStatus.StartTime)
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving Temporal workflow status for {WorkflowId}", workflowId);
+            return StatusCode(500, new
+            {
+                Status = "Internal server error",
+                Error = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("temporal/cancel-workflow/{workflowId}")]
+    [SwaggerOperation(
+        Summary = "Cancel Temporal Workflow",
+        Description = "Cancel a running Temporal workflow gracefully"
+    )]
+    [SwaggerResponse(200, "Workflow cancelled successfully")]
+    [SwaggerResponse(404, "Workflow not found")]
+    public async Task<IActionResult> CancelWorkflow(string workflowId, [FromBody] CancelWorkflowRequest? request = null)
+    {
+        try
+        {
+            _logger.LogInformation("Cancelling Temporal workflow {WorkflowId}", workflowId);
+
+            // Get the enhanced Temporal service
+            var temporalService = HttpContext.RequestServices.GetService<LocalTesting.WebApi.Services.Temporal.TemporalSecurityTokenService>();
+            if (temporalService == null)
+            {
+                return StatusCode(500, new
+                {
+                    Status = "Service unavailable",
+                    Error = "Temporal service not available"
+                });
+            }
+
+            var reason = request?.Reason ?? "Cancelled by user via API";
+            var cancelled = await temporalService.CancelWorkflowAsync(workflowId, reason);
+
+            if (cancelled)
+            {
+                return Ok(new
+                {
+                    Status = "Workflow cancelled successfully",
+                    WorkflowId = workflowId,
+                    Reason = reason,
+                    CancelledAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                return StatusCode(500, new
+                {
+                    Status = "Failed to cancel workflow",
+                    WorkflowId = workflowId,
+                    Error = "Workflow cancellation failed"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling Temporal workflow {WorkflowId}", workflowId);
             return StatusCode(500, new
             {
                 Status = "Internal server error",
@@ -544,4 +725,29 @@ public class EnterpriseScaleRequest
 {
     public int ClusterCount { get; set; } = 1000;
     public int JobCount { get; set; } = 100000;
+}
+
+// Enhanced models for Temporal workflow operations
+
+public class JobDistributionWorkflowRequest
+{
+    public List<JobDefinitionRequest> Jobs { get; set; } = new();
+    public string Strategy { get; set; } = "BestFit";
+}
+
+public class JobDefinitionRequest
+{
+    public string? JobId { get; set; }
+    public string? JobName { get; set; }
+    public string? JobGraph { get; set; }
+    public int? Parallelism { get; set; }
+    public int? CpuCores { get; set; }
+    public int? MemoryMb { get; set; }
+    public string? PreferredRegion { get; set; }
+    public string? PreferredZone { get; set; }
+}
+
+public class CancelWorkflowRequest
+{
+    public string Reason { get; set; } = "Cancelled by user";
 }

@@ -2,30 +2,107 @@
 
 LocalTesting provides an interactive API environment for debugging and executing Complex Logic Stress Test scenarios with **real-time orchestration of multiple Flink clusters** using the latest **Temporal Durable Workflow Architecture**. This environment demonstrates FlinkDotNet's enterprise-scale orchestration capabilities with comprehensive monitoring through Aspire dashboard and specialized UIs.
 
-## Latest Architecture Integration
+## ✨ Latest Enterprise Architecture Integration (Updated)
 
-LocalTesting has been updated to follow the latest **Temporal Durable Workflow Architecture** with enterprise-scale multi-cluster orchestration capabilities:
+LocalTesting has been updated to follow the latest **Temporal Durable Workflow Architecture** with enhanced enterprise-scale multi-cluster orchestration capabilities:
 
-### **FlinkDotNet.Orchestration Integration**
+### 🚀 **Enhanced Temporal Job and Cluster Management**
+- **Real Temporal Workflows**: Actual Temporal .NET SDK integration with fallback simulation mode
+- **Enhanced Job Distribution**: Intelligent job placement with advanced strategies (BestFit, LeastLoaded, RoundRobin, LocalityFirst)
+- **Enterprise Cluster Orchestration**: Durable cluster lifecycle management with auto-scaling and resilience patterns
+- **Circuit Breaker Integration**: Enterprise fault tolerance patterns with automatic recovery
+- **Workflow Monitoring**: Real-time workflow status tracking and cancellation capabilities
+
+### 🔧 **Multi-Cluster FlinkDotNet.Orchestration Integration**
 - **IFlinkOrchestra Service**: Multi-cluster job orchestration with intelligent placement strategies
 - **Real Job Submission**: Actual job submission to orchestrated clusters (no simulation)
-- **Dynamic Cluster Provisioning**: Create and manage Flink clusters programmatically
+- **Dynamic Cluster Provisioning**: Create and manage Flink clusters programmatically with .NET 9.0 compatibility
 - **Health Monitoring**: Comprehensive health reporting across all orchestrated clusters
+- **Enhanced API Endpoints**: New Temporal workflow management endpoints with enterprise features
 
-### **Actor-Based Cluster Management**
+### 🎯 **Actor-Based Cluster Management**
 - **FlinkClusterActor**: Enterprise actor model for massive scale cluster lifecycle management
 - **Independent Cluster Actors**: Each cluster managed by isolated actors preventing cascade failures
 - **99.999% Availability**: Actor-based isolation with fault tolerance patterns
+- **Enhanced Service Integration**: Seamless integration with LocalTesting WebAPI
 
-### **Temporal Workflow Orchestration**
+### ⚡ **Temporal Workflow Orchestration (Enhanced)**
 - **Durable Workflows**: Long-running orchestration processes with exactly-once execution guarantees
-- **Auto-scaling Workflows**: Dynamic cluster provisioning based on demand
-- **Resilience Patterns**: Circuit breakers, retry policies, and health checkers
+- **Auto-scaling Workflows**: Dynamic cluster provisioning based on demand with enterprise patterns
+- **Resilience Patterns**: Circuit breakers, retry policies, and health checkers with enhanced monitoring
+- **Real-time Workflow Control**: Start, monitor, cancel, and get results from Temporal workflows
+- **Enterprise Token Management**: Enhanced security token renewal with circuit breaker patterns
 
-### **Enterprise-Scale Testing Capabilities**
+### 📊 **Enterprise-Scale Testing Capabilities**
 - **Multi-Cluster Simulation**: Test orchestration across thousands of clusters
-- **Intelligent Job Placement**: BestFit, LeastLoaded, RoundRobin, LocalityFirst strategies
+- **Intelligent Job Placement**: Enhanced BestFit, LeastLoaded, RoundRobin, LocalityFirst strategies with optimization
 - **Real-time Monitoring**: Complete observability stack with metrics and distributed tracing
+- **Enhanced Business Flows**: 8-step stress test with improved enterprise patterns
+- **Comprehensive API Testing**: Interactive endpoints for all enterprise orchestration patterns
+
+## Enhanced Enterprise Features
+
+### 🔄 **Real Temporal Workflow Integration**
+LocalTesting now includes actual Temporal .NET SDK integration with graceful fallback to simulation mode:
+
+#### **Temporal Workflow Management**
+```bash
+# Start cluster orchestration with auto-scaling
+POST /api/TemporalArchitectureTest/temporal/start-orchestration
+{
+  "targetClusters": 10,
+  "minClusters": 2,
+  "maxClusters": 50
+}
+
+# Start intelligent job distribution
+POST /api/TemporalArchitectureTest/temporal/start-job-distribution
+{
+  "jobs": [
+    {
+      "jobName": "Analytics Pipeline",
+      "parallelism": 8,
+      "cpuCores": 4,
+      "memoryMb": 2048,
+      "preferredRegion": "us-west-2"
+    }
+  ],
+  "strategy": "BestFit"
+}
+
+# Monitor workflow execution
+GET /api/TemporalArchitectureTest/temporal/workflow-status/{workflowId}
+
+# Cancel workflow gracefully
+POST /api/TemporalArchitectureTest/temporal/cancel-workflow/{workflowId}
+{
+  "reason": "Maintenance window"
+}
+```
+
+### 🎯 **Enhanced Job Distribution Strategies**
+Advanced intelligent placement algorithms with enterprise optimization:
+
+- **BestFit**: Optimal resource utilization with capacity-aware placement
+- **LeastLoaded**: Dynamic load balancing across cluster health metrics
+- **RoundRobin**: Efficient distribution with enhanced locality awareness
+- **LocalityFirst**: Geographic and zone-aware placement with fallback strategies
+
+### 🔧 **Enterprise Resilience Patterns**
+Built-in fault tolerance with enhanced enterprise monitoring:
+
+- **Circuit Breaker Integration**: Automatic failure detection and recovery
+- **Enhanced Token Management**: Security token renewal with resilience patterns
+- **Health Monitoring**: Real-time cluster health aggregation
+- **Auto-scaling**: Dynamic cluster provisioning based on demand patterns
+
+### 📈 **Observability Enhancements**
+Enhanced monitoring capabilities for enterprise environments:
+
+- **Workflow Tracking**: Real-time status monitoring for all Temporal workflows
+- **Performance Metrics**: Enhanced job placement optimization metrics
+- **Health Dashboards**: Comprehensive cluster health visualization
+- **Enterprise Logging**: Structured logging with correlation IDs and workflow tracking
 
 ## Business Flow
 
@@ -402,7 +479,7 @@ Execute both traditional stress testing and enterprise orchestration through int
 | 7 | `POST /api/ComplexLogicStressTest/step7/verify-messages` | Top/last 10 message verification |
 | - | `POST /api/ComplexLogicStressTest/run-full-stress-test` | Complete automated execution |
 
-#### **Enterprise Temporal Durable Workflow Architecture (NEW)**
+#### **Enterprise Temporal Durable Workflow Architecture (Enhanced)**
 | Category | Endpoint | Description |
 |----------|----------|-------------|
 | **Orchestra** | `POST /api/TemporalArchitectureTest/orchestra/submit-job` | Submit jobs with intelligent placement strategies |
@@ -411,7 +488,10 @@ Execute both traditional stress testing and enterprise orchestration through int
 | **Orchestra** | `POST /api/TemporalArchitectureTest/orchestra/provision-cluster` | Provision new Flink cluster dynamically |
 | **Actors** | `POST /api/TemporalArchitectureTest/actor/create-cluster` | Create and test cluster actors |
 | **Actors** | `GET /api/TemporalArchitectureTest/actor/health-status` | Get all cluster actor health status |
-| **Temporal** | `POST /api/TemporalArchitectureTest/temporal/start-orchestration` | Start Temporal orchestration workflows |
+| **Temporal** | `POST /api/TemporalArchitectureTest/temporal/start-orchestration` | Start enhanced Temporal orchestration workflows |
+| **Temporal** | `POST /api/TemporalArchitectureTest/temporal/start-job-distribution` | ✨ **NEW**: Start intelligent job distribution workflows |
+| **Temporal** | `GET /api/TemporalArchitectureTest/temporal/workflow-status/{workflowId}` | ✨ **NEW**: Get real-time workflow status and execution details |
+| **Temporal** | `POST /api/TemporalArchitectureTest/temporal/cancel-workflow/{workflowId}` | ✨ **NEW**: Cancel running workflows gracefully |
 | **Resilience** | `POST /api/TemporalArchitectureTest/resilience/test-circuit-breaker` | Test circuit breaker patterns |
 | **Enterprise** | `POST /api/TemporalArchitectureTest/enterprise-scale/simulate-massive-orchestration` | Enterprise-scale multi-cluster simulation |
 
