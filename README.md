@@ -1,3 +1,7 @@
+# FlinkDotNet
+
+**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.0 clusters using a fluent C# API. It provides complete compatibility with Apache Flink 2.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
+
 # Why Kafka + FlinkDotNet + Temporal? Strategic Architecture Decision Guide
 
 In today's data-driven enterprise landscape, choosing the right messaging and stream processing architecture is critical for scalability, reliability, and maintainability. This section provides a comprehensive analysis of why **Kafka + FlinkDotNet + Temporal** represents the optimal choice for modern real-time data processing at enterprise scale.
@@ -305,11 +309,6 @@ var buildWorkflow = Temporal.WorkflowBuilder
 - **Bug Resolution**: Faster debugging with consistent patterns
 
 ---
-
-# FlinkDotNet
-
-**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.0 clusters using a fluent C# API. It provides complete compatibility with Apache Flink 2.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
-
 ## 🚀 Apache Flink 2.0 Compatibility
 
 FlinkDotNet implements the complete Apache Flink 2.0 feature set for .NET developers, including:
