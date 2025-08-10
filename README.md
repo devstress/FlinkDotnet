@@ -22,31 +22,59 @@ In today's data-driven enterprise landscape, choosing the right messaging and st
 
 ### **Decision Matrix:**
 
-- **Choose Kafka** when you need: High throughput, long retention, rich ecosystem, multi-cloud flexibility, complex event processing
+**Note:** When evaluating stream processing solutions, it's important to distinguish between Kafka (the message broker) and complete streaming solutions (Kafka + Kafka Streams or Apache Flink-based solutions).
+
+- **Choose Kafka alone** when you need: Message queuing, event storage, basic pub/sub, data pipeline transport
+- **Choose Kafka + Kafka Streams** when you need: High throughput stream processing, Java/Scala ecosystem, tight Kafka integration, stream topologies, local state management
 - **Choose Kinesis** when you have: AWS-only environment, moderate throughput needs, integrated AWS services requirement  
 - **Choose Service Bus** when you need: Enterprise messaging patterns, complex routing, Azure-native integration
 - **Choose SQS** when you need: Simple queuing, AWS integration, low operational overhead
 - **Choose Event Hubs** when you need: Azure-native big data ingestion, moderate complexity
 
-## ⚠️ Kafka Limitations: Why You Need FlinkDotNet + Temporal
+## 🔄 Architecture Comparison: Kafka + Kafka Streams vs FlinkDotNet + Temporal
 
-While Kafka excels at message streaming, it has significant limitations that require additional tools:
+When choosing between streaming architectures, it's important to compare complete solutions. This section compares **Kafka + Kafka Streams** (the complete Kafka ecosystem) with **FlinkDotNet + Temporal** for enterprise-scale stream processing:
 
-### **Kafka's Core Limitations:**
+### **Kafka + Kafka Streams vs FlinkDotNet + Temporal Comparison:**
 
-| **Limitation** | **Impact** | **FlinkDotNet + Temporal Solution** |
-|----------------|------------|-------------------------------------|
-| **No Complex Processing** | Kafka only moves data, cannot transform or aggregate | FlinkDotNet provides rich stream processing (windowing, joins, aggregations) |
-| **Limited Fault Tolerance** | Basic replication, no workflow orchestration | Temporal provides durable workflows with exactly-once guarantees |
-| **No State Management** | Cannot maintain processing state across failures | FlinkDotNet savepoints + Temporal state persistence |
-| **Scaling Complexity** | Manual partition management, rebalancing issues | FlinkDotNet adaptive scheduler + Temporal orchestration |
-| **No Multi-Step Workflows** | Cannot coordinate complex business processes | Temporal workflows handle long-running, multi-step processes |
-| **Limited Error Handling** | Basic retry, no sophisticated error recovery | Temporal's advanced retry policies and compensation patterns |
-| **No Cross-System Coordination** | Cannot orchestrate across multiple systems | Temporal coordinates Kafka + databases + APIs + external systems |
+| **Capability** | **Kafka + Kafka Streams** | **FlinkDotNet + Temporal** |
+|----------------|---------------------------|----------------------------|
+| **Stream Processing** | Kafka Streams provides rich processing (windowing, joins, aggregations) | FlinkDotNet provides equivalent stream processing with Apache Flink 2.0 features |
+| **Fault Tolerance** | At-least-once processing, exactly-once within Kafka topics | Exactly-once guarantees with Apache Flink checkpointing + Temporal workflows |
+| **State Management** | Local state stores with changelog topics for fault tolerance | FlinkDotNet savepoints + Temporal durable state persistence |
+| **Scaling** | Horizontal scaling via Kafka partitions, manual rebalancing | FlinkDotNet adaptive scheduler + automatic scaling with Temporal orchestration |
+| **Complex Workflows** | Limited to stream processing topologies | Temporal workflows handle long-running, multi-step business processes |
+| **Error Handling** | Stream-level error handling and dead letter queues | Temporal's advanced retry policies, compensation patterns, and workflow recovery |
+| **Cross-System Coordination** | Limited to Kafka ecosystem, requires external orchestration | Temporal natively coordinates across Kafka + databases + APIs + external systems |
+| **Language Ecosystem** | Java/Scala native, limited .NET support | Full .NET integration with C# APIs and .NET ecosystem |
 
-### **The Power of Combined Architecture:**
+### **When to Choose Each Architecture:**
+
+**Choose Kafka + Kafka Streams when:**
+- Your team has strong Java/Scala expertise
+- You need tight integration with the Kafka ecosystem
+- Your processing requirements fit well within stream processing topologies
+- You want to minimize infrastructure complexity (single technology stack)
+- Your use cases are primarily stream transformations and aggregations
+
+**Choose FlinkDotNet + Temporal when:**
+- Your team uses .NET and C# as primary languages
+- You need complex, long-running business process orchestration
+- You require advanced fault tolerance and workflow recovery capabilities
+- You need to coordinate across multiple external systems and APIs
+- You want Apache Flink 2.0 features like adaptive scheduling and reactive mode
+
+### **Technical Architecture Comparison:**
 
 ```
+Kafka + Kafka Streams Architecture:
+Kafka (Message Broker) + Kafka Streams (Stream Processing)
+    ↓                          ↓
+Message Topics          →  Stream Topologies
+Partitioned Data        →  Stateful Processing
+At-least-once          →  Local State Stores
+
+FlinkDotNet + Temporal Architecture:
 Kafka (Data Highway) + FlinkDotNet (Processing Engine) + Temporal (Orchestration Brain)
     ↓                        ↓                              ↓
 Stream Transport     →   Real-time Processing      →   Durable Coordination
@@ -54,7 +82,7 @@ Partitioned Topics   →   Windowing/Aggregations    →   Multi-step Workflows
 At-least-once       →   Exactly-once Processing   →   Workflow Guarantees
 ```
 
-## 🚀 Architecture Comparison: Kafka + FlinkDotNet + Temporal vs Alternatives
+## 🚀 Architecture Comparison: FlinkDotNet + Temporal vs Alternative Solutions
 
 ### **vs. Traditional ESB (Enterprise Service Bus)**
 - **Traditional ESB**: Monolithic, vendor lock-in, limited scalability, expensive licensing
@@ -68,9 +96,9 @@ At-least-once       →   Exactly-once Processing   →   Workflow Guarantees
 - **Big Data**: Batch-oriented, complex cluster management, high latency, Java-centric
 - **Our Stack**: Stream-first with batch capability, managed scaling, low latency, .NET ecosystem
 
-### **vs. Modern Alternatives (Pulsar + Flink + Apache Airflow)**
-- **Modern Alternative**: Steeper learning curve, operational complexity, limited .NET support
-- **Our Stack**: .NET-native APIs, enterprise support, simplified operations via Temporal
+### **vs. Apache Pulsar + Apache Flink + Apache Airflow**
+- **Pulsar + Flink + Airflow**: Java-centric ecosystem, complex multi-system integration, separate orchestration layer
+- **Our Stack**: .NET-native APIs with unified Flink integration, simplified operations via Temporal workflows
 
 ## 🏭 Real-World Industrial Use Cases: Multi-Business Case Reusability
 
