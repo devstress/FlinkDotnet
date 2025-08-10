@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.0 clusters using a fluent C# API. It provides complete compatibility with Apache Flink 2.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
+**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
 
 # Why Kafka + FlinkDotNet + Temporal? Strategic Architecture Decision Guide
 
@@ -320,26 +320,30 @@ var buildWorkflow = Temporal.WorkflowBuilder
 
 ## 📊 Enterprise ROI & Business Impact
 
-### **Cost Comparison (Enterprise Scale)**
+### **Cost Comparison (Enterprise Scale - Estimated)**
+
+*Note: These are estimated costs based on typical enterprise deployments and may vary significantly based on specific requirements, scale, and implementation choices.*
 
 | **Solution** | **Initial Setup** | **Annual Operations** | **3-Year TCO** | **Vendor Lock-in Risk** |
 |--------------|------------------|--------------------|----------------|----------------------|
-| **Our Stack** | Medium | Low (open-source) | **$2.5M** | **Low** |
-| **Full AWS** | Low | High (per-message) | $4.2M | High |
-| **Full Azure** | Low | High (per-message) | $3.8M | High |
-| **Traditional ESB** | High | Very High (licensing) | $6.1M | Very High |
+| **Our Stack** | Medium | Low (open-source) | **$2.5M+** | **Low** |
+| **Full AWS** | Low | High (per-message) | $4.2M+ | High |
+| **Full Azure** | Low | High (per-message) | $3.8M+ | High |
+| **Traditional ESB** | High | Very High (licensing) | $6.1M+ | Very High |
 
-### **Development Velocity Impact**
+### **Development Velocity Impact - Potential Benefits**
 
-- **Time to Production**: 60% faster with reusable patterns
-- **Developer Onboarding**: .NET developers productive immediately  
-- **Maintenance Overhead**: 70% reduction with unified architecture
-- **Bug Resolution**: Faster debugging with consistent patterns
+*Note: These metrics represent potential improvements and will vary based on team experience, project complexity, and implementation quality.*
+
+- **Time to Production**: Potentially 60% faster with reusable patterns
+- **Developer Onboarding**: .NET developers can be productive immediately  
+- **Maintenance Overhead**: Potential 70% reduction with unified architecture
+- **Bug Resolution**: Potentially faster debugging with consistent patterns
 
 ---
 ## 🚀 Apache Flink 2.0 Compatibility
 
-FlinkDotNet implements the complete Apache Flink 2.0 feature set for .NET developers, including:
+FlinkDotNet implements extensive Apache Flink 2.0 feature support for .NET developers, including:
 
 - **Dynamic Scaling**: Change job parallelism without stopping jobs
 - **Adaptive Scheduler**: Intelligent resource management and automatic parallelism adjustment
