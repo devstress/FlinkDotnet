@@ -9,7 +9,7 @@ env:
   configuration: Release
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:

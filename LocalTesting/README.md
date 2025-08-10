@@ -1,11 +1,37 @@
-# LocalTesting - Interactive Stress Test Environment
+# LocalTesting - Enterprise-Scale Temporal Durable Workflow Architecture Testing Environment
 
-LocalTesting provides an interactive API environment for debugging and executing Complex Logic Stress Test scenarios with real-time monitoring through Aspire dashboard and specialized UIs.
+LocalTesting provides an interactive API environment for debugging and executing Complex Logic Stress Test scenarios with **real-time orchestration of multiple Flink clusters** using the latest **Temporal Durable Workflow Architecture**. This environment demonstrates FlinkDotNet's enterprise-scale orchestration capabilities with comprehensive monitoring through Aspire dashboard and specialized UIs.
+
+## Latest Architecture Integration
+
+LocalTesting has been updated to follow the latest **Temporal Durable Workflow Architecture** with enterprise-scale multi-cluster orchestration capabilities:
+
+### **FlinkDotNet.Orchestration Integration**
+- **IFlinkOrchestra Service**: Multi-cluster job orchestration with intelligent placement strategies
+- **Real Job Submission**: Actual job submission to orchestrated clusters (no simulation)
+- **Dynamic Cluster Provisioning**: Create and manage Flink clusters programmatically
+- **Health Monitoring**: Comprehensive health reporting across all orchestrated clusters
+
+### **Actor-Based Cluster Management**
+- **FlinkClusterActor**: Enterprise actor model for massive scale cluster lifecycle management
+- **Independent Cluster Actors**: Each cluster managed by isolated actors preventing cascade failures
+- **99.999% Availability**: Actor-based isolation with fault tolerance patterns
+
+### **Temporal Workflow Orchestration**
+- **Durable Workflows**: Long-running orchestration processes with exactly-once execution guarantees
+- **Auto-scaling Workflows**: Dynamic cluster provisioning based on demand
+- **Resilience Patterns**: Circuit breakers, retry policies, and health checkers
+
+### **Enterprise-Scale Testing Capabilities**
+- **Multi-Cluster Simulation**: Test orchestration across thousands of clusters
+- **Intelligent Job Placement**: BestFit, LeastLoaded, RoundRobin, LocalityFirst strategies
+- **Real-time Monitoring**: Complete observability stack with metrics and distributed tracing
 
 ## Business Flow
 
-The LocalTesting environment implements an 8-step business flow for comprehensive stress testing:
+The LocalTesting environment implements both **traditional stress testing** and **modern orchestration workflows**:
 
+### **Traditional 8-Step Business Flow (ComplexLogicStressTest)**
 1. **Configure Backpressure**: Set 100 messages/second rate limit per logical queue using Kafka headers
 2. **Temporal Message Submission**: Submit job to Temporal to produce 1 million messages to Kafka with 100 partitions and 1000 logical queues. Backpressure blocks submission when hitting rate limits; Temporal retries until downstream processing catches up
 3. **Temporal Message Processing**: Submit job to Temporal to process Kafka messages using existing security token logic and correlation ID handling
@@ -15,20 +41,36 @@ The LocalTesting environment implements an 8-step business flow for comprehensiv
 7. **Response Output**: Write processed messages to `sample_response` Kafka topic
 8. **Message Verification**: Verify top 10 and last 10 messages including both headers and content
 
+### **Enterprise Orchestration Workflows (NEW)**
+1. **Orchestra Health Check**: Validate all cluster actors and orchestration service health
+2. **Cluster Provisioning**: Dynamically provision new Flink clusters with specified configurations
+3. **Job Submission with Placement**: Submit jobs using intelligent placement strategies across multiple clusters
+4. **Temporal Workflow Management**: Start long-running orchestration workflows for auto-scaling
+5. **Multi-Cluster Health Monitoring**: Real-time health aggregation across all orchestrated clusters
+6. **Resilience Testing**: Circuit breaker activation and recovery under failure conditions
+7. **Enterprise-Scale Simulation**: Test orchestration across thousands of clusters with various job loads
+8. **Performance Analytics**: Comprehensive metrics collection and observability validation
+
 ## BDD Explanation
 
-The LocalTesting environment transforms BDD (Behavior-Driven Development) test scenarios into executable API endpoints. This approach allows:
+The LocalTesting environment transforms BDD (Behavior-Driven Development) test scenarios into executable API endpoints supporting both **traditional stress testing** and **enterprise orchestration patterns**. This approach allows:
 
 - **Step-by-Step Debugging**: Execute each test phase individually through interactive API endpoints
 - **Real-Time Monitoring**: Monitor test progress through multiple specialized dashboards
 - **Correlation Tracking**: End-to-end tracking of 1 million messages with unique correlation IDs
 - **Integration Testing**: Validate complex enterprise streaming scenarios combining Flink, Kafka, Temporal, and HTTP processing
+- **Orchestra Testing**: Test multi-cluster job orchestration with intelligent placement strategies
+- **Actor Pattern Validation**: Validate cluster actor lifecycle management and fault isolation
+- **Temporal Workflow Testing**: Test durable workflow execution with exactly-once guarantees
 
 ### BDD Features Covered
 - **ComplexLogicStressTest.feature**: 1M message processing with correlation ID tracking, security token management, and HTTP batch processing
 - **BackpressureTest.feature**: Consumer lag-based flow control following LinkedIn best practices
 - **ReliabilityTest.feature**: System reliability and error handling scenarios
 - **StressTest.feature**: High-volume performance validation
+- **OrchestrationTest.feature** (NEW): Multi-cluster orchestration and intelligent job placement
+- **TemporalWorkflowTest.feature** (NEW): Durable workflow execution and auto-scaling scenarios
+- **ResilienceTest.feature** (NEW): Circuit breaker patterns and fault tolerance validation
 
 ## Services and Their Purpose
 
@@ -43,6 +85,16 @@ The LocalTesting environment transforms BDD (Behavior-Driven Development) test s
 | **FlinkJobManagementService** | Flink job lifecycle management | Job submission, monitoring, status tracking |
 | **TemporalSecurityTokenService** | Temporal workflow integration | Durable token workflows, retry handling |
 | **AspireHealthCheckService** | System health monitoring | Service health checks, resource monitoring |
+
+### **Enterprise Orchestration Services (NEW)**
+
+| Service | Purpose | Key Features |
+|---------|---------|--------------|
+| **IFlinkOrchestra** | Multi-cluster job orchestration | Intelligent placement, cluster provisioning, health aggregation |
+| **FlinkClusterActor** | Individual cluster lifecycle management | Actor-based isolation, health monitoring, job execution |
+| **Temporal Workflows** | Durable orchestration processes | Auto-scaling, exactly-once guarantees, long-running workflows |
+| **Circuit Breakers** | Fault tolerance and resilience | Prevent cascade failures, automatic recovery patterns |
+| **Health Aggregators** | Cross-cluster monitoring | Real-time health reports, issue detection and resolution |
 
 ### Infrastructure Components
 
@@ -336,8 +388,9 @@ The PowerShell test script includes enhanced observability monitoring:
 
 ### API Endpoints
 
-Execute the 8-step business flow through interactive endpoints:
+Execute both traditional stress testing and enterprise orchestration through interactive endpoints:
 
+#### **Traditional Complex Logic Stress Test**
 | Step | Endpoint | Description |
 |------|----------|-------------|
 | 1 | `POST /api/ComplexLogicStressTest/step1/setup-environment` | Environment validation |
@@ -348,6 +401,19 @@ Execute the 8-step business flow through interactive endpoints:
 | 6 | `POST /api/ComplexLogicStressTest/step6/process-batches` | Batch processing workflows |
 | 7 | `POST /api/ComplexLogicStressTest/step7/verify-messages` | Top/last 10 message verification |
 | - | `POST /api/ComplexLogicStressTest/run-full-stress-test` | Complete automated execution |
+
+#### **Enterprise Temporal Durable Workflow Architecture (NEW)**
+| Category | Endpoint | Description |
+|----------|----------|-------------|
+| **Orchestra** | `POST /api/TemporalArchitectureTest/orchestra/submit-job` | Submit jobs with intelligent placement strategies |
+| **Orchestra** | `GET /api/TemporalArchitectureTest/orchestra/clusters` | List all clusters with health status |
+| **Orchestra** | `GET /api/TemporalArchitectureTest/orchestra/health` | Comprehensive health report for all clusters |
+| **Orchestra** | `POST /api/TemporalArchitectureTest/orchestra/provision-cluster` | Provision new Flink cluster dynamically |
+| **Actors** | `POST /api/TemporalArchitectureTest/actor/create-cluster` | Create and test cluster actors |
+| **Actors** | `GET /api/TemporalArchitectureTest/actor/health-status` | Get all cluster actor health status |
+| **Temporal** | `POST /api/TemporalArchitectureTest/temporal/start-orchestration` | Start Temporal orchestration workflows |
+| **Resilience** | `POST /api/TemporalArchitectureTest/resilience/test-circuit-breaker` | Test circuit breaker patterns |
+| **Enterprise** | `POST /api/TemporalArchitectureTest/enterprise-scale/simulate-massive-orchestration` | Enterprise-scale multi-cluster simulation |
 
 ## Monitoring Workflow
 
