@@ -93,6 +93,15 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseAuthorization();
+
+// Add simple health check endpoint for LocalTesting
+app.MapGet("/health", () => Results.Ok(new { 
+    Status = "Healthy", 
+    Timestamp = DateTime.UtcNow, 
+    Service = "LocalTesting WebAPI",
+    Version = "1.0.0" 
+}));
+
 app.MapControllers();
 
 app.Run();
