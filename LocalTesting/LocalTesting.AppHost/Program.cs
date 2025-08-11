@@ -194,7 +194,7 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithHttpEndpoint(port: 5000, targetPort: 5000, name: "http")
+    .WithHttpEndpoint(5000, name: "http")
     .WithExternalHttpEndpoints()
     .WaitFor(flinkJobManager)
     .WaitFor(flinkTaskManager1)
