@@ -8,7 +8,53 @@
 **Type**: Bug Fix
 **Assignee**: AI Agent
 **Created**: 2025-08-11
-**Status**: Investigation
+**Status**: Testing & Validation
+
+## Phase 5: Testing & Validation
+### Test Results
+**AWAITING CI EXECUTION**: The enhanced LocalTesting workflow with comprehensive diagnostics has been deployed and is ready for testing.
+
+### Expected Diagnostic Output
+The enhanced workflow will now provide detailed information to identify the root cause:
+
+1. **If Docker Daemon Issues**:
+   - Docker info will show connectivity problems
+   - System events will be empty or show errors
+   - Process status will indicate Docker service problems
+
+2. **If Resource Constraints**:
+   - System resource checks will show low memory/disk
+   - Container creation will fail with resource errors
+   - Docker system df will show space issues
+
+3. **If Image Pull Failures**:
+   - Pre-validation step will show specific image pull failures
+   - Network connectivity issues will be evident
+   - Registry authentication problems will be visible
+
+4. **If Aspire Configuration Issues**:
+   - Complete Aspire logs will show configuration errors
+   - DCP CLI or Dashboard path issues will be reported
+   - Application startup errors will be captured
+
+5. **If Container Orchestration Failures**:
+   - Real-time monitoring will show where the process fails
+   - Failed container logs will provide specific error messages
+   - Exit codes will indicate the type of failure
+
+### Performance Metrics
+- **Diagnostic Overhead**: Added approximately 45 seconds of additional diagnostic time
+- **Error Detection**: Immediate detection when containers fail to start (30s check)
+- **Log Capture**: Complete log capture with structured display
+- **Progress Monitoring**: Real-time updates every 15 seconds during startup
+
+### Next Steps Based on Diagnostic Results
+**After CI execution, the enhanced diagnostics will guide the next phase**:
+- If Docker daemon issues → Focus on CI environment Docker configuration
+- If resource constraints → Optimize container resource usage or CI environment
+- If image pull failures → Address network/registry connectivity issues  
+- If Aspire configuration → Fix AppHost configuration or environment variables
+- If orchestration failures → Debug container dependency and startup sequence
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
