@@ -586,7 +586,10 @@ public class TemporalArchitectureTestController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Simulating circuit breaker test with {FailureRate}% failure rate", request.FailureRate);
+            // Convert failure rate: if < 1, treat as decimal (0.1 = 10%), otherwise as percentage
+            var failureRatePercentage = request.FailureRate < 1.0 ? request.FailureRate * 100.0 : request.FailureRate;
+            
+            _logger.LogInformation("Simulating circuit breaker test with {FailureRate}% failure rate", failureRatePercentage);
 
             await Task.Delay(500); // Simulate circuit breaker test
 
@@ -594,7 +597,7 @@ public class TemporalArchitectureTestController : ControllerBase
             {
                 Status = "Circuit breaker test completed (simulated)",
                 TestDurationSeconds = request.TestDurationSeconds ?? 30,
-                FailureRate = request.FailureRate,
+                FailureRate = failureRatePercentage,
                 CircuitBreakerStates = new[]
                 {
                     new { State = "Closed", Duration = "0-10 seconds", Behavior = "Normal operation" },
@@ -605,8 +608,8 @@ public class TemporalArchitectureTestController : ControllerBase
                 MetricsCollected = new
                 {
                     TotalRequests = 1000,
-                    SuccessfulRequests = 1000 - (1000 * request.FailureRate / 100),
-                    FailedRequests = 1000 * request.FailureRate / 100,
+                    SuccessfulRequests = 1000 - (1000 * failureRatePercentage / 100),
+                    FailedRequests = 1000 * failureRatePercentage / 100,
                     CircuitBreakerActivations = 1,
                     RecoveryTime = "5 seconds"
                 },
@@ -717,8 +720,9 @@ public class OrchestrationWorkflowRequest
 
 public class CircuitBreakerTestRequest
 {
-    public int FailureRate { get; set; } = 20; // Percentage
+    public double FailureRate { get; set; } = 20.0; // Can accept both int and double
     public int? TestDurationSeconds { get; set; } = 30;
+    public int? CircuitBreakerThreshold { get; set; } // Optional field for workflow compatibility
 }
 
 public class EnterpriseScaleRequest
