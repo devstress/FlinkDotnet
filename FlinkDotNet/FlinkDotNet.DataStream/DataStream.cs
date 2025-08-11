@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,6 +32,7 @@ namespace FlinkDotNet.DataStream
     {
         private readonly StreamExecutionEnvironment _environment;
         private readonly IEnumerable<T>? _collection;
+        private readonly ISourceFunction<T>? _sourceFunction;
         private readonly string _sourceName;
 
         /// <summary>
@@ -53,7 +55,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="sourceName">Name of the source</param>
         internal DataStream(ISourceFunction<T> sourceFunction, StreamExecutionEnvironment environment, string sourceName)
         {
-            _ = sourceFunction; // Placeholder for future implementation
+            _sourceFunction = sourceFunction;
             _environment = environment;
             _sourceName = sourceName;
         }
@@ -72,9 +74,13 @@ namespace FlinkDotNet.DataStream
                 return new DataStream<TOut>(transformedCollection, _environment);
             }
 
-            // For source functions, we'd need to create a new source function that applies the transformation
-            // This is a simplified implementation
-            throw new NotImplementedException("Map on source functions not yet implemented");
+            if (_sourceFunction != null)
+            {
+                var mappedSource = new MappedSourceFunction<T, TOut>(_sourceFunction, mapFunction);
+                return new DataStream<TOut>(mappedSource, _environment, $"Map({_sourceName})");
+            }
+
+            throw new InvalidOperationException("DataStream has no valid source");
         }
 
         /// <summary>
@@ -90,8 +96,13 @@ namespace FlinkDotNet.DataStream
                 return new DataStream<T>(filteredCollection, _environment);
             }
 
-            // For source functions, we'd need to create a new source function that applies the filter
-            throw new NotImplementedException("Filter on source functions not yet implemented");
+            if (_sourceFunction != null)
+            {
+                var filteredSource = new FilteredSourceFunction<T>(_sourceFunction, filterFunction);
+                return new DataStream<T>(filteredSource, _environment, $"Filter({_sourceName})");
+            }
+
+            throw new InvalidOperationException("DataStream has no valid source");
         }
 
         /// <summary>
@@ -355,5 +366,67 @@ namespace FlinkDotNet.DataStream
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task representing the async operation</returns>
         Task InvokeAsync(T element, CancellationToken cancellationToken = default);
+    }
+
+    /// <summary>
+    /// Internal wrapper source function that applies a map transformation to elements from another source.
+    /// </summary>
+    /// <typeparam name="TIn">The input element type</typeparam>
+    /// <typeparam name="TOut">The output element type</typeparam>
+    internal class MappedSourceFunction<TIn, TOut> : ISourceFunction<TOut>
+    {
+        private readonly ISourceFunction<TIn> _source;
+        private readonly Func<TIn, TOut> _mapFunction;
+
+        public MappedSourceFunction(ISourceFunction<TIn> source, Func<TIn, TOut> mapFunction)
+        {
+            _source = source ?? throw new ArgumentNullException(nameof(source));
+            _mapFunction = mapFunction ?? throw new ArgumentNullException(nameof(mapFunction));
+        }
+
+        /// <summary>
+        /// Runs the source function with map transformation applied.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Async enumerable of transformed elements</returns>
+        public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            // Using ConfigureAwait(false) for library code as per .NET best practices
+            await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return _mapFunction(item);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Internal wrapper source function that applies a filter predicate to elements from another source.
+    /// </summary>
+    /// <typeparam name="T">The element type</typeparam>
+    internal class FilteredSourceFunction<T> : ISourceFunction<T>
+    {
+        private readonly ISourceFunction<T> _source;
+        private readonly Func<T, bool> _filterFunction;
+
+        public FilteredSourceFunction(ISourceFunction<T> source, Func<T, bool> filterFunction)
+        {
+            _source = source ?? throw new ArgumentNullException(nameof(source));
+            _filterFunction = filterFunction ?? throw new ArgumentNullException(nameof(filterFunction));
+        }
+
+        /// <summary>
+        /// Runs the source function with filter predicate applied.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Async enumerable of filtered elements</returns>
+        public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            // Using ConfigureAwait(false) for library code as per .NET best practices
+            await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
+            {
+                if (_filterFunction(item))
+                    yield return item;
+            }
+        }
     }
 }
