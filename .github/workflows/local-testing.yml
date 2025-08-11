@@ -68,13 +68,43 @@ jobs:
       - name: Start LocalTesting Aspire Environment
         timeout-minutes: 15
         run: |
-          Write-Host "🚀 Starting LocalTesting Aspire environment..." -ForegroundColor Green
+          Write-Host "🚀 Starting LocalTesting Aspire environment with enhanced diagnostics..." -ForegroundColor Green
+          
+          # Enhanced Docker daemon diagnostics
+          Write-Host "`n🐳 Docker Daemon Diagnostics:" -ForegroundColor Yellow
+          Write-Host "Docker version: $(docker --version)" -ForegroundColor Cyan
+          Write-Host "Docker info:" -ForegroundColor Cyan
+          docker info | head -20
+          Write-Host "Docker system df:" -ForegroundColor Cyan
+          docker system df
+          Write-Host "Current containers:" -ForegroundColor Cyan
+          docker ps -a
+          
+          # Pre-validate critical container images
+          Write-Host "`n📦 Pre-validating container images..." -ForegroundColor Yellow
+          $criticalImages = @(
+            "bitnami/kafka:latest",
+            "flink:2.0.0", 
+            "postgres:13",
+            "temporalio/auto-setup:latest",
+            "prom/prometheus:latest"
+          )
+          
+          foreach ($image in $criticalImages) {
+            Write-Host "Checking image: $image" -ForegroundColor Cyan
+            try {
+              docker pull $image --quiet
+              Write-Host "✅ Image $image available" -ForegroundColor Green
+            } catch {
+              Write-Host "⚠️ Image $image pull failed: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+          }
           
           # Verify Aspire is working by testing the project build
-          Write-Host "Verifying Aspire functionality..." -ForegroundColor Yellow
+          Write-Host "`n🔧 Verifying Aspire functionality..." -ForegroundColor Yellow
           Push-Location LocalTesting/LocalTesting.AppHost
           try {
-            $buildOutput = dotnet build --configuration Release --verbosity quiet 2>&1
+            $buildOutput = dotnet build --configuration Release --verbosity normal 2>&1
             if ($LASTEXITCODE -eq 0) {
               Write-Host "✅ Aspire is functional and project builds successfully" -ForegroundColor Green
             } else {
@@ -104,6 +134,9 @@ jobs:
             Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
           } else {
             Write-Host "❌ DCP CLI path not found at expected location: $dcpPath" -ForegroundColor Red
+            # List available orchestration packages for debugging
+            Write-Host "Available orchestration packages:" -ForegroundColor Yellow
+            Get-ChildItem "$nugetPackages" -Filter "*aspire.hosting.orchestration*" -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" -ForegroundColor Cyan }
             throw "DCP CLI path is required but not found"
           }
           
@@ -114,6 +147,9 @@ jobs:
             Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green
           } else {
             Write-Host "❌ Aspire Dashboard path not found at expected location: $dashboardPath" -ForegroundColor Red
+            # List available dashboard packages for debugging
+            Write-Host "Available dashboard packages:" -ForegroundColor Yellow
+            Get-ChildItem "$nugetPackages" -Filter "*aspire.dashboard*" -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" -ForegroundColor Cyan }
             throw "Aspire Dashboard path is required but not found"
           }
           
@@ -126,50 +162,158 @@ jobs:
           $env:ASPNETCORE_ENVIRONMENT = "Development"
           $env:DOTNET_LAUNCH_PROFILE = ""
           
-          Write-Host "Environment variables set:" -ForegroundColor Yellow
+          # Add Docker daemon socket environment variable for CI
+          $env:DOCKER_HOST = "unix:///var/run/docker.sock"
+          
+          Write-Host "`n🌍 Environment variables set:" -ForegroundColor Yellow
           Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor Cyan
           Write-Host "  ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL" -ForegroundColor Cyan
           Write-Host "  ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
           Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor Cyan
           Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor Cyan
+          Write-Host "  DOCKER_HOST: $env:DOCKER_HOST" -ForegroundColor Cyan
           
-          Write-Host "Starting Aspire AppHost as background process..." -ForegroundColor Yellow
+          Write-Host "`n🚀 Starting Aspire AppHost as background process..." -ForegroundColor Yellow
           try {
+            # Ensure log files don't exist from previous runs
+            if (Test-Path "aspire_output.log") { Remove-Item "aspire_output.log" -Force }
+            if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
+            
             # Start Aspire as a background process and capture the process ID
-            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
+            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release", "--verbosity", "normal" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
             $global:AspirePID = $aspireProcess.Id
             Write-Host "✅ Aspire AppHost started in background (PID: $global:AspirePID)" -ForegroundColor Green
             
-            # Wait for initial startup and check for startup success
-            Write-Host "Waiting for Aspire to initialize..." -ForegroundColor Yellow
-            Start-Sleep -Seconds 45
+            # Monitor Aspire startup with periodic checks
+            Write-Host "`n⏱️ Monitoring Aspire initialization with periodic diagnostics..." -ForegroundColor Yellow
+            $maxWaitSeconds = 90
+            $checkInterval = 15
+            $waitedSeconds = 0
             
-            # Check startup output
-            $startupOutput = ""
-            if (Test-Path "aspire_output.log") {
-              $startupOutput += Get-Content "aspire_output.log" -Raw
+            while ($waitedSeconds -lt $maxWaitSeconds) {
+              Start-Sleep -Seconds $checkInterval
+              $waitedSeconds += $checkInterval
+              
+              Write-Host "⏱️ Aspire startup progress check (waited $waitedSeconds/$maxWaitSeconds seconds):" -ForegroundColor Yellow
+              
+              # Check if Aspire process is still running
+              $aspireRunning = Get-Process -Id $global:AspirePID -ErrorAction SilentlyContinue
+              if (-not $aspireRunning) {
+                Write-Host "❌ Aspire process has exited!" -ForegroundColor Red
+                break
+              } else {
+                Write-Host "✅ Aspire process still running (PID: $global:AspirePID)" -ForegroundColor Green
+              }
+              
+              # Check for containers being created
+              $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
+              Write-Host "📦 Docker containers created so far: $containerCount" -ForegroundColor Cyan
+              if ($containerCount -gt 0) {
+                Write-Host "🎉 Containers are being created! Current containers:" -ForegroundColor Green
+                docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+              }
+              
+              # Check startup logs for progress
+              if (Test-Path "aspire_output.log") {
+                $logContent = Get-Content "aspire_output.log" -Raw
+                $logLines = ($logContent -split "`n").Count
+                Write-Host "📝 Aspire output log lines: $logLines" -ForegroundColor Cyan
+                
+                # Look for specific startup indicators
+                if ($logContent -match "Distributed application starting") {
+                  Write-Host "✅ Found 'Distributed application starting' in logs" -ForegroundColor Green
+                }
+                if ($logContent -match "Dashboard available") {
+                  Write-Host "✅ Found 'Dashboard available' in logs" -ForegroundColor Green
+                }
+                if ($logContent -match "error|Error|ERROR") {
+                  Write-Host "⚠️ Found error messages in logs" -ForegroundColor Yellow
+                }
+              }
+              
+              # Check error logs
+              if (Test-Path "aspire_error.log") {
+                $errorContent = Get-Content "aspire_error.log" -Raw
+                if ($errorContent) {
+                  Write-Host "⚠️ Error log content detected (length: $($errorContent.Length))" -ForegroundColor Yellow
+                }
+              }
+              
+              Write-Host "---" -ForegroundColor Gray
             }
+            
+            # Final startup verification
+            Write-Host "`n🔍 Final Aspire startup verification:" -ForegroundColor Yellow
+            
+            # Display complete log contents for debugging
+            if (Test-Path "aspire_output.log") {
+              $startupOutput = Get-Content "aspire_output.log" -Raw
+              Write-Host "`n📝 Complete Aspire Output Log:" -ForegroundColor Yellow
+              Write-Host $startupOutput -ForegroundColor Cyan
+            } else {
+              Write-Host "❌ No aspire_output.log found" -ForegroundColor Red
+            }
+            
             if (Test-Path "aspire_error.log") {
               $errorOutput = Get-Content "aspire_error.log" -Raw
               if ($errorOutput) {
-                $startupOutput += "`nErrors: $errorOutput"
+                Write-Host "`n🚨 Aspire Error Log:" -ForegroundColor Red
+                Write-Host $errorOutput -ForegroundColor Red
+              } else {
+                Write-Host "ℹ️ aspire_error.log exists but is empty" -ForegroundColor Cyan
               }
+            } else {
+              Write-Host "ℹ️ No aspire_error.log found" -ForegroundColor Cyan
             }
             
-            # Check for startup success indicators
-            if ($startupOutput -match "Distributed application starting" -and $startupOutput -match "Aspire version") {
-              Write-Host "✅ Aspire environment startup successful" -ForegroundColor Green
+            # Check final container count
+            $finalContainerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
+            Write-Host "`n📦 Final container count: $finalContainerCount" -ForegroundColor $(if ($finalContainerCount -gt 0) { 'Green' } else { 'Red' })
+            
+            if ($finalContainerCount -eq 0) {
+              Write-Host "`n🔍 Additional Docker diagnostics for container startup failure:" -ForegroundColor Yellow
+              Write-Host "Docker system events (last 50):" -ForegroundColor Cyan
+              docker system events --since 5m --until now | tail -50
+              
+              Write-Host "`nDocker daemon logs:" -ForegroundColor Cyan
+              journalctl -u docker.service --no-pager --lines=20 2>/dev/null || echo "journalctl not available"
+              
+              Write-Host "`nSystem resources:" -ForegroundColor Cyan
+              free -h
+              df -h
+              
+              throw "Aspire environment startup failed - no containers created after $maxWaitSeconds seconds"
             } else {
-              Write-Host "❌ Aspire startup may have failed - missing expected startup messages:" -ForegroundColor Red
-              Write-Host $startupOutput -ForegroundColor Red
-              throw "Aspire startup failed with configuration errors"
+              Write-Host "✅ Aspire environment startup successful - $finalContainerCount containers created" -ForegroundColor Green
             }
           }
           catch {
-            Write-Host "❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
-            if ($startupOutput) {
-              Write-Host "Startup output:" -ForegroundColor Yellow
-              Write-Host $startupOutput -ForegroundColor Yellow
+            Write-Host "`n❌ Failed to start Aspire environment: $($_.Exception.Message)" -ForegroundColor Red
+            
+            # Enhanced error diagnostics
+            Write-Host "`n🔍 Enhanced error diagnostics:" -ForegroundColor Yellow
+            
+            # Show process status
+            $aspireRunning = Get-Process -Id $global:AspirePID -ErrorAction SilentlyContinue
+            if ($aspireRunning) {
+              Write-Host "Aspire process status: RUNNING (PID: $global:AspirePID)" -ForegroundColor Green
+            } else {
+              Write-Host "Aspire process status: STOPPED/CRASHED" -ForegroundColor Red
+            }
+            
+            # Show all log contents
+            if (Test-Path "aspire_output.log") {
+              $outputContent = Get-Content "aspire_output.log" -Raw
+              Write-Host "`nFull Aspire output log:" -ForegroundColor Yellow
+              Write-Host $outputContent -ForegroundColor Cyan
+            }
+            
+            if (Test-Path "aspire_error.log") {
+              $errorContent = Get-Content "aspire_error.log" -Raw
+              if ($errorContent) {
+                Write-Host "`nFull Aspire error log:" -ForegroundColor Yellow
+                Write-Host $errorContent -ForegroundColor Red
+              }
             }
             
             Pop-Location
@@ -183,40 +327,152 @@ jobs:
         run: |
           Write-Host "⏳ Waiting for services to start and become healthy..." -ForegroundColor Green
           
-          # Wait for services to start (give them more time to initialize, especially Temporal)
-          Write-Host "Waiting for basic containers to start..." -ForegroundColor Yellow
+          # Immediate check - containers should start appearing quickly
+          Write-Host "`n🔍 Immediate container check (containers should start appearing within 30 seconds)..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 30
+          
+          $initialContainerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
+          Write-Host "Initial container count after 30 seconds: $initialContainerCount" -ForegroundColor Cyan
+          
+          if ($initialContainerCount -eq 0) {
+            Write-Host "⚠️ No containers started yet - this indicates a potential problem" -ForegroundColor Yellow
+            Write-Host "Checking Docker daemon activity..." -ForegroundColor Cyan
+            
+            # Check recent Docker events
+            Write-Host "Recent Docker events:" -ForegroundColor Cyan
+            docker system events --since 30s --until now 2>/dev/null || Write-Host "No recent Docker events"
+            
+            # Check if any containers were created but failed
+            Write-Host "All containers (including failed ones):" -ForegroundColor Cyan
+            docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+            
+            # Check Aspire process status
+            if ($global:AspirePID) {
+              $aspireProcess = Get-Process -Id $global:AspirePID -ErrorAction SilentlyContinue
+              if ($aspireProcess) {
+                Write-Host "✅ Aspire process still running (PID: $global:AspirePID)" -ForegroundColor Green
+              } else {
+                Write-Host "❌ Aspire process has exited!" -ForegroundColor Red
+              }
+            }
+          } else {
+            Write-Host "✅ $initialContainerCount containers have started!" -ForegroundColor Green
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          }
+          
+          # Wait for basic containers to start
+          Write-Host "`n⏱️ Waiting for additional containers to start (60 seconds)..." -ForegroundColor Yellow
           Start-Sleep -Seconds 60
           
-          Write-Host "Checking initial container status..." -ForegroundColor Yellow
+          Write-Host "`n🔍 Container status after 90 seconds total:" -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          $containerCount90s = (docker ps --format "{{.Names}}" | Measure-Object).Count
+          Write-Host "Container count after 90 seconds: $containerCount90s" -ForegroundColor Cyan
           
-          Write-Host "Waiting additional time for Temporal stack to initialize..." -ForegroundColor Yellow
+          # Check for container creation progress
+          if ($containerCount90s -eq 0) {
+            Write-Host "`n🚨 Critical: Still no containers after 90 seconds!" -ForegroundColor Red
+            Write-Host "This indicates a fundamental issue with Aspire orchestration or Docker daemon" -ForegroundColor Red
+            
+            # Comprehensive diagnostics
+            Write-Host "`n🔍 Comprehensive failure diagnostics:" -ForegroundColor Yellow
+            
+            # Check all containers (including stopped/failed)
+            Write-Host "All containers ever created:" -ForegroundColor Cyan
+            docker ps -a
+            
+            # Check Docker system status
+            Write-Host "`nDocker system info:" -ForegroundColor Cyan
+            docker system info | head -30
+            
+            # Check available images
+            Write-Host "`nDocker images:" -ForegroundColor Cyan
+            docker images | head -10
+            
+            # Check for Docker daemon errors
+            Write-Host "`nDocker daemon logs (if available):" -ForegroundColor Cyan
+            journalctl -u docker.service --no-pager --lines=10 2>/dev/null || echo "journalctl not available"
+            
+            # Final Aspire log check
+            Write-Host "`nFinal Aspire logs check:" -ForegroundColor Cyan
+            Push-Location LocalTesting/LocalTesting.AppHost -ErrorAction SilentlyContinue
+            if (Test-Path "aspire_output.log") {
+              $finalOutput = Get-Content "aspire_output.log" -Raw
+              Write-Host "Latest Aspire output (last 1000 chars):" -ForegroundColor Cyan
+              Write-Host $finalOutput.Substring([Math]::Max(0, $finalOutput.Length - 1000)) -ForegroundColor Yellow
+            }
+            if (Test-Path "aspire_error.log") {
+              $finalError = Get-Content "aspire_error.log" -Raw
+              if ($finalError) {
+                Write-Host "Latest Aspire errors:" -ForegroundColor Red
+                Write-Host $finalError -ForegroundColor Red
+              }
+            }
+            Pop-Location -ErrorAction SilentlyContinue
+            
+            Write-Host "`n❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
+            throw "Aspire environment startup failed - no containers are running"
+          }
+          
+          # Wait additional time for Temporal stack to initialize (these are heavy containers)
+          Write-Host "`n⏱️ Waiting additional time for Temporal stack to initialize (120 seconds)..." -ForegroundColor Yellow
           Start-Sleep -Seconds 120
           
-          Write-Host "Checking Docker containers..." -ForegroundColor Yellow
+          Write-Host "`n🔍 Final container status check:" -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
           
-          # Check if we have some containers running
+          # Final container count
           $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
-          Write-Host "Found $containerCount running containers" -ForegroundColor Cyan
+          Write-Host "Final container count: $containerCount" -ForegroundColor Cyan
           
-          # Show any containers that failed to start
+          # Show any containers that failed to start or are unhealthy
+          Write-Host "`n🔍 Checking for failed or unhealthy containers..." -ForegroundColor Yellow
           $failedContainers = docker ps -a --filter "status=exited" --format "{{.Names}}"
           if ($failedContainers) {
             Write-Host "⚠️ Containers that failed to start:" -ForegroundColor Yellow
             $failedContainers | ForEach-Object { 
               Write-Host "  - $_" -ForegroundColor Red
-              Write-Host "    Last few log lines:" -ForegroundColor Yellow
+              Write-Host "    Exit code and error:" -ForegroundColor Yellow
+              docker inspect $_ --format "Exit Code: {{.State.ExitCode}}, Error: {{.State.Error}}"
+              Write-Host "    Last 10 log lines:" -ForegroundColor Yellow
               docker logs --tail 10 $_ 2>&1 | ForEach-Object { Write-Host "      $_" -ForegroundColor Cyan }
+              Write-Host ""
+            }
+          } else {
+            Write-Host "✅ No failed containers found" -ForegroundColor Green
+          }
+          
+          # Check for unhealthy containers
+          $unhealthyContainers = docker ps --filter "health=unhealthy" --format "{{.Names}}"
+          if ($unhealthyContainers) {
+            Write-Host "⚠️ Unhealthy containers:" -ForegroundColor Yellow
+            $unhealthyContainers | ForEach-Object { 
+              Write-Host "  - $_" -ForegroundColor Yellow
+              docker inspect $_ --format "Health: {{.State.Health.Status}}"
             }
           }
           
           if ($containerCount -eq 0) {
-            Write-Host "❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
+            Write-Host "`n❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
             throw "Aspire environment startup failed - no containers are running"
           }
           
-          Write-Host "✅ $containerCount containers are running" -ForegroundColor Green
+          Write-Host "`n✅ $containerCount containers are running" -ForegroundColor Green
+          
+          # Summary of running containers by type
+          Write-Host "`n📊 Container summary by type:" -ForegroundColor Green
+          $runningContainers = docker ps --format "{{.Names}}"
+          $kafkaContainers = $runningContainers | Where-Object { $_ -match "kafka" }
+          $flinkContainers = $runningContainers | Where-Object { $_ -match "flink" }
+          $temporalContainers = $runningContainers | Where-Object { $_ -match "temporal" }
+          $observabilityContainers = $runningContainers | Where-Object { $_ -match "prometheus|grafana|otel" }
+          $otherContainers = $runningContainers | Where-Object { $_ -notmatch "kafka|flink|temporal|prometheus|grafana|otel" }
+          
+          Write-Host "  Kafka: $(@($kafkaContainers).Count)" -ForegroundColor Cyan
+          Write-Host "  Flink: $(@($flinkContainers).Count)" -ForegroundColor Cyan  
+          Write-Host "  Temporal: $(@($temporalContainers).Count)" -ForegroundColor Cyan
+          Write-Host "  Observability: $(@($observabilityContainers).Count)" -ForegroundColor Cyan
+          Write-Host "  Other: $(@($otherContainers).Count)" -ForegroundColor Cyan
 
       - name: Validate Infrastructure Components and API Accessibility
         timeout-minutes: 8
