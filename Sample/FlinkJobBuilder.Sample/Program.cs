@@ -43,6 +43,14 @@ namespace FlinkJobBuilder.Sample
             
             try
             {
+                // NEW: Working local examples that demonstrate actual functionality
+                logger.LogInformation("🚀 Running LOCAL WORKING EXAMPLES first...");
+                await LocalWorkingExample.RunWorkingLocalExample(logger);
+                await LocalWorkingExample.RunPythonCompatibleExample(logger);
+                
+                logger.LogInformation("");
+                logger.LogInformation("🏗️ Now running INFRASTRUCTURE EXAMPLES (require external Flink)...");
+                
                 // Example 1: Basic streaming job demonstrating K8s service integration
                 await RunKubernetesStreamingExample(logger, scope.ServiceProvider);
                 

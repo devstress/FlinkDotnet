@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
   </ItemGroup>
 
   <ItemGroup>
