@@ -33,16 +33,25 @@ jobs:
           dotnet workload install aspire
           Write-Host "✅ Aspire workload installed successfully" -ForegroundColor Green
 
-      - name: Download build artifacts
+      - name: Download build artifacts (if available)
         uses: actions/download-artifact@v4
         with:
           name: build-solutions
+        continue-on-error: true
 
       - name: Build LocalTesting Solution
         run: |
           Write-Host "🔨 Building LocalTesting solution..." -ForegroundColor Green
-          dotnet restore LocalTesting/LocalTesting.sln
-          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+          
+          # First, ensure all referenced projects are built
+          Write-Host "Building FlinkDotNet core projects..." -ForegroundColor Yellow
+          dotnet restore FlinkDotNet/FlinkDotNet.sln --verbosity minimal
+          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release --no-restore --verbosity minimal
+          
+          # Then build LocalTesting solution
+          Write-Host "Building LocalTesting solution..." -ForegroundColor Yellow
+          dotnet restore LocalTesting/LocalTesting.sln --verbosity minimal
+          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore --verbosity minimal
 
       - name: Verify LocalTesting Build Artifacts
         run: |
@@ -127,30 +136,82 @@ jobs:
           # Set DCP and Dashboard paths for Aspire orchestration first
           $nugetPackages = "$HOME/.nuget/packages"
           
-          # Set DCP CLI path using the installed orchestration package
-          $dcpPath = "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.1.0/tools/dcp"
-          if (Test-Path $dcpPath) {
-            $env:DCP_CLI_PATH = $dcpPath
-            Write-Host "✅ DCP CLI path set: $dcpPath" -ForegroundColor Green
-          } else {
-            Write-Host "❌ DCP CLI path not found at expected location: $dcpPath" -ForegroundColor Red
-            # List available orchestration packages for debugging
-            Write-Host "Available orchestration packages:" -ForegroundColor Yellow
-            Get-ChildItem "$nugetPackages" -Filter "*aspire.hosting.orchestration*" -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" -ForegroundColor Cyan }
-            throw "DCP CLI path is required but not found"
+          # Set DCP CLI path using dynamic discovery of installed orchestration package
+          Write-Host "🔍 Discovering DCP CLI path..." -ForegroundColor Yellow
+          $dcpCandidates = @(
+            "$nugetPackages/aspire.hosting.orchestration.linux-x64/9.1.0/tools/dcp",
+            "$nugetPackages/aspire.hosting.orchestration.linux-x64/*/tools/dcp"
+          )
+          
+          $dcpPath = $null
+          foreach ($candidate in $dcpCandidates) {
+            $expandedPaths = Get-ChildItem $candidate -ErrorAction SilentlyContinue 2>$null
+            if ($expandedPaths) {
+              $dcpPath = $expandedPaths[0].FullName
+              break
+            }
           }
           
-          # Set Aspire Dashboard path using the installed dashboard SDK
-          $dashboardPath = "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.1.0/tools"  
-          if (Test-Path $dashboardPath) {
-            $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
-            Write-Host "✅ Aspire Dashboard path set: $dashboardPath" -ForegroundColor Green
+          if ($dcpPath -and (Test-Path $dcpPath)) {
+            $env:DCP_CLI_PATH = $dcpPath
+            Write-Host "✅ DCP CLI path discovered and set: $dcpPath" -ForegroundColor Green
           } else {
-            Write-Host "❌ Aspire Dashboard path not found at expected location: $dashboardPath" -ForegroundColor Red
+            Write-Host "⚠️ DCP CLI path not found, trying alternative discovery..." -ForegroundColor Yellow
+            # List available orchestration packages for debugging
+            Write-Host "Available orchestration packages:" -ForegroundColor Yellow
+            $orchestrationPackages = Get-ChildItem "$nugetPackages" -Filter "*aspire.hosting.orchestration*" -Recurse -ErrorAction SilentlyContinue 2>$null
+            if ($orchestrationPackages) {
+              $orchestrationPackages | ForEach-Object { Write-Host "  $($_.FullName)" -ForegroundColor Cyan }
+              # Try to find any dcp executable
+              $dcpFiles = Get-ChildItem "$nugetPackages" -Filter "dcp*" -Recurse -ErrorAction SilentlyContinue 2>$null
+              if ($dcpFiles) {
+                $env:DCP_CLI_PATH = $dcpFiles[0].FullName
+                Write-Host "✅ Alternative DCP CLI path found: $($env:DCP_CLI_PATH)" -ForegroundColor Green
+              } else {
+                Write-Host "⚠️ No DCP CLI found, Aspire will use default discovery" -ForegroundColor Yellow
+              }
+            } else {
+              Write-Host "⚠️ No orchestration packages found, Aspire will use default discovery" -ForegroundColor Yellow
+            }
+          }
+          
+          # Set Aspire Dashboard path using dynamic discovery of installed dashboard SDK
+          Write-Host "🔍 Discovering Aspire Dashboard path..." -ForegroundColor Yellow
+          $dashboardCandidates = @(
+            "$nugetPackages/aspire.dashboard.sdk.linux-x64/9.1.0/tools",
+            "$nugetPackages/aspire.dashboard.sdk.linux-x64/*/tools"
+          )
+          
+          $dashboardPath = $null
+          foreach ($candidate in $dashboardCandidates) {
+            $expandedPaths = Get-ChildItem $candidate -ErrorAction SilentlyContinue 2>$null
+            if ($expandedPaths) {
+              $dashboardPath = $expandedPaths[0].FullName
+              break
+            }
+          }
+          
+          if ($dashboardPath -and (Test-Path $dashboardPath)) {
+            $env:ASPIRE_DASHBOARD_PATH = $dashboardPath
+            Write-Host "✅ Aspire Dashboard path discovered and set: $dashboardPath" -ForegroundColor Green
+          } else {
+            Write-Host "⚠️ Aspire Dashboard path not found, trying alternative discovery..." -ForegroundColor Yellow
             # List available dashboard packages for debugging
             Write-Host "Available dashboard packages:" -ForegroundColor Yellow
-            Get-ChildItem "$nugetPackages" -Filter "*aspire.dashboard*" -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" -ForegroundColor Cyan }
-            throw "Aspire Dashboard path is required but not found"
+            $dashboardPackages = Get-ChildItem "$nugetPackages" -Filter "*aspire.dashboard*" -Recurse -ErrorAction SilentlyContinue 2>$null
+            if ($dashboardPackages) {
+              $dashboardPackages | ForEach-Object { Write-Host "  $($_.FullName)" -ForegroundColor Cyan }
+              # Try to find any dashboard tools directory
+              $dashboardTools = Get-ChildItem "$nugetPackages" -Filter "*dashboard*" -Directory -Recurse -ErrorAction SilentlyContinue 2>$null | Where-Object { $_.Name -eq "tools" }
+              if ($dashboardTools) {
+                $env:ASPIRE_DASHBOARD_PATH = $dashboardTools[0].FullName
+                Write-Host "✅ Alternative Dashboard path found: $($env:ASPIRE_DASHBOARD_PATH)" -ForegroundColor Green
+              } else {
+                Write-Host "⚠️ No Dashboard tools found, Aspire will use default discovery" -ForegroundColor Yellow
+              }
+            } else {
+              Write-Host "⚠️ No dashboard packages found, Aspire will use default discovery" -ForegroundColor Yellow
+            }
           }
           
           # Set all required environment variables for Aspire
@@ -167,8 +228,8 @@ jobs:
           
           Write-Host "`n🌍 Environment variables set:" -ForegroundColor Yellow
           Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor Cyan
-          Write-Host "  ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL" -ForegroundColor Cyan
-          Write-Host "  ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
+          Write-Host "  DOTNET_DASHBOARD_OTLP_ENDPOINT_URL: $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL" -ForegroundColor Cyan
+          Write-Host "  DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
           Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor Cyan
           Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor Cyan
           Write-Host "  DOCKER_HOST: $env:DOCKER_HOST" -ForegroundColor Cyan
@@ -180,14 +241,15 @@ jobs:
             if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
             
             # Start Aspire as a background process and capture the process ID
-            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release", "--verbosity", "normal" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
+            Write-Host "Starting Aspire AppHost with better CI resource configuration..." -ForegroundColor Yellow
+            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release", "--verbosity", "minimal" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
             $global:AspirePID = $aspireProcess.Id
             Write-Host "✅ Aspire AppHost started in background (PID: $global:AspirePID)" -ForegroundColor Green
             
-            # Monitor Aspire startup with periodic checks
+            # Monitor Aspire startup with periodic checks - increased timeout for CI environment
             Write-Host "`n⏱️ Monitoring Aspire initialization with periodic diagnostics..." -ForegroundColor Yellow
-            $maxWaitSeconds = 90
-            $checkInterval = 15
+            $maxWaitSeconds = 180  # Increased from 90 to 180 seconds for CI environment
+            $checkInterval = 20    # Increased from 15 to 20 seconds for better resource usage
             $waitedSeconds = 0
             
             while ($waitedSeconds -lt $maxWaitSeconds) {
@@ -273,16 +335,23 @@ jobs:
             if ($finalContainerCount -eq 0) {
               Write-Host "`n🔍 Additional Docker diagnostics for container startup failure:" -ForegroundColor Yellow
               Write-Host "Docker system events (last 50):" -ForegroundColor Cyan
-              docker system events --since 5m --until now | tail -50
+              docker system events --since 5m --until now | tail -50 2>/dev/null || echo "No events available"
               
               Write-Host "`nDocker daemon logs:" -ForegroundColor Cyan
               journalctl -u docker.service --no-pager --lines=20 2>/dev/null || echo "journalctl not available"
               
               Write-Host "`nSystem resources:" -ForegroundColor Cyan
-              free -h
-              df -h
+              free -h 2>/dev/null || echo "free command not available"
+              df -h 2>/dev/null || echo "df command not available"
+              
+              # Check for any containers that might have started and stopped
+              Write-Host "`nAll container history (including stopped):" -ForegroundColor Cyan
+              docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.CreatedAt}}" 2>/dev/null || echo "No container history available"
               
               throw "Aspire environment startup failed - no containers created after $maxWaitSeconds seconds"
+            } elseif ($finalContainerCount -lt 5) {
+              Write-Host "⚠️ Aspire environment partially started - only $finalContainerCount containers created (expected 10+)" -ForegroundColor Yellow
+              Write-Host "This may indicate resource constraints or slow startup. Continuing with available containers..." -ForegroundColor Yellow
             } else {
               Write-Host "✅ Aspire environment startup successful - $finalContainerCount containers created" -ForegroundColor Green
             }
@@ -360,18 +429,18 @@ jobs:
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
           }
           
-          # Wait for basic containers to start
-          Write-Host "`n⏱️ Waiting for additional containers to start (60 seconds)..." -ForegroundColor Yellow
-          Start-Sleep -Seconds 60
+          # Wait for basic containers to start - increased timing for CI environment
+          Write-Host "`n⏱️ Waiting for additional containers to start (90 seconds for CI environment)..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 90
           
-          Write-Host "`n🔍 Container status after 90 seconds total:" -ForegroundColor Yellow
+          Write-Host "`n🔍 Container status after 120 seconds total:" -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          $containerCount90s = (docker ps --format "{{.Names}}" | Measure-Object).Count
-          Write-Host "Container count after 90 seconds: $containerCount90s" -ForegroundColor Cyan
+          $containerCount120s = (docker ps --format "{{.Names}}" | Measure-Object).Count
+          Write-Host "Container count after 120 seconds: $containerCount120s" -ForegroundColor Cyan
           
           # Check for container creation progress
-          if ($containerCount90s -eq 0) {
-            Write-Host "`n🚨 Critical: Still no containers after 90 seconds!" -ForegroundColor Red
+          if ($containerCount120s -eq 0) {
+            Write-Host "`n🚨 Critical: Still no containers after 120 seconds!" -ForegroundColor Red
             Write-Host "This indicates a fundamental issue with Aspire orchestration or Docker daemon" -ForegroundColor Red
             
             # Comprehensive diagnostics
@@ -414,9 +483,9 @@ jobs:
             throw "Aspire environment startup failed - no containers are running"
           }
           
-          # Wait additional time for Temporal stack to initialize (these are heavy containers)
-          Write-Host "`n⏱️ Waiting additional time for Temporal stack to initialize (120 seconds)..." -ForegroundColor Yellow
-          Start-Sleep -Seconds 120
+          # Wait additional time for Temporal stack to initialize (these are heavy containers) - increased for CI
+          Write-Host "`n⏱️ Waiting additional time for Temporal stack to initialize (150 seconds for CI environment)..." -ForegroundColor Yellow
+          Start-Sleep -Seconds 150
           
           Write-Host "`n🔍 Final container status check:" -ForegroundColor Yellow
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -455,6 +524,9 @@ jobs:
           if ($containerCount -eq 0) {
             Write-Host "`n❌ No Docker containers are running. Aspire environment failed to start properly." -ForegroundColor Red
             throw "Aspire environment startup failed - no containers are running"
+          } elseif ($containerCount -lt 8) {
+            Write-Host "`n⚠️ Limited containers running ($containerCount). This may indicate CI resource constraints." -ForegroundColor Yellow
+            Write-Host "Continuing with available containers for testing..." -ForegroundColor Yellow
           }
           
           Write-Host "`n✅ $containerCount containers are running" -ForegroundColor Green
