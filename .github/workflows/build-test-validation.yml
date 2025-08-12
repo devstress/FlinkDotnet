@@ -1,0 +1,134 @@
+name: 🔨 Build and Test Validation
+
+on:
+  push:
+    branches: [ main, develop, 'copilot/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  CONFIGURATION: 'Release'
+
+jobs:
+  validate-builds:
+    name: 🏗️ Validate All Builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: 📦 Restore dependencies
+      run: |
+        dotnet restore FlinkDotNet/FlinkDotNet.sln
+        dotnet restore Sample/Sample.sln
+        dotnet restore LocalTesting/LocalTesting.sln
+        
+    - name: 🏗️ Build FlinkDotNet Solution
+      run: dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+      
+    - name: 🏗️ Build Sample Solution
+      run: dotnet build Sample/Sample.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+      
+    - name: 🏗️ Build LocalTesting Solution
+      run: dotnet build LocalTesting/LocalTesting.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+      
+    - name: ✅ Build Validation Summary
+      run: |
+        echo "✅ All builds completed successfully!"
+        echo "- FlinkDotNet.sln: SUCCESS"
+        echo "- Sample.sln: SUCCESS" 
+        echo "- LocalTesting.sln: SUCCESS"
+
+  validate-tests:
+    name: 🧪 Validate Tests
+    runs-on: ubuntu-latest
+    needs: validate-builds
+    timeout-minutes: 20
+    continue-on-error: true  # Allow test failures but report them
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: 📦 Restore and Build (for testing)
+      run: |
+        dotnet restore FlinkDotNet/FlinkDotNet.sln
+        dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet restore Sample/Sample.sln
+        dotnet build Sample/Sample.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+        
+    - name: 🧪 Run FlinkDotNet Tests
+      run: dotnet test FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=flinkdotnet-results.trx"
+      continue-on-error: true
+      
+    - name: 🧪 Run Sample Tests
+      run: dotnet test Sample/Sample.sln --configuration ${{ env.CONFIGURATION }} --no-build --logger "trx;LogFileName=sample-results.trx"
+      continue-on-error: true
+      
+    - name: 📊 Test Results Summary
+      run: |
+        echo "🧪 Test execution completed"
+        echo "Note: Test failures are reported but do not block builds"
+        echo "Builds must pass, tests are informational"
+
+  enforcement-check:
+    name: 🚨 Enforcement Validation
+    runs-on: ubuntu-latest
+    needs: [validate-builds, validate-tests]
+    if: always()
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Check Build Results
+      run: |
+        if [ "${{ needs.validate-builds.result }}" != "success" ]; then
+          echo "❌ BUILD ENFORCEMENT FAILED"
+          echo "Builds are REQUIRED to pass before any code changes can be merged."
+          echo "Please fix build errors and try again."
+          exit 1
+        else
+          echo "✅ BUILD ENFORCEMENT PASSED"
+          echo "All builds completed successfully."
+        fi
+        
+    - name: 🔍 Check Test Results  
+      run: |
+        if [ "${{ needs.validate-tests.result }}" == "success" ]; then
+          echo "✅ All tests passed"
+        elif [ "${{ needs.validate-tests.result }}" == "failure" ]; then
+          echo "⚠️ Some tests failed, but builds passed"
+          echo "This is allowed but should be investigated"
+        else
+          echo "ℹ️ Tests skipped or had issues"
+        fi
+        
+    - name: ✅ Final Enforcement Summary
+      run: |
+        echo "=== ENFORCEMENT VALIDATION COMPLETE ==="
+        echo "✅ Builds: REQUIRED TO PASS - ${{ needs.validate-builds.result }}"
+        echo "ℹ️ Tests: INFORMATIONAL - ${{ needs.validate-tests.result }}"
+        echo ""
+        if [ "${{ needs.validate-builds.result }}" == "success" ]; then
+          echo "🎉 All enforcement requirements met!"
+          echo "Code changes are approved for merge."
+        else
+          echo "🚫 Enforcement requirements NOT met!"
+          echo "Fix build errors before proceeding."
+          exit 1
+        fi

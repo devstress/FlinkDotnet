@@ -1004,6 +1004,40 @@ var testApp = builder.AddProject<Projects.TestApp>("testapp")
 builder.Build().Run();
 ```
 
+## 🔨 Build and Test Enforcement
+
+FlinkDotNet implements comprehensive build and test validation to ensure code quality and prevent build failures.
+
+### Quick Setup
+```bash
+# Verify .NET 9.0 requirement
+dotnet --version  # Must show 9.0.x
+
+# Run complete validation
+./validate-build-and-tests.ps1
+
+# Quick build check (skip tests)
+./validate-build-and-tests.ps1 -SkipTests
+```
+
+### Enforcement Rules
+- ✅ **ALL builds MUST pass** before commits/merges
+- ✅ **.NET 9.0.x** required for all development
+- ✅ **Three solutions** validated: FlinkDotNet, Sample, LocalTesting
+- ✅ **Automated blocking** of build failures via GitHub Actions
+
+### Pre-Commit Validation
+```bash
+# Always run before committing
+./pre-commit-validation.ps1
+```
+
+### Documentation
+- 📖 **[Complete Guide](docs/BUILD_ENFORCEMENT.md)** - Detailed enforcement rules and troubleshooting
+- 🚀 **[Quick Start](docs/BUILD_ENFORCEMENT_QUICKSTART.md)** - 2-minute developer setup guide
+
+**Important**: Build failures are automatically blocked. Fix build errors before proceeding with any development work.
+
 ## Getting Started
 
 ### Single Job Development
