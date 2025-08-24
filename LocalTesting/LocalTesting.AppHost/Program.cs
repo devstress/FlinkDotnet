@@ -1,5 +1,3 @@
-using Aspire.Hosting;
-
 // Configure Aspire dashboard and OTLP environment variables
 // These settings eliminate the need for manual environment variable setup
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
@@ -80,48 +78,60 @@ var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
     .WithEnvironment("AUTH_TYPE", "disabled");
 
-// Flink JobManager with proper memory configuration - fixed with newline-separated format
+// Flink JobManager with working memory configuration from WI4 success pattern
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.0.0")
     .WithHttpEndpoint(8081, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("FLINK_PROPERTIES", "jobmanager.rpc.address: flink-jobmanager\njobmanager.rpc.port: 6123\njobmanager.memory.process.size: 2048m\njobmanager.memory.flink.size: 1536m\njobmanager.memory.off-heap.size: 128m\njobmanager.memory.jvm-overhead.fraction: 0.1\ntaskmanager.memory.process.size: 2048m\ntaskmanager.numberOfTaskSlots: 10\nparallelism.default: 30\nrest.bind-address: 0.0.0.0")
+    .WithEnvironment("FLINK_PROPERTIES", """
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
+        jobmanager.memory.process.size: 1024m
+        jobmanager.memory.off-heap.size: 64m
+        taskmanager.numberOfTaskSlots: 8
+        parallelism.default: 24
+        rest.bind-address: 0.0.0.0
+        rest.port: 8081
+        """)
     .WithArgs("jobmanager");
 
-// Flink TaskManager 1 with IPv4 - 10 slots each
+// Flink TaskManager 1 with simplified working memory configuration
 var flinkTaskManager1 = builder.AddContainer("flink-taskmanager-1", "flink:2.0.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 2048m
-        taskmanager.numberOfTaskSlots: 10
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 8
         taskmanager.host: flink-taskmanager-1
         """)
-    .WithArgs("taskmanager");
+    .WithArgs("taskmanager")
+    .WaitFor(flinkJobManager);
 
-// Flink TaskManager 2 with IPv4 - 10 slots each
+// Flink TaskManager 2 with simplified working memory configuration
 var flinkTaskManager2 = builder.AddContainer("flink-taskmanager-2", "flink:2.0.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 2048m
-        taskmanager.numberOfTaskSlots: 10
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 8
         taskmanager.host: flink-taskmanager-2
         """)
-    .WithArgs("taskmanager");
+    .WithArgs("taskmanager")
+    .WaitFor(flinkJobManager);
 
-// Flink TaskManager 3 with IPv4 - 10 slots each  
+// Flink TaskManager 3 with simplified working memory configuration
 var flinkTaskManager3 = builder.AddContainer("flink-taskmanager-3", "flink:2.0.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 2048m
-        taskmanager.numberOfTaskSlots: 10
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 8
         taskmanager.host: flink-taskmanager-3
         """)
-    .WithArgs("taskmanager");
+    .WithArgs("taskmanager")
+    .WaitFor(flinkJobManager);
 
 // PostgreSQL for Temporal storage
 var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
@@ -176,17 +186,19 @@ var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-c
     .WithBindMount("./otel-config.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
     .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml");
 
-// Grafana with IPv4 and datasources configuration
+// Grafana with no authentication required for local testing
 var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithHttpEndpoint(3000, 3000, "grafana")
-    .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
+    .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
     .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
     .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0") // Force IPv4
     .WithBindMount("./grafana-datasources.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
     .WaitFor(prometheus)
     .WaitFor(otelCollector);
 
-// LocalTesting Web API with IPv4 configuration
+// LocalTesting Web API with single HTTP endpoint configuration
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
@@ -194,8 +206,7 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithHttpEndpoint(5000, name: "http")
-    .WithExternalHttpEndpoints()
+    .WithHttpEndpoint(5000, name: "webapi")
     .WaitFor(flinkJobManager)
     .WaitFor(flinkTaskManager1)
     .WaitFor(flinkTaskManager2)
