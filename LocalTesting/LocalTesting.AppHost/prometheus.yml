@@ -46,3 +46,21 @@ scrape_configs:
       - targets: ['localtesting-webapi:5000']
     metrics_path: /metrics
     scrape_interval: 10s
+
+  - job_name: 'temporal-server'
+    static_configs:
+      - targets: ['temporal-server:7233']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  - job_name: 'kafka-cluster'
+    static_configs:
+      - targets: ['kafka-broker-1:9092', 'kafka-broker-2:9092', 'kafka-broker-3:9092']
+    metrics_path: /metrics
+    scrape_interval: 15s
