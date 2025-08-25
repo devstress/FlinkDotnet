@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure IPv4-only binding to prevent address conflicts
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5000); // Force IPv4 binding on port 5000
+    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5000); // Force IPv4 binding on port 5000
 });
 
 // Configure Flink job management defaults
