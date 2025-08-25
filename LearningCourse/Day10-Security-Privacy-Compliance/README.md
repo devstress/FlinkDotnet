@@ -1,5 +1,10 @@
 # Day 10: Security, Privacy, and Compliance in Stream Processing
 
+## 🗺️ Course Navigation
+**[← Day 9: Performance Optimization & Scaling](../Day09-Performance-Optimization-Scaling/)** | **[Course Overview](../README.md)** | **[Next: Day 11 - Disaster Recovery & Multi-Region →](../Day11-Disaster-Recovery-Multi-Region/)**
+
+---
+
 ## Overview
 Implement enterprise-grade security, data privacy, and regulatory compliance patterns for streaming applications handling sensitive data.
 
@@ -486,3 +491,9 @@ public class DataAnonymizer
 
 ## Next Steps
 Day 11 focuses on disaster recovery, business continuity, and multi-region deployment strategies for mission-critical streaming applications.
+---
+
+## 🗺️ Course Navigation
+**[← Day 9: Performance Optimization & Scaling](../Day09-Performance-Optimization-Scaling/)** | **[Course Overview](../README.md)** | **[Next: Day 11 - Disaster Recovery & Multi-Region →](../Day11-Disaster-Recovery-Multi-Region/)**
+
+**Course Progress**: Day 10 of 14 Complete ✅

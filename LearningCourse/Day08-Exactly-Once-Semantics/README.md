@@ -1,5 +1,10 @@
 # Day 8: Exactly-Once Semantics and End-to-End Guarantees
 
+## 🗺️ Course Navigation
+**[← Day 7: Stress Testing](../Day07-Stress-Testing/)** | **[Course Overview](../README.md)** | **[Next: Day 9 - Performance Optimization & Scaling →](../Day09-Performance-Optimization-Scaling/)**
+
+---
+
 ## Overview
 Master exactly-once processing semantics and end-to-end delivery guarantees for mission-critical streaming applications.
 
@@ -390,3 +395,9 @@ public class ExactlyOnceMetrics
 
 ## Next Steps
 Day 9 focuses on performance optimization and scaling patterns for high-throughput streaming applications.
+---
+
+## 🗺️ Course Navigation
+**[← Day 7: Stress Testing](../Day07-Stress-Testing/)** | **[Course Overview](../README.md)** | **[Next: Day 9 - Performance Optimization & Scaling →](../Day09-Performance-Optimization-Scaling/)**
+
+**Course Progress**: Day 8 of 14 Complete ✅

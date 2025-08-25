@@ -1,5 +1,10 @@
 # Day 12: Advanced Streaming Patterns - Event Sourcing, CQRS, and Sagas
 
+## 🗺️ Course Navigation
+**[← Day 11: Disaster Recovery & Multi-Region](../Day11-Disaster-Recovery-Multi-Region/)** | **[Course Overview](../README.md)** | **[Next: Day 13 - Advanced Testing & Chaos Engineering →](../Day13-Advanced-Testing-Chaos-Engineering/)**
+
+---
+
 ## Overview
 Master advanced architectural patterns for complex business workflows including Event Sourcing, Command Query Responsibility Segregation (CQRS), and Saga patterns in distributed streaming systems.
 
@@ -585,3 +590,9 @@ public async Task TestSagaCompensation()
 
 ## Next Steps
 Day 13 focuses on advanced testing strategies including chaos engineering, property-based testing, and production testing techniques.
+---
+
+## 🗺️ Course Navigation
+**[← Day 11: Disaster Recovery & Multi-Region](../Day11-Disaster-Recovery-Multi-Region/)** | **[Course Overview](../README.md)** | **[Next: Day 13 - Advanced Testing & Chaos Engineering →](../Day13-Advanced-Testing-Chaos-Engineering/)**
+
+**Course Progress**: Day 12 of 14 Complete ✅

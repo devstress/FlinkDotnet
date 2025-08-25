@@ -1,5 +1,10 @@
 # Day 5: Temporal Workflow Orchestration & Durable Execution
 
+## 🗺️ Course Navigation
+**[← Day 4: Enterprise Observability](../Day04-Enterprise-Observability/)** | **[Course Overview](../README.md)** | **[Next: Day 6 - Advanced Windows & Joins →](../Day06-Advanced-Windows-Joins/)**
+
+---
+
 ## 🎯 Real-World Learning Objectives
 
 Master **Temporal's durable execution platform** to orchestrate complex, long-running business processes with fault tolerance, state management, and scalable workflow patterns used by Uber, Netflix, and Snapchat.
@@ -1292,3 +1297,9 @@ You've mastered **enterprise workflow orchestration** with Temporal's durable ex
 ---
 
 **Next**: [Day 6: Advanced Stream Processing Patterns →](../Day06-Advanced-Stream-Processing/README.md)
+---
+
+## 🗺️ Course Navigation
+**[← Day 4: Enterprise Observability](../Day04-Enterprise-Observability/)** | **[Course Overview](../README.md)** | **[Next: Day 6 - Advanced Windows & Joins →](../Day06-Advanced-Windows-Joins/)**
+
+**Course Progress**: Day 5 of 14 Complete ✅

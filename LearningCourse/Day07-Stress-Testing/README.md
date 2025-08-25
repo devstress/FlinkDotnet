@@ -1,5 +1,10 @@
 # Day 7: Complex Logic Stress Testing
 
+## 🗺️ Course Navigation
+**[← Day 6: Advanced Windows & Joins](../Day06-Advanced-Windows-Joins/)** | **[Course Overview](../README.md)** | **[Next: Day 8 - Exactly-Once Semantics →](../Day08-Exactly-Once-Semantics/)**
+
+---
+
 ## 🎯 Day 7 Learning Objectives
 
 - Master stress testing methodologies for Flink 2.0 applications
@@ -1465,3 +1470,9 @@ You've mastered complex logic stress testing with Flink 2.0! You now have:
 ---
 
 **Next**: [Day 8: Temporal Workflows & Orchestration →](../Day08-Temporal-Workflows/README.md)
+---
+
+## 🗺️ Course Navigation
+**[← Day 6: Advanced Windows & Joins](../Day06-Advanced-Windows-Joins/)** | **[Course Overview](../README.md)** | **[Next: Day 8 - Exactly-Once Semantics →](../Day08-Exactly-Once-Semantics/)**
+
+**Course Progress**: Day 7 of 14 Complete ✅

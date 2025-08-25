@@ -1,5 +1,10 @@
 # Day 4: Enterprise Observability & Monitoring
 
+## 🗺️ Course Navigation
+**[← Day 3: Production Backpressure](../Day03-Production-Backpressure/)** | **[Course Overview](../README.md)** | **[Next: Day 5 - Temporal Workflows →](../Day05-Temporal-Workflows/)**
+
+---
+
 ## 🎯 Real-World Learning Objectives
 
 Master **production-grade observability patterns** used by Netflix, Google, and Uber to monitor distributed streaming systems at scale. Learn to implement comprehensive monitoring, alerting, and troubleshooting workflows for Apache Flink applications.
@@ -1164,3 +1169,9 @@ You've mastered **enterprise-grade observability** that matches production deplo
 ---
 
 **Next**: [Day 5: Temporal Workflow Orchestration →](../Day05-Temporal-Workflows/README.md)
+---
+
+## 🗺️ Course Navigation
+**[← Day 3: Production Backpressure](../Day03-Production-Backpressure/)** | **[Course Overview](../README.md)** | **[Next: Day 5 - Temporal Workflows →](../Day05-Temporal-Workflows/)**
+
+**Course Progress**: Day 4 of 14 Complete ✅
