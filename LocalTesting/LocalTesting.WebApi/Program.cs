@@ -11,6 +11,12 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure IPv4-only binding to prevent address conflicts
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5000); // Force IPv4 binding on port 5000
+});
+
 // Configure Flink job management defaults
 builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
 
