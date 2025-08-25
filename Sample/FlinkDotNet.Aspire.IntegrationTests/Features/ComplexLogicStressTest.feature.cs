@@ -29,10 +29,10 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 "integration_test"};
         
         private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Complex Logic Stress Test - Advanced Integration with Correlation ID and HTTP Pro" +
-                "cessing", "  As a Flink.NET enterprise user\r\n  I want to process 1 million messages with cor" +
-                "relation ID tracking, security token management, batch HTTP processing, and resp" +
-                "onse verification\r\n  So that I can validate complex real-world enterprise stream" +
-                "ing scenarios", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+                "cessing", "  As a Flink.NET enterprise user\n  I want to process 1 million messages with corr" +
+                "elation ID tracking, security token management, batch HTTP processing, and respo" +
+                "nse verification\n  So that I can validate complex real-world enterprise streamin" +
+                "g scenarios", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
