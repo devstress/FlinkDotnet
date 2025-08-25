@@ -1,50 +1,92 @@
-# FlinkDotNet Learning Course - Complete Stream Processing Mastery
+# FlinkDotNet Learning Course - Complete Stream Processing + AI Mastery
 
-🎓 **Master Apache Flink 2.0 + .NET Integration for Enterprise-Scale Stream Processing**
+🎓 **Master Apache Flink 2.1.0 + .NET Integration for Enterprise-Scale Real-Time AI & Stream Processing**
 
-Welcome to the comprehensive **FlinkDotNet Learning Course** - a 14-day intensive journey that transforms developers into stream processing experts using real-world, production-grade patterns from Netflix, Uber, LinkedIn, and other industry leaders.
+Welcome to the comprehensive **FlinkDotNet Learning Course** - a 14-day intensive journey that transforms developers into **unified real-time Data + AI platform experts** using breakthrough Apache Flink 2.1.0 features and production-grade patterns from Netflix, Uber, LinkedIn, and other industry leaders.
 
 ## 🌟 Course Overview
 
-This course provides hands-on experience with **Apache Flink 2.0** and **.NET integration** through FlinkDotNet, covering everything from fundamentals to building production-ready streaming platforms. Each day builds upon the previous, culminating in a capstone project that demonstrates mastery of enterprise stream processing patterns.
+This course provides hands-on experience with **Apache Flink 2.1.0's revolutionary real-time AI capabilities** and **.NET integration** through FlinkDotNet, covering everything from fundamentals to building production-ready AI-enhanced streaming platforms. Each day builds upon the previous, culminating in a capstone project that demonstrates mastery of enterprise-scale real-time AI and stream processing patterns.
+
+## 🚀 NEW: Apache Flink 2.1.0 - Unified Real-Time Data + AI Platform
+
+**Released July 31, 2025** - Apache Flink 2.1.0 represents a **revolutionary leap forward**, transforming from a stream processing engine into a **unified Data + AI platform** with breakthrough real-time AI capabilities.
+
+### 🧠 Breakthrough Real-Time AI Features
+
+#### 🎯 AI Model DDL (Data Definition Language)
+- **Flexible AI model management** through Flink SQL and Table API
+- **Dynamic model registration, versioning, and lifecycle management**
+- **Enterprise-grade model governance and deployment patterns**
+
+#### ⚡ ML_PREDICT Table-Valued Function (TVF)
+- **Real-time AI model invocation** directly within Flink SQL queries
+- **Native streaming inference** with sub-millisecond latency
+- **End-to-end real-time AI workflow foundations**
+
+#### 🔄 Process Table Functions (PTFs)
+- **Event-driven applications** with full access to Flink's managed state
+- **Event-time and timer services** for complex temporal AI patterns
+- **Underlying table changelog access** for sophisticated AI model training
+
+### 🏗️ Enhanced Real-Time Data Processing
+
+#### 📊 VARIANT Data Type & JSON Processing
+- **Efficient semi-structured data handling** (JSON, XML, Avro)
+- **PARSE_JSON function** with lakehouse formats (Apache Paimon)
+- **Dynamic schema evolution** for AI feature engineering
+
+#### ⚡ Advanced Streaming Joins
+- **DeltaJoin strategies** eliminating state bottlenecks
+- **MultiJoin optimization** improving resource utilization
+- **Enhanced job stability** for production AI workloads
 
 ### 🎯 Learning Outcomes
 
 By completing this course, you will:
 
-- **Master Apache Flink 2.0** fundamentals and advanced features
-- **Build production-grade streaming applications** using FlinkDotNet and C#
-- **Implement enterprise patterns** for scalability, reliability, and maintainability
-- **Design fault-tolerant systems** with exactly-once semantics and disaster recovery
-- **Create comprehensive monitoring** and observability solutions
-- **Apply security and compliance** requirements for sensitive data processing
-- **Orchestrate complex workflows** using Temporal for durable execution
-- **Optimize performance** at scale with advanced tuning techniques
+- **Master Apache Flink 2.1.0** fundamentals and breakthrough AI capabilities
+- **Build production-grade AI-enhanced streaming applications** using FlinkDotNet and C#
+- **Implement real-time AI workflows** with AI Model DDL and ML_PREDICT TVF
+- **Design intelligent streaming systems** with Process Table Functions (PTFs)
+- **Handle dynamic data schemas** using VARIANT data types and JSON processing
+- **Optimize streaming joins** with DeltaJoin and MultiJoin strategies
+- **Create enterprise AI patterns** for scalability, reliability, and maintainability
+- **Design fault-tolerant AI systems** with exactly-once semantics and disaster recovery
+- **Build comprehensive AI monitoring** and observability solutions
+- **Apply security and compliance** requirements for sensitive AI data processing
+- **Orchestrate complex AI workflows** using Temporal for durable execution
+- **Optimize AI performance** at scale with advanced tuning techniques
 
 ### ⏱️ Time Commitment
 
-- **Total Duration**: 14 days (75-85 hours)
-- **Daily Time**: 4-7 hours per day
-- **Learning Format**: Progressive skill building with hands-on exercises
-- **Prerequisites**: C#/.NET experience, basic distributed systems knowledge
+- **Total Duration**: 14 days (85-95 hours)
+- **Daily Time**: 5-8 hours per day (increased for comprehensive AI coverage)
+- **Learning Format**: Progressive skill building with hands-on AI exercises
+- **Prerequisites**: C#/.NET experience, basic distributed systems knowledge, optional ML familiarity
 
 ## 🗺️ Complete Learning Path
 
-### 📚 Fundamentals & Setup (Days 1-2)
+### 📚 Fundamentals & AI Integration (Days 1-2)
 
-#### [Day 1: Apache Flink 2.0 Fundamentals & Production Environment](Day01-Flink20-Fundamentals/)
-**Time**: 6-7 hours | **Focus**: Core Concepts & Infrastructure Setup
+#### [Day 1: Apache Flink 2.1.0 Fundamentals & Production Environment](Day01-Flink20-Fundamentals/)
+**Time**: 6-7 hours | **Focus**: Core Concepts & Revolutionary AI Platform Setup
 
-Master Apache Flink 2.0 fundamentals while setting up a complete production-grade streaming stack. Learn revolutionary improvements in Flink 2.0 including unified batch/stream processing, adaptive scheduling, and dynamic scaling.
+Master Apache Flink 2.1.0 fundamentals while setting up a complete production-grade unified Data + AI streaming stack. Learn revolutionary improvements including AI Model DDL, ML_PREDICT TVF, and the transformation into a unified real-time AI platform.
 
-**Key Topics**: Flink architecture, DataStream API, job lifecycle, production deployment patterns
+**Key Topics**: Flink 2.1.0 architecture, unified Data + AI platform, DataStream API, AI integration foundations, production deployment patterns
 
-#### [Day 2: AI-Enhanced Stream Processing Introduction](Day02-AI-Stream-Processing/)
-**Time**: 4-5 hours | **Focus**: ML Integration & Real-time AI
+#### [Day 2: Comprehensive Real-Time AI Stream Processing](Day02-AI-Stream-Processing/)
+**Time**: 7-8 hours | **Focus**: Deep Dive into Flink 2.1.0 AI Capabilities
 
-Integrate machine learning with stream processing using ML.NET and FlinkDotNet. Build real-time fraud detection and anomaly detection systems with AI-enhanced pipelines.
+**SIGNIFICANTLY EXPANDED** - Comprehensive coverage of all Flink 2.1.0 AI breakthroughs with super detailed exercises:
+- **AI Model DDL** - Complete model lifecycle management through Flink SQL
+- **ML_PREDICT TVF** - Real-time model inference in streaming queries  
+- **Process Table Functions (PTFs)** - Event-driven AI with managed state access
+- **VARIANT Data Types** - Dynamic schema AI feature engineering
+- **End-to-End AI Workflows** - Production-ready real-time AI pipelines
 
-**Key Topics**: ML.NET integration, real-time inference, AI performance monitoring, fraud detection patterns
+**Key Topics**: AI Model DDL, ML_PREDICT TVF, PTFs, VARIANT types, PARSE_JSON, real-time AI workflows, AI performance optimization
 
 ### 🏗️ Production Patterns (Days 3-5)
 
@@ -71,12 +113,12 @@ Master Temporal's durable execution platform for orchestrating complex, long-run
 
 ### 🔧 Advanced Processing (Days 6-8)
 
-#### [Day 6: Advanced Windowing and Complex Joins](Day06-Advanced-Windows-Joins/)
-**Time**: 6-7 hours | **Focus**: Complex Stream Operations
+#### [Day 6: Advanced Windowing, Complex Joins & AI-Enhanced Analytics](Day06-Advanced-Windows-Joins/)
+**Time**: 7-8 hours | **Focus**: Complex Stream Operations & AI Analytics
 
-Implement advanced windowing strategies and complex join patterns for real-time analytics and event correlation.
+Implement advanced windowing strategies, Flink 2.1.0's revolutionary DeltaJoin and MultiJoin patterns, and AI-enhanced complex event processing for real-time analytics and intelligent event correlation.
 
-**Key Topics**: Window functions, complex joins, event correlation, temporal analytics, CEP patterns
+**Key Topics**: Advanced windowing, DeltaJoin/MultiJoin strategies, AI-enhanced CEP, temporal analytics, intelligent stream correlation
 
 #### [Day 7: Complex Logic Stress Testing](Day07-Stress-Testing/)
 **Time**: 4-5 hours | **Focus**: Performance Validation
@@ -183,22 +225,22 @@ Before starting the course, ensure you have:
 
 ## 📋 Quick Navigation
 
-| Day | Topic | Duration | Prerequisites |
-|-----|-------|----------|---------------|
-| [Day 1](Day01-Flink20-Fundamentals/) | Flink 2.0 Fundamentals | 6-7 hours | None |
-| [Day 2](Day02-AI-Stream-Processing/) | AI Stream Processing | 4-5 hours | Day 1 |
-| [Day 3](Day03-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-2 |
-| [Day 4](Day04-Enterprise-Observability/) | Observability & Monitoring | 5-6 hours | Days 1-3 |
-| [Day 5](Day05-Temporal-Workflows/) | Temporal Workflows | 7-8 hours | Days 1-4 |
-| [Day 6](Day06-Advanced-Windows-Joins/) | Advanced Windowing | 6-7 hours | Days 1-5 |
-| [Day 7](Day07-Stress-Testing/) | Stress Testing | 4-5 hours | Days 1-6 |
-| [Day 8](Day08-Exactly-Once-Semantics/) | Exactly-Once Semantics | 6-7 hours | Days 1-7 |
-| [Day 9](Day09-Performance-Optimization-Scaling/) | Performance & Scaling | 6-7 hours | Days 1-8 |
-| [Day 10](Day10-Security-Privacy-Compliance/) | Security & Compliance | 5-6 hours | Days 1-9 |
-| [Day 11](Day11-Disaster-Recovery-Multi-Region/) | Disaster Recovery | 6-7 hours | Days 1-10 |
-| [Day 12](Day12-Advanced-Streaming-Patterns/) | Advanced Patterns | 7-8 hours | Days 1-11 |
-| [Day 13](Day13-Advanced-Testing-Chaos-Engineering/) | Testing & Chaos Engineering | 5-6 hours | Days 1-12 |
-| [Day 14](Day14-Capstone-Project/) | Capstone Project | 8-10 hours | Days 1-13 |
+| Day | Topic | Duration | Prerequisites | Focus |
+|-----|-------|----------|---------------|-------|
+| [Day 1](Day01-Flink20-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | None | Core + AI Platform Setup |
+| [Day 2](Day02-AI-Stream-Processing/) | **Comprehensive Real-Time AI** | **7-8 hours** | Day 1 | **AI Model DDL, ML_PREDICT TVF, PTFs** |
+| [Day 3](Day03-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-2 | Production Patterns |
+| [Day 4](Day04-Enterprise-Observability/) | Observability & Monitoring | 5-6 hours | Days 1-3 | AI Monitoring |
+| [Day 5](Day05-Temporal-Workflows/) | Temporal Workflows | 7-8 hours | Days 1-4 | AI Workflow Orchestration |
+| [Day 6](Day06-Advanced-Windows-Joins/) | **Advanced Joins & AI Analytics** | **7-8 hours** | Days 1-5 | **DeltaJoin, MultiJoin, AI CEP** |
+| [Day 7](Day07-Stress-Testing/) | Stress Testing | 4-5 hours | Days 1-6 | AI Performance Testing |
+| [Day 8](Day08-Exactly-Once-Semantics/) | Exactly-Once Semantics | 6-7 hours | Days 1-7 | AI Data Consistency |
+| [Day 9](Day09-Performance-Optimization-Scaling/) | Performance & Scaling | 6-7 hours | Days 1-8 | AI Optimization |
+| [Day 10](Day10-Security-Privacy-Compliance/) | Security & Compliance | 5-6 hours | Days 1-9 | AI Security & Privacy |
+| [Day 11](Day11-Disaster-Recovery-Multi-Region/) | Disaster Recovery | 6-7 hours | Days 1-10 | AI Resilience |
+| [Day 12](Day12-Advanced-Streaming-Patterns/) | Advanced Patterns | 7-8 hours | Days 1-11 | AI Event Sourcing |
+| [Day 13](Day13-Advanced-Testing-Chaos-Engineering/) | Testing & Chaos Engineering | 5-6 hours | Days 1-12 | AI Reliability Testing |
+| [Day 14](Day14-Capstone-Project/) | **AI-Powered Capstone Project** | **8-10 hours** | Days 1-13 | **Complete AI Platform** |
 
 ## 🔗 Related Resources
 
@@ -212,9 +254,10 @@ Before starting the course, ensure you have:
 - **[LocalTesting Environment](../LocalTesting/README.md)** - Interactive testing platform
 
 ### External Learning Resources
-- **[Apache Flink Documentation](https://flink.apache.org/)** - Official Flink documentation
-- **[Apache Flink Training](https://nightlies.apache.org/flink/flink-docs-master/docs/learn-flink/overview/)** - Official learning modules
-- **[Temporal Documentation](https://docs.temporal.io/)** - Workflow orchestration guide
+- **[Apache Flink 2.1.0 Release Announcement](https://flink.apache.org/2025/07/31/apache-flink-2.1.0-ushers-in-a-new-era-of-unified-real-time-data--ai-with-comprehensive-upgrades/)** - Revolutionary Data + AI platform features
+- **[Apache Flink Documentation](https://flink.apache.org/)** - Official Flink 2.1.0 documentation
+- **[Apache Flink Training](https://nightlies.apache.org/flink/flink-docs-master/docs/learn-flink/overview/)** - Official learning modules updated for 2.1.0
+- **[Temporal Documentation](https://docs.temporal.io/)** - Workflow orchestration guide for AI workflows
 
 ## 📞 Support & Community
 
