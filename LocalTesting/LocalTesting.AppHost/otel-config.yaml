@@ -24,8 +24,8 @@ exporters:
     endpoint: "0.0.0.0:8889"
   debug:
     verbosity: detailed
-  jaeger:
-    endpoint: http://jaeger:14250
+  otlp:
+    endpoint: http://localhost:4317
     tls:
       insecure: true
 
@@ -38,7 +38,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [debug, jaeger]
+      exporters: [debug, otlp]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
