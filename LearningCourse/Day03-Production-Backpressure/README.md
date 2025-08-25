@@ -1,5 +1,10 @@
 # Day 3: Production-Grade Backpressure & Distributed Rate Limiting
 
+## 🗺️ Course Navigation
+**[← Day 2: AI-Enhanced Stream Processing](../Day02-AI-Stream-Processing/)** | **[Course Overview](../README.md)** | **[Next: Day 4 - Enterprise Observability →](../Day04-Enterprise-Observability/)**
+
+---
+
 ## 🎯 Real-World Learning Objectives
 
 Master the **"Local bucket + Regional Redis budget bank + Global controller"** pattern used by Netflix, Uber, and other scale companies for fault-tolerant distributed rate limiting with gRPC ingress.
@@ -996,3 +1001,9 @@ Tomorrow: **Enterprise Observability with OpenTelemetry** - Complete monitoring 
 ---
 
 **Next**: [Day 4: Enterprise Observability with OpenTelemetry →](../Day04-Enterprise-Observability/README.md)
+---
+
+## 🗺️ Course Navigation
+**[← Day 2: AI-Enhanced Stream Processing](../Day02-AI-Stream-Processing/)** | **[Course Overview](../README.md)** | **[Next: Day 4 - Enterprise Observability →](../Day04-Enterprise-Observability/)**
+
+**Course Progress**: Day 3 of 14 Complete ✅

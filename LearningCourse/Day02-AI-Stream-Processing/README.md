@@ -1,5 +1,10 @@
 # Day 2: AI-Enhanced Stream Processing Introduction
 
+## 🗺️ Course Navigation
+📚 **[← Day 1: Flink 2.0 Fundamentals](../Day01-Flink20-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
+
+---
+
 ## 🎯 Day 2 Learning Objectives
 
 - Master AI/ML integration with Flink 2.0 streams
@@ -905,5 +910,10 @@ You've mastered AI-enhanced stream processing with Flink 2.0! You now have:
 **Tomorrow**: We'll dive deep into advanced DataStream operations and complex transformation patterns!
 
 ---
+
+## 🗺️ Course Navigation
+📚 **[← Day 1: Flink 2.0 Fundamentals](../Day01-Flink20-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
+
+**Course Progress**: Day 2 of 14 Complete ✅
 
 **Next**: [Day 3: Advanced DataStream Operations →](../Day03-DataStreams-Advanced/README.md)

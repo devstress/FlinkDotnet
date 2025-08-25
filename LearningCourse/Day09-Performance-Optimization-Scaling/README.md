@@ -1,5 +1,10 @@
 # Day 9: Performance Optimization and Scaling Patterns
 
+## 🗺️ Course Navigation
+**[← Day 8: Exactly-Once Semantics](../Day08-Exactly-Once-Semantics/)** | **[Course Overview](../README.md)** | **[Next: Day 10 - Security, Privacy & Compliance →](../Day10-Security-Privacy-Compliance/)**
+
+---
+
 ## Overview
 Master advanced performance optimization techniques and scaling patterns for high-throughput streaming applications handling millions of events per second.
 
@@ -450,3 +455,9 @@ public async Task TestHighThroughputPerformance()
 
 ## Next Steps
 Day 10 focuses on security patterns and data privacy compliance for enterprise streaming applications.
+---
+
+## 🗺️ Course Navigation
+**[← Day 8: Exactly-Once Semantics](../Day08-Exactly-Once-Semantics/)** | **[Course Overview](../README.md)** | **[Next: Day 10 - Security, Privacy & Compliance →](../Day10-Security-Privacy-Compliance/)**
+
+**Course Progress**: Day 9 of 14 Complete ✅

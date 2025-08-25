@@ -1,5 +1,10 @@
 # Day 6: Advanced Windowing and Complex Joins
 
+## 🗺️ Course Navigation
+**[← Day 5: Temporal Workflows](../Day05-Temporal-Workflows/)** | **[Course Overview](../README.md)** | **[Next: Day 7 - Stress Testing →](../Day07-Stress-Testing/)**
+
+---
+
 ## Overview
 Master advanced windowing strategies and complex join patterns used in production streaming systems at scale.
 
@@ -212,3 +217,9 @@ public class OptimizedWindowBuffer<T> : IWindowBuffer<T>
 
 ## Next Steps
 Day 7 focuses on stateful function patterns and custom operators for advanced stream processing scenarios.
+---
+
+## 🗺️ Course Navigation
+**[← Day 5: Temporal Workflows](../Day05-Temporal-Workflows/)** | **[Course Overview](../README.md)** | **[Next: Day 7 - Stress Testing →](../Day07-Stress-Testing/)**
+
+**Course Progress**: Day 6 of 14 Complete ✅

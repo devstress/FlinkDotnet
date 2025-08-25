@@ -157,7 +157,7 @@ Before starting the course, ensure you have:
 
 1. **Install .NET 9.0 SDK**:
    ```bash
-   # Download from https://dotnet.microsoft.com/download/dotnet/9.0
+   # Download from https://learn.microsoft.com/en-us/dotnet/core/install/
    dotnet --version  # Should show 9.0.x
    ```
 
@@ -213,7 +213,7 @@ Before starting the course, ensure you have:
 
 ### External Learning Resources
 - **[Apache Flink Documentation](https://flink.apache.org/)** - Official Flink documentation
-- **[Apache Flink Training](https://training.apache.org/flink)** - Official training modules
+- **[Apache Flink Training](https://nightlies.apache.org/flink/flink-docs-master/docs/learn-flink/overview/)** - Official learning modules
 - **[Temporal Documentation](https://docs.temporal.io/)** - Workflow orchestration guide
 
 ## 📞 Support & Community

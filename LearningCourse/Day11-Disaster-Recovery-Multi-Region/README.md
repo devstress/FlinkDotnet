@@ -1,5 +1,10 @@
 # Day 11: Disaster Recovery and Multi-Region Deployment
 
+## 🗺️ Course Navigation
+**[← Day 10: Security, Privacy & Compliance](../Day10-Security-Privacy-Compliance/)** | **[Course Overview](../README.md)** | **[Next: Day 12 - Advanced Streaming Patterns →](../Day12-Advanced-Streaming-Patterns/)**
+
+---
+
 ## Overview
 Design and implement disaster recovery strategies, business continuity plans, and multi-region deployments for mission-critical streaming applications.
 
@@ -615,3 +620,9 @@ public class DisasterRecoveryMonitor
 
 ## Next Steps
 Day 12 focuses on advanced streaming patterns including event sourcing, CQRS, and saga patterns for complex business workflows.
+---
+
+## 🗺️ Course Navigation
+**[← Day 10: Security, Privacy & Compliance](../Day10-Security-Privacy-Compliance/)** | **[Course Overview](../README.md)** | **[Next: Day 12 - Advanced Streaming Patterns →](../Day12-Advanced-Streaming-Patterns/)**
+
+**Course Progress**: Day 11 of 14 Complete ✅

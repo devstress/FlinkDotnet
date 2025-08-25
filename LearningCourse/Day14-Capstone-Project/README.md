@@ -1,5 +1,10 @@
 # Day 14: Capstone Project - Real-World Streaming Platform
 
+## 🗺️ Course Navigation
+**[← Day 13: Advanced Testing & Chaos Engineering](../Day13-Advanced-Testing-Chaos-Engineering/)** | **[Course Overview](../README.md)**
+
+---
+
 ## Overview
 Build a comprehensive, production-ready streaming platform that integrates all concepts learned throughout the course into a real-world application handling multiple use cases simultaneously.
 
@@ -631,3 +636,9 @@ The platform you build will serve as a portfolio piece demonstrating mastery of:
 - Modern software engineering practices
 
 Congratulations on completing the FlinkDotNet Learning Course and building your expertise in enterprise-grade stream processing!
+---
+
+## 🗺️ Course Navigation
+**[← Day 13: Advanced Testing & Chaos Engineering](../Day13-Advanced-Testing-Chaos-Engineering/)** | **[Course Overview](../README.md)**
+
+**Course Progress**: Day 14 of 14 Complete ✅

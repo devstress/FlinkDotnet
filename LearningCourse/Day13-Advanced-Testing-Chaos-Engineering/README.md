@@ -1,5 +1,10 @@
 # Day 13: Advanced Testing Strategies and Chaos Engineering
 
+## 🗺️ Course Navigation
+**[← Day 12: Advanced Streaming Patterns](../Day12-Advanced-Streaming-Patterns/)** | **[Course Overview](../README.md)** | **[Next: Day 14 - Capstone Project →](../Day14-Capstone-Project/)**
+
+---
+
 ## Overview
 Master advanced testing techniques including chaos engineering, property-based testing, contract testing, and production testing for building resilient streaming systems.
 
@@ -643,3 +648,9 @@ public class TestEnvironmentProvisioner
 
 ## Next Steps
 Day 14 focuses on the final capstone project where all concepts are integrated into a comprehensive real-world streaming application.
+---
+
+## 🗺️ Course Navigation
+**[← Day 12: Advanced Streaming Patterns](../Day12-Advanced-Streaming-Patterns/)** | **[Course Overview](../README.md)** | **[Next: Day 14 - Capstone Project →](../Day14-Capstone-Project/)**
+
+**Course Progress**: Day 13 of 14 Complete ✅
