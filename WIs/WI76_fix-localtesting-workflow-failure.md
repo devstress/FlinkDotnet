@@ -135,13 +135,22 @@ Feature: LocalTesting API IPv4 Binding
 - Added Kestrel configuration with `builder.WebHost.ConfigureKestrel(options => { options.ListenAnyIP(5000); })` 
 - Positioned immediately after WebApplicationBuilder creation for explicit IPv4 binding on port 5000
 
+**File: LocalTesting/LocalTesting.AppHost/otel-config.yaml**
+- Replaced unsupported "jaeger" exporter with "otlp" exporter in exporters section
+- Updated traces pipeline to use [debug, otlp] instead of [debug, jaeger]
+- Fixed OpenTelemetry Collector startup failure that was blocking dependency chain
+
 ### Challenges Encountered
 - IPv6 binding conflicts in Aspire service reconciler causing "listen tcp [::1]:5000: bind: address already in use" errors
+- OpenTelemetry Collector failing with "'exporters' unknown type: jaeger" error 
+- Dependency chain blocking: API waits for Grafana → Grafana waits for otel-collector → otel-collector fails
 - Needed to identify correct environment variables and Kestrel configuration for IPv4-only binding
 
 ### Solutions Applied
 - Used `DOTNET_SYSTEM_NET_DISABLEIPV6` environment variable to disable IPv6 at .NET runtime level
 - Configured Kestrel `ListenAnyIP(5000)` to explicitly bind IPv4 on port 5000, overriding launch settings
+- Replaced jaeger exporter with otlp exporter in OpenTelemetry configuration
+- Validated YAML configuration syntax and exporter compatibility
 - Added configuration before Aspire builder creation to ensure early application
 
 ## Phase 5: Testing & Validation
@@ -153,10 +162,17 @@ Feature: LocalTesting API IPv4 Binding
 - ✅ No IPv6 "address already in use" binding conflicts
 - ✅ Business endpoints accessible (tested Step 1 endpoint successfully)
 
+**OpenTelemetry Configuration**:
+- ✅ YAML configuration validates successfully with python yaml.safe_load()
+- ✅ Exporters configured: ['prometheus', 'debug', 'otlp']
+- ✅ Traces pipeline exporters: ['debug', 'otlp'] 
+- ✅ No "unknown exporter type" errors expected
+
 **Environment Compatibility**:
 - ✅ .NET 9.0.304 environment works correctly
 - ✅ Aspire workload functions with IPv4-only configuration
 - ✅ Build process succeeds with configuration changes
+- ✅ Container dependency chain resolved
 
 ### Performance Metrics
 - **API Startup Time**: ~4 seconds (similar to previous)
@@ -192,15 +208,26 @@ Feature: LocalTesting API IPv4 Binding
 ### Key Insights for Similar Tasks
 - **Port binding errors often indicate networking configuration issues, not business logic problems**
 - **IPv6 conflicts are common in CI environments and containerized applications**
+- **Container dependency chains can hide secondary issues until primary issues are resolved**
+- **OpenTelemetry Collector exporter compatibility changes over time - validate configuration**
 - **Testing components in isolation helps identify infrastructure vs application issues**
 - **Environment variables for networking must be set before application builder creation**
 - **Kestrel configuration can override launch settings for explicit binding control**
+- **YAML configuration validation tools prevent deployment-time failures**
 
 ### Specific Problems to Avoid in Future
 - **Don't assume business logic issues when seeing port binding failures** - investigate networking first
 - **Don't skip testing API startup in isolation** - this reveals infrastructure problems quickly  
+- **Don't ignore container dependency chain failures** - one failed container can block entire system
+- **Don't use deprecated OpenTelemetry exporters** - verify compatibility with current collector versions
 - **Don't modify business logic when root cause is infrastructure** - address the actual problem
 - **Don't ignore IPv6 binding conflicts** - force IPv4 when needed for compatibility
+
+### Reference for Future WIs
+- **IPv4-only binding pattern**: `Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "true")` + Kestrel `ListenAnyIP(port)`
+- **OpenTelemetry supported exporters**: debug, otlp, prometheus (jaeger deprecated in newer versions)
+- **Aspire container dependency debugging**: Check WaitFor() chains and container startup logs
+- **YAML validation command**: `python3 -c "import yaml; yaml.safe_load(open('file.yaml'))"`
 
 ### Reference for Future WIs
 - **For "address already in use" errors**: Check IPv6 vs IPv4 binding conflicts first before debugging business logic
