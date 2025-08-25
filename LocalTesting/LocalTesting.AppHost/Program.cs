@@ -10,9 +10,21 @@ Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318");
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
 
-// Force IPv4 binding to prevent IPv6 address conflicts
+// Force IPv4 binding to prevent IPv6 address conflicts and DCP connectivity issues
 Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "true");
 Environment.SetEnvironmentVariable("ASPNETCORE_PREVENTHOSTINGSTARTUP", "false");
+
+// Additional IPv4 enforcement for DCP API server - system-wide approach
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://127.0.0.1:18888");
+Environment.SetEnvironmentVariable("DOTNET_ASPIRE_DASHBOARD_URL", "http://127.0.0.1:18888");
+
+// Force system-wide IPv4 preference to resolve DCP connectivity issues
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT", "false");
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USEIPV6", "false");
+
+// DCP-specific IPv4 enforcement
+Environment.SetEnvironmentVariable("DCP_API_SERVER_BIND_ADDRESS", "127.0.0.1");
+Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_BIND_ADDRESS", "127.0.0.1");
 
 var builder = DistributedApplication.CreateBuilder(args);
 
