@@ -10,6 +10,10 @@ Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318");
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
 
+// Force IPv4 binding to prevent IPv6 address conflicts
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "true");
+Environment.SetEnvironmentVariable("ASPNETCORE_PREVENTHOSTINGSTARTUP", "false");
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Redis with IPv4 configuration
