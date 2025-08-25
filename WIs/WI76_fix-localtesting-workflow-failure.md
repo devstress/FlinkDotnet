@@ -8,7 +8,7 @@
 **Type**: Bug Fix
 **Assignee**: AI Agent
 **Created**: 2025-01-02
-**Status**: Investigation
+**Status**: Completed
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -178,4 +178,33 @@ Feature: LocalTesting API IPv4 Binding
 - [Pending owner approval]
 
 ## Lessons Learned & Future Reference (MANDATORY)
-[To be completed at end of WI]
+### What Worked Well
+- **Systematic debugging approach**: Following TDD debugging-first methodology led to accurate root cause identification
+- **Environment-specific investigation**: Testing direct API startup revealed IPv6 binding conflicts vs assumptions about business logic issues
+- **Minimal surgical changes**: IPv4-only binding configuration solved the problem without changing business functionality
+- **Validation testing**: Direct WebAPI testing confirmed fix before full environment testing
+
+### What Could Be Improved  
+- **Initial diagnosis scope**: Could have tested API startup isolation earlier to identify networking vs business logic issues
+- **Environment documentation**: Better documentation of IPv4/IPv6 requirements would prevent similar issues
+- **Monitoring setup**: Could add startup health checks to catch binding failures earlier
+
+### Key Insights for Similar Tasks
+- **Port binding errors often indicate networking configuration issues, not business logic problems**
+- **IPv6 conflicts are common in CI environments and containerized applications**
+- **Testing components in isolation helps identify infrastructure vs application issues**
+- **Environment variables for networking must be set before application builder creation**
+- **Kestrel configuration can override launch settings for explicit binding control**
+
+### Specific Problems to Avoid in Future
+- **Don't assume business logic issues when seeing port binding failures** - investigate networking first
+- **Don't skip testing API startup in isolation** - this reveals infrastructure problems quickly  
+- **Don't modify business logic when root cause is infrastructure** - address the actual problem
+- **Don't ignore IPv6 binding conflicts** - force IPv4 when needed for compatibility
+
+### Reference for Future WIs
+- **For "address already in use" errors**: Check IPv6 vs IPv4 binding conflicts first before debugging business logic
+- **For Aspire startup failures**: Set networking environment variables before DistributedApplication.CreateBuilder()
+- **For API accessibility issues**: Test direct API startup without full orchestration to isolate networking problems
+- **For port conflicts**: Use `DOTNET_SYSTEM_NET_DISABLEIPV6=true` and explicit Kestrel IPv4 binding configuration
+- **Testing approach**: Always test individual components before full environment to identify infrastructure vs application issues
