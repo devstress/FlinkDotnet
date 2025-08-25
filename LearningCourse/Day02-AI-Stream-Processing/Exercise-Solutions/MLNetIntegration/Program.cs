@@ -1,55 +1,63 @@
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
+namespace MLNetIntegration;
+
 // Configure Serilog
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateLogger();
-
-Console.WriteLine("🤖 Day 2 Exercise 2.1: ML.NET Integration with Streaming");
-Console.WriteLine("=======================================================");
-
-// Create host for dependency injection
-var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
+public static class Program
+{
+    public static async Task Main(string[] args)
     {
-        services.AddSingleton<MLContext>();
-        services.AddSingleton<FraudDetectionService>();
-        services.AddSingleton<StreamingInferenceEngine>();
-    })
-    .UseSerilog()
-    .Build();
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateLogger();
 
-var mlContext = host.Services.GetRequiredService<MLContext>();
-var fraudDetectionService = host.Services.GetRequiredService<FraudDetectionService>();
-var inferenceEngine = host.Services.GetRequiredService<StreamingInferenceEngine>();
+        Console.WriteLine("🤖 Day 2 Exercise 2.1: ML.NET Integration with Streaming");
+        Console.WriteLine("=======================================================");
 
-try
-{
-    Console.WriteLine("🔧 Initializing ML.NET fraud detection model...");
-    
-    // Train or load the fraud detection model
-    await fraudDetectionService.InitializeModelAsync();
-    
-    Console.WriteLine("✅ Model initialized successfully");
-    Console.WriteLine("🌊 Starting streaming inference simulation...");
-    
-    // Simulate streaming data processing
-    await inferenceEngine.StartStreamingInferenceAsync(fraudDetectionService);
-    
-    Console.WriteLine("🎉 Streaming inference completed successfully!");
-}
-catch (Exception ex)
-{
-    Log.Error(ex, "Error in ML.NET integration");
-    Console.WriteLine($"❌ Error: {ex.Message}");
-}
-finally
-{
-    await host.StopAsync();
-    Log.CloseAndFlush();
+        // Create host for dependency injection
+        var host = Host.CreateDefaultBuilder(args)
+            .ConfigureServices(services =>
+            {
+                services.AddSingleton<MLContext>();
+                services.AddSingleton<FraudDetectionService>();
+                services.AddSingleton<StreamingInferenceEngine>();
+            })
+            .UseSerilog()
+            .Build();
+
+        var fraudDetectionService = host.Services.GetRequiredService<FraudDetectionService>();
+        var inferenceEngine = host.Services.GetRequiredService<StreamingInferenceEngine>();
+
+        try
+        {
+            Console.WriteLine("🔧 Initializing ML.NET fraud detection model...");
+            
+            // Train or load the fraud detection model
+            await fraudDetectionService.InitializeModelAsync();
+            
+            Console.WriteLine("✅ Model initialized successfully");
+            Console.WriteLine("🌊 Starting streaming inference simulation...");
+            
+            // Simulate streaming data processing
+            await inferenceEngine.StartStreamingInferenceAsync(fraudDetectionService);
+            
+            Console.WriteLine("🎉 Streaming inference completed successfully!");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in ML.NET integration");
+            Console.WriteLine($"❌ Error: {ex.Message}");
+        }
+        finally
+        {
+            await host.StopAsync();
+            await Log.CloseAndFlushAsync();
+        }
+    }
 }
 
 // Transaction data model
@@ -79,7 +87,6 @@ public class FraudPrediction
 public class FraudDetectionService
 {
     private readonly MLContext _mlContext;
-    private ITransformer? _model;
     private PredictionEngine<TransactionData, FraudPrediction>? _predictionEngine;
     
     public FraudDetectionService(MLContext mlContext)
@@ -110,10 +117,10 @@ public class FraudDetectionService
                 featureColumnName: "Features"));
         
         // Train the model
-        _model = pipeline.Fit(dataView);
+        var model = pipeline.Fit(dataView);
         
         // Create prediction engine
-        _predictionEngine = _mlContext.Model.CreatePredictionEngine<TransactionData, FraudPrediction>(_model);
+        _predictionEngine = _mlContext.Model.CreatePredictionEngine<TransactionData, FraudPrediction>(model);
         
         Log.Information("Model training completed successfully");
         
@@ -137,7 +144,7 @@ public class FraudDetectionService
         return prediction;
     }
     
-    private List<TransactionData> GenerateTrainingData()
+    private static List<TransactionData> GenerateTrainingData()
     {
         var data = new List<TransactionData>();
         var random = new Random(42); // Fixed seed for reproducibility
@@ -161,7 +168,7 @@ public class FraudDetectionService
         return data;
     }
     
-    private string GetRandomLocation(Random random)
+    private static string GetRandomLocation(Random random)
     {
         var locations = new[] { "New York", "London", "Tokyo", "Sydney", "San Francisco", "Toronto" };
         return locations[random.Next(locations.Length)];
@@ -217,7 +224,7 @@ public class StreamingInferenceEngine
         Console.WriteLine($"   Average Latency: {totalTime.TotalMilliseconds / processedCount:F1}ms");
     }
     
-    private TransactionData GenerateRandomTransaction(Random random)
+    private static TransactionData GenerateRandomTransaction(Random random)
     {
         var locations = new[] { "New York", "London", "Tokyo", "Sydney", "San Francisco", "Toronto", "Unknown" };
         
