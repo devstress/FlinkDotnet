@@ -19,7 +19,7 @@ var isCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTI
 var aspireHost = "127.0.0.1"; // Always use IPv4
 
 Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", $"http://{aspireHost}:18888");
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://{aspireHost}:18888");
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://{aspireHost}:18888"); // Required for Aspire dashboard
 Environment.SetEnvironmentVariable("DOTNET_ASPIRE_DASHBOARD_URL", $"http://{aspireHost}:18888");
 
 // DCP-specific IPv4 enforcement - these are critical for CI environment
