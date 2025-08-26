@@ -224,22 +224,23 @@ Each day includes complete Visual Studio solution files for immediate IDE integr
 
 | Day | Solution File | Projects | Focus Area |
 |-----|---------------|----------|------------|
-| **Day 1** | `Day01Tutorial.sln` | 4 projects | Flink 2.1.0 Fundamentals |
-| **Day 2** | `Day02Tutorial.sln` | 4 projects | **Comprehensive Real-Time AI** |
-| **Day 7** | `Day07Tutorial.sln` | 3 projects | Stress Testing & Performance |
-| **Day 14** | `Day14Tutorial.sln` | 4 projects | **AI-Powered Capstone Project** |
+| **Day 1** | `Day01-Flink20-Fundamentals/Day01Tutorial.sln` | 4 projects | Flink 2.1.0 Fundamentals |
+| **Day 2** | `Day02-AI-Stream-Processing/Day02Tutorial.sln` | 4 projects | **Comprehensive Real-Time AI** |
+| **Day 7** | `Day07-Stress-Testing/Day07Tutorial.sln` | 3 projects | Stress Testing & Performance |
+| **Day 14** | `Day14-Capstone-Project/Day14Tutorial.sln` | 4 projects | **AI-Powered Capstone Project** |
 
 #### **🎯 Professional IDE Integration**
 
 ```bash
 # Open complete day's exercises in Visual Studio Code
-code Day02Tutorial.sln
+code Day02-AI-Stream-Processing/Day02Tutorial.sln
 
 # Build all day's projects with .NET CLI
+cd Day02-AI-Stream-Processing
 dotnet build Day02Tutorial.sln --configuration Release
 
 # Run specific AI exercise
-dotnet run --project Day02-AI-Stream-Processing/Exercise-Solutions/AIModelDDLMastery
+dotnet run --project Exercise-Solutions/AIModelDDLMastery
 
 # Debug with full IntelliSense support
 # Open any .sln file in Visual Studio, VS Code, or JetBrains Rider
@@ -254,7 +255,7 @@ dotnet run --project Day02-AI-Stream-Processing/Exercise-Solutions/AIModelDDLMas
 
 #### **🔥 Zero Setup Friction**
 
-- **One-click setup**: Open any DayXXTutorial.sln file for immediate coding
+- **One-click setup**: Open any Day##-*/DayXXTutorial.sln file for immediate coding
 - **Integrated debugging**: Full breakpoint and debugging support across all projects
 - **IntelliSense support**: Complete code completion and navigation
 - **Build automation**: Single command builds all day's exercises
