@@ -391,7 +391,7 @@ public class ExactlyOnceMetrics
 - [Apache Flink Exactly-Once Documentation](https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/learn-flink/fault_tolerance/)
 - [Confluent: Exactly-Once Semantics in Kafka](https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/)
 - [Google Cloud: Dataflow Exactly-Once Processing](https://cloud.google.com/dataflow/docs/concepts/exactly-once)
-- [Two-Phase Commit Protocol Paper](https://www.microsoft.com/en-us/research/publication/principles-of-transaction-processing/)
+- [Two-Phase Commit Protocol (Princeton CS)](https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/L6-2pc.pdf)
 
 ## Next Steps
 Day 9 focuses on performance optimization and scaling patterns for high-throughput streaming applications.
