@@ -2,7 +2,7 @@
 
 ## Overview
 
-The FlinkDotNet Observability Framework provides comprehensive monitoring, logging, metrics collection, and tracing capabilities following **Apache Flink 2.0 standards**. This implementation ensures compatibility with Apache Flink's observability patterns while providing native .NET integration.
+The FlinkDotNet Observability Framework provides comprehensive monitoring, logging, metrics collection, and tracing capabilities following **Apache Flink 2.1.0 standards**. This implementation ensures compatibility with Apache Flink's observability patterns while providing native .NET integration.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ The FlinkDotNet Observability Framework provides comprehensive monitoring, loggi
 
 ## Architecture
 
-The observability framework is built on four core pillars, aligned with Apache Flink 2.0:
+The observability framework is built on four core pillars, aligned with Apache Flink 2.1.0:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -37,7 +37,7 @@ The observability framework is built on four core pillars, aligned with Apache F
 
 ### Core Principles
 
-1. **Apache Flink Compatibility**: All metrics, naming conventions, and patterns follow Apache Flink 2.0 standards
+1. **Apache Flink Compatibility**: All metrics, naming conventions, and patterns follow Apache Flink 2.1.0 standards
 2. **OpenTelemetry Native**: Built on OpenTelemetry for industry-standard observability
 3. **Performance First**: Minimal overhead with async operations and efficient data structures
 4. **Production Ready**: Comprehensive error handling, circuit breakers, and graceful degradation

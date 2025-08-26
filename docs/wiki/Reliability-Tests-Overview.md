@@ -22,7 +22,7 @@ Our reliability tests validate FLINK.NET's ability to maintain data processing i
 - **Data Consistency**: Exactly-once processing guarantees under failure conditions
 - **Architecture**: Clean separation ensures infrastructure failures don't affect core processing logic
 
-### 2. Apache Flink 2.0 Reliability Standards
+### 2. Apache Flink 2.1.0 Reliability Standards
 - **StreamExecutionEnvironment.GetExecutionEnvironment()**: Standard Apache Flink initialization patterns implemented in test scenarios
 - **ICheckpointedFunction Implementation**: Proper state management and recovery interfaces with RocksDB backend storage
 - **Enhanced Connection Resilience**: 1-minute Kafka setup wait with comprehensive retry logic via `FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync()`
@@ -61,7 +61,7 @@ Our reliability tests validate FLINK.NET's ability to maintain data processing i
 - Critical for financial systems, real-time analytics, and mission-critical applications
 
 **Fault Tolerance Architecture**
-- Apache Flink 2.0 sets the industry standard for stream processing fault tolerance
+- Apache Flink 2.1.0 sets the industry standard for stream processing fault tolerance
 - We implement the same checkpoint-based recovery mechanisms
 - Ensures compatibility with production-grade fault tolerance requirements
 
@@ -222,7 +222,7 @@ The reliability tests generate comprehensive fault tolerance validation reports 
 **Command**: `dotnet test --filter "Category=reliability_test"`
 
 **Generated Output Contains**:
-- **BDD-style fault tolerance scenarios** with comprehensive failure simulation following Apache Flink 2.0 patterns
+- **BDD-style fault tolerance scenarios** with comprehensive failure simulation following Apache Flink 2.1.0 patterns
 - **Fault injection results** with 5% failure rate across network, TaskManager, and state management components
 - **Recovery metrics** demonstrating <50ms average recovery per failure with 100% success rate
 - **State preservation validation** ensuring exactly-once semantics are maintained during all failure conditions
@@ -230,7 +230,7 @@ The reliability tests generate comprehensive fault tolerance validation reports 
 - **Checkpoint-based recovery** implementing Apache Flink's fault tolerance patterns with RocksDB state backend
 - **Comprehensive fault tolerance validation** covering network failures, TaskManager restarts, load rebalancing, and exactly-once semantics
 
-This output file is automatically generated during reliability test execution and proves that FLINK.NET implements Apache Flink 2.0 comprehensive fault tolerance standards with complete exactly-once processing guarantees under all failure conditions.
+This output file is automatically generated during reliability test execution and proves that FLINK.NET implements Apache Flink 2.1.0 comprehensive fault tolerance standards with complete exactly-once processing guarantees under all failure conditions.
 
 ### Key Reliability Metrics
 

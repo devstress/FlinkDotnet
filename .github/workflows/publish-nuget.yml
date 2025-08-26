@@ -177,7 +177,7 @@ jobs:
             
             ### NuGet Packages Published
             
-            - **FlinkDotNet** - Core .NET API for Apache Flink 2.0
+            - **FlinkDotNet** - Core .NET API for Apache Flink 2.1.0
             - **FlinkDotNet.DataStream** - DataStream API with Python compatibility
             - **FlinkDotNet.Table** - Table API for structured data processing
             - **Flink.JobBuilder** - Fluent job builder with JSON IR generation

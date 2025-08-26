@@ -6,7 +6,7 @@ using Flink.JobBuilder.Models;
 namespace Flink.JobGateway.Services;
 
 /// <summary>
-/// Implementation of Flink Job Manager that integrates with real Apache Flink 2.0 cluster
+/// Implementation of Flink Job Manager that integrates with real Apache Flink 2.1.0 cluster
 /// Uses Flink REST API to submit, monitor, and manage jobs
 /// </summary>
 public class FlinkJobManager : IFlinkJobManager
@@ -31,12 +31,12 @@ public class FlinkJobManager : IFlinkJobManager
         _httpClient.BaseAddress = new Uri(flinkBaseUrl);
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
         
-        _logger.LogInformation("Flink Job Gateway configured for real Flink 2.0 cluster at: {FlinkBaseUrl}", flinkBaseUrl);
+        _logger.LogInformation("Flink Job Gateway configured for real Flink 2.1.0 cluster at: {FlinkBaseUrl}", flinkBaseUrl);
     }
 
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
-        _logger.LogInformation("Submitting job to real Flink 2.0 cluster: {JobId}", jobDefinition.Metadata.JobId);
+        _logger.LogInformation("Submitting job to real Flink 2.1.0 cluster: {JobId}", jobDefinition.Metadata.JobId);
 
         try
         {
@@ -72,21 +72,21 @@ public class FlinkJobManager : IFlinkJobManager
                 JobDefinition = jobDefinition
             };
 
-            _logger.LogInformation("Job submitted successfully to Flink 2.0 cluster: {JobId} -> {FlinkJobId}", 
+            _logger.LogInformation("Job submitted successfully to Flink 2.1.0 cluster: {JobId} -> {FlinkJobId}", 
                 jobDefinition.Metadata.JobId, flinkJobId);
 
             return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to submit job to Flink 2.0 cluster: {JobId}", jobDefinition.Metadata.JobId);
+            _logger.LogError(ex, "Failed to submit job to Flink 2.1.0 cluster: {JobId}", jobDefinition.Metadata.JobId);
             return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, ex.Message);
         }
     }
 
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
-        _logger.LogDebug("Getting status from Flink 2.0 cluster for job: {FlinkJobId}", flinkJobId);
+        _logger.LogDebug("Getting status from Flink 2.1.0 cluster for job: {FlinkJobId}", flinkJobId);
 
         try
         {
@@ -122,14 +122,14 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to query Flink 2.0 cluster for job status: {FlinkJobId}", flinkJobId);
+            _logger.LogError(ex, "Failed to query Flink 2.1.0 cluster for job status: {FlinkJobId}", flinkJobId);
             return null;
         }
     }
 
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
-        _logger.LogDebug("Getting metrics from Flink 2.0 cluster for job: {FlinkJobId}", flinkJobId);
+        _logger.LogDebug("Getting metrics from Flink 2.1.0 cluster for job: {FlinkJobId}", flinkJobId);
 
         try
         {
@@ -160,14 +160,14 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to query Flink 2.0 cluster for job metrics: {FlinkJobId}", flinkJobId);
+            _logger.LogError(ex, "Failed to query Flink 2.1.0 cluster for job metrics: {FlinkJobId}", flinkJobId);
             return null;
         }
     }
 
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
-        _logger.LogInformation("Canceling job in Flink 2.0 cluster: {FlinkJobId}", flinkJobId);
+        _logger.LogInformation("Canceling job in Flink 2.1.0 cluster: {FlinkJobId}", flinkJobId);
 
         try
         {
@@ -194,7 +194,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to cancel job in Flink 2.0 cluster: {FlinkJobId}", flinkJobId);
+            _logger.LogError(ex, "Failed to cancel job in Flink 2.1.0 cluster: {FlinkJobId}", flinkJobId);
             return false;
         }
     }
@@ -203,7 +203,7 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            _logger.LogDebug("Checking Flink 2.0 cluster health at {Host}:{Port}", _flinkClusterHost, _flinkClusterPort);
+            _logger.LogDebug("Checking Flink 2.1.0 cluster health at {Host}:{Port}", _flinkClusterHost, _flinkClusterPort);
             
             var response = await _httpClient.GetAsync("/v1/overview");
             if (response.IsSuccessStatusCode)

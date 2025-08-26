@@ -7,8 +7,8 @@ using Flink.JobBuilder.Extensions;
 namespace FlinkJobBuilder.Sample
 {
     /// <summary>
-    /// Sample application demonstrating the new FlinkJobBuilder API with real Flink 2.0 integration
-    /// This shows how .NET developers can write streaming jobs that execute on Apache Flink 2.0
+    /// Sample application demonstrating the new FlinkJobBuilder API with real Flink 2.1.0 integration
+    /// This shows how .NET developers can write streaming jobs that execute on Apache Flink 2.1.0
     /// using Kubernetes deployment patterns for production-ready applications
     /// </summary>
     public class Program
@@ -38,7 +38,7 @@ namespace FlinkJobBuilder.Sample
             using var scope = host.Services.CreateScope();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             
-            logger.LogInformation("=== Flink.NET Job Builder Sample with Real Flink 2.0 Integration ===");
+            logger.LogInformation("=== Flink.NET Job Builder Sample with Real Flink 2.1.0 Integration ===");
             logger.LogInformation("Demonstrates Kubernetes deployment patterns and real job execution");
             
             try
@@ -54,14 +54,14 @@ namespace FlinkJobBuilder.Sample
                 // Example 1: Basic streaming job demonstrating K8s service integration
                 await RunKubernetesStreamingExample(logger, scope.ServiceProvider);
                 
-                // Example 2: Complex streaming job with real Flink 2.0 execution
+                // Example 2: Complex streaming job with real Flink 2.1.0 execution
                 await RunRealFlinkExecutionExample(logger, scope.ServiceProvider);
                 
                 // Example 3: Production-ready windowed processing with monitoring
                 await RunProductionWindowedExample(logger, scope.ServiceProvider);
                 
                 logger.LogInformation("All examples completed successfully!");
-                logger.LogInformation("Note: For full execution, ensure Flink 2.0 cluster is running as per K8s setup");
+                logger.LogInformation("Note: For full execution, ensure Flink 2.1.0 cluster is running as per K8s setup");
             }
             catch (Exception ex)
             {
@@ -77,7 +77,7 @@ namespace FlinkJobBuilder.Sample
         private static async Task RunKubernetesStreamingExample(ILogger logger, IServiceProvider serviceProvider)
         {
             logger.LogInformation("Running Kubernetes Integration Example...");
-            logger.LogInformation("This example demonstrates K8s service discovery and real Flink 2.0 job submission");
+            logger.LogInformation("This example demonstrates K8s service discovery and real Flink 2.1.0 job submission");
             
             try
             {
@@ -102,10 +102,10 @@ namespace FlinkJobBuilder.Sample
                 
                 if (validation.IsValid)
                 {
-                    logger.LogInformation("Job validation passed - ready for K8s Flink 2.0 cluster");
+                    logger.LogInformation("Job validation passed - ready for K8s Flink 2.1.0 cluster");
                     
-                    // Attempt real job submission to Flink 2.0 cluster via K8s service
-                    logger.LogInformation("Attempting job submission to real Flink 2.0 cluster...");
+                    // Attempt real job submission to Flink 2.1.0 cluster via K8s service
+                    logger.LogInformation("Attempting job submission to real Flink 2.1.0 cluster...");
                     
                     try
                     {
@@ -113,14 +113,14 @@ namespace FlinkJobBuilder.Sample
                         
                         if (submissionResult.IsSuccess)
                         {
-                            logger.LogInformation("✅ Job submitted successfully to Flink 2.0 cluster!");
+                            logger.LogInformation("✅ Job submitted successfully to Flink 2.1.0 cluster!");
                             logger.LogInformation("Job ID: {JobId}, Flink Job ID: {FlinkJobId}", 
                                 submissionResult.JobId, submissionResult.FlinkJobId);
                         }
                         else
                         {
                             logger.LogWarning("Job submission failed: {ErrorMessage}", submissionResult.ErrorMessage);
-                            logger.LogInformation("This is expected if Flink 2.0 cluster is not running");
+                            logger.LogInformation("This is expected if Flink 2.1.0 cluster is not running");
                         }
                     }
                     catch (Exception ex)
@@ -141,12 +141,12 @@ namespace FlinkJobBuilder.Sample
         }
 
         /// <summary>
-        /// Example 2: Complex aggregation with real Flink 2.0 execution attempt
+        /// Example 2: Complex aggregation with real Flink 2.1.0 execution attempt
         /// </summary>
         private static async Task RunRealFlinkExecutionExample(ILogger logger, IServiceProvider serviceProvider)
         {
-            logger.LogInformation("Running Real Flink 2.0 Execution Example...");
-            logger.LogInformation("This example attempts actual job execution on Flink 2.0 cluster");
+            logger.LogInformation("Running Real Flink 2.1.0 Execution Example...");
+            logger.LogInformation("This example attempts actual job execution on Flink 2.1.0 cluster");
             
             try
             {
@@ -160,7 +160,7 @@ namespace FlinkJobBuilder.Sample
                     .ToKafka("user-click-counts");
 
                 var json = job.ToJson();
-                logger.LogInformation("Real Flink 2.0 Execution Example IR:");
+                logger.LogInformation("Real Flink 2.1.0 Execution Example IR:");
                 logger.LogInformation(json);
 
                 var validation = job.BuildJobDefinition().Validate();
@@ -168,7 +168,7 @@ namespace FlinkJobBuilder.Sample
                 
                 if (validation.IsValid)
                 {
-                    logger.LogInformation("Attempting real execution on Flink 2.0 cluster...");
+                    logger.LogInformation("Attempting real execution on Flink 2.1.0 cluster...");
                     
                     try
                     {
@@ -176,7 +176,7 @@ namespace FlinkJobBuilder.Sample
                         
                         if (submissionResult.IsSuccess)
                         {
-                            logger.LogInformation("✅ Job executing on real Flink 2.0 cluster!");
+                            logger.LogInformation("✅ Job executing on real Flink 2.1.0 cluster!");
                             logger.LogInformation("Monitor job at: http://flink-jobmanager-ui:8081");
                             logger.LogInformation("Flink Job ID: {FlinkJobId}", submissionResult.FlinkJobId);
                             
@@ -233,7 +233,7 @@ namespace FlinkJobBuilder.Sample
                 
                 if (validation.IsValid)
                 {
-                    logger.LogInformation("Attempting production job submission to Flink 2.0...");
+                    logger.LogInformation("Attempting production job submission to Flink 2.1.0...");
                     
                     try
                     {
@@ -241,7 +241,7 @@ namespace FlinkJobBuilder.Sample
                         
                         if (submissionResult.IsSuccess)
                         {
-                            logger.LogInformation("✅ Production job running on Flink 2.0 cluster!");
+                            logger.LogInformation("✅ Production job running on Flink 2.1.0 cluster!");
                             logger.LogInformation("Production Job ID: {FlinkJobId}", submissionResult.FlinkJobId);
                             logger.LogInformation("Monitor at: http://flink-jobmanager-ui:8081/#/job/{FlinkJobId}/overview", 
                                 submissionResult.FlinkJobId);
@@ -274,7 +274,7 @@ namespace FlinkJobBuilder.Sample
         private static void ShowKubernetesSetupInstructions(ILogger logger)
         {
             logger.LogInformation("=== Kubernetes Setup Instructions ===");
-            logger.LogInformation("To run jobs on real Flink 2.0 cluster:");
+            logger.LogInformation("To run jobs on real Flink 2.1.0 cluster:");
             logger.LogInformation("1. Deploy Flink cluster: kubectl apply -f k8s/");
             logger.LogInformation("2. Verify deployment: kubectl get pods -n flink-system");
             logger.LogInformation("3. Check services: kubectl get svc -n flink-system");
@@ -285,7 +285,7 @@ namespace FlinkJobBuilder.Sample
         private static void ShowProductionDeploymentGuide(ILogger logger)
         {
             logger.LogInformation("=== Production Deployment Guide ===");
-            logger.LogInformation("For production Flink 2.0 deployment:");
+            logger.LogInformation("For production Flink 2.1.0 deployment:");
             logger.LogInformation("1. Build images: docker build -t flink-job-gateway:prod .");
             logger.LogInformation("2. Push to registry: docker push your-registry/flink-job-gateway:prod");
             logger.LogInformation("3. Update K8s manifests with production settings");

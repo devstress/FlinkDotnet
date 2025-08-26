@@ -64,7 +64,7 @@ For production-ready applications, follow our comprehensive best practices guide
 
 Our comprehensive testing infrastructure ensures high quality standards:
 
-* **[[Stress Tests Overview|Stress-Tests-Overview]]** - High-performance load testing with Apache Flink 2.0 compliance
+* **[[Stress Tests Overview|Stress-Tests-Overview]]** - High-performance load testing with Apache Flink 2.1.0 compliance
 * **[[Reliability Tests Overview|Reliability-Tests-Overview]]** - Fault tolerance and recovery testing for reliable operation
 
 ### Recommended Pipeline Pattern

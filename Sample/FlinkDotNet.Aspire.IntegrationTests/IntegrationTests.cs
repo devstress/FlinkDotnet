@@ -30,7 +30,7 @@ public class IntegrationTests
     {
         // GIVEN: Aspire orchestrated container infrastructure
         _output.WriteLine("🧪 Starting Container Infrastructure Integration Test");
-        _output.WriteLine("🏗️ Orchestrating: Kafka + Flink 2.0 + Redis + Job Gateway");
+        _output.WriteLine("🏗️ Orchestrating: Kafka + Flink 2.1.0 + Redis + Job Gateway");
         _output.WriteLine("🎯 Target: Complete infrastructure startup validation");
 
         try
@@ -166,9 +166,9 @@ public class IntegrationTests
     {
         try
         {
-            _output.WriteLine("🔍 Validating Flink 2.0 cluster health design patterns...");
+            _output.WriteLine("🔍 Validating Flink 2.1.0 cluster health design patterns...");
             await Task.Delay(TimeSpan.FromSeconds(1));
-            _output.WriteLine("✅ Flink 2.0 cluster health patterns validated");
+            _output.WriteLine("✅ Flink 2.1.0 cluster health patterns validated");
         }
         catch (Exception ex)
         {

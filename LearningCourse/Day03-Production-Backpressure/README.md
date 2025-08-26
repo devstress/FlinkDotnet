@@ -16,7 +16,7 @@ Master the **"Local bucket + Regional Redis budget bank + Global controller"** p
 This implementation follows the **exact architecture** described in production fault-tolerance playbooks from:
 - **Netflix Zuul 2** - Distributed rate limiting architecture
 - **Uber's API Gateway** - Regional budget bank pattern  
-- **Apache Flink 2.0** - AsyncSink rate limiting strategies
+- **Apache Flink 2.1.0** - AsyncSink rate limiting strategies
 
 ### 🏗️ Architecture Overview
 
@@ -967,7 +967,7 @@ chaos run --scenario gateway_restart,redis_partition,network_delay
 ## 📚 References and Further Reading
 
 ### 📖 Official Documentation
-- **[Apache Flink AsyncSink Rate Limiting](https://flink.apache.org/2022/11/25/optimising-the-throughput-of-async-sinks-using-a-custom-ratelimitingstrategy/)** - Official Flink 2.0 rate limiting patterns
+- **[Apache Flink AsyncSink Rate Limiting](https://flink.apache.org/2022/11/25/optimising-the-throughput-of-async-sinks-using-a-custom-ratelimitingstrategy/)** - Official Flink 2.1.0 rate limiting patterns
 - **[Netflix Zuul 2 Architecture](https://netflixtechblog.com/zuul-2-the-netflix-journey-to-asynchronous-non-blocking-systems-45947377fb5c)** - Production distributed rate limiting
 - **[Uber's Rate Limiting at Scale](https://eng.uber.com/scaling-api-with-rate-limiter/)** - Regional budget bank patterns
 

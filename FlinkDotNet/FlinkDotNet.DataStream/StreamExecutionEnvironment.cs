@@ -166,7 +166,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Enables the Adaptive Scheduler for dynamic resource management.
         /// The Adaptive Scheduler automatically adjusts parallelism based on workload and available resources.
-        /// This is a key feature of Apache Flink 2.0 for intelligent scaling.
+        /// This is a key feature of Apache Flink 2.1.0 for intelligent scaling.
         /// </summary>
         /// <param name="enabled">True to enable adaptive scheduler</param>
         /// <returns>This object</returns>
@@ -188,7 +188,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Enables Reactive Mode for automatic adaptation to available cluster resources.
         /// In Reactive Mode, Flink automatically adapts the parallelism to the available resources.
-        /// This is a Apache Flink 2.0 feature for elastic scaling.
+        /// This is a Apache Flink 2.1.0 feature for elastic scaling.
         /// </summary>
         /// <param name="enabled">True to enable reactive mode</param>
         /// <returns>This object</returns>
@@ -209,7 +209,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Sets the path to a savepoint to restore the job from.
-        /// This enables savepoint-based scaling workflows in Apache Flink 2.0.
+        /// This enables savepoint-based scaling workflows in Apache Flink 2.1.0.
         /// </summary>
         /// <param name="savepointPath">Path to the savepoint</param>
         /// <returns>This object</returns>
@@ -333,7 +333,7 @@ namespace FlinkDotNet.DataStream
 
     /// <summary>
     /// A client that can be used to communicate with a submitted job.
-    /// Enhanced for Apache Flink 2.0 dynamic scaling capabilities.
+    /// Enhanced for Apache Flink 2.1.0 dynamic scaling capabilities.
     /// </summary>
     public class JobClient
     {
@@ -342,7 +342,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Triggers a savepoint for the job.
-        /// This is essential for savepoint-based scaling in Apache Flink 2.0.
+        /// This is essential for savepoint-based scaling in Apache Flink 2.1.0.
         /// </summary>
         /// <param name="savepointPath">Optional path where the savepoint should be stored</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -403,7 +403,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Stops the job gracefully by taking a savepoint and then terminating the job.
-        /// This is the recommended way to stop jobs for scaling in Apache Flink 2.0.
+        /// This is the recommended way to stop jobs for scaling in Apache Flink 2.1.0.
         /// </summary>
         /// <param name="savepointPath">Optional path where the savepoint should be stored</param>
         /// <param name="drain">Whether to process all records before stopping</param>

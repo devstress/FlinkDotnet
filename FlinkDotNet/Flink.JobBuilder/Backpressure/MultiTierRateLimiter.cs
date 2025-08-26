@@ -23,7 +23,7 @@ namespace Flink.JobBuilder.Backpressure;
 /// - Previous version: In-memory ConcurrentDictionary (single instance only)
 /// - Current version: Kafka partitions for distributed, persistent state management
 /// 
-/// Based on LinkedIn's finite resource management patterns with Flink 2.0 AsyncSink optimizations.
+/// Based on LinkedIn's finite resource management patterns with Flink 2.1.0 AsyncSink optimizations.
 /// </summary>
 public class MultiTierRateLimiter : IDisposable
 {

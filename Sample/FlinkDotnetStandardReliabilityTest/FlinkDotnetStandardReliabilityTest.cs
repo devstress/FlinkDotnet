@@ -14,26 +14,26 @@ using Flink.JobBuilder.Extensions;
 namespace FlinkDotnetStandardReliabilityTest
 {
     /// <summary>
-    /// Apache Flink Integration Reliability Test with BDD Style and Real Flink 2.0 Execution
+    /// Apache Flink Integration Reliability Test with BDD Style and Real Flink 2.1.0 Execution
     /// 
     /// This test implements Apache Flink integration best practices with REAL FLINK 2.0 EXECUTION:
     /// - BDD Style: Given/When/Then scenarios for clear test documentation
     /// - Flink.JobBuilder Pattern: Source → Where → GroupBy → Aggregate → Sink
-    /// - Real Job Submission: Actual job submission to live Flink 2.0 cluster via Job Gateway
+    /// - Real Job Submission: Actual job submission to live Flink 2.1.0 cluster via Job Gateway
     /// - Real Job Execution: Validates actual job execution, not just IR validation
-    /// - Apache Flink Integration: Uses real Flink Job Gateway for job submission to Flink 2.0
+    /// - Apache Flink Integration: Uses real Flink Job Gateway for job submission to Flink 2.1.0
     /// - Kafka Best Practices: Uses pre-configured topics and external Kafka environment
     /// - High Volume Testing: Configurable message count for comprehensive validation
     /// 
     /// APACHE FLINK 2.0 INTEGRATION SCENARIOS TESTED:
-    /// 1. Real Job Submission and Execution via Flink Job Gateway to Flink 2.0 cluster
+    /// 1. Real Job Submission and Execution via Flink Job Gateway to Flink 2.1.0 cluster
     /// 2. JSON Intermediate Representation (IR) translation to actual Flink DataStream jobs
-    /// 3. Job Gateway communication with real Flink 2.0 JobManager and TaskManager
+    /// 3. Job Gateway communication with real Flink 2.1.0 JobManager and TaskManager
     /// 4. Apache Flink cluster integration with actual job execution and monitoring
     /// 5. End-to-End reliability with real infrastructure and actual data processing
     /// 
     /// PREREQUISITES:
-    /// - Real Flink 2.0 cluster running (JobManager + TaskManager)
+    /// - Real Flink 2.1.0 cluster running (JobManager + TaskManager)
     /// - Flink Job Gateway running and connected to Flink cluster
     /// - Kafka cluster running with required topics
     /// - All services accessible and healthy
@@ -62,8 +62,8 @@ namespace FlinkDotnetStandardReliabilityTest
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Test method")]
         public async Task Given_ValidFlinkJobDefinition_When_SubmittingToApacheFlink_Then_JobShouldBeProcessedReliably()
         {
-            // GIVEN: A valid Apache Flink 2.0 job definition using Flink.JobBuilder DSL
-            var testName = "Apache Flink 2.0 Real Integration Test";
+            // GIVEN: A valid Apache Flink 2.1.0 job definition using Flink.JobBuilder DSL
+            var testName = "Apache Flink 2.1.0 Real Integration Test";
             var expectedMessages = GetExpectedMessageCount();
             var kafkaTopic = "reliability-test-topic";
             var outputTopic = "reliability-output-topic";
@@ -72,7 +72,7 @@ namespace FlinkDotnetStandardReliabilityTest
             _output.WriteLine($"📊 Expected message count: {expectedMessages:N0}");
             _output.WriteLine($"📥 Input topic: {kafkaTopic}");
             _output.WriteLine($"📤 Output topic: {outputTopic}");
-            _output.WriteLine($"🎯 Target: Real Flink 2.0 cluster execution");
+            _output.WriteLine($"🎯 Target: Real Flink 2.1.0 cluster execution");
 
             try
             {
@@ -90,32 +90,32 @@ namespace FlinkDotnetStandardReliabilityTest
                 ValidateJobDefinitionIR(jsonIR);
                 _output.WriteLine("✅ JSON IR validation passed");
 
-                // WHEN: Building job definition for Apache Flink 2.0
+                // WHEN: Building job definition for Apache Flink 2.1.0
                 var jobDefinition = jobBuilder.BuildJobDefinition();
                 ValidateJobDefinition(jobDefinition);
                 _output.WriteLine("✅ Job definition validation passed");
 
-                // WHEN: Actually submitting job to REAL Flink 2.0 cluster
-                _output.WriteLine("🚀 Submitting job to REAL Flink 2.0 cluster via Job Gateway...");
+                // WHEN: Actually submitting job to REAL Flink 2.1.0 cluster
+                _output.WriteLine("🚀 Submitting job to REAL Flink 2.1.0 cluster via Job Gateway...");
                 
                 var submissionResult = await AttemptRealJobSubmission(jobBuilder, testName);
                 
                 if (submissionResult.IsSuccess)
                 {
-                    _output.WriteLine($"✅ Job submitted successfully to Flink 2.0 cluster!");
+                    _output.WriteLine($"✅ Job submitted successfully to Flink 2.1.0 cluster!");
                     _output.WriteLine($"📝 Job ID: {submissionResult.JobId}");
                     _output.WriteLine($"🔗 Flink Job ID: {submissionResult.FlinkJobId}");
                     
-                    // WHEN: Monitoring real job execution on Flink 2.0
+                    // WHEN: Monitoring real job execution on Flink 2.1.0
                     await MonitorRealJobExecution(submissionResult.FlinkJobId);
                     
-                    // THEN: The job should execute successfully on real Flink 2.0 cluster
-                    _output.WriteLine("✅ Real Flink 2.0 job execution test completed successfully");
+                    // THEN: The job should execute successfully on real Flink 2.1.0 cluster
+                    _output.WriteLine("✅ Real Flink 2.1.0 job execution test completed successfully");
                 }
                 else
                 {
                     _output.WriteLine($"⚠️ Job submission failed (expected in test environment): {submissionResult.ErrorMessage}");
-                    _output.WriteLine("📝 Note: This test validates job submission capability - actual execution requires running Flink 2.0 cluster");
+                    _output.WriteLine("📝 Note: This test validates job submission capability - actual execution requires running Flink 2.1.0 cluster");
                     
                     // Still validate the job definition was correct
                     Assert.NotNull(jobDefinition);
@@ -128,7 +128,7 @@ namespace FlinkDotnetStandardReliabilityTest
             catch (Exception ex)
             {
                 _output.WriteLine($"⚠️ Real Flink integration test encountered expected infrastructure limitation: {ex.Message}");
-                _output.WriteLine("📝 This test validates the integration path - full execution requires live Flink 2.0 cluster");
+                _output.WriteLine("📝 This test validates the integration path - full execution requires live Flink 2.1.0 cluster");
                 
                 // In CI/test environments without real Flink, this is expected
                 // The test still validates the job definition and submission logic
@@ -172,12 +172,12 @@ namespace FlinkDotnetStandardReliabilityTest
         [Fact]
         public async Task Given_ApacheFlinkEnvironment_When_TestingReliability_Then_ShouldHandleHighThroughput()
         {
-            // GIVEN: High-throughput scenario for Apache Flink 2.0 with real job submission
+            // GIVEN: High-throughput scenario for Apache Flink 2.1.0 with real job submission
             var messageCount = GetExpectedMessageCount();
             var startTime = DateTime.UtcNow;
 
-            _output.WriteLine($"🚀 Testing Apache Flink 2.0 reliability with {messageCount:N0} messages");
-            _output.WriteLine($"🎯 Target: Real high-throughput job execution on Flink 2.0");
+            _output.WriteLine($"🚀 Testing Apache Flink 2.1.0 reliability with {messageCount:N0} messages");
+            _output.WriteLine($"🎯 Target: Real high-throughput job execution on Flink 2.1.0");
 
             try
             {
@@ -193,13 +193,13 @@ namespace FlinkDotnetStandardReliabilityTest
                 var jobDefinition = highThroughputJob.BuildJobDefinition();
 
                 // WHEN: Attempting real job submission for high-throughput testing
-                _output.WriteLine("🚀 Submitting high-throughput job to real Flink 2.0 cluster...");
+                _output.WriteLine("🚀 Submitting high-throughput job to real Flink 2.1.0 cluster...");
                 
                 var submissionResult = await AttemptRealJobSubmission(highThroughputJob, "HighThroughputReliabilityTest");
                 
                 if (submissionResult.IsSuccess)
                 {
-                    _output.WriteLine($"✅ High-throughput job submitted to Flink 2.0: {submissionResult.FlinkJobId}");
+                    _output.WriteLine($"✅ High-throughput job submitted to Flink 2.1.0: {submissionResult.FlinkJobId}");
                     
                     // Monitor the actual job execution
                     await MonitorRealJobExecution(submissionResult.FlinkJobId);
@@ -221,7 +221,7 @@ namespace FlinkDotnetStandardReliabilityTest
                 Assert.True(duration.TotalMinutes < 10, "Test should complete within 10 minutes");
                 Assert.True(jobDefinition.Operations.Count > 0, "Job should have valid operations for high throughput");
                 
-                // In a real environment with Flink 2.0 running, we would assert actual throughput
+                // In a real environment with Flink 2.1.0 running, we would assert actual throughput
                 // For test environment, we validate the job structure is optimized for performance
                 var hasOptimizedWindowing = jobDefinition.Operations.Any(op => 
                     op.Type == "window" && ((WindowOperationDefinition)op).Size == 1);
@@ -230,10 +230,10 @@ namespace FlinkDotnetStandardReliabilityTest
             catch (Exception ex)
             {
                 _output.WriteLine($"⚠️ High-throughput test encountered expected limitation: {ex.Message}");
-                _output.WriteLine("📝 Test validates high-throughput job design - execution requires live Flink 2.0 cluster");
+                _output.WriteLine("📝 Test validates high-throughput job design - execution requires live Flink 2.1.0 cluster");
                 
                 // Test passes by validating the approach is correct
-                Assert.True(true, "High-throughput test validates job design for real Flink 2.0 execution");
+                Assert.True(true, "High-throughput test validates job design for real Flink 2.1.0 execution");
             }
         }
 
@@ -301,7 +301,7 @@ namespace FlinkDotnetStandardReliabilityTest
                 await Task.Delay(TimeSpan.FromSeconds(5));
                 
                 _output.WriteLine($"✅ Job monitoring completed for: {flinkJobId}");
-                _output.WriteLine("📝 Note: Full monitoring requires connection to live Flink 2.0 cluster");
+                _output.WriteLine("📝 Note: Full monitoring requires connection to live Flink 2.1.0 cluster");
             }
             catch (Exception ex)
             {

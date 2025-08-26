@@ -410,6 +410,6 @@ kafkaRateLimiter.TryAcquire(5);   // Same interface - use synchronous methods fo
 3. **Infrastructure**: Simple Kafka setup vs complex Redis cluster + Sentinel
 4. **Resilience**: Automatic failover and ISR guarantees vs manual intervention
 
-The Kafka-based implementation aligns perfectly with Flink 2.0 AsyncSink patterns and provides enterprise-grade scaling for distributed rate limiting scenarios.
+The Kafka-based implementation aligns perfectly with Flink 2.1.0 AsyncSink patterns and provides enterprise-grade scaling for distributed rate limiting scenarios.
 
 **Recommendation**: Use `KafkaRateLimiterStateStorage` for production deployments and `InMemoryRateLimiterStateStorage` only for development/testing environments.
