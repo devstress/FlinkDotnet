@@ -87,7 +87,7 @@ Master Apache Flink 2.1.0 fundamentals while setting up a complete production-gr
 #### [Day 2: Advanced Stream Processing & AI Integration](Day02-AI-Stream-Processing/)
 **Time**: 7-8 hours | **Focus**: Deep Dive into Flink 2.1.0 Advanced Capabilities
 
-**SIGNIFICANTLY EXPANDED** - Comprehensive coverage of all Flink 2.1.0 enhancements with detailed exercises:
+Comprehensive coverage of all Flink 2.1.0 enhancements with detailed exercises:
 - **Advanced Stream Processing** - Complex event processing and data transformation
 - **AI Model Integration** - Where applicable for enhanced processing capabilities
 - **VARIANT Data Types** - Dynamic schema handling for flexible data processing
