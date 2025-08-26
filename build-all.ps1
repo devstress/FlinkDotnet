@@ -1,5 +1,4 @@
 #!/usr/bin/env pwsh
-#requires -version 7.0
 
 <#
 .SYNOPSIS
@@ -83,20 +82,49 @@ $ErrorActionPreference = "Stop"
 $script:StartTime = Get-Date
 $script:BuildSuccessful = $true
 $script:BuildErrors = @()
-$script:IsWindowsPlatform = $PSVersionTable.Platform -eq "Win32NT" -or $env:OS -eq "Windows_NT"
-$script:IsLinuxPlatform = $PSVersionTable.Platform -eq "Unix" -and (Test-Path "/proc/version" -ErrorAction SilentlyContinue) -and (Get-Content /proc/version -ErrorAction SilentlyContinue) -match "Linux"
-$script:IsMacOSPlatform = $PSVersionTable.Platform -eq "Unix" -and -not $script:IsLinuxPlatform
+# Platform detection with fallback for older PowerShell versions
+$script:Platform = if ($PSVersionTable.PSObject.Properties.Name -contains "Platform") {
+    $PSVersionTable.Platform
+} else {
+    "Win32NT"  # Default to Windows for older PowerShell versions
+}
+
+$script:IsWindowsPlatform = $script:Platform -eq "Win32NT" -or $env:OS -eq "Windows_NT"
+$script:IsLinuxPlatform = $script:Platform -eq "Unix" -and (Test-Path "/proc/version" -ErrorAction SilentlyContinue) -and (Get-Content /proc/version -ErrorAction SilentlyContinue) -match "Linux"
+$script:IsMacOSPlatform = $script:Platform -eq "Unix" -and -not $script:IsLinuxPlatform
+
+# Color output configuration - detect if ANSI colors are supported
+$script:SupportsAnsiColors = $false
+try {
+    # Test if we're in a terminal that supports ANSI colors
+    if ($host.UI.RawUI.WindowTitle -and $PSVersionTable.PSVersion.Major -ge 7) {
+        $script:SupportsAnsiColors = $true
+    }
+} catch {
+    $script:SupportsAnsiColors = $false
+}
 
 # ANSI color codes for cross-platform colored output
 $script:Colors = @{
-    Red = "`e[31m"
-    Green = "`e[32m"
-    Yellow = "`e[33m"
-    Blue = "`e[34m"
-    Magenta = "`e[35m"
-    Cyan = "`e[36m"
-    White = "`e[37m"
-    Reset = "`e[0m"
+    Red = if ($script:SupportsAnsiColors) { "`e[31m" } else { "" }
+    Green = if ($script:SupportsAnsiColors) { "`e[32m" } else { "" }
+    Yellow = if ($script:SupportsAnsiColors) { "`e[33m" } else { "" }
+    Blue = if ($script:SupportsAnsiColors) { "`e[34m" } else { "" }
+    Magenta = if ($script:SupportsAnsiColors) { "`e[35m" } else { "" }
+    Cyan = if ($script:SupportsAnsiColors) { "`e[36m" } else { "" }
+    White = if ($script:SupportsAnsiColors) { "`e[37m" } else { "" }
+    Reset = if ($script:SupportsAnsiColors) { "`e[0m" } else { "" }
+}
+
+# PowerShell color mapping for Write-Host
+$script:PSColors = @{
+    Red = "Red"
+    Green = "Green"
+    Yellow = "Yellow"
+    Blue = "Blue"
+    Magenta = "Magenta"
+    Cyan = "Cyan"
+    White = "White"
 }
 
 # Main solutions to build
@@ -110,6 +138,11 @@ $script:Solutions = @(
         Name = "Sample Applications"
         Path = "Sample/Sample.sln"
         Description = "Sample applications and Aspire orchestration"
+    },
+    @{
+        Name = "Local Testing"
+        Path = "LocalTesting/LocalTesting.sln"
+        Description = "Local testing infrastructure and services"
     }
 )
 
@@ -122,7 +155,7 @@ function Write-ColoredOutput {
         [switch]$NoNewline
     )
     
-    if ($script:Colors.ContainsKey($Color)) {
+    if ($script:SupportsAnsiColors -and $script:Colors.ContainsKey($Color)) {
         $colorCode = $script:Colors[$Color]
         $resetCode = $script:Colors["Reset"]
         
@@ -130,6 +163,13 @@ function Write-ColoredOutput {
             Write-Host "$colorCode$Message$resetCode" -NoNewline
         } else {
             Write-Host "$colorCode$Message$resetCode"
+        }
+    } elseif ($script:PSColors.ContainsKey($Color)) {
+        # Use PowerShell's built-in colors
+        if ($NoNewline) {
+            Write-Host $Message -ForegroundColor $script:PSColors[$Color] -NoNewline
+        } else {
+            Write-Host $Message -ForegroundColor $script:PSColors[$Color]
         }
     } else {
         if ($NoNewline) {
@@ -228,63 +268,38 @@ function Invoke-BuildCommand {
             Write-ColoredOutput "   Working Directory: $WorkingDirectory" "Cyan"
         }
         
-        $processInfo = @{
-            FileName = $Command
-            Arguments = $Arguments
-            UseShellExecute = $false
-            RedirectStandardOutput = $true
-            RedirectStandardError = $true
-            CreateNoWindow = $true
+        # Use Start-Process for better compatibility
+        if ($VerboseOutput) {
+            Write-Host "   Command: $Command $Arguments" -ForegroundColor Cyan
+            Write-Host "   Working Directory: $WorkingDirectory" -ForegroundColor Cyan
         }
         
-        $process = New-Object System.Diagnostics.Process
-        $process.StartInfo = New-Object System.Diagnostics.ProcessStartInfo $processInfo
-        
-        $outputBuilder = New-Object System.Text.StringBuilder
-        $errorBuilder = New-Object System.Text.StringBuilder
-        
-        $outputEvent = Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action {
-            if ($Event.SourceEventArgs.Data) {
-                $outputBuilder.AppendLine($Event.SourceEventArgs.Data) | Out-Null
-                if ($using:VerboseOutput) {
-                    Write-Host $Event.SourceEventArgs.Data
-                }
-            }
+        $processArgs = @{
+            FilePath = $Command
+            ArgumentList = $Arguments.Split(' ')
+            WorkingDirectory = $WorkingDirectory
+            Wait = $true
+            PassThru = $true
+            NoNewWindow = $true
         }
         
-        $errorEvent = Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action {
-            if ($Event.SourceEventArgs.Data) {
-                $errorBuilder.AppendLine($Event.SourceEventArgs.Data) | Out-Null
-                Write-ColoredOutput $Event.SourceEventArgs.Data "Red"
-            }
+        if (-not $VerboseOutput) {
+            $processArgs.RedirectStandardOutput = $true
+            $processArgs.RedirectStandardError = $true
         }
         
-        $process.Start() | Out-Null
-        $process.BeginOutputReadLine()
-        $process.BeginErrorReadLine()
-        $process.WaitForExit()
-        
-        $output = $outputBuilder.ToString()
-        $errorOutput = $errorBuilder.ToString()
+        $process = Start-Process @processArgs
         $exitCode = $process.ExitCode
-        
-        # Cleanup events
-        Unregister-Event -SourceIdentifier $outputEvent.Name
-        Unregister-Event -SourceIdentifier $errorEvent.Name
-        $process.Dispose()
         
         if ($exitCode -ne 0) {
             $errorMessage = "Command failed with exit code $exitCode"
-            if ($errorOutput) {
-                $errorMessage += ": $errorOutput"
-            }
             throw $errorMessage
         }
         
         return @{
             ExitCode = $exitCode
-            Output = $output
-            Error = $errorOutput
+            Output = ""
+            Error = ""
             Success = $exitCode -eq 0
         }
     } catch {
@@ -308,10 +323,10 @@ function Test-Prerequisites {
     }
     
     $dotnetInfo = dotnet --info | Out-String
-    if ($dotnetInfo -match "8\.0\.\d+") {
-        Write-Success ".NET 9.0 SDK found"
+    if ($dotnetInfo -match "9\.0\.\d+" -or $dotnetInfo -match "8\.0\.\d+") {
+        Write-Success ".NET SDK found (8.0+ or 9.0+)"
     } else {
-        Write-Warning ".NET 9.0 SDK not detected. Some features may not work correctly."
+        Write-Warning ".NET 8.0+ SDK not detected. Some features may not work correctly."
         Write-Info "Installed .NET versions:"
         dotnet --list-sdks | ForEach-Object { Write-Info "  $_" }
     }
@@ -504,8 +519,17 @@ function Main {
         Write-Info "Platform: $(if($script:IsWindowsPlatform){'Windows'}elseif($script:IsLinuxPlatform){'Linux'}elseif($script:IsMacOSPlatform){'macOS'}else{'Unknown'})"
         
         # Verify we're in the correct directory
-        if (-not (Test-Path "FlinkDotNet") -or -not (Test-Path "Sample")) {
+        if (-not (Test-Path "FlinkDotNet") -or -not (Test-Path "Sample") -or -not (Test-Path "LocalTesting")) {
             throw "Please run this script from the root of the Flink.NET repository"
+        }
+        
+        Write-Info "Found $(($script:Solutions | Measure-Object).Count) solutions to build:"
+        foreach ($solution in $script:Solutions) {
+            if (Test-Path $solution.Path) {
+                Write-Info "  ✅ $($solution.Name) - $($solution.Path)"
+            } else {
+                Write-Warning "  ❌ $($solution.Name) - $($solution.Path) (NOT FOUND)"
+            }
         }
         
         # Step 1: Check prerequisites

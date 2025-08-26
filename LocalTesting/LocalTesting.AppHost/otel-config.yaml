@@ -24,6 +24,10 @@ exporters:
     endpoint: "0.0.0.0:8889"
   debug:
     verbosity: detailed
+  otlp:
+    endpoint: http://localhost:4317
+    tls:
+      insecure: true
 
 service:
   pipelines:
@@ -34,7 +38,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [debug]
+      exporters: [debug, otlp]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]

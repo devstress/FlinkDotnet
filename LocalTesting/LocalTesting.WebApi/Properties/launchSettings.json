@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "LocalTesting.WebApi": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54472;http://localhost:54473"
+    }
+  }
+}
