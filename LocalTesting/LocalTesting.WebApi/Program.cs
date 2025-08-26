@@ -11,12 +11,11 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure IPv4-only binding to prevent address conflicts
-// Explicitly ignore ASPNETCORE_URLS environment variable for this WebApi
-builder.WebHost.UseUrls("http://127.0.0.1:5000");
+// Configure IPv4-only binding compatible with Aspire orchestration
+// Use a different internal port to avoid conflicts with Aspire's proxy
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5000); // Force IPv4 binding on port 5000
+    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5001); // Internal port for Aspire
 });
 
 // Configure Flink job management defaults
