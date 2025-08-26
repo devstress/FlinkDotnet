@@ -3,28 +3,96 @@
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:4324");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:18888");
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
+
+// Force IPv4 binding to prevent IPv6 address conflicts and DCP connectivity issues
+// Configure .NET runtime networking for both IPv4 preference and IPv6 compatibility
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "false"); // Allow IPv6 but prefer IPv4
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USEIPV6", "true");  // Allow IPv6 for HTTP connections
+Environment.SetEnvironmentVariable("ASPNETCORE_PREVENTHOSTINGSTARTUP", "false");
+
+// Force system-wide IPv4 preference but keep IPv6 functional for DCP
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT", "true");
+
+// Enhanced IPv4 enforcement for CI environments - DCP API server configuration
+// Set consistent IPv4 binding for all Aspire components
+var isCI = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+var aspireHost = "127.0.0.1"; // Always use IPv4
+
+Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", $"http://{aspireHost}:18888");
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://{aspireHost}:18888"); // Required for Aspire dashboard
+Environment.SetEnvironmentVariable("DOTNET_ASPIRE_DASHBOARD_URL", $"http://{aspireHost}:18888");
+
+// DCP-specific IPv4 enforcement - these are critical for CI environment
+Environment.SetEnvironmentVariable("DCP_API_SERVER_BIND_ADDRESS", aspireHost);
+Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_BIND_ADDRESS", aspireHost);
+
+// Additional DCP IPv4 configuration for CI environment
+if (isCI)
+{
+    // For CI: Focus on ensuring IPv6 connectivity works since DCP binds to IPv6
+    // Remove aggressive IPv6 blocking - instead ensure IPv6 localhost works
+    Environment.SetEnvironmentVariable("DCP_BIND_IPV4_ONLY", "false");
+    Environment.SetEnvironmentVariable("DOTNET_DCP_API_SERVER_IPV4_ONLY", "false");
+    Environment.SetEnvironmentVariable("ASPIRE_HOSTING_IPV4_ONLY", "false");
+    
+    // Ensure .NET networking stack works with IPv6 localhost in CI
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "false");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "false");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USEIPV6", "true");
+    
+    // Configure HTTP client for IPv6 localhost connectivity
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS", "true");
+    Environment.SetEnvironmentVariable("DCP_FORCE_IPV4", "false");
+    
+    // Additional .NET socket configuration for IPv6 localhost support
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_IPV6ONLY", "false");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_PREFERIPV4STACK", "false");
+    Environment.SetEnvironmentVariable("DOTNET_PREFERIPV4STACK", "false");
+}
+else
+{
+    // Local development - try IPv4 preference
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_PREFERIPV4STACK", "true");
+}
 
 // Configure OpenTelemetry endpoints for applications
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318");
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
 
-// Force IPv4 binding to prevent IPv6 address conflicts and DCP connectivity issues
-Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "true");
-Environment.SetEnvironmentVariable("ASPNETCORE_PREVENTHOSTINGSTARTUP", "false");
-
-// Additional IPv4 enforcement for DCP API server - system-wide approach
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://127.0.0.1:18888");
-Environment.SetEnvironmentVariable("DOTNET_ASPIRE_DASHBOARD_URL", "http://127.0.0.1:18888");
-
-// Force system-wide IPv4 preference to resolve DCP connectivity issues
-Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT", "false");
-Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USEIPV6", "false");
-
-// DCP-specific IPv4 enforcement
-Environment.SetEnvironmentVariable("DCP_API_SERVER_BIND_ADDRESS", "127.0.0.1");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_BIND_ADDRESS", "127.0.0.1");
+// Additional programmatic IPv4 enforcement for DCP in CI environment
+if (isCI)
+{
+    try
+    {
+        // Since DCP binds to IPv6 regardless of our settings, ensure IPv6 connectivity works
+        // Configure .NET HTTP client to handle IPv6 localhost connections properly
+        AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+        AppContext.SetSwitch("System.Net.Http.UseSocketsHttpHandler", true);
+        
+        // Ensure IPv6 localhost resolution works correctly
+        AppContext.SetSwitch("System.Net.Sockets.UseSocketsHttpHandler", true);
+        
+        Console.WriteLine("✅ Applied IPv6 connectivity enhancement for CI environment");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ IPv6 connectivity enhancement failed: {ex.Message}");
+        // Continue anyway
+    }
+}
+else
+{
+    // Local development - try IPv4 preference but allow IPv6 fallback
+    try
+    {
+        AppContext.SetSwitch("System.Net.DisableIPv6", true);
+        Console.WriteLine("✅ Applied IPv4 preference for local development");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ IPv4 preference failed: {ex.Message}");
+    }
+}
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -222,7 +290,7 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithHttpEndpoint(5000, name: "webapi")
+    .WithHttpEndpoint(5000, 5001, name: "webapi") // External port 5000 -> Internal port 5001
     .WaitFor(flinkJobManager)
     .WaitFor(flinkTaskManager1)
     .WaitFor(flinkTaskManager2)

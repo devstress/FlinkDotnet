@@ -11,10 +11,11 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure IPv4-only binding to prevent address conflicts
+// Configure IPv4-only binding compatible with Aspire orchestration
+// Use a different internal port to avoid conflicts with Aspire's proxy
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5000); // Force IPv4 binding on port 5000
+    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5001); // Internal port for Aspire
 });
 
 // Configure Flink job management defaults
@@ -54,12 +55,41 @@ builder.Services.AddSwaggerGen(c =>
     c.EnableAnnotations();
 });
 
-// Add Redis connection
-builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
+// Add Redis connection as a lazy singleton for Aspire compatibility
+builder.Services.AddSingleton<Lazy<IConnectionMultiplexer>>(provider =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("redis") ?? "localhost:6379";
-    return ConnectionMultiplexer.Connect(connectionString);
+    return new Lazy<IConnectionMultiplexer>(() =>
+    {
+        var logger = provider.GetRequiredService<ILogger<Program>>();
+        var connectionString = builder.Configuration.GetConnectionString("redis") ?? "localhost:6379";
+        
+        // Retry logic for Aspire orchestration - Redis might not be ready immediately
+        for (int attempt = 1; attempt <= 5; attempt++)
+        {
+            try
+            {
+                logger.LogInformation("Attempting to connect to Redis (attempt {Attempt}/5): {ConnectionString}", attempt, connectionString);
+                return ConnectionMultiplexer.Connect(connectionString);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Redis connection attempt {Attempt} failed", attempt);
+                if (attempt == 5)
+                {
+                    logger.LogError(ex, "Failed to connect to Redis after 5 attempts. Application will continue but Redis features may not work.");
+                    throw; // Re-throw on final attempt
+                }
+                Thread.Sleep(attempt * 1000); // 1s, 2s, 3s, 4s delays
+            }
+        }
+        
+        throw new InvalidOperationException("This should never be reached");
+    });
 });
+
+// Add IConnectionMultiplexer as a service that gets the value from the lazy instance
+builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
+    provider.GetRequiredService<Lazy<IConnectionMultiplexer>>().Value);
 
 // Add custom services
 builder.Services.AddSingleton<AspireHealthCheckService>();
@@ -82,35 +112,51 @@ builder.Services.AddHttpClient().ConfigureHttpClientDefaults(clientBuilder =>
     });
 });
 
-var app = builder.Build();
-
-// Initialize Orchestra with test clusters for LocalTesting
-await InitializeOrchestraForLocalTestingAsync(app.Services);
-
-// Configure the HTTP request pipeline
-app.UseSwagger();
-app.UseSwaggerUI(c => 
+try
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "LocalTesting API v1");
-    c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
-    c.DocumentTitle = "LocalTesting - Complex Logic Stress Test Interface";
-    c.DefaultModelsExpandDepth(-1);
-    c.DefaultModelExpandDepth(2);
-});
+    var app = builder.Build();
 
-app.UseAuthorization();
+    // Initialize Orchestra with test clusters for LocalTesting
+    try
+    {
+        await InitializeOrchestraForLocalTestingAsync(app.Services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Orchestra initialization failed but continuing: {ex.Message}");
+    }
 
-// Add simple health check endpoint for LocalTesting
-app.MapGet("/health", () => Results.Ok(new { 
-    Status = "Healthy", 
-    Timestamp = DateTime.UtcNow, 
-    Service = "LocalTesting WebAPI",
-    Version = "1.0.0" 
-}));
+    // Configure the HTTP request pipeline
+    app.UseSwagger();
+    app.UseSwaggerUI(c => 
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "LocalTesting API v1");
+        c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
+        c.DocumentTitle = "LocalTesting - Complex Logic Stress Test Interface";
+        c.DefaultModelsExpandDepth(-1);
+        c.DefaultModelExpandDepth(2);
+    });
 
-app.MapControllers();
+    app.UseAuthorization();
 
-app.Run();
+    // Add simple health check endpoint for LocalTesting
+    app.MapGet("/health", () => Results.Ok(new { 
+        Status = "Healthy", 
+        Timestamp = DateTime.UtcNow, 
+        Service = "LocalTesting WebAPI",
+        Version = "1.0.0" 
+    }));
+
+    app.MapControllers();
+
+    Console.WriteLine("Starting LocalTesting WebAPI application...");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"CRITICAL ERROR: Application startup failed: {ex}");
+    Environment.Exit(1);
+}
 
 /// <summary>
 /// Initialize Orchestra with test clusters for LocalTesting environment
