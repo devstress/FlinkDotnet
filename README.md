@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
+**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.1.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
 
 # Why Kafka + FlinkDotNet + Temporal? Strategic Architecture Decision Guide
 
@@ -39,7 +39,7 @@ When choosing between streaming architectures, it's important to compare complet
 
 | **Capability** | **Kafka + Kafka Streams** | **FlinkDotNet + Temporal** |
 |----------------|---------------------------|----------------------------|
-| **Stream Processing** | Kafka Streams provides rich processing (windowing, joins, aggregations) | FlinkDotNet provides equivalent stream processing with Apache Flink 2.0 features |
+| **Stream Processing** | Kafka Streams provides rich processing (windowing, joins, aggregations) | FlinkDotNet provides equivalent stream processing with Apache Flink 2.1.0 features |
 | **Fault Tolerance** | At-least-once processing, exactly-once within Kafka topics | Exactly-once guarantees with Apache Flink checkpointing + Temporal workflows |
 | **State Management** | Local state stores with changelog topics for fault tolerance | FlinkDotNet savepoints + Temporal durable state persistence |
 | **Scaling** | Horizontal scaling via Kafka partitions, manual rebalancing | FlinkDotNet adaptive scheduler + automatic scaling with Temporal orchestration |
@@ -62,7 +62,7 @@ When choosing between streaming architectures, it's important to compare complet
 - You need complex, long-running business process orchestration
 - You require advanced fault tolerance and workflow recovery capabilities
 - You need to coordinate across multiple external systems and APIs
-- You want Apache Flink 2.0 features like adaptive scheduling and reactive mode
+- You want Apache Flink 2.1.0 features like adaptive scheduling and reactive mode
 
 ### **Technical Architecture Comparison:**
 
@@ -341,9 +341,9 @@ var buildWorkflow = Temporal.WorkflowBuilder
 - **Bug Resolution**: Potentially faster debugging with consistent patterns
 
 ---
-## 🚀 Apache Flink 2.0 Compatibility
+## 🚀 Apache Flink 2.1.0 Compatibility
 
-FlinkDotNet implements extensive Apache Flink 2.0 feature support for .NET developers, including:
+FlinkDotNet implements extensive Apache Flink 2.1.0 feature support for .NET developers, including:
 
 - **Dynamic Scaling**: Change job parallelism without stopping jobs
 - **Adaptive Scheduler**: Intelligent resource management and automatic parallelism adjustment
@@ -355,7 +355,7 @@ FlinkDotNet implements extensive Apache Flink 2.0 feature support for .NET devel
 
 ## 🔄 Dynamic Scaling and Rebalancing
 
-FlinkDotNet provides comprehensive support for Apache Flink 2.0's dynamic scaling capabilities:
+FlinkDotNet provides comprehensive support for Apache Flink 2.1.0's dynamic scaling capabilities:
 
 ### Partitioning Strategies
 
@@ -367,28 +367,28 @@ var dataStream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
 // Rebalance: Uniformly distribute data across all parallel operators
 var rebalanced = dataStream
     .Map(x => x * 2)
-    .Rebalance()  // Apache Flink 2.0 rebalance operation
+    .Rebalance()  // Apache Flink 2.1.0 rebalance operation
     .Filter(x => x > 5);
 
 // Rescale: Distribute to subset of operators (more efficient for different parallelisms)
 var rescaled = dataStream
     .Map(x => x * 3)
-    .Rescale()   // Apache Flink 2.0 rescale operation
+    .Rescale()   // Apache Flink 2.1.0 rescale operation
     .Filter(x => x > 10);
 
 // Forward: Direct forwarding (same parallelism required)
 var forwarded = dataStream
-    .Forward()   // Apache Flink 2.0 forward partitioning
+    .Forward()   // Apache Flink 2.1.0 forward partitioning
     .Map(x => x + 1);
 
 // Shuffle: Random distribution
 var shuffled = dataStream
-    .Shuffle()   // Apache Flink 2.0 shuffle partitioning
+    .Shuffle()   // Apache Flink 2.1.0 shuffle partitioning
     .Map(x => x * 2);
 
 // Broadcast: Send to all operators
 var broadcasted = dataStream
-    .Broadcast() // Apache Flink 2.0 broadcast partitioning
+    .Broadcast() // Apache Flink 2.1.0 broadcast partitioning
     .Map(x => x + 10);
 
 // Custom partitioning
@@ -409,8 +409,8 @@ var env = Flink.GetExecutionEnvironment();
 // Configure parallelism and scaling parameters
 env.SetParallelism(8)                    // Default parallelism
    .SetMaxParallelism(128)               // Maximum parallelism for scaling
-   .EnableAdaptiveScheduler()            // Apache Flink 2.0 adaptive scheduler
-   .EnableReactiveMode();                // Apache Flink 2.0 reactive mode
+   .EnableAdaptiveScheduler()            // Apache Flink 2.1.0 adaptive scheduler
+   .EnableReactiveMode();                // Apache Flink 2.1.0 reactive mode
 
 var dataStream = env.FromCollection(data)
     .SetParallelism(4)                   // Operator-specific parallelism
@@ -455,7 +455,7 @@ FlinkDotNet provides a comprehensive, multi-layered architecture supporting ever
 ### Individual Job Development
 
 ```csharp
-// Modern DataStream API (Apache Flink 2.0 compatible)
+// Modern DataStream API (Apache Flink 2.1.0 compatible)
 var env = Flink.GetExecutionEnvironment();
 env.SetParallelism(4)
    .EnableAdaptiveScheduler()
@@ -508,14 +508,14 @@ await orchestra.StartOrchestrationWorkflowAsync(new OrchestrationRequest
 });
 ```
 
-## Apache Flink 2.0 Configuration
+## Apache Flink 2.1.0 Configuration
 
 ```csharp
 var config = new ExecutionConfig()
     .SetParallelism(8)
     .SetMaxParallelism(128)
-    .EnableAdaptiveScheduler()           // Apache Flink 2.0 intelligent scheduling
-    .EnableReactiveMode()                // Apache Flink 2.0 elastic scaling
+    .EnableAdaptiveScheduler()           // Apache Flink 2.1.0 intelligent scheduling
+    .EnableReactiveMode()                // Apache Flink 2.1.0 elastic scaling
     .SetRestartStrategy("exponential-delay")  // Advanced fault tolerance
     .EnableSlotSharing()                 // Resource optimization
     .EnableObjectReuse()                 // Performance optimization
@@ -531,7 +531,7 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
 ### Core Components
 
 #### Job Development Layer
-- **.NET SDK (FlinkDotNet.DataStream)**: Complete Apache Flink 2.0 streaming API
+- **.NET SDK (FlinkDotNet.DataStream)**: Complete Apache Flink 2.1.0 streaming API
 - **JobBuilder SDK (Flink.JobBuilder)**: Fluent C# DSL for rapid development
 - **Intermediate Representation (IR)**: JSON-based job definitions
 - **Job Gateway**: HTTP service that bridges .NET applications with Apache Flink clusters
@@ -542,7 +542,7 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
 - **FlinkDotNet.Temporal**: Temporal.io workflow definitions for durable orchestration
 - **FlinkDotNet.Resilience**: Circuit breakers, retry policies, and health checkers
 
-### Apache Flink 2.0 Integration Architecture
+### Apache Flink 2.1.0 Integration Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -564,18 +564,18 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                     Apache Flink 2.0 Compatible APIs                     │
+│                     Apache Flink 2.1.0 Compatible APIs                     │
 │  ┌─────────────────────┐              ┌─────────────────────┐             │
 │  │ FlinkDotNet         │              │ Flink.JobBuilder    │             │
 │  │ .DataStream         │              │ (Fluent DSL)        │             │
-│  │ (Apache Flink 2.0   │              │ (Rapid              │             │
+│  │ (Apache Flink 2.1.0   │              │ (Rapid              │             │
 │  │  compatible API)    │              │  Development)       │             │
 │  └─────────────────────┘              └─────────────────────┘             │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           Apache Flink 2.0 Clusters                      │
+│                           Apache Flink 2.1.0 Clusters                      │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │
 │  │ JobManager +    │  │ JobManager +    │  │ JobManager +    │    ...    │
 │  │ TaskManagers    │  │ TaskManagers    │  │ TaskManagers    │           │
@@ -585,7 +585,7 @@ FlinkDotNet provides a complete enterprise-scale integration solution with multi
 
 ### FlinkDotNet.Gateway to Apache Flink Communication
 
-The FlinkDotNet.Gateway acts as a bridge between .NET applications and Apache Flink 2.0 clusters, supporting advanced scaling features:
+The FlinkDotNet.Gateway acts as a bridge between .NET applications and Apache Flink 2.1.0 clusters, supporting advanced scaling features:
 
 #### Single Cluster Communication
 1. **Job Submission**: .NET applications submit job definitions via HTTP to the gateway
@@ -593,13 +593,13 @@ The FlinkDotNet.Gateway acts as a bridge between .NET applications and Apache Fl
 3. **Cluster Communication**: Gateway communicates with Flink JobManager via REST API
 4. **Status Monitoring**: Gateway provides job status and metrics back to .NET applications
 
-#### Multi-Cluster Orchestration (Apache Flink 2.0 Enhanced)
+#### Multi-Cluster Orchestration (Apache Flink 2.1.0 Enhanced)
 1. **Orchestra Coordination**: FlinkOrchestra manages job distribution across thousands of clusters
 2. **Actor-based Management**: Each cluster is managed by an independent ClusterActor
 3. **Temporal Workflows**: Long-running orchestration processes with exactly-once guarantees
 4. **Intelligent Placement**: Jobs routed to optimal clusters based on health, capacity, and locality
 5. **Auto-scaling**: Dynamic cluster provisioning and decommissioning based on demand
-6. **Adaptive Scheduling**: Apache Flink 2.0 adaptive scheduler integration
+6. **Adaptive Scheduling**: Apache Flink 2.1.0 adaptive scheduler integration
 7. **Reactive Scaling**: Automatic adaptation to available resources
 
 ```
@@ -624,8 +624,8 @@ The gateway and orchestra handle:
 - **Error Handling**: Graceful error recovery and retry logic with circuit breakers
 - **Auto-scaling**: Intelligent cluster provisioning and capacity management
 - **Health Aggregation**: Cross-cluster health monitoring and issue detection
-- **Dynamic Scaling**: Apache Flink 2.0 savepoint-based scaling workflows
-- **Adaptive Scheduling**: Integration with Flink 2.0 adaptive scheduler
+- **Dynamic Scaling**: Apache Flink 2.1.0 savepoint-based scaling workflows
+- **Adaptive Scheduling**: Integration with Flink 2.1.0 adaptive scheduler
 - **Reactive Mode**: Automatic parallelism adjustment based on cluster resources
 
 ## Modular Structure
@@ -633,10 +633,10 @@ The gateway and orchestra handle:
 ```
 FlinkDotNet/
 ├── FlinkDotNet.Common/           # Core types and configuration
-│   ├── Configuration             # Configuration, ExecutionConfig with Flink 2.0 features
+│   ├── Configuration             # Configuration, ExecutionConfig with Flink 2.1.0 features
 │   ├── TypeInfo                  # Types, TypeInformation  
 │   └── JobManagement            # JobClient with scaling capabilities
-├── FlinkDotNet.DataStream/       # Apache Flink 2.0 compatible streaming API
+├── FlinkDotNet.DataStream/       # Apache Flink 2.1.0 compatible streaming API
 │   ├── StreamExecutionEnvironment # Main entry point with adaptive/reactive modes
 │   ├── DataStream                # Core streaming API with partitioning strategies
 │   ├── Functions                 # User functions
@@ -676,7 +676,7 @@ FlinkDotNet/
 ```csharp
 var env = Flink.GetExecutionEnvironment();
 
-// Configure Apache Flink 2.0 features
+// Configure Apache Flink 2.1.0 features
 env.SetParallelism(4)
    .SetMaxParallelism(128)              // Enable dynamic scaling
    .EnableAdaptiveScheduler()           // Automatic parallelism adjustment
@@ -688,7 +688,7 @@ var numbers = env.FromCollection(Enumerable.Range(1, 1000));
 var result = numbers
     .Filter(x => x % 2 == 0)      // Even numbers only
     .Map(x => x * x)              // Square them
-    .Rebalance()                  // Apache Flink 2.0 rebalancing
+    .Rebalance()                  // Apache Flink 2.1.0 rebalancing
     .SetParallelism(8)            // Scale this operation
     .Sum();                       // Sum the results
 
@@ -704,7 +704,7 @@ env.EnableAdaptiveScheduler()
 
 var dataStream = env.FromCollection(generateData());
 
-// Demonstrate all Apache Flink 2.0 partitioning strategies
+// Demonstrate all Apache Flink 2.1.0 partitioning strategies
 var processed = dataStream
     .Map(x => processData(x))
     .SetParallelism(4)
@@ -747,7 +747,7 @@ var job = Flink.JobBuilder
     .Where("processed.isValid")
     .ToKafka("output-topic");
 
-// Configure Apache Flink 2.0 features for the job
+// Configure Apache Flink 2.1.0 features for the job
 await job.Configure(config => {
     config.EnableAdaptiveScheduler()
           .EnableReactiveMode()
@@ -780,7 +780,7 @@ await job.Configure(config => {
 ```csharp
 var orchestra = new FlinkOrchestra(logger);
 
-// Provision a new cluster with Apache Flink 2.0 features
+// Provision a new cluster with Apache Flink 2.1.0 features
 var cluster = await orchestra.ProvisionClusterAsync(new ClusterConfiguration
 {
     Name = "production-west",
@@ -788,7 +788,7 @@ var cluster = await orchestra.ProvisionClusterAsync(new ClusterConfiguration
     TaskManagers = 8,
     Region = "us-west-2",
     HighAvailability = true,
-    AdaptiveSchedulerEnabled = true,    // Enable Apache Flink 2.0 adaptive scheduler
+    AdaptiveSchedulerEnabled = true,    // Enable Apache Flink 2.1.0 adaptive scheduler
     ReactiveModeEnabled = true          // Enable reactive mode
 });
 
@@ -802,7 +802,7 @@ Console.WriteLine($"Healthy: {health.HealthyClusters}, Critical: {health.Critica
 #### Intelligent Job Submission with Scaling
 
 ```csharp
-// Define a job with Apache Flink 2.0 configuration
+// Define a job with Apache Flink 2.1.0 configuration
 var jobDefinition = new FlinkJobDefinition
 {
     JobId = "analytics-pipeline",
@@ -870,7 +870,7 @@ if (savepointResult.Success)
 #### Auto-scaling with Temporal Workflows
 
 ```csharp
-// Start long-running orchestration workflow with Apache Flink 2.0 features
+// Start long-running orchestration workflow with Apache Flink 2.1.0 features
 var workflowId = await orchestra.StartOrchestrationWorkflowAsync(new OrchestrationRequest
 {
     RequestId = "scaling-request-1",
@@ -891,7 +891,7 @@ Console.WriteLine($"Scaled from {scalingResult.PreviousCapacity} to {scalingResu
 
 ## Backpressure and Rate Limiting
 
-FlinkDotNet includes built-in backpressure support with Apache Flink 2.0 enhancements to ensure system stability:
+FlinkDotNet includes built-in backpressure support with Apache Flink 2.1.0 enhancements to ensure system stability:
 
 ```csharp
 using Flink.JobBuilder.Backpressure;
@@ -909,7 +909,7 @@ if (rateLimiter.TryAcquire())
 }
 else
 {
-    // Apache Flink 2.0 handles backpressure automatically
+    // Apache Flink 2.1.0 handles backpressure automatically
     // This provides additional application-level control
     await Task.Delay(100); // Wait and retry
 }
@@ -924,7 +924,7 @@ env.GetConfig()
 
 ## Testing and Reliability
 
-FlinkDotNet includes comprehensive testing capabilities with Apache Flink 2.0 integration:
+FlinkDotNet includes comprehensive testing capabilities with Apache Flink 2.1.0 integration:
 
 ### Integration Tests
 
@@ -940,7 +940,7 @@ public async Task TestStreamProcessingWithScaling()
     var testData = new[] { 1, 2, 3, 4, 5 };
     var result = env.FromCollection(testData)
         .Map(x => x * 2)
-        .Rebalance()                    // Test Apache Flink 2.0 rebalancing
+        .Rebalance()                    // Test Apache Flink 2.1.0 rebalancing
         .SetParallelism(4)              // Test dynamic parallelism
         .CollectAsync();
         
@@ -968,14 +968,14 @@ public async Task TestSavepointBasedScaling()
 
 The project includes comprehensive stress tests that validate:
 - High-throughput processing (1M+ messages)
-- Backpressure handling with Apache Flink 2.0 improvements
+- Backpressure handling with Apache Flink 2.1.0 improvements
 - Fault tolerance and recovery with adaptive scheduling
 - Dynamic scaling scenarios and savepoint-based workflows
 - Reactive mode adaptation to resource changes
 
 ## Local Development with Aspire
 
-FlinkDotNet integrates with .NET Aspire for local development with Apache Flink 2.0 features:
+FlinkDotNet integrates with .NET Aspire for local development with Apache Flink 2.1.0 features:
 
 ```csharp
 // LocalTesting/Program.cs
@@ -983,7 +983,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var kafka = builder.AddKafka("kafka");
 
-// Apache Flink 2.0 cluster with advanced features
+// Apache Flink 2.1.0 cluster with advanced features
 var flink = builder.AddContainer("flink", "flink:2.0-latest")
     .WithEnvironment("FLINK_PROPERTIES", 
         "scheduler-mode: adaptive\n" +
@@ -1048,19 +1048,19 @@ dotnet --version  # Must show 9.0.x
    dotnet add package FlinkDotNet.DataStream
    ```
 
-2. **Set up Apache Flink 2.0 cluster**
-   - Download and install Apache Flink 2.0
+2. **Set up Apache Flink 2.1.0 cluster**
+   - Download and install Apache Flink 2.1.0
    - Start JobManager and TaskManager with adaptive scheduler enabled
    - Configure reactive mode if desired
 
 3. **Deploy FlinkDotNet.Gateway**
    - Configure connection to your Flink cluster
    - Deploy as web service or container
-   - Enable Apache Flink 2.0 feature support
+   - Enable Apache Flink 2.1.0 feature support
 
 4. **Build and submit your first job with scaling capabilities**
    ```csharp
-   // Apache Flink 2.0 compatible approach (DataStream API)
+   // Apache Flink 2.1.0 compatible approach (DataStream API)
    var env = Flink.GetExecutionEnvironment();
    env.EnableAdaptiveScheduler()
       .EnableReactiveMode()
@@ -1096,7 +1096,7 @@ dotnet --version  # Must show 9.0.x
    docker run -p 7233:7233 -p 8233:8233 temporalio/auto-setup:latest
    ```
 
-3. **Initialize Orchestra service with Apache Flink 2.0 features**
+3. **Initialize Orchestra service with Apache Flink 2.1.0 features**
    ```csharp
    var services = new ServiceCollection();
    services.AddLogging();
@@ -1108,7 +1108,7 @@ dotnet --version  # Must show 9.0.x
 
 4. **Start with cluster provisioning and scaling**
    ```csharp
-   // Provision your first cluster with Apache Flink 2.0 features
+   // Provision your first cluster with Apache Flink 2.1.0 features
    var cluster = await orchestra.ProvisionClusterAsync(new ClusterConfiguration
    {
        Name = "starter-cluster",
@@ -1134,7 +1134,7 @@ dotnet --version  # Must show 9.0.x
 - [Local Development Setup](./docs/wiki/Aspire-Local-Development-Setup.md)
 - [Contributing Guidelines](./CONTRIBUTING.md)
 
-### Apache Flink 2.0 Feature Documentation
+### Apache Flink 2.1.0 Feature Documentation
 - [Dynamic Scaling and Rebalancing Guide](./docs/flink-2.0-scaling-guide.md)
 - [Adaptive Scheduler Configuration](./docs/adaptive-scheduler-setup.md)
 - [Reactive Mode Implementation](./docs/reactive-mode-guide.md)
@@ -1157,19 +1157,19 @@ dotnet --version  # Must show 9.0.x
 
 ## Frequently Asked Questions
 
-### How does FlinkDotNet support Apache Flink 2.0 features?
+### How does FlinkDotNet support Apache Flink 2.1.0 features?
 
-**FlinkDotNet provides complete Apache Flink 2.0 compatibility** including:
+**FlinkDotNet provides complete Apache Flink 2.1.0 compatibility** including:
 
 - **Adaptive Scheduler**: Automatic parallelism adjustment based on workload characteristics
 - **Reactive Mode**: Elastic scaling that adapts to available cluster resources
 - **Dynamic Scaling**: Change job parallelism without stopping jobs using savepoints
-- **Advanced Partitioning**: All Apache Flink 2.0 partitioning strategies (rebalance, rescale, forward, shuffle, broadcast, custom)
+- **Advanced Partitioning**: All Apache Flink 2.1.0 partitioning strategies (rebalance, rescale, forward, shuffle, broadcast, custom)
 - **Fine-grained Resource Management**: Slot sharing groups and resource profiles
 - **Enhanced Fault Tolerance**: Advanced restart strategies and checkpointing
 
 ```csharp
-// Enable all Apache Flink 2.0 features
+// Enable all Apache Flink 2.1.0 features
 var env = Flink.GetExecutionEnvironment()
     .EnableAdaptiveScheduler()     // Intelligent resource management
     .EnableReactiveMode()          // Elastic scaling
@@ -1177,7 +1177,7 @@ var env = Flink.GetExecutionEnvironment()
     .EnableCheckpointing(5000);    // Enhanced fault tolerance
 
 var scalableStream = env.FromCollection(data)
-    .Rebalance()                   // Apache Flink 2.0 rebalancing
+    .Rebalance()                   // Apache Flink 2.1.0 rebalancing
     .SetParallelism(8)             // Dynamic parallelism
     .SlotSharingGroup("processing"); // Fine-grained resources
 ```
@@ -1215,7 +1215,7 @@ var scalableStream = env.FromCollection(data)
 
 **Choose based on your use case:**
 
-- **DataStream API**: Use for Apache Flink 2.0 compatibility, complex stream processing, and when you need full control over scaling and partitioning
+- **DataStream API**: Use for Apache Flink 2.1.0 compatibility, complex stream processing, and when you need full control over scaling and partitioning
 - **JobBuilder API**: Use for rapid development, simple pipelines, and when you prefer fluent syntax
 - **Orchestra API**: Use for enterprise-scale multi-cluster deployments with thousands of jobs
 
@@ -1242,10 +1242,10 @@ await orchestra.SubmitJobAsync(jobDef, SubmissionStrategy.BestFit);
 
 ### Migration Path from Earlier Versions
 
-**FlinkDotNet maintains full compatibility** while adding Apache Flink 2.0 features:
+**FlinkDotNet maintains full compatibility** while adding Apache Flink 2.1.0 features:
 
 1. **Keep existing code**: All existing DataStream and JobBuilder code continues to work
-2. **Add Apache Flink 2.0 features gradually**: Enable adaptive scheduler, reactive mode, and advanced partitioning as needed
+2. **Add Apache Flink 2.1.0 features gradually**: Enable adaptive scheduler, reactive mode, and advanced partitioning as needed
 3. **Scale incrementally**: Start with single cluster, add orchestration layer when needed
 4. **Optimize performance**: Use new partitioning strategies and resource management features
 
@@ -1255,7 +1255,7 @@ await orchestra.SubmitJobAsync(jobDef, SubmissionStrategy.BestFit);
 var env = Flink.GetExecutionEnvironment();
 var stream = env.FromCollection(data).Map(x => x * 2);
 
-// Enhanced with Apache Flink 2.0 features
+// Enhanced with Apache Flink 2.1.0 features
 var enhancedEnv = Flink.GetExecutionEnvironment()
     .EnableAdaptiveScheduler()     // Add intelligent scheduling
     .EnableReactiveMode()          // Add elastic scaling
@@ -1267,7 +1267,7 @@ var enhancedStream = enhancedEnv.FromCollection(data)
     .SetParallelism(8);            // Set optimal parallelism
 ```
 
-The architecture is designed for **incremental adoption** - you can start with basic features and scale to enterprise levels with Apache Flink 2.0 capabilities as your requirements grow.
+The architecture is designed for **incremental adoption** - you can start with basic features and scale to enterprise levels with Apache Flink 2.1.0 capabilities as your requirements grow.
 
 ## Contributing
 

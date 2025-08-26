@@ -77,7 +77,7 @@ By completing this course, you will:
 
 ### 📚 Fundamentals & Integration (Days 1-2)
 
-#### [Day 1: Apache Flink 2.1.0 Fundamentals & Production Environment](Day01-Flink20-Fundamentals/)
+#### [Day 1: Apache Flink 2.1.0 Fundamentals & Production Environment](Day01-Flink21-Fundamentals/)
 **Time**: 6-7 hours | **Focus**: Core Concepts & Production Platform Setup
 
 Master Apache Flink 2.1.0 fundamentals while setting up a complete production-grade streaming stack. Learn platform improvements including advanced data processing, integration patterns, and enhanced streaming capabilities.
@@ -354,7 +354,7 @@ Each day includes complete Visual Studio solution files for immediate IDE integr
 
 | Day | Solution File | Projects | Focus Area |
 |-----|---------------|----------|------------|
-| **Day 1** | `Day01-Flink20-Fundamentals/Day01Tutorial.sln` | 4 projects | Flink 2.1.0 Fundamentals |
+| **Day 1** | `Day01-Flink21-Fundamentals/Day01Tutorial.sln` | 4 projects | Flink 2.1.0 Fundamentals |
 | **Day 2** | `Day02-AI-Stream-Processing/Day02Tutorial.sln` | 4 projects | **Advanced Stream Processing & AI Integration** |
 | **Day 7** | `Day07-Stress-Testing/Day07Tutorial.sln` | 3 projects | Stress Testing & Performance |
 | **Day 14** | `Day14-Capstone-Project/Day14Tutorial.sln` | 4 projects | **Enterprise Capstone Project** |
@@ -402,7 +402,7 @@ dotnet run --project Exercise-Solutions/StreamProcessingMastery
 
 | Day | Topic | Duration | Prerequisites | Focus |
 |-----|-------|----------|---------------|-------|
-| [Day 1](Day01-Flink20-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | None | Core + AI Platform Setup |
+| [Day 1](Day01-Flink21-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | None | Core + AI Platform Setup |
 | [Day 2](Day02-AI-Stream-Processing/) | **Advanced Stream Processing & AI Integration** | **7-8 hours** | Day 1 | **Stream Processing, Integration Patterns, AI Capabilities** |
 | [Day 3](Day03-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-2 | Production Patterns |
 | [Day 4](Day04-Enterprise-Observability/) | Observability & LocalTesting | 5-6 hours | Days 1-3 | LocalTesting Observability Integration |
@@ -442,4 +442,4 @@ dotnet run --project Exercise-Solutions/StreamProcessingMastery
 
 ---
 
-**Ready to become a stream processing expert?** Start with [Day 1: Apache Flink 2.0 Fundamentals](Day01-Flink20-Fundamentals/) and begin your journey to mastering enterprise-scale stream processing with FlinkDotNet!
+**Ready to become a stream processing expert?** Start with [Day 1: Apache Flink 2.1.0 Fundamentals](Day01-Flink21-Fundamentals/) and begin your journey to mastering enterprise-scale stream processing with FlinkDotNet!

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Flink.JobBuilder.Backpressure;
 
 /// <summary>
-/// Rate limiting strategy interface following Apache Flink 2.0 AsyncSink patterns.
+/// Rate limiting strategy interface following Apache Flink 2.1.0 AsyncSink patterns.
 /// Implements custom RateLimitingStrategy for optimizing throughput of async sinks.
 /// 
 /// Based on: https://flink.apache.org/2022/11/25/optimising-the-throughput-of-async-sinks-using-a-custom-ratelimitingstrategy/

@@ -22,7 +22,7 @@
 
 > **🚨 Flink JobManager Compatibility Note**: This tutorial has been updated to use synchronous rate limiting patterns (`rateLimiter.TryAcquire()`) that work reliably when jobs are submitted to Flink's JobManager. Async patterns (`await rateLimiter.TryAcquireAsync()`) should only be used in local development and testing. See [Flink JobManager Async Compatibility Guide](../flink-jobmanager-async-compatibility.md) for details.
 
-This tutorial shows you how to implement the enhanced backpressure system following Apache Flink 2.0 AsyncSink patterns. Based on the official article: [Optimising the throughput of async sinks using a custom RateLimitingStrategy](https://flink.apache.org/2022/11/25/optimising-the-throughput-of-async-sinks-using-a-custom-ratelimitingstrategy/).
+This tutorial shows you how to implement the enhanced backpressure system following Apache Flink 2.1.0 AsyncSink patterns. Based on the official article: [Optimising the throughput of async sinks using a custom RateLimitingStrategy](https://flink.apache.org/2022/11/25/optimising-the-throughput-of-async-sinks-using-a-custom-ratelimitingstrategy/).
 
 ## Table of Contents
 
@@ -933,6 +933,6 @@ Timer.Periodic(TimeSpan.FromMinutes(1), () =>
 ✅ **Backpressure**: Automatic upstream flow control  
 ✅ **Monitoring**: Built-in utilization and performance metrics  
 ✅ **Thread Safety**: All components are thread-safe and production ready  
-✅ **Flink 2.0 Patterns**: Based on official AsyncSink documentation  
+✅ **Flink 2.1.0 Patterns**: Based on official AsyncSink documentation  
 
 **Next Steps**: Deploy to production with monitoring and alerting configured.

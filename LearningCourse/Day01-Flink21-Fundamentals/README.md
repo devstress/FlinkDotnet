@@ -233,7 +233,7 @@ curl http://localhost:5000/health/comprehensive
 
 ### Step 4: Service Discovery and Exploration
 
-#### Flink 2.0 Dashboard Deep Dive
+#### Flink 2.1.0 Dashboard Deep Dive
 
 Visit http://localhost:8081 and explore:
 
@@ -293,9 +293,9 @@ Visit http://localhost:3000 (Grafana) and examine:
 - **Prometheus**: Metrics storage and querying
 - **OpenTelemetry**: Distributed tracing integration
 
-## 🛠️ Your First Flink 2.0 Application
+## 🛠️ Your First Flink 2.1.0 Application
 
-Now let's build a sophisticated streaming application that demonstrates Flink 2.0 capabilities and integrates with the complete stack:
+Now let's build a sophisticated streaming application that demonstrates Flink 2.1.0 capabilities and integrates with the complete stack:
 
 ### Enterprise-Grade Streaming Application
 
@@ -315,14 +315,14 @@ using System.Diagnostics.Metrics;
 namespace LearningCourse.Day01
 {
     /// <summary>
-    /// Production-grade Flink 2.0 streaming application demonstrating:
+    /// Production-grade Flink 2.1.0 streaming application demonstrating:
     /// - Enterprise integration patterns
     /// - Advanced state management
     /// - Comprehensive observability
     /// - Real-world data processing patterns
     /// 
     /// References:
-    /// - Apache Flink 2.0 DataStream API
+    /// - Apache Flink 2.1.0 DataStream API
     /// - Netflix streaming architecture patterns
     /// - Google SRE observability practices
     /// </summary>
@@ -382,7 +382,7 @@ namespace LearningCourse.Day01
 
         public static async Task Main(string[] args)
         {
-            Console.WriteLine("🚀 Flink 2.0 Production Streaming Application");
+            Console.WriteLine("🚀 Flink 2.1.0 Production Streaming Application");
             Console.WriteLine("==============================================");
             Console.WriteLine("🔗 Dashboard: http://localhost:8081");
             Console.WriteLine("📊 Grafana:   http://localhost:3000");
@@ -435,7 +435,7 @@ namespace LearningCourse.Day01
         }
 
         /// <summary>
-        /// Create production-optimized Flink 2.0 execution environment
+        /// Create production-optimized Flink 2.1.0 execution environment
         /// Based on Netflix and Uber production configurations
         /// </summary>
         private static StreamExecutionEnvironment CreateProductionEnvironment()
@@ -449,7 +449,7 @@ namespace LearningCourse.Day01
             env.EnableCheckpointing(TimeSpan.FromSeconds(30)); // Netflix pattern: 30s intervals
             env.SetBufferTimeout(TimeSpan.FromMilliseconds(100)); // Low latency
             
-            // Advanced Flink 2.0 configuration
+            // Advanced Flink 2.1.0 configuration
             var config = env.GetConfig();
             config.SetGlobalJobParameters(new Configuration
             {
@@ -535,7 +535,7 @@ namespace LearningCourse.Day01
 
         /// <summary>
         /// Apply comprehensive enterprise processing pipeline
-        /// Demonstrates Flink 2.0 advanced patterns
+        /// Demonstrates Flink 2.1.0 advanced patterns
         /// </summary>
         private static async Task ApplyEnterpriseProcessingPipeline(DataStream<EnterpriseEvent> eventStream)
         {
@@ -591,7 +591,7 @@ namespace LearningCourse.Day01
             await Task.CompletedTask;
         }
 
-        // Processing Functions (Flink 2.0 patterns)
+        // Processing Functions (Flink 2.1.0 patterns)
 
         public class EventValidationFunction : MapFunction<EnterpriseEvent, EnterpriseEvent>
         {
@@ -1020,7 +1020,7 @@ curl http://localhost:3000/api/health
 
 ```bash
 # Compile and run the application
-cd LearningCourse/Day01-Flink20-Fundamentals
+cd LearningCourse/Day01-Flink21-Fundamentals
 dotnet build
 dotnet run
 
@@ -1088,8 +1088,8 @@ After completing Day 1, you should see:
 ## 📝 Day 1 Assessment
 
 ### Knowledge Check
-1. What are the three major improvements in Apache Flink 2.0?
-2. How does Flink 2.0's unified runtime differ from previous versions?
+1. What are the three major improvements in Apache Flink 2.1.0?
+2. How does Flink 2.1.0's unified runtime differ from previous versions?
 3. What is the purpose of credit-based flow control?
 4. How do TaskManagers coordinate with the JobManager?
 5. What observability patterns are implemented in this setup?
@@ -1098,7 +1098,7 @@ After completing Day 1, you should see:
 Build a streaming application that:
 1. Processes 50,000 events with realistic business logic
 2. Implements proper error handling and monitoring
-3. Uses Flink 2.0 advanced features (state, checkpointing)
+3. Uses Flink 2.1.0 advanced features (state, checkpointing)
 4. Integrates with the observability stack
 5. Demonstrates production-ready patterns
 
@@ -1147,7 +1147,7 @@ Each solution includes:
 - [ ] Successfully started complete production stack (8 services)
 - [ ] Validated all service connectivity and health
 - [ ] Built and deployed enterprise streaming application
-- [ ] Explored Flink 2.0 dashboard and advanced features
+- [ ] Explored Flink 2.1.0 dashboard and advanced features
 - [ ] Configured and used observability stack (Grafana, Prometheus, OpenTelemetry)
 
 ### Exercise Solutions Completed
@@ -1174,7 +1174,7 @@ Tomorrow: **Real-World Stream Processing Patterns** - Advanced DataStream operat
 
 You've successfully set up and validated a **production-grade streaming infrastructure** that mirrors enterprise deployments at scale. You now have:
 
-- ✅ **Complete Flink 2.0 cluster** with advanced features enabled
+- ✅ **Complete Flink 2.1.0 cluster** with advanced features enabled
 - ✅ **Enterprise observability** with distributed tracing and metrics
 - ✅ **Workflow orchestration** with Temporal integration
 - ✅ **Event streaming** with fault-tolerant Kafka cluster

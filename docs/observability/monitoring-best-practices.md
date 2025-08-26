@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines monitoring best practices for FlinkDotNet applications, following Apache Flink 2.0 standards. It provides guidance on setting up comprehensive observability to detect and fix issues in stress tests, reliability tests, and production environments.
+This document outlines monitoring best practices for FlinkDotNet applications, following Apache Flink 2.1.0 standards. It provides guidance on setting up comprehensive observability to detect and fix issues in stress tests, reliability tests, and production environments.
 
 ## Monitoring Strategy
 

@@ -1,7 +1,7 @@
 # Day 2: Comprehensive Real-Time AI Stream Processing with Apache Flink 2.1.0
 
 ## 🗺️ Course Navigation
-📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink20-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
+📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink21-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
 
 ---
 
@@ -175,7 +175,7 @@ LearningCourse/Day02-AI-Stream-Processing/
 
 ## 🚀 Your First AI-Enhanced Stream
 
-Let's build a sophisticated AI-powered fraud detection system that showcases Flink 2.0's AI capabilities:
+Let's build a sophisticated AI-powered fraud detection system that showcases Flink 2.1.0's AI capabilities:
 
 ### Exercise 2.1: Real-time Fraud Detection Stream
 
@@ -193,7 +193,7 @@ using System.Threading.Tasks;
 namespace LearningCourse.Day02
 {
     /// <summary>
-    /// AI-Enhanced Fraud Detection with Flink 2.0 and ML.NET
+    /// AI-Enhanced Fraud Detection with Flink 2.1.0 and ML.NET
     /// Demonstrates real-time ML inference in streaming applications
     /// </summary>
     public class AIFraudDetectionDemo
@@ -255,13 +255,13 @@ namespace LearningCourse.Day02
 
         public static async Task Main(string[] args)
         {
-            Console.WriteLine("🧠 AI-Enhanced Fraud Detection with Flink 2.0");
+            Console.WriteLine("🧠 AI-Enhanced Fraud Detection with Flink 2.1.0");
             Console.WriteLine("===============================================");
 
             // Step 1: Initialize ML.NET model
             await InitializeMLModel();
 
-            // Step 2: Set up Flink 2.0 execution environment with AI optimizations
+            // Step 2: Set up Flink 2.1.0 execution environment with AI optimizations
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             ConfigureAIOptimizedEnvironment(env);
 
@@ -282,7 +282,7 @@ namespace LearningCourse.Day02
 
             try
             {
-                await env.Execute("AI Fraud Detection - Flink 2.0");
+                await env.Execute("AI Fraud Detection - Flink 2.1.0");
                 Console.WriteLine("\n✅ AI fraud detection completed successfully!");
             }
             catch (Exception ex)
@@ -926,7 +926,7 @@ var batchedPredictions = stream
 
 ### Knowledge Check:
 1. What are the advantages of real-time ML inference vs batch processing?
-2. How does Flink 2.0 support hot model swapping?
+2. How does Flink 2.1.0 support hot model swapping?
 3. What are the key considerations for AI performance monitoring?
 4. How do you handle model accuracy degradation in production?
 5. What is the difference between model confidence and business risk?
@@ -988,7 +988,7 @@ All solutions include comprehensive documentation, build successfully, and demon
 
 ## 🎉 Congratulations!
 
-You've mastered AI-enhanced stream processing with Flink 2.0! You now have:
+You've mastered AI-enhanced stream processing with Flink 2.1.0! You now have:
 - Real-time ML inference capabilities
 - Advanced fraud detection systems
 - AI performance monitoring
@@ -999,7 +999,7 @@ You've mastered AI-enhanced stream processing with Flink 2.0! You now have:
 ---
 
 ## 🗺️ Course Navigation
-📚 **[← Day 1: Flink 2.0 Fundamentals](../Day01-Flink20-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
+📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink21-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
 
 **Course Progress**: Day 2 of 14 Complete ✅
 

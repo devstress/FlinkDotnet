@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Flink.JobBuilder.Backpressure;
 
 /// <summary>
-/// Token Bucket rate limiter implementation following Apache Flink 2.0 AsyncSink patterns.
+/// Token Bucket rate limiter implementation following Apache Flink 2.1.0 AsyncSink patterns.
 /// Provides burst capacity with sustained rate limiting for optimal throughput control.
 /// 
 /// IMPROVEMENTS (v2.0):

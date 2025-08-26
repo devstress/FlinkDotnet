@@ -210,7 +210,7 @@ app.MapGet("/", () => new
         PrometheusMetrics = "/metrics",
         Swagger = "/swagger"
     },
-    Documentation = "This is the Day 1 production streaming application demonstrating Flink 2.0 integration patterns."
+    Documentation = "This is the Day 1 production streaming application demonstrating Flink 2.1.0 integration patterns."
 });
 
 Log.Information("🚀 Day 1 Production Streaming Application starting...");

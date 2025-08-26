@@ -1,7 +1,7 @@
 # Day 2: Comprehensive Real-Time AI Stream Processing with Apache Flink 2.1.0
 
 ## 🗺️ Course Navigation
-📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink20-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
+📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink21-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
 
 ---
 
@@ -1093,6 +1093,6 @@ Build on today's AI foundation by learning how to handle massive AI inference lo
 ---
 
 ## 🗺️ Course Navigation
-📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink20-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
+📚 **[← Day 1: Flink 2.1.0 Fundamentals](../Day01-Flink21-Fundamentals/)** | **[Course Overview](../README.md)** | **[Next: Day 3 - Production Backpressure →](../Day03-Production-Backpressure/)**
 
 **Day 2 of 14 Complete** ✅ | **Time Invested**: 7-8 hours | **Next**: Production AI Scaling Patterns

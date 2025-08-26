@@ -4,7 +4,7 @@ This is a complete production-grade streaming application demonstrating Day 1 co
 
 ## Features
 
-- ✅ Flink 2.0 DataStream API integration
+- ✅ Flink 2.1.0 DataStream API integration
 - ✅ Enterprise error handling and monitoring
 - ✅ Health checks and observability
 - ✅ Production deployment patterns

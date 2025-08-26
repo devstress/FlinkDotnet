@@ -197,7 +197,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Partitions the stream by uniformly distributing the data across all parallel operators.
-        /// This corresponds to the rebalance() operation in Apache Flink 2.0.
+        /// This corresponds to the rebalance() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The rebalanced DataStream</returns>
         public DataStream<T> Rebalance()
@@ -209,7 +209,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Partitions the stream by distributing the data to a subset of parallel operators.
         /// This is more efficient than rebalance() when the downstream operation has fewer parallel instances.
-        /// This corresponds to the rescale() operation in Apache Flink 2.0.
+        /// This corresponds to the rescale() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The rescaled DataStream</returns>
         public DataStream<T> Rescale()
@@ -221,7 +221,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Forwards elements to the next operator with the same parallelism.
         /// Only works if the upstream and downstream operators have the same parallelism.
-        /// This corresponds to the forward() operation in Apache Flink 2.0.
+        /// This corresponds to the forward() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The forwarded DataStream</returns>
         public DataStream<T> Forward()
@@ -232,7 +232,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Partitions the stream randomly across all parallel operators.
-        /// This corresponds to the shuffle() operation in Apache Flink 2.0.
+        /// This corresponds to the shuffle() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The shuffled DataStream</returns>
         public DataStream<T> Shuffle()
@@ -243,7 +243,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Broadcasts the stream to all parallel operators of the next operation.
-        /// This corresponds to the broadcast() operation in Apache Flink 2.0.
+        /// This corresponds to the broadcast() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The broadcasted DataStream</returns>
         public DataStream<T> Broadcast()
@@ -254,7 +254,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Partitions the stream using a custom partitioner.
-        /// This corresponds to the partitionCustom() operation in Apache Flink 2.0.
+        /// This corresponds to the partitionCustom() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <param name="partitioner">The custom partitioner function</param>
@@ -269,7 +269,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Sets the maximum parallelism for this operation.
         /// This is used for dynamic scaling and savepoint compatibility.
-        /// Corresponds to Apache Flink 2.0 max parallelism configuration.
+        /// Corresponds to Apache Flink 2.1.0 max parallelism configuration.
         /// </summary>
         /// <param name="maxParallelism">The maximum parallelism for this operation</param>
         /// <returns>This DataStream</returns>
@@ -284,7 +284,7 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Sets the slotting group for this operation.
-        /// Used for fine-grained resource management in Apache Flink 2.0.
+        /// Used for fine-grained resource management in Apache Flink 2.1.0.
         /// </summary>
         /// <param name="slotSharingGroup">The slot sharing group name</param>
         /// <returns>This DataStream</returns>

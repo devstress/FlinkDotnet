@@ -103,7 +103,7 @@ namespace FlinkJobBuilder.Sample
             logger.LogInformation($"✅ Environment parallelism: {env.GetParallelism()}");
             logger.LogInformation($"✅ Environment buffer timeout: {env.GetBufferTimeout()}");
 
-            // Test Flink 2.0 features (these work as configuration setters)
+            // Test Flink 2.1.0 features (these work as configuration setters)
             env.EnableAdaptiveScheduler(true);
             env.EnableReactiveMode(true);
             env.EnableCheckpointing(5000);

@@ -203,11 +203,11 @@ Once you have this running:
 
 ## Enhanced Rate Limiting Implementation (.NET Code Examples)
 
-### 🚀 NEW: Advanced Rate Limiting Following Flink 2.0 Patterns
+### 🚀 NEW: Advanced Rate Limiting Following Flink 2.1.0 Patterns
 
 > **📋 Critical Context**: The code examples below are for **normal .NET producer/consumer applications**, NOT for Flink job serialization. This code runs in your application processes and coordinates with the Aspire-managed containers.
 
-Flink.NET now includes comprehensive rate limiting implementation based on Apache Flink 2.0 AsyncSink patterns. This section shows practical .NET code examples for implementing effective backpressure with rate limiting.
+Flink.NET now includes comprehensive rate limiting implementation based on Apache Flink 2.1.0 AsyncSink patterns. This section shows practical .NET code examples for implementing effective backpressure with rate limiting.
 
 #### Reference Implementation
 
@@ -605,7 +605,7 @@ dotnet test --filter "Category=backpressure_test" --verbosity normal
 
 ### Key Benefits of This Implementation
 
-✅ **Follows Flink 2.0 Best Practices**: Based on official AsyncSink patterns  
+✅ **Follows Flink 2.1.0 Best Practices**: Based on official AsyncSink patterns  
 ✅ **Multi-Tier Enforcement**: Global, Topic, Consumer, and Endpoint levels  
 ✅ **Size AND Time Thresholds**: Buffer pool supports both triggers  
 ✅ **Burst Accommodation**: Token bucket handles traffic spikes gracefully  
