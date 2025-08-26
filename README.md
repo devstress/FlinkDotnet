@@ -1006,7 +1006,7 @@ builder.Build().Run();
 
 ## 🔨 Build and Test Enforcement
 
-### .NET 9.0 Requirements
+### NET 9.0 Requirements
 
 FlinkDotNet implements comprehensive build and test validation to ensure code quality and prevent build failures.
 

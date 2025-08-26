@@ -210,9 +210,9 @@ public class OptimizedWindowBuffer<T> : IWindowBuffer<T>
 - Configure Grafana dashboards for window performance
 
 ## References
-- [Netflix Tech Blog: Stream Processing at Scale](https://netflixtechblog.com)
-- [LinkedIn Engineering: Real-time Data Infrastructure](https://engineering.linkedin.com)
-- [Uber Engineering: Stream Processing Platform](https://eng.uber.com)
+- [Netflix Tech Blog: Keystone Real-time Stream Processing](https://netflixtechblog.com/keystone-real-time-stream-processing-platform-a3ee651812a)
+- [LinkedIn Engineering: Brooklin - Real-time Data Streaming](https://engineering.linkedin.com/blog/2019/brooklin-real-time-data-streaming)
+- [Uber Engineering: Real-time Analytics at Scale](https://eng.uber.com/logging/)
 - [Google Cloud Dataflow Documentation](https://cloud.google.com/dataflow/docs)
 
 ## Next Steps

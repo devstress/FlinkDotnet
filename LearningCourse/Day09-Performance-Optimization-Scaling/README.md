@@ -447,9 +447,9 @@ public async Task TestHighThroughputPerformance()
 - Create capacity planning tools based on historical metrics
 
 ## References
-- [Netflix Tech Blog: High-Performance Stream Processing](https://netflixtechblog.com)
-- [LinkedIn Engineering: Scaling Kafka for High Throughput](https://engineering.linkedin.com)
-- [Uber Engineering: Performance Optimization Techniques](https://eng.uber.com)
+- [Netflix Tech Blog: Keystone Real-time Stream Processing](https://netflixtechblog.com/keystone-real-time-stream-processing-platform-a3ee651812a)
+- [LinkedIn Engineering: Brooklin - Real-time Data Streaming](https://engineering.linkedin.com/blog/2019/brooklin-real-time-data-streaming)
+- [Uber Engineering: Real-time Analytics at Scale](https://eng.uber.com/logging/)
 - [Google SRE Book: Monitoring and Alerting](https://sre.google/sre-book/)
 - [JVM Performance Tuning Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/)
 
