@@ -1,8 +1,8 @@
-# FlinkDotNet Learning Course - Enterprise Real-Time Stream Processing Mastery
+# FlinkDotNet Learning Course - Real-Time Stream Processing Mastery
 
 🎓 **Master Apache Flink 2.1.0 + .NET Integration for Real-Time Stream Processing**
 
-Welcome to the comprehensive **FlinkDotNet Learning Course** - a 14-day intensive journey that transforms developers into **enterprise real-time stream processing experts** using Apache Flink 2.1.0 features and production-grade patterns from Netflix, Uber, LinkedIn, and other industry leaders.
+Welcome to the comprehensive **FlinkDotNet Learning Course** - a 14-day intensive journey that transforms developers into **real-time stream processing experts** using Apache Flink 2.1.0 features and production-grade patterns from Netflix, Uber, LinkedIn, and other industry leaders.
 
 ## 🌟 Course Overview
 
