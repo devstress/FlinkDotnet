@@ -214,25 +214,43 @@ jobs:
             }
           }
           
-          # Set all required environment variables for Aspire
+          # Set all required environment variables for Aspire with IPv6 support for DCP
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-          $env:ASPNETCORE_URLS = "http://localhost:15000"
+          # Remove conflicting ASPNETCORE_URLS - let AppHost configure this consistently
+          # $env:ASPNETCORE_URLS = "http://localhost:15000"  # REMOVED - conflicts with AppHost IPv4 config
           $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
           $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
-          $env:ASPIRE_DASHBOARD_URL = "http://localhost:18888"
+          $env:ASPIRE_DASHBOARD_URL = "http://127.0.0.1:18888"  # Use IPv4 consistently
           $env:ASPNETCORE_ENVIRONMENT = "Development"
           $env:DOTNET_LAUNCH_PROFILE = ""
+          
+          # Configure networking for IPv6 DCP compatibility in CI environment
+          # Since DCP binds to IPv6, ensure IPv6 connectivity works properly
+          $env:DOTNET_SYSTEM_NET_DISABLEIPV6 = "false"
+          $env:DOTNET_SYSTEM_NET_HTTP_USEIPV6 = "true"
+          $env:DCP_API_SERVER_BIND_ADDRESS = "127.0.0.1"
+          $env:ASPIRE_DASHBOARD_BIND_ADDRESS = "127.0.0.1"
+          
+          # CI-specific IPv6 localhost support for DCP connectivity
+          $env:DCP_BIND_IPV4_ONLY = "false"
+          $env:DOTNET_DCP_API_SERVER_IPV4_ONLY = "false"
+          $env:ASPIRE_HOSTING_IPV4_ONLY = "false"
+          $env:DCP_FORCE_IPV4 = "false"
           
           # Add Docker daemon socket environment variable for CI
           $env:DOCKER_HOST = "unix:///var/run/docker.sock"
           
           Write-Host "`n🌍 Environment variables set:" -ForegroundColor Yellow
-          Write-Host "  ASPNETCORE_URLS: $env:ASPNETCORE_URLS" -ForegroundColor Cyan
+          Write-Host "  ASPIRE_DASHBOARD_URL: $env:ASPIRE_DASHBOARD_URL" -ForegroundColor Cyan
           Write-Host "  DOTNET_DASHBOARD_OTLP_ENDPOINT_URL: $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL" -ForegroundColor Cyan
           Write-Host "  DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL: $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL" -ForegroundColor Cyan
           Write-Host "  DCP_CLI_PATH: $env:DCP_CLI_PATH" -ForegroundColor Cyan
           Write-Host "  ASPIRE_DASHBOARD_PATH: $env:ASPIRE_DASHBOARD_PATH" -ForegroundColor Cyan
           Write-Host "  DOCKER_HOST: $env:DOCKER_HOST" -ForegroundColor Cyan
+          Write-Host "  IPv6 Compatibility Variables:" -ForegroundColor Yellow
+          Write-Host "    DOTNET_SYSTEM_NET_DISABLEIPV6: $env:DOTNET_SYSTEM_NET_DISABLEIPV6" -ForegroundColor Cyan
+          Write-Host "    DCP_API_SERVER_BIND_ADDRESS: $env:DCP_API_SERVER_BIND_ADDRESS" -ForegroundColor Cyan
+          Write-Host "    DCP_FORCE_IPV4: $env:DCP_FORCE_IPV4" -ForegroundColor Cyan
           
           Write-Host "`n🚀 Starting Aspire AppHost as background process..." -ForegroundColor Yellow
           try {
