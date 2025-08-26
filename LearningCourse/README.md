@@ -98,11 +98,11 @@ Implement the "Local bucket + Regional Redis budget bank + Global controller" pa
 **Key Topics**: Backpressure handling, distributed rate limiting, gRPC ingress patterns, fault tolerance
 
 #### [Day 4: Enterprise Observability & Monitoring](Day04-Enterprise-Observability/)
-**Time**: 5-6 hours | **Focus**: Monitoring & Metrics
+**Time**: 5-6 hours | **Focus**: Monitoring & Metrics with LocalTesting Integration
 
-Build comprehensive observability solutions with Prometheus, Grafana, and enterprise monitoring patterns. Implement SLA monitoring and alerting systems.
+Build comprehensive observability solutions with Prometheus, Grafana, and enterprise monitoring patterns using the **LocalTesting observability stack**. Implement SLA monitoring and alerting systems with real business flows and automated testing procedures.
 
-**Key Topics**: Metrics collection, dashboards, alerting, SLA monitoring, performance analysis
+**Key Topics**: Metrics collection, dashboards, alerting, SLA monitoring, performance analysis, **LocalTesting observability integration**, automated observability testing
 
 #### [Day 5: Temporal Workflow Orchestration & Durable Execution](Day05-Temporal-Workflows/)
 **Time**: 7-8 hours | **Focus**: Workflow Orchestration
@@ -274,7 +274,7 @@ dotnet run --project Day02-AI-Stream-Processing/Exercise-Solutions/AIModelDDLMas
 | [Day 1](Day01-Flink20-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | None | Core + AI Platform Setup |
 | [Day 2](Day02-AI-Stream-Processing/) | **Comprehensive Real-Time AI** | **7-8 hours** | Day 1 | **AI Model DDL, ML_PREDICT TVF, PTFs** |
 | [Day 3](Day03-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-2 | Production Patterns |
-| [Day 4](Day04-Enterprise-Observability/) | Observability & Monitoring | 5-6 hours | Days 1-3 | AI Monitoring |
+| [Day 4](Day04-Enterprise-Observability/) | Observability & LocalTesting | 5-6 hours | Days 1-3 | LocalTesting Observability Integration |
 | [Day 5](Day05-Temporal-Workflows/) | Temporal Workflows | 7-8 hours | Days 1-4 | AI Workflow Orchestration |
 | [Day 6](Day06-Advanced-Windows-Joins/) | **Advanced Joins & AI Analytics** | **7-8 hours** | Days 1-5 | **DeltaJoin, MultiJoin, AI CEP** |
 | [Day 7](Day07-Stress-Testing/) | Stress Testing | 4-5 hours | Days 1-6 | AI Performance Testing |
