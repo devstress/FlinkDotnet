@@ -194,7 +194,7 @@ Build a comprehensive, production-ready streaming platform integrating all cours
 Before starting the course, ensure you have:
 
 - **Development Environment**: Visual Studio 2022 or VS Code with C# support
-- **.NET Requirements**: .NET 8.0 SDK (see [installation guide](../README.md#net-80-requirements))
+- **.NET Requirements**: .NET 9.0 SDK (see [installation guide](../README.md#net-90-requirements))
 - **Docker**: Docker Desktop for container orchestration
 - **Basic Knowledge**: 
   - C# and .NET development experience
@@ -236,7 +236,7 @@ If your computer is unable to run the local setup (Docker Desktop issues, hardwa
 #### Step 1: Create Azure Account
 
 1. **Register for Azure** (if you don't have an account):
-   - Visit [Azure Free Account](https://azure.microsoft.com/free/)
+   - Visit [Azure Free Account](https://azure.microsoft.com/en-us/free/)
    - Click "Start free" and follow the registration process
    - Provides $200 credit for 30 days (more than enough for learning)
    - No charges after credit expires unless you upgrade
@@ -329,9 +329,9 @@ Once deployed, you'll have:
 
 - **[Azure Container Apps Documentation](https://docs.microsoft.com/azure/container-apps/)**: Complete guide to Container Apps
 - **[Azure Developer CLI Documentation](https://docs.microsoft.com/azure/developer/azure-developer-cli/)**: azd command reference and tutorials
-- **[Azure Free Account Guide](https://azure.microsoft.com/free/free-account-faq/)**: Detailed information about free tier limits
+- **[Azure Free Account Guide](https://azure.microsoft.com/en-us/free/)**: Detailed information about free tier limits
 - **[Azure Cost Management](https://docs.microsoft.com/azure/cost-management-billing/)**: Tools for monitoring and controlling costs
-- **[Azure Container Apps Pricing](https://azure.microsoft.com/pricing/details/container-apps/)**: Detailed pricing information
+- **[Azure Container Apps Pricing](https://azure.microsoft.com/en-us/pricing/details/container-apps/)**: Detailed pricing information
 
 #### Troubleshooting Azure Deployment
 

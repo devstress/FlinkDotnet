@@ -59,9 +59,9 @@ This module implements **enterprise observability patterns** from industry leade
 
 ### 🏛️ Industry Reference Standards
 - **[Google SRE Practices](https://sre.google/sre-book/)** - The four golden signals, SLI/SLO design
-- **[Netflix Engineering Blog](https://netflixtechblog.com/tagged/observability)** - Large-scale monitoring architecture  
-- **[Uber's M3 Observability Platform](https://eng.uber.com/m3/)** - Multi-tenant metrics infrastructure
-- **[Apache Flink Monitoring](https://flink.apache.org/docs/stable/ops/monitoring/)** - Official monitoring best practices
+- **[Netflix Engineering Blog](https://netflixtechblog.com/chaos-engineering-upgraded-878d341f15fa)** - Large-scale monitoring architecture  
+- **[Uber Engineering: Monitoring at Scale](https://eng.uber.com/logging/)** - Multi-tenant metrics infrastructure
+- **[Apache Flink Monitoring](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/monitoring/)** - Official monitoring best practices
 
 ### 🔧 Enterprise Technology Stack
 - **[OpenTelemetry](https://opentelemetry.io/)** - Vendor-neutral observability framework
