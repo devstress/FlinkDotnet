@@ -223,6 +223,129 @@ Before starting the course, ensure you have:
    docker-compose --version
    ```
 
+### 🌥️ Alternative: Azure Container Apps Deployment
+
+If your computer is unable to run the local setup (Docker Desktop issues, hardware limitations, or .NET installation problems), you can use **Azure Container Apps** with **Azure Developer CLI (azd)** to deploy and run the LearningCourse in the cloud.
+
+#### Prerequisites for Azure Deployment
+
+- **Azure Account**: Free Azure account with $200 credit for new users
+- **Azure Developer CLI**: Cross-platform tool for deploying to Azure
+- **Git**: For cloning and managing code
+
+#### Step 1: Create Azure Account
+
+1. **Register for Azure** (if you don't have an account):
+   - Visit [Azure Free Account](https://azure.microsoft.com/free/)
+   - Click "Start free" and follow the registration process
+   - Provides $200 credit for 30 days (more than enough for learning)
+   - No charges after credit expires unless you upgrade
+
+2. **Verify your account**:
+   - Complete email verification
+   - Provide payment method (required for verification, but won't be charged with free account)
+   - Complete identity verification process
+
+#### Step 2: Install Azure Developer CLI (azd)
+
+Choose your platform for azd installation:
+
+**Windows:**
+```powershell
+# Using PowerShell (recommended)
+Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression
+
+# Or using winget
+winget install microsoft.azd
+```
+
+**macOS:**
+```bash
+# Using Homebrew (recommended)
+brew tap azure/azd && brew install azd
+
+# Or using curl
+curl -fsSL https://aka.ms/install-azd.sh | bash
+```
+
+**Linux:**
+```bash
+# Using curl
+curl -fsSL https://aka.ms/install-azd.sh | bash
+
+# Or download directly
+wget -q https://aka.ms/install-azd.sh -O - | bash
+```
+
+**Verify installation:**
+```bash
+azd version
+# Should display version 1.5.0 or later
+```
+
+#### Step 3: Setup and Deploy LearningCourse
+
+1. **Login to Azure**:
+   ```bash
+   azd auth login
+   # Opens browser for Azure authentication
+   ```
+
+2. **Initialize the project**:
+   ```bash
+   cd /path/to/FlinkDotnet/LearningCourse
+   azd init
+   # Follow prompts to configure Azure Container Apps deployment
+   ```
+
+3. **Deploy to Azure**:
+   ```bash
+   azd up
+   # Provisions Azure resources and deploys the application
+   # Creates Container Apps, databases, and monitoring resources
+   ```
+
+4. **Access your deployed LearningCourse**:
+   - azd will provide the URL of your deployed application
+   - All exercises and examples will run in Azure Container Apps
+   - Full observability and monitoring included
+
+#### Step 4: Learning Course Access
+
+Once deployed, you'll have:
+
+- **Web-based IDE**: Use GitHub Codespaces or Azure Cloud Shell for development
+- **Container Apps Environment**: All FlinkDotNet services running in Azure
+- **Integrated Monitoring**: Built-in logging, metrics, and distributed tracing
+- **Scalable Resources**: Automatically scales based on your learning needs
+
+#### Step 5: Cost Management
+
+- **Free Tier**: Azure Container Apps includes generous free tier
+- **Monitor Usage**: Use Azure Cost Management to track spending
+- **Clean Up**: Run `azd down` to remove all resources when finished
+
+#### Azure Resources and References
+
+- **[Azure Container Apps Documentation](https://docs.microsoft.com/azure/container-apps/)**: Complete guide to Container Apps
+- **[Azure Developer CLI Documentation](https://docs.microsoft.com/azure/developer/azure-developer-cli/)**: azd command reference and tutorials
+- **[Azure Free Account Guide](https://azure.microsoft.com/free/free-account-faq/)**: Detailed information about free tier limits
+- **[Azure Cost Management](https://docs.microsoft.com/azure/cost-management-billing/)**: Tools for monitoring and controlling costs
+- **[Azure Container Apps Pricing](https://azure.microsoft.com/pricing/details/container-apps/)**: Detailed pricing information
+
+#### Troubleshooting Azure Deployment
+
+**Common Issues:**
+- **Authentication problems**: Ensure you're logged in with `azd auth login`
+- **Resource limits**: Check Azure subscription limits and quotas
+- **Deployment failures**: Use `azd logs` to view detailed error information
+- **Cost concerns**: Monitor usage in Azure Portal Cost Management section
+
+**Getting Help:**
+- **Azure Support**: Use Azure Portal support options
+- **Community**: [Azure Container Apps GitHub](https://github.com/microsoft/azure-container-apps)
+- **Documentation**: [Azure Container Apps Troubleshooting](https://docs.microsoft.com/azure/container-apps/troubleshooting)
+
 ### Solution Files for Professional IDE Integration
 
 Each day includes complete Visual Studio solution files for immediate IDE integration:
