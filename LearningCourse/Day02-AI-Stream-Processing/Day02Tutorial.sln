@@ -2,13 +2,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIModelDDLMastery", "Day02-AI-Stream-Processing\Exercise-Solutions\AIModelDDLMastery\AIModelDDLMastery.csproj", "{A1B2C3D4-E5F6-7890-A1B2-C3D4E5F67890}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIModelDDLMastery", "Exercise-Solutions\AIModelDDLMastery\AIModelDDLMastery.csproj", "{A1B2C3D4-E5F6-7890-A1B2-C3D4E5F67890}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MLPredictTVFImplementation", "Day02-AI-Stream-Processing\Exercise-Solutions\MLPredictTVFImplementation\MLPredictTVFImplementation.csproj", "{B2C3D4E5-F6A7-8901-B2C3-D4E5F6A78901}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MLPredictTVFImplementation", "Exercise-Solutions\MLPredictTVFImplementation\MLPredictTVFImplementation.csproj", "{B2C3D4E5-F6A7-8901-B2C3-D4E5F6A78901}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FraudDetectionSystem", "Day02-AI-Stream-Processing\Exercise-Solutions\FraudDetectionSystem\FraudDetectionSystem.csproj", "{E5F6A7B8-C9D0-1234-E5F6-A7B8C9D01234}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FraudDetectionSystem", "Exercise-Solutions\FraudDetectionSystem\FraudDetectionSystem.csproj", "{E5F6A7B8-C9D0-1234-E5F6-A7B8C9D01234}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MLNetIntegration", "Day02-AI-Stream-Processing\Exercise-Solutions\MLNetIntegration\MLNetIntegration.csproj", "{F6A7B8C9-D0E1-2345-F6A7-B8C9D0E12345}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MLNetIntegration", "Exercise-Solutions\MLNetIntegration\MLNetIntegration.csproj", "{F6A7B8C9-D0E1-2345-F6A7-B8C9D0E12345}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
