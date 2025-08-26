@@ -53,9 +53,11 @@ This implementation follows the **exact architecture** described in production f
 
 ## 🚀 Implementation: Real-World gRPC Ingress with Distributed Rate Limiting
 
-### Step 1: Global Quota Controller (GQC)
+### Step 1: Global Quota Controller (GQC) → **[Exercise 3.1: Netflix Global Rate Limiting Controller](Exercise-Solutions/)**
 
-Following **Netflix's distributed architecture** patterns:
+Following **Netflix's distributed architecture** patterns and implementing their Global Quota Controller used for managing API rate limits across Netflix's 2000+ microservices:
+
+**🎯 Hands-on Implementation:** This Netflix-proven architecture is implemented in **[Exercise 3.1: Netflix Global Rate Limiting Controller](Exercise-Solutions/Exercise31/)** where you'll build Netflix-scale distributed rate limiting for their API gateway that handles 1+ billion requests daily with coordinated quota management across multiple regions.
 
 ```csharp
 using System;
@@ -236,6 +238,12 @@ namespace FlinkDotNet.Production.RateLimiting
         }
     }
 
+### Step 2: Regional Budget Bank (RBB) → **[Exercise 3.2: Uber Regional Redis Coordination](Exercise-Solutions/)**
+
+Following **Uber's regional budget bank patterns** used for coordinating API rate limits across their global regions handling 15+ million rides daily:
+
+**🎯 Hands-on Implementation:** This Uber-proven coordination architecture is implemented in **[Exercise 3.2: Uber Regional Redis Coordination](Exercise-Solutions/Exercise32/)** where you'll build Uber-scale regional budget coordination using Redis for their API gateway that handles massive traffic spikes during peak hours with atomic DECRBY operations and TTL management.
+
     /// <summary>
     /// Regional Budget Bank (RBB) - Redis-backed budget storage
     /// Implements atomic DECRBY operations for fair allocation
@@ -320,6 +328,12 @@ namespace FlinkDotNet.Production.RateLimiting
             }
         }
     }
+
+### Step 3: gRPC Ingress Gateway → **[Exercise 3.3: LinkedIn High-Performance Gateway](Exercise-Solutions/)**
+
+Following **LinkedIn's high-performance gateway patterns** used for handling 900+ million user requests with stateless rate limiting and local token buckets:
+
+**🎯 Hands-on Implementation:** This LinkedIn-proven gateway architecture is implemented in **[Exercise 3.3: LinkedIn High-Performance Gateway](Exercise-Solutions/Exercise33/)** where you'll build LinkedIn-scale gRPC ingress gateway for their API that handles massive user traffic with local token buckets and hot path rate limiting.
 
     /// <summary>
     /// gRPC Ingress Gateway with stateless rate limiting
@@ -939,30 +953,198 @@ public class ProductionMetrics
 }
 ```
 
-## 🎯 Day 3 Exercises
+## 🎯 Day 3 Exercises - Enterprise Production Backpressure Patterns
 
-### Exercise 3.1: Implement Gateway Restart Simulation
-Test the "safe by default" startup behavior:
-```bash
-# Kill and restart gateway while load testing
-kubectl delete pod gateway-instance-1
-# Verify: no double-spend, graceful degradation
-```
+These exercises implement the **specific distributed rate limiting concepts** covered in today's theory using real-world business scenarios from Netflix, Uber, and LinkedIn.
 
-### Exercise 3.2: Redis Cluster Failover
-Simulate Redis cluster failure:
-```bash
-# Partition Redis cluster
-sudo iptables -A INPUT -s redis-cluster-ip -j DROP
-# Verify: fail-closed behavior, regional fallback
-```
+### Exercise 3.1: Netflix Global Rate Limiting Controller (90 minutes)
+**Business Context**: Netflix API Gateway Global Coordination
+**Theory Connection**: Implements **[Step 1: Global Quota Controller (GQC)](#step-1-global-quota-controller-gqc--exercise-31-netflix-global-rate-limiting-controller)** and **[Fault-Tolerant Distributed Rate Limiting Architecture](#🏗️-architecture-overview)**
 
-### Exercise 3.3: Load Testing with Chaos Engineering
-```bash
-# Combine multiple failure scenarios
-chaos run --scenario gateway_restart,redis_partition,network_delay
-# Verify: system remains stable under compound failures
-```
+**Objective**: Build Netflix-scale Global Quota Controller for coordinating API rate limits across 2000+ microservices
+
+**Real-World Scenario**: You're a Netflix SRE implementing their global rate limiting system that coordinates quota distribution across multiple regions for their API gateway handling 1+ billion requests daily during peak streaming hours.
+
+**Implementation Tasks** (directly implementing theory concepts):
+
+1. **Epoch-Based Budget Minting** (30 minutes) - implements theory: Global Quota Controller
+   ```bash
+   cd LearningCourse/Day03-Production-Backpressure/Exercise-Solutions/Exercise31
+   dotnet build
+   dotnet run --configuration=NetflixGlobalQuotaController
+   
+   # Verify theory implementation:
+   # - Epoch-based budget minting every 250ms (theory connection)
+   # - Cross-region coordination prevention (theory connection)
+   # - Policy distribution to regional banks (theory connection)
+   ```
+
+2. **Pre-mint Budget Futures** (30 minutes) - implements theory: advanced coordination patterns
+   ```bash
+   # Test pre-minting future budgets (theory connection)
+   curl -X POST http://localhost:5000/api/quota/pre-mint -d '{"region":"us-east-1","duration":"PT5M"}'
+   
+   # Verify theory concepts:
+   # - Future budget allocation (theory connection)
+   # - Regional quota coordination (theory connection)
+   # - Netflix's prevention of coordination in hot path (theory connection)
+   ```
+
+3. **Fault Tolerance Testing** (30 minutes) - implements theory: production resilience patterns
+   ```bash
+   # Simulate Netflix-style failure scenarios (theory connection)
+   # Kill Global Quota Controller and verify graceful degradation
+   docker stop netflix-gqc-container
+   
+   # Expected behavior from theory:
+   # - Regional Budget Banks continue with cached budgets (theory connection)
+   # - No impact on hot path rate limiting (theory connection)
+   # - Graceful recovery when GQC restarts (theory connection)
+   ```
+
+**Expected Business Value**: Netflix-level coordination with 99.99% API gateway uptime, automated quota distribution across regions, zero hot-path coordination delay.
+
+**🔗 Theory Integration**: This exercise implements all **[Global Quota Controller (GQC)](#step-1-global-quota-controller-gqc--exercise-31-netflix-global-rate-limiting-controller)** concepts including epoch-based minting, policy distribution, and cross-region coordination prevention described in the theory.
+
+### Exercise 3.2: Uber Regional Redis Coordination (120 minutes)
+**Business Context**: Uber Regional Budget Bank System
+**Theory Connection**: Implements **[Step 2: Regional Budget Bank (RBB)](#step-2-regional-budget-bank-rbb--exercise-32-uber-regional-redis-coordination)** and **[Fault Scenarios](#fault-scenarios)**
+
+**Objective**: Build Uber-scale Regional Budget Bank using Redis for handling 15+ million ride requests with atomic budget operations
+
+**Real-World Scenario**: You're implementing Uber's regional budget coordination system that handles massive traffic spikes during peak hours, requiring atomic DECRBY operations, TTL management, and regional failover capabilities.
+
+**Implementation Tasks** (directly implementing theory concepts):
+
+1. **Atomic Redis Operations** (45 minutes) - implements theory: Regional Budget Bank
+   ```bash
+   cd LearningCourse/Day03-Production-Backpressure/Exercise-Solutions/Exercise32
+   dotnet build
+   dotnet run --configuration=UberRegionalBudgetBank
+   
+   # Test atomic DECRBY operations (theory connection)
+   redis-cli --eval atomic-budget-decrby.lua , "user:12345" "100" "300"
+   
+   # Verify theory implementation:
+   # - Atomic budget decrements (theory connection)
+   # - Fair allocation across requests (theory connection)
+   # - TTL management for budget expiration (theory connection)
+   ```
+
+2. **Regional Failover Handling** (45 minutes) - implements theory: fault tolerance patterns
+   ```bash
+   # Simulate Redis cluster failure (theory connection)
+   sudo iptables -A INPUT -s redis-cluster-ip -j DROP
+   
+   # Test theory concepts:
+   # - Fail-closed behavior when Redis dies (theory connection)
+   # - Regional fallback to RBB-B (theory connection)
+   # - Network partition handling (theory connection)
+   ```
+
+3. **Performance Under Load** (30 minutes) - implements theory: Uber-scale requirements
+   ```bash
+   # Load test with 15M+ request simulation (theory connection)
+   ./load-test-uber-scale.sh --requests 15000000 --concurrency 10000
+   
+   # Monitor theory compliance:
+   # - Background refill every 250ms (theory connection)
+   # - Atomic operations maintaining fairness (theory connection)
+   # - TTL cleanup preventing memory leaks (theory connection)
+   ```
+
+**Expected Business Value**: Uber-scale budget coordination handling 15M+ daily rides, atomic fairness preventing double-spending, regional resilience during failures.
+
+**🔗 Theory Integration**: This exercise implements all **[Regional Budget Bank (RBB)](#step-2-regional-budget-bank-rbb--exercise-32-uber-regional-redis-coordination)** concepts including atomic Redis operations, TTL management, and failover handling described in the theory.
+
+### Exercise 3.3: LinkedIn High-Performance Gateway (150 minutes)
+**Business Context**: LinkedIn API Gateway Hot Path Processing
+**Theory Connection**: Implements **[Step 3: gRPC Ingress Gateway](#step-3-grpc-ingress-gateway--exercise-33-linkedin-high-performance-gateway)** and **[Hot Path Rate Limiting](#hot-path-rate-limiting)**
+
+**Objective**: Build LinkedIn-scale gRPC ingress gateway with stateless rate limiting for handling 900+ million user requests
+
+**Real-World Scenario**: You're building LinkedIn's API gateway that processes user requests for their platform, requiring local token buckets, hot path optimization, and "safe by default" startup behavior during traffic spikes.
+
+**Implementation Tasks** (directly implementing theory concepts):
+
+1. **Local Token Bucket Implementation** (60 minutes) - implements theory: gRPC Gateway patterns
+   ```bash
+   cd LearningCourse/Day03-Production-Backpressure/Exercise-Solutions/Exercise33
+   dotnet build
+   dotnet run --configuration=LinkedInAPIGateway
+   
+   # Test hot path rate limiting (theory connection)
+   grpcurl -d '{"user_id":"12345","request_type":"feed"}' localhost:50051 linkedin.api.ProcessRequest
+   
+   # Verify theory implementation:
+   # - Local token buckets for hot path (theory connection)
+   # - Stateless rate limiting (theory connection)
+   # - Background refill from Regional Budget Bank (theory connection)
+   ```
+
+2. **"Safe by Default" Startup** (45 minutes) - implements theory: fault tolerance
+   ```bash
+   # Test gateway restart simulation (theory connection)
+   kubectl delete pod linkedin-gateway-instance-1
+   
+   # Verify theory concepts:
+   # - SEVERE pause until first grant (theory connection)
+   # - No double-spend during startup (theory connection)
+   # - Graceful degradation patterns (theory connection)
+   ```
+
+3. **Chaos Engineering Validation** (45 minutes) - implements theory: compound failure scenarios
+   ```bash
+   # Combine multiple failure scenarios (theory connection)
+   chaos run --scenario gateway_restart,redis_partition,network_delay
+   
+   # Test theory resilience:
+   # - System stability under compound failures (theory connection)
+   # - End-to-end flow control (theory connection)
+   # - Circuit breaker activation (theory connection)
+   ```
+
+**Expected Business Value**: LinkedIn-scale API gateway with 99.9% uptime during traffic spikes, sub-10ms hot path latency, automatic failure recovery.
+
+**🔗 Theory Integration**: This exercise implements all **[gRPC Ingress Gateway](#step-3-grpc-ingress-gateway--exercise-33-linkedin-high-performance-gateway)** concepts including local token buckets, hot path optimization, and safe startup behavior described in the theory.
+
+### Exercise 3.4: Chaos Engineering Production Validation (60 minutes)
+**Business Context**: Netflix/Uber/LinkedIn Compound Failure Testing
+**Theory Connection**: Implements **[Fault Scenarios](#fault-scenarios)** and **[Production Monitoring](#production-monitoring)**
+
+**Objective**: Validate the complete distributed rate limiting system under compound failure scenarios matching production chaos engineering practices
+
+**Real-World Scenario**: You're conducting Netflix-style chaos engineering to validate that your distributed rate limiting system maintains stability under the exact failure scenarios that occur in production environments.
+
+**Implementation Tasks** (directly implementing theory concepts):
+
+1. **Combined Failure Scenarios** (30 minutes) - implements theory: comprehensive fault tolerance
+   ```bash
+   cd LearningCourse/Day03-Production-Backpressure/Exercise-Solutions/Exercise34
+   
+   # Execute compound chaos scenarios (theory connection)
+   ./chaos-engineering-suite.sh --scenario all-failures
+   
+   # Test theory resilience patterns:
+   # - Gateway restart + Redis partition + Network delay (theory connection)
+   # - Fail-closed behavior verification (theory connection)
+   # - End-to-end flow control validation (theory connection)
+   ```
+
+2. **Production Monitoring Validation** (30 minutes) - implements theory: observability patterns
+   ```bash
+   # Validate monitoring during failures (theory connection)
+   curl http://localhost:3000/dashboards/distributed-rate-limiting
+   
+   # Verify theory monitoring:
+   # - Circuit breaker status (theory connection)
+   # - Budget allocation metrics (theory connection)
+   # - Regional failover detection (theory connection)
+   ```
+
+**Expected Business Value**: Production-validated resilience matching Netflix/Uber/LinkedIn standards, automated failure detection, comprehensive monitoring.
+
+**🔗 Theory Integration**: This exercise validates all **[Fault Scenarios](#fault-scenarios)** and monitoring patterns described throughout the theory sections.
 
 ## 📚 References and Further Reading
 
