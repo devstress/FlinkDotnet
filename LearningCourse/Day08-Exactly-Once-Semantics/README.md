@@ -202,26 +202,61 @@ public class ExactlyOnceKafkaProducer : FlinkKafkaProducer<ProcessedPayment>
 
 ## Hands-On Exercises
 
-### Exercise 1: Banking Transaction System
+### Exercise 8.1: Banking Transaction System
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
 Build an exactly-once payment processing system that:
-- Handles duplicate transaction detection
+- Handles duplicate transaction detection using idempotency keys
 - Maintains account balances with exactly-once updates
-- Integrates with external banking APIs
+- Integrates with external banking APIs using two-phase commit
 - Provides audit trails for regulatory compliance
 
-### Exercise 2: E-commerce Order Processing
+**💡 Implementation Focus**: Financial transaction processing with exactly-once guarantees
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise81/)**
+
+### Exercise 8.2: E-commerce Order Processing
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
 Create an order fulfillment system with:
-- Exactly-once inventory updates
+- Exactly-once inventory updates across distributed systems
 - Payment processing with rollback capabilities
 - Order status tracking across multiple systems
 - Integration with shipping and notification services
 
-### Exercise 3: Real-time Analytics with Exactly-Once
+**💡 Implementation Focus**: Distributed transaction management with exactly-once semantics
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise82/)**
+
+### Exercise 8.3: Real-time Analytics with Exactly-Once
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
 Implement analytics aggregations that:
-- Count unique events exactly once
+- Count unique events exactly once using state deduplication
 - Calculate financial metrics without double-counting
-- Handle late-arriving data corrections
+- Handle late-arriving data corrections while maintaining consistency
 - Maintain consistency across multiple time windows
+
+**💡 Implementation Focus**: Exactly-once semantics in real-time analytics scenarios
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise83/)**
+
+### Exercise 8.4: Advanced Exactly-Once Patterns
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
+Master advanced exactly-once techniques:
+- High-performance checkpoint optimization for enterprise scale
+- Complex external system integration patterns  
+- Advanced recovery strategies and monitoring
+- Production debugging and troubleshooting
+
+**💡 Implementation Focus**: Enterprise-scale exactly-once optimization techniques
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise84/)**
+
+---
+
+## 🚀 Get Started with Exercises
+
+All exercises include complete working solutions, detailed documentation, and step-by-step instructions:
+
+**[→ Start with Exercise Solutions](Exercise-Solutions/README.md)**
 
 ## Checkpoint Optimization
 
