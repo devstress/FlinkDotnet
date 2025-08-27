@@ -23,12 +23,16 @@ public class GatewayService : IDisposable
         string bootstrapServers,
         string topicName,
         int gatewayId,
+        BackpressureConfiguration backpressureConfig,
         ILogger<GatewayService> logger)
     {
         _topicName = topicName;
         _gatewayId = gatewayId;
         _logger = logger;
-        _backpressureQueue = new BackpressureQueue(2, $"Gateway-{gatewayId}"); // BackpressureQueue=2 per customer
+        
+        // Get configured BackpressureQueue limit for Gateway service type
+        var maxConcurrencyPerCustomer = backpressureConfig.GetMaxConcurrencyPerCustomer("Gateway");
+        _backpressureQueue = new BackpressureQueue(maxConcurrencyPerCustomer, $"Gateway-{gatewayId}");
 
         var config = new ProducerConfig
         {
@@ -47,7 +51,8 @@ public class GatewayService : IDisposable
             .SetErrorHandler((_, e) => _logger.LogError("Kafka producer error: {Error}", e))
             .Build();
 
-        _logger.LogInformation("Gateway {GatewayId} initialized with BackpressureQueue=2 per customer", gatewayId);
+        _logger.LogInformation("Gateway {GatewayId} initialized with BackpressureQueue={MaxConcurrency} per customer", 
+            gatewayId, maxConcurrencyPerCustomer);
     }
 
     public string ServiceName => $"Gateway-{_gatewayId}";

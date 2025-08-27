@@ -26,12 +26,16 @@ public class FlinkProcessorService : IDisposable
         string consumerGroup,
         int taskManagerId,
         List<string> temporalEndpoints,
+        BackpressureConfiguration backpressureConfig,
         ILogger<FlinkProcessorService> logger)
     {
         _taskManagerId = taskManagerId;
         _logger = logger;
         _processingCts = new CancellationTokenSource();
-        _backpressureQueue = new BackpressureQueue(2, $"Flink-TM-{taskManagerId}"); // BackpressureQueue=2 per customer
+        
+        // Get configured BackpressureQueue limit for Flink service type
+        var maxConcurrencyPerCustomer = backpressureConfig.GetMaxConcurrencyPerCustomer("Flink");
+        _backpressureQueue = new BackpressureQueue(maxConcurrencyPerCustomer, $"Flink-TM-{taskManagerId}");
 
         var config = new ConsumerConfig
         {
@@ -61,11 +65,12 @@ public class FlinkProcessorService : IDisposable
             _temporalClients[i] = new TemporalClientService(
                 temporalEndpoints[i], 
                 i, 
+                backpressureConfig,
                 logger);
         }
 
-        _logger.LogInformation("Flink TaskManager {TaskManagerId} initialized with BackpressureQueue=2 per customer, {TemporalCount} Temporal endpoints",
-            taskManagerId, temporalEndpoints.Count);
+        _logger.LogInformation("Flink TaskManager {TaskManagerId} initialized with BackpressureQueue={MaxConcurrency} per customer, {TemporalCount} Temporal endpoints",
+            taskManagerId, maxConcurrencyPerCustomer, temporalEndpoints.Count);
     }
 
     public string ServiceName => $"Flink-TM-{_taskManagerId}";

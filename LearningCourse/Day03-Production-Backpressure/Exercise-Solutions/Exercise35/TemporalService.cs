@@ -20,15 +20,19 @@ public class TemporalClientService : IDisposable
     public TemporalClientService(
         string endpoint,
         int instanceId,
+        BackpressureConfiguration backpressureConfig,
         Microsoft.Extensions.Logging.ILogger logger)
     {
         _endpoint = endpoint;
         _instanceId = instanceId;
         _logger = logger;
-        _backpressureQueue = new BackpressureQueue(2, $"Temporal-{instanceId}"); // BackpressureQueue=2 per customer
+        
+        // Get configured BackpressureQueue limit for Temporal service type
+        var maxConcurrencyPerCustomer = backpressureConfig.GetMaxConcurrencyPerCustomer("Temporal");
+        _backpressureQueue = new BackpressureQueue(maxConcurrencyPerCustomer, $"Temporal-{instanceId}");
 
-        _logger.LogInformation("Temporal instance {InstanceId} initialized with BackpressureQueue=2 per customer, endpoint: {Endpoint}",
-            instanceId, _endpoint);
+        _logger.LogInformation("Temporal instance {InstanceId} initialized with BackpressureQueue={MaxConcurrency} per customer, endpoint: {Endpoint}",
+            instanceId, maxConcurrencyPerCustomer, _endpoint);
     }
 
     public string ServiceName => $"Temporal-{_instanceId}";
@@ -107,6 +111,7 @@ public class TemporalService : IDisposable
 
     public TemporalService(
         List<string> endpoints,
+        BackpressureConfiguration backpressureConfig,
         ILogger<TemporalService> logger)
     {
         _logger = logger;
@@ -114,7 +119,7 @@ public class TemporalService : IDisposable
 
         for (int i = 0; i < endpoints.Count; i++)
         {
-            _instances.Add(new TemporalClientService(endpoints[i], i, logger));
+            _instances.Add(new TemporalClientService(endpoints[i], i, backpressureConfig, logger));
         }
 
         _logger.LogInformation("Temporal service initialized with {InstanceCount} instances", endpoints.Count);

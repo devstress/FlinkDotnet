@@ -73,6 +73,14 @@ class Program
 
     static async Task RunTestScenariosAsync(Microsoft.Extensions.Logging.ILogger logger)
     {
+        // Initialize BackpressureQueue configuration
+        var backpressureConfig = BackpressureConfiguration.CreateDefault();
+        
+        Console.WriteLine("🔧 BackpressureQueue Configuration Management:");
+        Console.WriteLine("".PadRight(60, '-'));
+        backpressureConfig.ValidateAndLog(logger);
+        Console.WriteLine("");
+
         // Test scenario configurations
         var scenarios = new[]
         {
@@ -81,21 +89,24 @@ class Program
                 Name = "Scenario 1: High Volume", 
                 TargetMessages = 3_000_000, 
                 Customers = 300, 
-                TopicPartitionCount = 4 
+                TopicPartitionCount = 4,
+                BackpressureConfig = backpressureConfig
             },
             new TestScenario 
             { 
                 Name = "Scenario 2: Medium Volume, More Partitions", 
                 TargetMessages = 1_000_000, 
                 Customers = 300, 
-                TopicPartitionCount = 8 
+                TopicPartitionCount = 8,
+                BackpressureConfig = backpressureConfig
             },
             new TestScenario 
             { 
                 Name = "Scenario 3: Medium Volume, Max Partitions", 
                 TargetMessages = 1_000_000, 
                 Customers = 300, 
-                TopicPartitionCount = 16 
+                TopicPartitionCount = 16,
+                BackpressureConfig = backpressureConfig
             }
         };
 
@@ -103,7 +114,8 @@ class Program
         foreach (var scenario in scenarios)
         {
             Console.WriteLine($"  • {scenario.Name}");
-            Console.WriteLine($"    Messages: {scenario.TargetMessages:N0} | Customers: {scenario.Customers} | Partitions: {scenario.TopicPartitionCount} | BackpressureQueue: 2 per customer");
+            Console.WriteLine($"    Messages: {scenario.TargetMessages:N0} | Customers: {scenario.Customers} | Partitions: {scenario.TopicPartitionCount}");
+            Console.WriteLine($"    BackpressureQueue Config: {scenario.BackpressureConfig.GetConfigurationInfo()}");
         }
         Console.WriteLine("");
 
@@ -174,7 +186,10 @@ public class TestScenario
     public int TargetMessages { get; set; }
     public int Customers { get; set; }
     public int TopicPartitionCount { get; set; }
-    public int BackpressureQueue { get; set; } = 2; // Always 2 per customer for this exercise
+    public BackpressureConfiguration BackpressureConfig { get; set; } = BackpressureConfiguration.CreateDefault();
+    
+    [Obsolete("Use BackpressureConfig.GetMaxConcurrencyPerCustomer() instead")]
+    public int BackpressureQueue { get; set; } = 2; // Kept for backward compatibility
 }
 
 /// <summary>
@@ -198,6 +213,9 @@ public class ScenarioOrchestrator : IDisposable
         _scenario = scenario;
         _logger = logger;
 
+        // Get BackpressureQueue configuration
+        var backpressureConfig = scenario.BackpressureConfig;
+
         // Initialize services - using simpler logger creation
         _gateways = new List<GatewayService>();
         _flinkProcessors = new List<FlinkProcessorService>();
@@ -208,10 +226,10 @@ public class ScenarioOrchestrator : IDisposable
         var flinkLogger = loggerFactory.CreateLogger<FlinkProcessorService>();
         var temporalLogger = loggerFactory.CreateLogger<TemporalService>();
 
-        // Create 2 Gateway instances
+        // Create 2 Gateway instances with configured BackpressureQueue
         for (int i = 0; i < 2; i++)
         {
-            _gateways.Add(new GatewayService(bootstrapServers, topicName, i, gatewayLogger));
+            _gateways.Add(new GatewayService(bootstrapServers, topicName, i, backpressureConfig, gatewayLogger));
         }
 
         // Create 4 Temporal instances (endpoints would be real URLs in production)
@@ -219,9 +237,9 @@ public class ScenarioOrchestrator : IDisposable
             .Select(i => $"http://temporal-{i}:7233")
             .ToList();
         
-        _temporalService = new TemporalService(temporalEndpoints, temporalLogger);
+        _temporalService = new TemporalService(temporalEndpoints, backpressureConfig, temporalLogger);
 
-        // Create 4 Flink TaskManager instances
+        // Create 4 Flink TaskManager instances with configured BackpressureQueue
         for (int i = 0; i < 4; i++)
         {
             _flinkProcessors.Add(new FlinkProcessorService(
@@ -230,10 +248,12 @@ public class ScenarioOrchestrator : IDisposable
                 $"flink-consumer-group",
                 i,
                 temporalEndpoints,
+                backpressureConfig,
                 flinkLogger));
         }
 
-        logger.LogInformation("Scenario orchestrator initialized: 2 Gateways, 4 Flink TaskManagers, 4 Temporal instances (BackpressureQueue=2 per customer)");
+        logger.LogInformation("Scenario orchestrator initialized: 2 Gateways, 4 Flink TaskManagers, 4 Temporal instances");
+        logger.LogInformation("BackpressureQueue configuration: {Config}", backpressureConfig.GetConfigurationInfo());
     }
 
     public async Task<ScenarioResults> RunAsync(TimeSpan duration)

@@ -46,6 +46,106 @@ This exercise demonstrates a **simple per-customer semaphore-based backpressure 
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+## BackpressureQueue Configuration Management
+
+### 🔧 Configuration System
+
+The BackpressureQueue settings are managed through a centralized `BackpressureConfiguration` system that provides:
+
+- **Global default** per-customer limits for all services
+- **Service-specific overrides** for different components (Gateway, Flink, Temporal)
+- **Runtime configuration** without code changes
+- **Validation and monitoring** of configuration values
+
+### Configuration Location and Management
+
+**Primary Configuration Class**: [`BackpressureConfiguration.cs`](./BackpressureConfiguration.cs)
+
+```csharp
+// Default configuration - all services use 2 per customer
+var config = BackpressureConfiguration.CreateDefault();
+
+// Service-specific overrides example:
+config.SetServiceOverride("Gateway", 3);    // Gateways can handle more load
+config.SetServiceOverride("Temporal", 1);   // Temporal instances are more constrained
+
+// Configuration is passed to all services
+var gateway = new GatewayService(kafkaServer, topic, id, config, logger);
+var flink = new FlinkProcessorService(kafkaServer, topic, group, id, endpoints, config, logger);
+var temporal = new TemporalService(endpoints, config, logger);
+```
+
+### Configuration Options
+
+| Setting | Purpose | Default | Override Example |
+|---------|---------|---------|------------------|
+| `DefaultMaxConcurrencyPerCustomer` | Global default for all services | 2 | 3 |
+| `ServiceOverrides["Gateway"]` | Gateway-specific per-customer limit | Uses default | 4 |
+| `ServiceOverrides["Flink"]` | Flink-specific per-customer limit | Uses default | 2 |
+| `ServiceOverrides["Temporal"]` | Temporal-specific per-customer limit | Uses default | 1 |
+
+### Runtime Configuration Management
+
+**View Current Configuration:**
+```csharp
+var configInfo = backpressureConfig.GetConfigurationInfo();
+Console.WriteLine($"Config: {configInfo}");
+// Output: Default: 2 per customer | Effective: Gateway=2, Flink=2, Temporal=2
+```
+
+**Modify Configuration at Runtime:**
+```csharp
+// Increase Gateway capacity
+backpressureConfig.SetServiceOverride("Gateway", 4);
+
+// Reduce Temporal capacity for testing
+backpressureConfig.SetServiceOverride("Temporal", 1);
+
+// Remove override (fall back to default)
+backpressureConfig.RemoveServiceOverride("Gateway");
+```
+
+**Configuration Validation:**
+```csharp
+// Validates configuration and logs warnings for potential issues
+backpressureConfig.ValidateAndLog(logger);
+```
+
+**Example Output:**
+```
+BackpressureQueue Configuration:
+  Default per customer: 2
+  Service-specific overrides:
+    Gateway: 4 per customer
+    Temporal: 1 per customer
+  Effective settings per service type:
+    Gateway: 4 per customer
+    Flink: 2 per customer
+    Temporal: 1 per customer
+```
+
+### Integration Points
+
+1. **Service Initialization**: All services receive `BackpressureConfiguration` and use it to create appropriately configured `BackpressureQueue` instances
+
+2. **Test Scenarios**: Each test scenario includes its configuration for repeatability:
+   ```csharp
+   var scenario = new TestScenario {
+       Name = "High Load Test",
+       BackpressureConfig = config  // Passed to all services
+   };
+   ```
+
+3. **Monitoring**: Runtime statistics include configuration info for debugging
+
+### Configuration Benefits
+
+- **🎯 Flexibility**: Different services can have different per-customer limits
+- **🔍 Observability**: Clear visibility into current configuration
+- **⚙️ Testability**: Easy to test different configurations
+- **🛡️ Safety**: Validation prevents invalid configurations
+- **📊 Monitoring**: Configuration info included in runtime statistics
+
 ## Test Scenarios
 
 The exercise tests three specific configurations as requested:
