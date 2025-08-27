@@ -350,15 +350,6 @@ Once deployed, you'll have:
 
 Each day includes complete Visual Studio solution files for immediate IDE integration:
 
-#### **🔧 Available Tutorial Solutions**
-
-| Day | Solution File | Projects | Focus Area |
-|-----|---------------|----------|------------|
-| **Day 1** | `Day01-Flink21-Fundamentals/Day01Tutorial.sln` | 4 projects | Flink 2.1.0 Fundamentals |
-| **Day 2** | `Day02-AI-Stream-Processing/Day02Tutorial.sln` | 4 projects | **Advanced Stream Processing & AI Integration** |
-| **Day 7** | `Day07-Stress-Testing/Day07Tutorial.sln` | 3 projects | Stress Testing & Performance |
-| **Day 14** | `Day14-Capstone-Project/Day14Tutorial.sln` | 4 projects | **Enterprise Capstone Project** |
-
 #### **🎯 Professional IDE Integration**
 
 ```bash
