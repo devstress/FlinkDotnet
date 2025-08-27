@@ -1,6 +1,9 @@
-# Day 8 Exercise Solutions
+# Day 8 Exercise Solutions - Exactly-Once Semantics & Data Consistency
 
-This directory contains complete working solutions for all Day 8 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 8 exercises, implementing **real-world exactly-once processing patterns** from Uber, Stripe, and PayPal.
 
 ## 🎯 Focus: Exactly-Once Semantics & Data Consistency
 

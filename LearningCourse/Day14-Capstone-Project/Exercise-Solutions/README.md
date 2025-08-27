@@ -1,6 +1,9 @@
-# Day 14 Exercise Solutions
+# Day 14 Exercise Solutions - Capstone Project
 
-This directory contains complete working solutions for all Day 14 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains the complete capstone project combining all enterprise patterns from Days 1-13 into a production-ready streaming platform.
 
 ## 🎯 Focus: Capstone Project - Multi-Domain Platform
 

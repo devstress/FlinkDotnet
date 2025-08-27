@@ -86,19 +86,19 @@ Mark off each exercise as you complete it
 - **[Day 1: Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)** ← START HERE
 - **[Day 2: AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
 - **[Day 3: Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **Day 4: Enterprise Observability** - [Click here for steps](Day04-Enterprise-Observability/Exercise-Solutions/)
-- **Day 5: Temporal Workflows** - [Click here for steps](Day05-Temporal-Workflows/Exercise-Solutions/)
-- **Day 6: Advanced Windows/Joins** - [Click here for steps](Day06-Advanced-Windows-Joins/Exercise-Solutions/)
-- **Day 7: Stress Testing** - [Click here for steps](Day07-Stress-Testing/Exercise-Solutions/)
+- **[Day 4: Enterprise Observability](Day04-Enterprise-Observability/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 5: Temporal Workflows](Day05-Temporal-Workflows/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 6: Advanced Windows/Joins](Day06-Advanced-Windows-Joins/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 7: Stress Testing](Day07-Stress-Testing/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
 
 ### Week 2: Advanced Patterns  
-- **Day 8: Exactly-Once Semantics** - [Click here for steps](Day08-Exactly-Once-Semantics/Exercise-Solutions/)
-- **Day 9: Performance Optimization** - [Click here for steps](Day09-Performance-Optimization-Scaling/Exercise-Solutions/)
-- **Day 10: Security & Compliance** - [Click here for steps](Day10-Security-Privacy-Compliance/Exercise-Solutions/)
-- **Day 11: Disaster Recovery** - [Click here for steps](Day11-Disaster-Recovery-Multi-Region/Exercise-Solutions/)
-- **Day 12: Advanced Patterns** - [Click here for steps](Day12-Advanced-Streaming-Patterns/Exercise-Solutions/)
-- **Day 13: Testing & Chaos** - [Click here for steps](Day13-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/)
-- **Day 14: Capstone Project** - [Click here for steps](Day14-Capstone-Project/Exercise-Solutions/)
+- **[Day 8: Exactly-Once Semantics](Day08-Exactly-Once-Semantics/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 9: Performance Optimization](Day09-Performance-Optimization-Scaling/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 10: Security & Compliance](Day10-Security-Privacy-Compliance/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 11: Disaster Recovery](Day11-Disaster-Recovery-Multi-Region/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 12: Advanced Patterns](Day12-Advanced-Streaming-Patterns/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 13: Testing & Chaos](Day13-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 14: Capstone Project](Day14-Capstone-Project/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
 
 ---
 

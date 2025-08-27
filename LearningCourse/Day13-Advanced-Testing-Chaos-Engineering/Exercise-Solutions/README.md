@@ -1,6 +1,9 @@
-# Day 13 Exercise Solutions
+# Day 13 Exercise Solutions - Advanced Testing & Chaos Engineering
 
-This directory contains complete working solutions for all Day 13 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 13 exercises, implementing **real-world testing and chaos engineering patterns** from Netflix, Amazon, and Google.
 
 ## 🎯 Focus: Advanced Testing & Chaos Engineering
 
