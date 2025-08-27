@@ -44,6 +44,46 @@ This directory contains complete working solutions for all Day 1 exercises, impl
   - Comprehensive audit logging implementing compliance reporting from theory
   - Secret management integration matching enterprise secret stores from theory
 
+### ✅ Exercise 1.5: Netflix-Style Recommendation System (AI-Enhanced Microservices)
+- **Directory**: `ProductionApp/` (RecommendationEngine configuration)
+- **Theory Connection**: Implements **[Netflix's AI-Enhanced Microservices](../README.md#netflix's-ai-enhanced-microservices)** with Flink 2.1.0 AI capabilities
+- **Business Context**: Netflix AI recommendation system processing 2.5 billion hours of viewing data
+- **Key Features**:
+  - Real-time viewing event processing implementing AI-enhanced microservices from theory
+  - Multi-model deployment with A/B testing demonstrating traffic splitting from theory
+  - Global content personalization implementing sub-50ms response times from theory
+  - AI Model DDL for 200+ ML models matching production deployment patterns from theory
+
+### ✅ Exercise 1.6: Uber-Scale Dynamic Pricing (Unified Real-time Platform)
+- **Directory**: `ProductionApp/` (DynamicPricingEngine configuration)
+- **Theory Connection**: Implements **[Uber's Unified Real-time Platform](../README.md#uber's-unified-real-time-platform)** with Flink 2.1.0 Process Table Functions
+- **Business Context**: Uber's dynamic pricing engine processing 15 million trips daily
+- **Key Features**:
+  - Real-time surge calculation implementing unified real-time platform from theory
+  - ML-powered route optimization demonstrating Process Table Functions from theory
+  - Driver-rider matching algorithms implementing exactly-once financial processing from theory
+  - Dynamic pricing optimization matching theory specifications for global scale
+
+### ✅ Exercise 1.7: LinkedIn Feed Generation (Event-Driven AI Architecture)
+- **Directory**: `ProductionApp/` (FeedGenerationEngine configuration)
+- **Theory Connection**: Implements **[LinkedIn's Event-Driven AI Architecture](../README.md#linkedin's-event-driven-ai-architecture)** with advanced windowing and CEP
+- **Business Context**: LinkedIn's feed generation system serving 900+ million professionals
+- **Key Features**:
+  - Real-time feed personalization implementing event-driven AI architecture from theory
+  - Advanced windowing for social graph processing demonstrating complex event processing from theory
+  - Fraud detection with CEP patterns implementing professional content ranking from theory
+  - Social relationship analysis matching theory specifications for global professional network
+
+### ✅ Exercise 1.8: Google-Style Observability (SRE Practices)
+- **Files**: `infrastructure-validation.ps1` (SREMonitoring mode) + `observability-dashboard.html`
+- **Theory Connection**: Implements **[Google SRE Practices](../README.md#google-sre-practices)** with comprehensive infrastructure monitoring
+- **Business Context**: Google SRE practices for infrastructure validation and AI model monitoring
+- **Key Features**:
+  - SLI/SLO monitoring and tracking implementing Google SRE practices from theory
+  - Error budget management demonstrating distributed tracing from theory
+  - Predictive capacity planning implementing automated alerting from theory
+  - Comprehensive observability matching theory specifications for Google-level reliability
+
 ## 🚀 Quick Start Guide
 
 1. **Setup Complete Environment**:
@@ -52,19 +92,19 @@ This directory contains complete working solutions for all Day 1 exercises, impl
    pwsh ./test-aspire-localtesting.ps1 -MessageCount 1000
    ```
 
-2. **Run Netflix Infrastructure Validation**:
+2. **Run Netflix Infrastructure Validation** (Exercise 1.1):
    ```bash
    pwsh ./infrastructure-validation.ps1
    ```
 
-3. **Deploy Uber State Backend Configuration**:
+3. **Deploy Uber State Backend Configuration** (Exercise 1.2):
    ```bash
    cd ProductionApp
    dotnet build
    dotnet run --configuration=RocksDBStateBackend
    ```
 
-4. **Test LinkedIn Load Management**:
+4. **Test LinkedIn Load Management** (Exercise 1.3):
    ```bash
    # Open observability dashboard
    start observability-dashboard.html
@@ -73,9 +113,33 @@ This directory contains complete working solutions for all Day 1 exercises, impl
    pwsh ./load-testing.ps1
    ```
 
-5. **Validate Financial Services Security**:
+5. **Validate Financial Services Security** (Exercise 1.4):
    ```bash
    pwsh ./infrastructure-validation.ps1 -SecurityValidation
+   ```
+
+6. **Deploy Netflix-Style Recommendation System** (Exercise 1.5):
+   ```bash
+   cd ProductionApp
+   dotnet run --configuration=RecommendationEngine
+   ```
+
+7. **Test Uber-Scale Dynamic Pricing** (Exercise 1.6):
+   ```bash
+   cd ProductionApp
+   dotnet run --configuration=DynamicPricingEngine
+   ```
+
+8. **Run LinkedIn Feed Generation** (Exercise 1.7):
+   ```bash
+   cd ProductionApp
+   dotnet run --configuration=FeedGenerationEngine
+   ```
+
+9. **Validate Google-Style SRE Observability** (Exercise 1.8):
+   ```bash
+   pwsh ./infrastructure-validation.ps1 -SREMonitoring
+   start observability-dashboard.html
    ```
 
 ## 📊 Expected Enterprise Results
