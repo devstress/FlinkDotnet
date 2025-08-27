@@ -1,6 +1,9 @@
-# Day 9 Exercise Solutions
+# Day 9 Exercise Solutions - Performance Optimization & Scaling
 
-This directory contains complete working solutions for all Day 9 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 9 exercises, implementing **real-world performance optimization patterns** from Netflix, LinkedIn, and Google.
 
 ## 🎯 Focus: Performance Optimization & Scaling
 

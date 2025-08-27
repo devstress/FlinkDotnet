@@ -1,6 +1,9 @@
-# Day 7 Exercise Solutions
+# Day 7 Exercise Solutions - Stress Testing & Performance Analysis
 
-This directory contains complete working solutions for all Day 7 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 7 exercises, implementing **real-world stress testing patterns** from Netflix, Uber, and Amazon.
 
 ## 🎯 Focus: Stress Testing & Performance Analysis
 

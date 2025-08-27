@@ -1,6 +1,9 @@
-# Day 10 Exercise Solutions
+# Day 10 Exercise Solutions - Security & Privacy Compliance
 
-This directory contains complete working solutions for all Day 10 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 10 exercises, implementing **real-world security and compliance patterns** for GDPR, PCI DSS, SOX, and HIPAA.
 
 ## 🎯 Focus: Security, Privacy & Compliance
 

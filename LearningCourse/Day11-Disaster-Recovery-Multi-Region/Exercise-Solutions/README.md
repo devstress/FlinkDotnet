@@ -1,6 +1,9 @@
-# Day 11 Exercise Solutions
+# Day 11 Exercise Solutions - Disaster Recovery & Multi-Region
 
-This directory contains complete working solutions for all Day 11 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 11 exercises, implementing **real-world disaster recovery patterns** from Netflix, AWS, and Azure.
 
 ## 🎯 Focus: Disaster Recovery & Multi-Region
 

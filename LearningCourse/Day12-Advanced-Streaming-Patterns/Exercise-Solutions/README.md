@@ -1,6 +1,9 @@
-# Day 12 Exercise Solutions
+# Day 12 Exercise Solutions - Advanced Streaming Patterns
 
-This directory contains complete working solutions for all Day 12 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 12 exercises, implementing **real-world advanced streaming patterns** from Uber, LinkedIn, and Airbnb.
 
 ## 🎯 Focus: Advanced Streaming Patterns
 

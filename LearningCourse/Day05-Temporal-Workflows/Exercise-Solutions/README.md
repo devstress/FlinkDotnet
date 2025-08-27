@@ -1,6 +1,9 @@
-# Day 5 Exercise Solutions
+# Day 5 Exercise Solutions - Temporal Workflows & Orchestration
 
-This directory contains complete working solutions for all Day 5 exercises.
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
+This directory contains complete working solutions for all Day 5 exercises, implementing **real-world workflow orchestration patterns** from Uber, Airbnb, and Stripe.
 
 ## 🎯 Focus: Temporal Workflows & Orchestration
 

@@ -1,5 +1,8 @@
 # Day 3 Exercise Solutions - Enterprise Production Backpressure Implementation
 
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
 This directory contains complete working solutions for all Day 3 exercises, implementing **real-world distributed rate limiting patterns** from Netflix, Uber, and LinkedIn. Each solution directly implements specific theory concepts from the main README.md.
 
 ## 🏢 Enterprise Backpressure Business Context Solutions

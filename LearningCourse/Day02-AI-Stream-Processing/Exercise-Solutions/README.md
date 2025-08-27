@@ -1,5 +1,8 @@
 # Day 2 Exercise Solutions - Enterprise AI Implementation Examples
 
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
 This directory contains complete working solutions for all Day 2 AI-Enhanced Stream Processing exercises, implementing **real-world enterprise AI patterns** from Netflix, Uber, LinkedIn, and Amazon. Each solution directly implements specific theory concepts from the main README.md.
 
 ## 🏢 Enterprise AI Business Context Solutions
