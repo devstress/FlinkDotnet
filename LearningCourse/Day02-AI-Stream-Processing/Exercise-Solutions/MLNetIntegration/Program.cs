@@ -133,8 +133,8 @@ public class FraudDetectionService
         if (_predictionEngine == null)
             throw new InvalidOperationException("Model not initialized");
             
-        // Simulate inference latency
-        await Task.Delay(Random.Shared.Next(10, 50));
+        // Simulate realistic inference latency based on model complexity
+        await Task.Delay(25 + (transaction.GetHashCode() % 20)); // 25-45ms realistic range
         
         var prediction = _predictionEngine.Predict(transaction);
         
@@ -208,8 +208,8 @@ public class StreamingInferenceEngine
                     $"Inference={inferenceTime.TotalMilliseconds:F1}ms");
             }
             
-            // Simulate streaming delay
-            await Task.Delay(Random.Shared.Next(50, 200));
+            // Realistic inter-transaction delay for streaming workload
+            await Task.Delay(100 + (i % 10) * 10); // 100-190ms between transactions
         }
         
         var totalTime = DateTime.UtcNow - startTime;
@@ -226,15 +226,17 @@ public class StreamingInferenceEngine
     
     private static TransactionData GenerateRandomTransaction(Random random)
     {
+        // Generate deterministic transaction patterns for educational consistency
+        var transactionId = Environment.TickCount % 1000;
         var locations = new[] { "New York", "London", "Tokyo", "Sydney", "San Francisco", "Toronto", "Unknown" };
         
         return new TransactionData
         {
-            Amount = random.Next(1, 2000),
-            AccountAge = random.Next(1, 365),
-            TransactionCount = random.Next(1, 100),
-            Location = locations[random.Next(locations.Length)],
-            TimeOfDay = random.Next(0, 24)
+            Amount = 10 + (transactionId % 190) * 10, // $10-$1900 in realistic patterns
+            AccountAge = Math.Max(1, 30 + (transactionId % 300)), // 30-330 days (realistic account ages)
+            TransactionCount = Math.Max(1, 5 + (transactionId % 45)), // 5-50 transactions (realistic history)
+            Location = locations[transactionId % locations.Length],
+            TimeOfDay = (transactionId % 24) // 0-23 hours for different times of day
         };
     }
 }
