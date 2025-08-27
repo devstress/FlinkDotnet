@@ -1146,6 +1146,62 @@ These exercises implement the **specific distributed rate limiting concepts** co
 
 **🔗 Theory Integration**: This exercise validates all **[Fault Scenarios](#fault-scenarios)** and monitoring patterns described throughout the theory sections.
 
+### Exercise 3.5: Simple BackpressureQueue Implementation (45 minutes)
+**Business Context**: Alternative Simple Backpressure Approach
+**Theory Connection**: Contrasts with distributed patterns - demonstrates when simple solutions are better
+
+**Objective**: Implement a straightforward semaphore-based backpressure system and compare it with the complex distributed rate limiting patterns from Exercises 3.1-3.4.
+
+**Real-World Scenario**: You need to choose between simple local backpressure vs complex distributed coordination. This exercise shows when simple solutions are more effective.
+
+**Architecture**: `Gateway(producer) → Kafka → Flink → Temporal(processor)` with `BackpressureQueue=2` for all services
+
+**Implementation Tasks**:
+
+1. **Simple BackpressureQueue Implementation** (15 minutes) - demonstrates semaphore-based limiting
+   ```bash
+   cd LearningCourse/Day03-Production-Backpressure/Exercise-Solutions/Exercise35
+   
+   # Build and run the simple backpressure demo
+   dotnet build
+   dotnet run
+   
+   # Observe BackpressureQueue=2 limiting in action
+   # - Gateway: max 2 concurrent sends
+   # - Flink: max 2 concurrent processes  
+   # - Temporal: max 2 concurrent receives
+   ```
+
+2. **Test Three Scenarios** (20 minutes) - validates different partition/load configurations
+   ```bash
+   # Test scenarios as specified:
+   # Scenario 1: 3,000,000 messages | 300 customers | 4 partitions | BackpressureQueue=2
+   # Scenario 2: 1,000,000 messages | 300 customers | 8 partitions | BackpressureQueue=2
+   # Scenario 3: 1,000,000 messages | 300 customers | 16 partitions | BackpressureQueue=2
+   
+   # Compare throughput and backpressure behavior across scenarios
+   dotnet run -- --scenario 1
+   dotnet run -- --scenario 2
+   dotnet run -- --scenario 3
+   ```
+
+3. **Compare Approaches** (10 minutes) - analyze simple vs complex trade-offs
+   ```bash
+   # Review comparison documentation
+   cat Exercise35/README.md
+   
+   # Key comparisons:
+   # - Simple: Easy to understand, fixed limits, no coordination
+   # - Complex: Adaptive, global fairness, enterprise scale
+   # - Use cases for each approach
+   ```
+
+**Expected Results**: Clear understanding of when to use simple backpressure vs distributed rate limiting, with concrete performance comparisons.
+
+**Expected Business Value**: Practical guidance for choosing appropriate backpressure patterns based on system requirements and operational complexity.
+
+**🔗 Theory Integration**: This exercise provides practical comparison between simple and complex approaches, helping determine the right tool for the right job.
+
 ## 📚 References and Further Reading
 
 ### 📖 Official Documentation
@@ -1170,6 +1226,9 @@ These exercises implement the **specific distributed rate limiting concepts** co
 - [ ] Validated "safe by default" startup behavior
 - [ ] Configured production monitoring and alerting
 - [ ] Completed chaos engineering exercises
+- [ ] Implemented simple BackpressureQueue alternative approach
+- [ ] Compared simple vs complex backpressure patterns
+- [ ] Tested three BackpressureQueue scenarios with different configurations
 - [ ] Documented lessons learned and operational procedures
 
 ## 📚 Preparation for Day 4
