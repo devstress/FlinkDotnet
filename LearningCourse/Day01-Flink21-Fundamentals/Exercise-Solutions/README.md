@@ -1,5 +1,8 @@
 # Day 1 Exercise Solutions - Enterprise Implementation Examples
 
+> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](HOW-TO-RUN-EXERCISES.md)**  
+> Follow the simple guide above - no experience needed! ⬆️
+
 This directory contains complete working solutions for all Day 1 exercises, implementing **real-world enterprise patterns** from Netflix, Uber, LinkedIn, and financial services companies. Each solution directly implements specific theory concepts from the main README.md.
 
 ## 🏢 Enterprise Business Context Solutions
