@@ -21,10 +21,56 @@ This module follows **Apache Flink 2.1.0's revolutionary transformation** into a
 - **[Flink Architecture Overview](https://flink.apache.org/flink-architecture.html)** - Core concepts and unified Data + AI design
 
 ### 🏢 Enterprise Infrastructure Patterns
-- **Netflix's AI-Enhanced Microservices** - Real-time AI recommendation systems
-- **Uber's Unified Real-time Platform** - AI-powered dynamic pricing and route optimization
-- **LinkedIn's Event-Driven AI Architecture** - Real-time content personalization and fraud detection
-- **Google SRE Practices** - Infrastructure validation and AI model monitoring
+
+These patterns demonstrate how industry leaders implement Flink 2.1.0 at massive scale:
+
+#### **Netflix's AI-Enhanced Microservices** → **[Exercise 1.5: Netflix-Style Recommendation System](Exercise-Solutions/)**
+**Scale**: 250+ million global users, 2.5 billion hours of content daily  
+**Architecture**: Real-time recommendation systems using Flink 2.1.0's AI Model DDL and ML_PREDICT functions
+- **Microservices Integration**: Event-driven architecture with 200+ ML models
+- **Real-time Personalization**: Sub-50ms recommendation generation
+- **A/B Testing**: Traffic splitting between model versions
+- **Global Scale**: Multi-region deployment with consistent user experience
+
+**🎯 What You'll Learn**: Netflix-style microservices patterns, AI model lifecycle management, real-time recommendation algorithms, global content delivery optimization
+
+**🛠️ Practical Exercise**: Build a Netflix-style recommendation engine that processes viewing events in real-time, manages multiple ML models with A/B testing, and delivers personalized content recommendations with sub-50ms latency.
+
+#### **Uber's Unified Real-time Platform** → **[Exercise 1.6: Uber-Scale Dynamic Pricing](Exercise-Solutions/)**
+**Scale**: 15+ million trips daily, 5+ million drivers globally  
+**Architecture**: AI-powered dynamic pricing and route optimization using Flink 2.1.0's Process Table Functions
+- **Dynamic Pricing**: Real-time surge calculation based on supply/demand
+- **Route Optimization**: ML-powered GPS routing with traffic prediction  
+- **Driver Matching**: Event-time processing for optimal driver-rider pairing
+- **Fault Tolerance**: Exactly-once processing for financial accuracy
+
+**🎯 What You'll Learn**: Uber's unified platform patterns, dynamic pricing algorithms, real-time geospatial processing, financial-grade exactness guarantees
+
+**🛠️ Practical Exercise**: Implement Uber's dynamic pricing system that calculates surge multipliers in real-time, optimizes driver routes using ML predictions, and maintains financial accuracy with exactly-once processing.
+
+#### **LinkedIn's Event-Driven AI Architecture** → **[Exercise 1.7: LinkedIn Feed Generation](Exercise-Solutions/)**
+**Scale**: 900+ million professionals, 2+ billion daily feed updates  
+**Architecture**: Real-time content personalization and fraud detection using Flink 2.1.0's advanced windowing and CEP
+- **Feed Generation**: Personalized content ranking for professional networks
+- **Fraud Detection**: Real-time detection of fake profiles and spam content
+- **Social Graph Processing**: Complex relationship analysis and recommendations
+- **Professional Insights**: Career progression and skill development tracking
+
+**🎯 What You'll Learn**: LinkedIn's event-driven patterns, social graph processing, professional content algorithms, enterprise fraud detection
+
+**🛠️ Practical Exercise**: Build LinkedIn's feed generation system that personalizes content for professional networks, detects fraudulent activity in real-time, and processes complex social graph relationships.
+
+#### **Google SRE Practices** → **[Exercise 1.8: Google-Style Observability](Exercise-Solutions/)**
+**Scale**: Infrastructure monitoring for Google-scale services  
+**Architecture**: Infrastructure validation and AI model monitoring using comprehensive observability patterns
+- **SLI/SLO Management**: Service level indicators and objectives monitoring
+- **Error Budget Tracking**: Reliability engineering with automated alerts
+- **Distributed Tracing**: End-to-end request tracking across microservices
+- **Capacity Planning**: Predictive scaling based on traffic patterns
+
+**🎯 What You'll Learn**: Google SRE methodologies, comprehensive observability patterns, reliability engineering practices, predictive infrastructure management
+
+**🛠️ Practical Exercise**: Implement Google-style SRE practices with SLI/SLO monitoring, error budget tracking, distributed tracing, and predictive capacity planning for Flink applications.
 
 ## 🚀 What's Revolutionary in Apache Flink 2.1.0
 
@@ -35,7 +81,7 @@ Apache Flink 2.1.0 marks a **paradigm shift** from stream processing engine to *
 #### 1. **Breakthrough Real-Time AI Capabilities** → **[Exercise 1.1: Production Infrastructure Validation](Exercise-Solutions/)**
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                     FLINK 2.0 UNIFIED ARCHITECTURE                             │
+│                     FLINK 2.1.0 UNIFIED ARCHITECTURE                           │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────┐    ┌─────────────────────────────────────────────────────┐ │
@@ -97,7 +143,7 @@ Your LocalTesting environment provides an **enterprise-grade infrastructure** th
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐ │
-│  │   APACHE FLINK 2.0  │    │    TEMPORAL.IO      │    │  OBSERVABILITY      │ │
+│  │  APACHE FLINK 2.1.0 │    │    TEMPORAL.IO      │    │  OBSERVABILITY      │ │
 │  │                     │    │                     │    │      STACK          │ │
 │  │ • JobManager:8081   │    │ • Server:7233       │    │ • Grafana:3000      │ │
 │  │ • 3 TaskManagers    │───▶│ • UI:8084           │───▶│ • Prometheus:9090   │ │
@@ -1119,6 +1165,134 @@ pwsh ./infrastructure-validation.ps1 -SecurityValidation
 
 **🔗 Theory Integration**: This exercise implements all **[Enterprise Security & Compliance](#4-enterprise-security--compliance)** requirements including fine-grained RBAC, end-to-end encryption, audit logging, and secret management described in the theory section.
 
+### Exercise 1.5: Netflix-Style Recommendation System
+**Business Context**: Netflix AI-Enhanced Microservices Architecture
+**Theory Connection**: Implements **[Netflix's AI-Enhanced Microservices](#netflix's-ai-enhanced-microservices)** with Flink 2.1.0 AI capabilities
+
+**Objective**: Build Netflix-scale recommendation system processing 2.5 billion hours of viewing data with real-time personalization
+
+**Real-World Scenario**: You're implementing Netflix's recommendation engine that must deliver personalized content to 250+ million users globally with sub-50ms response times while managing 200+ ML models in production.
+
+```bash
+# Deploy Netflix-style recommendation system
+cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions/NetflixRecommendationSystem
+dotnet build
+dotnet run --configuration=RecommendationEngine
+
+# Key Netflix patterns implemented (connects to enterprise patterns theory):
+# - Real-time viewing event processing (2.5B hours daily)
+# - AI Model DDL for 200+ ML models (theory connection)
+# - A/B testing with traffic splitting (theory connection)
+# - Multi-region content delivery (theory connection)
+# - Sub-50ms recommendation generation (theory connection)
+
+# Monitor Netflix-style metrics at http://localhost:3000
+# - Content recommendation accuracy
+# - Model performance across regions
+# - A/B test effectiveness metrics
+# - Global user engagement patterns
+```
+
+**Expected Business Value**: Netflix-level recommendation accuracy (>85%), sub-50ms response times, A/B testing for model optimization, global content personalization.
+
+**🔗 Theory Integration**: This exercise demonstrates all **[Netflix's AI-Enhanced Microservices](#netflix's-ai-enhanced-microservices)** patterns including microservices integration, real-time personalization, A/B testing, and global scale deployment.
+
+### Exercise 1.6: Uber-Scale Dynamic Pricing
+**Business Context**: Uber's Unified Real-time Platform
+**Theory Connection**: Implements **[Uber's Unified Real-time Platform](#uber's-unified-real-time-platform)** with Flink 2.1.0 Process Table Functions
+
+**Objective**: Build Uber-scale dynamic pricing engine processing 15 million trips daily with real-time surge calculation
+
+**Real-World Scenario**: You're implementing Uber's dynamic pricing system that must calculate surge multipliers in real-time, optimize driver routes using ML predictions, and maintain financial accuracy for 5+ million drivers globally.
+
+```bash
+# Deploy Uber-style dynamic pricing system
+cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions/UberDynamicPricing
+dotnet build
+dotnet run --configuration=DynamicPricingEngine
+
+# Key Uber patterns implemented (connects to enterprise patterns theory):
+# - Real-time surge calculation (15M trips daily)
+# - Process Table Functions for pricing logic (theory connection)
+# - ML-powered route optimization (theory connection)
+# - Driver-rider matching algorithms (theory connection)
+# - Exactly-once financial processing (theory connection)
+
+# Monitor Uber-style metrics at http://localhost:3000
+# - Dynamic pricing accuracy
+# - Route optimization effectiveness
+# - Driver utilization rates
+# - Financial transaction accuracy
+```
+
+**Expected Business Value**: Uber-level pricing optimization (15M+ trips daily), sub-second route calculation, optimal driver-rider matching, exactly-once financial accuracy.
+
+**🔗 Theory Integration**: This exercise demonstrates all **[Uber's Unified Real-time Platform](#uber's-unified-real-time-platform)** patterns including dynamic pricing, route optimization, driver matching, and fault tolerance.
+
+### Exercise 1.7: LinkedIn Feed Generation
+**Business Context**: LinkedIn's Event-Driven AI Architecture
+**Theory Connection**: Implements **[LinkedIn's Event-Driven AI Architecture](#linkedin's-event-driven-ai-architecture)** with advanced windowing and CEP
+
+**Objective**: Build LinkedIn-scale feed generation system serving 900+ million professionals with real-time content personalization
+
+**Real-World Scenario**: You're implementing LinkedIn's feed generation system that must personalize professional content, detect fraudulent activity, and process complex social graph relationships for the world's largest professional network.
+
+```bash
+# Deploy LinkedIn-style feed generation system
+cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions/LinkedInFeedGeneration
+dotnet build
+dotnet run --configuration=FeedGenerationEngine
+
+# Key LinkedIn patterns implemented (connects to enterprise patterns theory):
+# - Real-time feed personalization (900M+ professionals)
+# - Advanced windowing for social graph processing (theory connection)
+# - Fraud detection with CEP patterns (theory connection)
+# - Professional content ranking algorithms (theory connection)
+# - Social relationship analysis (theory connection)
+
+# Monitor LinkedIn-style metrics at http://localhost:3000
+# - Feed engagement rates
+# - Fraud detection accuracy
+# - Social graph processing performance
+# - Professional content relevance scores
+```
+
+**Expected Business Value**: LinkedIn-level engagement (900M+ users), real-time fraud detection, personalized professional content, complex social graph insights.
+
+**🔗 Theory Integration**: This exercise demonstrates all **[LinkedIn's Event-Driven AI Architecture](#linkedin's-event-driven-ai-architecture)** patterns including feed generation, fraud detection, social graph processing, and professional insights.
+
+### Exercise 1.8: Google-Style Observability
+**Business Context**: Google SRE Practices
+**Theory Connection**: Implements **[Google SRE Practices](#google-sre-practices)** with comprehensive infrastructure monitoring
+
+**Objective**: Build Google-scale observability system with SLI/SLO monitoring and predictive capacity planning
+
+**Real-World Scenario**: You're implementing Google's SRE practices for infrastructure validation and AI model monitoring, ensuring Google-level reliability and performance for mission-critical streaming applications.
+
+```bash
+# Deploy Google-style SRE observability system
+cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions/GoogleSREObservability
+dotnet build
+dotnet run --configuration=SREMonitoringSystem
+
+# Key Google SRE patterns implemented (connects to enterprise patterns theory):
+# - SLI/SLO monitoring and tracking (theory connection)
+# - Error budget management (theory connection)
+# - Distributed tracing across services (theory connection)
+# - Predictive capacity planning (theory connection)
+# - Automated alerting and remediation (theory connection)
+
+# Monitor Google-style SRE metrics at http://localhost:3000
+# - Service level indicator dashboards
+# - Error budget consumption tracking
+# - Distributed trace analysis
+# - Capacity utilization predictions
+```
+
+**Expected Business Value**: Google-level reliability (99.99% uptime), proactive error budget management, comprehensive distributed tracing, predictive infrastructure scaling.
+
+**🔗 Theory Integration**: This exercise demonstrates all **[Google SRE Practices](#google-sre-practices)** patterns including SLI/SLO management, error budget tracking, distributed tracing, and capacity planning.
+
 ## 📊 Expected Enterprise Results
 
 After completing Day 1, you should achieve enterprise-grade metrics matching industry leaders:
@@ -1127,16 +1301,29 @@ After completing Day 1, you should achieve enterprise-grade metrics matching ind
 - **System Availability**: 99.99% uptime with automated failure detection
 - **Response Times**: Sub-second health check responses
 - **Failure Recovery**: Automated detection and recovery within 30 seconds
+- **Recommendation Accuracy**: 85%+ content personalization success rate
+- **A/B Testing**: Multi-model deployment with traffic splitting capabilities
 
 ### Uber-Scale State Management
 - **Concurrent Operations**: 1M+ state operations per second
 - **Checkpoint Performance**: Complete state checkpoints under 30 seconds
 - **Memory Efficiency**: Optimized RocksDB configuration for high-throughput processing
+- **Dynamic Pricing**: Real-time surge calculation for 15M+ daily trips
+- **Financial Accuracy**: Exactly-once processing for monetary transactions
 
 ### LinkedIn-Grade Load Management
 - **Traffic Handling**: 99.9% uptime during 10x traffic spikes
 - **Backpressure Control**: Automatic throttling prevents system overload
 - **Response Times**: Sub-100ms 95th percentile latency under load
+- **Social Graph Processing**: Complex relationship analysis for 900M+ users
+- **Content Personalization**: Real-time professional feed generation
+
+### Google SRE-Level Observability
+- **SLI/SLO Monitoring**: Comprehensive service level tracking
+- **Error Budget Management**: Proactive reliability engineering
+- **Distributed Tracing**: End-to-end request visibility
+- **Predictive Scaling**: AI-powered capacity planning
+- **Automated Remediation**: Self-healing infrastructure patterns
 
 ### Financial Services Security Compliance
 - **Data Protection**: Full PCI DSS compliance with end-to-end encryption
@@ -1212,7 +1399,11 @@ Each solution includes:
 - [ ] **Exercise 1.1**: Infrastructure validation script executed successfully
 - [ ] **Exercise 1.2**: Production application built and running  
 - [ ] **Exercise 1.3**: Observability dashboard explored and working
-- [ ] **Exercise 1.4**: Load testing completed with performance results
+- [ ] **Exercise 1.4**: Security implementation validated with compliance checks
+- [ ] **Exercise 1.5**: Netflix-style recommendation system deployed and tested
+- [ ] **Exercise 1.6**: Uber-scale dynamic pricing engine implemented
+- [ ] **Exercise 1.7**: LinkedIn feed generation system built and validated
+- [ ] **Exercise 1.8**: Google-style SRE observability system configured
 
 ### Knowledge & Assessment
 - [ ] Completed load testing and performance validation
