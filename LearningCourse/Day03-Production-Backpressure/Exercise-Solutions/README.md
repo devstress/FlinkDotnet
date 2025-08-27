@@ -47,6 +47,16 @@ This directory contains complete working solutions for all Day 3 exercises, impl
   - Circuit breaker integration from theory specifications
   - End-to-end flow control verification matching theory requirements
 
+### ✅ Exercise 3.5: Simple BackpressureQueue Implementation
+- **Directory**: `Exercise35/`
+- **Theory Connection**: Contrasts with **[Complex Distributed Patterns](../README.md#🚀-implementation-real-world-grpc-ingress-with-distributed-rate-limiting)** - demonstrates alternative approaches
+- **Business Context**: Simple semaphore-based backpressure as alternative to complex distributed coordination
+- **Key Features**:
+  - BackpressureQueue=2 limiting for Gateway → Kafka → Flink → Temporal architecture
+  - Three test scenarios with different message/partition configurations
+  - Direct comparison with Exercises 3.1-3.4 distributed approaches
+  - Practical guidance for choosing simple vs complex solutions
+
 ## 🚀 Quick Start Guide
 
 1. **Setup Complete Backpressure Environment**:
@@ -80,6 +90,13 @@ This directory contains complete working solutions for all Day 3 exercises, impl
    ```bash
    cd Exercise34
    ./chaos-engineering-suite.sh --scenario all-failures
+   ```
+
+6. **Test Simple BackpressureQueue Alternative**:
+   ```bash
+   cd Exercise35
+   dotnet build
+   dotnet run
    ```
 
 ## 📊 Expected Enterprise Backpressure Results
