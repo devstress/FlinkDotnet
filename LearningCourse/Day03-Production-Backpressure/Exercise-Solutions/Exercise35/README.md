@@ -1,12 +1,12 @@
-# Exercise 3.5: Simple BackpressureQueue Implementation
+# Exercise 3.5: Simple BackpressureQueue Implementation (Per-Customer)
 
 ## Overview
 
-This exercise demonstrates a **simple semaphore-based backpressure approach** compared to the complex distributed rate limiting patterns shown in Exercises 3.1-3.4. 
+This exercise demonstrates a **simple per-customer semaphore-based backpressure approach** compared to the complex distributed rate limiting patterns shown in Exercises 3.1-3.4. 
 
 **Architecture**: `Gateway(producer) → Kafka → Flink → Temporal(processor)`
 
-**Key Feature**: `BackpressureQueue=2` limits each service to maximum 2 concurrent messages
+**Key Feature**: `BackpressureQueue=2 per customer` limits each service to maximum 2 concurrent messages **per customer**
 
 **Scale**: 2 Gateways, 4 Flink task managers, 4 Temporal instances
 
@@ -14,31 +14,33 @@ This exercise demonstrates a **simple semaphore-based backpressure approach** co
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                    SIMPLE BACKPRESSURE QUEUE ARCHITECTURE                      │
+│              SIMPLE PER-CUSTOMER BACKPRESSURE QUEUE ARCHITECTURE               │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐              │
 │  │ GATEWAY SERVICE │    │ FLINK PROCESSOR │    │ TEMPORAL SERVICE│              │
 │  │                 │    │                 │    │                 │              │
 │  │ BackpressureQ=2 │───▶│ BackpressureQ=2 │───▶│ BackpressureQ=2 │              │
+│  │  PER CUSTOMER   │    │  PER CUSTOMER   │    │  PER CUSTOMER   │              │
 │  │                 │    │                 │    │                 │              │
 │  │ • Produces to   │    │ • Consumes from │    │ • Receives msgs │              │
 │  │   Kafka         │    │   Kafka         │    │ • Discards msgs │              │
-│  │ • 2 concurrent  │    │ • Routes by     │    │ • 2 concurrent  │              │
-│  │   sends max     │    │   customer      │    │   processes max │              │
-│  │                 │    │ • 2 concurrent  │    │                 │              │
-│  │                 │    │   processes max │    │                 │              │
+│  │ • Each customer │    │ • Routes by     │    │ • Each customer │              │
+│  │   max 2 concur. │    │   customer      │    │   max 2 concur. │              │
+│  │   messages      │    │ • Each customer │    │   messages      │              │
+│  │                 │    │   max 2 concur. │    │                 │              │
+│  │                 │    │   messages      │    │                 │              │
 │  └─────────────────┘    └─────────────────┘    └─────────────────┘              │
 │            │                       │                       │                    │
 │            └──── KAFKA TOPIC ──────┼────── Partitioned ────┘                    │
 │                                    │                                            │
 │              ┌─────────────────────────────────────────────────────────────┐    │
-│              │              NATURAL BACKPRESSURE FLOW                     │    │
+│              │            NATURAL PER-CUSTOMER BACKPRESSURE FLOW          │    │
 │              │                                                             │    │
-│              │ 1. Temporal full    → Flink waits (don't commit offset)    │    │
-│              │ 2. Flink full       → Natural Kafka consumer lag           │    │
-│              │ 3. Kafka lag builds → Gateway detects slower consumption   │    │
-│              │ 4. Gateway full     → Client sees slower response times    │    │
+│              │ 1. Temporal full for Customer A → Flink waits for A only   │    │
+│              │ 2. Customer B messages still processed normally            │    │
+│              │ 3. Per-customer isolation prevents blocking other customers│    │
+│              │ 4. Fairer resource distribution across customers           │    │
 │              └─────────────────────────────────────────────────────────────┘    │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
@@ -50,13 +52,13 @@ The exercise tests three specific configurations as requested:
 
 | Scenario | TargetMessages | Customers | TopicPartitionCount | BackpressureQueue |
 |----------|---------------|-----------|---------------------|-------------------|
-| 1        | 3,000,000     | 300       | 4                  | 2                 |
-| 2        | 1,000,000     | 300       | 8                  | 2                 |
-| 3        | 1,000,000     | 300       | 16                 | 2                 |
+| 1        | 3,000,000     | 300       | 4                  | 2 per customer    |
+| 2        | 1,000,000     | 300       | 8                  | 2 per customer    |
+| 3        | 1,000,000     | 300       | 16                 | 2 per customer    |
 
 ## Simple vs Complex Backpressure: Comparison Analysis
 
-### 🟢 Simple BackpressureQueue Approach (This Exercise)
+### 🟢 Simple Per-Customer BackpressureQueue Approach (This Exercise)
 
 **When to Use:**
 - Single-cluster deployments
@@ -65,18 +67,20 @@ The exercise tests three specific configurations as requested:
 - Applications where natural backpressure flow is sufficient
 
 **Advantages:**
-- ✅ **Simplicity**: Easy to understand and debug - just semaphore limiting
+- ✅ **Per-Customer Isolation**: Each customer has independent processing limits
+- ✅ **Fairness**: One customer cannot block others from processing
+- ✅ **Simplicity**: Easy to understand and debug - semaphore per customer
 - ✅ **Natural Flow**: Backpressure propagates naturally through the system
 - ✅ **No Distributed State**: No coordination overhead between instances
 - ✅ **Fast Implementation**: Quick to implement and test
-- ✅ **Predictable Behavior**: Clear concurrent processing limits
-- ✅ **Resource Bounded**: Hard limits prevent resource exhaustion
+- ✅ **Predictable Behavior**: Clear concurrent processing limits per customer
+- ✅ **Resource Bounded**: Hard limits prevent resource exhaustion per customer
 
 **Disadvantages:**
-- ❌ **Less Adaptive**: Fixed concurrency limits, not adaptive to system load
-- ❌ **No Global Coordination**: Each service limits independently
-- ❌ **Coarse-Grained**: Limits entire service, not per-customer or per-endpoint
-- ❌ **No Fairness Guarantees**: No cross-customer or cross-tenant fairness
+- ❌ **Less Adaptive**: Fixed concurrency limits per customer, not adaptive to system load
+- ❌ **No Global Coordination**: Each service limits independently per customer
+- ❌ **Memory Overhead**: Maintains semaphores for each active customer
+- ❌ **No Cross-Customer Balancing**: Cannot redistribute unused capacity between customers
 
 ### 🟡 Complex Distributed Rate Limiting (Exercises 3.1-3.4)
 
@@ -102,38 +106,44 @@ The exercise tests three specific configurations as requested:
 
 ## Implementation Highlights
 
-### BackpressureQueue Core Implementation
+### BackpressureQueue Core Implementation (Per-Customer)
 
 ```csharp
 public class BackpressureQueue : IDisposable
 {
-    private readonly SemaphoreSlim _semaphore;
+    private readonly int _maxConcurrencyPerCustomer;
+    private readonly ConcurrentDictionary<int, SemaphoreSlim> _customerSemaphores;
     
-    public BackpressureQueue(int maxConcurrency, string serviceName)
+    public BackpressureQueue(int maxConcurrencyPerCustomer, string serviceName)
     {
-        _semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+        _maxConcurrencyPerCustomer = maxConcurrencyPerCustomer;
+        _customerSemaphores = new ConcurrentDictionary<int, SemaphoreSlim>();
         // ...
     }
 
-    public async Task<MessageSlot?> TryAcquireAsync(string messageId, CancellationToken cancellationToken = default)
+    public async Task<MessageSlot?> TryAcquireAsync(int customerId, string messageId, CancellationToken cancellationToken = default)
     {
-        // Non-blocking attempt - immediate backpressure if full
-        if (await _semaphore.WaitAsync(0, cancellationToken))
+        // Get or create semaphore for this customer
+        var semaphore = _customerSemaphores.GetOrAdd(customerId, 
+            _ => new SemaphoreSlim(_maxConcurrencyPerCustomer, _maxConcurrencyPerCustomer));
+
+        // Non-blocking attempt - immediate backpressure if customer limit reached
+        if (await semaphore.WaitAsync(0, cancellationToken))
         {
-            return new MessageSlot(this, messageId);
+            return new MessageSlot(this, messageId, customerId);
         }
-        return null; // Backpressure applied
+        return null; // Backpressure applied for this customer
     }
 }
 ```
 
 ### Service Implementation Pattern
 
-Each service (Gateway, Flink, Temporal) follows the same pattern:
+Each service (Gateway, Flink, Temporal) follows the same per-customer pattern:
 
 ```csharp
-// Try to acquire processing slot
-using var slot = await _backpressureQueue.TryAcquireAsync(messageId, cancellationToken);
+// Try to acquire processing slot for specific customer
+using var slot = await _backpressureQueue.TryAcquireAsync(message.CustomerId, messageId, cancellationToken);
 
 if (slot == null)
 {

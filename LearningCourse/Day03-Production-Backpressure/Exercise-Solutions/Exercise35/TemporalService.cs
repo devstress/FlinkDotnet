@@ -6,7 +6,8 @@ namespace Exercise35.Services;
 /// <summary>
 /// Temporal client service that simulates forwarding messages to Temporal instances.
 /// In a real implementation, this would make HTTP/gRPC calls to Temporal.
-/// For this exercise, it just receives and discards messages with BackpressureQueue=2 limiting.
+/// For this exercise, it just receives and discards messages with per-customer BackpressureQueue=2 limiting.
+/// Each customer can have up to 2 concurrent messages being processed by this Temporal instance.
 /// </summary>
 public class TemporalClientService : IDisposable
 {
@@ -24,9 +25,9 @@ public class TemporalClientService : IDisposable
         _endpoint = endpoint;
         _instanceId = instanceId;
         _logger = logger;
-        _backpressureQueue = new BackpressureQueue(2, $"Temporal-{instanceId}"); // BackpressureQueue=2
+        _backpressureQueue = new BackpressureQueue(2, $"Temporal-{instanceId}"); // BackpressureQueue=2 per customer
 
-        _logger.LogInformation("Temporal instance {InstanceId} initialized with BackpressureQueue=2, endpoint: {Endpoint}",
+        _logger.LogInformation("Temporal instance {InstanceId} initialized with BackpressureQueue=2 per customer, endpoint: {Endpoint}",
             instanceId, _endpoint);
     }
 
@@ -36,6 +37,7 @@ public class TemporalClientService : IDisposable
 
     /// <summary>
     /// Processes a message by receiving it and discarding it (as specified in requirements).
+    /// Uses per-customer backpressure limiting.
     /// Returns true if processed successfully, false if backpressure was applied.
     /// </summary>
     public async Task<bool> ProcessMessageAsync(
@@ -47,13 +49,13 @@ public class TemporalClientService : IDisposable
 
         var messageId = $"temporal-{_instanceId}-{message.CustomerId}-{DateTime.UtcNow:yyyyMMddHHmmssfff}";
 
-        // Try to acquire backpressure slot (non-blocking)
-        using var slot = await _backpressureQueue.TryAcquireAsync(messageId, cancellationToken);
+        // Try to acquire backpressure slot for this customer (non-blocking)
+        using var slot = await _backpressureQueue.TryAcquireAsync(message.CustomerId, messageId, cancellationToken);
         
         if (slot == null)
         {
-            // Backpressure applied - reject message
-            _logger.LogDebug("Temporal instance {InstanceId} rejected message for customer {CustomerId} due to backpressure",
+            // Backpressure applied for this customer - reject message
+            _logger.LogDebug("Temporal instance {InstanceId} rejected message for customer {CustomerId} due to per-customer backpressure",
                 _instanceId, message.CustomerId);
             return false;
         }

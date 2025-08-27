@@ -6,8 +6,9 @@ using System.Text.Json;
 namespace Exercise35.Services;
 
 /// <summary>
-/// Gateway service that produces messages to Kafka with BackpressureQueue=2 limiting.
+/// Gateway service that produces messages to Kafka with per-customer BackpressureQueue=2 limiting.
 /// Simulates the producer side of the Gateway → Kafka → Flink → Temporal flow.
+/// Each customer can have up to 2 concurrent messages being processed by this gateway.
 /// </summary>
 public class GatewayService : IDisposable
 {
@@ -27,7 +28,7 @@ public class GatewayService : IDisposable
         _topicName = topicName;
         _gatewayId = gatewayId;
         _logger = logger;
-        _backpressureQueue = new BackpressureQueue(2, $"Gateway-{gatewayId}"); // BackpressureQueue=2
+        _backpressureQueue = new BackpressureQueue(2, $"Gateway-{gatewayId}"); // BackpressureQueue=2 per customer
 
         var config = new ProducerConfig
         {
@@ -46,14 +47,15 @@ public class GatewayService : IDisposable
             .SetErrorHandler((_, e) => _logger.LogError("Kafka producer error: {Error}", e))
             .Build();
 
-        _logger.LogInformation("Gateway {GatewayId} initialized with BackpressureQueue=2", gatewayId);
+        _logger.LogInformation("Gateway {GatewayId} initialized with BackpressureQueue=2 per customer", gatewayId);
     }
 
     public string ServiceName => $"Gateway-{_gatewayId}";
     public BackpressureStats GetStats() => _backpressureQueue.GetStats();
 
     /// <summary>
-    /// Sends messages to Kafka with backpressure control.
+    /// Sends messages to Kafka with per-customer backpressure control.
+    /// Each customer can have up to 2 concurrent messages in processing.
     /// Returns the number of messages successfully sent.
     /// </summary>
     public async Task<SendResult> SendMessagesAsync(
@@ -71,7 +73,7 @@ public class GatewayService : IDisposable
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            // Apply backpressure - only 2 concurrent sends allowed
+            // Apply per-customer backpressure - group by customer for processing
             var task = ProcessSingleMessageAsync(message, result, cancellationToken);
             semTasks.Add(task);
 
@@ -86,7 +88,7 @@ public class GatewayService : IDisposable
         // Wait for remaining tasks
         await Task.WhenAll(semTasks);
 
-        _logger.LogInformation("Gateway {GatewayId} completed batch: {Sent} sent, {Dropped} dropped due to backpressure",
+        _logger.LogInformation("Gateway {GatewayId} completed batch: {Sent} sent, {Dropped} dropped due to per-customer backpressure",
             _gatewayId, result.MessagesSent, result.MessagesDropped);
 
         return result;
@@ -99,15 +101,15 @@ public class GatewayService : IDisposable
     {
         var messageId = $"gw{_gatewayId}-{message.CustomerId}-{message.Timestamp:yyyyMMddHHmmssfff}";
 
-        // Try to acquire backpressure slot (non-blocking)
-        using var slot = await _backpressureQueue.TryAcquireAsync(messageId, cancellationToken);
+        // Try to acquire backpressure slot for this customer (non-blocking)
+        using var slot = await _backpressureQueue.TryAcquireAsync(message.CustomerId, messageId, cancellationToken);
         
         if (slot == null)
         {
-            // Backpressure applied - drop message
+            // Backpressure applied for this customer - drop message
             Interlocked.Increment(ref result.MessagesDropped);
-            _logger.LogDebug("Gateway {GatewayId} dropped message {MessageId} due to backpressure", 
-                _gatewayId, messageId);
+            _logger.LogDebug("Gateway {GatewayId} dropped message {MessageId} for customer {CustomerId} due to per-customer backpressure", 
+                _gatewayId, messageId, message.CustomerId);
             return;
         }
 
@@ -132,14 +134,14 @@ public class GatewayService : IDisposable
             var deliveryResult = await _producer.ProduceAsync(_topicName, kafkaMessage, cancellationToken);
             
             Interlocked.Increment(ref result.MessagesSent);
-            _logger.LogDebug("Gateway {GatewayId} sent message {MessageId} to partition {Partition}",
-                _gatewayId, messageId, deliveryResult.Partition.Value);
+            _logger.LogDebug("Gateway {GatewayId} sent message {MessageId} for customer {CustomerId} to partition {Partition}",
+                _gatewayId, messageId, message.CustomerId, deliveryResult.Partition.Value);
         }
         catch (Exception ex)
         {
             Interlocked.Increment(ref result.MessagesFailed);
-            _logger.LogError(ex, "Gateway {GatewayId} failed to send message {MessageId}", 
-                _gatewayId, messageId);
+            _logger.LogError(ex, "Gateway {GatewayId} failed to send message {MessageId} for customer {CustomerId}", 
+                _gatewayId, messageId, message.CustomerId);
         }
         // slot is automatically disposed here, releasing the backpressure slot
     }

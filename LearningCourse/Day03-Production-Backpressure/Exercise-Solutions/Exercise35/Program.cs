@@ -8,19 +8,19 @@ using Serilog;
 namespace Exercise35;
 
 /// <summary>
-/// Exercise 3.5: Simple BackpressureQueue Implementation
+/// Exercise 3.5: Simple BackpressureQueue Implementation (Per-Customer)
 /// 
 /// Architecture: Gateway(producer) → Kafka → Flink → Temporal(processor)
 /// - Gateway puts messages to Kafka
 /// - Flink routes to Temporal by customer 
 /// - Temporal receives and discards
-/// - BackpressureQueue=2 for all services
+/// - BackpressureQueue=2 per customer for all services
 /// - Scale: 2 Gateways, 4 Flink task managers, 4 Temporal instances
 /// 
 /// Test scenarios:
-/// 1. 3,000,000 messages | 300 customers | 4 partitions | BackpressureQueue=2
-/// 2. 1,000,000 messages | 300 customers | 8 partitions | BackpressureQueue=2  
-/// 3. 1,000,000 messages | 300 customers | 16 partitions | BackpressureQueue=2
+/// 1. 3,000,000 messages | 300 customers | 4 partitions | BackpressureQueue=2 per customer
+/// 2. 1,000,000 messages | 300 customers | 8 partitions | BackpressureQueue=2 per customer  
+/// 3. 1,000,000 messages | 300 customers | 16 partitions | BackpressureQueue=2 per customer
 /// </summary>
 class Program
 {
@@ -31,10 +31,10 @@ class Program
             .WriteTo.Console()
             .CreateLogger();
 
-        Console.WriteLine("🚀 Exercise 3.5: Simple BackpressureQueue Implementation");
+        Console.WriteLine("🚀 Exercise 3.5: Simple BackpressureQueue Implementation (Per-Customer)");
         Console.WriteLine("".PadRight(80, '='));
         Console.WriteLine("Architecture: Gateway → Kafka → Flink → Temporal");
-        Console.WriteLine("BackpressureQueue=2 for all services");
+        Console.WriteLine("BackpressureQueue=2 per customer for all services");
         Console.WriteLine("Scale: 2 Gateways, 4 Flink TaskManagers, 4 Temporal instances");
         Console.WriteLine("");
 
@@ -53,7 +53,7 @@ class Program
         try
         {
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Starting Exercise 3.5: Simple BackpressureQueue Implementation");
+            logger.LogInformation("Starting Exercise 3.5: Simple BackpressureQueue Implementation (Per-Customer)");
 
             await RunTestScenariosAsync(logger);
 
@@ -103,7 +103,7 @@ class Program
         foreach (var scenario in scenarios)
         {
             Console.WriteLine($"  • {scenario.Name}");
-            Console.WriteLine($"    Messages: {scenario.TargetMessages:N0} | Customers: {scenario.Customers} | Partitions: {scenario.TopicPartitionCount} | BackpressureQueue: 2");
+            Console.WriteLine($"    Messages: {scenario.TargetMessages:N0} | Customers: {scenario.Customers} | Partitions: {scenario.TopicPartitionCount} | BackpressureQueue: 2 per customer");
         }
         Console.WriteLine("");
 
@@ -149,7 +149,18 @@ class Program
         Console.WriteLine("  Service Statistics:");
         foreach (var serviceStat in stats.ServiceStats)
         {
-            Console.WriteLine($"    {serviceStat.ServiceName}: {serviceStat.UtilizationPercentage:F1}% utilization, {serviceStat.CurrentConcurrency}/{serviceStat.MaxConcurrency} active");
+            Console.WriteLine($"    {serviceStat.ServiceName}: {serviceStat.OverallUtilizationPercentage:F1}% avg utilization, {serviceStat.ActiveCustomers} active customers");
+            
+            // Show top 5 most active customers for this service
+            var topCustomers = serviceStat.CustomerStats
+                .OrderByDescending(c => c.UtilizationPercentage)
+                .Take(5)
+                .ToList();
+            
+            if (topCustomers.Any())
+            {
+                Console.WriteLine($"      Top customers: {string.Join(", ", topCustomers.Select(c => $"C{c.CustomerId}({c.UtilizationPercentage:F0}%)"))}");
+            }
         }
     }
 }
@@ -163,7 +174,7 @@ public class TestScenario
     public int TargetMessages { get; set; }
     public int Customers { get; set; }
     public int TopicPartitionCount { get; set; }
-    public int BackpressureQueue { get; set; } = 2; // Always 2 for this exercise
+    public int BackpressureQueue { get; set; } = 2; // Always 2 per customer for this exercise
 }
 
 /// <summary>
@@ -222,7 +233,7 @@ public class ScenarioOrchestrator : IDisposable
                 flinkLogger));
         }
 
-        logger.LogInformation("Scenario orchestrator initialized: 2 Gateways, 4 Flink TaskManagers, 4 Temporal instances");
+        logger.LogInformation("Scenario orchestrator initialized: 2 Gateways, 4 Flink TaskManagers, 4 Temporal instances (BackpressureQueue=2 per customer)");
     }
 
     public async Task<ScenarioResults> RunAsync(TimeSpan duration)
@@ -283,7 +294,7 @@ public class ScenarioOrchestrator : IDisposable
             serviceStats.AddRange(_temporalService.GetAllStats());
 
             var totalProcessed = serviceStats.Where(s => s.ServiceName.StartsWith("Temporal"))
-                .Sum(s => s.MaxConcurrency - s.AvailableSlots); // Approximation
+                .Sum(s => s.TotalConcurrency); // Use TotalConcurrency instead
 
             return new ScenarioResults
             {

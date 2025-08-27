@@ -7,7 +7,8 @@ namespace Exercise35.Services;
 
 /// <summary>
 /// Flink processor service that consumes from Kafka, routes messages by customer,
-/// and forwards to appropriate Temporal instances with BackpressureQueue=2 limiting.
+/// and forwards to appropriate Temporal instances with per-customer BackpressureQueue=2 limiting.
+/// Each customer can have up to 2 concurrent messages being processed by this Flink TaskManager.
 /// </summary>
 public class FlinkProcessorService : IDisposable
 {
@@ -30,7 +31,7 @@ public class FlinkProcessorService : IDisposable
         _taskManagerId = taskManagerId;
         _logger = logger;
         _processingCts = new CancellationTokenSource();
-        _backpressureQueue = new BackpressureQueue(2, $"Flink-TM-{taskManagerId}"); // BackpressureQueue=2
+        _backpressureQueue = new BackpressureQueue(2, $"Flink-TM-{taskManagerId}"); // BackpressureQueue=2 per customer
 
         var config = new ConsumerConfig
         {
@@ -63,7 +64,7 @@ public class FlinkProcessorService : IDisposable
                 logger);
         }
 
-        _logger.LogInformation("Flink TaskManager {TaskManagerId} initialized with BackpressureQueue=2, {TemporalCount} Temporal endpoints",
+        _logger.LogInformation("Flink TaskManager {TaskManagerId} initialized with BackpressureQueue=2 per customer, {TemporalCount} Temporal endpoints",
             taskManagerId, temporalEndpoints.Count);
     }
 
@@ -71,7 +72,7 @@ public class FlinkProcessorService : IDisposable
     public BackpressureStats GetStats() => _backpressureQueue.GetStats();
 
     /// <summary>
-    /// Starts processing messages from Kafka with backpressure control.
+    /// Starts processing messages from Kafka with per-customer backpressure control.
     /// </summary>
     public async Task StartProcessingAsync(CancellationToken cancellationToken = default)
     {
@@ -105,7 +106,7 @@ public class FlinkProcessorService : IDisposable
         }
         finally
         {
-            _logger.LogInformation("Flink TaskManager {TaskManagerId} completed: {Processed} processed, {Dropped} dropped due to backpressure",
+            _logger.LogInformation("Flink TaskManager {TaskManagerId} completed: {Processed} processed, {Dropped} dropped due to per-customer backpressure",
                 _taskManagerId, stats.MessagesProcessed, stats.MessagesDropped);
         }
     }
@@ -117,29 +118,39 @@ public class FlinkProcessorService : IDisposable
     {
         var messageId = $"flink-{_taskManagerId}-{consumeResult.Partition.Value}-{consumeResult.Offset.Value}";
 
-        // Try to acquire backpressure slot (non-blocking)
-        using var slot = await _backpressureQueue.TryAcquireAsync(messageId, cancellationToken);
-        
-        if (slot == null)
-        {
-            // Backpressure applied - don't commit offset to create natural backpressure
-            Interlocked.Increment(ref stats.MessagesDropped);
-            _logger.LogDebug("Flink TaskManager {TaskManagerId} dropped message due to backpressure: {MessageId}",
-                _taskManagerId, messageId);
-            return;
-        }
-
+        // Parse message first to get customer ID
+        CustomerMessage? customerMessage = null;
         try
         {
-            // Parse message
-            var customerMessage = JsonSerializer.Deserialize<CustomerMessage>(consumeResult.Message.Value);
+            customerMessage = JsonSerializer.Deserialize<CustomerMessage>(consumeResult.Message.Value);
             if (customerMessage == null)
             {
                 _logger.LogWarning("Flink TaskManager {TaskManagerId} received invalid message: {MessageId}",
                     _taskManagerId, messageId);
                 return;
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Flink TaskManager {TaskManagerId} failed to parse message: {MessageId}",
+                _taskManagerId, messageId);
+            return;
+        }
 
+        // Try to acquire backpressure slot for this customer (non-blocking)
+        using var slot = await _backpressureQueue.TryAcquireAsync(customerMessage.CustomerId, messageId, cancellationToken);
+        
+        if (slot == null)
+        {
+            // Backpressure applied for this customer - don't commit offset to create natural backpressure
+            Interlocked.Increment(ref stats.MessagesDropped);
+            _logger.LogDebug("Flink TaskManager {TaskManagerId} dropped message for customer {CustomerId} due to per-customer backpressure: {MessageId}",
+                _taskManagerId, customerMessage.CustomerId, messageId);
+            return;
+        }
+
+        try
+        {
             // Route to appropriate Temporal instance based on customer ID
             var temporalInstanceId = customerMessage.CustomerId % _temporalClients.Count;
             var temporalClient = _temporalClients[temporalInstanceId];
@@ -156,21 +167,21 @@ public class FlinkProcessorService : IDisposable
                 _consumer.Commit(consumeResult);
                 Interlocked.Increment(ref stats.MessagesProcessed);
                 
-                _logger.LogDebug("Flink TaskManager {TaskManagerId} processed and forwarded message {MessageId} to Temporal-{TemporalId}",
-                    _taskManagerId, messageId, temporalInstanceId);
+                _logger.LogDebug("Flink TaskManager {TaskManagerId} processed and forwarded message {MessageId} for customer {CustomerId} to Temporal-{TemporalId}",
+                    _taskManagerId, messageId, customerMessage.CustomerId, temporalInstanceId);
             }
             else
             {
                 // Temporal was backpressured - don't commit offset
                 Interlocked.Increment(ref stats.MessagesDropped);
-                _logger.LogDebug("Flink TaskManager {TaskManagerId} couldn't forward message {MessageId} - Temporal backpressured",
-                    _taskManagerId, messageId);
+                _logger.LogDebug("Flink TaskManager {TaskManagerId} couldn't forward message {MessageId} for customer {CustomerId} - Temporal backpressured",
+                    _taskManagerId, messageId, customerMessage.CustomerId);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Flink TaskManager {TaskManagerId} failed to process message {MessageId}",
-                _taskManagerId, messageId);
+            _logger.LogError(ex, "Flink TaskManager {TaskManagerId} failed to process message {MessageId} for customer {CustomerId}",
+                _taskManagerId, messageId, customerMessage.CustomerId);
             // Don't commit offset on error to allow retry
         }
         // slot is automatically disposed here, releasing the backpressure slot
