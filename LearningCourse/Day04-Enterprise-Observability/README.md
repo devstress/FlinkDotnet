@@ -1407,6 +1407,43 @@ After completing Day 4 with LocalTesting integration, you should have:
 - **Performance Analysis**: Bottleneck identification and optimization opportunities
 - **Error Correlation**: Cross-service error analysis and root cause identification
 
+---
+
+## 🚀 Get Started with Exercises
+
+All Day 4 exercises include complete working solutions using the LocalTesting observability stack:
+
+### Exercise Overview and Links
+
+**[→ Complete Exercise Solutions](Exercise-Solutions/README.md)**
+
+- **[Exercise 4.1: Grafana Dashboard Creation](Exercise-Solutions/Exercise41/)** - Build production monitoring dashboards
+- **[Exercise 4.2: Custom Metrics Implementation](Exercise-Solutions/Exercise42/)** - Implement business KPI tracking
+- **[Exercise 4.3: Distributed Tracing Analysis](Exercise-Solutions/Exercise43/)** - Analyze request flows across services
+- **[Exercise 4.4: Automated Observability Testing](Exercise-Solutions/Exercise44/)** - Continuous monitoring validation
+- **[Exercise 4.5: Alert Configuration](Exercise-Solutions/Exercise45/)** - Production alerting and escalation
+- **[Exercise 4.6: SLI/SLO Implementation](Exercise-Solutions/Exercise46/)** - Enterprise SLA monitoring
+
+### Quick Start Instructions
+
+1. **Start LocalTesting Environment**:
+   ```bash
+   cd LocalTesting
+   dotnet run --project LocalTesting.AppHost
+   ```
+
+2. **Generate Observability Data**:
+   ```bash
+   ./test-aspire-localtesting.ps1 -MessageCount 1000
+   ```
+
+3. **Access Monitoring Stack**:
+   - **Grafana Dashboard**: http://localhost:3000 (admin/admin)
+   - **Prometheus Metrics**: http://localhost:9090 
+   - **Aspire Dashboard**: http://localhost:18888
+
+**All exercises demonstrate real-world enterprise observability patterns using the complete LocalTesting production environment.**
+
 ## 📈 Performance Benchmarks
 
 Your observability stack should achieve:

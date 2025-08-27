@@ -79,25 +79,61 @@ var enrichedStream = dataStream
 
 ## Hands-On Exercises
 
-### Exercise 1: E-commerce Order Enrichment
+### Exercise 6.1: E-commerce Order Enrichment
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
 Build a real-time order processing system that joins:
-- Order events (payment, shipping, fulfillment)
-- Product catalog updates
-- Customer profile changes
-- Inventory level updates
+- Order events (payment, shipping, fulfillment) using interval joins
+- Product catalog updates with temporal table patterns
+- Customer profile changes with watermark management
+- Inventory level updates using complex windowing strategies
 
-### Exercise 2: Financial Fraud Detection Windows
+**💡 Implementation Focus**: Multi-stream temporal joins for real-time order processing
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise61/)**
+
+### Exercise 6.2: Financial Fraud Detection Windows
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
 Implement sliding windows for fraud detection:
-- 5-minute velocity checks (transaction count/amount)
-- 1-hour pattern analysis windows
-- 24-hour behavioral baseline windows
+- 5-minute velocity checks (transaction count/amount) using tumbling windows
+- 1-hour pattern analysis windows with custom triggers
+- 24-hour behavioral baseline windows with state management
+- Real-time alerting with complex event processing
 
-### Exercise 3: IoT Sensor Data Correlation
+**💡 Implementation Focus**: Advanced windowing strategies for fraud detection patterns
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise62/)**
+
+### Exercise 6.3: IoT Sensor Data Correlation
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
 Create temporal joins for IoT manufacturing:
-- Temperature sensor readings
-- Vibration sensor data
-- Production line events
-- Quality control checkpoints
+- Temperature sensor readings with time-bounded joins
+- Vibration sensor data correlation using session windows
+- Production line events with state-based enrichment
+- Quality control checkpoints using interval joins
+
+**💡 Implementation Focus**: IoT data correlation with precise temporal alignment
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise63/)**
+
+### Exercise 6.4: Advanced Windowing Optimization
+**📁 [Complete Solution Available →](Exercise-Solutions/)**
+
+Master advanced windowing performance techniques:
+- Custom window functions and triggers for specific business requirements
+- Memory optimization for large state windows
+- Watermark strategies for handling late-arriving data
+- Performance tuning for high-throughput windowing scenarios
+
+**💡 Implementation Focus**: Enterprise-scale windowing optimization patterns
+**🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise64/)**
+
+---
+
+## 🚀 Get Started with Exercises
+
+All exercises include complete working solutions, detailed documentation, and step-by-step instructions:
+
+**[→ Start with Exercise Solutions](Exercise-Solutions/README.md)**
 
 ## Production Patterns
 

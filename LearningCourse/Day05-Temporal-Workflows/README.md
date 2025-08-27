@@ -1245,6 +1245,42 @@ After completing Day 5, you should see:
 - **Temporal + Kafka**: Event-driven workflow initiation
 - **Temporal + Observability**: Complete workflow monitoring
 
+---
+
+## 🚀 Get Started with Exercises
+
+All Day 5 exercises include complete working solutions using Temporal workflow orchestration:
+
+### Exercise Overview and Links
+
+**[→ Complete Exercise Solutions](Exercise-Solutions/README.md)**
+
+- **[Exercise 5.1: Workflow Execution and Monitoring](Exercise-Solutions/Exercise51/)** - Execute and monitor workflows using Temporal UI
+- **[Exercise 5.2: Custom Workflow Implementation](Exercise-Solutions/Exercise52/)** - Build custom business workflows with activities
+- **[Exercise 5.3: Long-Running Process Simulation](Exercise-Solutions/Exercise53/)** - Implement multi-day workflows with timers
+- **[Exercise 5.4: Saga Pattern Implementation](Exercise-Solutions/Exercise54/)** - Distributed transaction management with compensation
+- **[Exercise 5.5: Advanced Temporal Patterns](Exercise-Solutions/Exercise55/)** - Workflow versioning and advanced features
+
+### Quick Start Instructions
+
+1. **Start LocalTesting with Temporal**:
+   ```bash
+   cd LocalTesting
+   dotnet run --project LocalTesting.AppHost
+   ```
+
+2. **Access Temporal UI**:
+   - **Temporal Dashboard**: http://localhost:8084
+   - **Workflow Monitoring**: Complete execution history and state visualization
+
+3. **Run Day 5 Workflows**:
+   ```bash
+   cd LearningCourse/Day05-Temporal-Workflows
+   dotnet build && dotnet run
+   ```
+
+**All exercises demonstrate enterprise workflow orchestration patterns using the complete Temporal production environment.**
+
 ## 🎯 Day 5 Assessment
 
 ### Knowledge Check
