@@ -17,7 +17,7 @@ This module follows **Apache Flink 2.1.0's revolutionary transformation** into a
 
 ### 🏛️ Official Apache Flink 2.1.0 Resources
 - **[Apache Flink 2.1.0 Release Notes](https://flink.apache.org/2025/07/31/apache-flink-2.1.0-ushers-in-a-new-era-of-unified-real-time-data--ai-with-comprehensive-upgrades/)** - Breakthrough AI capabilities and comprehensive upgrades
-- **[Flink Operations Playbook](https://flink.apache.org/features/operations/)** - Production deployment guidance for AI workloads
+- **[Flink Operations Playbook](https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/overview/)** - Production deployment guidance for AI workloads
 - **[Flink Architecture Overview](https://flink.apache.org/flink-architecture.html)** - Core concepts and unified Data + AI design
 
 ### 🏢 Enterprise Infrastructure Patterns
