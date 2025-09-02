@@ -1,44 +1,125 @@
+# OpenTelemetry Collector Configuration for LGTM Stack Integration
+# This configuration routes telemetry data to Loki (Logs), Grafana (Dashboards), Tempo (Traces), and Mimir (Long-term Metrics)
+
 receivers:
+  # OTLP receivers for applications sending telemetry
   otlp:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  
+  # Prometheus receiver for scraping metrics from services
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'flink-jobmanager'
+          static_configs:
+            - targets: ['flink-jobmanager:9249']
+        - job_name: 'flink-taskmanagers'
+          static_configs:
+            - targets: ['flink-taskmanager-1:9249', 'flink-taskmanager-2:9249', 'flink-taskmanager-3:9249']
+        - job_name: 'kafka-brokers'
+          static_configs:
+            - targets: ['kafka-broker-1:9308', 'kafka-broker-2:9308', 'kafka-broker-3:9308']
+        - job_name: 'temporal-server'
+          static_configs:
+            - targets: ['temporal-server:9090']
 
 processors:
+  # Batch processor for efficiency
   batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+  
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    limit_mib: 512
+  
+  # Resource processor to add service metadata
+  resource:
+    attributes:
+      - key: service.name
+        value: "otel-collector"
+        action: upsert
+      - key: service.version
+        value: "1.0.0"
+        action: upsert
 
 exporters:
-  # Export metrics to Prometheus
+  # Loki exporter for logs
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    labels:
+      attributes:
+        service.name: "service_name"
+        level: "level"
+      resource:
+        container.name: "container_name"
+    format: json
+  
+  # Tempo exporter for distributed traces
+  otlp/tempo:
+    endpoint: http://tempo:9095
+    tls:
+      insecure: true
+    headers:
+      "content-type": "application/x-protobuf"
+  
+  # Mimir exporter for long-term metrics storage
+  prometheusremotewrite/mimir:
+    endpoint: http://mimir:9009/api/v1/push
+    tls:
+      insecure: true
+    headers:
+      "X-Scope-OrgID": "demo"
+  
+  # Prometheus exporter for real-time metrics
+  prometheusremotewrite/prometheus:
+    endpoint: http://prometheus:9090/api/v1/write
+    tls:
+      insecure: true
+  
+  # Prometheus metrics endpoint for self-monitoring
   prometheus:
     endpoint: "0.0.0.0:8889"
-    
-  # Export logs to Loki
-  loki:
-    endpoint: "http://loki:3100/loki/api/v1/push"
-    
-  # Log traces for now (Tempo removed due to complexity)
+    resource_to_telemetry_conversion:
+      enabled: true
+  
+  # Debug logging
   logging:
     loglevel: debug
-      
-  # Also send metrics to Prometheus remote write
-  prometheusremotewrite:
-    endpoint: "http://prometheus:9090/api/v1/write"
 
 service:
+  # Extensions for health checking and monitoring
+  extensions: []
+  
+  # Telemetry pipelines
   pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [logging]
-      
+    # Metrics pipeline: Receive → Process → Export to Mimir (long-term) and Prometheus (real-time)
     metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheus, prometheusremotewrite]
-      
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheusremotewrite/mimir, prometheusremotewrite/prometheus, prometheus, logging]
+    
+    # Logs pipeline: Receive → Process → Export to Loki
     logs:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [loki]
+      processors: [memory_limiter, resource, batch]
+      exporters: [loki, logging]
+    
+    # Traces pipeline: Receive → Process → Export to Tempo
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/tempo, logging]
+
+  # Telemetry for the collector itself
+  telemetry:
+    logs:
+      level: "debug"
+    metrics:
+      address: 0.0.0.0:8888
+      level: detailed

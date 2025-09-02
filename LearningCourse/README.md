@@ -68,11 +68,15 @@ dotnet run --project LocalTesting.AppHost
 
 ### ✅ Verify Infrastructure is Working
 Open these URLs - all should work:
-- **Flink Dashboard**: http://localhost:8081
-- **Kafka UI**: http://localhost:8082  
-- **Temporal UI**: http://localhost:8084
-- **Grafana**: http://localhost:3000
-- **Aspire Dashboard**: http://localhost:18888
+- **Aspire Dashboard**: http://localhost:18888 (Main orchestration dashboard)
+- **LocalTesting WebApi**: http://localhost:5000/swagger (API documentation and testing)
+- **Flink Dashboard**: http://localhost:8081 (Job management and monitoring)
+- **Kafka UI**: http://localhost:8082 (Message broker management)
+- **Temporal UI**: http://localhost:8084 (Workflow orchestration)
+- **Grafana**: http://localhost:3000 (Unified observability dashboard)
+- **Prometheus**: http://localhost:9090 (Metrics collection)
+- **Loki**: http://localhost:3100 (Log aggregation)
+- **OpenTelemetry Collector**: http://localhost:8889/metrics (Telemetry processing)
 
 **✅ All working? You're ready to start Day 1!**
 

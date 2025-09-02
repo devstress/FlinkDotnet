@@ -1,0 +1,52 @@
+# Grafana Mimir configuration for local development
+target: all,alertmanager
+
+server:
+  http_listen_port: 9009
+  grpc_listen_port: 9095
+
+common:
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /tmp/mimir
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/blocks
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/ruler
+
+alertmanager_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/alertmanager
+
+ingester:
+  ring:
+    replication_factor: 1
+
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
+
+compactor:
+  sharding_ring:
+    wait_stability_min_duration: 0s
+
+query_scheduler:
+  max_outstanding_requests_per_tenant: 32000
+
+frontend:
+  max_outstanding_per_tenant: 32000
+  scheduler_address: ""
+
+limits:
+  ingestion_rate: 50000
+  ingestion_burst_size: 100000
+  max_global_series_per_user: 0
+  max_global_series_per_metric: 0

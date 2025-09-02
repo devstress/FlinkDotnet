@@ -16,5 +16,22 @@ datasources:
     url: http://loki:3100
     editable: true
 
-  # Note: Tempo (distributed tracing) temporarily removed for simplified setup
-  # Can be added back later with proper configuration files
+  # Tempo for distributed tracing (part of LGTM stack)
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: 'prometheus'
+
+  # Mimir for long-term metrics storage (part of LGTM stack)
+  - name: Mimir
+    type: prometheus
+    access: proxy
+    url: http://mimir:9009
+    editable: true
+    jsonData:
+      httpMethod: POST

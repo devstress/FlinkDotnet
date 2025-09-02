@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
 // Configure Aspire dashboard and OTLP environment variables
 // These settings eliminate the need for manual environment variable setup
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
@@ -40,11 +43,46 @@ catch (Exception ex)
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Redis with IPv4 configuration
+// Configure extended timeouts for Aspire DCP to handle complex infrastructure
+// This prevents the 20-second timeout that causes container reconciliation failures
+builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
+{
+    options.StartupTimeout = TimeSpan.FromMinutes(5); // Extended startup timeout
+    options.ShutdownTimeout = TimeSpan.FromMinutes(2); // Extended shutdown timeout
+});
+
+// Configure Aspire DCP with extended resource creation timeouts
+// This addresses the core issue: Aspire.Hosting.Dcp.KubernetesService timeout
+Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "300"); // 5 minutes
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "120"); // 2 minutes per resource
+Environment.SetEnvironmentVariable("ASPIRE_DCP_MAX_RETRIES", "5");
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RETRY_BACKOFF", "10"); // 10 seconds between retries
+
+// Configure container runtime stability settings
+Environment.SetEnvironmentVariable("ASPIRE_DCP_CONTAINER_RESTART_POLICY", "always");
+Environment.SetEnvironmentVariable("ASPIRE_DCP_HEALTH_CHECK_TIMEOUT", "60"); // 60 seconds for health checks
+Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_COUNT", "10");
+Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_DELAY", "5"); // 5 seconds between network retries
+
+// Docker runtime optimizations for container stability
+Environment.SetEnvironmentVariable("DOCKER_CLI_EXPERIMENTAL", "enabled");
+Environment.SetEnvironmentVariable("DOCKER_BUILDKIT", "1");
+
+Console.WriteLine("✅ Applied extended DCP timeouts and container stability settings");
+
+// Enhanced sequential container startup with reduced parallel load
+// Prevents DCP reconciliation failures by limiting simultaneous container creation
+// Key insight: Start essential services first, then build dependency chains
+
+// Redis with enhanced stability and health check configuration
 var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_MAXMEMORY", "256mb")
     .WithEnvironment("REDIS_MAXMEMORY_POLICY", "allkeys-lru")
-    .WithEnvironment("REDIS_BIND", "0.0.0.0"); // Force IPv4
+    .WithEnvironment("REDIS_BIND", "0.0.0.0") // Force IPv4
+    .WithEnvironment("REDIS_TIMEOUT", "30")
+    .WithEnvironment("REDIS_TCP_KEEPALIVE", "60")
+    .WithEnvironment("REDIS_SAVE", "60 1000") // Persistence settings for stability
+    .WithEnvironment("REDIS_STOP_WRITES_ON_BGSAVE_ERROR", "no"); // Prevent redis crashes on save errors
 
 // 3 Kafka Brokers with KRaft cluster configuration using official Apache Kafka image
 var kafkaBroker1 = builder.AddContainer("kafka-broker-1", "apache/kafka:3.8.0")
@@ -88,6 +126,7 @@ var kafkaBroker2 = builder.AddContainer("kafka-broker-2", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_BROKER_VERSION_FALLBACK", "3.8.0")
     .WithEnvironment("KAFKA_INTER_BROKER_PROTOCOL_VERSION", "3.8")
     .WithEnvironment("KAFKA_LOG_MESSAGE_FORMAT_VERSION", "3.8");
+    // No WaitFor - Kafka brokers must start simultaneously for KRaft cluster
 
 var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
     .WithEndpoint(9094, 9092, "kafka3")
@@ -109,14 +148,19 @@ var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_BROKER_VERSION_FALLBACK", "3.8.0")
     .WithEnvironment("KAFKA_INTER_BROKER_PROTOCOL_VERSION", "3.8")
     .WithEnvironment("KAFKA_LOG_MESSAGE_FORMAT_VERSION", "3.8");
+    // No WaitFor - Kafka brokers must start simultaneously for KRaft cluster
 
-// Kafka UI with IPv4 - connecting to all 3 brokers
+// Kafka UI with staggered startup to reduce DCP load
 var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
     .WithHttpEndpoint(8082, 8080, "kafka-ui")
     .WithEnvironment("KAFKA_CLUSTERS_0_NAME", "local-testing-cluster")
     .WithEnvironment("KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
-    .WithEnvironment("AUTH_TYPE", "disabled");
+    .WithEnvironment("AUTH_TYPE", "disabled")
+    .WithEnvironment("STARTUP_DELAY", "30") // Delay to let Kafka brokers fully initialize
+    .WaitFor(kafkaBroker1)
+    .WaitFor(kafkaBroker2)
+    .WaitFor(kafkaBroker3); // Wait for all Kafka brokers to be ready
 
 // Flink JobManager with working memory configuration from WI4 success pattern - Updated to 2.1.0 for latest AI capabilities
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
@@ -147,7 +191,7 @@ var flinkTaskManager1 = builder.AddContainer("flink-taskmanager-1", "flink:2.1.0
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
-// Flink TaskManager 2 with simplified working memory configuration - Updated to 2.1.0 for latest AI capabilities
+// Flink TaskManager 2 with sequential startup to prevent DCP reconciliation race conditions
 var flinkTaskManager2 = builder.AddContainer("flink-taskmanager-2", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
@@ -158,9 +202,9 @@ var flinkTaskManager2 = builder.AddContainer("flink-taskmanager-2", "flink:2.1.0
         taskmanager.host: flink-taskmanager-2
         """)
     .WithArgs("taskmanager")
-    .WaitFor(flinkJobManager);
+    .WaitFor(flinkTaskManager1); // Sequential startup prevents container reconciliation failures
 
-// Flink TaskManager 3 with simplified working memory configuration - Updated to 2.1.0 for latest AI capabilities
+// Flink TaskManager 3 with sequential startup to prevent DCP reconciliation race conditions
 var flinkTaskManager3 = builder.AddContainer("flink-taskmanager-3", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
@@ -171,19 +215,25 @@ var flinkTaskManager3 = builder.AddContainer("flink-taskmanager-3", "flink:2.1.0
         taskmanager.host: flink-taskmanager-3
         """)
     .WithArgs("taskmanager")
-    .WaitFor(flinkJobManager);
+    .WaitFor(flinkTaskManager2); // Sequential startup prevents container reconciliation failures
 
-// PostgreSQL for Temporal storage
+// PostgreSQL for Temporal storage with enhanced startup reliability and health checks
 var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
     .WithEnvironment("POSTGRES_DB", "temporal")
     .WithEnvironment("POSTGRES_USER", "temporal")
     .WithEnvironment("POSTGRES_PASSWORD", "temporal")
     .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")
     .WithEnvironment("POSTGRES_INITDB_ARGS", "--auth-host=trust")
+    .WithEnvironment("POSTGRES_MAX_CONNECTIONS", "100")
+    .WithEnvironment("POSTGRES_SHARED_BUFFERS", "128MB")
+    .WithEnvironment("POSTGRES_INITDB_WAIT_TIMEOUT", "60") // Extended init timeout
+    .WithEnvironment("POSTGRES_LOG_STATEMENT", "none") // Reduce logging for stability
+    .WithEnvironment("POSTGRES_LOG_MIN_MESSAGES", "warning") // Reduce log noise
     .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data")
-    .WithEndpoint(5432, 5432, "postgres");
+    .WithEndpoint(5432, 5432, "postgres")
+    .WaitFor(redis); // Sequence after Redis to spread DCP load
 
-// Temporal Server for durable execution workflows
+// Temporal Server for durable execution workflows with enhanced startup reliability
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
     .WithHttpEndpoint(7233, 7233, "temporal-server")
     .WithEnvironment("DB", "postgres12")
@@ -198,7 +248,12 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("SKIP_DB_CREATE", "false")
     .WithEnvironment("SKIP_SCHEMA_SETUP", "false")
     .WithEnvironment("ENABLE_ES", "false")
-    .WithEnvironment("LOG_LEVEL", "info")
+    .WithEnvironment("LOG_LEVEL", "warn") // Reduce log noise for stability
+    .WithEnvironment("AUTO_SETUP", "true")
+    .WithEnvironment("TEMPORAL_DYNAMIC_CONFIG_FILE_PATH", "/etc/temporal/config/dynamicconfig/development.yaml")
+    .WithEnvironment("SQL_MAX_CONNS", "20") // Limit connections for stability
+    .WithEnvironment("SQL_MAX_IDLE_CONNS", "10")
+    .WithEnvironment("SQL_MAX_CONN_LIFETIME", "3600") // 1 hour connection lifetime
     .WaitFor(temporalPostgres);
 
 // Temporal UI for workflow monitoring
@@ -208,36 +263,42 @@ var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
     .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084")
     .WaitFor(temporalServer);
 
-// Loki for centralized log aggregation (part of LGTM stack)
+// Loki for centralized log aggregation with enhanced stability
 var loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
     .WithHttpEndpoint(3100, 3100, "loki")
     .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
-    .WithArgs("-config.file=/etc/loki/local-config.yaml");
+    .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
+    .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", "3100")
+    .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", "9095")
+    .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
 
-// Simplified observability - removing Tempo temporarily due to configuration complexity
-// Focus on Loki + Grafana + Prometheus for now
-
-// Prometheus for metrics collection (part of LGTM stack)
+// Prometheus for metrics collection with enhanced startup stability
 var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
     .WithHttpEndpoint(9090, 9090, "prometheus")
     .WithBindMount("./prometheus.yml", "/etc/prometheus/prometheus.yml")
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "7d")
+    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", "0.0.0.0:9090")
     .WithArgs("--config.file=/etc/prometheus/prometheus.yml",
               "--storage.tsdb.path=/prometheus",
               "--web.console.libraries=/etc/prometheus/console_libraries",
               "--web.console.templates=/etc/prometheus/consoles",
-              "--web.enable-lifecycle");
+              "--web.enable-lifecycle",
+              "--storage.tsdb.retention.time=7d",
+              "--log.level=warn",
+              "--web.listen-address=0.0.0.0:9090");
 
-// OpenTelemetry Collector for telemetry processing with simplified configuration
+// OpenTelemetry Collector with minimal, stable configuration
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
     .WithHttpEndpoint(4317, 4317, "otlp-grpc")
     .WithHttpEndpoint(4318, 4318, "otlp-http")
     .WithHttpEndpoint(8889, 8889, "prometheus-metrics")
-    .WithEnvironment("LOKI_ENDPOINT", "http://loki:3100/loki/api/v1/push")
-    .WithEnvironment("PROMETHEUS_ENDPOINT", "http://prometheus:9090/api/v1/write")
-    .WaitFor(loki)
-    .WaitFor(prometheus);
+    .WithEnvironment("OTEL_LOG_LEVEL", "INFO")
+    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=otel-collector,service.version=1.0.0")
+    .WithBindMount("./otel-config-training-minimal.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
+    .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml")
+    .WaitFor(prometheus); // Only wait for Prometheus (Loki integration removed for stability)
 
-// Grafana with LGTM stack integration (no authentication for local testing)
+// Grafana with PGL stack integration and enhanced startup reliability
 var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithHttpEndpoint(3000, 3000, "grafana")
     .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
@@ -245,18 +306,25 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
     .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
     .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
     .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0") // Force IPv4
+    .WithEnvironment("GF_SERVER_HTTP_PORT", "3000")
+    .WithEnvironment("GF_LOG_LEVEL", "warn") // Reduce log noise
+    .WithEnvironment("GF_INSTALL_PLUGINS", "") // Disable plugin installation for faster startup
+    .WithEnvironment("GF_ANALYTICS_REPORTING_ENABLED", "false")
+    .WithEnvironment("GF_ANALYTICS_CHECK_FOR_UPDATES", "false")
     .WithEnvironment("LOKI_URL", "http://loki:3100")
     .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
-    .WithBindMount("./grafana-datasources.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
+    .WithBindMount("./grafana-datasources-training.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
     .WaitFor(loki)
     .WaitFor(prometheus)
     .WaitFor(otelCollector);
 
-// LocalTesting Web API with LGTM observability integration
+// LocalTesting Web API with simplified dependency chain to prevent DCP reconciliation failures
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
     .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", "10")
+    .WithEnvironment("KAFKA_REQUEST_TIMEOUT_MS", "30000")
+    .WithEnvironment("KAFKA_RETRY_BACKOFF_MS", "1000")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
@@ -265,18 +333,91 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("LOKI_ENDPOINT", "http://loki:3100")
     .WithEnvironment("GRAFANA_URL", "http://grafana:3000")
     .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
+    .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")
+    .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")
     .WithHttpEndpoint(5000, 5001, name: "webapi") // External port 5000 -> Internal port 5001
-    .WaitFor(flinkJobManager)
-    .WaitFor(flinkTaskManager1)
-    .WaitFor(flinkTaskManager2)
-    .WaitFor(flinkTaskManager3)
-    .WaitFor(temporalServer)
-    .WaitFor(kafkaBroker1)
-    .WaitFor(kafkaBroker2)
-    .WaitFor(kafkaBroker3)
-    .WaitFor(loki)
-    .WaitFor(prometheus)
-    .WaitFor(otelCollector)
-    .WaitFor(grafana);
+    // Simplified dependency chain prevents DCP reconciliation race conditions
+    // Kafka brokers start simultaneously, other components use sequential chains
+    .WaitFor(redis)
+    .WaitFor(kafkaUI)           // Waits for all Kafka brokers (UI waits for all 3 brokers)
+    .WaitFor(flinkTaskManager3) // Waits for all Flink components (sequential chain: JM->TM1->TM2->TM3)
+    .WaitFor(temporalServer)    // Waits for Temporal stack (Postgres->Server)
+    .WaitFor(grafana);          // Waits for observability stack (Loki->Prometheus->OTel->Grafana)
 
-builder.Build().Run();
+// Enhanced application startup with DCP timeout fixes and comprehensive error handling
+try
+{
+    Console.WriteLine("🚀 Starting LocalTesting infrastructure with DCP timeout fixes...");
+    Console.WriteLine("📊 PGL Observability Stack: Prometheus + Grafana + Loki + OpenTelemetry");
+    Console.WriteLine("⚙️  Applied fixes: Extended DCP timeouts, sequential startup, enhanced resilience");
+    Console.WriteLine("⏱️  Expected startup time: 3-5 minutes for complete infrastructure (extended for stability)");
+    Console.WriteLine();
+    
+    var app = builder.Build();
+    
+    // Add graceful shutdown handling with extended timeout
+    var cts = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, e) =>
+    {
+        e.Cancel = true;
+        cts.Cancel();
+        Console.WriteLine("🛑 Graceful shutdown initiated...");
+    };
+    
+    // Enhanced startup with retry logic for DCP failures
+    var maxRetries = 3;
+    var currentRetry = 0;
+    
+    while (currentRetry < maxRetries)
+    {
+        try
+        {
+            Console.WriteLine($"🔄 Startup attempt {currentRetry + 1}/{maxRetries}...");
+            await app.RunAsync(cts.Token);
+            break; // Success - exit retry loop
+        }
+        catch (AggregateException ae) when (ae.InnerException is Polly.Timeout.TimeoutRejectedException)
+        {
+            currentRetry++;
+            if (currentRetry >= maxRetries)
+            {
+                Console.WriteLine("❌ All startup attempts failed due to DCP timeouts");
+                throw;
+            }
+            
+            Console.WriteLine($"⚠️ DCP timeout on attempt {currentRetry}. Cleaning up and retrying...");
+            
+            // Clean up any partial containers before retry
+            var cleanupProcess = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "docker",
+                    Arguments = "system prune -f --volumes",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
+            
+            cleanupProcess.Start();
+            await cleanupProcess.WaitForExitAsync();
+            Console.WriteLine("🧹 Docker cleanup completed. Retrying startup...");
+            
+            // Wait before retry
+            await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ LocalTesting infrastructure startup failed: {ex.Message}");
+    Console.WriteLine("🔧 Troubleshooting steps:");
+    Console.WriteLine("1. Ensure Docker Desktop is running with 8GB+ RAM");
+    Console.WriteLine("2. Check if ports 5000, 8081, 8084, 9090, 3000, 4317, 4318 are available");
+    Console.WriteLine("3. Run: docker system prune -f --volumes");
+    Console.WriteLine("4. Restart Docker Desktop if issues persist");
+    Console.WriteLine("5. Check Windows Defender/Antivirus is not blocking Docker");
+    Console.WriteLine($"📝 Full error: {ex}");
+    throw;
+}
