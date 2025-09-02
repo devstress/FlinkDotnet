@@ -333,7 +333,7 @@ function Test-LocalTestingAPI {
     
     while ($retryCount -lt $maxRetries -and -not $apiReady) {
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:5000/health" -TimeoutSec 5 -ErrorAction Stop
+            $response = Invoke-WebRequest -Uri "http://localhost:18000/health" -TimeoutSec 5 -ErrorAction Stop
             if ($response.StatusCode -eq 200) {
                 Write-Success "LocalTesting API is accessible and healthy through Aspire"
                 $apiReady = $true
@@ -353,7 +353,7 @@ function Test-LocalTestingAPI {
 function Test-BusinessFlows {
     Write-Section "🧪 Testing Complex Logic Stress Test Business Flows with Observability Monitoring"
     
-    $apiBase = "http://localhost:5000/api/ComplexLogicStressTest"
+    $apiBase = "http://localhost:18000/api/ComplexLogicStressTest"
     $testResults = @()
     $overallSuccess = $true
     $observabilityMetrics = @()
@@ -369,7 +369,7 @@ function Test-BusinessFlows {
         
         # Capture Prometheus metrics
         try {
-            $upQuery = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=up" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+            $upQuery = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=up" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
             $snapshot.ServicesUp = ($upQuery.data.result | Where-Object { $_.value[1] -eq "1" }).Count
             $snapshot.ServicesTotal = $upQuery.data.result.Count
         } catch {
@@ -379,7 +379,7 @@ function Test-BusinessFlows {
         
         # Capture HTTP metrics
         try {
-            $httpMetrics = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=http_requests_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+            $httpMetrics = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=http_requests_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
             $snapshot.HttpRequests = ($httpMetrics.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum
         } catch {
             $snapshot.HttpRequests = "N/A"
@@ -398,7 +398,7 @@ function Test-BusinessFlows {
         # Test basic health first
         Write-Step "Testing API health..."
         try {
-            $healthResponse = Invoke-RestMethod -Uri "http://localhost:5000/health" -Method GET -TimeoutSec 10
+            $healthResponse = Invoke-RestMethod -Uri "http://localhost:18000/health" -Method GET -TimeoutSec 10
             Write-Success "Health check: API is healthy"
             $testResults += @{Step="Health Check"; Status="Healthy"; Success=$true}
         } catch {
@@ -505,9 +505,9 @@ function Test-BusinessFlows {
         Write-Step "Testing Aspire dashboard and API endpoints..."
         $endpointTests = @(
             @{Port=18888; Path="/"; Name="Aspire Dashboard"},
-            @{Port=5000; Path="/api/ComplexLogicStressTest/test-status"; Name="Test Status Monitoring"},
-            @{Port=5000; Path="/health"; Name="Health Monitoring"},
-            @{Port=5000; Path="/index.html"; Name="API Documentation (Swagger UI)"}
+            @{Port=18000; Path="/api/ComplexLogicStressTest/test-status"; Name="Test Status Monitoring"},
+            @{Port=18000; Path="/health"; Name="Health Monitoring"},
+            @{Port=18000; Path="/index.html"; Name="API Documentation (Swagger UI)"}
         )
         
         foreach ($endpoint in $endpointTests) {
@@ -641,37 +641,37 @@ try {
     Write-Host "       • Monitor application logs and distributed tracing" -ForegroundColor $Yellow
     Write-Host "       • Real-time performance metrics and health status" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  🚀 LocalTesting API & Swagger: http://localhost:5000/index.html" -ForegroundColor $Cyan
+    Write-Host "  🚀 LocalTesting API & Swagger: http://localhost:18000/index.html" -ForegroundColor $Cyan
     Write-Host "       • Interactive API documentation and testing interface" -ForegroundColor $Yellow
     Write-Host "       • Execute stress test steps manually and view responses" -ForegroundColor $Yellow
-    Write-Host "       • Monitor test status: http://localhost:5000/api/ComplexLogicStressTest/test-status" -ForegroundColor $Yellow
+    Write-Host "       • Monitor test status: http://localhost:18000/api/ComplexLogicStressTest/test-status" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  📝 Kafka UI: http://localhost:8082" -ForegroundColor $Cyan
+    Write-Host "  📝 Kafka UI: http://localhost:18001" -ForegroundColor $Cyan
     Write-Host "       • View topics, messages, and consumer groups" -ForegroundColor $Yellow
     Write-Host "       • Monitor message throughput and lag metrics" -ForegroundColor $Yellow
     Write-Host "       • Inspect message content and correlation IDs" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  ⚡ Flink Dashboard: http://localhost:8081" -ForegroundColor $Cyan
+    Write-Host "  ⚡ Flink Dashboard: http://localhost:18002" -ForegroundColor $Cyan
     Write-Host "       • Monitor running jobs and task managers" -ForegroundColor $Yellow
     Write-Host "       • View job execution graphs and checkpoint status" -ForegroundColor $Yellow
     Write-Host "       • Performance metrics and backpressure monitoring" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  📈 Grafana Dashboards: http://localhost:3000" -ForegroundColor $Cyan
+    Write-Host "  📈 Grafana Dashboards: http://localhost:18010" -ForegroundColor $Cyan
     Write-Host "       • System metrics and custom performance dashboards" -ForegroundColor $Yellow
     Write-Host "       • Login: admin/admin (default credentials)" -ForegroundColor $Yellow
     Write-Host "       • Real-time charts and alerting capabilities" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  📊 Prometheus Metrics: http://localhost:9090" -ForegroundColor $Cyan
+    Write-Host "  📊 Prometheus Metrics: http://localhost:18006" -ForegroundColor $Cyan
     Write-Host "       • Query and explore all collected metrics" -ForegroundColor $Yellow
     Write-Host "       • View service targets and health status" -ForegroundColor $Yellow
     Write-Host "       • Access raw metrics data and time series" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  🔄 Temporal UI: http://localhost:8084" -ForegroundColor $Cyan
+    Write-Host "  🔄 Temporal UI: http://localhost:18004" -ForegroundColor $Cyan
     Write-Host "       • Monitor workflows and activities execution" -ForegroundColor $Yellow
     Write-Host "       • View workflow history and task queues" -ForegroundColor $Yellow
     Write-Host "       • Debug workflow failures and retry policies" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  ❤️  Health Check: http://localhost:5000/health" -ForegroundColor $Cyan
+    Write-Host "  ❤️  Health Check: http://localhost:18000/health" -ForegroundColor $Cyan
     Write-Host "       • Overall system health status and service availability" -ForegroundColor $Yellow
     Write-Host ""
     Write-Host "💡 OBSERVABILITY MONITORING DURING STRESS TESTS:" -ForegroundColor $Green
