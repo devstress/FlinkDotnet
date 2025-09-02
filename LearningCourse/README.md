@@ -15,12 +15,9 @@ Run the automated setup script for your platform:
 git clone https://github.com/devstress/FlinkDotnet.git
 cd FlinkDotnet/LearningCourse
 
-# Auto-detect platform and setup everything
-./setup-environment.sh
-
-# OR use platform-specific scripts:
-# Linux/macOS: ./setup-environment-linux-macos.sh  
-# Windows: .\setup-environment-windows.ps1
+# Use platform-specific scripts:
+# Linux/macOS: ./scripts/setup-environment-linux-macos.sh  
+# Windows: .\scripts\setup-environment-windows.ps1
 ```
 
 **✅ The automated setup installs:**
@@ -41,7 +38,7 @@ If you prefer manual installation or the automated setup fails:
 # 1. Install .NET 9.0 SDK from: https://dotnet.microsoft.com/download/dotnet/9.0
 dotnet --version  # Should show 9.0.x
 
-# 2. Install Docker Desktop from: https://docs.docker.com/get-docker/
+# 2. Install Docker Desktop from: https://docs.docker.com/get-docker/ or Podman https://podman-desktop.io/
 docker --version  # Should show version without errors
 
 # 3. Install Git if not already installed
