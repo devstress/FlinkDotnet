@@ -793,7 +793,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
 - **MANDATORY .NET 9.0 SDK**: All local development must use .NET 9.0.303 or later
 - **Before submitting any GitHub workflow or PR**, developers MUST verify:
   - Local environment has .NET 9.0 SDK installed (`dotnet --version` returns 9.0.x)
-  - Aspire workload is installed and functional (`dotnet workload list` shows aspire)
+  - Aspire workload is installed and functional
   - All solutions build successfully locally with .NET 9.0
   - LocalTesting workflow executes successfully locally
 - **Local environment setup requirements**:
@@ -816,8 +816,8 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   # Verify .NET version
   dotnet --version  # Must return 9.0.x
   
-  # Verify Aspire workload
-  dotnet workload list  # Must show aspire installed
+  # Install Aspire workload
+  dotnet workload install aspire
   
   # Build all solutions
   dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
@@ -842,7 +842,6 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   
   # Verify installation
   dotnet --version  # Should show 9.0.x
-  dotnet workload list  # Should show aspire as installed
   ```
 - **Project file enforcement**:
   - All new .csproj files MUST target `net9.0` framework

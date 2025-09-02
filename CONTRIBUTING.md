@@ -55,14 +55,8 @@ dotnet --version  # Should return 9.0.x
 - **Linux**: Aspire tooling is NOT bundled and must be manually installed
 
 ```bash
-# First, verify current workload status
-dotnet workload list  # Check if aspire is already installed
-
-# Install Aspire workload if needed (required on Linux, may be needed on Windows/macOS)
+# Install Aspire workload (required on Linux, may be needed on Windows/macOS)
 dotnet workload install aspire
-
-# Verify Aspire installation (all platforms)
-dotnet workload list  # Should show aspire as installed
 ```
 
 **Why the difference?** Microsoft bundles Aspire tooling with the standard .NET SDK packages on Windows and macOS, but Linux package managers (apt, yum, etc.) typically distribute base SDK packages without optional workloads.
@@ -357,7 +351,6 @@ dotnet test
    ```bash
    # Verify .NET 9.0 environment
    dotnet --version  # Must return 9.0.x
-   dotnet workload list  # Must show aspire installed
    
    # Build all solutions locally
    dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
@@ -475,9 +468,9 @@ FlinkDotNet follows semantic versioning (SemVer):
 
 ### Development Support
 
-- **Architecture Questions**: Review `docs/wiki/` for system design patterns
+- **Architecture Questions**: Review `docs/` for system design documentation
 - **Testing Help**: See `docs/wiki/Getting-Started.md` for BDD testing examples
-- **Local Development**: Use `docs/wiki/Aspire-Local-Development-Setup.md`
+- **Local Development**: Use `docs/local-testing-setup.md`
 
 ### Code Review
 

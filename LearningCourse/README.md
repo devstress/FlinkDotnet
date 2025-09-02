@@ -47,9 +47,6 @@ git clone https://github.com/devstress/FlinkDotnet.git
 # Windows/macOS: included with .NET SDK (.NET 8+)
 # Linux: Manual installation required
 dotnet workload install aspire
-
-# Verify installation on all platforms:
-dotnet workload list  # Should show aspire installed
 ```
 
 #### ✅ Step 3: Start Infrastructure

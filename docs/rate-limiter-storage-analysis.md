@@ -1,18 +1,15 @@
 # ⚠️ DEPRECATED - This Document Has Been Consolidated
 
-> **🚨 Important Update**: This document has been consolidated into the new comprehensive reference. Please use the single reference link below instead of this scattered document.
+> **🚨 Important Update**: This document has been consolidated for better organization.
 >
-> **📋 NEW SINGLE REFERENCE**: [Flink.NET Backpressure: Complete Reference Guide](../wiki/Backpressure-Complete-Reference.md)
+> **Why the change?**: Users reported the backpressure documentation was "messy" with too many scattered documents. We've consolidated guidance into focused sections throughout the main documentation.
 >
-> **Why the change?**: Users reported the backpressure wiki was "messy" with too many scattered documents. We've consolidated everything into one comprehensive guide that covers:
-> - Performance guidance (when to enable/disable rate limiting)
-> - Scalability architecture (multiple consumers, logical queues)  
-> - Unique identifier strategy and partition relationships
-> - Rebalancing integration and best practices
-> - World-class patterns with scholar references
-> - Complete implementation guide with examples
+> **📋 CURRENT REFERENCES**: 
+> - [Getting Started Guide](../docs/wiki/Getting-Started.md) - Quick start and basic setup
+> - [Local Testing Setup](../docs/local-testing-setup.md) - Development environment configuration  
+> - [Contributing Guidelines](../CONTRIBUTING.md) - Development workflow and patterns
 >
-> **🎯 This gives you everything in one place instead of hunting through multiple documents.**
+> **🎯 This gives you practical guidance without hunting through multiple documents.**
 
 ---
 

@@ -135,10 +135,9 @@ Following **LearningCourse enterprise requirements**:
 dotnet --version  # Must return 9.0.x
 
 # Install Aspire workload (Platform-specific requirement)
-# Windows/macOS: Usually included with .NET SDK (.NET 8+), verify with: dotnet workload list
+# Windows/macOS: Usually included with .NET SDK (.NET 8+)
 # Linux: Manual installation required
 dotnet workload install aspire
-dotnet workload list  # Must show aspire installed
 
 # Verify Docker Desktop
 docker --version
