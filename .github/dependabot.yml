@@ -1,15 +1,10 @@
-# Dependabot configuration for FLINK.NET
-# Automatically manages dependency updates for .NET packages and GitHub Actions
-# Documentation: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  # NuGet packages for main FlinkDotNet solution
   - package-ecosystem: "nuget"
-    directory: "/FlinkDotNet"
+    directory: "/"
     schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 10
+      interval: "yearly"
+    open-pull-requests-limit: 0
     groups:
       major:
         patterns:
@@ -23,31 +18,11 @@ updates:
           - "minor"
           - "patch"
 
-  # NuGet packages for IntegrationTests solution
-  - package-ecosystem: "nuget"
-    directory: "/IntegrationTests"
-    schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 10
-    groups:
-      major:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-      minor-and-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-
-  # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 5
+      interval: "yearly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
