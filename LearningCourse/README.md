@@ -3,6 +3,9 @@
 > **🚀 STUDENTS START HERE: [Complete 14-Day Step-by-Step Guide](STUDENT-GUIDE.md)**  
 > No experience needed - follow simple instructions to master enterprise patterns! ⬆️
 
+> **⚡ INSTANT SETUP: Run [Automated Environment Setup Scripts](SETUP-GUIDE.md)**  
+> One command installs everything: .NET 9.0, Docker, Git, and all dependencies! 🛠️
+
 🎓 **Master Apache Flink 2.1.0 + .NET Integration for Real-Time Stream Processing**
 
 Welcome to the comprehensive **FlinkDotNet Learning Course** - a 14-day intensive journey that transforms developers into **real-time stream processing experts** using Apache Flink 2.1.0 features and production-grade patterns from Netflix, Uber, LinkedIn, and other industry leaders.

@@ -29,16 +29,64 @@
 
 ## 🚀 Quick Start - Begin Your Journey
 
-### ✅ Prerequisites (Do Once)
+### 🎯 **FASTEST SETUP** (Automated - Recommended for Beginners)
+
+Run the automated setup script for your platform:
+
 ```bash
-# 1. Verify .NET 9 is installed
+# Download and run the universal setup script
+git clone https://github.com/devstress/FlinkDotnet.git
+cd FlinkDotnet/LearningCourse
+
+# Auto-detect platform and setup everything
+./setup-environment.sh
+
+# OR use platform-specific scripts:
+# Linux/macOS: ./setup-environment-linux-macos.sh  
+# Windows: .\setup-environment-windows.ps1
+```
+
+**✅ The automated setup installs:**
+- ✅ .NET 9.0 SDK
+- ✅ Docker Desktop 
+- ✅ Git
+- ✅ Aspire workload
+- ✅ All dependencies
+
+**📖 For detailed setup instructions, see [SETUP-GUIDE.md](SETUP-GUIDE.md)**
+
+---
+
+### 🔧 Manual Setup (Alternative)
+
+If you prefer manual installation or the automated setup fails:
+
+#### ✅ Step 1: Install Prerequisites
+```bash
+# 1. Install .NET 9.0 SDK from: https://dotnet.microsoft.com/download/dotnet/9.0
 dotnet --version  # Should show 9.0.x
 
-# 2. Clone and navigate to course
-cd FlinkDotNet/LearningCourse
+# 2. Install Docker Desktop from: https://docs.docker.com/get-docker/
+docker --version  # Should show version without errors
 
-# 3. Start infrastructure (used by all days)
-cd LocalTesting
+# 3. Install Git if not already installed
+git --version     # Should show version
+```
+
+#### ✅ Step 2: Clone Repository
+```bash
+# Clone and navigate to course
+git clone https://github.com/devstress/FlinkDotnet.git
+cd FlinkDotnet/LearningCourse
+
+# Install Aspire workload
+dotnet workload install aspire
+```
+
+#### ✅ Step 3: Start Infrastructure
+```bash
+# Start LocalTesting infrastructure (used by all days)
+cd ../LocalTesting
 dotnet run --project LocalTesting.AppHost
 # Wait 90 seconds for all services to start
 ```
