@@ -108,7 +108,7 @@ cd %USERPROFILE%\FlinkDotNet\LearningCourse
 ### 3. Read the Student Guide
 ```bash
 # Open the comprehensive learning guide
-cat STUDENT-GUIDE.md
+cat README.md
 ```
 
 ### 4. Start LocalTesting Infrastructure
@@ -207,7 +207,7 @@ dotnet workload list | grep aspire
 
 ### Support Resources
 - **Repository Issues**: https://github.com/devstress/FlinkDotnet/issues
-- **Learning Course Guide**: [STUDENT-GUIDE.md](STUDENT-GUIDE.md)
+- **Learning Course Guide**: [README.md](README.md)
 - **.NET Documentation**: https://docs.microsoft.com/dotnet/
 - **Docker Documentation**: https://docs.docker.com/
 
@@ -215,7 +215,7 @@ dotnet workload list | grep aspire
 
 After successful setup:
 
-1. **📚 Review Course Overview**: Read `STUDENT-GUIDE.md` for the complete 14-day learning path
+1. **📚 Review Course Overview**: Read `README.md` for the complete 14-day learning path
 2. **🏃‍♂️ Start Day 1**: Navigate to `Day01-Flink21-Fundamentals/Exercise-Solutions/`
 3. **💡 Join the Community**: Contribute improvements and share your learning experience
 4. **🔄 Keep Updated**: Run `git pull` regularly to get the latest exercises and fixes

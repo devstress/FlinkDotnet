@@ -40,7 +40,7 @@ The FlinkDotNet Learning Course has been successfully completed and enhanced to 
 
 ### 2. Enhanced Documentation
 - **SETUP-GUIDE.md**: Comprehensive setup and troubleshooting
-- **Enhanced STUDENT-GUIDE.md**: Automated setup instructions
+- **Enhanced README.md**: Automated setup instructions
 - **Updated README.md**: Clear entry points for students
 
 ### 3. Platform-Specific Support
@@ -181,7 +181,7 @@ The FlinkDotNet Learning Course is now ready to transform developers into real-t
 
 **Ready to begin?** 
 1. Run `./setup-environment.sh` 
-2. Follow `STUDENT-GUIDE.md`
+2. Follow `README.md`
 3. Start your journey to stream processing mastery!
 
 ---
