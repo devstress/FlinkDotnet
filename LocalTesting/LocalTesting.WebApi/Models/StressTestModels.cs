@@ -34,11 +34,11 @@ public class ComplexLogicMessage
         return $"queue-{queueIndex}";
     }
     
-    // Calculate partition number using hash for proper load balancing across 100 partitions
+    // Calculate partition number using hash for proper load balancing across 10 partitions
     private int GetPartitionNumber()
     {
-        // Use message ID hash to distribute across 100 partitions
-        return (int)(MessageId % 100);
+        // Use message ID hash to distribute across 10 partitions
+        return (int)(MessageId % 10);
     }
     
     public Dictionary<string, string> Headers => ProcessingStage switch
@@ -110,8 +110,8 @@ public class StressTestConfiguration
     public TimeSpan LagThreshold { get; set; } = TimeSpan.FromSeconds(5);
     public double RateLimit { get; set; } = 100.0; // Changed from 1000 to 100 per logical queue
     public double BurstCapacity { get; set; } = 5000.0;
-    public int PartitionCount { get; set; } = 100;
-    public int LogicalQueueCount { get; set; } = 1000;
+    public int PartitionCount { get; set; } = 10;
+    public int LogicalQueueCount { get; set; } = 100;
     public bool UseTemporalJobs { get; set; } = true;
     public string SampleResponseTopic { get; set; } = "sample_response";
 }
@@ -205,8 +205,8 @@ public class TemporalJobRequest
 
 public class LogicalQueueConfiguration
 {
-    public int PartitionCount { get; set; } = 100;
-    public int LogicalQueueCount { get; set; } = 1000;
+    public int PartitionCount { get; set; } = 10;
+    public int LogicalQueueCount { get; set; } = 100;
     public double MessagesPerSecondPerQueue { get; set; } = 100.0;
     public Dictionary<string, string> KafkaHeaders { get; set; } = new();
 }
@@ -258,8 +258,8 @@ public class MessageProductionRequest
     public int MessageCount { get; set; } = 1000000;
     public string? TestId { get; set; }
     public bool UseTemporalSubmission { get; set; } = true;
-    public int PartitionCount { get; set; } = 100;
-    public int LogicalQueueCount { get; set; } = 1000;
+    public int PartitionCount { get; set; } = 10;
+    public int LogicalQueueCount { get; set; } = 100;
 }
 
 public class FlinkJobConfiguration

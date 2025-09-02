@@ -158,11 +158,24 @@ Feature: Aspire Container Reconciliation
    - Removed `.WithExternalHttpEndpoints()` to reduce multiple endpoint exposure
    - Kept single `WithHttpEndpoint(5000, name: "webapi")` configuration
 
+5. **🚨 CRITICAL KAFKA KRAFT FIX (January 2025)**:
+   - **Root Cause Identified**: `java.net.UnknownHostException: kafka-broker-2, kafka-broker-3` due to sequential startup
+   - **Sequential startup broke Kafka KRaft cluster** - all brokers in `KAFKA_CONTROLLER_QUORUM_VOTERS` must be reachable simultaneously
+   - **Fixed**: Removed `.WaitFor()` dependencies between Kafka brokers to allow simultaneous startup
+   - **KafkaUI Dependencies**: Changed from sequential wait to individual waits: `.WaitFor(kafkaBroker1).WaitFor(kafkaBroker2).WaitFor(kafkaBroker3)`
+   - **Updated WebApi dependency**: Changed from `kafkaBroker3` to `kafkaUI` to ensure all Kafka brokers are ready
+   - **Maintains**: Sequential startup for other appropriate components (Flink, Temporal, observability)
+
 ### Challenges Encountered
 1. **Flink Memory Configuration Error**: JVM overhead calculation failing with "Derived JVM Overhead size (0 bytes)" error
 2. **Container Reconciliation Race Conditions**: DCP losing track of containers during startup
 3. **Resource Allocation Issues**: Multiple high-memory containers (2048m each) causing startup conflicts
 4. **Dashboard Configuration Complexity**: Incorrect namespace usage causing compilation errors
+5. **🚨 CRITICAL: Kafka KRaft Cluster Startup Failures** (January 2025):
+   - Sequential startup caused DNS resolution failures (`UnknownHostException`)
+   - Kafka KRaft mode requires all quorum members to be reachable at startup time
+   - Container logs showed broker-1 failing to connect to non-existent broker-2 and broker-3
+   - Graceful shutdown timeouts and RaftClient failures due to incomplete quorum formation
 
 ### Solutions Applied
 1. **Simplified Memory Configuration**: Used working patterns from WI4 with basic process.size settings
@@ -170,6 +183,22 @@ Feature: Aspire Container Reconciliation
 3. **Reduced Resource Usage**: Lowered memory allocations from 2048m to 1024m per container
 4. **Streamlined Dashboard Setup**: Used simple environment variable approach for auto-launch
 5. **Container Lifecycle Management**: Ensured proper startup sequence and dependency management
+6. **🚨 CRITICAL: Kafka KRaft Simultaneous Startup** (January 2025):
+   - **Removed sequential dependencies between Kafka brokers** - they must start simultaneously
+   - **Implemented proper KafkaUI dependencies** - waits for all three brokers individually
+   - **Log analysis driven solution** - checked container logs to identify DNS resolution as root cause
+   - **Component-specific startup patterns** - different distributed systems have different requirements
+
+7. **🚨 CRITICAL: OpenTelemetry Collector Configuration Fix** (September 2025):
+   - **Root Cause**: Deprecated "logging" exporter and missing "check_interval" in memory_limiter processor
+   - **Error**: `invalid configuration: processors::memory_limiter: 'check_interval' must be greater than zero`
+   - **Error**: Unsupported "loki" exporter causing container exits
+   - **Fixed**: Created [`otel-config-training-minimal.yaml`](LocalTesting/LocalTesting.AppHost/otel-config-training-minimal.yaml) with:
+     - Replaced deprecated "logging" exporter with "debug" exporter
+     - Added required `check_interval: 1s` to memory_limiter processor
+     - Removed unsupported "loki" exporter
+     - Maintained core functionality: OTLP receivers, metrics/logs/traces pipelines
+   - **Validation**: Container starts successfully and runs stable with "Everything is ready" log message
 
 ## Phase 5: Testing & Validation
 ### Test Results
@@ -237,9 +266,25 @@ User confirmed containers are working and provided additional feedback:
 - **Don't allocate more than 1GB memory per container without careful resource planning**
 - **Don't assume dashboard will auto-launch without explicit environment variable configuration**
 - **Don't ignore container reconciliation errors - they indicate deeper infrastructure issues**
+- **🚨 NEVER sequence Kafka KRaft brokers with .WaitFor() - they must start simultaneously for quorum formation**
+- **🚨 ALWAYS check container logs first** - DNS resolution failures reveal startup order issues, not networking problems
+- **🚨 DON'T assume generic solutions** - distributed systems have specific startup requirements (consensus algorithms, quorums)
+- **🚨 NEVER use deprecated OpenTelemetry exporters** - "logging" is deprecated, use "debug" instead
+- **🚨 ALWAYS include required processor parameters** - memory_limiter requires check_interval > 0
+- **🚨 DON'T use unsupported exporters** - verify exporter compatibility with collector version
 
 ### Reference for Future WIs
 - **Aspire Container Issues**: Use simplified memory configurations, explicit dependencies, reduced resource allocation
 - **Flink Configuration**: Use basic process.size and off-heap.size settings, avoid JVM overhead complexity
 - **Dashboard Setup**: Use `DOTNET_DASHBOARD_FRONTEND_AUTOLAUNCH=true` environment variable
 - **Container Debugging**: Check reconciliation logs first, then examine memory and dependency configurations
+- **🚨 Kafka KRaft Clusters**: ALL brokers in `KAFKA_CONTROLLER_QUORUM_VOTERS` must be reachable simultaneously at startup
+- **🚨 Log-Driven Debugging**: Container logs (especially `UnknownHostException`) reveal DNS/networking issues from startup timing
+- **🚨 Component-Specific Patterns**: Research distributed system requirements before implementing startup sequences
+- **🚨 Simultaneous vs Sequential**: Consensus-based systems (Kafka KRaft, etcd, etc.) require simultaneous startup, not sequential
+- **🚨 OpenTelemetry Collector Configuration**:
+  - Use "debug" exporter instead of deprecated "logging" exporter
+  - Always include `check_interval: 1s` in memory_limiter processor configuration
+  - Verify exporter compatibility with collector version before deployment
+  - Create minimal working configurations first, then add complexity
+  - Test container startup independently before full Aspire integration

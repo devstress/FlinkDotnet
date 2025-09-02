@@ -1,0 +1,74 @@
+# Grafana Datasources Configuration for Training
+# PGL Stack: Prometheus + Grafana + Loki
+# Comprehensive observability coverage for learning
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Metrics and Service Health
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.45.0
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+      queryTimeout: 60s
+    secureJsonFields: {}
+
+  # Loki - Centralized Logs
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: 'prometheus-uid'
+          matcherRegex: 'trace_id=(\w+)'
+          name: 'TraceID'
+          url: '$${__value.raw}'
+
+  # OpenTelemetry Traces (via Aspire Dashboard)
+  - name: Aspire-Traces
+    type: jaeger
+    access: proxy
+    url: http://host.docker.internal:18888
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: 'loki-uid'
+        tags: ['service.name', 'service.namespace']
+        mappedTags:
+          - key: 'service.name'
+            value: 'service_name'
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+      tracesToMetrics:
+        datasourceUid: 'prometheus-uid'
+        tags: [{ key: 'service.name', value: 'service' }]
+        queries:
+          - name: 'Sample query'
+            query: 'sum(rate(traces_spanmetrics_latency_bucket{service="$service"}[5m]))'
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      spanBar:
+        type: 'Tag'
+        tag: 'http.path'
+
+deleteDatasources:
+  - name: TestData DB
+    orgId: 1

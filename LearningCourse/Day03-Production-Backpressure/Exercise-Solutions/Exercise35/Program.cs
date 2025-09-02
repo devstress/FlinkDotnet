@@ -18,9 +18,9 @@ namespace Exercise35;
 /// - Scale: 2 Gateways, 4 Flink task managers, 4 Temporal instances
 /// 
 /// Test scenarios:
-/// 1. 3,000,000 messages | 300 customers | 4 partitions | BackpressureQueue=2 per customer
-/// 2. 1,000,000 messages | 300 customers | 8 partitions | BackpressureQueue=2 per customer  
-/// 3. 1,000,000 messages | 300 customers | 16 partitions | BackpressureQueue=2 per customer
+/// 1. 3,000,000 messages | 300 customers | 10 partitions | BackpressureQueue=2 per customer
+/// 2. 1,000,000 messages | 300 customers | 10 partitions | BackpressureQueue=2 per customer
+/// 3. 1,000,000 messages | 300 customers | 10 partitions | BackpressureQueue=2 per customer
 /// </summary>
 class Program
 {
@@ -88,24 +88,24 @@ class Program
             { 
                 Name = "Scenario 1: High Volume", 
                 TargetMessages = 3_000_000, 
-                Customers = 300, 
-                TopicPartitionCount = 4,
+                Customers = 300,
+                TopicPartitionCount = 10,
                 BackpressureConfig = backpressureConfig
             },
             new TestScenario 
-            { 
-                Name = "Scenario 2: Medium Volume, More Partitions", 
-                TargetMessages = 1_000_000, 
-                Customers = 300, 
-                TopicPartitionCount = 8,
+            {
+                Name = "Scenario 2: Medium Volume, Standard Partitions",
+                TargetMessages = 1_000_000,
+                Customers = 300,
+                TopicPartitionCount = 10,
                 BackpressureConfig = backpressureConfig
             },
             new TestScenario 
-            { 
-                Name = "Scenario 3: Medium Volume, Max Partitions", 
-                TargetMessages = 1_000_000, 
-                Customers = 300, 
-                TopicPartitionCount = 16,
+            {
+                Name = "Scenario 3: Medium Volume, Standard Partitions",
+                TargetMessages = 1_000_000,
+                Customers = 300,
+                TopicPartitionCount = 10,
                 BackpressureConfig = backpressureConfig
             }
         };

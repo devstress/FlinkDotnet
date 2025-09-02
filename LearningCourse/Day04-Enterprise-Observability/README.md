@@ -13,7 +13,15 @@ Master **production-grade observability patterns** used by Netflix, Google, and 
 
 ## 🛠️ LocalTesting Environment Setup
 
-This course uses the **comprehensive LocalTesting observability stack** for all hands-on exercises. The LocalTesting environment provides a complete enterprise observability platform that mirrors production setups at major tech companies.
+This course uses the **PGL observability stack** (Prometheus + Grafana + Loki) with OpenTelemetry for comprehensive training coverage. The LocalTesting environment provides all observability pillars while maintaining simplicity for effective learning.
+
+### Training-Focused Observability Stack
+
+**What We Cover:**
+- ✅ **Metrics**: Prometheus + OpenTelemetry (business & infrastructure metrics)
+- ✅ **Logs**: Loki centralized log aggregation with Grafana integration
+- ✅ **Traces**: OpenTelemetry traces via Aspire Dashboard integration
+- ✅ **Service Health**: Prometheus service discovery with Grafana dashboards
 
 ### Quick Setup for Day 4 Exercises
 
@@ -22,36 +30,37 @@ This course uses the **comprehensive LocalTesting observability stack** for all 
    - Docker Desktop or Podman running
    - LocalTesting environment setup (see [LocalTesting README](../../LocalTesting/README.md#observability-configuration-and-testing))
 
-2. **Start LocalTesting Observability Stack**:
+2. **Start LocalTesting PGL Stack**:
    ```bash
    cd LocalTesting
    dotnet run --project LocalTesting.AppHost
    ```
 
-3. **Verify Observability Endpoints**:
-   - **Grafana Dashboard**: http://localhost:3000 (admin/admin)
-   - **Prometheus Metrics**: http://localhost:9090 
-   - **Aspire Dashboard**: http://localhost:18888
+3. **Verify Training Stack Endpoints**:
+   - **Grafana Dashboard**: http://localhost:3000 (anonymous access enabled)
+   - **Prometheus Metrics**: http://localhost:9090
+   - **Loki Logs**: http://localhost:3100
+   - **Aspire Dashboard (Traces)**: http://localhost:18888
    - **OpenTelemetry Collector**: http://localhost:4318
 
-4. **Run Automated Observability Testing**:
+4. **Generate Training Data**:
    ```bash
-   # Test the complete observability stack with real data
+   # Generate comprehensive observability data for training
    curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
    ```
 
-### What You Get
+### Training Benefits
 
-The LocalTesting environment provides:
-- **Complete observability stack** with Grafana, Prometheus, OpenTelemetry
-- **Real-time message flow monitoring** during 8-step business flows
-- **Automated metrics validation** with comprehensive testing procedures
-- **Enterprise-grade monitoring** with all production patterns implemented
-- **Ready-to-use dashboards** and pre-configured data sources
+The PGL stack provides:
+- **📊 Complete Observability Coverage**: All three pillars (metrics, logs, traces) without complexity
+- **🎯 Training-Optimized**: Simplified configuration focused on learning core concepts
+- **🔗 Integrated Experience**: Seamless correlation between metrics, logs, and traces in Grafana
+- **⚡ Fast Setup**: 3 core components vs 6+ in full enterprise stacks
+- **💡 Real Patterns**: Industry-standard PGL stack used by many production teams
 
-💡 **Pro Tip**: Leave the LocalTesting environment running throughout Day 4 exercises for the best hands-on experience!
+💡 **Training Philosophy**: Master the fundamentals with PGL stack, then apply knowledge to any observability platform!
 
-📖 **Detailed Setup**: For comprehensive setup instructions and troubleshooting, see [LocalTesting Observability Documentation](../../LocalTesting/README.md#observability-configuration-and-testing)
+📖 **Why PGL for Training**: See [Observability Stack Comparison](OBSERVABILITY_STACK_COMPARISON.md) for detailed analysis of when to use different complexity levels.
 
 ## 📚 Real-World Reference Foundation
 
@@ -59,7 +68,7 @@ This module implements **enterprise observability patterns** from industry leade
 
 ### 🏛️ Industry Reference Standards
 - **[Google SRE Practices](https://sre.google/sre-book/)** - The four golden signals, SLI/SLO design
-- **[Netflix Engineering Blog](https://netflixtechblog.com/chaos-engineering-upgraded-878d341f15fa)** - Large-scale monitoring architecture  
+- **[Netflix Engineering Blog](https://netflixtechblog.com/chaos-engineering-upgraded-878d341f15fa)** - Large-scale monitoring architecture
 - **[Uber Engineering: Monitoring at Scale](https://eng.uber.com/logging/)** - Multi-tenant metrics infrastructure
 - **[Apache Flink Monitoring](https://nightlies.apache.org/flink/flink-docs-master/docs/ops/monitoring/)** - Official monitoring best practices
 
@@ -68,6 +77,20 @@ This module implements **enterprise observability patterns** from industry leade
 - **[Prometheus](https://prometheus.io/)** - Time-series metrics collection and storage
 - **[Grafana](https://grafana.com/)** - Metrics visualization and alerting platform
 - **[Jaeger](https://jaegertracing.io/)** - Distributed tracing system
+
+### 📊 Choosing the Right Observability Stack
+**New:** For comprehensive analysis of different observability approaches, see our detailed comparison guide:
+
+**[📋 Observability Stack Comparison: LGTM vs ELK vs OpenTelemetry →](OBSERVABILITY_STACK_COMPARISON.md)**
+
+This guide covers:
+- **LGTM Stack** (Loki + Grafana + Tempo + Mimir) vs **ELK Stack** (Elasticsearch + Logstash + Kibana)
+- **OpenTelemetry + SigNoz** vs **Enterprise SaaS** solutions (DataDog, New Relic)
+- **Decision framework** for choosing the right complexity level for your organization
+- **Cost-benefit analysis** and **migration strategies** between different stacks
+- **Professional references** from industry experts and comparative studies
+
+💡 **Key Insight**: Most projects don't need the full complexity of enterprise observability stacks. Start simple with Prometheus + Grafana, then add complexity only when proven necessary.
 
 ## 🌟 The Four Golden Signals of Observability
 
