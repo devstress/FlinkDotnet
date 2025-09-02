@@ -11,8 +11,8 @@ This directory contains complete working solutions for all Day 7 exercises, impl
 #### ✅ Step 1: Verify Infrastructure is Running
 ```bash
 # Check if LocalTesting from Day 1 is still running
-curl http://localhost:8081/overview
-curl http://localhost:3000/api/health
+curl http://localhost:18002/overview
+curl http://localhost:18005/api/health
 ```
 
 **Expected Output:**
@@ -203,7 +203,7 @@ Mark each exercise as complete:
 ### Problem: "Performance metrics missing"
 **Solution:**
 - Grafana may take 30 seconds to show load metrics
-- Check http://localhost:3000 for real-time graphs
+- Check http://localhost:18005 for real-time graphs
 - Metrics will appear during active load generation
 
 ## 🎯 What You've Accomplished
@@ -239,8 +239,8 @@ cd Exercise74 && dotnet run && cd ..
 ### Monitor Load Testing:
 ```bash
 # View real-time performance metrics
-# Open http://localhost:3000 (Grafana)
-# Check http://localhost:8081 (Flink Dashboard)
+# Open http://localhost:18005 (Grafana)
+# Check http://localhost:18002 (Flink Dashboard)
 # Load testing metrics appear during active tests
 ```
 

@@ -11,7 +11,7 @@ This directory contains complete working solutions for all Day 5 exercises, impl
 #### ✅ Step 1: Verify Infrastructure is Running
 ```bash
 # Check if LocalTesting from Day 1 is still running
-curl http://localhost:8084/api/v1/namespaces
+curl http://localhost:18004/api/v1/namespaces
 curl http://localhost:7233/api/v1/health
 ```
 
@@ -197,7 +197,7 @@ dotnet run
 ```
 
 **✅ Verify workflows:**
-- Open http://localhost:8084 (Temporal UI)
+- Open http://localhost:18004 (Temporal UI)
 - Should show active workflows
 - Workflow history visible
 
@@ -224,7 +224,7 @@ Mark each exercise as complete:
 **Solution:**
 ```bash
 # Check Temporal is running
-curl http://localhost:8084/api/v1/namespaces
+curl http://localhost:18004/api/v1/namespaces
 # If fails, restart LocalTesting infrastructure
 ```
 
@@ -291,7 +291,7 @@ cd Exercise54 && dotnet run && cd ..
 ### Check Temporal Status:
 ```bash
 # Verify workflow services
-curl http://localhost:8084/api/v1/namespaces  # Temporal UI
+curl http://localhost:18004/api/v1/namespaces  # Temporal UI
 curl http://localhost:7233/api/v1/health      # Temporal Server
 ```
 

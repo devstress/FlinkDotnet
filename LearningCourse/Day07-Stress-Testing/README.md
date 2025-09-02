@@ -83,7 +83,7 @@ The LocalTesting environment provides sophisticated stress testing capabilities 
 Let's explore the comprehensive testing framework:
 
 ```csharp
-// Access via: http://localhost:5000/swagger
+// Access via: http://localhost:18000/index.html
 // ComplexLogicStressTest endpoints:
 
 // GET /api/ComplexLogicStressTest/million-message-stress
@@ -257,8 +257,8 @@ namespace LearningCourse.Day07
 
             // Step 4: Execute stress test with monitoring
             Console.WriteLine("\n🎯 Starting complex logic stress test...");
-            Console.WriteLine("📊 Monitor stress metrics at: http://localhost:5000/stress-monitor");
-            Console.WriteLine("📈 Performance dashboard: http://localhost:3000/stress");
+            Console.WriteLine("📊 Monitor stress metrics at: http://localhost:18001/stress-monitor");
+            Console.WriteLine("📈 Performance dashboard: http://localhost:18005/stress");
 
             var stopwatch = Stopwatch.StartNew();
 
@@ -1365,7 +1365,7 @@ public class PerformanceBenchmarkSuite
 
 ## 📈 LocalTesting Stress Monitor
 
-Access comprehensive stress testing at http://localhost:5000/swagger:
+Access comprehensive stress testing at http://localhost:18000/ (Swagger UI is at root):
 
 ### Available Stress Test Endpoints:
 - **POST /api/ComplexLogicStressTest/start**: Start comprehensive stress test
@@ -1377,10 +1377,10 @@ Access comprehensive stress testing at http://localhost:5000/swagger:
 ### Real-time Monitoring:
 ```bash
 # Monitor stress test progress
-curl http://localhost:5000/api/ComplexLogicStressTest/metrics
+curl http://localhost:18000/api/ComplexLogicStressTest/metrics
 
 # View detailed performance report
-curl http://localhost:5000/api/ComplexLogicStressTest/report
+curl http://localhost:18000/api/ComplexLogicStressTest/report
 ```
 
 ## 🔧 Day 7 Troubleshooting
@@ -1414,7 +1414,7 @@ ThreadPool.SetMaxThreads(200, 200);
 **Network Buffer Overflow**:
 ```bash
 # Monitor network buffer utilization
-curl http://localhost:8081/taskmanagers/<tm_id>/metrics
+curl http://localhost:18002/taskmanagers/<tm_id>/metrics
 
 # Tune network buffer configuration
 taskmanager.network.numberOfBuffers: 16384

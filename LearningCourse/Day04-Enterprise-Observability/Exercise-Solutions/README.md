@@ -237,7 +237,7 @@ Applications → Prometheus → Grafana ← Loki ← Container Logs
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    GRAFANA (G) - Unified Dashboard                 │
 │         📊 Metrics Visualization | 📋 Log Exploration               │
-│                    http://localhost:3000                           │
+│                    http://localhost:18005                           │
 └─────────────────────────────────────────────────────────────────────┘
                                    │
                      ┌─────────────┼─────────────┐
@@ -268,7 +268,7 @@ Applications → Prometheus → Grafana ← Loki ← Container Logs
 │ LocalTesting    │   │     Kafka       │   │     Flink       │
 │ WebApi          │──▶│   3 Brokers     │──▶│   JobManager    │
 │ Port: 5000      │   │ 10 Partitions   │   │   Port: 8081    │
-│ /swagger        │   │ UI: 8082        │   │ 3 TaskManagers  │
+│                 │   │ UI: 8082        │   │ 3 TaskManagers  │
 │ ✅ OBSERVABLE   │   │ ✅ MONITORED    │   │ ✅ TRACED       │
 └─────────────────┘   └─────────────────┘   └─────────────────┘
           │                       │                   │
@@ -501,23 +501,23 @@ dotnet run --project LocalTesting.AppHost
 # 2. Wait for all services to be ready (3-5 minutes for complete stack)
 
 # 3. Verify each component with current ports and endpoints
-curl http://localhost:3000/api/health   # Grafana (unified dashboard)
-curl http://localhost:9090/-/healthy    # Prometheus (metrics collection)
-curl http://localhost:3100/ready        # Loki (log aggregation)
+curl http://localhost:18005/api/health   # Grafana (unified dashboard)
+curl http://localhost:18006/-/healthy    # Prometheus (metrics collection)
+curl http://localhost:18005/ready        # Loki (log aggregation)
 curl http://localhost:18888/health      # Aspire Dashboard (orchestration)
-curl http://localhost:8889/metrics      # OTEL Collector (fixed configuration)
-curl http://localhost:5000/swagger      # WebApi Swagger (API testing)
+curl http://localhost:18009/metrics     # OTEL Collector (telemetry processing)
+curl http://localhost:5000/             # WebApi Swagger (API testing)
 
 # 4. Verify complete service stack
-curl http://localhost:8081             # Flink Dashboard (stream processing)
-curl http://localhost:8082             # Kafka UI (message broker)
-curl http://localhost:8084             # Temporal UI (workflow orchestration)
+curl http://localhost:18002             # Flink Dashboard (stream processing)
+curl http://localhost:18003             # Kafka UI (message broker)
+curl http://localhost:18004             # Temporal UI (workflow orchestration)
 ```
 
 ### Exercise 2: Explore OTEL Telemetry Pipeline
 ```bash
 # 1. Check OTEL Collector health
-curl http://localhost:8889/metrics | grep otelcol
+curl http://localhost:18009/metrics | grep otelcol
 
 # 2. Send test telemetry
 curl -X POST http://localhost:4318/v1/metrics \
@@ -525,7 +525,7 @@ curl -X POST http://localhost:4318/v1/metrics \
   -d '{"resourceMetrics":[{"scopeMetrics":[{"metrics":[{"name":"test_metric","gauge":{"dataPoints":[{"value":42}]}}]}]}]}'
 
 # 3. Verify data reaches PGL stack
-# - Check Prometheus: http://localhost:9090/graph?g0.expr=test_metric
+# - Check Prometheus: http://localhost:18006/graph?g0.expr=test_metric
 # - Check Loki via Grafana data source
 ```
 
@@ -622,20 +622,20 @@ curl -X POST http://localhost:5000/api/backpressure/stress-test \
 ```bash
 # Check WebApi health and metrics
 curl http://localhost:5000/health
-curl http://localhost:5000/swagger  # API documentation
+curl http://localhost:5000/         # API documentation (Swagger UI at root)
 
 # View WebApi logs in Grafana
-# Navigate to: http://localhost:3000 → Explore → Loki
+# Navigate to: http://localhost:18005 → Explore → Loki
 # Query: {container_name="localtesting-webapi"}
 ```
 
 **Kafka Monitoring (Port 8082):**
 ```bash
 # Monitor Kafka through UI
-open http://localhost:8082
+open http://localhost:18003
 
 # Check Kafka metrics in Prometheus
-open http://localhost:9090/targets  # Verify Kafka scrapers
+open http://localhost:18006/targets  # Verify Kafka scrapers
 # Query: kafka_server_brokertopicmetrics_messagesin_total
 
 # View Kafka logs in Loki
@@ -645,7 +645,7 @@ open http://localhost:9090/targets  # Verify Kafka scrapers
 **Flink Monitoring (Port 8081):**
 ```bash
 # Monitor Flink job execution
-open http://localhost:8081
+open http://localhost:18002
 
 # Check Flink metrics in Prometheus
 # Query: flink_jobmanager_numRunningJobs
@@ -658,7 +658,7 @@ open http://localhost:8081
 **Temporal Monitoring (Port 8084):**
 ```bash
 # Monitor Temporal workflows
-open http://localhost:8084
+open http://localhost:18004
 
 # Check Temporal metrics in Prometheus
 # Query: temporal_workflow_start_counter
@@ -691,7 +691,7 @@ sum(rate(temporal_workflow_completed_counter[5m]))                   # Temporal 
 #### **Step 4: End-to-End Performance Monitoring**
 
 **Create Complete Flow Dashboard in Grafana:**
-1. Navigate to http://localhost:3000
+1. Navigate to http://localhost:18005
 2. Create new dashboard with panels for:
 
 ```json
@@ -757,10 +757,10 @@ for i in {1..10}; do
 done
 
 # 2. Monitor in real-time:
-# - Grafana Dashboard: http://localhost:3000
-# - Flink Jobs: http://localhost:8081
-# - Kafka Topics: http://localhost:8082
-# - Temporal Workflows: http://localhost:8084
+# - Grafana Dashboard: http://localhost:18005
+# - Flink Jobs: http://localhost:18002
+# - Kafka Topics: http://localhost:18003
+# - Temporal Workflows: http://localhost:18004
 # - Aspire Overview: http://localhost:18888
 
 # 3. Check flow completion

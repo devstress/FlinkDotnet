@@ -507,7 +507,7 @@ function Test-BusinessFlows {
             @{Port=18888; Path="/"; Name="Aspire Dashboard"},
             @{Port=5000; Path="/api/ComplexLogicStressTest/test-status"; Name="Test Status Monitoring"},
             @{Port=5000; Path="/health"; Name="Health Monitoring"},
-            @{Port=5000; Path="/swagger"; Name="API Documentation (Swagger UI)"}
+            @{Port=5000; Path="/index.html"; Name="API Documentation (Swagger UI)"}
         )
         
         foreach ($endpoint in $endpointTests) {
@@ -641,7 +641,7 @@ try {
     Write-Host "       • Monitor application logs and distributed tracing" -ForegroundColor $Yellow
     Write-Host "       • Real-time performance metrics and health status" -ForegroundColor $Yellow
     Write-Host ""
-    Write-Host "  🚀 LocalTesting API & Swagger: http://localhost:5000/swagger" -ForegroundColor $Cyan
+    Write-Host "  🚀 LocalTesting API & Swagger: http://localhost:5000/index.html" -ForegroundColor $Cyan
     Write-Host "       • Interactive API documentation and testing interface" -ForegroundColor $Yellow
     Write-Host "       • Execute stress test steps manually and view responses" -ForegroundColor $Yellow
     Write-Host "       • Monitor test status: http://localhost:5000/api/ComplexLogicStressTest/test-status" -ForegroundColor $Yellow

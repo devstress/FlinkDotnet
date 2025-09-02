@@ -257,7 +257,7 @@ app.MapGet("/", () => new
 Log.Information("🚀 Day 1 Production Streaming Application starting...");
 Log.Information("📊 Health checks available at: /health and /health/comprehensive");
 Log.Information("📈 Metrics available at: /metrics");
-Log.Information("📚 API documentation at: /swagger");
+Log.Information("📚 API documentation at: /index.html");
 
 await app.RunAsync();
 

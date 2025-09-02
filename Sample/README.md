@@ -103,7 +103,7 @@ builder.Services.AddFlinkJobBuilder(config =>
    # Check Flink UI
    kubectl port-forward svc/flink-jobmanager-ui 8081:8081 -n flink-system
    
-   # Access at http://localhost:8081
+   # Access at http://localhost:18002
    ```
 
 3. **Test Job Gateway connectivity:**
@@ -188,14 +188,14 @@ When connected to actual Flink 2.1.0 cluster:
 
 ```bash
 # Flink 2.1.0 Web UI (real cluster)
-http://localhost:8081
+http://localhost:18002
 
 # Job Gateway Health (real API)
 curl http://localhost:8080/actuator/health
 
 # Real job metrics and status
-curl http://localhost:8081/api/v1/jobs
-curl http://localhost:8081/api/v1/jobs/{job-id}/metrics
+curl http://localhost:18002/api/v1/jobs
+curl http://localhost:18002/api/v1/jobs/{job-id}/metrics
 ```
 
 ### Production Metrics

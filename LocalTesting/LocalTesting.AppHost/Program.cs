@@ -152,7 +152,7 @@ var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
 
 // Kafka UI with staggered startup to reduce DCP load
 var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
-    .WithHttpEndpoint(8082, 8080, "kafka-ui")
+    .WithHttpEndpoint(18001, 8080, "kafka-ui")
     .WithEnvironment("KAFKA_CLUSTERS_0_NAME", "local-testing-cluster")
     .WithEnvironment("KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
     .WithEnvironment("DYNAMIC_CONFIG_ENABLED", "true")
@@ -164,7 +164,7 @@ var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
 
 // Flink JobManager with working memory configuration from WI4 success pattern - Updated to 2.1.0 for latest AI capabilities
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
-    .WithHttpEndpoint(8081, 8081, "jobmanager-ui")
+    .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
@@ -235,7 +235,7 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
 
 // Temporal Server for durable execution workflows with enhanced startup reliability
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
-    .WithHttpEndpoint(7233, 7233, "temporal-server")
+    .WithHttpEndpoint(18003, 7233, "temporal-server")
     .WithEnvironment("DB", "postgres12")
     .WithEnvironment("DB_PORT", "5432")
     .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
@@ -258,14 +258,14 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
 
 // Temporal UI for workflow monitoring
 var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
-    .WithHttpEndpoint(8084, 8080, "temporal-ui")
+    .WithHttpEndpoint(18004, 8080, "temporal-ui")
     .WithEnvironment("TEMPORAL_ADDRESS", "temporal-server:7233")
     .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084")
     .WaitFor(temporalServer);
 
 // Loki for centralized log aggregation with enhanced stability
 var loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
-    .WithHttpEndpoint(3100, 3100, "loki")
+    .WithHttpEndpoint(18005, 3100, "loki")
     .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
     .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
     .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", "3100")
@@ -274,7 +274,7 @@ var loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
 
 // Prometheus for metrics collection with enhanced startup stability
 var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
-    .WithHttpEndpoint(9090, 9090, "prometheus")
+    .WithHttpEndpoint(18006, 9090, "prometheus")
     .WithBindMount("./prometheus.yml", "/etc/prometheus/prometheus.yml")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "7d")
     .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", "0.0.0.0:9090")
@@ -289,9 +289,9 @@ var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
 
 // OpenTelemetry Collector with minimal, stable configuration
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
-    .WithHttpEndpoint(4317, 4317, "otlp-grpc")
-    .WithHttpEndpoint(4318, 4318, "otlp-http")
-    .WithHttpEndpoint(8889, 8889, "prometheus-metrics")
+    .WithHttpEndpoint(18007, 4317, "otlp-grpc")
+    .WithHttpEndpoint(18008, 4318, "otlp-http")
+    .WithHttpEndpoint(18009, 8889, "prometheus-metrics")
     .WithEnvironment("OTEL_LOG_LEVEL", "INFO")
     .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=otel-collector,service.version=1.0.0")
     .WithBindMount("./otel-config-training-minimal.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
@@ -300,7 +300,7 @@ var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-c
 
 // Grafana with PGL stack integration and enhanced startup reliability
 var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
-    .WithHttpEndpoint(3000, 3000, "grafana")
+    .WithHttpEndpoint(18010, 3000, "grafana")
     .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
     .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
     .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
@@ -335,7 +335,7 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
     .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")
     .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")
-    .WithHttpEndpoint(5000, 5001, name: "webapi") // External port 5000 -> Internal port 5001
+    .WithHttpEndpoint(18000, 5001, name: "webapi") // External port 18000 -> Internal port 5001
     // Simplified dependency chain prevents DCP reconciliation race conditions
     // Kafka brokers start simultaneously, other components use sequential chains
     .WaitFor(redis)

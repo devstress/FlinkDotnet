@@ -11,7 +11,7 @@ This directory contains complete working solutions for all Day 13 exercises, imp
 #### ✅ Step 1: Verify Infrastructure is Running
 ```bash
 curl http://localhost:8081/overview
-curl http://localhost:3000/api/health
+curl http://localhost:18010/api/health
 ```
 
 **❌ If any fail:**

@@ -37,9 +37,11 @@ This course uses the **PGL observability stack** (Prometheus + Grafana + Loki) w
    ```
 
 3. **Verify Training Stack Endpoints**:
-   - **Grafana Dashboard**: http://localhost:3000 (anonymous access enabled)
-   - **Prometheus Metrics**: http://localhost:9090
-   - **Loki Logs**: http://localhost:3100
+   - **Grafana Dashboard**: http://localhost:18010 (anonymous access enabled)
+   - **Prometheus Metrics**: http://localhost:18006/
+   - **Loki Logs**: http://localhost:18005/
+   - **Grafana Dashboards**: http://localhost:18010/ (admin/admin)
+   - **OpenTelemetry Collector**: http://localhost:18009/metrics
    - **Aspire Dashboard (Traces)**: http://localhost:18888
    - **OpenTelemetry Collector**: http://localhost:4318
 
@@ -145,12 +147,12 @@ Your LocalTesting environment provides a **complete enterprise observability pla
 
 | Component | URL | Enterprise Pattern | Production Use Case |
 |-----------|-----|-------------------|-------------------|
-| **Grafana Dashboard** | http://localhost:3000 | Netflix monitoring dashboards | Real-time operational visibility |
-| **Prometheus Metrics** | http://localhost:9090 | Google Borgmon successor | Time-series metrics storage |
-| **OpenTelemetry** | http://localhost:4318 | CNCF standard telemetry | Vendor-neutral observability |
+| **Grafana Dashboard** | http://localhost:18010 | Netflix monitoring dashboards | Real-time operational visibility |
+| **Prometheus Metrics** | http://localhost:18006 | Google Borgmon successor | Time-series metrics storage |
+| **OpenTelemetry HTTP** | http://localhost:18008 | CNCF standard telemetry | Vendor-neutral observability |
 | **Aspire Dashboard** | http://localhost:18888 | .NET application insights | Application performance monitoring |
-| **Flink Dashboard** | http://localhost:8081 | Stream processing monitoring | Job execution visibility |
-| **Temporal UI** | http://localhost:8084 | Workflow execution monitoring | Durable execution visibility |
+| **Flink Dashboard** | http://localhost:18002 | Stream processing monitoring | Job execution visibility |
+| **Temporal UI** | http://localhost:18004 | Workflow execution monitoring | Durable execution visibility |
 
 ### Metrics Collection Architecture
 
@@ -332,10 +334,10 @@ namespace LearningCourse.Day04
         {
             Console.WriteLine("🔍 Enterprise Observability Showcase");
             Console.WriteLine("====================================");
-            Console.WriteLine("📊 Grafana:     http://localhost:3000");
-            Console.WriteLine("📈 Prometheus:  http://localhost:9090");  
+            Console.WriteLine("📊 Grafana:     http://localhost:18010");
+            Console.WriteLine("📈 Prometheus:  http://localhost:18006");
             Console.WriteLine("🔗 Traces:      http://localhost:18888");
-            Console.WriteLine("⚡ Flink:       http://localhost:8081");
+            Console.WriteLine("⚡ Flink:       http://localhost:18002");
             Console.WriteLine();
 
             // Configure enterprise-grade observability
@@ -1046,17 +1048,17 @@ namespace LearningCourse.Day04
 - Generate observability data: `curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000`
 
 #### Step 1: Access LocalTesting Grafana
-1. **Navigate to Grafana** (http://localhost:3000)
+1. **Navigate to Grafana** (http://localhost:18010)
    - Login: admin/admin (first time)
-   - **Pre-configured data sources**: Prometheus (localhost:9090), OpenTelemetry
+   - **Pre-configured data sources**: Prometheus (localhost:18006), OpenTelemetry
 
 2. **Verify Data Sources**:
    ```bash
    # Test Prometheus connectivity
-   curl http://localhost:9090/api/v1/query?query=up
-   
+   curl http://localhost:18006/api/v1/query?query=up
+
    # Check available metrics
-   curl http://localhost:9090/api/v1/label/__name__/values
+   curl http://localhost:18006/api/v1/label/__name__/values
    ```
 
 #### Step 2: Create LocalTesting Dashboard
@@ -1099,7 +1101,7 @@ Set up alerts based on LocalTesting observability patterns:
 curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 5000
 
 # Watch dashboard update in real-time
-# Navigate between Grafana (localhost:3000) and Aspire Dashboard (localhost:18888)
+# Navigate between Grafana (localhost:18010) and Aspire Dashboard (localhost:18888)
 ```
 
 💡 **LocalTesting Integration**: This exercise uses the actual LocalTesting observability stack with real metrics from stress testing scenarios.
@@ -1156,8 +1158,8 @@ dotnet run --project LocalTesting.AppHost
 curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
 
 # 3. Query your custom metrics in Prometheus
-curl "http://localhost:9090/api/v1/query?query=customer_satisfaction_score"
-curl "http://localhost:9090/api/v1/query?query=orders_processed_total"
+curl "http://localhost:18006/api/v1/query?query=customer_satisfaction_score"
+curl "http://localhost:18006/api/v1/query?query=orders_processed_total"
 ```
 
 #### Step 3: Create Business Dashboard
@@ -1253,16 +1255,16 @@ Create your own observability validation:
 
 ```bash
 # Test specific Prometheus queries
-curl "http://localhost:9090/api/v1/query?query=up{job='localtesting-webapi'}"
+curl "http://localhost:18006/api/v1/query?query=up{job='localtesting-webapi'}"
 
 # Validate Grafana health
-curl -u admin:admin http://localhost:3000/api/health
+curl -u admin:admin http://localhost:18010/api/health
 
 # Test OpenTelemetry endpoints
 curl http://localhost:4318/v1/metrics
 
 # Verify service discovery
-curl http://localhost:9090/api/v1/targets
+curl http://localhost:18006/api/v1/targets
 ```
 
 #### Step 5: Enterprise Monitoring Patterns
@@ -1318,8 +1320,8 @@ Create alerts based on LocalTesting's actual metrics and business flows:
 # Generate alert conditions during stress testing
 curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 10000  # High load
 
-# Monitor alerts in Prometheus: http://localhost:9090/alerts
-# Check alert manager: http://localhost:9093 (if configured)
+# Monitor alerts in Prometheus: http://localhost:18006/alerts
+# Check alert manager: http://localhost:18008 (if configured)
 ```
 
 #### Step 3: Business Flow Alerts
@@ -1461,8 +1463,8 @@ All Day 4 exercises include complete working solutions using the LocalTesting ob
    ```
 
 3. **Access Monitoring Stack**:
-   - **Grafana Dashboard**: http://localhost:3000 (admin/admin)
-   - **Prometheus Metrics**: http://localhost:9090 
+   - **Grafana Dashboard**: http://localhost:18010 (admin/admin)
+   - **Prometheus Metrics**: http://localhost:18006
    - **Aspire Dashboard**: http://localhost:18888
 
 **All exercises demonstrate real-world enterprise observability patterns using the complete LocalTesting production environment.**
@@ -1499,7 +1501,7 @@ Build an observability solution that:
 ### LocalTesting Environment
 - [ ] **LocalTesting observability stack** successfully running (Grafana, Prometheus, OpenTelemetry)
 - [ ] **Automated observability testing** executed with `curl -X POST http://localhost:5000/stress/complex-logic`
-- [ ] **All monitoring endpoints accessible**: localhost:3000, localhost:9090, localhost:18888
+- [ ] **All monitoring endpoints accessible**: localhost:18010, localhost:18006, localhost:18888
 
 ### Core Observability Skills  
 - [ ] Successfully implemented The Four Golden Signals monitoring using LocalTesting metrics

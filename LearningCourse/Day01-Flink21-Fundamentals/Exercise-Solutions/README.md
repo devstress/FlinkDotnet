@@ -47,7 +47,7 @@ dotnet run --project LocalTesting.AppHost
 
 **Expected Output:**
 ```
-✅ FLINK CLUSTER STATUS: JobManager: RUNNING (http://localhost:8081)
+✅ FLINK CLUSTER STATUS: JobManager: RUNNING (http://localhost:18002)
 ✅ KAFKA CLUSTER STATUS: Brokers: 3/3 ONLINE
 ✅ TEMPORAL CLUSTER STATUS: Server: RUNNING
 ✅ OBSERVABILITY STACK STATUS: All components running
@@ -62,10 +62,10 @@ dotnet run --project LocalTesting.AppHost
 #### ✅ Step 3: Verify Infrastructure is Working
 Open these URLs in your browser (should all load):
 
-- **Flink Dashboard**: http://localhost:8081 ← Should show cluster with 3 TaskManagers
-- **Kafka UI**: http://localhost:8082 ← Should show 3 brokers
-- **Temporal UI**: http://localhost:8084 ← Should show namespace "default"
-- **Grafana**: http://localhost:3000 ← Should show login screen
+- **Flink Dashboard**: http://localhost:18002 ← Should show cluster with 3 TaskManagers
+- **Kafka UI**: http://localhost:18003 ← Should show 3 brokers
+- **Temporal UI**: http://localhost:18004 ← Should show namespace "default"
+- **Grafana**: http://localhost:18005 ← Should show login screen
 - **Aspire Dashboard**: http://localhost:18888 ← Should show running services
 
 **✅ All URLs work? Great! Continue to exercises.**
@@ -89,7 +89,7 @@ cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions
 
 # Run Netflix-style infrastructure validation
 # Verify LocalTesting infrastructure is running
-curl http://localhost:8081  # Flink Dashboard
+curl http://localhost:18002  # Flink Dashboard
 ```
 
 **Expected Output:**
@@ -139,13 +139,13 @@ dotnet run --configuration=RocksDBStateBackend
 🚀 Day 1 Production App with configuration: RocksDBStateBackend
 💾 Configuring RocksDB State Backend for Uber-Scale Operations
 🚀 Day 1 Production Streaming Application starting...
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
 ```
 
 **✅ Test the state backend:**
 ```bash
 # Open new terminal and test state performance endpoint
-curl http://localhost:5000/state/performance
+curl http://localhost:18000/state/performance
 ```
 
 **Expected Response:**
@@ -183,12 +183,12 @@ curl http://localhost:5000/state/performance
 ```bash
 # Open observability dashboard
 # Open Grafana Dashboard
-# http://localhost:3000
+# http://localhost:18005
 # OR on Mac/Linux: open observability-dashboard.html
 
 # Run load testing in another terminal
 # Use LocalTesting WebApi for load testing
-curl -X POST http://localhost:5000/stress/complex-logic
+curl -X POST http://localhost:18000/stress/complex-logic
 ```
 
 **Expected Output:**
@@ -225,7 +225,7 @@ curl -X POST http://localhost:5000/stress/complex-logic
 ```bash
 # Run comprehensive security validation
 # Verify LocalTesting infrastructure is running
-curl http://localhost:8081  # Flink Dashboard -SecurityValidation
+curl http://localhost:18002  # Flink Dashboard -SecurityValidation
 ```
 
 **Expected Output:**
@@ -263,16 +263,16 @@ dotnet run --configuration=RecommendationEngine
 **Expected Output:**
 ```
 🎯 Configuring Netflix-Style Recommendation Engine
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
 ```
 
 **✅ Test Netflix recommendations:**
 ```bash
 # Open new terminal and test recommendations
-curl http://localhost:5000/recommendations/user123
+curl http://localhost:18000/recommendations/user123
 
 # Check Netflix metrics
-curl http://localhost:5000/netflix-metrics
+curl http://localhost:18000/netflix-metrics
 ```
 
 **Expected Response for recommendations:**
@@ -328,19 +328,19 @@ dotnet run --configuration=DynamicPricingEngine
 **Expected Output:**
 ```
 🚗 Configuring Uber-Scale Dynamic Pricing Engine
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
 ```
 
 **✅ Test Uber pricing:**
 ```bash
 # Calculate dynamic pricing
-curl -X POST http://localhost:5000/pricing/calculate -d '{"pickup":"downtown","destination":"airport"}' -H "Content-Type: application/json"
+curl -X POST http://localhost:18000/pricing/calculate -d '{"pickup":"downtown","destination":"airport"}' -H "Content-Type: application/json"
 
 # Check driver matching
-curl http://localhost:5000/driver-matching/downtown
+curl http://localhost:18000/driver-matching/downtown
 
 # View Uber metrics
-curl http://localhost:5000/uber-metrics
+curl http://localhost:18000/uber-metrics
 ```
 
 **Expected Response for pricing:**
@@ -382,19 +382,19 @@ dotnet run --configuration=FeedGenerationEngine
 **Expected Output:**
 ```
 💼 Configuring LinkedIn Feed Generation Engine
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
 ```
 
 **✅ Test LinkedIn feed:**
 ```bash
 # Generate personalized feed
-curl http://localhost:5000/feed/user456
+curl http://localhost:18000/feed/user456
 
 # Test fraud detection
-curl -X POST http://localhost:5000/fraud-detection -d '{"userId":"user456","activity":"rapid_posting"}' -H "Content-Type: application/json"
+curl -X POST http://localhost:18000/fraud-detection -d '{"userId":"user456","activity":"rapid_posting"}' -H "Content-Type: application/json"
 
 # View LinkedIn metrics
-curl http://localhost:5000/linkedin-metrics
+curl http://localhost:18000/linkedin-metrics
 ```
 
 **Expected Response for feed:**
@@ -435,11 +435,11 @@ curl http://localhost:5000/linkedin-metrics
 ```bash
 # Run SRE monitoring validation
 # Verify LocalTesting infrastructure is running
-curl http://localhost:8081  # Flink Dashboard -SREMonitoring
+curl http://localhost:18002  # Flink Dashboard -SREMonitoring
 
 # Open comprehensive observability dashboard
 # Open Grafana Dashboard
-# http://localhost:3000
+# http://localhost:18005
 ```
 
 **Expected Output:**
@@ -557,8 +557,8 @@ cd ProductionApp && dotnet run --configuration=FeedGenerationEngine
 
 ### Test Any Configuration:
 ```bash
-curl http://localhost:5000/health
-curl http://localhost:5000/metrics
+curl http://localhost:18000/health
+curl http://localhost:18000/metrics
 ```
 
 ## 🔗 Theory-to-Practice Integration

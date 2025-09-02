@@ -11,9 +11,9 @@ This directory contains the complete capstone project, integrating **all enterpr
 #### ✅ Step 1: Verify Infrastructure is Running
 ```bash
 curl http://localhost:8081/overview
-curl http://localhost:8082/api/clusters
+curl http://localhost:18001/api/clusters
 curl http://localhost:8084/api/v1/namespaces
-curl http://localhost:3000/api/health
+curl http://localhost:18010/api/health
 ```
 
 **❌ If any fail:**
@@ -204,10 +204,10 @@ cd Exercise144 && dotnet run && cd ..
 ```bash
 # Check all services are running
 curl http://localhost:8081/overview     # Flink
-curl http://localhost:8082/api/clusters # Kafka
+curl http://localhost:18001/api/clusters # Kafka
 curl http://localhost:8084/api/v1/namespaces # Temporal
-curl http://localhost:3000/api/health  # Grafana
-curl http://localhost:9090/api/v1/targets # Prometheus
+curl http://localhost:18010/api/health  # Grafana
+curl http://localhost:18006/api/v1/targets # Prometheus
 ```
 
 ### Start Infrastructure (if needed):

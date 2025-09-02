@@ -12,7 +12,7 @@ This directory contains complete working solutions for all Day 8 exercises, impl
 ```bash
 # Check if LocalTesting from Day 1 is still running
 curl http://localhost:8081/overview
-curl http://localhost:8082/api/clusters
+curl http://localhost:18001/api/clusters
 ```
 
 **Expected Output:**

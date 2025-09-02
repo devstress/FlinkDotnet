@@ -48,7 +48,7 @@ This will start:
 # All services, endpoints, and logs are available through the dashboard
 
 # Access Flink Web UI (check Aspire dashboard for port forwarding)
-# Access Job Gateway Swagger UI at http://localhost:8080/swagger-ui.html
+# Access Job Gateway Swagger UI at http://localhost:18000/
 ```
 
 ### 2. Monitor Services

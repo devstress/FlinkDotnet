@@ -1134,7 +1134,7 @@ These exercises implement the **specific distributed rate limiting concepts** co
 2. **Production Monitoring Validation** (30 minutes) - implements theory: observability patterns
    ```bash
    # Validate monitoring during failures (theory connection)
-   curl http://localhost:3000/dashboards/distributed-rate-limiting
+   curl http://localhost:18010/dashboards/distributed-rate-limiting
    
    # Verify theory monitoring:
    # - Circuit breaker status (theory connection)
