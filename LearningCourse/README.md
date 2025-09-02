@@ -27,8 +27,6 @@ cd FlinkDotnet/LearningCourse
 - ✅ Aspire workload
 - ✅ All dependencies
 
-**📖 For detailed setup instructions, see [SETUP-GUIDE.md](SETUP-GUIDE.md)**
-
 ### 🔧 Manual Setup (Alternative)
 
 If you prefer manual installation or the automated setup fails:
@@ -40,9 +38,6 @@ dotnet --version  # Should show 9.0.x
 
 # 2. Install Docker Desktop from: https://docs.docker.com/get-docker/ or Podman https://podman-desktop.io/
 docker --version  # Should show version without errors
-
-# 3. Install Git if not already installed
-git --version     # Should show version
 ```
 
 #### ✅ Step 2: Clone Repository
