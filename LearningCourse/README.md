@@ -13,24 +13,17 @@ Run the automated setup script for your platform:
 ```bash
 # Download and run the universal setup script
 git clone https://github.com/devstress/FlinkDotnet.git
-cd FlinkDotnet/LearningCourse
-
-# Auto-detect platform and setup everything
-./setup-environment.sh
-
-# OR use platform-specific scripts:
-# Linux/macOS: ./setup-environment-linux-macos.sh  
-# Windows: .\setup-environment-windows.ps1
+# Linux/macOS: 
+./scripts/setup-environment-linux-macos.sh  
+# Windows: 
+./scripts/setup-environment-windows.ps1
 ```
 
 **✅ The automated setup installs:**
 - ✅ .NET 9.0 SDK
 - ✅ Docker Desktop 
-- ✅ Git
 - ✅ Aspire workload
 - ✅ All dependencies
-
-**📖 For detailed setup instructions, see [SETUP-GUIDE.md](SETUP-GUIDE.md)**
 
 ### 🔧 Manual Setup (Alternative)
 
@@ -41,18 +34,14 @@ If you prefer manual installation or the automated setup fails:
 # 1. Install .NET 9.0 SDK from: https://dotnet.microsoft.com/download/dotnet/9.0
 dotnet --version  # Should show 9.0.x
 
-# 2. Install Docker Desktop from: https://docs.docker.com/get-docker/
+# 2. Install Docker Desktop from: https://docs.docker.com/get-docker/ or Podman https://podman-desktop.io/
 docker --version  # Should show version without errors
-
-# 3. Install Git if not already installed
-git --version     # Should show version
 ```
 
 #### ✅ Step 2: Clone Repository
 ```bash
-# Clone and navigate to course
+# Clone
 git clone https://github.com/devstress/FlinkDotnet.git
-cd FlinkDotnet/LearningCourse
 
 # Install Aspire workload
 dotnet workload install aspire
@@ -61,7 +50,7 @@ dotnet workload install aspire
 #### ✅ Step 3: Start Infrastructure
 ```bash
 # Start LocalTesting infrastructure (used by all days)
-cd ../LocalTesting
+cd LocalTesting
 dotnet run --project LocalTesting.AppHost
 # Wait 90 seconds for all services to start
 ```
@@ -78,7 +67,9 @@ Open these URLs - all should work:
 - **Loki**: http://localhost:3100 (Log aggregation)
 - **OpenTelemetry Collector**: http://localhost:8889/metrics (Telemetry processing)
 
-**✅ All working? You're ready to start Day 1!**
+**Note: Please press Control + C to stop Aspire. It will stop and delete all the related containers in Docker.**  
+**✅ All working? You're ready to start Day 1!**  
+**❌ If your PC cannot handle heavy Aspire setup? Please check [Azure Container Apps Deployment](#alternative-azure-container-apps-deployment) below**
 
 ### 📖 How to Follow Each Day
 
@@ -443,7 +434,7 @@ Before starting the course, ensure you have:
    # Wait 90 seconds for all services to start
    ```
 
-### 🌥️ Alternative: Azure Container Apps Deployment
+### Alternative: Azure Container Apps Deployment
 
 If your computer is unable to run the local setup (Docker Desktop issues, hardware limitations, or .NET installation problems), you can use **Azure Container Apps** with **Azure Developer CLI (azd)** to deploy and run the LearningCourse in the cloud.
 
