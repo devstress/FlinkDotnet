@@ -649,13 +649,13 @@ jobs:
           # Test API endpoint accessibility for all services including LocalTesting API
           Write-Host "`n🌐 Testing API and UI endpoint accessibility..." -ForegroundColor Green
           
-          # Check if we can reach the LocalTesting API and other UI endpoints
+          # Check if we can reach the LocalTesting API and other UI endpoints - Updated ports for LocalTesting
           $testEndpoints = @(
-            @{Port=5000; Name="LocalTesting API"; Path="/"; Critical=$true},
-            @{Port=8082; Name="Kafka UI"; Path="/"; Critical=$false},
-            @{Port=8084; Name="Temporal UI"; Path="/"; Critical=$true},
-            @{Port=3000; Name="Grafana"; Path="/"; Critical=$false},
-            @{Port=8081; Name="Flink JobManager UI"; Path="/"; Critical=$false}
+            @{Port=18000; Name="LocalTesting API"; Path="/"; Critical=$true},
+            @{Port=18001; Name="Kafka UI"; Path="/"; Critical=$false},
+            @{Port=18004; Name="Temporal UI"; Path="/"; Critical=$true},
+            @{Port=18010; Name="Grafana"; Path="/"; Critical=$false},
+            @{Port=18002; Name="Flink JobManager UI"; Path="/"; Critical=$false}
           )
           
           $accessibleEndpoints = @()
@@ -718,7 +718,7 @@ jobs:
           Write-Host "`n🎯 Testing Prometheus metrics collection..." -ForegroundColor Yellow
           try {
             # Test Prometheus server health
-            $prometheusHealth = Invoke-RestMethod -Uri "http://localhost:9090/-/healthy" -Method GET -TimeoutSec 10
+            $prometheusHealth = Invoke-RestMethod -Uri "http://localhost:18006/-/healthy" -Method GET -TimeoutSec 10
             Write-Host "✅ Prometheus server is healthy" -ForegroundColor Green
             
             # Test metrics data availability from different targets
@@ -731,7 +731,7 @@ jobs:
             
             foreach ($query in $metricsQueries) {
               try {
-                $queryUrl = "http://localhost:9090/api/v1/query?query=$($query.Query)"
+                $queryUrl = "http://localhost:18006/api/v1/query?query=$($query.Query)"
                 $result = Invoke-RestMethod -Uri $queryUrl -Method GET -TimeoutSec 5
                 if ($result.status -eq "success" -and $result.data.result.Count -gt 0) {
                   Write-Host "✅ $($query.Name): $($result.data.result.Count) metrics found" -ForegroundColor Green
@@ -755,14 +755,14 @@ jobs:
           Write-Host "`n📈 Testing Grafana datasource connectivity..." -ForegroundColor Yellow
           try {
             # Test Grafana health
-            $grafanaHealth = Invoke-RestMethod -Uri "http://localhost:3000/api/health" -Method GET -TimeoutSec 10
+            $grafanaHealth = Invoke-RestMethod -Uri "http://localhost:18010/api/health" -Method GET -TimeoutSec 10
             Write-Host "✅ Grafana server is healthy: $($grafanaHealth.database)" -ForegroundColor Green
             
             # Test datasource connectivity (admin:admin default credentials)
             $grafanaAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin"))
             $headers = @{"Authorization" = "Basic $grafanaAuth"}
             
-            $datasources = Invoke-RestMethod -Uri "http://localhost:3000/api/datasources" -Method GET -Headers $headers -TimeoutSec 10
+            $datasources = Invoke-RestMethod -Uri "http://localhost:18010/api/datasources" -Method GET -Headers $headers -TimeoutSec 10
             foreach ($ds in $datasources) {
               Write-Host "✅ Grafana datasource: $($ds.name) ($($ds.type)) - URL: $($ds.url)" -ForegroundColor Green
             }
@@ -771,7 +771,7 @@ jobs:
             $prometheusDS = $datasources | Where-Object { $_.name -eq "Prometheus" }
             if ($prometheusDS) {
               try {
-                $testUrl = "http://localhost:3000/api/datasources/$($prometheusDS.id)/health"
+                $testUrl = "http://localhost:18010/api/datasources/$($prometheusDS.id)/health"
                 $healthTest = Invoke-RestMethod -Uri $testUrl -Method GET -Headers $headers -TimeoutSec 10
                 Write-Host "✅ Prometheus datasource connectivity verified" -ForegroundColor Green
                 $observabilityResults += @{Component="Grafana-Prometheus"; Status="Connected"; Success=$true}
@@ -878,7 +878,7 @@ jobs:
           Write-Host "`n🔄 Validating Enhanced Temporal Architecture Integration..." -ForegroundColor Green
           Write-Host "Testing new enterprise-grade Temporal workflow management capabilities" -ForegroundColor Cyan
           
-          $temporalApiBase = "http://localhost:5000/api/TemporalArchitectureTest"
+          $temporalApiBase = "http://localhost:18000/api/TemporalArchitectureTest"
           $temporalTestResults = @()
           $temporalSuccess = $true
           
@@ -1027,7 +1027,7 @@ jobs:
           Write-Host "This validates the actual business functionality rather than just container startup" -ForegroundColor Cyan
           Write-Host "🔍 Monitoring message flow and observability during stress test execution" -ForegroundColor Yellow
           
-          $apiBase = "http://localhost:5000/api/ComplexLogicStressTest"
+          $apiBase = "http://localhost:18000/api/ComplexLogicStressTest"
           $testResults = @()
           $overallSuccess = $true
           $observabilityMonitoring = @()
@@ -1044,7 +1044,7 @@ jobs:
             
             # Capture Prometheus metrics
             try {
-              $upQuery = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=up" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+              $upQuery = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=up" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
               $metrics.ServiceUpCount = ($upQuery.data.result | Where-Object { $_.value[1] -eq "1" }).Count
               $metrics.ServiceTotalCount = $upQuery.data.result.Count
             } catch {
@@ -1054,7 +1054,7 @@ jobs:
             
             # Capture message flow metrics (if available)
             try {
-              $httpRequests = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=http_requests_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+              $httpRequests = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=http_requests_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
               $metrics.HttpRequestsTotal = ($httpRequests.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum
             } catch {
               $metrics.HttpRequestsTotal = "N/A"
@@ -1062,7 +1062,7 @@ jobs:
             
             # Capture Kafka metrics (if available)
             try {
-              $kafkaQuery = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=kafka_producer_messages_sent_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+              $kafkaQuery = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=kafka_producer_messages_sent_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
               if ($kafkaQuery.data.result.Count -gt 0) {
                 $metrics.KafkaMessagesSent = ($kafkaQuery.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum
               } else {
