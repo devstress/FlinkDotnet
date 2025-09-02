@@ -919,7 +919,7 @@ public static class ProductionConfiguration
 ### Load Test Scenario:
 ```bash
 # Simulate Netflix-scale load testing
-./scripts/run-distributed-load-test.sh \
+curl -X POST http://localhost:5000/stress/backpressure \
   --gateways 10 \
   --clients-per-gateway 100 \
   --request-rate 10000 \
@@ -1045,7 +1045,7 @@ These exercises implement the **specific distributed rate limiting concepts** co
 3. **Performance Under Load** (30 minutes) - implements theory: Uber-scale requirements
    ```bash
    # Load test with 15M+ request simulation (theory connection)
-   ./load-test-uber-scale.sh --requests 15000000 --concurrency 10000
+   curl -X POST http://localhost:5000/stress/complex-logic --requests 15000000 --concurrency 10000
    
    # Monitor theory compliance:
    # - Background refill every 250ms (theory connection)
@@ -1123,7 +1123,7 @@ These exercises implement the **specific distributed rate limiting concepts** co
    cd LearningCourse/Day03-Production-Backpressure/Exercise-Solutions/Exercise34
    
    # Execute compound chaos scenarios (theory connection)
-   ./chaos-engineering-suite.sh --scenario all-failures
+   curl -X POST http://localhost:5000/stress/chaos --scenario all-failures
    
    # Test theory resilience patterns:
    # - Gateway restart + Redis partition + Network delay (theory connection)
