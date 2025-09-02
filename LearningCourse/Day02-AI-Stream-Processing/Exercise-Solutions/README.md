@@ -11,8 +11,8 @@ This directory contains complete working solutions for all Day 2 AI-Enhanced Str
 #### ✅ Step 1: Verify Infrastructure is Running
 ```bash
 # Check if LocalTesting from Day 1 is still running
-curl http://localhost:8081/overview
-curl http://localhost:5000/health
+curl http://localhost:18002/overview
+curl http://localhost:18001/health
 ```
 
 **Expected Output:**
@@ -303,8 +303,8 @@ cd LocalTesting && dotnet run --project LocalTesting.AppHost
 
 ### Verify Infrastructure:
 ```bash
-curl http://localhost:8081/overview
-curl http://localhost:5000/health
+curl http://localhost:18002/overview
+curl http://localhost:18001/health
 ```
 
 ## 🔗 AI Theory-to-Practice Integration

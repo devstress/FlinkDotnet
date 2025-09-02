@@ -47,7 +47,7 @@ public class Program
         var services = new ServiceCollection();
         services.AddFlinkJobBuilder(config =>
         {
-            config.BaseUrl = "http://localhost:8080"; // Flink Job Gateway URL
+            config.BaseUrl = "http://localhost:18000"; // Flink Job Gateway URL
         });
 
         var serviceProvider = services.BuildServiceProvider();
@@ -133,12 +133,12 @@ Access monitoring interfaces:
 
 ```bash
 # Flink Web UI (if running locally)
-kubectl port-forward svc/flink-jobmanager-ui 8081:8081 -n flink-system
-# Visit http://localhost:8081
+kubectl port-forward svc/flink-jobmanager-ui 18002:8081 -n flink-system
+# Visit http://localhost:18002
 
 # Job Gateway API
-kubectl port-forward svc/flink-job-gateway 8080:8080 -n flink-system
-# Visit http://localhost:8080/swagger-ui.html
+kubectl port-forward svc/flink-job-gateway 18000:8080 -n flink-system
+# Visit http://localhost:18000/
 ```
 
 ## Next Steps
@@ -176,7 +176,7 @@ kubectl port-forward svc/flink-job-gateway 8080:8080 -n flink-system
 ```json
 {
   "Flink": {
-    "JobManagerRestAddress": "http://localhost:8081",
+    "JobManagerRestAddress": "http://localhost:18002",
     "JobManagerRpcAddress": "flink-jobmanager",
     "TaskManagerConfig": {
       "NumberOfTaskSlots": 10,
@@ -214,7 +214,7 @@ Once your code is ready and the Flink connection is configured:
     dotnet run
     ```
 
-You should see the odd numbers (1, 3, 5, 7, 9) printed in the console output from your Flink job. You can also monitor the job through the Flink Web UI (usually at `http://localhost:8081`).
+You should see the odd numbers (1, 3, 5, 7, 9) printed in the console output from your Flink job. You can also monitor the job through the Flink Web UI (usually at `http://localhost:18002`).
 
 ## Next Steps
 

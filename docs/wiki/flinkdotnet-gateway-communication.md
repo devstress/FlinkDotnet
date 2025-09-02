@@ -136,7 +136,7 @@ PATCH http://flink-jobmanager:8081/v1/jobs/{jobId}?mode=stop
 # appsettings.json
 {
   "FlinkGateway": {
-    "FlinkJobManagerUrl": "http://localhost:8081",
+    "FlinkJobManagerUrl": "http://localhost:18002",
     "ConnectionTimeout": "00:00:30",
     "RequestTimeout": "00:02:00",
     "RetryPolicy": {
@@ -232,7 +232,7 @@ services.Configure<FlinkGatewayOptions>(options =>
 
 **Gateway Connection Failures**
 ```
-Error: Unable to connect to Flink JobManager at http://localhost:8081
+Error: Unable to connect to Flink JobManager at http://localhost:18002
 Solution: Verify Flink cluster is running and REST API is accessible
 ```
 

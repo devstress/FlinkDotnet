@@ -80,7 +80,7 @@ Your LocalTesting environment provides a **complete Temporal platform** identica
 | Component | URL | Enterprise Pattern | Production Use Case |
 |-----------|-----|-------------------|-------------------|
 | **Temporal Server** | http://localhost:7233 | Uber's workflow backend | Durable execution engine |
-| **Temporal Web UI** | http://localhost:8084 | Workflow monitoring dashboard | Operational visibility |
+| **Temporal Web UI** | http://localhost:18004 | Workflow monitoring dashboard | Operational visibility |
 | **PostgreSQL** | localhost:5432 | Persistent workflow state | Event history storage |
 | **Worker Processes** | .NET Applications | Distributed workers | Activity execution |
 
@@ -88,7 +88,7 @@ Your LocalTesting environment provides a **complete Temporal platform** identica
 
 ```bash
 # Verify Temporal connectivity
-curl -s http://localhost:8084/api/v1/namespaces | jq '.namespaces[].namespaceInfo.name'
+curl -s http://localhost:18004/api/v1/namespaces | jq '.namespaces[].namespaceInfo.name'
 # Expected: ["default"]
 
 # Check server health
@@ -905,8 +905,8 @@ namespace LearningCourse.Day05
         {
             Console.WriteLine("🔄 Temporal Workflow Orchestration Showcase");
             Console.WriteLine("===========================================");
-            Console.WriteLine("🌐 Temporal UI:  http://localhost:8084");
-            Console.WriteLine("📊 Grafana:      http://localhost:3000");
+            Console.WriteLine("🌐 Temporal UI:  http://localhost:18004");
+            Console.WriteLine("📊 Grafana:      http://localhost:18005");
             Console.WriteLine("🔗 Traces:       http://localhost:18888");
             Console.WriteLine();
 
@@ -1070,7 +1070,7 @@ namespace LearningCourse.Day05
    dotnet run
    ```
 
-2. **Monitor in Temporal UI** (http://localhost:8084):
+2. **Monitor in Temporal UI** (http://localhost:18004):
    - View workflow execution history
    - Examine activity execution details
    - Analyze failure scenarios and compensation
@@ -1270,7 +1270,7 @@ All Day 5 exercises include complete working solutions using Temporal workflow o
    ```
 
 2. **Access Temporal UI**:
-   - **Temporal Dashboard**: http://localhost:8084
+   - **Temporal Dashboard**: http://localhost:18004
    - **Workflow Monitoring**: Complete execution history and state visualization
 
 3. **Run Day 5 Workflows**:

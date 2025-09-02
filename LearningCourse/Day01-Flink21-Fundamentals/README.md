@@ -117,10 +117,10 @@ Apache Flink 2.1.0 marks a **paradigm shift** from stream processing engine to *
 **🎯 Hands-on Implementation:** These advanced state management features are demonstrated in **[Exercise 1.2: Enterprise State Backend Configuration](Exercise-Solutions/ProductionApp/)** through a production-grade e-commerce order processing system that shows RocksDB tuning, state evolution patterns, and queryable state implementation.
 
 #### 3. **Advanced Backpressure Control** → **[Exercise 1.3: Netflix-Style Load Management](Exercise-Solutions/)**
-- **Credit-based Flow Control**: Network-level backpressure management → **[Exercise 1.3 Network Flow Control](Exercise-Solutions/http://localhost:3000 (Grafana Dashboard))**
+- **Credit-based Flow Control**: Network-level backpressure management → **[Exercise 1.3 Network Flow Control](Exercise-Solutions/http://localhost:18010 (Grafana Dashboard))**
 - **Adaptive Rate Limiting**: Dynamic throughput adjustment based on downstream capacity → **[Exercise 1.3 Rate Limiting Implementation](Exercise-Solutions/LocalTesting/LocalTesting.WebApi (Stress Testing Controllers))**
 - **Circuit Breaker Integration**: Cascading failure prevention → **[Exercise 1.3 Circuit Breaker Patterns](Exercise-Solutions/ProductionApp/)**
-- **End-to-end Flow Control**: From source to sink backpressure propagation → **[Exercise 1.3 Full Pipeline Monitoring](Exercise-Solutions/http://localhost:3000 (Grafana Dashboard))**
+- **End-to-end Flow Control**: From source to sink backpressure propagation → **[Exercise 1.3 Full Pipeline Monitoring](Exercise-Solutions/http://localhost:18010 (Grafana Dashboard))**
 
 **🎯 Hands-on Implementation:** Production-grade backpressure patterns are implemented in **[Exercise 1.3: Netflix-Style Load Management](Exercise-Solutions/)** where you'll build a high-throughput financial trading system that demonstrates credit-based flow control, adaptive rate limiting, and cascading failure prevention using real-world patterns from Netflix and Uber.
 
@@ -176,12 +176,12 @@ Your LocalTesting environment provides an **enterprise-grade infrastructure** th
 
 | Component | URL | Purpose | Production Pattern |
 |-----------|-----|---------|-------------------|
-| **Flink Dashboard** | http://localhost:8081 | Stream processing monitoring | [Flink Web UI Best Practices](https://flink.apache.org/docs/stable/ops/monitoring/dashboard/) |
-| **Temporal UI** | http://localhost:8084 | Workflow orchestration | [Temporal Production Setup](https://docs.temporal.io/cluster-deployment-guide) |
-| **Kafka UI** | http://localhost:8082 | Event stream management | [Confluent Control Center](https://docs.confluent.io/platform/current/control-center/index.html) |
-| **Grafana** | http://localhost:3000 | Metrics visualization | [Grafana Production Setup](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/) |
-| **Prometheus** | http://localhost:9090 | Metrics collection | [Prometheus Monitoring](https://prometheus.io/docs/prometheus/latest/configuration/configuration/) |
-| **LocalTesting API** | http://localhost:5000 | Development tools | Custom integration testing framework |
+| **LocalTesting API** | http://localhost:18000 | Development tools | Custom integration testing framework |
+| **Kafka UI** | http://localhost:18001 | Event stream management | [Confluent Control Center](https://docs.confluent.io/platform/current/control-center/index.html) |
+| **Flink Dashboard** | http://localhost:18002 | Stream processing monitoring | [Flink Web UI Best Practices](https://flink.apache.org/docs/stable/ops/monitoring/dashboard/) |
+| **Temporal UI** | http://localhost:18004 | Workflow orchestration | [Temporal Production Setup](https://docs.temporal.io/cluster-deployment-guide) |
+| **Prometheus** | http://localhost:18006 | Metrics collection | [Prometheus Monitoring](https://prometheus.io/docs/prometheus/latest/configuration/configuration/) |
+| **Grafana** | http://localhost:18010 | Metrics visualization | [Grafana Production Setup](https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/) |
 | **Aspire Dashboard** | http://localhost:18888 | .NET orchestration | [.NET Aspire Dashboard](https://learn.microsoft.com/en-us/dotnet/aspire/fundamentals/dashboard) |
 
 ## 🚀 Step-by-Step Environment Setup
@@ -252,7 +252,7 @@ curl http://localhost:5000/health/comprehensive
 ==========================================
 
 ✅ FLINK CLUSTER STATUS
-   • JobManager: RUNNING (http://localhost:8081)
+   • JobManager: RUNNING (http://localhost:18002)
    • TaskManagers: 3/3 HEALTHY
    • Available Slots: 24/24
    • Parallelism: 24
@@ -266,7 +266,7 @@ curl http://localhost:5000/health/comprehensive
 ✅ TEMPORAL CLUSTER STATUS
    • Server: RUNNING (temporal-server:7233)
    • Database: CONNECTED (PostgreSQL)
-   • UI: ACCESSIBLE (http://localhost:8084)
+   • UI: ACCESSIBLE (http://localhost:18004)
    • Namespaces: default (REGISTERED)
 
 ✅ OBSERVABILITY STACK STATUS
@@ -289,7 +289,7 @@ curl http://localhost:5000/health/comprehensive
 
 #### Flink 2.1.0 Dashboard Deep Dive
 
-Visit http://localhost:8081 and explore:
+Visit http://localhost:18002 and explore:
 
 **1. Cluster Overview**
 - **Task Managers**: 3 instances with 8 slots each (24 total)
@@ -303,12 +303,12 @@ Visit http://localhost:8081 and explore:
 
 **3. Advanced Features**
 - **JobManager RPC**: Cluster coordination
-- **REST API**: http://localhost:8081/v1 (production API)
+- **REST API**: http://localhost:18002/v1 (production API)
 - **Metrics**: JVM, network, and processing metrics
 
 #### Temporal Workflow Engine
 
-Visit http://localhost:8084 and understand:
+Visit http://localhost:18004 and understand:
 
 **1. Workflow Management**
 - **Namespaces**: Logical separation of workflows
@@ -322,7 +322,7 @@ Visit http://localhost:8084 and understand:
 
 #### Kafka Event Streaming
 
-Visit http://localhost:8082 and explore:
+Visit http://localhost:18003 and explore:
 
 **1. Cluster Information**
 - **Brokers**: 3-node cluster with automatic failover
@@ -336,7 +336,7 @@ Visit http://localhost:8082 and explore:
 
 #### Enterprise Observability
 
-Visit http://localhost:3000 (Grafana) and examine:
+Visit http://localhost:18010 (Grafana) and examine:
 
 **1. Pre-configured Dashboards**
 - **Flink Cluster Metrics**: Job performance and resource usage
@@ -438,9 +438,9 @@ namespace LearningCourse.Day01
         {
             Console.WriteLine("🚀 Flink 2.1.0 Production Streaming Application");
             Console.WriteLine("==============================================");
-            Console.WriteLine("🔗 Dashboard: http://localhost:8081");
-            Console.WriteLine("📊 Grafana:   http://localhost:3000");
-            Console.WriteLine("⚡ Temporal:  http://localhost:8084");
+            Console.WriteLine("🔗 Dashboard: http://localhost:18002");
+            Console.WriteLine("📊 Grafana:   http://localhost:18010");
+            Console.WriteLine("⚡ Temporal:  http://localhost:18004");
             Console.WriteLine();
 
             // Step 1: Create production-optimized execution environment
@@ -465,7 +465,7 @@ namespace LearningCourse.Day01
             try
             {
                 Console.WriteLine("\n🎯 Starting production streaming job...");
-                Console.WriteLine("📈 Monitor performance: http://localhost:3000");
+                Console.WriteLine("📈 Monitor performance: http://localhost:18010");
                 Console.WriteLine("🔍 View traces: http://localhost:18888");
                 
                 await env.Execute("Production Streaming Application v2.0");
@@ -1061,17 +1061,17 @@ These exercises implement the **specific Flink 2.1.0 concepts** covered in today
 curl http://localhost:5000/health/comprehensive | jq
 
 # Verify Flink 2.1.0 unified architecture (implements theory concepts)
-curl http://localhost:8081/overview | jq
+curl http://localhost:18002/overview | jq
 
 # Test DataStream + Table/SQL API integration (theory: unified runtime)
-curl http://localhost:8082/api/clusters/local-testing-cluster/brokers
+curl http://localhost:18003/api/clusters/local-testing-cluster/brokers
 
 # Validate AI model serving capabilities (theory: real-time AI)
-curl http://localhost:8084/api/v1/namespaces
+curl http://localhost:18004/api/v1/namespaces
 
 # Check observability for AI workloads (theory: enterprise patterns)
-curl http://localhost:9090/api/v1/targets
-curl http://localhost:3000/api/health
+curl http://localhost:18006/api/v1/targets
+curl http://localhost:18010/api/health
 ```
 
 **Expected Business Value**: 99.99% uptime SLA validation, sub-second health check response times, automated failure detection matching Netflix's reliability standards.
@@ -1093,7 +1093,7 @@ dotnet build
 dotnet run --configuration=RocksDBStateBackend
 
 # Monitor RocksDB improvements (theory: faster checkpoints, better memory)
-# Visit http://localhost:8081 and observe:
+# Visit http://localhost:18002 and observe:
 # - Enhanced checkpoint performance (theory connection)
 # - State schema evolution capabilities (theory connection)  
 # - Queryable state endpoints (theory connection)
@@ -1115,7 +1115,7 @@ dotnet run --configuration=RocksDBStateBackend
 1. **Credit-based Flow Control** (implements theory concepts):
    ```bash
    # Deploy production observability stack
-   # Open http://localhost:3000 for Grafana dashboards
+   # Open http://localhost:18010 for Grafana dashboards
    # - Monitor network-level backpressure (theory connection)
    # - Track adaptive rate limiting (theory connection)
    # - Observe circuit breaker activation (theory connection)
@@ -1131,7 +1131,7 @@ dotnet run --configuration=RocksDBStateBackend
 
 3. **Performance Metrics** (implements theory concepts):
    ```bash
-   # Query Prometheus at http://localhost:9090
+   # Query Prometheus at http://localhost:18006
    # - Custom backpressure metrics (theory connection)
    # - Rate limiting effectiveness (theory connection)
    # - Circuit breaker statistics (theory connection)
@@ -1153,8 +1153,8 @@ dotnet run --configuration=RocksDBStateBackend
 # Execute comprehensive security validation
 cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions
 # Check LocalTesting infrastructure is running
-curl http://localhost:8081  # Flink Dashboard
-curl http://localhost:3000  # Grafana Dashboard
+curl http://localhost:18002  # Flink Dashboard
+curl http://localhost:18010  # Grafana Dashboard
 
 # Security components validated (implements theory concepts):
 # - Fine-grained RBAC for financial data access (theory connection)
@@ -1287,10 +1287,10 @@ curl http://localhost:5000/linkedin-metrics
 # Deploy Google-style SRE observability system (using infrastructure validation with monitoring)
 cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions
 # Verify SRE monitoring is working
-# Open Grafana: http://localhost:3000
+# Open Grafana: http://localhost:18010
 # Open Aspire Dashboard: http://localhost:18888
 # Also open observability dashboard for comprehensive monitoring
-start http://localhost:3000 (Grafana Dashboard)
+start http://localhost:18010 (Grafana Dashboard)
 
 # Key Google SRE patterns implemented (connects to enterprise patterns theory):
 # - SLI/SLO monitoring and tracking (theory connection)
@@ -1299,7 +1299,7 @@ start http://localhost:3000 (Grafana Dashboard)
 # - Predictive capacity planning (theory connection)
 # - Automated alerting and remediation (theory connection)
 
-# Monitor Google-style SRE metrics at http://localhost:3000
+# Monitor Google-style SRE metrics at http://localhost:18010
 # - Service level indicator dashboards
 # - Error budget consumption tracking
 # - Distributed trace analysis
@@ -1371,7 +1371,7 @@ All Day 1 exercises have complete working solutions in the [`Exercise-Solutions/
 ### ✅ Available Solutions
 - **[Exercise 1.1: Infrastructure Validation](Exercise-Solutions/LocalTesting infrastructure health check)** - Complete health check automation
 - **[Exercise 1.2: Production Application](Exercise-Solutions/ProductionApp/)** - Full streaming application with monitoring
-- **[Exercise 1.3: Observability Dashboard](Exercise-Solutions/http://localhost:3000 (Grafana Dashboard))** - Interactive monitoring dashboard
+- **[Exercise 1.3: Observability Dashboard](Exercise-Solutions/http://localhost:18010 (Grafana Dashboard))** - Interactive monitoring dashboard
 - **[Exercise 1.4: Load Testing](Exercise-Solutions/LocalTesting/LocalTesting.WebApi (Stress Testing Controllers))** - Comprehensive performance testing
 - **[Exercise 1.5: Netflix Recommendation System](Exercise-Solutions/ProductionApp/)** - AI-enhanced microservices with recommendation engine
 - **[Exercise 1.6: Uber Dynamic Pricing](Exercise-Solutions/ProductionApp/)** - Real-time pricing engine with ML optimization
@@ -1393,7 +1393,7 @@ dotnet build
 dotnet run
 
 # Open observability dashboard (in another terminal)
-start http://localhost:3000 (Grafana Dashboard)
+start http://localhost:18010 (Grafana Dashboard)
 
 # Execute load testing
 # Use LocalTesting WebApi for load testing
