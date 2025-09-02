@@ -65,7 +65,7 @@ Open these URLs in your browser (should all load):
 - **Flink Dashboard**: http://localhost:18002 ← Should show cluster with 3 TaskManagers
 - **Kafka UI**: http://localhost:18003 ← Should show 3 brokers
 - **Temporal UI**: http://localhost:18004 ← Should show namespace "default"
-- **Grafana**: http://localhost:18005 ← Should show login screen
+- **Grafana**: http://localhost:18010 ← Should show login screen
 - **Aspire Dashboard**: http://localhost:18888 ← Should show running services
 
 **✅ All URLs work? Great! Continue to exercises.**
@@ -183,7 +183,7 @@ curl http://localhost:18000/state/performance
 ```bash
 # Open observability dashboard
 # Open Grafana Dashboard
-# http://localhost:18005
+# http://localhost:18010
 # OR on Mac/Linux: open observability-dashboard.html
 
 # Run load testing in another terminal
@@ -439,7 +439,7 @@ curl http://localhost:18002  # Flink Dashboard -SREMonitoring
 
 # Open comprehensive observability dashboard
 # Open Grafana Dashboard
-# http://localhost:18005
+# http://localhost:18010
 ```
 
 **Expected Output:**

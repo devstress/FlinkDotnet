@@ -258,7 +258,7 @@ namespace LearningCourse.Day07
             // Step 4: Execute stress test with monitoring
             Console.WriteLine("\n🎯 Starting complex logic stress test...");
             Console.WriteLine("📊 Monitor stress metrics at: http://localhost:18001/stress-monitor");
-            Console.WriteLine("📈 Performance dashboard: http://localhost:18005/stress");
+            Console.WriteLine("📈 Performance dashboard: http://localhost:18010/stress");
 
             var stopwatch = Stopwatch.StartNew();
 

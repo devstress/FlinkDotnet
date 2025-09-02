@@ -906,7 +906,7 @@ namespace LearningCourse.Day05
             Console.WriteLine("🔄 Temporal Workflow Orchestration Showcase");
             Console.WriteLine("===========================================");
             Console.WriteLine("🌐 Temporal UI:  http://localhost:18004");
-            Console.WriteLine("📊 Grafana:      http://localhost:18005");
+            Console.WriteLine("📊 Grafana:      http://localhost:18010");
             Console.WriteLine("🔗 Traces:       http://localhost:18888");
             Console.WriteLine();
 

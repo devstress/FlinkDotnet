@@ -237,7 +237,7 @@ Applications → Prometheus → Grafana ← Loki ← Container Logs
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    GRAFANA (G) - Unified Dashboard                 │
 │         📊 Metrics Visualization | 📋 Log Exploration               │
-│                    http://localhost:18005                           │
+│                    http://localhost:18010                           │
 └─────────────────────────────────────────────────────────────────────┘
                                    │
                      ┌─────────────┼─────────────┐
@@ -501,7 +501,7 @@ dotnet run --project LocalTesting.AppHost
 # 2. Wait for all services to be ready (3-5 minutes for complete stack)
 
 # 3. Verify each component with current ports and endpoints
-curl http://localhost:18005/api/health   # Grafana (unified dashboard)
+curl http://localhost:18010/api/health   # Grafana (unified dashboard)
 curl http://localhost:18006/-/healthy    # Prometheus (metrics collection)
 curl http://localhost:18005/ready        # Loki (log aggregation)
 curl http://localhost:18888/health      # Aspire Dashboard (orchestration)
@@ -625,7 +625,7 @@ curl http://localhost:5000/health
 curl http://localhost:5000/         # API documentation (Swagger UI at root)
 
 # View WebApi logs in Grafana
-# Navigate to: http://localhost:18005 → Explore → Loki
+# Navigate to: http://localhost:18010 → Explore → Loki
 # Query: {container_name="localtesting-webapi"}
 ```
 
@@ -691,7 +691,7 @@ sum(rate(temporal_workflow_completed_counter[5m]))                   # Temporal 
 #### **Step 4: End-to-End Performance Monitoring**
 
 **Create Complete Flow Dashboard in Grafana:**
-1. Navigate to http://localhost:18005
+1. Navigate to http://localhost:18010
 2. Create new dashboard with panels for:
 
 ```json
@@ -757,7 +757,7 @@ for i in {1..10}; do
 done
 
 # 2. Monitor in real-time:
-# - Grafana Dashboard: http://localhost:18005
+# - Grafana Dashboard: http://localhost:18010
 # - Flink Jobs: http://localhost:18002
 # - Kafka Topics: http://localhost:18003
 # - Temporal Workflows: http://localhost:18004
