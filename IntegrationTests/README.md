@@ -35,44 +35,41 @@ Based on **LocalTesting proven patterns**:
 └─────────────────────────────┘   └──────────────────────────────┘   └─────────────────────────────┘
 ```
 
-## 📊 Enterprise Observability Integration
+## 📊 Integration Test Infrastructure Stack
 
-### Production Monitoring Stack (PGL)
-Following **LocalTesting proven enterprise patterns**:
+### Minimal Configuration for CI/CD Reliability
+**Integration Tests uses a simplified stack** optimized for reliable CI/CD execution:
 
-#### **Prometheus Metrics Collection**
-- **Port**: `localhost:18006` (Integration Tests) vs `localhost:18006` (LocalTesting)
-- **Real-time metrics**: Flink job performance, Kafka throughput, system resources
-- **Custom FlinkDotNet metrics**: Job submission rates, processing latency, error rates
+#### **Core Services Only**
+- **Aspire Dashboard**: `localhost:18889` - Container orchestration (offset to avoid LocalTesting conflicts)
+- **Kafka UI**: `localhost:18001` - Message broker monitoring and debugging  
+- **Flink Dashboard**: `localhost:18002` - Job management and monitoring
+- **Redis**: Available for distributed caching (internal port only)
 
-#### **Grafana Enterprise Dashboards**  
-- **Port**: `localhost:18010` (Integration Tests) vs `localhost:18010` (LocalTesting)
-- **Pre-configured data sources**: Prometheus, Loki, Temporal integration
-- **Enterprise dashboards**: Real-time streaming analytics, SLA monitoring
+#### **3-Broker Kafka Cluster**
+- **Production-grade KRaft configuration** with 3 brokers for high availability
+- **Enhanced heap settings** for integration test workloads (1GB per broker)
+- **Automatic topic creation** with 10 partitions and replication factor 3
 
-#### **Loki Centralized Logging**
-- **Port**: `localhost:18005` (Integration Tests) vs `localhost:18005` (LocalTesting)
-- **Structured logging**: All containers with JSON-formatted logs
-- **Query capabilities**: Complex log analysis and troubleshooting
-
-#### **Kafka UI Enterprise Monitoring**
-- **Port**: `localhost:18001` (Integration Tests) vs `localhost:18001` (LocalTesting)
-- **Real-time monitoring**: Message broker health, topic management, consumer lag
-- **Integration testing support**: Topic creation, message inspection, throughput analysis
+#### **Flink 2.0 Cluster** 
+- **JobManager**: Enhanced configuration for integration tests (2GB heap)
+- **TaskManager**: 10 task slots with 2GB heap for stress testing
+- **Checkpointing**: Configured for fault tolerance testing
 
 ### Port Management Strategy
-**Integration Tests uses offset ports** to prevent conflicts with LocalTesting:
+**Integration Tests uses minimal ports** to prevent conflicts with LocalTesting:
 
 | Service | LocalTesting Port | IntegrationTests Port | Purpose |
 |---------|-------------------|----------------------|---------|
 | Aspire Dashboard | 18888 | 18889 | Container orchestration |
 | Kafka UI | 18001 | 18001 | Message broker monitoring |
 | Flink Dashboard | 18002 | 18002 | Job management |
-| Temporal Server | 18003 | 18003 | Workflow orchestration |
-| Temporal UI | 18004 | 18004 | Workflow monitoring |
-| Loki | 18005 | 18005 | Log aggregation |
-| Prometheus | 18006 | 18006 | Metrics collection |
-| Grafana | 18010 | 18010 | Unified dashboards |
+| Redis | Internal | Internal | Distributed caching |
+
+### Observability Notes
+- **Simplified for CI/CD**: Full observability stack (Prometheus, Grafana, Loki, Temporal) available in LocalTesting
+- **Focus on Core Testing**: Integration tests prioritize Flink and Kafka functionality  
+- **Reliable Execution**: Minimal dependencies reduce CI/CD failure points
 
 ## 📁 Project Structure
 
@@ -162,19 +159,17 @@ dotnet run
 # (Extended timeout prevents DCP reconciliation failures)
 ```
 
-#### 2. Verify Enterprise Stack
+#### 2. Verify Integration Test Stack
 Open these URLs to verify all services are healthy:
 
-**🎛️ Management Dashboards:**
-- **Aspire Dashboard**: http://localhost:18889 (Container orchestration)
+**🎛️ Core Services:**
+- **Aspire Dashboard**: http://localhost:18889 (Container orchestration)  
 - **Flink Dashboard**: http://localhost:18002 (Job management and monitoring)
 - **Kafka UI**: http://localhost:18001 (Message broker management)
-- **Temporal UI**: http://localhost:18004 (Workflow monitoring)
 
-**📊 Observability Stack:**
-- **Grafana**: http://localhost:18010 (Unified enterprise dashboards)
-- **Prometheus**: http://localhost:18006 (Metrics collection and querying)
-- **Loki**: http://localhost:18005 (Centralized log aggregation)
+**💡 Full Observability Stack Available in LocalTesting:**
+- For complete observability (Prometheus, Grafana, Loki, Temporal), see [LocalTesting](../LocalTesting/README.md)
+- IntegrationTests focuses on core Flink and Kafka functionality for reliable CI/CD
 
 #### 3. Execute BDD Integration Tests
 ```bash
@@ -347,10 +342,9 @@ Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USEIPV6", "true");
 #### Test Failures
 **Problem**: BDD scenarios fail due to infrastructure issues
 **Solution**:
-- Verify all monitoring dashboards are accessible
-- Check service health endpoints
-- Review Grafana dashboards for system metrics
-- Examine Loki logs for error patterns
+- Verify core services are accessible: Aspire (18889), Flink (18002), Kafka UI (18001)
+- Check service health endpoints (see curl commands above)
+- For full observability testing, use LocalTesting environment
 
 ### Performance Optimization
 
@@ -594,8 +588,9 @@ dotnet run
 **Issue: Tests fail intermittently**
 ```bash
 # Solution: Check service health first
-curl http://localhost:18002/api/v1/cluster/overview  # Flink health
-curl http://localhost:18888  # Aspire dashboard health
+curl http://localhost:18002/overview  # Flink health check
+curl http://localhost:18889  # Aspire dashboard health check  
+curl http://localhost:18001/api/actuator/health  # Kafka UI health
 ```
 
 ### Performance Tuning
