@@ -33,13 +33,7 @@ Flink.NET provides an integration architecture that connects .NET applications w
 
 ## Getting Started
 
-Ready to dive in? Our [[Getting Started|Getting-Started]] guide will walk you through setting up the Flink.JobBuilder SDK and deploying Apache Flink infrastructure.
-
-**External References:**
-
-*   [Apache Flink Documentation](https://flink.apache.org/) - Official Apache Flink documentation
-*   [Apache Flink Local Installation](https://nightlies.apache.org/flink/flink-docs-stable/docs/try-flink/local_installation/) - Local setup guide
-*   [Apache Flink DataStream API](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/overview/) - DataStream programming guide
+Ready to dive in? Our [Getting Started](Getting-Started.md) guide will walk you through setting up FlinkDotnet and deploying Apache Flink infrastructure.
 
 ## Use Cases
 
@@ -51,37 +45,22 @@ Flink.NET with Apache Flink integration can be used for a variety of stream proc
 *   Data ingestion and transformation pipelines with exactly-once semantics
 *   Anomaly detection using Flink's CEP (Complex Event Processing) capabilities
 
-## Flink.Net Best Practices
+## Core Documentation
 
-For production-ready applications, follow our comprehensive best practices guides:
+For more details:
 
-* **[[Complete Usage Example|Complete-Usage-Example]]** - Step-by-step example with connection strings and backend configuration
-* **[[Flink.Net Best Practices: Stream Processing Patterns|Flink.Net-Best-Practices-Stream-Processing-Patterns]]** - Complete guide to Flink.Net standard pipeline patterns
-* **[[Flink.Net Back Pressure|FLINK_NET_BACK_PRESSURE]]** - Credit-based flow control and back pressure handling
-* **[[RocksDB State Backend|Core-Concepts-RocksDB-State-Backend]]** - Production-grade state management
+* **[Usage Examples](Usage-Examples.md)** - Step-by-step examples with real configuration
+* **[Gateway API](Gateway-API.md)** - Communication architecture and API details
 
-## Quality Assurance & Testing
+## Testing
 
-Our comprehensive testing infrastructure ensures high quality standards:
+FlinkDotnet includes comprehensive testing capabilities:
 
-* **[[Stress Tests Overview|Stress-Tests-Overview]]** - High-performance load testing with Apache Flink 2.1.0 compliance
-* **[[Reliability Tests Overview|Reliability-Tests-Overview]]** - Fault tolerance and recovery testing for reliable operation
+* Integration tests for application structure validation
+* Stress tests for high-throughput performance validation  
+* BDD testing framework with SpecFlow integration
 
-### Recommended Pipeline Pattern
-
-Follow the Flink.Net standard pattern for optimal performance:
-
-```
-Source -> Map/Filter -> KeyBy -> Process/Window -> AsyncFunction -> Sink
-```
-
-This pattern provides:
-- Superior performance and scalability
-- Built-in fault tolerance and exactly-once semantics  
-- Rich monitoring and observability
-- Industry-standard patterns and maintainability
-
-*(This section will be expanded with more specific examples in the future.)*
+Learn more in our [Getting Started](Getting-Started.md) guide.
 
 ## Community & Contribution
 
