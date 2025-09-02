@@ -1,24 +1,10 @@
-# Dependabot configuration for FLINK.NET
-# Automatically manages dependency updates for .NET packages and GitHub Actions
-# Documentation: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-#
-# IMPORTANT: 6-Month Review Schedule Implementation
-# GitHub Dependabot only supports daily/weekly/monthly intervals (no 6-month option)
-# This configuration uses monthly schedule for security but is intended for 6-month review cycles:
-# 1. Dependabot will create PRs monthly for security and updates
-# 2. Review and merge PRs every 6 months (January and July)
-# 3. Close unneeded PRs between review cycles if desired
-# 4. This approach maintains security scanning while achieving 6-month update cycles
-
 version: 2
 updates:
-  # NuGet packages for main FlinkDotNet solution
-  # Monthly schedule maintained for security, review/merge every 6 months
   - package-ecosystem: "nuget"
     directory: "/FlinkDotNet"
     schedule:
-      interval: "monthly"  # GitHub limitation: 6-month interval not supported
-    open-pull-requests-limit: 0  # Unlimited PRs for better dependency management
+      interval: "yearly"
+    open-pull-requests-limit: 0
     groups:
       major:
         patterns:
@@ -32,13 +18,11 @@ updates:
           - "minor"
           - "patch"
 
-  # NuGet packages for IntegrationTests solution
-  # Monthly schedule maintained for security, review/merge every 6 months
   - package-ecosystem: "nuget"
     directory: "/IntegrationTests"
     schedule:
-      interval: "monthly"  # GitHub limitation: 6-month interval not supported
-    open-pull-requests-limit: 0  # Unlimited PRs for better dependency management
+      interval: "yearly"
+    open-pull-requests-limit: 0
     groups:
       major:
         patterns:
@@ -52,13 +36,11 @@ updates:
           - "minor"
           - "patch"
 
-  # GitHub Actions dependencies
-  # Monthly schedule maintained for security, review/merge every 6 months
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"  # GitHub limitation: 6-month interval not supported
-    open-pull-requests-limit: 0  # Unlimited PRs for better dependency management
+      interval: "yearly"
+    open-pull-requests-limit: 0
     groups:
       github-actions:
         patterns:
