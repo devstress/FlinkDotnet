@@ -51,12 +51,12 @@ jobs:
       - name: Restore dependencies
         run: |
           dotnet restore FlinkDotNet/FlinkDotNet.sln
-          dotnet restore Sample/Sample.sln
+          dotnet restore IntegrationTests/IntegrationTests.sln
 
       - name: Build solutions
         run: |
           dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-restore
-          dotnet build Sample/Sample.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+          dotnet build IntegrationTests/IntegrationTests.sln --configuration ${{ env.CONFIGURATION }} --no-restore
 
       - name: Run unit tests
         run: |

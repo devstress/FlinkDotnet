@@ -87,7 +87,7 @@ Write-Info "Step 2: Finding solution files..."
 
 $SolutionFiles = @(
     "FlinkDotNet/FlinkDotNet.sln",
-    "Sample/Sample.sln", 
+    "IntegrationTests/IntegrationTests.sln", 
     "LocalTesting/LocalTesting.sln"
 )
 
@@ -145,7 +145,7 @@ if (-not $BuildFailed -and -not $SkipTests) {
     # Test solutions that have test projects
     $TestSolutions = @(
         "FlinkDotNet/FlinkDotNet.sln",
-        "Sample/Sample.sln"
+        "IntegrationTests/IntegrationTests.sln"
     )
     
     foreach ($sln in $TestSolutions) {

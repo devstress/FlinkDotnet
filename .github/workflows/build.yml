@@ -37,7 +37,7 @@ jobs:
       - name: Restore .NET Solutions
         run: |
           dotnet restore FlinkDotNet/FlinkDotNet.sln
-          dotnet restore Sample/Sample.sln
+          dotnet restore IntegrationTests/IntegrationTests.sln
 
       - name: Install SonarCloud scanner
         run: |
@@ -50,7 +50,7 @@ jobs:
         run: |
           # Build all solutions
           dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
-          dotnet build Sample/Sample.sln --configuration ${{ env.configuration }} --no-restore
+          dotnet build IntegrationTests/IntegrationTests.sln --configuration ${{ env.configuration }} --no-restore
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -58,7 +58,7 @@ jobs:
           name: build-solutions
           path: |
             FlinkDotNet/**/bin/${{ env.configuration }}/
-            Sample/**/bin/${{ env.configuration }}/
+            IntegrationTests/**/bin/${{ env.configuration }}/
 
   unit_tests:
     needs: build
