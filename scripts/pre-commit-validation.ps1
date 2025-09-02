@@ -9,9 +9,19 @@
     functionality changes do not break builds or critical tests.
     Implements enforcement to prevent build failures from being committed.
     
+.PARAMETER Force
+    Force validation to run even when no staged changes are detected
+    
 .EXAMPLE
     ./pre-commit-validation.ps1
+    
+.EXAMPLE
+    ./pre-commit-validation.ps1 -Force
 #>
+
+param(
+    [switch]$Force
+)
 
 # Colors for output
 $Green = "`e[32m"
@@ -42,27 +52,33 @@ function Write-Info {
 
 Write-Info "=== Pre-Commit Build and Test Validation ==="
 
-# Check if we have any staged changes
-try {
-    $stagedFiles = git diff --cached --name-only 2>$null
-    if (-not $stagedFiles) {
-        Write-Info "No staged changes found. Skipping validation."
-        exit 0
+# Check if we have any staged changes (unless forced)
+if (-not $Force) {
+    try {
+        $stagedFiles = git diff --cached --name-only 2>$null
+        if (-not $stagedFiles) {
+            Write-Info "No staged changes found. Skipping validation."
+            Write-Info "Use -Force parameter to run validation anyway."
+            exit 0
+        }
+        
+        # Check if staged changes include code files
+        $codeChanges = $stagedFiles | Where-Object { $_ -match '\.(cs|csproj|sln|json)$' }
+        if (-not $codeChanges) {
+            Write-Info "No code changes detected. Skipping validation."
+            Write-Info "Use -Force parameter to run validation anyway."
+            exit 0
+        }
+        
+        Write-Info "Code changes detected:"
+        foreach ($file in $codeChanges) {
+            Write-Info "  - $file"
+        }
+    } catch {
+        Write-Warning "Could not check git status. Proceeding with validation."
     }
-    
-    # Check if staged changes include code files
-    $codeChanges = $stagedFiles | Where-Object { $_ -match '\.(cs|csproj|sln|json)$' }
-    if (-not $codeChanges) {
-        Write-Info "No code changes detected. Skipping validation."
-        exit 0
-    }
-    
-    Write-Info "Code changes detected:"
-    foreach ($file in $codeChanges) {
-        Write-Info "  - $file"
-    }
-} catch {
-    Write-Warning "Could not check git status. Proceeding with validation."
+} else {
+    Write-Info "Force mode enabled. Running validation regardless of staged changes."
 }
 
 # Run the main validation script

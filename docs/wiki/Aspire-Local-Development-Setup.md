@@ -27,7 +27,7 @@ Start the complete development environment using Aspire:
 
 ```bash
 # From the repository root
-./build-all.sh    # or `build-all.cmd` on Windows
+./scripts/build-all.sh    # or `scripts/build-all.cmd` on Windows
 cd Sample/FlinkDotNetAspire.AppHost.AppHost
 dotnet run
 ```
@@ -117,7 +117,7 @@ The Aspire environment automatically creates these optimized topics:
 
 ```bash
 # 1. Start complete environment with Aspire
-./build-all.sh    # or `build-all.cmd` on Windows
+./scripts/build-all.sh    # or `scripts/build-all.cmd` on Windows
 ./Sample/FlinkDotNetAspire.AppHost.AppHost/bin/Release/net8.0/publish/FlinkDotNetAspire.AppHost.AppHost
 
 # 2. In another terminal, run reliability tests using native Aspire
@@ -130,7 +130,7 @@ dotnet test --filter "Category=reliability_test"
 
 ### 2. High-Volume Testing
 
-./build-all.sh    # or `build-all.cmd` on Windows
+./scripts/build-all.sh    # or `scripts/build-all.cmd` on Windows
 ./Sample/FlinkDotNetAspire.AppHost.AppHost/bin/Release/net8.0/publish/FlinkDotNetAspire.AppHost.AppHost
 
 # Test with configurable message count using native Aspire integration

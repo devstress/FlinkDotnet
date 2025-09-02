@@ -275,13 +275,11 @@ static string GetConfigurationFromArgs(string[] args)
     }
     
     // Try alternative parsing for args like "--configuration=Value"
-    foreach (var arg in args)
+    var configArg = args.FirstOrDefault(arg => arg.StartsWith("--configuration="));
+    if (configArg != null)
     {
-        if (arg.StartsWith("--configuration="))
-        {
-            var value = arg.Substring("--configuration=".Length);
-            return value;
-        }
+        var value = configArg.Substring("--configuration=".Length);
+        return value;
     }
     
     return "Default";

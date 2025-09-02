@@ -13,13 +13,13 @@ dotnet --version
 ### 2. Quick Validation
 ```bash
 # Run this before any development work
-./validate-build-and-tests.ps1 -SkipTests
+./scripts/validate-build-and-tests.ps1 -SkipTests
 ```
 
 ### 3. Pre-Commit Check
 ```bash
 # Run this before committing changes  
-./pre-commit-validation.ps1
+./scripts/pre-commit-validation.ps1
 ```
 
 ## 🛠️ Daily Developer Commands
@@ -27,13 +27,13 @@ dotnet --version
 ### Build Everything
 ```bash
 # One command to build all solutions
-./validate-build-and-tests.ps1 -SkipTests
+./scripts/validate-build-and-tests.ps1 -SkipTests
 ```
 
 ### Build + Test Everything
 ```bash
 # Full validation (builds + tests)
-./validate-build-and-tests.ps1
+./scripts/validate-build-and-tests.ps1
 ```
 
 ### Manual Build (if scripts fail)
@@ -55,7 +55,7 @@ dotnet test Sample/Sample.sln --configuration Release --no-build
 1. **Clean rebuild**: `dotnet clean && dotnet build`
 2. **Check .NET version**: `dotnet --version` (must be 9.0.x)
 3. **Restore packages**: `dotnet restore`
-4. **Run validation**: `./validate-build-and-tests.ps1 -SkipTests`
+4. **Run validation**: `./scripts/validate-build-and-tests.ps1 -SkipTests`
 
 ### Wrong .NET Version?
 ```bash
@@ -72,14 +72,14 @@ export PATH="$HOME/.dotnet:$PATH"
 chmod +x *.ps1
 
 # Run with PowerShell explicitly
-pwsh ./validate-build-and-tests.ps1
+pwsh ./scripts/validate-build-and-tests.ps1
 ```
 
 ## ✅ Before Committing
 
 **Always run this checklist:**
 - [ ] `dotnet --version` shows 9.0.x
-- [ ] `./pre-commit-validation.ps1` passes
+- [ ] `./scripts/pre-commit-validation.ps1` passes
 - [ ] All build errors fixed
 - [ ] Ready to commit
 

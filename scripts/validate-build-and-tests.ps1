@@ -55,9 +55,10 @@ function Write-Info {
     Write-Host "${Blue}ℹ️ $Message${Reset}"
 }
 
-# Ensure we're in the correct directory
+# Ensure we're in the repository root directory
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $ScriptDir
+$RepoRoot = Split-Path -Parent $ScriptDir
+Set-Location $RepoRoot
 
 Write-Info "=== FlinkDotNet Build and Test Validation ==="
 Write-Info "Configuration: $Configuration"

@@ -43,7 +43,7 @@ dotnet --version  # Should return 9.0.x
 
 # If not installed, download from https://dotnet.microsoft.com/download/dotnet/9.0
 # Or use the included script:
-./dotnet-install.sh --version 9.0.303
+./scripts/dotnet-install.sh --version 9.0.303
 ```
 
 ### 2. Install Required Workloads
@@ -73,7 +73,7 @@ dotnet restore LocalTesting/LocalTesting.sln
 
 ```bash
 # Use the provided build script
-./build-all.ps1
+./scripts/build-all.ps1
 
 # Or build individually
 dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
@@ -332,7 +332,7 @@ public async Task ProcessOrder_WithValidOrder_ShouldReturnSuccess()
 
 ```bash
 # Run local testing with Aspire
-./test-aspire-localtesting.ps1 -MessageCount 1000
+./scripts/test-aspire-localtesting.ps1 -MessageCount 1000
 
 # Verify all tests pass locally before PR submission
 dotnet test
@@ -360,7 +360,7 @@ dotnet test
    dotnet test
    
    # LocalTesting workflow must execute successfully
-   ./test-aspire-localtesting.ps1 -MessageCount 1000
+   ./scripts/test-aspire-localtesting.ps1 -MessageCount 1000
    ```
 
 3. **Code Quality Checks**:

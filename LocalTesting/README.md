@@ -355,7 +355,7 @@ The PowerShell test script includes enhanced observability monitoring:
 
 ```powershell
 # Run with observability monitoring
-./test-aspire-localtesting.ps1 -MessageCount 1000
+./scripts/test-aspire-localtesting.ps1 -MessageCount 1000
 
 # The script will:
 # - Capture baseline observability metrics
@@ -539,7 +539,7 @@ The LocalTesting GitHub workflow automatically tests observability:
 #### Manual Testing with Enhanced Monitoring
 ```powershell
 # Run LocalTesting with comprehensive observability monitoring
-./test-aspire-localtesting.ps1 -MessageCount 1000
+./scripts/test-aspire-localtesting.ps1 -MessageCount 1000
 
 # Features included:
 # - Baseline observability metrics capture

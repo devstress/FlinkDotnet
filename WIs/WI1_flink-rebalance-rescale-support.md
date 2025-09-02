@@ -171,7 +171,7 @@ Feature: Apache Flink 2.1.0 Dynamic Scaling
 
 ### Solutions Applied
 - Distinguished method implementations by using different delays and savepoint path patterns
-- Used proper .NET 9.0 SDK for building (9.0.304)
+- Used proper .NET 9.0 SDK for building (9.0.100)
 - Added comprehensive documentation for all new Apache Flink 2.1.0 features
 
 ## Phase 5: Testing & Validation
