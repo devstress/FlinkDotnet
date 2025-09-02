@@ -1,0 +1,148 @@
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; text-anchor: middle; fill: #2c3e50; }
+      .env-title { font: bold 18px sans-serif; text-anchor: middle; fill: #fff; }
+      .service-title { font: bold 12px sans-serif; text-anchor: middle; fill: #2c3e50; }
+      .port-text { font: 10px sans-serif; text-anchor: middle; fill: #7f8c8d; }
+      .desc-text { font: 10px sans-serif; text-anchor: middle; fill: #95a5a6; }
+      .note-text { font: 12px sans-serif; fill: #34495e; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#f8f9fa"/>
+  
+  <!-- Title -->
+  <text x="600" y="40" class="title">FlinkDotNet System Architecture</text>
+  
+  <!-- LocalTesting Environment -->
+  <rect x="50" y="80" width="520" height="660" fill="#fdf2f2" stroke="#e74c3c" stroke-width="3" rx="10"/>
+  <rect x="50" y="80" width="520" height="40" fill="#e74c3c" rx="10"/>
+  <text x="310" y="105" class="env-title">LocalTesting Environment (Full Stack)</text>
+  
+  <!-- LocalTesting Services -->
+  <!-- Row 1 -->
+  <rect x="70" y="140" width="120" height="80" fill="#fff" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="130" y="165" class="service-title">Aspire Dashboard</text>
+  <text x="130" y="180" class="port-text">localhost:18888</text>
+  <text x="130" y="195" class="desc-text">Orchestration</text>
+  
+  <rect x="210" y="140" width="120" height="80" fill="#fff" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="270" y="165" class="service-title">LocalTesting API</text>
+  <text x="270" y="180" class="port-text">localhost:18000</text>
+  <text x="270" y="195" class="desc-text">Gateway & Testing</text>
+  
+  <rect x="350" y="140" width="120" height="80" fill="#fff" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="410" y="165" class="service-title">Kafka UI</text>
+  <text x="410" y="180" class="port-text">localhost:18001</text>
+  <text x="410" y="195" class="desc-text">Message Broker</text>
+  
+  <!-- Row 2 -->
+  <rect x="70" y="240" width="120" height="80" fill="#fff" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="130" y="265" class="service-title">Flink Dashboard</text>
+  <text x="130" y="280" class="port-text">localhost:18002</text>
+  <text x="130" y="295" class="desc-text">Job Management</text>
+  
+  <rect x="210" y="240" width="120" height="80" fill="#fff" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="270" y="265" class="service-title">Temporal Server</text>
+  <text x="270" y="280" class="port-text">localhost:18003</text>
+  <text x="270" y="295" class="desc-text">Workflows</text>
+  
+  <rect x="350" y="240" width="120" height="80" fill="#fff" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="410" y="265" class="service-title">Temporal UI</text>
+  <text x="410" y="280" class="port-text">localhost:18004</text>
+  <text x="410" y="295" class="desc-text">Workflow Monitor</text>
+  
+  <!-- Observability Section -->
+  <rect x="70" y="340" width="400" height="30" fill="#9b59b6" rx="5"/>
+  <text x="270" y="360" class="env-title">Observability Stack (PGL)</text>
+  
+  <!-- Row 3 - Observability -->
+  <rect x="70" y="380" width="120" height="80" fill="#fff" stroke="#9b59b6" stroke-width="2" rx="5"/>
+  <text x="130" y="405" class="service-title">Loki</text>
+  <text x="130" y="420" class="port-text">localhost:18005</text>
+  <text x="130" y="435" class="desc-text">Log Aggregation</text>
+  
+  <rect x="210" y="380" width="120" height="80" fill="#fff" stroke="#9b59b6" stroke-width="2" rx="5"/>
+  <text x="270" y="405" class="service-title">Prometheus</text>
+  <text x="270" y="420" class="port-text">localhost:18006</text>
+  <text x="270" y="435" class="desc-text">Metrics</text>
+  
+  <rect x="350" y="380" width="120" height="80" fill="#fff" stroke="#9b59b6" stroke-width="2" rx="5"/>
+  <text x="410" y="405" class="service-title">Grafana</text>
+  <text x="410" y="420" class="port-text">localhost:18010</text>
+  <text x="410" y="435" class="desc-text">Dashboards</text>
+  
+  <!-- Row 4 - OpenTelemetry -->
+  <rect x="70" y="480" width="120" height="80" fill="#fff" stroke="#9b59b6" stroke-width="2" rx="5"/>
+  <text x="130" y="505" class="service-title">OTEL gRPC</text>
+  <text x="130" y="520" class="port-text">localhost:18007</text>
+  <text x="130" y="535" class="desc-text">Tracing</text>
+  
+  <rect x="210" y="480" width="120" height="80" fill="#fff" stroke="#9b59b6" stroke-width="2" rx="5"/>
+  <text x="270" y="505" class="service-title">OTEL HTTP</text>
+  <text x="270" y="520" class="port-text">localhost:18008</text>
+  <text x="270" y="535" class="desc-text">Tracing</text>
+  
+  <rect x="350" y="480" width="120" height="80" fill="#fff" stroke="#9b59b6" stroke-width="2" rx="5"/>
+  <text x="410" y="505" class="service-title">OTEL Prometheus</text>
+  <text x="410" y="520" class="port-text">localhost:18009</text>
+  <text x="410" y="535" class="desc-text">Metrics</text>
+  
+  <!-- Use Cases -->
+  <rect x="70" y="580" width="400" height="120" fill="#e8f4f8" stroke="#3498db" stroke-width="1" rx="5"/>
+  <text x="80" y="600" class="note-text">Use Cases:</text>
+  <text x="80" y="620" class="note-text">• Development & Learning (LearningCourse)</text>
+  <text x="80" y="640" class="note-text">• Full Observability & Debugging</text>
+  <text x="80" y="660" class="note-text">• Performance Analysis & Monitoring</text>
+  <text x="80" y="680" class="note-text">• Workflow Development & Testing</text>
+  
+  <!-- IntegrationTests Environment -->
+  <rect x="630" y="80" width="520" height="380" fill="#fef9e7" stroke="#f39c12" stroke-width="3" rx="10"/>
+  <rect x="630" y="80" width="520" height="40" fill="#f39c12" rx="10"/>
+  <text x="890" y="105" class="env-title">IntegrationTests Environment (Minimal)</text>
+  
+  <!-- IntegrationTests Services -->
+  <rect x="650" y="140" width="120" height="80" fill="#fff" stroke="#f39c12" stroke-width="2" rx="5"/>
+  <text x="710" y="165" class="service-title">Aspire Dashboard</text>
+  <text x="710" y="180" class="port-text">localhost:18889</text>
+  <text x="710" y="195" class="desc-text">Orchestration</text>
+  
+  <rect x="790" y="140" width="120" height="80" fill="#fff" stroke="#f39c12" stroke-width="2" rx="5"/>
+  <text x="850" y="165" class="service-title">Kafka UI</text>
+  <text x="850" y="180" class="port-text">localhost:18001</text>
+  <text x="850" y="195" class="desc-text">Message Broker</text>
+  
+  <rect x="930" y="140" width="120" height="80" fill="#fff" stroke="#f39c12" stroke-width="2" rx="5"/>
+  <text x="990" y="165" class="service-title">Flink Dashboard</text>
+  <text x="990" y="180" class="port-text">localhost:18002</text>
+  <text x="990" y="195" class="desc-text">Job Management</text>
+  
+  <rect x="720" y="240" width="120" height="80" fill="#fff" stroke="#f39c12" stroke-width="2" rx="5"/>
+  <text x="780" y="265" class="service-title">Redis</text>
+  <text x="780" y="280" class="port-text">Internal Only</text>
+  <text x="780" y="295" class="desc-text">Caching</text>
+  
+  <!-- IntegrationTests Use Cases -->
+  <rect x="650" y="340" width="400" height="100" fill="#fff3cd" stroke="#f39c12" stroke-width="1" rx="5"/>
+  <text x="660" y="360" class="note-text">Use Cases:</text>
+  <text x="660" y="380" class="note-text">• CI/CD Pipeline Testing</text>
+  <text x="660" y="400" class="note-text">• BDD Scenario Validation</text>
+  <text x="660" y="420" class="note-text">• Core Flink & Kafka Testing</text>
+  
+  <!-- Port Conflict Prevention -->
+  <rect x="630" y="480" width="520" height="180" fill="#e8f4f8" stroke="#3498db" stroke-width="2" rx="10"/>
+  <text x="890" y="505" class="service-title">Port Conflict Prevention Strategy</text>
+  
+  <text x="650" y="530" class="note-text">LocalTesting Ports: 18000-18010, 18888</text>
+  <text x="650" y="550" class="note-text">IntegrationTests Ports: 18001-18002, 18889</text>
+  <text x="650" y="580" class="note-text">Key Differences:</text>
+  <text x="650" y="600" class="note-text">• Aspire Dashboard: 18888 vs 18889 (offset)</text>
+  <text x="650" y="620" class="note-text">• Observability: Full stack vs None</text>
+  <text x="650" y="640" class="note-text">• Purpose: Development vs CI/CD</text>
+  
+  <!-- Architecture Decision -->
+  <rect x="50" y="750" width="1100" height="40" fill="#d5f4e6" stroke="#27ae60" stroke-width="2" rx="5"/>
+  <text x="70" y="775" class="note-text">Architecture Decision: Separate environments provide comprehensive development (LocalTesting) with reliable CI/CD testing (IntegrationTests)</text>
+</svg>
