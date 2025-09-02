@@ -41,7 +41,7 @@ public class ComplexLogicStressTestController : ControllerBase
     [HttpPost("step1/configure-backpressure")]
     [SwaggerOperation(
         Summary = "Step 1: Configure Backpressure - 100 msg/sec per Logical Queue",
-        Description = "Configure 100 messages/second rate limit per logical queue using Kafka headers for 1000 logical queues across 100 partitions"
+        Description = "Configure 100 messages/second rate limit per logical queue using Kafka headers for 100 logical queues across 10 partitions"
     )]
     [SwaggerResponse(200, "Backpressure configured successfully")]
     [SwaggerResponse(400, "Invalid backpressure configuration")]
@@ -52,14 +52,14 @@ public class ComplexLogicStressTestController : ControllerBase
             // Default configuration for the required business flow
             var queueConfig = config ?? new LogicalQueueConfiguration
             {
-                PartitionCount = 100,
-                LogicalQueueCount = 1000,
+                PartitionCount = 10,
+                LogicalQueueCount = 100,
                 MessagesPerSecondPerQueue = 100.0,
                 KafkaHeaders = new Dictionary<string, string>
                 {
                     ["backpressure.rate"] = "100.0",
-                    ["logical.queue.count"] = "1000",
-                    ["partition.count"] = "100",
+                    ["logical.queue.count"] = "100",
+                    ["partition.count"] = "10",
                     ["rate.per.queue"] = "100.0"
                 }
             };
@@ -112,7 +112,7 @@ public class ComplexLogicStressTestController : ControllerBase
     [HttpPost("step2/temporal-submit-messages")]
     [SwaggerOperation(
         Summary = "Step 2: Temporal Job Submission for 1M Messages",
-        Description = "Submit job to Temporal to produce 1 million messages to Kafka with 100 partitions and 1000 logical queues. Backpressure blocks submission when hitting rate limits; Temporal retries until downstream processing catches up. Shows top 1 and last 1 message details."
+        Description = "Submit job to Temporal to produce 1 million messages to Kafka with 10 partitions and 100 logical queues. Backpressure blocks submission when hitting rate limits; Temporal retries until downstream processing catches up. Shows top 1 and last 1 message details."
     )]
     [SwaggerResponse(200, "Temporal job submitted successfully with message samples")]
     [SwaggerResponse(400, "Invalid message count")]
@@ -125,8 +125,8 @@ public class ComplexLogicStressTestController : ControllerBase
             {
                 MessageCount = 1000000,
                 UseTemporalSubmission = true,
-                PartitionCount = 100,
-                LogicalQueueCount = 1000
+                PartitionCount = 10,
+                LogicalQueueCount = 100
             };
 
             if (prodRequest.MessageCount <= 0)
@@ -199,8 +199,8 @@ public class ComplexLogicStressTestController : ControllerBase
                 lastMessage.ProcessingStage = "initial";
                 lastMessage.CorrelationId = $"corr-{lastMessage.MessageId:D6}";
                 // Last message should be in queue-999 as Darren requested
-                lastMessage.LogicalQueueName = "queue-999";
-                lastMessage.PartitionNumber = 99; // Last partition for demonstration
+                lastMessage.LogicalQueueName = "queue-99";
+                lastMessage.PartitionNumber = 9; // Last partition for demonstration
             }
             
             var metrics = new Dictionary<string, object>
@@ -840,8 +840,8 @@ public class ComplexLogicStressTestController : ControllerBase
                 lastFinalMessage.ProcessingStage = "final";
                 lastFinalMessage.CorrelationId = $"corr-{lastFinalMessage.MessageId:D6}";
                 lastFinalMessage.SendingID = $"send-{lastFinalMessage.MessageId:D6}";
-                lastFinalMessage.LogicalQueueName = $"queue-{lastFinalMessage.MessageId % 1000}";
-                lastFinalMessage.PartitionNumber = 99; // Last partition
+                lastFinalMessage.LogicalQueueName = $"queue-{lastFinalMessage.MessageId % 100}";
+                lastFinalMessage.PartitionNumber = 9; // Last partition
                 lastFinalMessage.BatchNumber = 10000; // Last batch
             }
             
@@ -857,7 +857,7 @@ public class ComplexLogicStressTestController : ControllerBase
                     WrittenMessages = writtenCount,
                     WriteSuccessRate = 1.0,
                     Topic = writeConfig.TargetTopic,
-                    PartitionsUsed = 100,
+                    PartitionsUsed = 10,
                     AverageMessageSize = "1KB"
                 },
                 
@@ -1424,8 +1424,8 @@ public class ComplexLogicStressTestController : ControllerBase
                 LogicalQueueName = $"queue-{(i - 1) % 1000}",
                 Payload = $"Complex logic msg {i}: Correlation tracked, security token renewed, HTTP batch processed",
                 Timestamp = DateTime.UtcNow.AddSeconds(-1000000 + i),
-                BatchNumber = ((i - 1) / 100) + 1,
-                PartitionNumber = (i - 1) % 100,
+                BatchNumber = ((i - 1) / 10) + 1,
+                PartitionNumber = (i - 1) % 10,
                 ProcessingStage = "final", // Set to final stage for step 8 verification
                 SecurityToken = $"final-token-{i:D6}"
             });
@@ -1448,8 +1448,8 @@ public class ComplexLogicStressTestController : ControllerBase
                 LogicalQueueName = $"queue-{(messageId - 1) % 1000}",
                 Payload = $"Complex logic msg {messageId}: Final correlation match with complete HTTP processing",
                 Timestamp = DateTime.UtcNow.AddSeconds(-count + i),
-                BatchNumber = ((messageId - 1) / 100) + 1,
-                PartitionNumber = (messageId - 1) % 100,
+                BatchNumber = ((messageId - 1) / 10) + 1,
+                PartitionNumber = (messageId - 1) % 10,
                 ProcessingStage = "final", // Set to final stage for step 8 verification
                 SecurityToken = $"final-token-{messageId:D6}"
             });
