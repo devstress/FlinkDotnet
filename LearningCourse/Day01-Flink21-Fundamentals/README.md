@@ -117,18 +117,18 @@ Apache Flink 2.1.0 marks a **paradigm shift** from stream processing engine to *
 **🎯 Hands-on Implementation:** These advanced state management features are demonstrated in **[Exercise 1.2: Enterprise State Backend Configuration](Exercise-Solutions/ProductionApp/)** through a production-grade e-commerce order processing system that shows RocksDB tuning, state evolution patterns, and queryable state implementation.
 
 #### 3. **Advanced Backpressure Control** → **[Exercise 1.3: Netflix-Style Load Management](Exercise-Solutions/)**
-- **Credit-based Flow Control**: Network-level backpressure management → **[Exercise 1.3 Network Flow Control](Exercise-Solutions/observability-dashboard.html)**
-- **Adaptive Rate Limiting**: Dynamic throughput adjustment based on downstream capacity → **[Exercise 1.3 Rate Limiting Implementation](Exercise-Solutions/load-testing.ps1)**
+- **Credit-based Flow Control**: Network-level backpressure management → **[Exercise 1.3 Network Flow Control](Exercise-Solutions/http://localhost:3000 (Grafana Dashboard))**
+- **Adaptive Rate Limiting**: Dynamic throughput adjustment based on downstream capacity → **[Exercise 1.3 Rate Limiting Implementation](Exercise-Solutions/LocalTesting/LocalTesting.WebApi (Stress Testing Controllers))**
 - **Circuit Breaker Integration**: Cascading failure prevention → **[Exercise 1.3 Circuit Breaker Patterns](Exercise-Solutions/ProductionApp/)**
-- **End-to-end Flow Control**: From source to sink backpressure propagation → **[Exercise 1.3 Full Pipeline Monitoring](Exercise-Solutions/observability-dashboard.html)**
+- **End-to-end Flow Control**: From source to sink backpressure propagation → **[Exercise 1.3 Full Pipeline Monitoring](Exercise-Solutions/http://localhost:3000 (Grafana Dashboard))**
 
 **🎯 Hands-on Implementation:** Production-grade backpressure patterns are implemented in **[Exercise 1.3: Netflix-Style Load Management](Exercise-Solutions/)** where you'll build a high-throughput financial trading system that demonstrates credit-based flow control, adaptive rate limiting, and cascading failure prevention using real-world patterns from Netflix and Uber.
 
 #### 4. **Enterprise Security & Compliance** → **[Exercise 1.4: Production Security Implementation](Exercise-Solutions/)**
-- **Fine-grained RBAC**: Role-based access control → **[Exercise 1.4 RBAC Configuration](Exercise-Solutions/infrastructure-validation.ps1)**
-- **End-to-end Encryption**: Data in transit and at rest → **[Exercise 1.4 Encryption Validation](Exercise-Solutions/infrastructure-validation.ps1)**
+- **Fine-grained RBAC**: Role-based access control → **[Exercise 1.4 RBAC Configuration](Exercise-Solutions/LocalTesting infrastructure health check)**
+- **End-to-end Encryption**: Data in transit and at rest → **[Exercise 1.4 Encryption Validation](Exercise-Solutions/LocalTesting infrastructure health check)**
 - **Audit Logging**: Comprehensive compliance reporting → **[Exercise 1.4 Audit Trail Implementation](Exercise-Solutions/ProductionApp/)**
-- **Secret Management**: Integration with enterprise secret stores → **[Exercise 1.4 Secret Store Integration](Exercise-Solutions/infrastructure-validation.ps1)**
+- **Secret Management**: Integration with enterprise secret stores → **[Exercise 1.4 Secret Store Integration](Exercise-Solutions/LocalTesting infrastructure health check)**
 
 **🎯 Hands-on Implementation:** Enterprise-grade security patterns are demonstrated in **[Exercise 1.4: Production Security Implementation](Exercise-Solutions/)** through a banking compliance system that implements RBAC, end-to-end encryption, comprehensive audit logging, and secret management integration following financial services security standards.
 
@@ -195,7 +195,7 @@ Before starting, ensure your development environment meets production standards:
 dotnet --version
 # Expected: 9.0.x or higher
 
-# Verify Docker Desktop is running
+# Verify Docker Desktop or Podman is running
 docker version
 # Expected: Docker version 24.x+ with Compose support
 
@@ -1152,7 +1152,9 @@ dotnet run --configuration=RocksDBStateBackend
 ```bash
 # Execute comprehensive security validation
 cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions
-pwsh ./infrastructure-validation.ps1 -SecurityValidation
+# Check LocalTesting infrastructure is running
+curl http://localhost:8081  # Flink Dashboard
+curl http://localhost:3000  # Grafana Dashboard
 
 # Security components validated (implements theory concepts):
 # - Fine-grained RBAC for financial data access (theory connection)
@@ -1284,9 +1286,11 @@ curl http://localhost:5000/linkedin-metrics
 ```bash
 # Deploy Google-style SRE observability system (using infrastructure validation with monitoring)
 cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions
-pwsh ./infrastructure-validation.ps1 -SREMonitoring
+# Verify SRE monitoring is working
+# Open Grafana: http://localhost:3000
+# Open Aspire Dashboard: http://localhost:18888
 # Also open observability dashboard for comprehensive monitoring
-start observability-dashboard.html
+start http://localhost:3000 (Grafana Dashboard)
 
 # Key Google SRE patterns implemented (connects to enterprise patterns theory):
 # - SLI/SLO monitoring and tracking (theory connection)
@@ -1365,10 +1369,10 @@ Build a streaming application that:
 All Day 1 exercises have complete working solutions in the [`Exercise-Solutions/`](Exercise-Solutions/) directory:
 
 ### ✅ Available Solutions
-- **[Exercise 1.1: Infrastructure Validation](Exercise-Solutions/infrastructure-validation.ps1)** - Complete health check automation
+- **[Exercise 1.1: Infrastructure Validation](Exercise-Solutions/LocalTesting infrastructure health check)** - Complete health check automation
 - **[Exercise 1.2: Production Application](Exercise-Solutions/ProductionApp/)** - Full streaming application with monitoring
-- **[Exercise 1.3: Observability Dashboard](Exercise-Solutions/observability-dashboard.html)** - Interactive monitoring dashboard
-- **[Exercise 1.4: Load Testing](Exercise-Solutions/load-testing.ps1)** - Comprehensive performance testing
+- **[Exercise 1.3: Observability Dashboard](Exercise-Solutions/http://localhost:3000 (Grafana Dashboard))** - Interactive monitoring dashboard
+- **[Exercise 1.4: Load Testing](Exercise-Solutions/LocalTesting/LocalTesting.WebApi (Stress Testing Controllers))** - Comprehensive performance testing
 - **[Exercise 1.5: Netflix Recommendation System](Exercise-Solutions/ProductionApp/)** - AI-enhanced microservices with recommendation engine
 - **[Exercise 1.6: Uber Dynamic Pricing](Exercise-Solutions/ProductionApp/)** - Real-time pricing engine with ML optimization
 - **[Exercise 1.7: LinkedIn Feed Generation](Exercise-Solutions/ProductionApp/)** - Professional feed generation with social graph processing
@@ -1380,7 +1384,8 @@ All Day 1 exercises have complete working solutions in the [`Exercise-Solutions/
 cd Exercise-Solutions/
 
 # Run infrastructure validation
-pwsh ./infrastructure-validation.ps1 -Detailed
+# Verify LocalTesting infrastructure is running
+dotnet run --project LocalTesting/LocalTesting.AppHost
 
 # Build and test production app
 cd ProductionApp/
@@ -1388,10 +1393,12 @@ dotnet build
 dotnet run
 
 # Open observability dashboard (in another terminal)
-start observability-dashboard.html
+start http://localhost:3000 (Grafana Dashboard)
 
 # Execute load testing
-pwsh ../load-testing.ps1 -SaveResults
+# Use LocalTesting WebApi for load testing
+curl -X POST http://localhost:5000/stress/complex-logic
+curl -X POST http://localhost:5000/stress/backpressure
 ```
 
 ### 📊 Expected Results

@@ -10,9 +10,9 @@
 
 | Day | Topic | Company Patterns | What You'll Build |
 |-----|-------|------------------|-------------------|
-| **Day 1** | [Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md) | Netflix, Uber, LinkedIn | Infrastructure + AI Recommendations |
-| **Day 2** | [AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md) | Netflix, Uber, LinkedIn, Amazon | ML Model Management + Fraud Detection |
-| **Day 3** | [Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md) | Netflix, Uber, LinkedIn | Global Rate Limiting + Chaos Engineering |
+| **Day 1** | [Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Infrastructure + AI Recommendations |
+| **Day 2** | [AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn, Amazon | ML Model Management + Fraud Detection |
+| **Day 3** | [Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Global Rate Limiting + Chaos Engineering |
 | **Day 4** | Enterprise Observability | Google, Datadog, Netflix | SRE Monitoring + Alert Management |
 | **Day 5** | Temporal Workflows | Uber, Airbnb, Stripe | Workflow Orchestration + Event Sourcing |
 | **Day 6** | Advanced Windows/Joins | LinkedIn, Twitter, Facebook | Social Graph + Real-time Analytics |
@@ -65,7 +65,7 @@ cd Day[XX]-[Topic-Name]/Exercise-Solutions
 ```
 
 ### 📚 2. Open the Step-by-Step Guide
-Look for: **`HOW-TO-RUN-EXERCISES.md`** in each Exercise-Solutions folder
+Look for: **`README.md`** in each Exercise-Solutions folder
 
 ### 🏃‍♂️ 3. Follow the Instructions
 Each guide contains:
@@ -83,22 +83,22 @@ Mark off each exercise as you complete it
 ## 📚 Day-by-Day Quick Links
 
 ### Week 1: Foundations
-- **[Day 1: Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)** ← START HERE
-- **[Day 2: AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 3: Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 4: Enterprise Observability](Day04-Enterprise-Observability/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 5: Temporal Workflows](Day05-Temporal-Workflows/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 6: Advanced Windows/Joins](Day06-Advanced-Windows-Joins/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 7: Stress Testing](Day07-Stress-Testing/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 1: Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/README.md)** ← START HERE
+- **[Day 2: AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/README.md)**
+- **[Day 3: Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/README.md)**
+- **[Day 4: Enterprise Observability](Day04-Enterprise-Observability/Exercise-Solutions/README.md)**
+- **[Day 5: Temporal Workflows](Day05-Temporal-Workflows/Exercise-Solutions/README.md)**
+- **[Day 6: Advanced Windows/Joins](Day06-Advanced-Windows-Joins/Exercise-Solutions/README.md)**
+- **[Day 7: Stress Testing](Day07-Stress-Testing/Exercise-Solutions/README.md)**
 
 ### Week 2: Advanced Patterns  
-- **[Day 8: Exactly-Once Semantics](Day08-Exactly-Once-Semantics/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 9: Performance Optimization](Day09-Performance-Optimization-Scaling/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 10: Security & Compliance](Day10-Security-Privacy-Compliance/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 11: Disaster Recovery](Day11-Disaster-Recovery-Multi-Region/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 12: Advanced Patterns](Day12-Advanced-Streaming-Patterns/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 13: Testing & Chaos](Day13-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
-- **[Day 14: Capstone Project](Day14-Capstone-Project/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+- **[Day 8: Exactly-Once Semantics](Day08-Exactly-Once-Semantics/Exercise-Solutions/README.md)**
+- **[Day 9: Performance Optimization](Day09-Performance-Optimization-Scaling/Exercise-Solutions/README.md)**
+- **[Day 10: Security & Compliance](Day10-Security-Privacy-Compliance/Exercise-Solutions/README.md)**
+- **[Day 11: Disaster Recovery](Day11-Disaster-Recovery-Multi-Region/Exercise-Solutions/README.md)**
+- **[Day 12: Advanced Patterns](Day12-Advanced-Streaming-Patterns/Exercise-Solutions/README.md)**
+- **[Day 13: Testing & Chaos](Day13-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/README.md)**
+- **[Day 14: Capstone Project](Day14-Capstone-Project/Exercise-Solutions/README.md)**
 
 ---
 
@@ -144,7 +144,7 @@ netstat -an | findstr "8081\|8082\|5000"
 ### Problem: Out of memory errors
 **Solution:**
 - Close other applications
-- Restart Docker Desktop
+- Restart Docker Desktop or Podman
 - Ensure 8GB+ RAM available
 
 ### Problem: .NET build failures
@@ -209,4 +209,4 @@ By completing this 14-day course, you'll have:
 
 ---
 
-**🎯 [START YOUR JOURNEY: Day 1 Instructions →](Day01-Flink21-Fundamentals/Exercise-Solutions/HOW-TO-RUN-EXERCISES.md)**
+**🎯 [START YOUR JOURNEY: Day 1 Instructions →](Day01-Flink21-Fundamentals/Exercise-Solutions/README.md)**

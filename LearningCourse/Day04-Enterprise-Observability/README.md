@@ -19,7 +19,7 @@ This course uses the **comprehensive LocalTesting observability stack** for all 
 
 1. **Prerequisites**:
    - .NET 9.0 SDK installed
-   - Docker Desktop running
+   - Docker Desktop or Podman running
    - LocalTesting environment setup (see [LocalTesting README](../../LocalTesting/README.md#observability-configuration-and-testing))
 
 2. **Start LocalTesting Observability Stack**:
@@ -37,7 +37,7 @@ This course uses the **comprehensive LocalTesting observability stack** for all 
 4. **Run Automated Observability Testing**:
    ```bash
    # Test the complete observability stack with real data
-   ./test-aspire-localtesting.ps1 -MessageCount 1000
+   curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
    ```
 
 ### What You Get
@@ -1020,7 +1020,7 @@ namespace LearningCourse.Day04
 
 #### Prerequisites
 - LocalTesting environment running: `dotnet run --project LocalTesting.AppHost` 
-- Generate observability data: `./test-aspire-localtesting.ps1 -MessageCount 1000`
+- Generate observability data: `curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000`
 
 #### Step 1: Access LocalTesting Grafana
 1. **Navigate to Grafana** (http://localhost:3000)
@@ -1073,7 +1073,7 @@ Set up alerts based on LocalTesting observability patterns:
 #### Step 4: Test with Real Data
 ```bash
 # Generate metrics while monitoring dashboard
-./test-aspire-localtesting.ps1 -MessageCount 5000
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 5000
 
 # Watch dashboard update in real-time
 # Navigate between Grafana (localhost:3000) and Aspire Dashboard (localhost:18888)
@@ -1130,7 +1130,7 @@ public class BusinessMetricsService
 dotnet run --project LocalTesting.AppHost
 
 # 2. Generate business metrics data
-./test-aspire-localtesting.ps1 -MessageCount 1000
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
 
 # 3. Query your custom metrics in Prometheus
 curl "http://localhost:9090/api/v1/query?query=customer_satisfaction_score"
@@ -1156,7 +1156,7 @@ Add panels to your Grafana dashboard for the new metrics:
 dotnet run --project LocalTesting.AppHost
 
 # Generate rich tracing data through 8-step business flow
-./test-aspire-localtesting.ps1 -MessageCount 2000
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 2000
 ```
 
 #### Step 2: Analyze LocalTesting Traces
@@ -1208,7 +1208,7 @@ LocalTesting includes **comprehensive automated observability testing** that val
 #### Step 2: Run Automated Observability Validation
 ```bash
 # Execute comprehensive observability testing
-./test-aspire-localtesting.ps1 -MessageCount 1000
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
 
 # Watch for observability validation output:
 # 🔍 OBSERVABILITY VALIDATION:
@@ -1293,7 +1293,7 @@ Create alerts based on LocalTesting's actual metrics and business flows:
 #### Step 2: Test Alerts with LocalTesting
 ```bash
 # Generate alert conditions during stress testing
-./test-aspire-localtesting.ps1 -MessageCount 10000  # High load
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 10000  # High load
 
 # Monitor alerts in Prometheus: http://localhost:9090/alerts
 # Check alert manager: http://localhost:9093 (if configured)
@@ -1370,10 +1370,10 @@ Build Grafana dashboard panels for LocalTesting SLO tracking:
 #### Step 4: Test SLO Scenarios
 ```bash
 # Test SLO compliance during normal operations
-./test-aspire-localtesting.ps1 -MessageCount 1000
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
 
 # Test SLO behavior under stress
-./test-aspire-localtesting.ps1 -MessageCount 20000
+curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 20000
 
 # Analyze SLO impact in Grafana dashboards
 ```
@@ -1434,7 +1434,7 @@ All Day 4 exercises include complete working solutions using the LocalTesting ob
 
 2. **Generate Observability Data**:
    ```bash
-   ./test-aspire-localtesting.ps1 -MessageCount 1000
+   curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
    ```
 
 3. **Access Monitoring Stack**:
@@ -1475,7 +1475,7 @@ Build an observability solution that:
 
 ### LocalTesting Environment
 - [ ] **LocalTesting observability stack** successfully running (Grafana, Prometheus, OpenTelemetry)
-- [ ] **Automated observability testing** executed with `./test-aspire-localtesting.ps1`
+- [ ] **Automated observability testing** executed with `curl -X POST http://localhost:5000/stress/complex-logic`
 - [ ] **All monitoring endpoints accessible**: localhost:3000, localhost:9090, localhost:18888
 
 ### Core Observability Skills  
