@@ -29,9 +29,9 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 "high_throughput"};
         
         private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Stress Test - High Throughput Message Processing with Multi-Cluster Orchestration" +
-                "", "  As a Flink.NET user\r\n  I want to process 1 million messages through both single" +
-                " clusters and multi-cluster orchestration\r\n  So that I can validate high-through" +
-                "put streaming performance at enterprise scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+                "", "  As a Flink.NET user\n  I want to process 1 million messages through both single " +
+                "clusters and multi-cluster orchestration\n  So that I can validate high-throughpu" +
+                "t streaming performance at enterprise scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         
