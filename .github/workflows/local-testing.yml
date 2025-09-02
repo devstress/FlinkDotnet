@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -34,7 +34,7 @@ jobs:
           Write-Host "✅ Aspire workload installed successfully" -ForegroundColor Green
 
       - name: Download build artifacts (if available)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: build-solutions
         continue-on-error: true
