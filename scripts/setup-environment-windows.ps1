@@ -91,8 +91,8 @@ function Install-DotNet {
         } else {
             # Fallback to direct download
             Write-Host "   Downloading .NET 9.0 SDK installer..." -ForegroundColor Yellow
-            $downloadUrl = "https://download.microsoft.com/download/e/8/4/e844ccec-64a4-4e1b-a6df-4c1b8dc12207/dotnet-sdk-9.0.304-win-x64.exe"
-            $installerPath = "$env:TEMP\dotnet-sdk-9.0.304-win-x64.exe"
+            $downloadUrl = "https://download.microsoft.com/download/e/8/4/e844ccec-64a4-4e1b-a6df-4c1b8dc12207/dotnet-sdk-9.0.100-win-x64.exe"
+            $installerPath = "$env:TEMP\dotnet-sdk-9.0.100-win-x64.exe"
             
             Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
             

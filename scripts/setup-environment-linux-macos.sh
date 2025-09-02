@@ -49,7 +49,7 @@ install_dotnet() {
     
     if [[ "$OS" == "Linux" ]]; then
         # Install .NET 9.0 on Linux
-        curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.304
+        curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.100
         export PATH="$HOME/.dotnet:$PATH"
         echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.bashrc
         echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.zshrc 2>/dev/null || true
@@ -60,7 +60,7 @@ install_dotnet() {
             brew install --cask dotnet
         else
             echo "   Using Microsoft installer..."
-            curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.304
+            curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.100
             export PATH="$HOME/.dotnet:$PATH"
             echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.zshrc
             echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.bash_profile 2>/dev/null || true

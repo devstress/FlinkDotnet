@@ -1016,10 +1016,10 @@ FlinkDotNet implements comprehensive build and test validation to ensure code qu
 dotnet --version  # Must show 9.0.x
 
 # Run complete validation
-./validate-build-and-tests.ps1
+./scripts/validate-build-and-tests.ps1
 
 # Quick build check (skip tests)
-./validate-build-and-tests.ps1 -SkipTests
+./scripts/validate-build-and-tests.ps1 -SkipTests
 ```
 
 ### Enforcement Rules
@@ -1031,7 +1031,7 @@ dotnet --version  # Must show 9.0.x
 ### Pre-Commit Validation
 ```bash
 # Always run before committing
-./pre-commit-validation.ps1
+./scripts/pre-commit-validation.ps1
 ```
 
 ### Documentation

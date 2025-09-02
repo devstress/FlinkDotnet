@@ -47,7 +47,7 @@
   - LocalTesting API logs: ComplexLogicStressTestService component
   - Previous WI30 investigation confirmed same root cause
 - **System State**: 
-  - .NET 9.0.304 installed and Aspire workload configured
+  - .NET 9.0.100 installed and Aspire workload configured
   - Environment setup meets project requirements
   - API service starts successfully but test initialization missing
 - **Reproduction Steps**: 
@@ -169,7 +169,7 @@ Feature: LocalTesting API IPv4 Binding
 - ✅ No "unknown exporter type" errors expected
 
 **Environment Compatibility**:
-- ✅ .NET 9.0.304 environment works correctly
+- ✅ .NET 9.0.100 environment works correctly
 - ✅ Aspire workload functions with IPv4-only configuration
 - ✅ Build process succeeds with configuration changes
 - ✅ Container dependency chain resolved

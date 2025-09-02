@@ -25,19 +25,19 @@ All three solutions must build successfully:
 ### Comprehensive Validation Script
 ```powershell
 # Run complete validation (builds + tests)
-./validate-build-and-tests.ps1
+./scripts/validate-build-and-tests.ps1
 
 # Run only builds (skip tests)
-./validate-build-and-tests.ps1 -SkipTests
+./scripts/validate-build-and-tests.ps1 -SkipTests
 
 # Run with Debug configuration
-./validate-build-and-tests.ps1 -Configuration Debug
+./scripts/validate-build-and-tests.ps1 -Configuration Debug
 ```
 
 ### Pre-Commit Validation
 ```powershell
 # Run before committing changes
-./pre-commit-validation.ps1
+./scripts/pre-commit-validation.ps1
 ```
 
 ### Manual Build Commands
@@ -70,7 +70,7 @@ dotnet test Sample/Sample.sln --configuration Release --no-build
 
 ### Before Making Changes
 1. **Verify environment**: `dotnet --version` shows 9.0.x
-2. **Baseline validation**: `./validate-build-and-tests.ps1`
+2. **Baseline validation**: `./scripts/validate-build-and-tests.ps1`
 3. **Ensure clean state**: All builds and critical tests pass
 
 ### During Development
@@ -79,7 +79,7 @@ dotnet test Sample/Sample.sln --configuration Release --no-build
 3. **Address issues immediately**: Fix build errors as they occur
 
 ### Before Committing
-1. **Run validation**: `./pre-commit-validation.ps1`
+1. **Run validation**: `./scripts/pre-commit-validation.ps1`
 2. **Fix any failures**: Build errors must be resolved
 3. **Commit only when green**: No build failures allowed
 
@@ -132,11 +132,11 @@ export PATH="$HOME/.dotnet:$PATH"
 ### Validation Script Issues
 ```powershell
 # Make scripts executable (Linux/macOS)
-chmod +x validate-build-and-tests.ps1
-chmod +x pre-commit-validation.ps1
+chmod +x scripts/validate-build-and-tests.ps1
+chmod +x scripts/pre-commit-validation.ps1
 
 # Run with explicit PowerShell
-pwsh ./validate-build-and-tests.ps1
+pwsh ./scripts/validate-build-and-tests.ps1
 ```
 
 ## 📈 Continuous Improvement

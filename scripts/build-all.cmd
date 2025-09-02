@@ -12,13 +12,19 @@ echo.
 REM Store original arguments for help detection and no-pause detection
 set "help_requested="
 set "no_pause="
+set "filtered_args="
 for %%a in (%*) do (
     if /i "%%a"=="-Help" set "help_requested=true"
     if /i "%%a"=="--help" set "help_requested=true"
     if "%%a"=="/?" set "help_requested=true"
-    if "%%a"=="-h" set "help_requested=true"
-    if /i "%%a"=="-NoPause" set "no_pause=true"
-    if /i "%%a"=="--no-pause" set "no_pause=true"
+    if /i "%%a"=="-h" set "help_requested=true"
+    if /i "%%a"=="-NoPause" (
+        set "no_pause=true"
+    ) else if /i "%%a"=="--no-pause" (
+        set "no_pause=true"
+    ) else (
+        set "filtered_args=!filtered_args! %%a"
+    )
 )
 
 REM Check if running in automated environment (CI/CD)
@@ -32,7 +38,7 @@ where pwsh >nul 2>&1
 if %errorlevel% == 0 (
     echo Using PowerShell Core ^(pwsh^)...
     echo.
-    pwsh -ExecutionPolicy Bypass -File "%~dp0build-all.ps1" %*
+    pwsh -ExecutionPolicy Bypass -File "%~dp0build-all.ps1" !filtered_args!
     set "ps_exit_code=%errorlevel%"
 ) else (
     REM Check if Windows PowerShell is available
@@ -40,7 +46,7 @@ if %errorlevel% == 0 (
     if %errorlevel% == 0 (
         echo Using Windows PowerShell...
         echo.
-        powershell -ExecutionPolicy Bypass -File "%~dp0build-all.ps1" %*
+        powershell -ExecutionPolicy Bypass -File "%~dp0build-all.ps1" !filtered_args!
         set "ps_exit_code=%errorlevel%"
     ) else (
         echo ERROR: No PowerShell found on this system.

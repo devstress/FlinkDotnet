@@ -47,7 +47,7 @@ All stress tests now use the consolidated framework with Flink.Net as a gateway 
 
 ### Consolidated Test Execution Process
 
-1. **Build all components**: `./build-all.ps1` (cross-platform build script)
+1. **Build all components**: `./scripts/build-all.ps1` (cross-platform build script)
 2. **Start the Aspire environment**: 
    ```bash
    cd Sample/FlinkDotNet.Aspire.AppHost

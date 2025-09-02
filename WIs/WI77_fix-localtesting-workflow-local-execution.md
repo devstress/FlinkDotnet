@@ -47,7 +47,7 @@
   * You intended to execute a .NET SDK command:
       A compatible .NET SDK was not found.
 
-  Requested SDK version: 9.0.304
+  Requested SDK version: 9.0.100
   global.json file: /home/runner/work/FlinkDotnet/FlinkDotnet/global.json
 
   Installed SDKs:
@@ -55,18 +55,18 @@
   ```
 - **Log Locations**: 
   - LocalTesting workflow file: `.github/workflows/local-testing.yml`
-  - global.json version specification: `global.json` (requires 9.0.304)
+  - global.json version specification: `global.json` (requires 9.0.100)
   - Validation scripts: `validate-build-and-tests.ps1`, `test-aspire-localtesting.ps1`
 - **System State**: 
   - Only .NET 8.0.119 SDK installed locally
-  - global.json requires .NET 9.0.304 with latestFeature rollForward
+  - global.json requires .NET 9.0.100 with latestFeature rollForward
   - Repository contains comprehensive LocalTesting workflow with multiple validation phases
 - **Reproduction Steps**: 
   1. Clone repository to local environment
   2. Run `dotnet --version` - fails due to SDK version mismatch
   3. Attempt to run any validation scripts - would fail due to .NET version requirement
 - **Evidence**: 
-  - ✅ .NET 9.0.304 installed and functional (`dotnet --version` returns 9.0.304)
+  - ✅ .NET 9.0.100 installed and functional (`dotnet --version` returns 9.0.100)
   - ✅ Aspire workload installed (`dotnet workload list` shows aspire 8.2.2)
   - ✅ All solutions build successfully (FlinkDotNet, Sample, LocalTesting)
   - ✅ LocalTesting.AppHost builds and starts successfully
@@ -86,7 +86,7 @@
 ### Findings
 Root cause analysis shows the actual problem after .NET 9.0 environment setup:
 
-1. **✅ RESOLVED - .NET Environment**: .NET 9.0 SDK (9.0.304) now installed and functional
+1. **✅ RESOLVED - .NET Environment**: .NET 9.0 SDK (9.0.100) now installed and functional
 2. **✅ RESOLVED - Aspire Workload**: Aspire workload (8.2.2) installed and functional  
 3. **✅ RESOLVED - Build Issues**: All solutions build successfully (FlinkDotNet, Sample, LocalTesting)
 4. **🔍 ROOT CAUSE IDENTIFIED - IPv6 Connectivity Issue**: 
@@ -237,7 +237,7 @@ builder.WebHost.ConfigureKestrel(options =>
 ### Test Results
 
 **✅ Environment Setup Validation**:
-- .NET 9.0 SDK (9.0.304): Successfully installed and functional
+- .NET 9.0 SDK (9.0.100): Successfully installed and functional
 - Aspire workload (8.2.2): Successfully installed and functional
 - All solutions build successfully: FlinkDotNet, Sample, LocalTesting
 

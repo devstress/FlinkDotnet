@@ -28,9 +28,9 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
                 "reliability_test",
                 "fault_tolerance"};
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience", "  As a Flink.NET user\n  I want to handle 10% failure rates with backpressure, reb" +
-                "alancing, and multi-cluster actor resilience\n  So that I can ensure system relia" +
-                "bility under adverse conditions at enterprise scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Reliability Test - Fault Tolerance and Recovery with Actor-Based Resilience", "  As a Flink.NET user\r\n  I want to handle 10% failure rates with backpressure, re" +
+                "balancing, and multi-cluster actor resilience\r\n  So that I can ensure system rel" +
+                "iability under adverse conditions at enterprise scale", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

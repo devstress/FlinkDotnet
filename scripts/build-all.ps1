@@ -274,31 +274,32 @@ function Invoke-BuildCommand {
             Write-Host "   Working Directory: $WorkingDirectory" -ForegroundColor Cyan
         }
         
-        $processArgs = @{
-            FilePath = $Command
-            ArgumentList = $Arguments.Split(' ')
-            WorkingDirectory = $WorkingDirectory
-            Wait = $true
-            PassThru = $true
-            NoNewWindow = $true
+        # Use simpler approach with direct execution
+        $fullCommand = "$Command $Arguments"
+        
+        if ($VerboseOutput) {
+            Write-ColoredOutput "   Executing: $fullCommand" "Cyan"
         }
         
-        if (-not $VerboseOutput) {
-            $processArgs.RedirectStandardOutput = $true
-            $processArgs.RedirectStandardError = $true
-        }
+        # Execute command and capture result
+        $result = & cmd /c "cd /d `"$WorkingDirectory`" && $fullCommand 2>&1"
+        $exitCode = $LASTEXITCODE
         
-        $process = Start-Process @processArgs
-        $exitCode = $process.ExitCode
+        if ($VerboseOutput) {
+            Write-Host $result
+        }
         
         if ($exitCode -ne 0) {
             $errorMessage = "Command failed with exit code $exitCode"
+            if ($result) {
+                $errorMessage += "`nOutput: $result"
+            }
             throw $errorMessage
         }
         
         return @{
             ExitCode = $exitCode
-            Output = ""
+            Output = $result
             Error = ""
             Success = $exitCode -eq 0
         }
@@ -518,9 +519,23 @@ function Main {
         Write-Info "Building Flink.NET repository with configuration: $Configuration"
         Write-Info "Platform: $(if($script:IsWindowsPlatform){'Windows'}elseif($script:IsLinuxPlatform){'Linux'}elseif($script:IsMacOSPlatform){'macOS'}else{'Unknown'})"
         
+        # Ensure we're in the repository root directory
+        $ScriptPath = $PSCommandPath
+        if (-not $ScriptPath) {
+            $ScriptPath = $MyInvocation.MyCommand.Path
+        }
+        if ($ScriptPath) {
+            $ScriptDir = Split-Path -Parent $ScriptPath
+            if ($ScriptDir -match "scripts$") {
+                # Script is in scripts folder, navigate to parent (repository root)
+                $RepoRoot = Split-Path -Parent $ScriptDir
+                Set-Location $RepoRoot
+            }
+        }
+        
         # Verify we're in the correct directory
         if (-not (Test-Path "FlinkDotNet") -or -not (Test-Path "Sample") -or -not (Test-Path "LocalTesting")) {
-            throw "Please run this script from the root of the Flink.NET repository"
+            throw "Please run this script from the root of the Flink.NET repository. Current location: $(Get-Location)"
         }
         
         Write-Info "Found $(($script:Solutions | Measure-Object).Count) solutions to build:"
@@ -568,10 +583,8 @@ function Main {
     }
 }
 
-# Execute main function if script is run directly
-if ($MyInvocation.InvocationName -eq $MyInvocation.MyCommand.Name) {
-    $exitCode = Main @args
-    exit $exitCode
-}
+# Execute main function
+$exitCode = Main
+exit $exitCode
 
 #endregion

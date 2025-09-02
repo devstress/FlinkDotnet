@@ -24,7 +24,7 @@
 - .NET 9 and Aspire integration knowledge from WI2
 
 ### Problems Prevented
-- Avoiding version compatibility issues by using .NET 9.0.304
+- Avoiding version compatibility issues by using .NET 9.0.100
 - Using established IPv4 configuration patterns
 - Following CI environment resource constraints knowledge
 

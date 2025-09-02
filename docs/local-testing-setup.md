@@ -31,8 +31,8 @@ To properly test locally, please install .NET 9.0 SDK:
 
 ### Option 1: Use the provided install script
 ```bash
-chmod +x ./dotnet-install.sh
-./dotnet-install.sh --version 9.0.303
+chmod +x ./scripts/dotnet-install.sh
+./scripts/dotnet-install.sh --version 9.0.303
 ```
 
 ### Option 2: Download from Microsoft
@@ -70,7 +70,7 @@ dotnet build Sample/Sample.sln --configuration Release
 dotnet build LocalTesting/LocalTesting.sln --configuration Release
 
 # Test LocalTesting workflow
-./test-aspire-localtesting.ps1 -MessageCount 1000
+./scripts/test-aspire-localtesting.ps1 -MessageCount 1000
 ```
 
 ## GitHub Workflows Validation

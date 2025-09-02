@@ -37,7 +37,7 @@
 
 - **Log Locations**: Build output from dotnet build command
 - **System State**: 
-  - .NET 9.0.304 installed and functional
+  - .NET 9.0.100 installed and functional
   - Aspire workload installed
   - All step definition files exist: BackpressureTestStepDefinitions.cs, ComplexLogicStressTestStepDefinitions.cs, ReliabilityTestStepDefinitions.cs, StressTestStepDefinitions.cs
 

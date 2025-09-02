@@ -260,7 +260,7 @@ Scenario: Multi-cluster backpressure coordination
    - Used type aliases for disambiguation where needed
 
 3. **.NET 9.0 SDK Requirement**:
-   - Installed .NET 9.0.304 SDK for local development
+   - Installed .NET 9.0.100 SDK for local development
    - Configured PATH and DOTNET_ROOT environment variables
 
 ### Solutions Applied
