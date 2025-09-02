@@ -975,7 +975,11 @@ The project includes comprehensive stress tests that validate:
 
 ## Local Development with Aspire
 
-FlinkDotNet integrates with .NET Aspire for local development with Apache Flink 2.1.0 features:
+FlinkDotNet integrates with .NET Aspire for local development with Apache Flink 2.1.0 features.
+
+**Platform-Specific Setup**: Before using Aspire locally, ensure the workload is installed:
+- **Windows/macOS**: Aspire is typically included with .NET SDK (.NET 8+)
+- **Linux**: Manual installation required: `dotnet workload install aspire`
 
 ```csharp
 // LocalTesting/Program.cs
@@ -1131,9 +1135,6 @@ dotnet --version  # Must show 9.0.x
 
 ### Core Documentation
 - [Getting Started Guide](./docs/wiki/Getting-Started.md)
-- [Complete Usage Example](./docs/wiki/Complete-Usage-Example.md)
-- [Gateway Communication Guide](./docs/wiki/flinkdotnet-gateway-communication.md)
-- [Local Development Setup](./docs/wiki/Aspire-Local-Development-Setup.md)
 - [Contributing Guidelines](./CONTRIBUTING.md)
 
 ### Apache Flink 2.1.0 Feature Documentation
@@ -1145,15 +1146,9 @@ dotnet --version  # Must show 9.0.x
 
 ### Temporal Durable Workflow Architecture Documentation
 - [Flink vs Temporal Decision Guide](./docs/flink-vs-temporal-decision-guide.md)
-- [Backpressure Complete Reference](./docs/wiki/Backpressure-Complete-Reference.md)
-- [Aspire Container Architecture](./docs/wiki/Backpressure-Aspire-Container-Architecture.md)
-- [Rate Limiting Implementation](./docs/wiki/Rate-Limiting-Implementation-Tutorial.md)
 - [Local Testing Setup](./docs/local-testing-setup.md)
 
 ### Testing and Quality Assurance
-- [Stress Tests Overview](./docs/wiki/Stress-Tests-Overview.md)
-- [Reliability Tests Overview](./docs/wiki/Reliability-Tests-Overview.md)
-- [Complex Logic Stress Tests](./docs/wiki/Complex-Logic-Stress-Tests.md)
 - [Observability and Monitoring](./docs/observability/README.md)
 - [Monitoring Best Practices](./docs/observability/monitoring-best-practices.md)
 

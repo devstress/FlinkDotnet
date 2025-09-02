@@ -4,6 +4,22 @@
 
 This project requires **.NET 9.0.303** as specified in `global.json`. 
 
+## Aspire Tooling Platform Requirements
+
+**Critical Platform Difference**: .NET Aspire workload availability varies by operating system:
+
+### Windows and macOS
+- **Aspire tooling is INCLUDED** with .NET SDK (.NET 8 onward)
+- **Usually no manual installation required**
+
+### Linux
+- **Aspire tooling is NOT bundled** with base .NET SDK packages
+- **Manual installation REQUIRED**: `dotnet workload install aspire`
+- **This is by design**: Linux package managers typically distribute minimal SDK packages
+
+### Why This Difference Exists
+Microsoft bundles Aspire tooling in their official Windows/macOS .NET SDK installers, but Linux distributions via package managers (apt, yum, dnf) typically provide base SDK packages without optional workloads to keep package sizes minimal and allow users to install only needed components. 
+
 ## Current Environment Status
 
 **❌ Local Environment Issue**: .NET 9.0 SDK is not currently installed in this environment. 
@@ -58,10 +74,7 @@ After installing .NET 9.0, verify the environment:
 # Verify .NET version
 dotnet --version  # Should return 9.0.x
 
-# Verify Aspire workload (required for LocalTesting)
-dotnet workload list  # Should show aspire installed
-
-# If Aspire not installed:
+# Install Aspire workload if needed (required on Linux):
 dotnet workload install aspire
 
 # Build all solutions
