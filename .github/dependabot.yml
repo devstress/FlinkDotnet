@@ -18,7 +18,7 @@ updates:
     directory: "/FlinkDotNet"
     schedule:
       interval: "monthly"  # GitHub limitation: 6-month interval not supported
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0  # Unlimited PRs for better dependency management
     groups:
       major:
         patterns:
@@ -38,7 +38,7 @@ updates:
     directory: "/IntegrationTests"
     schedule:
       interval: "monthly"  # GitHub limitation: 6-month interval not supported
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0  # Unlimited PRs for better dependency management
     groups:
       major:
         patterns:
@@ -58,7 +58,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"  # GitHub limitation: 6-month interval not supported
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0  # Unlimited PRs for better dependency management
     groups:
       github-actions:
         patterns:
