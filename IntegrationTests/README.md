@@ -1,52 +1,402 @@
-# FlinkDotNet Integration Tests - BDD Test Environment
+# FlinkDotNet Integration Tests - Enterprise BDD Testing Infrastructure
 
-This directory contains **integration test infrastructure** with comprehensive BDD scenarios for validating FlinkDotNet's real Apache Flink integration capabilities. The focus is on **integration testing**, not sample code.
+This directory contains **comprehensive integration testing infrastructure** with enterprise-grade BDD scenarios for validating FlinkDotNet's real Apache Flink integration capabilities. Following patterns from **LocalTesting** and **LearningCourse**, this infrastructure provides production-ready testing for enterprise streaming applications.
 
-## 🧪 Purpose and Architecture
+## 🎯 Purpose and Enterprise Architecture
 
-This infrastructure provides automated integration testing for:
+This infrastructure provides **enterprise-grade integration testing** for:
+
+### 🏢 Real-World Integration Validation
 - **Real job submission** to live Flink clusters via REST API
-- **BDD testing scenarios** using SpecFlow/ReqNRoll
-- **Enterprise observability** with comprehensive monitoring stack
-- **Multi-environment testing** with Docker orchestration
+- **Production-scale infrastructure** with 3-broker Kafka clusters
+- **Enterprise observability** with comprehensive PGL monitoring stack (Prometheus + Grafana + Loki)
+- **Multi-environment testing** with Docker orchestration and Aspire DCP
+
+### 🧪 BDD Testing Framework
+Following **LearningCourse enterprise patterns**:
+- **SpecFlow/ReqNRoll** BDD scenarios for behavioral validation
+- **Given/When/Then** specifications for clear test documentation
+- **Allure reporting** with professional test reports and metrics
+- **Test categorization** by business impact and performance characteristics
+
+### 🏗️ Enterprise Infrastructure Stack
+Based on **LocalTesting proven patterns**:
 
 ```
-┌─────────────────────┐   ┌──────────────────────┐   ┌─────────────────────┐
-│  Integration Tests  │──▶│  Aspire AppHost      │──▶│  Apache Flink       │
-│  (BDD Scenarios)    │   │  (Modern Stack)      │   │  (Real Execution)   │
-└─────────────────────┘   └──────────────────────┘   └─────────────────────┘
+┌─────────────────────────────┐   ┌──────────────────────────────┐   ┌─────────────────────────────┐
+│  BDD Integration Tests      │──▶│  Enterprise Aspire AppHost   │──▶│  Production Infrastructure  │
+│  (SpecFlow/ReqNRoll)        │   │  (LocalTesting Patterns)     │   │  (Flink + Kafka + PGL)     │
+│                             │   │                              │   │                             │
+│  ├── IntegrationTest        │   │  ├── 3-Broker Kafka KRaft   │   │  ├── Apache Flink 2.1.0    │
+│  ├── stress                 │   │  ├── Redis Distributed Cache│   │  ├── Kafka UI Monitoring   │
+│  ├── reliability_test       │   │  ├── Flink 2.1.0 Cluster   │   │  ├── Prometheus Metrics    │
+│  ├── backpressure_test      │   │  ├── Temporal Workflows     │   │  ├── Grafana Dashboards   │
+│  └── chaos_engineering      │   │  └── PGL Observability     │   │  └── Loki Log Aggregation │
+└─────────────────────────────┘   └──────────────────────────────┘   └─────────────────────────────┘
 ```
+
+## 📊 Enterprise Observability Integration
+
+### Production Monitoring Stack (PGL)
+Following **LocalTesting proven enterprise patterns**:
+
+#### **Prometheus Metrics Collection**
+- **Port**: `localhost:18006` (Integration Tests) vs `localhost:18006` (LocalTesting)
+- **Real-time metrics**: Flink job performance, Kafka throughput, system resources
+- **Custom FlinkDotNet metrics**: Job submission rates, processing latency, error rates
+
+#### **Grafana Enterprise Dashboards**  
+- **Port**: `localhost:18010` (Integration Tests) vs `localhost:18010` (LocalTesting)
+- **Pre-configured data sources**: Prometheus, Loki, Temporal integration
+- **Enterprise dashboards**: Real-time streaming analytics, SLA monitoring
+
+#### **Loki Centralized Logging**
+- **Port**: `localhost:18005` (Integration Tests) vs `localhost:18005` (LocalTesting)
+- **Structured logging**: All containers with JSON-formatted logs
+- **Query capabilities**: Complex log analysis and troubleshooting
+
+#### **Kafka UI Enterprise Monitoring**
+- **Port**: `localhost:18001` (Integration Tests) vs `localhost:18001` (LocalTesting)
+- **Real-time monitoring**: Message broker health, topic management, consumer lag
+- **Integration testing support**: Topic creation, message inspection, throughput analysis
+
+### Port Management Strategy
+**Integration Tests uses offset ports** to prevent conflicts with LocalTesting:
+
+| Service | LocalTesting Port | IntegrationTests Port | Purpose |
+|---------|-------------------|----------------------|---------|
+| Aspire Dashboard | 18888 | 18889 | Container orchestration |
+| Kafka UI | 18001 | 18001 | Message broker monitoring |
+| Flink Dashboard | 18002 | 18002 | Job management |
+| Temporal Server | 18003 | 18003 | Workflow orchestration |
+| Temporal UI | 18004 | 18004 | Workflow monitoring |
+| Loki | 18005 | 18005 | Log aggregation |
+| Prometheus | 18006 | 18006 | Metrics collection |
+| Grafana | 18010 | 18010 | Unified dashboards |
 
 ## 📁 Project Structure
 
-### 🎯 Integration Test Projects
+### 🎯 Enterprise Integration Test Projects
 
 #### **FlinkDotNet.Aspire.IntegrationTests**
-**BDD Integration Test Suite** - SpecFlow/ReqNRoll scenarios for comprehensive testing
+**Primary BDD Integration Test Suite** - Comprehensive SpecFlow/ReqNRoll scenarios
 
-**Test Categories:**
-- **IntegrationTest** - Basic container infrastructure validation
-- **stress** - High throughput and scalability testing (1M+ messages)
-- **reliability_test** - Back pressure and rebalance scenarios
-- **backpressure_test** - Flow control and rate limiting validation
+**Test Categories (Based on LearningCourse Patterns):**
+- **🧪 IntegrationTest** - Basic infrastructure and connectivity validation
+- **⚡ stress** - High-throughput and scalability testing (1M+ messages)
+- **🔄 reliability_test** - Back pressure, rebalance, and fault tolerance scenarios  
+- **🌊 backpressure_test** - Flow control and distributed rate limiting validation
+- **💥 chaos_engineering** - Failure injection and recovery validation
 
-**Features:**
-- **Real Flink Integration** - Tests against actual Flink clusters
-- **BDD Scenarios** - Given/When/Then test specifications
-- **Allure Reporting** - Professional test reports with charts and metrics
-- **Multi-environment** - Local, CI/CD, and production testing support
+**Enterprise Features:**
+- **Real Flink Integration**: Tests against actual Flink 2.1.0 clusters with AI capabilities
+- **Production-Scale Testing**: 3-broker Kafka clusters, Redis distributed caching
+- **BDD Specifications**: Clear Given/When/Then scenarios for business validation
+- **Allure Reporting**: Professional test reports with metrics, charts, and traceability
+- **Multi-Environment Support**: Local development, CI/CD, and cloud deployment testing
 
 #### **FlinkDotnetStandardReliabilityTest**
-**Reliability and Performance Validation** - Long-running stability tests
+**Enterprise Reliability and Performance Validation** - Long-running stability testing
 
-**Features:**
-- **End-to-end reliability** testing with real infrastructure
-- **Performance benchmarking** with throughput and latency metrics
-- **Fault tolerance** validation under various failure conditions
-- **Resource utilization** monitoring and optimization
+**Enterprise Capabilities:**
+- **End-to-End Reliability**: Continuous testing with real infrastructure over extended periods
+- **Performance Benchmarking**: Throughput, latency, and resource utilization metrics
+- **Fault Tolerance Validation**: Network partitions, node failures, container restarts
+- **Resource Optimization**: Memory usage, CPU utilization, and auto-scaling validation
+- **SLA Compliance Testing**: 99.9% uptime validation under various failure conditions
 
-#### **FlinkJobBuilder.Sample**
-**API Integration Examples** - Demonstrates FlinkDotNet API usage in test scenarios
+#### **FlinkJobBuilder.Sample**  
+**API Integration Demonstrations** - Real-world FlinkDotNet API usage patterns
+
+**Enterprise Integration Examples:**
+- **DataStream API**: Type-safe stream operations with .NET 9.0 features
+- **Connector Ecosystem**: Kafka, Redis, Temporal, and custom connector integration
+- **Error Handling**: Comprehensive retry policies, circuit breakers, and recovery patterns
+- **Observability Integration**: Metrics, logging, and distributed tracing examples
+
+#### **FlinkDotNet.Aspire.AppHost**
+**Enterprise Infrastructure Orchestration** - Production-grade Aspire orchestration
+
+**LocalTesting Pattern Adoption:**
+- **Sequential Container Startup**: Prevents DCP reconciliation failures
+- **Extended Timeouts**: 5-minute startup timeout for complex infrastructure
+- **IPv6 Connectivity Enhancement**: Proper localhost connectivity for Aspire DCP
+- **3-Broker Kafka KRaft**: Production-scale messaging without Zookeeper
+- **Enhanced Observability**: Complete PGL stack integration
+
+## 🚀 Getting Started
+
+### Prerequisites
+Following **LearningCourse enterprise requirements**:
+
+#### .NET 9.0 Environment (MANDATORY)
+```bash
+# Verify .NET 9.0 installation
+dotnet --version  # Must return 9.0.x
+
+# Install Aspire workload
+dotnet workload install aspire
+dotnet workload list  # Must show aspire installed
+
+# Verify Docker Desktop
+docker --version
+docker-compose --version
+```
+
+#### Development Environment
+- **Visual Studio 2022** or **VS Code** with C# support
+- **Docker Desktop** with 8GB+ RAM allocation
+- **.NET 9.0 SDK** with Aspire workload
+- **PowerShell 7+** for validation scripts
+
+### 🏃‍♂️ Quick Start
+
+#### 1. Infrastructure Startup
+```bash
+# Start IntegrationTests infrastructure
+cd IntegrationTests/FlinkDotNet.Aspire.AppHost
+dotnet run
+
+# Wait 3-5 minutes for complete infrastructure startup
+# (Extended timeout prevents DCP reconciliation failures)
+```
+
+#### 2. Verify Enterprise Stack
+Open these URLs to verify all services are healthy:
+
+**🎛️ Management Dashboards:**
+- **Aspire Dashboard**: http://localhost:18889 (Container orchestration)
+- **Flink Dashboard**: http://localhost:18002 (Job management and monitoring)
+- **Kafka UI**: http://localhost:18001 (Message broker management)
+- **Temporal UI**: http://localhost:18004 (Workflow monitoring)
+
+**📊 Observability Stack:**
+- **Grafana**: http://localhost:18010 (Unified enterprise dashboards)
+- **Prometheus**: http://localhost:18006 (Metrics collection and querying)
+- **Loki**: http://localhost:18005 (Centralized log aggregation)
+
+#### 3. Execute BDD Integration Tests
+```bash
+# Run all integration tests
+cd IntegrationTests
+dotnet test --configuration Release
+
+# Run specific test categories
+dotnet test --filter "Category=IntegrationTest"     # Basic infrastructure tests
+dotnet test --filter "Category=stress"             # High-throughput tests  
+dotnet test --filter "Category=reliability_test"   # Fault tolerance tests
+dotnet test --filter "Category=backpressure_test"  # Flow control tests
+```
+
+#### 4. View Enterprise Test Reports
+```bash
+# Generate Allure reports (if configured)
+allure serve allure-results
+
+# View test results in Visual Studio Test Explorer
+# Professional test categorization and traceability
+```
+
+## 🧪 BDD Test Categories and Scenarios
+
+### 🧪 IntegrationTest Category
+**Purpose**: Basic infrastructure connectivity and health validation
+
+**Example Scenarios:**
+```gherkin
+Feature: Infrastructure Health Validation
+  As a platform operator
+  I want to validate all infrastructure components are healthy
+  So that integration tests can run reliably
+
+  Scenario: All services start successfully
+    Given the Aspire orchestration is running
+    When I check all service health endpoints
+    Then all services should report healthy status
+    And all monitoring dashboards should be accessible
+```
+
+### ⚡ stress Category  
+**Purpose**: High-throughput and scalability testing (Based on LearningCourse Day 7 patterns)
+
+**Example Scenarios:**
+```gherkin
+Feature: Enterprise Scale Stress Testing
+  As a platform engineer
+  I want to validate system performance under high load
+  So that I can ensure production readiness
+
+  Scenario: Process 1 Million Messages with Exactly-Once Semantics
+    Given a 3-broker Kafka cluster is running
+    And Flink cluster has 24 task slots available
+    When I produce 1,000,000 messages across 100 partitions
+    And I start a Flink streaming job with exactly-once semantics
+    Then all messages should be processed successfully
+    And processing latency should remain under 50ms p99
+    And no messages should be lost or duplicated
+```
+
+### 🔄 reliability_test Category
+**Purpose**: Fault tolerance and recovery validation (Based on LearningCourse Day 11 patterns)
+
+**Example Scenarios:**
+```gherkin
+Feature: Disaster Recovery and Fault Tolerance
+  As a reliability engineer  
+  I want to validate system behavior under failure conditions
+  So that I can ensure business continuity
+
+  Scenario: Kafka broker failure recovery
+    Given a 3-broker Kafka cluster is processing messages
+    When one Kafka broker fails unexpectedly
+    Then the system should continue processing without data loss
+    And recovery should complete within 30 seconds
+    And replication factor should be maintained
+```
+
+### 🌊 backpressure_test Category
+**Purpose**: Flow control and distributed rate limiting (Based on LearningCourse Day 3 patterns)
+
+**Example Scenarios:**
+```gherkin
+Feature: Production Backpressure Handling
+  As a streaming engineer
+  I want to validate backpressure handling under load
+  So that the system remains stable under varying throughput
+
+  Scenario: Graceful backpressure with Redis rate limiting
+    Given Flink job is processing at maximum capacity
+    When message production rate exceeds processing capacity
+    Then Redis-based rate limiting should activate
+    And system should gracefully handle backpressure
+    And no messages should be dropped
+```
+
+## 🏗️ Architecture Best Practices
+
+### 🎯 LocalTesting Pattern Integration
+**Following proven LocalTesting enterprise patterns:**
+
+#### Sequential Container Startup
+```csharp
+// Prevent DCP reconciliation failures with sequential startup
+var flinkTaskManager1 = builder.AddContainer("flink-taskmanager-1", "flink:2.1.0")
+    .WaitFor(flinkJobManager);
+var flinkTaskManager2 = builder.AddContainer("flink-taskmanager-2", "flink:2.1.0")
+    .WaitFor(flinkTaskManager1); // Sequential prevents race conditions
+var flinkTaskManager3 = builder.AddContainer("flink-taskmanager-3", "flink:2.1.0")
+    .WaitFor(flinkTaskManager2);
+```
+
+#### Extended DCP Timeouts
+```csharp
+// Extended timeouts for complex infrastructure startup
+builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
+{
+    options.StartupTimeout = TimeSpan.FromMinutes(5); // Prevents timeout failures
+    options.ShutdownTimeout = TimeSpan.FromMinutes(2);
+});
+
+Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "300");
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "120");
+```
+
+#### IPv6 Connectivity Enhancement
+```csharp
+// Proper localhost connectivity for Aspire DCP
+AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "false");
+Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USEIPV6", "true");
+```
+
+### 🎓 LearningCourse Pattern Integration
+**Adopting enterprise patterns from LearningCourse:**
+
+#### Real-World Company Patterns
+- **Netflix Patterns**: Real-time recommendation systems, global rate limiting
+- **Uber Patterns**: Financial processing, distributed sagas, fault tolerance
+- **LinkedIn Patterns**: Social graph processing, complex analytics
+- **Google SRE Patterns**: 99.99% uptime validation, comprehensive monitoring
+
+#### Progressive Test Complexity
+- **Foundation Tests**: Basic connectivity and health validation
+- **Enterprise Tests**: Production-scale load and performance validation
+- **Advanced Tests**: Chaos engineering and fault injection
+- **Integration Tests**: End-to-end business workflow validation
+
+## 🔧 Troubleshooting Guide
+
+### Common Issues and Solutions
+
+#### Container Startup Failures
+**Problem**: "Container state became undetermined" or DCP reconciliation failures
+**Solution**: 
+- Ensure Docker Desktop has 8GB+ RAM allocated
+- Verify sequential startup patterns are followed
+- Check extended timeout configuration
+- Use IPv6 connectivity enhancement
+
+#### Port Conflicts
+**Problem**: Services fail to bind to ports
+**Solution**:
+- Stop LocalTesting if running simultaneously
+- Check port availability: `netstat -an | findstr "18001\|18002\|18889"`
+- Use different port offset for parallel testing
+
+#### Test Failures
+**Problem**: BDD scenarios fail due to infrastructure issues
+**Solution**:
+- Verify all monitoring dashboards are accessible
+- Check service health endpoints
+- Review Grafana dashboards for system metrics
+- Examine Loki logs for error patterns
+
+### Performance Optimization
+
+#### Resource Allocation
+```yaml
+# Docker Desktop recommended settings
+Memory: 8GB minimum, 16GB recommended
+CPU: 4 cores minimum, 8 cores recommended
+Disk: 50GB available space
+```
+
+#### Flink Cluster Tuning
+```properties
+# Production-grade Flink configuration
+jobmanager.memory.process.size: 2048m
+taskmanager.memory.process.size: 2048m
+taskmanager.numberOfTaskSlots: 8
+parallelism.default: 24
+taskmanager.network.memory.fraction: 0.2
+```
+
+## 📞 Support and Continuous Improvement
+
+### Documentation References
+- **[LocalTesting Patterns](../LocalTesting/README.md)** - Infrastructure best practices
+- **[LearningCourse Enterprise Patterns](../LearningCourse/README.md)** - Real-world company implementations
+- **[FlinkDotNet API Documentation](../FlinkDotNet/README.md)** - Core library integration
+
+### Continuous Learning Integration
+- **BDD Scenarios**: Continuously updated based on production feedback
+- **Performance Benchmarks**: Regular validation against enterprise SLAs
+- **Chaos Engineering**: Monthly failure injection and recovery validation
+- **Company Pattern Updates**: Quarterly integration of latest industry practices
+
+### Contributing Guidelines
+- **New Test Scenarios**: Follow BDD patterns with clear business value
+- **Infrastructure Changes**: Adopt LocalTesting proven patterns
+- **Performance Requirements**: Maintain enterprise SLA standards
+- **Documentation**: Update with real-world learnings and troubleshooting
+
+---
+
+**🎯 Enterprise Integration Testing Excellence**
+
+This IntegrationTests infrastructure represents **enterprise-grade testing capabilities** following proven patterns from LocalTesting and LearningCourse. The combination of **real infrastructure**, **comprehensive BDD scenarios**, and **production-scale observability** provides confidence for production deployments at scale.
+
+**Ready to validate your enterprise streaming applications?** Start with the infrastructure setup and explore the comprehensive BDD test scenarios!
 
 **Examples:**
 - **Job submission** patterns for integration testing

@@ -23,28 +23,9 @@ updates:
           - "minor"
           - "patch"
 
-  # NuGet packages for Sample solution
+  # NuGet packages for IntegrationTests solution
   - package-ecosystem: "nuget"
-    directory: "/Sample"
-    schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 10
-    groups:
-      major:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-      minor-and-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-
-  # NuGet packages for FlinkDotNet.WebUI solution
-  - package-ecosystem: "nuget"
-    directory: "/FlinkDotNet.WebUI"
+    directory: "/IntegrationTests"
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 10
