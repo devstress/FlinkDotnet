@@ -41,9 +41,9 @@ jobs:
           if [ ! -f FlinkDotNet/*/bin/Release/net9.0/*.dll ]; then
             echo "Build artifacts missing. Building solutions..."
             dotnet restore FlinkDotNet/FlinkDotNet.sln
-            dotnet restore Sample/Sample.sln
+            dotnet restore IntegrationTests/IntegrationTests.sln
             dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
-            dotnet build Sample/Sample.sln --configuration Release
+            dotnet build IntegrationTests/IntegrationTests.sln --configuration Release
           fi
 
       - name: Run tests for FlinkDotNet solution

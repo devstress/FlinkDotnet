@@ -39,12 +39,12 @@ jobs:
       - name: Ensure build assemblies
         shell: bash
         run: |
-          if [ ! -f Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/FlinkDotNet.Aspire.IntegrationTests.dll ]; then
+          if [ ! -f IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/FlinkDotNet.Aspire.IntegrationTests.dll ]; then
             echo "Build artifacts missing. Building solutions..."
             dotnet restore FlinkDotNet/FlinkDotNet.sln
-            dotnet restore Sample/Sample.sln
+            dotnet restore IntegrationTests/IntegrationTests.sln
             dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
-            dotnet build Sample/Sample.sln --configuration Release
+            dotnet build IntegrationTests/IntegrationTests.sln --configuration Release
           fi
 
       - name: Run BDD Backpressure Test Scenarios with ReqNRoll
@@ -71,7 +71,7 @@ jobs:
               Write-Host "  🔄 Testing: Ring-Buffer vs Consumer-Lag vs Million-Partitions approaches" -ForegroundColor Cyan
               
               # Run BDD scenarios from ReqNRoll feature files - display full Given/When/Then step execution
-              dotnet test Sample/FlinkDotNet.Aspire.IntegrationTests/FlinkDotNet.Aspire.IntegrationTests.csproj --configuration Release --logger "console;verbosity=detailed" --logger trx --verbosity minimal --no-build --filter "Category=backpressure_test"
+              dotnet test IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/FlinkDotNet.Aspire.IntegrationTests.csproj --configuration Release --logger "console;verbosity=detailed" --logger trx --verbosity minimal --no-build --filter "Category=backpressure_test"
               
             if ($LASTEXITCODE -ne 0) {
               Write-Host "❌ BDD backpressure test scenarios failed" -ForegroundColor Red
@@ -97,8 +97,8 @@ jobs:
             **/*.trx
             **/allure-results/**
             **/allure-report/**
-            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
-            Sample/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
+            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
+            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
 
       - name: Generate Backpressure Test Summary Report
         if: always()
