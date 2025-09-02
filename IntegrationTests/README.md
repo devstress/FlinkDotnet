@@ -134,7 +134,9 @@ Following **LearningCourse enterprise requirements**:
 # Verify .NET 9.0 installation
 dotnet --version  # Must return 9.0.x
 
-# Install Aspire workload
+# Install Aspire workload (Platform-specific requirement)
+# Windows/macOS: Usually included with .NET SDK (.NET 8+), verify with: dotnet workload list
+# Linux: Manual installation required
 dotnet workload install aspire
 dotnet workload list  # Must show aspire installed
 
@@ -431,6 +433,8 @@ Modern Aspire orchestration with enterprise observability stack:
 - .NET 9.0 SDK (required for all projects)
 - Docker Desktop with sufficient resources (8GB+ RAM recommended)
 - Aspire workload installed (`dotnet workload install aspire`)
+  - **Note**: On Windows/macOS, Aspire is typically included with .NET SDK (.NET 8+), but verify installation
+  - **Note**: On Linux, Aspire workload must be manually installed as it's not bundled with base SDK packages
 
 ### Quick Start for Integration Testing
 

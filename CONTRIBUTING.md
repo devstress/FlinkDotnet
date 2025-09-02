@@ -48,13 +48,24 @@ dotnet --version  # Should return 9.0.x
 
 ### 2. Install Required Workloads
 
+**.NET Aspire Workload Installation (Platform-Specific)**
+
+**Important**: Aspire tooling availability varies by platform:
+- **Windows/macOS**: Aspire is included with .NET SDK (.NET 8+) but verification is recommended
+- **Linux**: Aspire tooling is NOT bundled and must be manually installed
+
 ```bash
-# Install Aspire workload for local orchestration
+# First, verify current workload status
+dotnet workload list  # Check if aspire is already installed
+
+# Install Aspire workload if needed (required on Linux, may be needed on Windows/macOS)
 dotnet workload install aspire
 
-# Verify Aspire installation
+# Verify Aspire installation (all platforms)
 dotnet workload list  # Should show aspire as installed
 ```
+
+**Why the difference?** Microsoft bundles Aspire tooling with the standard .NET SDK packages on Windows and macOS, but Linux package managers (apt, yum, etc.) typically distribute base SDK packages without optional workloads.
 
 ### 3. Clone and Setup Repository
 

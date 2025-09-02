@@ -122,7 +122,9 @@ dotnet clean && dotnet build
 # Verify installation
 dotnet --list-sdks | grep "9.0"
 
-# Install Aspire workload (if needed)
+# Install Aspire workload (platform-specific)
+# Windows/macOS: Usually included with .NET SDK (.NET 8+), verify: dotnet workload list
+# Linux: Manual installation required
 dotnet workload install aspire
 
 # Update PATH (Linux/macOS)

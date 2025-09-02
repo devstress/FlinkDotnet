@@ -5,6 +5,21 @@ FlinkDotnet enables .NET developers to build and submit streaming jobs to Apache
 ## Prerequisites
 
 - **.NET 9.0 SDK** - Download from [here](https://dotnet.microsoft.com/download)
+- **.NET Aspire Workload** - Installation requirements vary by platform:
+  
+  **Windows/macOS**: Aspire tooling is included with .NET SDK (.NET 8+), but verify installation:
+  ```bash
+  dotnet workload list  # Should show aspire installed
+  # If not installed:
+  dotnet workload install aspire
+  ```
+  
+  **Linux**: Aspire tooling is NOT bundled with .NET SDK and must be installed manually:
+  ```bash
+  dotnet workload install aspire  # Required on Linux
+  dotnet workload list  # Verify aspire is now installed
+  ```
+
 - **Docker** - For running Apache Flink infrastructure
 - **Apache Flink Cluster** - Kubernetes deployment or local installation
 

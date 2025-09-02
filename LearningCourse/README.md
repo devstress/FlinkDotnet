@@ -22,7 +22,7 @@ git clone https://github.com/devstress/FlinkDotnet.git
 **✅ The automated setup installs:**
 - ✅ .NET 9.0 SDK
 - ✅ Docker Desktop 
-- ✅ Aspire workload
+- ✅ Aspire workload (auto-installed on Windows/macOS, manually installed on Linux)
 - ✅ All dependencies
 
 ### 🔧 Manual Setup (Alternative)
@@ -43,8 +43,13 @@ docker --version  # Should show version without errors
 # Clone
 git clone https://github.com/devstress/FlinkDotnet.git
 
-# Install Aspire workload
+# Install Aspire workload (Platform-specific requirement)
+# Windows/macOS: Usually included with .NET SDK (.NET 8+), but verify:
+# Linux: Manual installation required
 dotnet workload install aspire
+
+# Verify installation on all platforms:
+dotnet workload list  # Should show aspire installed
 ```
 
 #### ✅ Step 3: Start Infrastructure

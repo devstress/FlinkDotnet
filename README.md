@@ -975,7 +975,13 @@ The project includes comprehensive stress tests that validate:
 
 ## Local Development with Aspire
 
-FlinkDotNet integrates with .NET Aspire for local development with Apache Flink 2.1.0 features:
+FlinkDotNet integrates with .NET Aspire for local development with Apache Flink 2.1.0 features.
+
+**Platform-Specific Setup**: Before using Aspire locally, ensure the workload is installed:
+- **Windows/macOS**: Aspire is typically included with .NET SDK (.NET 8+)
+- **Linux**: Manual installation required: `dotnet workload install aspire`
+
+Verify installation: `dotnet workload list` (should show aspire)
 
 ```csharp
 // LocalTesting/Program.cs
