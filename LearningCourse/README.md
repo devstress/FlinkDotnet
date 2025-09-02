@@ -44,7 +44,7 @@ docker --version  # Should show version without errors
 git clone https://github.com/devstress/FlinkDotnet.git
 
 # Install Aspire workload (Platform-specific requirement)
-# Windows/macOS: Usually included with .NET SDK (.NET 8+), but verify:
+# Windows/macOS: included with .NET SDK (.NET 8+)
 # Linux: Manual installation required
 dotnet workload install aspire
 
