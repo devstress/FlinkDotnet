@@ -1,25 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/FlinkDotNet"
-    schedule:
-      interval: "yearly"
-    open-pull-requests-limit: 0
-    groups:
-      major:
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-      minor-and-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "nuget"
-    directory: "/IntegrationTests"
+    directory: "/"
     schedule:
       interval: "yearly"
     open-pull-requests-limit: 0
