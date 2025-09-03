@@ -376,6 +376,269 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
             await this.ScenarioCleanupAsync();
         }
         
+        [Xunit.SkippableFactAttribute(DisplayName="Track Message State Through Complete Pipeline")]
+        [Xunit.TraitAttribute("FeatureTitle", "Observability Messages Per Second Metrics")]
+        [Xunit.TraitAttribute("Description", "Track Message State Through Complete Pipeline")]
+        [Xunit.TraitAttribute("Category", "observability")]
+        [Xunit.TraitAttribute("Category", "message-state")]
+        [Xunit.TraitAttribute("Category", "tracking")]
+        [Xunit.TraitAttribute("Category", "flow")]
+        public async global::System.Threading.Tasks.Task TrackMessageStateThroughCompletePipeline()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "observability",
+                    "message-state",
+                    "tracking",
+                    "flow"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Track Message State Through Complete Pipeline", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 53
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 54
+    await testRunner.GivenAsync("LocalTesting infrastructure is running with observability enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 55
+    await testRunner.WhenAsync("I produce 100 messages to Kafka topic \"state-tracking-test\" with message state tr" +
+                        "acking enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 56
+    await testRunner.AndAsync("I consume messages from Kafka topic \"state-tracking-test\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 57
+    await testRunner.AndAsync("I start a Flink job to process the consumed messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 58
+    await testRunner.AndAsync("I execute Temporal workflows for the processed messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 59
+    await testRunner.ThenAsync("I should be able to query message states for all produced messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 60
+    await testRunner.AndAsync("message states should progress from \"Produced\" to \"Consumed\" to \"FlinkProcessing\"" +
+                        " to \"Delivered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 61
+    await testRunner.AndAsync("message state summary should show correct counts for each state", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 62
+    await testRunner.AndAsync("message processing times should be recorded accurately", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Query Message States with Advanced Filtering")]
+        [Xunit.TraitAttribute("FeatureTitle", "Observability Messages Per Second Metrics")]
+        [Xunit.TraitAttribute("Description", "Query Message States with Advanced Filtering")]
+        [Xunit.TraitAttribute("Category", "observability")]
+        [Xunit.TraitAttribute("Category", "message-state")]
+        [Xunit.TraitAttribute("Category", "query")]
+        [Xunit.TraitAttribute("Category", "filtering")]
+        public async global::System.Threading.Tasks.Task QueryMessageStatesWithAdvancedFiltering()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "observability",
+                    "message-state",
+                    "query",
+                    "filtering"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Query Message States with Advanced Filtering", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 65
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 66
+    await testRunner.GivenAsync("LocalTesting infrastructure is running with observability enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 67
+    await testRunner.AndAsync("I have produced 50 messages with tracking to topic \"filter-test-topic\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 68
+    await testRunner.WhenAsync("I query message states filtered by topic \"filter-test-topic\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 69
+    await testRunner.ThenAsync("I should receive only messages for that topic", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 70
+    await testRunner.WhenAsync("I query message states filtered by state \"Produced\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 71
+    await testRunner.ThenAsync("I should receive only messages in \"Produced\" state", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 72
+    await testRunner.WhenAsync("I query message states with creation time filter", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 73
+    await testRunner.ThenAsync("I should receive only messages within the specified time range", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Validate Message Delivery Status Tracking")]
+        [Xunit.TraitAttribute("FeatureTitle", "Observability Messages Per Second Metrics")]
+        [Xunit.TraitAttribute("Description", "Validate Message Delivery Status Tracking")]
+        [Xunit.TraitAttribute("Category", "observability")]
+        [Xunit.TraitAttribute("Category", "message-state")]
+        [Xunit.TraitAttribute("Category", "delivery")]
+        [Xunit.TraitAttribute("Category", "completion")]
+        public async global::System.Threading.Tasks.Task ValidateMessageDeliveryStatusTracking()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "observability",
+                    "message-state",
+                    "delivery",
+                    "completion"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Validate Message Delivery Status Tracking", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 76
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 77
+    await testRunner.GivenAsync("LocalTesting infrastructure is running with observability enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 78
+    await testRunner.WhenAsync("I produce 20 messages to Kafka topic \"delivery-test\" with tracking enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 79
+    await testRunner.AndAsync("all messages complete the end-to-end processing pipeline", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 80
+    await testRunner.ThenAsync("all tracked messages should have final state \"Delivered\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 81
+    await testRunner.AndAsync("message state summary should show 20 delivered messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 82
+    await testRunner.AndAsync("average processing time should be calculated correctly", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 83
+    await testRunner.AndAsync("no messages should be in failed state", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Track Message Failures and Error States")]
+        [Xunit.TraitAttribute("FeatureTitle", "Observability Messages Per Second Metrics")]
+        [Xunit.TraitAttribute("Description", "Track Message Failures and Error States")]
+        [Xunit.TraitAttribute("Category", "observability")]
+        [Xunit.TraitAttribute("Category", "message-state")]
+        [Xunit.TraitAttribute("Category", "failure")]
+        [Xunit.TraitAttribute("Category", "error-handling")]
+        public async global::System.Threading.Tasks.Task TrackMessageFailuresAndErrorStates()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "observability",
+                    "message-state",
+                    "failure",
+                    "error-handling"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Track Message Failures and Error States", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 86
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 87
+    await testRunner.GivenAsync("LocalTesting infrastructure is running with observability enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 88
+    await testRunner.WhenAsync("I produce 30 messages to Kafka topic \"failure-test\" with tracking enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 89
+    await testRunner.AndAsync("I simulate processing failures for 30% of the messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 90
+    await testRunner.ThenAsync("failed messages should have state \"Failed\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 91
+    await testRunner.AndAsync("failed messages should contain error details", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 92
+    await testRunner.AndAsync("message state summary should show correct counts of failed vs delivered messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 93
+    await testRunner.AndAsync("I should be able to query only failed messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [Xunit.SkippableFactAttribute(DisplayName="Message State Tracking Cleanup and Maintenance")]
+        [Xunit.TraitAttribute("FeatureTitle", "Observability Messages Per Second Metrics")]
+        [Xunit.TraitAttribute("Description", "Message State Tracking Cleanup and Maintenance")]
+        [Xunit.TraitAttribute("Category", "observability")]
+        [Xunit.TraitAttribute("Category", "message-state")]
+        [Xunit.TraitAttribute("Category", "cleanup")]
+        [Xunit.TraitAttribute("Category", "maintenance")]
+        public async global::System.Threading.Tasks.Task MessageStateTrackingCleanupAndMaintenance()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "observability",
+                    "message-state",
+                    "cleanup",
+                    "maintenance"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Message State Tracking Cleanup and Maintenance", null, tagsOfScenario, argumentsOfScenario, featureTags);
+#line 96
+  this.ScenarioInitialize(scenarioInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                testRunner.SkipScenario();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 97
+    await testRunner.GivenAsync("LocalTesting infrastructure is running with observability enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 98
+    await testRunner.AndAsync("I have tracked messages that are older than 1 hour", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 99
+    await testRunner.WhenAsync("I trigger cleanup of expired message tracking data", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 100
+    await testRunner.ThenAsync("expired messages should be removed from tracking", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 101
+    await testRunner.AndAsync("cleanup count should reflect the number of removed messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 102
+    await testRunner.AndAsync("active message tracking should remain unaffected", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Reqnroll", "2.0.0.0")]
         [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
         public class FixtureData : object, Xunit.IAsyncLifetime

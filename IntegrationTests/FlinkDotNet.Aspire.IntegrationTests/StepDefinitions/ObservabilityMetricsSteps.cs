@@ -308,8 +308,10 @@ public class ObservabilityMetricsSteps
         Console.WriteLine($"📊 Retrieved observability metrics: {content.Length} characters");
     }
 
-    private object? GetNestedProperty(Dictionary<string, object> dict, string path)
+    private object? GetNestedProperty(Dictionary<string, object>? dict, string path)
     {
+        if (dict == null) return null;
+        
         var parts = path.Split('.');
         object? current = dict;
         
@@ -622,7 +624,7 @@ public class ObservabilityMetricsSteps
     }
 
     [Then(@"I should receive only messages for that topic")]
-    public async Task ThenIShouldReceiveOnlyMessagesForThatTopic()
+    public Task ThenIShouldReceiveOnlyMessagesForThatTopic()
     {
         var queryResponse = _scenarioContext["query_response"] as string;
         Assert.NotNull(queryResponse);
@@ -644,10 +646,12 @@ public class ObservabilityMetricsSteps
         {
             Console.WriteLine("✅ Topic filter validation completed (no messages in array format)");
         }
+        
+        return Task.CompletedTask;
     }
 
     [Then(@"I should receive only messages in ""(.*)"" state")]
-    public async Task ThenIShouldReceiveOnlyMessagesInState(string expectedState)
+    public Task ThenIShouldReceiveOnlyMessagesInState(string expectedState)
     {
         var queryResponse = _scenarioContext["query_response"] as string;
         Assert.NotNull(queryResponse);
@@ -663,10 +667,12 @@ public class ObservabilityMetricsSteps
         var countValue = count is JsonElement element ? element.GetInt32() : 0;
         
         Console.WriteLine($"✅ State filter for '{expectedState}' returned {countValue} messages");
+        
+        return Task.CompletedTask;
     }
 
     [Then(@"I should receive only messages within the specified time range")]
-    public async Task ThenIShouldReceiveOnlyMessagesWithinTheSpecifiedTimeRange()
+    public Task ThenIShouldReceiveOnlyMessagesWithinTheSpecifiedTimeRange()
     {
         var queryResponse = _scenarioContext["query_response"] as string;
         Assert.NotNull(queryResponse);
@@ -680,6 +686,8 @@ public class ObservabilityMetricsSteps
         
         var messages = GetNestedProperty(response, "Messages") as JsonElement?;
         Console.WriteLine("✅ Time range filter validation completed");
+        
+        return Task.CompletedTask;
     }
 
     [When(@"all messages complete the end-to-end processing pipeline")]
@@ -926,7 +934,7 @@ public class ObservabilityMetricsSteps
     }
 
     [Then(@"expired messages should be removed from tracking")]
-    public async Task ThenExpiredMessagesShouldBeRemovedFromTracking()
+    public Task ThenExpiredMessagesShouldBeRemovedFromTracking()
     {
         Console.WriteLine("🔍 Validating expired messages were removed");
         
@@ -942,10 +950,12 @@ public class ObservabilityMetricsSteps
         var count = cleanupCount is JsonElement element ? element.GetInt32() : 0;
         
         Console.WriteLine($"✅ Cleanup removed {count} expired messages");
+        
+        return Task.CompletedTask;
     }
 
     [Then(@"cleanup count should reflect the number of removed messages")]
-    public async Task ThenCleanupCountShouldReflectTheNumberOfRemovedMessages()
+    public Task ThenCleanupCountShouldReflectTheNumberOfRemovedMessages()
     {
         Console.WriteLine("📊 Validating cleanup count accuracy");
         
@@ -962,6 +972,8 @@ public class ObservabilityMetricsSteps
         
         Assert.True(count >= 0, "Cleanup count should be non-negative");
         Console.WriteLine($"✅ Cleanup count validated: {count} messages removed");
+        
+        return Task.CompletedTask;
     }
 
     [Then(@"active message tracking should remain unaffected")]
