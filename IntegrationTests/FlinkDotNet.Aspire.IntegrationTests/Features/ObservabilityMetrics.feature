@@ -40,7 +40,7 @@ Feature: Observability Messages Per Second Metrics
   @observability @metrics @comprehensive @performance
   Scenario: Comprehensive Messages Per Second Metrics Validation
     Given LocalTesting infrastructure is running with observability enabled
-    When I produce 2000 messages to Kafka topic "comprehensive-test-input"
+    When I produce 1000000 messages to Kafka topic "comprehensive-test-input"
     And I start a Flink job to process messages
     And I execute Temporal workflows
     Then Kafka producer messages per second metrics should be greater than 0

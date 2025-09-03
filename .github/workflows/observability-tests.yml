@@ -51,7 +51,7 @@ jobs:
           ALLURE_RESULTS_DIRECTORY: "allure-results"
         run: |
           Write-Host "🎭 Running BDD Observability Metrics Test Scenarios with ReqNRoll..." -ForegroundColor Green
-          Write-Host "📋 Testing messages-per-second metrics across Kafka, Flink, Temporal, and end-to-end flow" -ForegroundColor Green
+          Write-Host "📋 Testing messages-per-second metrics across Kafka, Flink, Temporal, and end-to-end flow with 1 million messages" -ForegroundColor Green
           
           # Set environment variables for observability testing
           $env:INTEGRATION_TEST_MODE = "OBSERVABILITY"
