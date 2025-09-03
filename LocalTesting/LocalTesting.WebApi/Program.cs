@@ -98,6 +98,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 
 // Add custom services
 builder.Services.AddSingleton<ObservabilityMetricsService>();
+builder.Services.AddSingleton<IMessageStateService, MessageStateService>();
 builder.Services.AddSingleton<AspireHealthCheckService>();
 builder.Services.AddSingleton<ComplexLogicStressTestService>();
 builder.Services.AddSingleton<SecurityTokenManagerService>();

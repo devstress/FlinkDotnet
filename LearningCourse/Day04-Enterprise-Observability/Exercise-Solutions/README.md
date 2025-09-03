@@ -1143,6 +1143,242 @@ public class ObservabilityController : ControllerBase
 }
 ```
 
+#### **10. Message Event State Tracking Implementation**
+
+**Enhanced Observability: Individual Message Lifecycle Monitoring**
+
+The FlinkDotNet observability stack includes comprehensive message state tracking that allows you to monitor individual messages as they flow through the entire processing pipeline.
+
+```csharp
+// Message State Enumeration
+public enum MessageState
+{
+    Produced,           // Message produced to Kafka
+    Consumed,           // Message consumed from Kafka
+    FlinkProcessing,    // Message being processed by Flink
+    FlinkProcessed,     // Message processed by Flink
+    TemporalReceived,   // Message received by Temporal
+    TemporalProcessing, // Message being processed by Temporal
+    TemporalCompleted,  // Message completed by Temporal
+    Delivered,          // End-to-end processing complete
+    Failed,             // Processing failed
+    Expired             // Tracking expired (cleanup)
+}
+
+// Message Tracking Information
+public class MessageTrackingInfo
+{
+    public string MessageId { get; set; }
+    public MessageState CurrentState { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
+    public TimeSpan TotalProcessingTime => LastUpdatedAt - CreatedAt;
+    public string? Topic { get; set; }
+    public string? Partition { get; set; }
+    public string? FlinkJobId { get; set; }
+    public string? TemporalWorkflowType { get; set; }
+    public string? ErrorMessage { get; set; }
+    public List<StateTransition> StateHistory { get; set; } = new();
+    public Dictionary<string, object?> Metadata { get; set; } = new();
+}
+```
+
+**Message State Service Implementation:**
+
+```csharp
+public interface IMessageStateService
+{
+    Task<MessageTrackingInfo> StartTrackingAsync(string messageId, MessageState initialState, Dictionary<string, object?>? metadata = null);
+    Task<MessageTrackingInfo?> UpdateStateAsync(string messageId, MessageState newState, string? component = null, string? details = null);
+    Task<MessageTrackingInfo?> GetMessageStateAsync(string messageId, bool includeHistory = false);
+    Task<MessageStateQueryResponse> QueryMessageStatesAsync(MessageStateQueryRequest query);
+    Task<MessageStateSummary> GetSummaryAsync();
+    Task<MessageTrackingInfo?> MarkAsFailedAsync(string messageId, string errorMessage, string? component = null);
+    Task<MessageTrackingInfo?> MarkAsDeliveredAsync(string messageId, string? component = null);
+    string GenerateMessageId(string? prefix = null);
+}
+```
+
+**Message State API Endpoints:**
+
+```csharp
+[ApiController]
+[Route("api/observability")]
+public class ObservabilityController : ControllerBase
+{
+    [HttpGet("messages/state")]
+    public async Task<IActionResult> GetMessageStateSummary()
+    {
+        var summary = await _messageStateService.GetSummaryAsync();
+        
+        return Ok(new {
+            Status = "Success",
+            Summary = summary,
+            StateDistribution = summary.MessagesByState.ToDictionary(
+                kvp => kvp.Key.ToString(), 
+                kvp => new { 
+                    Count = kvp.Value, 
+                    Percentage = summary.TotalMessages > 0 ? Math.Round((double)kvp.Value / summary.TotalMessages * 100, 2) : 0 
+                }
+            )
+        });
+    }
+
+    [HttpGet("messages/state/{messageId}")]
+    public async Task<IActionResult> GetMessageState(string messageId, [FromQuery] bool includeHistory = false)
+    {
+        var messageInfo = await _messageStateService.GetMessageStateAsync(messageId, includeHistory);
+        
+        if (messageInfo == null)
+        {
+            return NotFound(new { 
+                Status = "NotFound", 
+                Message = $"Message {messageId} is not being tracked"
+            });
+        }
+
+        return Ok(new {
+            Status = "Success",
+            MessageInfo = messageInfo,
+            ProcessingMetrics = new {
+                ProcessingTime = messageInfo.TotalProcessingTime,
+                IsCompleted = messageInfo.CurrentState is MessageState.Delivered or MessageState.Failed,
+                StateTransitions = includeHistory ? messageInfo.StateHistory.Count : 0
+            }
+        });
+    }
+
+    [HttpPost("messages/state/query")]
+    public async Task<IActionResult> QueryMessageStates([FromBody] MessageStateQueryRequest query)
+    {
+        var response = await _messageStateService.QueryMessageStatesAsync(query);
+        return Ok(response);
+    }
+
+    [HttpGet("messages/state/by-state/{state}")]
+    public async Task<IActionResult> GetMessagesByState(string state, [FromQuery] bool includeHistory = false)
+    {
+        if (!Enum.TryParse<MessageState>(state, true, out var messageState))
+        {
+            return BadRequest(new { 
+                Status = "InvalidState", 
+                Message = $"Invalid state '{state}'"
+            });
+        }
+
+        var messages = await _messageStateService.GetMessagesByStateAsync(messageState, includeHistory);
+        
+        return Ok(new {
+            Status = "Success",
+            State = messageState.ToString(),
+            Messages = messages,
+            Count = messages.Count
+        });
+    }
+}
+```
+
+**Message State Tracking Usage Examples:**
+
+```bash
+# Get message state summary
+curl http://localhost:18000/api/observability/messages/state
+
+# Response:
+{
+  "status": "Success",
+  "summary": {
+    "totalMessages": 150,
+    "messagesByState": {
+      "Produced": 20,
+      "Consumed": 15,
+      "FlinkProcessing": 10,
+      "FlinkProcessed": 25,
+      "TemporalReceived": 20,
+      "TemporalProcessing": 5,
+      "TemporalCompleted": 30,
+      "Delivered": 45,
+      "Failed": 5
+    },
+    "deliveredMessages": 45,
+    "failedMessages": 5,
+    "messagesInProcessing": 95,
+    "averageProcessingTime": "00:02:30.450"
+  },
+  "stateDistribution": {
+    "Produced": { "count": 20, "percentage": 13.33 },
+    "Consumed": { "count": 15, "percentage": 10.0 },
+    "Delivered": { "count": 45, "percentage": 30.0 },
+    "Failed": { "count": 5, "percentage": 3.33 }
+  }
+}
+
+# Get specific message state with history
+curl http://localhost:18000/api/observability/messages/state/kafka-1738072800123-4567?includeHistory=true
+
+# Query messages by state
+curl http://localhost:18000/api/observability/messages/state/by-state/FlinkProcessing
+
+# Query messages with advanced filtering
+curl -X POST http://localhost:18000/api/observability/messages/state/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "states": ["Failed"],
+    "topic": "order-processing",
+    "createdAfter": "2025-01-27T10:00:00Z",
+    "includeHistory": true,
+    "limit": 50
+  }'
+
+# Cleanup expired messages
+curl -X POST http://localhost:18000/api/observability/messages/cleanup?maxAgeHours=24
+```
+
+**Integration Test Validation:**
+
+```gherkin
+Feature: Message Event State Tracking
+  Scenario: Track Message State Through Complete Pipeline
+    Given LocalTesting infrastructure is running with observability enabled
+    When I produce 100 messages to Kafka topic "state-tracking-test" with message state tracking enabled
+    And I consume messages from Kafka topic "state-tracking-test"
+    And I start a Flink job to process the consumed messages
+    And I execute Temporal workflows for the processed messages
+    Then I should be able to query message states for all produced messages
+    And message states should progress from "Produced" to "Consumed" to "FlinkProcessing" to "Delivered"
+    And message state summary should show correct counts for each state
+    And message processing times should be recorded accurately
+
+  Scenario: Query Message States with Advanced Filtering
+    Given LocalTesting infrastructure is running with observability enabled
+    And I have produced 50 messages with tracking to topic "filter-test-topic"
+    When I query message states filtered by topic "filter-test-topic"
+    Then I should receive only messages for that topic
+    When I query message states filtered by state "Produced"
+    Then I should receive only messages in "Produced" state
+
+  Scenario: Track Message Failures and Error States
+    Given LocalTesting infrastructure is running with observability enabled
+    When I produce 30 messages to Kafka topic "failure-test" with tracking enabled
+    And I simulate processing failures for 30% of the messages
+    Then failed messages should have state "Failed"
+    And failed messages should contain error details
+    And I should be able to query only failed messages
+```
+
+**Benefits of Message State Tracking:**
+
+1. **Individual Message Visibility**: Track each message's journey through the entire pipeline
+2. **Delivery Confirmation**: Know exactly when messages are delivered or if they failed
+3. **Processing Time Analysis**: Measure how long each stage takes for individual messages
+4. **Failure Investigation**: Identify where and why specific messages failed
+5. **Bottleneck Detection**: See which stage messages spend the most time in
+6. **Audit Trail**: Complete history of message state transitions
+7. **Real-time Monitoring**: Query current message states and processing status
+8. **Performance Optimization**: Identify slow processing patterns
+9. **Data Quality**: Ensure message integrity across the pipeline
+10. **Compliance**: Maintain detailed records for regulatory requirements
+
 ## 🚨 Production Monitoring Patterns
 
 ### SRE Golden Signals
