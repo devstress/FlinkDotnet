@@ -1048,10 +1048,13 @@ dotnet --version  # Must show 9.0.x
 
 ### Single Job Development
 
-1. **Install FlinkDotNet NuGet packages**
+1. **Clone and Build FlinkDotNet Repository**
    ```bash
-   dotnet add package FlinkDotNet
-   dotnet add package FlinkDotNet.DataStream
+   # TODO: NuGet packages are not yet published. Use repository for now.
+   # Future: A single FlinkDotNet NuGet package will be available that includes everything.
+   git clone https://github.com/devstress/FlinkDotnet.git
+   cd FlinkDotnet
+   dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
    ```
 
 2. **Set up Apache Flink 2.1.0 cluster**
@@ -1088,12 +1091,14 @@ dotnet --version  # Must show 9.0.x
 
 ### Enterprise-Scale Multi-Cluster Setup
 
-1. **Install additional orchestration packages**
+1. **Use FlinkDotNet Repository (All Components Included)**
    ```bash
-   dotnet add package FlinkDotNet.Orchestration
-   dotnet add package FlinkDotNet.ClusterManager
-   dotnet add package FlinkDotNet.Temporal
-   dotnet add package FlinkDotNet.Resilience
+   # TODO: NuGet packages are not yet published. Use repository for now.
+   # Future: A single FlinkDotNet NuGet package will include all orchestration components.
+   # The repository already contains all enterprise components:
+   # - FlinkDotNet.Orchestration, ClusterManager, Temporal, Resilience
+   cd FlinkDotnet
+   dotnet build --configuration Release
    ```
 
 2. **Set up Temporal Server**

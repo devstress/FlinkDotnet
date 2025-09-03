@@ -23,12 +23,20 @@ FlinkDotnet enables .NET developers to build and submit streaming jobs to Apache
 
 ## Quick Start
 
-### 1. Create a .NET Project
+### 1. Clone and Build FlinkDotNet Project
 
 ```bash
+# TODO: NuGet packages are not yet published. Use repository for now.
+# Future: A single FlinkDotNet NuGet package will be available.
+git clone https://github.com/devstress/FlinkDotnet.git
+cd FlinkDotnet
+
+# Create your application project
 dotnet new console -n MyFlinkJobApp
 cd MyFlinkJobApp
-dotnet add package Flink.JobBuilder
+
+# Reference the FlinkDotNet projects locally
+dotnet add reference ../FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj
 ```
 
 ### 2. Write a Streaming Job
