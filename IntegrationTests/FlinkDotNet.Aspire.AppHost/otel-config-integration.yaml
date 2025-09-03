@@ -1,0 +1,42 @@
+# Minimal OpenTelemetry Collector Configuration for Integration Testing
+# Optimized for CI/CD environments with reduced resource usage
+
+receivers:
+  # OTLP receiver for applications
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Memory limiter for stability in CI/CD
+  memory_limiter:
+    limit_mib: 256
+    check_interval: 1s
+
+  # Batch processor for efficiency
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+exporters:
+  # Prometheus exporter for metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: "integration_tests"
+    
+  # Debug exporter for troubleshooting
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    # Metrics pipeline only (simplified for integration tests)
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, debug]
+
+  extensions: []

@@ -797,6 +797,588 @@ Process:
   3. Pre-filtered logs for the same timeframe and service
 ```
 
+# 🚨 Production Monitoring Patterns
+
+## 📊 Messages-Per-Second Observability Implementation
+
+### **Complete Implementation Guide for Multi-Layer Message Rate Monitoring**
+
+This section provides comprehensive implementation patterns for monitoring messages-per-second across your entire Kafka → Flink → Temporal → End-to-End flow.
+
+#### **1. OpenTelemetry Custom Metrics Setup**
+
+```csharp
+// Program.cs - Configure comprehensive observability
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddMeter("FlinkDotNet.Kafka")      // Kafka layer metrics
+        .AddMeter("FlinkDotNet.Flink")      // Flink layer metrics
+        .AddMeter("FlinkDotNet.Temporal")   // Temporal layer metrics
+        .AddMeter("FlinkDotNet.Flow")       // End-to-end flow metrics
+        .AddOtlpExporter());
+
+// ObservabilityMetricsService.cs - Custom metrics implementation
+public class ObservabilityMetricsService
+{
+    private readonly Meter _kafkaMeter;
+    private readonly Counter<long> _kafkaProducerMessagesTotal;
+    private readonly Counter<long> _kafkaConsumerMessagesTotal;
+    private readonly Histogram<double> _kafkaProducerLatency;
+    
+    public ObservabilityMetricsService()
+    {
+        _kafkaMeter = new Meter("FlinkDotNet.Kafka", "1.0.0");
+        _kafkaProducerMessagesTotal = _kafkaMeter.CreateCounter<long>(
+            "kafka_producer_messages_total",
+            "messages",
+            "Total number of messages produced to Kafka");
+    }
+    
+    public void RecordKafkaProducerMessage(string topic, string partition, long count = 1, long bytes = 0)
+    {
+        var tags = new KeyValuePair<string, object?>[] { 
+            new("topic", topic), 
+            new("partition", partition) 
+        };
+        _kafkaProducerMessagesTotal.Add(count, tags);
+    }
+}
+```
+
+#### **2. Kafka Layer Messages-Per-Second Metrics**
+
+```yaml
+# Kafka Producer Metrics
+kafka_producer_messages_total{topic, partition}
+kafka_producer_bytes_total{topic, partition}
+kafka_producer_latency_seconds{topic}
+
+# Kafka Consumer Metrics  
+kafka_consumer_messages_total{topic, partition, consumer_group}
+kafka_consumer_lag_messages{topic, partition, consumer_group}
+
+# Implementation in KafkaProducerService
+public async Task ProduceMessagesAsync(string topic, List<Message> messages)
+{
+    var startTime = DateTime.UtcNow;
+    foreach (var message in messages)
+    {
+        var messageBytes = System.Text.Encoding.UTF8.GetByteCount(jsonMessage);
+        var partition = message.PartitionNumber.ToString();
+        
+        // Record metrics for each produced message
+        _metricsService.RecordKafkaProducerMessage(topic, partition, 1, messageBytes);
+        _metricsService.RecordKafkaProducerLatency(topic, latencySeconds);
+        _metricsService.RecordFlowKafkaToFlink(1); // Track flow progression
+    }
+    
+    var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
+    var messagesPerSecond = messages.Count / Math.Max(totalTime, 1.0);
+    _logger.LogInformation("Kafka production: {MessagesPerSecond:F2} msg/sec", messagesPerSecond);
+}
+```
+
+#### **3. Flink Layer Processing Rate Metrics**
+
+```yaml
+# Flink Job Metrics
+flink_job_messages_in_total{job_id, operator}
+flink_job_messages_out_total{job_id, operator}
+flink_job_latency_seconds{job_id}
+flink_job_throughput_messages_per_second{job_id}
+
+# Implementation in FlinkJobManagementService
+public void RecordFlinkJobMetrics(string jobId, string operatorName, long inputCount, long outputCount)
+{
+    _metricsService.RecordFlinkJobMessageIn(jobId, operatorName, inputCount);
+    _metricsService.RecordFlinkJobMessageOut(jobId, operatorName, outputCount);
+    
+    // Calculate and record throughput
+    var throughput = CalculateCurrentThroughput(jobId);
+    _logger.LogInformation("Flink job {JobId}: {Throughput:F2} msg/sec", jobId, throughput);
+}
+```
+
+#### **4. Temporal Layer Execution Rate Metrics**
+
+```yaml
+# Temporal Workflow Metrics
+temporal_workflow_executions_total{workflow_type}
+temporal_activity_executions_total{activity_type}
+temporal_workflow_duration_seconds{workflow_type}
+temporal_workflow_completions_total{workflow_type}
+
+# Implementation in Temporal Services
+public async Task<WorkflowResult> ExecuteWorkflowAsync(string workflowType)
+{
+    var startTime = DateTime.UtcNow;
+    _metricsService.RecordTemporalWorkflowExecution(workflowType);
+    
+    try 
+    {
+        var result = await ProcessWorkflowAsync();
+        var duration = (DateTime.UtcNow - startTime).TotalSeconds;
+        
+        _metricsService.RecordTemporalWorkflowDuration(workflowType, duration);
+        _metricsService.RecordTemporalWorkflowCompletion(workflowType);
+        
+        return result;
+    }
+    catch (Exception ex)
+    {
+        // Record failure metrics
+        _metricsService.RecordTemporalWorkflowFailure(workflowType);
+        throw;
+    }
+}
+```
+
+#### **5. End-to-End Flow Rate Metrics**
+
+```yaml
+# Complete Flow Metrics
+flow_messages_kafka_to_flink_total
+flow_messages_flink_to_temporal_total  
+flow_messages_end_to_end_total
+flow_latency_end_to_end_seconds_p95
+
+# Implementation for End-to-End Tracking
+public class FlowTracker
+{
+    private readonly Dictionary<string, DateTime> _messageTimestamps = new();
+    
+    public void TrackMessageStart(string messageId)
+    {
+        _messageTimestamps[messageId] = DateTime.UtcNow;
+        _metricsService.RecordFlowKafkaToFlink(1);
+    }
+    
+    public void TrackMessageComplete(string messageId)
+    {
+        if (_messageTimestamps.TryGetValue(messageId, out var startTime))
+        {
+            var endToEndLatency = (DateTime.UtcNow - startTime).TotalSeconds;
+            _metricsService.RecordFlowEndToEndLatency(endToEndLatency);
+            _metricsService.RecordFlowEndToEnd(1);
+            
+            _messageTimestamps.Remove(messageId);
+        }
+    }
+}
+```
+
+#### **6. Rate Calculation Implementation**
+
+```csharp
+// Rate tracking for messages-per-second calculations
+internal class RateTracker
+{
+    private readonly Queue<(DateTime timestamp, long messageCount)> _measurements = new();
+    private readonly TimeSpan _windowSize = TimeSpan.FromMinutes(1); // 1-minute rolling window
+    
+    public void AddMessages(long messageCount)
+    {
+        var now = DateTime.UtcNow;
+        _measurements.Enqueue((now, messageCount));
+        
+        // Remove old measurements outside the window
+        while (_measurements.Count > 0 && now - _measurements.Peek().timestamp > _windowSize)
+        {
+            _measurements.Dequeue();
+        }
+    }
+    
+    public double GetRate()
+    {
+        if (_measurements.Count == 0) return 0.0;
+        
+        var now = DateTime.UtcNow;
+        var totalMessages = 0L;
+        var oldestTimestamp = now;
+        
+        foreach (var (timestamp, messageCount) in _measurements)
+        {
+            if (now - timestamp <= _windowSize)
+            {
+                totalMessages += messageCount;
+                if (timestamp < oldestTimestamp)
+                    oldestTimestamp = timestamp;
+            }
+        }
+        
+        var windowDuration = (now - oldestTimestamp).TotalSeconds;
+        return windowDuration > 0 ? totalMessages / windowDuration : 0.0;
+    }
+}
+```
+
+#### **7. Grafana Dashboard Configuration**
+
+```json
+{
+  "dashboard": {
+    "title": "Messages Per Second - Multi-Layer Flow",
+    "panels": [
+      {
+        "title": "Kafka Producer Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(kafka_producer_messages_total[1m])",
+            "legendFormat": "{{topic}}-{{partition}}"
+          }
+        ]
+      },
+      {
+        "title": "Flink Processing Rate", 
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(flink_job_messages_in_total[1m])",
+            "legendFormat": "Input: {{job_id}}-{{operator}}"
+          },
+          {
+            "expr": "rate(flink_job_messages_out_total[1m])",
+            "legendFormat": "Output: {{job_id}}-{{operator}}"
+          }
+        ]
+      },
+      {
+        "title": "Temporal Execution Rate",
+        "type": "stat", 
+        "targets": [
+          {
+            "expr": "rate(temporal_workflow_executions_total[1m])",
+            "legendFormat": "{{workflow_type}}"
+          }
+        ]
+      },
+      {
+        "title": "End-to-End Flow Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(flow_messages_kafka_to_flink_total[1m])",
+            "legendFormat": "Kafka → Flink"
+          },
+          {
+            "expr": "rate(flow_messages_flink_to_temporal_total[1m])",
+            "legendFormat": "Flink → Temporal"
+          },
+          {
+            "expr": "rate(flow_messages_end_to_end_total[1m])",
+            "legendFormat": "End-to-End"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### **8. Integration Test Validation**
+
+```csharp
+[Fact]
+public async Task ValidateMessagesPerSecondMetrics()
+{
+    // Arrange
+    var messageCount = 1000;
+    var testId = "metrics-validation-test";
+    
+    // Act - Produce messages and trigger processing
+    await _kafkaService.ProduceMessagesAsync("test-topic", messages);
+    await _flinkService.StartJobAsync(jobConfig);
+    await _temporalService.ExecuteWorkflowAsync("TestWorkflow");
+    
+    // Assert - Validate metrics are recorded
+    var metrics = await _observabilityService.GetAllMessagesPerSecondRates();
+    
+    Assert.True(metrics.Any(m => m.Key.StartsWith("kafka_producer_")));
+    Assert.True(metrics.Any(m => m.Key.StartsWith("flink_") && m.Value > 0));
+    Assert.True(metrics.Any(m => m.Key.StartsWith("temporal_") && m.Value > 0));
+    Assert.True(metrics.Any(m => m.Key.StartsWith("flow_") && m.Value > 0));
+}
+```
+
+#### **9. Observability API Endpoints**
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class ObservabilityController : ControllerBase
+{
+    [HttpGet("metrics/messages-per-second")]
+    public IActionResult GetMessagesPerSecondMetrics()
+    {
+        var allRates = _metricsService.GetAllMessagesPerSecondRates();
+        
+        return Ok(new {
+            KafkaMetrics = allRates.Where(kvp => kvp.Key.StartsWith("kafka_")),
+            FlinkMetrics = allRates.Where(kvp => kvp.Key.StartsWith("flink_")),
+            TemporalMetrics = allRates.Where(kvp => kvp.Key.StartsWith("temporal_")),
+            FlowMetrics = allRates.Where(kvp => kvp.Key.StartsWith("flow_")),
+            Summary = new {
+                TotalMessagesPerSecond = allRates.Values.Sum(),
+                ActiveFlows = allRates.Count(kvp => kvp.Value > 0)
+            }
+        });
+    }
+    
+    [HttpGet("metrics/layer/{layer}")]
+    public IActionResult GetLayerMetrics(string layer)
+    {
+        var layerRates = _metricsService.GetAllMessagesPerSecondRates()
+            .Where(kvp => kvp.Key.StartsWith($"{layer.ToLower()}_"))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            
+        return Ok(new {
+            Layer = layer,
+            Metrics = layerRates,
+            TotalRate = layerRates.Values.Sum()
+        });
+    }
+}
+```
+
+#### **10. Message Event State Tracking Implementation**
+
+**Enhanced Observability: Individual Message Lifecycle Monitoring**
+
+The FlinkDotNet observability stack includes comprehensive message state tracking that allows you to monitor individual messages as they flow through the entire processing pipeline.
+
+```csharp
+// Message State Enumeration
+public enum MessageState
+{
+    Produced,           // Message produced to Kafka
+    Consumed,           // Message consumed from Kafka
+    FlinkProcessing,    // Message being processed by Flink
+    FlinkProcessed,     // Message processed by Flink
+    TemporalReceived,   // Message received by Temporal
+    TemporalProcessing, // Message being processed by Temporal
+    TemporalCompleted,  // Message completed by Temporal
+    Delivered,          // End-to-end processing complete
+    Failed,             // Processing failed
+    Expired             // Tracking expired (cleanup)
+}
+
+// Message Tracking Information
+public class MessageTrackingInfo
+{
+    public string MessageId { get; set; }
+    public MessageState CurrentState { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
+    public TimeSpan TotalProcessingTime => LastUpdatedAt - CreatedAt;
+    public string? Topic { get; set; }
+    public string? Partition { get; set; }
+    public string? FlinkJobId { get; set; }
+    public string? TemporalWorkflowType { get; set; }
+    public string? ErrorMessage { get; set; }
+    public List<StateTransition> StateHistory { get; set; } = new();
+    public Dictionary<string, object?> Metadata { get; set; } = new();
+}
+```
+
+**Message State Service Implementation:**
+
+```csharp
+public interface IMessageStateService
+{
+    Task<MessageTrackingInfo> StartTrackingAsync(string messageId, MessageState initialState, Dictionary<string, object?>? metadata = null);
+    Task<MessageTrackingInfo?> UpdateStateAsync(string messageId, MessageState newState, string? component = null, string? details = null);
+    Task<MessageTrackingInfo?> GetMessageStateAsync(string messageId, bool includeHistory = false);
+    Task<MessageStateQueryResponse> QueryMessageStatesAsync(MessageStateQueryRequest query);
+    Task<MessageStateSummary> GetSummaryAsync();
+    Task<MessageTrackingInfo?> MarkAsFailedAsync(string messageId, string errorMessage, string? component = null);
+    Task<MessageTrackingInfo?> MarkAsDeliveredAsync(string messageId, string? component = null);
+    string GenerateMessageId(string? prefix = null);
+}
+```
+
+**Message State API Endpoints:**
+
+```csharp
+[ApiController]
+[Route("api/observability")]
+public class ObservabilityController : ControllerBase
+{
+    [HttpGet("messages/state")]
+    public async Task<IActionResult> GetMessageStateSummary()
+    {
+        var summary = await _messageStateService.GetSummaryAsync();
+        
+        return Ok(new {
+            Status = "Success",
+            Summary = summary,
+            StateDistribution = summary.MessagesByState.ToDictionary(
+                kvp => kvp.Key.ToString(), 
+                kvp => new { 
+                    Count = kvp.Value, 
+                    Percentage = summary.TotalMessages > 0 ? Math.Round((double)kvp.Value / summary.TotalMessages * 100, 2) : 0 
+                }
+            )
+        });
+    }
+
+    [HttpGet("messages/state/{messageId}")]
+    public async Task<IActionResult> GetMessageState(string messageId, [FromQuery] bool includeHistory = false)
+    {
+        var messageInfo = await _messageStateService.GetMessageStateAsync(messageId, includeHistory);
+        
+        if (messageInfo == null)
+        {
+            return NotFound(new { 
+                Status = "NotFound", 
+                Message = $"Message {messageId} is not being tracked"
+            });
+        }
+
+        return Ok(new {
+            Status = "Success",
+            MessageInfo = messageInfo,
+            ProcessingMetrics = new {
+                ProcessingTime = messageInfo.TotalProcessingTime,
+                IsCompleted = messageInfo.CurrentState is MessageState.Delivered or MessageState.Failed,
+                StateTransitions = includeHistory ? messageInfo.StateHistory.Count : 0
+            }
+        });
+    }
+
+    [HttpPost("messages/state/query")]
+    public async Task<IActionResult> QueryMessageStates([FromBody] MessageStateQueryRequest query)
+    {
+        var response = await _messageStateService.QueryMessageStatesAsync(query);
+        return Ok(response);
+    }
+
+    [HttpGet("messages/state/by-state/{state}")]
+    public async Task<IActionResult> GetMessagesByState(string state, [FromQuery] bool includeHistory = false)
+    {
+        if (!Enum.TryParse<MessageState>(state, true, out var messageState))
+        {
+            return BadRequest(new { 
+                Status = "InvalidState", 
+                Message = $"Invalid state '{state}'"
+            });
+        }
+
+        var messages = await _messageStateService.GetMessagesByStateAsync(messageState, includeHistory);
+        
+        return Ok(new {
+            Status = "Success",
+            State = messageState.ToString(),
+            Messages = messages,
+            Count = messages.Count
+        });
+    }
+}
+```
+
+**Message State Tracking Usage Examples:**
+
+```bash
+# Get message state summary
+curl http://localhost:18000/api/observability/messages/state
+
+# Response:
+{
+  "status": "Success",
+  "summary": {
+    "totalMessages": 150,
+    "messagesByState": {
+      "Produced": 20,
+      "Consumed": 15,
+      "FlinkProcessing": 10,
+      "FlinkProcessed": 25,
+      "TemporalReceived": 20,
+      "TemporalProcessing": 5,
+      "TemporalCompleted": 30,
+      "Delivered": 45,
+      "Failed": 5
+    },
+    "deliveredMessages": 45,
+    "failedMessages": 5,
+    "messagesInProcessing": 95,
+    "averageProcessingTime": "00:02:30.450"
+  },
+  "stateDistribution": {
+    "Produced": { "count": 20, "percentage": 13.33 },
+    "Consumed": { "count": 15, "percentage": 10.0 },
+    "Delivered": { "count": 45, "percentage": 30.0 },
+    "Failed": { "count": 5, "percentage": 3.33 }
+  }
+}
+
+# Get specific message state with history
+curl http://localhost:18000/api/observability/messages/state/kafka-1738072800123-4567?includeHistory=true
+
+# Query messages by state
+curl http://localhost:18000/api/observability/messages/state/by-state/FlinkProcessing
+
+# Query messages with advanced filtering
+curl -X POST http://localhost:18000/api/observability/messages/state/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "states": ["Failed"],
+    "topic": "order-processing",
+    "createdAfter": "2025-01-27T10:00:00Z",
+    "includeHistory": true,
+    "limit": 50
+  }'
+
+# Cleanup expired messages
+curl -X POST http://localhost:18000/api/observability/messages/cleanup?maxAgeHours=24
+```
+
+**Integration Test Validation:**
+
+```gherkin
+Feature: Message Event State Tracking
+  Scenario: Track Message State Through Complete Pipeline
+    Given LocalTesting infrastructure is running with observability enabled
+    When I produce 100 messages to Kafka topic "state-tracking-test" with message state tracking enabled
+    And I consume messages from Kafka topic "state-tracking-test"
+    And I start a Flink job to process the consumed messages
+    And I execute Temporal workflows for the processed messages
+    Then I should be able to query message states for all produced messages
+    And message states should progress from "Produced" to "Consumed" to "FlinkProcessing" to "Delivered"
+    And message state summary should show correct counts for each state
+    And message processing times should be recorded accurately
+
+  Scenario: Query Message States with Advanced Filtering
+    Given LocalTesting infrastructure is running with observability enabled
+    And I have produced 50 messages with tracking to topic "filter-test-topic"
+    When I query message states filtered by topic "filter-test-topic"
+    Then I should receive only messages for that topic
+    When I query message states filtered by state "Produced"
+    Then I should receive only messages in "Produced" state
+
+  Scenario: Track Message Failures and Error States
+    Given LocalTesting infrastructure is running with observability enabled
+    When I produce 30 messages to Kafka topic "failure-test" with tracking enabled
+    And I simulate processing failures for 30% of the messages
+    Then failed messages should have state "Failed"
+    And failed messages should contain error details
+    And I should be able to query only failed messages
+```
+
+**Benefits of Message State Tracking:**
+
+1. **Individual Message Visibility**: Track each message's journey through the entire pipeline
+2. **Delivery Confirmation**: Know exactly when messages are delivered or if they failed
+3. **Processing Time Analysis**: Measure how long each stage takes for individual messages
+4. **Failure Investigation**: Identify where and why specific messages failed
+5. **Bottleneck Detection**: See which stage messages spend the most time in
+6. **Audit Trail**: Complete history of message state transitions
+7. **Real-time Monitoring**: Query current message states and processing status
+8. **Performance Optimization**: Identify slow processing patterns
+9. **Data Quality**: Ensure message integrity across the pipeline
+10. **Compliance**: Maintain detailed records for regulatory requirements
+
 ## 🚨 Production Monitoring Patterns
 
 ### SRE Golden Signals

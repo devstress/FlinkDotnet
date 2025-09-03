@@ -1,17 +1,23 @@
 name: Build Solutions
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/CODEOWNERS'
+      - '.github/copilot-instructions.md'
+      - '.github/dependabot.yml'
   workflow_dispatch:
 
 env:
   configuration: Release
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:

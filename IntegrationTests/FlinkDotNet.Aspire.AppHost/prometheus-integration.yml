@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 10s  # Faster scraping for integration tests
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'otel-collector-integration'
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+  - job_name: 'aspire-dashboard-integration'
+    static_configs:
+      - targets: ['aspire-dashboard:18889']
+
+  - job_name: 'flink-jobmanager-integration'
+    static_configs:
+      - targets: ['flink-jobmanager:8081']
+
+  - job_name: 'kafka-broker-1-integration'
+    static_configs:
+      - targets: ['kafka-broker-1:9092']
+
+  - job_name: 'kafka-broker-2-integration'
+    static_configs:
+      - targets: ['kafka-broker-2:9092']
+
+  - job_name: 'kafka-broker-3-integration'
+    static_configs:
+      - targets: ['kafka-broker-3:9092']
