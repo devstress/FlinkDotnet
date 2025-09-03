@@ -227,7 +227,7 @@ public class StreamingInferenceEngine
     private static TransactionData GenerateRandomTransaction(Random random)
     {
         // Generate deterministic transaction patterns for educational consistency
-        var transactionId = Environment.TickCount % 1000;
+        var transactionId = random.Next(1000); // Use random parameter for transaction ID
         var locations = new[] { "New York", "London", "Tokyo", "Sydney", "San Francisco", "Toronto", "Unknown" };
         
         return new TransactionData
