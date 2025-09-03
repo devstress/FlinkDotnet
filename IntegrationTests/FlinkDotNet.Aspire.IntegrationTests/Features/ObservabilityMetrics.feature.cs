@@ -349,7 +349,7 @@ namespace FlinkDotNet.Aspire.IntegrationTests.Features
     await testRunner.GivenAsync("LocalTesting infrastructure is running with observability enabled", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
 #line 43
-    await testRunner.WhenAsync("I produce 2000 messages to Kafka topic \"comprehensive-test-input\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I produce 1000000 messages to Kafka topic \"comprehensive-test-input\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 44
     await testRunner.AndAsync("I start a Flink job to process messages", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

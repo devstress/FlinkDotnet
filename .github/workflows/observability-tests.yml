@@ -31,21 +31,132 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Install .NET Aspire workload
+        run: |
+          Write-Host "📦 Installing .NET Aspire workload..." -ForegroundColor Green
+          dotnet workload install aspire
+          Write-Host "✅ Aspire workload installed successfully" -ForegroundColor Green
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-solutions
+        continue-on-error: true
 
-      - name: Ensure build assemblies
-        shell: bash
+      - name: Build all solutions
         run: |
-          if [ ! -f IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/FlinkDotNet.Aspire.IntegrationTests.dll ]; then
-            echo "Build artifacts missing. Building solutions..."
-            dotnet restore FlinkDotNet/FlinkDotNet.sln
-            dotnet restore IntegrationTests/IntegrationTests.sln
-            dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
-            dotnet build IntegrationTests/IntegrationTests.sln --configuration Release
-          fi
+          Write-Host "🔨 Building all solutions..." -ForegroundColor Green
+          
+          # Build FlinkDotNet core projects first
+          Write-Host "Building FlinkDotNet core projects..." -ForegroundColor Yellow
+          dotnet restore FlinkDotNet/FlinkDotNet.sln --verbosity minimal
+          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release --no-restore --verbosity minimal
+          
+          # Build IntegrationTests solution
+          Write-Host "Building IntegrationTests solution..." -ForegroundColor Yellow
+          dotnet restore IntegrationTests/IntegrationTests.sln --verbosity minimal
+          dotnet build IntegrationTests/IntegrationTests.sln --configuration Release --no-restore --verbosity minimal
+          
+          # Build LocalTesting solution (needed for observability tests)
+          Write-Host "Building LocalTesting solution..." -ForegroundColor Yellow
+          dotnet restore LocalTesting/LocalTesting.sln --verbosity minimal
+          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore --verbosity minimal
+
+      - name: Start LocalTesting Infrastructure for Observability
+        timeout-minutes: 12
+        run: |
+          Write-Host "🚀 Starting LocalTesting infrastructure for observability tests..." -ForegroundColor Green
+          
+          # Set up environment variables for Aspire
+          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
+          $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
+          $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
+          $env:ASPIRE_DASHBOARD_URL = "http://127.0.0.1:18888"
+          $env:ASPNETCORE_ENVIRONMENT = "Development"
+          $env:DOTNET_LAUNCH_PROFILE = ""
+          
+          # Configure networking for CI environment
+          $env:DOTNET_SYSTEM_NET_DISABLEIPV6 = "false"
+          $env:DOTNET_SYSTEM_NET_HTTP_USEIPV6 = "true"
+          $env:DCP_API_SERVER_BIND_ADDRESS = "127.0.0.1"
+          $env:ASPIRE_DASHBOARD_BIND_ADDRESS = "127.0.0.1"
+          $env:DOCKER_HOST = "unix:///var/run/docker.sock"
+          
+          # Start LocalTesting AppHost as background process
+          Push-Location LocalTesting/LocalTesting.AppHost
+          try {
+            Write-Host "Starting LocalTesting AppHost..." -ForegroundColor Yellow
+            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release", "--verbosity", "minimal" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
+            $global:AspirePID = $aspireProcess.Id
+            Write-Host "✅ LocalTesting AppHost started (PID: $global:AspirePID)" -ForegroundColor Green
+            
+            # Wait for services to start (reduced timeout for CI)
+            Write-Host "⏱️ Waiting for LocalTesting services to start (90 seconds)..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 90
+            
+            # Check startup logs
+            if (Test-Path "aspire_output.log") {
+              $startupOutput = Get-Content "aspire_output.log" -Raw
+              Write-Host "📝 Startup logs preview:" -ForegroundColor Cyan
+              $startupOutput.Split("`n") | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+            }
+            
+            # Verify containers are starting
+            $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
+            Write-Host "📦 Container count: $containerCount" -ForegroundColor Cyan
+            
+            if ($containerCount -eq 0) {
+              Write-Host "⚠️ No containers started yet - checking for startup issues..." -ForegroundColor Yellow
+              if (Test-Path "aspire_error.log") {
+                $errorOutput = Get-Content "aspire_error.log" -Raw
+                if ($errorOutput) {
+                  Write-Host "Error output:" -ForegroundColor Red
+                  Write-Host $errorOutput -ForegroundColor Red
+                }
+              }
+            } else {
+              Write-Host "✅ $containerCount containers started" -ForegroundColor Green
+              docker ps --format "table {{.Names}}\t{{.Status}}"
+            }
+            
+          } catch {
+            Write-Host "❌ Failed to start LocalTesting infrastructure: $($_.Exception.Message)" -ForegroundColor Red
+            throw
+          } finally {
+            Pop-Location
+          }
+
+      - name: Wait for LocalTesting API to be Ready
+        timeout-minutes: 5
+        run: |
+          Write-Host "⏳ Waiting for LocalTesting API to be ready..." -ForegroundColor Green
+          
+          $maxRetries = 30
+          $retryCount = 0
+          $apiReady = $false
+          
+          while ($retryCount -lt $maxRetries -and -not $apiReady) {
+            try {
+              $response = Invoke-WebRequest -Uri "http://localhost:18000/health" -TimeoutSec 5 -ErrorAction Stop
+              if ($response.StatusCode -eq 200) {
+                Write-Host "✅ LocalTesting API is ready and healthy" -ForegroundColor Green
+                $apiReady = $true
+              } else {
+                Write-Host "⚠️ API returned status: $($response.StatusCode)" -ForegroundColor Yellow
+              }
+            } catch {
+              $retryCount++
+              Write-Host "⏱️ API not ready yet (attempt $retryCount/$maxRetries): $($_.Exception.Message)" -ForegroundColor Yellow
+              Start-Sleep -Seconds 5
+            }
+          }
+          
+          if (-not $apiReady) {
+            Write-Host "❌ LocalTesting API failed to become ready after $($maxRetries * 5) seconds" -ForegroundColor Red
+            Write-Host "Current container status:" -ForegroundColor Yellow
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            throw "LocalTesting API not accessible for observability tests"
+          }
 
       - name: Run BDD Observability Metrics Test Scenarios with ReqNRoll
         timeout-minutes: 20
@@ -93,11 +204,11 @@ jobs:
           
           # Attempt to capture metrics from LocalTesting API if available
           try {
-            $healthResponse = Invoke-RestMethod -Uri "http://localhost:18000/health" -Method Get -TimeoutSec 5
+            $healthResponse = Invoke-RestMethod -Uri "http://localhost:18000/health" -Method Get -TimeoutSec 10
             Write-Host "✅ LocalTesting API accessible" -ForegroundColor Green
             
             try {
-              $metricsResponse = Invoke-RestMethod -Uri "http://localhost:18000/api/observability/metrics/messages-per-second" -Method Get -TimeoutSec 10
+              $metricsResponse = Invoke-RestMethod -Uri "http://localhost:18000/api/observability/metrics/messages-per-second" -Method Get -TimeoutSec 15
               Write-Host "📈 Messages Per Second Metrics:" -ForegroundColor Cyan
               
               # Display Kafka metrics
@@ -161,7 +272,17 @@ jobs:
             }
           }
           catch {
-            Write-Host "ℹ️ LocalTesting API not accessible - this is expected for isolated test validation" -ForegroundColor Blue
+            Write-Host "ℹ️ LocalTesting API not accessible - this may be expected in CI if infrastructure is still starting" -ForegroundColor Blue
+            Write-Host "   Error details: $($_.Exception.Message)" -ForegroundColor Yellow
+            
+            # Check if any containers are running to provide context
+            $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
+            if ($containerCount -gt 0) {
+              Write-Host "ℹ️ $containerCount containers are running - infrastructure may be partially available" -ForegroundColor Cyan
+              docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | Head -5
+            } else {
+              Write-Host "ℹ️ No containers running - infrastructure may not have started fully" -ForegroundColor Cyan
+            }
           }
           
           Write-Host "✅ Observability test execution completed - metrics validation infrastructure confirmed working" -ForegroundColor Green
@@ -193,3 +314,51 @@ jobs:
             **/allure-report/**
             IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
             IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
+
+      - name: Cleanup LocalTesting Infrastructure
+        if: always()
+        run: |
+          Write-Host "🧹 Cleaning up LocalTesting infrastructure..." -ForegroundColor Green
+          
+          # Stop the Aspire background process if it's still running
+          try {
+            if ($global:AspirePID) {
+              Write-Host "Stopping LocalTesting AppHost process (PID: $global:AspirePID)..." -ForegroundColor Yellow
+              Stop-Process -Id $global:AspirePID -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
+            }
+          } catch {
+            Write-Host "LocalTesting AppHost process may have already stopped" -ForegroundColor Yellow
+          }
+          
+          # Stop any remaining dotnet processes
+          try {
+            $dotnetProcesses = Get-Process -Name "dotnet" -ErrorAction SilentlyContinue
+            if ($dotnetProcesses) {
+              Write-Host "Stopping remaining dotnet processes..." -ForegroundColor Yellow
+              $dotnetProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
+            }
+          } catch {
+            Write-Host "No additional dotnet processes to stop" -ForegroundColor Yellow
+          }
+          
+          # Stop all containers
+          Write-Host "Stopping all Docker containers..." -ForegroundColor Yellow
+          docker ps -q | ForEach-Object { docker stop $_ } 2>$null
+          
+          # Clean up containers
+          Write-Host "Cleaning up containers..." -ForegroundColor Yellow
+          docker container prune -f 2>$null
+          
+          # Clean up log files
+          try {
+            Push-Location LocalTesting/LocalTesting.AppHost -ErrorAction SilentlyContinue
+            if (Test-Path "aspire_output.log") { Remove-Item "aspire_output.log" -Force }
+            if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
+            Pop-Location
+          } catch {
+            Write-Host "No log files to clean up" -ForegroundColor Yellow
+          }
+          
+          Write-Host "✅ Cleanup completed!" -ForegroundColor Green
