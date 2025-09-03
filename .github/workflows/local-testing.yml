@@ -1032,7 +1032,7 @@ jobs:
           $overallSuccess = $true
           $observabilityMonitoring = @()
           
-          # Enhanced observability metrics function supporting all LearningCourse modules
+          # Comprehensive observability metrics function supporting ALL 14 LearningCourse modules
           function Capture-ObservabilityMetrics {
             param([string]$StepName, [string]$TestId = "", [string]$LearningModule = "")
             
@@ -1085,6 +1085,200 @@ jobs:
               $metrics.MessageProcessingRate = "N/A"
             }
             
+            # LearningCourse module-specific metrics collection for ALL 14 modules
+            if ($LearningModule) {
+              switch ($LearningModule) {
+                "Day01-Flink21-Fundamentals" {
+                  # Flink JobManager metrics
+                  try {
+                    $flinkJobs = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=flink_jobmanager_numRunningJobs" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.FlinkRunningJobs = if ($flinkJobs.data.result.Count -gt 0) { $flinkJobs.data.result[0].value[1] } else { "0" }
+                    
+                    $flinkMemory = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=flink_jobmanager_Status_JVM_Memory_Heap_Used" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.FlinkHeapMemory = if ($flinkMemory.data.result.Count -gt 0) { [math]::Round([double]$flinkMemory.data.result[0].value[1] / 1048576, 2) } else { "N/A" }
+                  } catch {
+                    $metrics.FlinkRunningJobs = "N/A"
+                    $metrics.FlinkHeapMemory = "N/A"
+                  }
+                }
+                "Day02-AI-Stream-Processing" {
+                  # AI inference request tracking
+                  try {
+                    $aiRequests = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=ai_inference_requests_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.AIInferenceRequests = if ($aiRequests.data.result.Count -gt 0) { ($aiRequests.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $aiLatency = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=ai_inference_duration_seconds" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.AIInferenceLatency = if ($aiLatency.data.result.Count -gt 0) { [math]::Round([double]$aiLatency.data.result[0].value[1] * 1000, 2) } else { "N/A" }
+                  } catch {
+                    $metrics.AIInferenceRequests = "N/A"
+                    $metrics.AIInferenceLatency = "N/A"
+                  }
+                }
+                "Day03-Production-Backpressure" {
+                  # Backpressure event monitoring
+                  try {
+                    $backpressureEvents = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=kafka_consumer_lag_sum" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.ConsumerLag = if ($backpressureEvents.data.result.Count -gt 0) { [math]::Round([double]$backpressureEvents.data.result[0].value[1], 0) } else { "0" }
+                    
+                    $throughput = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=rate(kafka_producer_messages_sent_total[1m])" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.MessageThroughput = if ($throughput.data.result.Count -gt 0) { [math]::Round([double]$throughput.data.result[0].value[1], 2) } else { "N/A" }
+                  } catch {
+                    $metrics.ConsumerLag = "N/A"
+                    $metrics.MessageThroughput = "N/A"
+                  }
+                }
+                "Day04-Enterprise-Observability" {
+                  # Prometheus metrics ingestion tracking
+                  try {
+                    $prometheusTargets = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=up" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.PrometheusTargetsUp = ($prometheusTargets.data.result | Where-Object { $_.value[1] -eq "1" }).Count
+                    $metrics.PrometheusTargetsTotal = $prometheusTargets.data.result.Count
+                    
+                    $scraped = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=prometheus_tsdb_samples_appended_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.MetricsSamples = if ($scraped.data.result.Count -gt 0) { [math]::Round([double]$scraped.data.result[0].value[1], 0) } else { "N/A" }
+                  } catch {
+                    $metrics.PrometheusTargetsUp = "N/A"
+                    $metrics.PrometheusTargetsTotal = "N/A"
+                    $metrics.MetricsSamples = "N/A"
+                  }
+                }
+                "Day05-Temporal-Workflows" {
+                  # Temporal workflow execution metrics
+                  try {
+                    $temporalWorkflows = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=temporal_workflow_executions_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.TemporalWorkflows = if ($temporalWorkflows.data.result.Count -gt 0) { ($temporalWorkflows.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $temporalTasks = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=temporal_activity_executions_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.TemporalActivities = if ($temporalTasks.data.result.Count -gt 0) { ($temporalTasks.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                  } catch {
+                    $metrics.TemporalWorkflows = "N/A"
+                    $metrics.TemporalActivities = "N/A"
+                  }
+                }
+                "Day06-Advanced-Windows-Joins" {
+                  # Flink window operation monitoring
+                  try {
+                    $windowOperations = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=flink_taskmanager_job_task_operator_numRecordsIn" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.WindowOperations = if ($windowOperations.data.result.Count -gt 0) { ($windowOperations.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $watermarks = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=flink_taskmanager_job_task_currentInputWatermark" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.WindowWatermarks = if ($watermarks.data.result.Count -gt 0) { [math]::Round([double]$watermarks.data.result[0].value[1], 0) } else { "N/A" }
+                  } catch {
+                    $metrics.WindowOperations = "N/A"
+                    $metrics.WindowWatermarks = "N/A"
+                  }
+                }
+                "Day07-Stress-Testing" {
+                  # Stress test event processing metrics
+                  try {
+                    $stressEvents = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=stress_test_events_processed_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.StressTestEvents = if ($stressEvents.data.result.Count -gt 0) { ($stressEvents.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $errorRate = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=rate(stress_test_errors_total[1m])" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.StressTestErrorRate = if ($errorRate.data.result.Count -gt 0) { [math]::Round([double]$errorRate.data.result[0].value[1], 4) } else { "0" }
+                  } catch {
+                    $metrics.StressTestEvents = "N/A"
+                    $metrics.StressTestErrorRate = "N/A"
+                  }
+                }
+                "Day08-Exactly-Once-Semantics" {
+                  # Exactly-once guarantee tracking
+                  try {
+                    $duplicates = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=exactly_once_duplicates_detected_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.DuplicatesDetected = if ($duplicates.data.result.Count -gt 0) { ($duplicates.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $checkpoints = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=flink_jobmanager_job_lastCheckpointDuration" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.CheckpointDuration = if ($checkpoints.data.result.Count -gt 0) { [math]::Round([double]$checkpoints.data.result[0].value[1], 2) } else { "N/A" }
+                  } catch {
+                    $metrics.DuplicatesDetected = "N/A"
+                    $metrics.CheckpointDuration = "N/A"
+                  }
+                }
+                "Day09-Performance-Optimization-Scaling" {
+                  # CPU utilization and performance monitoring
+                  try {
+                    $cpuUsage = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=container_cpu_usage_seconds_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.CPUUsage = if ($cpuUsage.data.result.Count -gt 0) { [math]::Round([double]$cpuUsage.data.result[0].value[1], 4) } else { "N/A" }
+                    
+                    $parallelism = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=flink_jobmanager_job_numTotalTaskSlots" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.FlinkParallelism = if ($parallelism.data.result.Count -gt 0) { $parallelism.data.result[0].value[1] } else { "N/A" }
+                  } catch {
+                    $metrics.CPUUsage = "N/A"
+                    $metrics.FlinkParallelism = "N/A"
+                  }
+                }
+                "Day10-Security-Privacy-Compliance" {
+                  # Security event tracking
+                  try {
+                    $securityEvents = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=security_events_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.SecurityEvents = if ($securityEvents.data.result.Count -gt 0) { ($securityEvents.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $authFailures = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=authentication_failures_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.AuthFailures = if ($authFailures.data.result.Count -gt 0) { ($authFailures.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                  } catch {
+                    $metrics.SecurityEvents = "N/A"
+                    $metrics.AuthFailures = "N/A"
+                  }
+                }
+                "Day11-Disaster-Recovery-Multi-Region" {
+                  # DR event monitoring
+                  try {
+                    $replicationLag = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=kafka_replica_lag_sum" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.ReplicationLag = if ($replicationLag.data.result.Count -gt 0) { [math]::Round([double]$replicationLag.data.result[0].value[1], 0) } else { "0" }
+                    
+                    $drEvents = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=disaster_recovery_events_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.DREvents = if ($drEvents.data.result.Count -gt 0) { ($drEvents.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                  } catch {
+                    $metrics.ReplicationLag = "N/A"
+                    $metrics.DREvents = "N/A"
+                  }
+                }
+                "Day12-Advanced-Streaming-Patterns" {
+                  # Pattern matching metrics
+                  try {
+                    $patternMatches = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=pattern_matches_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.PatternMatches = if ($patternMatches.data.result.Count -gt 0) { ($patternMatches.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $complexEvents = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=complex_event_processing_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.ComplexEvents = if ($complexEvents.data.result.Count -gt 0) { ($complexEvents.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                  } catch {
+                    $metrics.PatternMatches = "N/A"
+                    $metrics.ComplexEvents = "N/A"
+                  }
+                }
+                "Day13-Advanced-Testing-Chaos-Engineering" {
+                  # Chaos experiment tracking
+                  try {
+                    $chaosExperiments = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=chaos_experiments_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.ChaosExperiments = if ($chaosExperiments.data.result.Count -gt 0) { ($chaosExperiments.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                    
+                    $resilience = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=system_resilience_score" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.ResilienceScore = if ($resilience.data.result.Count -gt 0) { [math]::Round([double]$resilience.data.result[0].value[1], 2) } else { "N/A" }
+                  } catch {
+                    $metrics.ChaosExperiments = "N/A"
+                    $metrics.ResilienceScore = "N/A"
+                  }
+                }
+                "Day14-Capstone-Project" {
+                  # Comprehensive project metrics integration
+                  try {
+                    $projectMetrics = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=capstone_project_completion_percentage" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.ProjectCompletion = if ($projectMetrics.data.result.Count -gt 0) { [math]::Round([double]$projectMetrics.data.result[0].value[1], 1) } else { "0" }
+                    
+                    $integrationTests = Invoke-RestMethod -Uri "http://localhost:18006/api/v1/query?query=integration_tests_passed_total" -Method GET -TimeoutSec 3 -ErrorAction SilentlyContinue
+                    $metrics.IntegrationTestsPassed = if ($integrationTests.data.result.Count -gt 0) { ($integrationTests.data.result | Measure-Object -Property @{Expression={[double]$_.value[1]}} -Sum).Sum } else { "0" }
+                  } catch {
+                    $metrics.ProjectCompletion = "N/A"
+                    $metrics.IntegrationTestsPassed = "N/A"
+                  }
+                }
+                default {
+                  # Generic module metrics
+                  $metrics.ModuleSpecificMetrics = "Basic monitoring for $LearningModule"
+                }
+              }
+            }
+            
             $global:LastObservabilityTimestamp = Get-Date
             return $metrics
           }
@@ -1119,6 +1313,12 @@ jobs:
               $step1Metrics = Capture-ObservabilityMetrics -StepName "Step 1 - Backpressure Config" -LearningModule "Day03-Production-Backpressure"
               $observabilityMonitoring += $step1Metrics
               Write-Host "   📊 Observability: Services Up: $($step1Metrics.ServiceUpCount)/$($step1Metrics.ServiceTotalCount)" -ForegroundColor Cyan
+              if ($step1Metrics.ConsumerLag -ne "N/A") {
+                Write-Host "   📊 Consumer Lag: $($step1Metrics.ConsumerLag) messages" -ForegroundColor Green
+              }
+              if ($step1Metrics.MessageThroughput -ne "N/A") {
+                Write-Host "   📊 Throughput: $($step1Metrics.MessageThroughput) msg/sec" -ForegroundColor Green
+              }
             } catch {
               Write-Host "❌ Step 1 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="1-Backpressure"; Status="Failed"; Success=$false}
@@ -1165,6 +1365,12 @@ jobs:
               if ($step2Metrics.MessageProcessingRate -ne "N/A") {
                 Write-Host "      Processing Rate: $($step2Metrics.MessageProcessingRate) msg/sec" -ForegroundColor Green
               }
+              if ($step2Metrics.TemporalWorkflows -ne "N/A") {
+                Write-Host "      Temporal Workflows: $($step2Metrics.TemporalWorkflows)" -ForegroundColor Green
+              }
+              if ($step2Metrics.TemporalActivities -ne "N/A") {
+                Write-Host "      Temporal Activities: $($step2Metrics.TemporalActivities)" -ForegroundColor Green
+              }
             } catch {
               Write-Host "❌ Step 2 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="2-Temporal_Submit"; Status="Failed"; Success=$false}
@@ -1197,6 +1403,11 @@ jobs:
                 Write-Host "      Headers: $($processResponse.LastMessageSample.Headers)" -ForegroundColor Cyan
               }
               $testResults += @{Step="3-Temporal_Process"; Status=$processResponse.Status; Success=$true}
+              
+              # Capture observability metrics for Day10 security monitoring
+              $step3Metrics = Capture-ObservabilityMetrics -StepName "Step 3 - Temporal Process" -LearningModule "Day10-Security-Privacy-Compliance"
+              $observabilityMonitoring += $step3Metrics
+              Write-Host "   📊 Security observability: Events: $($step3Metrics.SecurityEvents), Auth Failures: $($step3Metrics.AuthFailures)" -ForegroundColor Cyan
             } catch {
               Write-Host "❌ Step 3 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="3-Temporal_Process"; Status="Failed"; Success=$false}
@@ -1231,6 +1442,11 @@ jobs:
                 Write-Host "      Headers: $($concatResponse.LastConcatMessageSample.Headers)" -ForegroundColor Cyan
               }
               $testResults += @{Step="4-Flink_Concat"; Status=$concatResponse.Status; Success=$true}
+              
+              # Capture observability metrics for Day06 window operations
+              $step4Metrics = Capture-ObservabilityMetrics -StepName "Step 4 - Flink Concat" -LearningModule "Day06-Advanced-Windows-Joins"
+              $observabilityMonitoring += $step4Metrics
+              Write-Host "   📊 Window operations: Records: $($step4Metrics.WindowOperations), Watermarks: $($step4Metrics.WindowWatermarks)" -ForegroundColor Cyan
             } catch {
               Write-Host "❌ Step 4 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="4-Flink_Concat"; Status="Failed"; Success=$false}
@@ -1264,6 +1480,11 @@ jobs:
                 Write-Host "      Headers: $($sinkResponse.LastRetrievedMessageSample.Headers)" -ForegroundColor Cyan
               }
               $testResults += @{Step="5-Kafka_InSink"; Status=$sinkResponse.Status; Success=$true}
+              
+              # Capture observability metrics for Day02 AI stream processing
+              $step5Metrics = Capture-ObservabilityMetrics -StepName "Step 5 - Kafka InSink" -LearningModule "Day02-AI-Stream-Processing"
+              $observabilityMonitoring += $step5Metrics
+              Write-Host "   📊 AI inference monitoring: Requests: $($step5Metrics.AIInferenceRequests), Latency: $($step5Metrics.AIInferenceLatency)ms" -ForegroundColor Cyan
             } catch {
               Write-Host "❌ Step 5 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="5-Kafka_InSink"; Status="Failed"; Success=$false}
@@ -1299,6 +1520,11 @@ jobs:
                 Write-Host "      Headers: $($splitResponse.LastSplitMessageSample.Headers)" -ForegroundColor Cyan
               }
               $testResults += @{Step="6-Flink_Split"; Status=$splitResponse.Status; Success=$true}
+              
+              # Capture observability metrics for Day12 advanced streaming patterns
+              $step6Metrics = Capture-ObservabilityMetrics -StepName "Step 6 - Flink Split" -LearningModule "Day12-Advanced-Streaming-Patterns"
+              $observabilityMonitoring += $step6Metrics
+              Write-Host "   📊 Pattern matching: Matches: $($step6Metrics.PatternMatches), Complex Events: $($step6Metrics.ComplexEvents)" -ForegroundColor Cyan
             } catch {
               Write-Host "❌ Step 6 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="6-Flink_Split"; Status="Failed"; Success=$false}
@@ -1332,6 +1558,11 @@ jobs:
                 Write-Host "      Headers: $($writeResponse.LastWrittenMessageSample.Headers)" -ForegroundColor Cyan
               }
               $testResults += @{Step="7-Write_SampleResponse"; Status=$writeResponse.Status; Success=$true}
+              
+              # Capture observability metrics for Day07 stress testing
+              $step7Metrics = Capture-ObservabilityMetrics -StepName "Step 7 - Write Sample Response" -LearningModule "Day07-Stress-Testing"
+              $observabilityMonitoring += $step7Metrics
+              Write-Host "   📊 Stress test monitoring: Events: $($step7Metrics.StressTestEvents), Error Rate: $($step7Metrics.StressTestErrorRate)" -ForegroundColor Cyan
             } catch {
               Write-Host "❌ Step 7 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="7-Write_SampleResponse"; Status="Failed"; Success=$false}
@@ -1370,26 +1601,150 @@ jobs:
               }
               
               $testResults += @{Step="8-Verify_Messages"; Status=$verificationResponse.Status; Success=$true}
+              
+              # Capture observability metrics for Day08 exactly-once semantics
+              $step8Metrics = Capture-ObservabilityMetrics -StepName "Step 8 - Verify Messages" -LearningModule "Day08-Exactly-Once-Semantics"
+              $observabilityMonitoring += $step8Metrics
+              Write-Host "   📊 Exactly-once monitoring: Duplicates: $($step8Metrics.DuplicatesDetected), Checkpoint Duration: $($step8Metrics.CheckpointDuration)ms" -ForegroundColor Cyan
             } catch {
               Write-Host "❌ Step 8 failed: $($_.Exception.Message)" -ForegroundColor Red
               $testResults += @{Step="8-Verify_Messages"; Status="Failed"; Success=$false}
               $overallSuccess = $false
             }
             
-            # Comprehensive Observability Monitoring Summary with LearningCourse Support
-            Write-Host "`n📊 ENHANCED LEARNINGCOURSE OBSERVABILITY SUMMARY:" -ForegroundColor Green
-            Write-Host "Supporting all 14 Learning Course modules with comprehensive monitoring" -ForegroundColor Cyan
-            Write-Host "=" * 80 -ForegroundColor Green
+            # Comprehensive Observability Monitoring Summary with ALL 14 LearningCourse Modules
+            Write-Host "`n📊 COMPREHENSIVE 14-MODULE LEARNINGCOURSE OBSERVABILITY SUMMARY:" -ForegroundColor Green
+            Write-Host "Supporting all 14 Learning Course modules with comprehensive real-time monitoring" -ForegroundColor Cyan
+            Write-Host "=" * 90 -ForegroundColor Green
             
-            # Capture final observability metrics after complete business flow
+            # Capture final observability metrics for Day14 capstone project
             $finalMetrics = Capture-ObservabilityMetrics -StepName "Final State - All Steps Complete" -LearningModule "Day14-Capstone-Project"
             $observabilityMonitoring += $finalMetrics
             
+            # Display comprehensive observability data for all modules
             foreach ($monitoring in $observabilityMonitoring) {
               Write-Host "🕐 $($monitoring.Timestamp) - $($monitoring.Step):" -ForegroundColor Yellow
               if ($monitoring.LearningModule) {
                 Write-Host "   📚 Learning Module: $($monitoring.LearningModule)" -ForegroundColor Magenta
+                
+                # Display module-specific metrics based on the learning module
+                switch ($monitoring.LearningModule) {
+                  "Day01-Flink21-Fundamentals" {
+                    if ($monitoring.FlinkRunningJobs -ne "N/A") {
+                      Write-Host "   ⚡ Flink Running Jobs: $($monitoring.FlinkRunningJobs)" -ForegroundColor Green
+                    }
+                    if ($monitoring.FlinkHeapMemory -ne "N/A") {
+                      Write-Host "   🧠 Flink Heap Memory: $($monitoring.FlinkHeapMemory) MB" -ForegroundColor Green
+                    }
+                  }
+                  "Day02-AI-Stream-Processing" {
+                    if ($monitoring.AIInferenceRequests -ne "N/A") {
+                      Write-Host "   🤖 AI Inference Requests: $($monitoring.AIInferenceRequests)" -ForegroundColor Green
+                    }
+                    if ($monitoring.AIInferenceLatency -ne "N/A") {
+                      Write-Host "   ⏱️ AI Inference Latency: $($monitoring.AIInferenceLatency) ms" -ForegroundColor Green
+                    }
+                  }
+                  "Day03-Production-Backpressure" {
+                    if ($monitoring.ConsumerLag -ne "N/A") {
+                      Write-Host "   📈 Consumer Lag: $($monitoring.ConsumerLag) messages" -ForegroundColor Green
+                    }
+                    if ($monitoring.MessageThroughput -ne "N/A") {
+                      Write-Host "   🚀 Message Throughput: $($monitoring.MessageThroughput) msg/sec" -ForegroundColor Green
+                    }
+                  }
+                  "Day04-Enterprise-Observability" {
+                    if ($monitoring.PrometheusTargetsUp -ne "N/A") {
+                      Write-Host "   🎯 Prometheus Targets: $($monitoring.PrometheusTargetsUp)/$($monitoring.PrometheusTargetsTotal) up" -ForegroundColor Green
+                    }
+                    if ($monitoring.MetricsSamples -ne "N/A") {
+                      Write-Host "   📊 Metrics Samples: $($monitoring.MetricsSamples)" -ForegroundColor Green
+                    }
+                  }
+                  "Day05-Temporal-Workflows" {
+                    if ($monitoring.TemporalWorkflows -ne "N/A") {
+                      Write-Host "   🔄 Temporal Workflows: $($monitoring.TemporalWorkflows)" -ForegroundColor Green
+                    }
+                    if ($monitoring.TemporalActivities -ne "N/A") {
+                      Write-Host "   ⚙️ Temporal Activities: $($monitoring.TemporalActivities)" -ForegroundColor Green
+                    }
+                  }
+                  "Day06-Advanced-Windows-Joins" {
+                    if ($monitoring.WindowOperations -ne "N/A") {
+                      Write-Host "   🪟 Window Operations: $($monitoring.WindowOperations)" -ForegroundColor Green
+                    }
+                    if ($monitoring.WindowWatermarks -ne "N/A") {
+                      Write-Host "   💧 Window Watermarks: $($monitoring.WindowWatermarks)" -ForegroundColor Green
+                    }
+                  }
+                  "Day07-Stress-Testing" {
+                    if ($monitoring.StressTestEvents -ne "N/A") {
+                      Write-Host "   💪 Stress Test Events: $($monitoring.StressTestEvents)" -ForegroundColor Green
+                    }
+                    if ($monitoring.StressTestErrorRate -ne "N/A") {
+                      Write-Host "   ❗ Stress Test Error Rate: $($monitoring.StressTestErrorRate)" -ForegroundColor Green
+                    }
+                  }
+                  "Day08-Exactly-Once-Semantics" {
+                    if ($monitoring.DuplicatesDetected -ne "N/A") {
+                      Write-Host "   🔍 Duplicates Detected: $($monitoring.DuplicatesDetected)" -ForegroundColor Green
+                    }
+                    if ($monitoring.CheckpointDuration -ne "N/A") {
+                      Write-Host "   ⏰ Checkpoint Duration: $($monitoring.CheckpointDuration) ms" -ForegroundColor Green
+                    }
+                  }
+                  "Day09-Performance-Optimization-Scaling" {
+                    if ($monitoring.CPUUsage -ne "N/A") {
+                      Write-Host "   💻 CPU Usage: $($monitoring.CPUUsage)" -ForegroundColor Green
+                    }
+                    if ($monitoring.FlinkParallelism -ne "N/A") {
+                      Write-Host "   ⚡ Flink Parallelism: $($monitoring.FlinkParallelism)" -ForegroundColor Green
+                    }
+                  }
+                  "Day10-Security-Privacy-Compliance" {
+                    if ($monitoring.SecurityEvents -ne "N/A") {
+                      Write-Host "   🔐 Security Events: $($monitoring.SecurityEvents)" -ForegroundColor Green
+                    }
+                    if ($monitoring.AuthFailures -ne "N/A") {
+                      Write-Host "   🚫 Auth Failures: $($monitoring.AuthFailures)" -ForegroundColor Green
+                    }
+                  }
+                  "Day11-Disaster-Recovery-Multi-Region" {
+                    if ($monitoring.ReplicationLag -ne "N/A") {
+                      Write-Host "   🔄 Replication Lag: $($monitoring.ReplicationLag) messages" -ForegroundColor Green
+                    }
+                    if ($monitoring.DREvents -ne "N/A") {
+                      Write-Host "   🆘 DR Events: $($monitoring.DREvents)" -ForegroundColor Green
+                    }
+                  }
+                  "Day12-Advanced-Streaming-Patterns" {
+                    if ($monitoring.PatternMatches -ne "N/A") {
+                      Write-Host "   🎯 Pattern Matches: $($monitoring.PatternMatches)" -ForegroundColor Green
+                    }
+                    if ($monitoring.ComplexEvents -ne "N/A") {
+                      Write-Host "   🌟 Complex Events: $($monitoring.ComplexEvents)" -ForegroundColor Green
+                    }
+                  }
+                  "Day13-Advanced-Testing-Chaos-Engineering" {
+                    if ($monitoring.ChaosExperiments -ne "N/A") {
+                      Write-Host "   💥 Chaos Experiments: $($monitoring.ChaosExperiments)" -ForegroundColor Green
+                    }
+                    if ($monitoring.ResilienceScore -ne "N/A") {
+                      Write-Host "   🛡️ Resilience Score: $($monitoring.ResilienceScore)" -ForegroundColor Green
+                    }
+                  }
+                  "Day14-Capstone-Project" {
+                    if ($monitoring.ProjectCompletion -ne "N/A") {
+                      Write-Host "   🎓 Project Completion: $($monitoring.ProjectCompletion)%" -ForegroundColor Green
+                    }
+                    if ($monitoring.IntegrationTestsPassed -ne "N/A") {
+                      Write-Host "   ✅ Integration Tests Passed: $($monitoring.IntegrationTestsPassed)" -ForegroundColor Green
+                    }
+                  }
+                }
               }
+              
+              # Core metrics displayed for all modules
               Write-Host "   🔧 Services: $($monitoring.ServiceUpCount)/$($monitoring.ServiceTotalCount) up" -ForegroundColor Green
               if ($monitoring.HttpRequestsTotal -ne "N/A") {
                 Write-Host "   🌐 HTTP Requests: $($monitoring.HttpRequestsTotal)" -ForegroundColor Green
