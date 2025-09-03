@@ -1157,127 +1157,49 @@ dotnet --version  # Must show 9.0.x
 - [Observability and Monitoring](./docs/observability/README.md)
 - [Monitoring Best Practices](./docs/observability/monitoring-best-practices.md)
 
-## 📊 Integration Tests and Observability
+## 📊 Observability Metrics Testing
 
-### **Observability Integration Tests**
+FlinkDotNet includes comprehensive observability testing that validates message-per-second metrics across all system layers with **1 million message processing**.
 
-FlinkDotNet includes comprehensive integration tests that validate observability metrics across all layers:
+### **Observability Tests Workflow**
 
-#### **Integration Test Coverage**
+🔗 **[View Observability Test Runs](../../actions/workflows/observability-tests.yml)** - Monitor real-time observability metrics test execution with 1 million messages
 
-| Test Suite | GitHub Workflow | Purpose | Observability Coverage |
-|------------|----------------|---------|----------------------|
-| **ObservabilityMetrics.feature** | [`integration-tests.yml`](../../actions/workflows/integration-tests.yml) | Validates messages-per-second metrics across all layers | ✅ Kafka, Flink, Temporal, End-to-End Flow |
-| **StressTest.feature** | [`stress-tests-confluent.yml`](../../actions/workflows/stress-tests-confluent.yml) | High-throughput scenarios with performance metrics | ✅ Throughput, Latency, Resource Utilization |
-| **ReliabilityTest.feature** | [`reliability-tests.yml`](../../actions/workflows/reliability-tests.yml) | Fault tolerance with health monitoring | ✅ System Health, Error Rates, Recovery Metrics |
-| **BackpressureTest.feature** | [`backpressure-tests.yml`](../../actions/workflows/backpressure-tests.yml) | Flow control validation with rate metrics | ✅ Backpressure, Rate Limiting, Queue Depth |
+The observability tests process **1 million messages** to validate:
+- **Kafka Producer Metrics**: Messages-per-second rates across topics and partitions
+- **Flink Processing Metrics**: Real-time stream processing throughput and latency  
+- **Temporal Workflow Metrics**: Workflow execution rates and completion times
+- **End-to-End Flow Metrics**: Complete pipeline throughput from Kafka → Flink → Temporal
 
-#### **Observability Metrics Validated**
+### **Live Metrics Display**
 
-**Kafka Layer Metrics:**
-- `kafka_producer_messages_per_second_total{topic, partition}`
-- `kafka_consumer_messages_per_second_total{topic, partition, consumer_group}`
-- `kafka_producer_bytes_per_second_total{topic, partition}`
-- `kafka_consumer_lag_messages{topic, partition, consumer_group}`
+During test execution, the GitHub Actions workflow displays real-time metrics:
 
-**Flink Layer Metrics:**
-- `flink_job_messages_per_second_in{job_id, operator}`
-- `flink_job_messages_per_second_out{job_id, operator}`
-- `flink_job_throughput_records_per_second{job_id}`
-- `flink_job_latency_p99_milliseconds{job_id}`
-
-**Temporal Layer Metrics:**
-- `temporal_workflow_executions_per_second{workflow_type}`
-- `temporal_activity_executions_per_second{activity_type}`
-- `temporal_workflow_completion_rate{workflow_type}`
-- `temporal_workflow_duration_seconds{workflow_type}`
-
-**End-to-End Flow Metrics:**
-- `flow_messages_per_second_kafka_to_flink`
-- `flow_messages_per_second_flink_to_temporal`
-- `flow_messages_per_second_end_to_end`
-- `flow_latency_end_to_end_seconds_p95`
-
-#### **Integration Test Validation Pattern**
-
-```gherkin
-Feature: Observability Messages Per Second Metrics
-  
-  @observability @metrics @comprehensive @performance
-  Scenario: Comprehensive Messages Per Second Metrics Validation
-    Given LocalTesting infrastructure is running with observability enabled
-    When I produce 2000 messages to Kafka topic "comprehensive-test-input"
-    And I start a Flink job to process messages
-    And I execute Temporal workflows
-    Then Kafka producer messages per second metrics should be greater than 0
-    And Flink job processing rate metrics should be recorded
-    And Temporal workflow execution rate metrics should be recorded
-    And end-to-end flow rate metrics should show total throughput
-    And Prometheus should be able to scrape all observability metrics
+```
+📈 Kafka Producer Metrics:
+  📤 producer-1: 15,247.5 msg/sec
+📈 Flink Processing Metrics:  
+  📥 Input Rate - job-1: 15,200 msg/sec
+  📤 Output Rate - job-1: 15,195 msg/sec
+📈 End-to-End Flow Metrics:
+  📊 Kafka → Flink: 15,247.5 msg/sec
+  📊 End-to-End Total: 15,180.2 msg/sec
 ```
 
-#### **Real-Time Observability API**
+### **High-Throughput Validation**
 
-Access real-time metrics via REST API:
+The 1 million message test validates:
+- ✅ **High-Volume Processing**: System handles enterprise-scale message volumes
+- ✅ **Metrics Collection**: All observability metrics are captured under load
+- ✅ **Performance Monitoring**: Real-time throughput tracking across all layers
+- ✅ **System Stability**: Infrastructure remains stable during high-throughput processing
 
+Run locally:
 ```bash
-# Get all messages-per-second metrics
-curl http://localhost:18000/api/observability/metrics/messages-per-second
-
-# Get layer-specific metrics
-curl http://localhost:18000/api/observability/metrics/layer/kafka
-curl http://localhost:18000/api/observability/metrics/layer/flink
-curl http://localhost:18000/api/observability/metrics/layer/temporal
-curl http://localhost:18000/api/observability/metrics/layer/flow
-
-# Simulate metrics for testing
-curl -X POST http://localhost:18000/api/observability/metrics/simulate \
-  -H "Content-Type: application/json" \
-  -d '{"KafkaMessages": 1000, "FlinkJobs": 2, "TemporalWorkflows": 5}'
-```
-
-#### **Prometheus & Grafana Integration**
-
-**Prometheus Endpoints:**
-- LocalTesting: `http://localhost:18006` (full observability stack)
-- IntegrationTests: `http://localhost:18006` (metrics collection only)
-- OpenTelemetry Metrics: `http://localhost:18009/metrics`
-
-**Grafana Dashboards:**
-- LocalTesting: `http://localhost:18010` (comprehensive dashboards)
-- Pre-configured datasources for Prometheus, Loki, Aspire traces
-- Real-time messages-per-second visualization across all layers
-
-#### **GitHub Workflow Integration**
-
-All observability integration tests are executed in GitHub Actions:
-
-🔗 **[View Integration Test Runs](../../actions/workflows/integration-tests.yml)** - Monitor real-time test execution and results
-
-```yaml
-# .github/workflows/integration-tests.yml  
-- name: Run Observability Integration Tests
-  run: |
-    dotnet test IntegrationTests/IntegrationTests.sln \
-      --filter "Category=observability" \
-      --configuration Release \
-      --logger "console;verbosity=detailed"
-```
-
-**Validation Commands:**
-```bash
-# Run observability-specific tests locally
 dotnet test IntegrationTests/IntegrationTests.sln \
   --filter "Category=observability" \
   --configuration Release
-
-# Validate specific metric categories
-dotnet test IntegrationTests/IntegrationTests.sln \
-  --filter "Category=metrics&Category=kafka" \
-  --configuration Release
 ```
-
-This comprehensive observability coverage ensures that all messages-per-second metrics are properly collected, exported to Prometheus, and validated through automated integration tests.
 
 ## Frequently Asked Questions
 
