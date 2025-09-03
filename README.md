@@ -1162,7 +1162,7 @@ FlinkDotNet includes comprehensive integration tests that validate observability
 
 | Test Suite | GitHub Workflow | Purpose | Observability Coverage |
 |------------|----------------|---------|----------------------|
-| **ObservabilityMetrics.feature** | [`integration-tests.yml`](../../actions/workflows/integration-tests.yml) | Validates messages-per-second metrics across all layers | ✅ Kafka, Flink, Temporal, End-to-End Flow |
+| **ObservabilityMetrics.feature** | [`observability-tests.yml`](../../actions/workflows/observability-tests.yml) | Validates messages-per-second metrics across all layers | ✅ Kafka, Flink, Temporal, End-to-End Flow |
 | **StressTest.feature** | [`stress-tests-confluent.yml`](../../actions/workflows/stress-tests-confluent.yml) | High-throughput scenarios with performance metrics | ✅ Throughput, Latency, Resource Utilization |
 | **ReliabilityTest.feature** | [`reliability-tests.yml`](../../actions/workflows/reliability-tests.yml) | Fault tolerance with health monitoring | ✅ System Health, Error Rates, Recovery Metrics |
 | **BackpressureTest.feature** | [`backpressure-tests.yml`](../../actions/workflows/backpressure-tests.yml) | Flow control validation with rate metrics | ✅ Backpressure, Rate Limiting, Queue Depth |
@@ -1247,13 +1247,13 @@ curl -X POST http://localhost:18000/api/observability/metrics/simulate \
 
 All observability integration tests are executed in GitHub Actions:
 
-🔗 **[View Integration Test Runs](../../actions/workflows/integration-tests.yml)** - Monitor real-time test execution and results
+🔗 **[View Observability Test Runs](../../actions/workflows/observability-tests.yml)** - Monitor real-time observability metrics test execution and results
 
 ```yaml
-# .github/workflows/integration-tests.yml  
-- name: Run Observability Integration Tests
+# .github/workflows/observability-tests.yml  
+- name: Run BDD Observability Metrics Test Scenarios with ReqNRoll
   run: |
-    dotnet test IntegrationTests/IntegrationTests.sln \
+    dotnet test IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/FlinkDotNet.Aspire.IntegrationTests.csproj \
       --filter "Category=observability" \
       --configuration Release \
       --logger "console;verbosity=detailed"

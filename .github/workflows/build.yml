@@ -74,6 +74,10 @@ jobs:
     needs: build
     uses: ./.github/workflows/integration-tests.yml
 
+  observability_tests:
+    needs: build
+    uses: ./.github/workflows/observability-tests.yml
+
   reliability_tests:
     needs: build
     uses: ./.github/workflows/reliability-tests.yml
