@@ -8,6 +8,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using StackExchange.Redis;
+using System.Diagnostics.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,7 @@ builder.WebHost.ConfigureKestrel(options =>
 // Configure Flink job management defaults
 builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
 
-// Configure OpenTelemetry
+// Configure OpenTelemetry with comprehensive observability metrics
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService("LocalTesting.WebApi")
@@ -37,6 +38,10 @@ builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
+        .AddMeter("FlinkDotNet.Kafka")
+        .AddMeter("FlinkDotNet.Flink") 
+        .AddMeter("FlinkDotNet.Temporal")
+        .AddMeter("FlinkDotNet.Flow")
         .AddOtlpExporter())
     .WithLogging(logging => logging
         .AddOtlpExporter());
@@ -92,6 +97,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
     provider.GetRequiredService<Lazy<IConnectionMultiplexer>>().Value);
 
 // Add custom services
+builder.Services.AddSingleton<ObservabilityMetricsService>();
 builder.Services.AddSingleton<AspireHealthCheckService>();
 builder.Services.AddSingleton<ComplexLogicStressTestService>();
 builder.Services.AddSingleton<SecurityTokenManagerService>();

@@ -9,12 +9,14 @@ public class KafkaProducerService : IDisposable
     private IProducer<string, string>? _producer;
     private readonly ILogger<KafkaProducerService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly ObservabilityMetricsService _metricsService;
     private readonly object _lock = new object();
 
-    public KafkaProducerService(ILogger<KafkaProducerService> logger, IConfiguration configuration)
+    public KafkaProducerService(ILogger<KafkaProducerService> logger, IConfiguration configuration, ObservabilityMetricsService metricsService)
     {
         _logger = logger;
         _configuration = configuration;
+        _metricsService = metricsService;
         _logger.LogInformation("KafkaProducerService created (producer will be initialized on first use)");
     }
 
@@ -56,6 +58,7 @@ public class KafkaProducerService : IDisposable
         var tasks = new List<Task>();
         var successCount = 0;
         var failureCount = 0;
+        var startTime = DateTime.UtcNow;
 
         _logger.LogInformation("Producing {MessageCount} messages to topic '{Topic}'", messages.Count, topic);
 
@@ -64,6 +67,8 @@ public class KafkaProducerService : IDisposable
         foreach (var message in messages)
         {
             var jsonMessage = JsonSerializer.Serialize(message);
+            var messageBytes = System.Text.Encoding.UTF8.GetByteCount(jsonMessage);
+            
             var kafkaMessage = new Message<string, string>
             {
                 Key = message.CorrelationId,
@@ -77,12 +82,22 @@ public class KafkaProducerService : IDisposable
                 }
             };
 
+            var messageStartTime = DateTime.UtcNow;
+            var partition = message.PartitionNumber.ToString();
+            
             var task = producer.ProduceAsync(topic, kafkaMessage)
                 .ContinueWith(deliveryReport =>
                 {
+                    var latencySeconds = (DateTime.UtcNow - messageStartTime).TotalSeconds;
+                    
                     if (deliveryReport.Result.Status == PersistenceStatus.Persisted)
                     {
                         Interlocked.Increment(ref successCount);
+                        
+                        // Record observability metrics for successful message production
+                        _metricsService.RecordKafkaProducerMessage(topic, partition, 1, messageBytes);
+                        _metricsService.RecordKafkaProducerLatency(topic, latencySeconds);
+                        _metricsService.RecordFlowKafkaToFlink(1); // Track flow progression
                     }
                     else
                     {
@@ -98,8 +113,11 @@ public class KafkaProducerService : IDisposable
         await Task.WhenAll(tasks);
         producer.Flush(TimeSpan.FromSeconds(30));
 
-        _logger.LogInformation("Message production completed: {SuccessCount} successful, {FailureCount} failed", 
-            successCount, failureCount);
+        var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
+        var messagesPerSecond = successCount / Math.Max(totalTime, 1.0);
+        
+        _logger.LogInformation("Message production completed: {SuccessCount} successful, {FailureCount} failed, {MessagesPerSecond:F2} msg/sec", 
+            successCount, failureCount, messagesPerSecond);
     }
 
     public async Task<List<ComplexLogicMessage>> ConsumeMessagesAsync(string topic, string consumerGroup, int maxMessages = 1000, TimeSpan? timeout = null)
@@ -124,6 +142,7 @@ public class KafkaProducerService : IDisposable
         
         var messages = new List<ComplexLogicMessage>();
         var endTime = DateTime.UtcNow.Add(timeout ?? TimeSpan.FromMinutes(5));
+        var startTime = DateTime.UtcNow;
 
         _logger.LogInformation("Consuming up to {MaxMessages} messages from topic '{Topic}' with consumer group '{ConsumerGroup}'", 
             maxMessages, topic, consumerGroup);
@@ -141,6 +160,11 @@ public class KafkaProducerService : IDisposable
                         if (message != null)
                         {
                             messages.Add(message);
+                            
+                            // Record observability metrics for message consumption
+                            var partition = result.Partition.Value.ToString();
+                            _metricsService.RecordKafkaConsumerMessage(topic, partition, consumerGroup, 1);
+                            _metricsService.RecordFlowFlinkToTemporal(1); // Track flow progression
                         }
                         consumer.Commit(result);
                     }
@@ -160,7 +184,11 @@ public class KafkaProducerService : IDisposable
             consumer.Close();
         }
 
-        _logger.LogInformation("Consumed {MessageCount} messages from topic '{Topic}'", messages.Count, topic);
+        var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
+        var messagesPerSecond = messages.Count / Math.Max(totalTime, 1.0);
+
+        _logger.LogInformation("Consumed {MessageCount} messages from topic '{Topic}', {MessagesPerSecond:F2} msg/sec", 
+            messages.Count, topic, messagesPerSecond);
         return messages;
     }
 
