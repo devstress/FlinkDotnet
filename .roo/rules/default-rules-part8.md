@@ -49,62 +49,45 @@
   - **Test environment consistency** between local and CI must be maintained
 - **Failure to fix all tests is a MAJOR violation** requiring immediate attention and resolution
 
-## Premium AI Usage Tracking (MANDATORY)
+## .NET 9.0 Local Development Environment Enforcement (MANDATORY)
 
-### Rule 13: Premium Request Logging and Cost Management (CRITICAL)
-- **ALWAYS log premium AI requests** in the premium-request-tracker folder
-- **Premium request triggers** include:
-  - Advanced code analysis beyond basic capabilities
-  - Complex code generation requiring multiple iterations
-  - Enhanced debugging with sophisticated reasoning
-  - Premium AI features like advanced completions
-  - High-complexity problem solving requiring premium models
-  - Extended context analysis exceeding standard limits
-- **Logging requirements**:
-  - **Log immediately** when initiating premium requests
-  - **Use structured format**: `TIMESTAMP | REQUEST_TYPE | CONTEXT | JUSTIFICATION | COST_IMPACT`
-  - **File naming**: `premium-requests-YYYY-MM.log` in premium-request-tracker folder
-  - **Monthly summaries**: Create summary reports using template provided
-- **Cost impact classification**:
-  - **High Cost**: Complex multi-step analysis, advanced code generation, extended context
-  - **Medium Cost**: Standard premium features, moderate complexity analysis
-  - **Low Cost**: Basic premium features, simple enhancements
-- **Tracking categories**:
-  - **ADVANCED_ANALYSIS**: Complex code or system analysis
-  - **PREMIUM_COMPLETION**: Advanced code generation and completions
-  - **ENHANCED_DEBUGGING**: Sophisticated debugging and troubleshooting
-  - **COMPLEX_REASONING**: Multi-step problem solving and planning
-  - **EXTENDED_CONTEXT**: Large context analysis and processing
-- **Monitoring requirements**:
-  - **Weekly review**: Check premium usage patterns
-  - **Monthly reporting**: Generate summary reports with cost analysis
-  - **Optimization**: Identify opportunities to reduce premium usage
-  - **Justification**: Document business value of premium requests
-- **Usage optimization**:
-  - **Prefer standard features** when sufficient for the task
-  - **Batch similar requests** to reduce individual premium calls
-  - **Document alternatives** that were considered before using premium features
-  - **Regular review** of usage patterns for optimization opportunities
+### Rule 13: .NET 9.0 Environment Requirements (CRITICAL)
+- **MANDATORY .NET 9.0 SDK**: All local development must use .NET 9.0.303 or later
+- **Before submitting any GitHub workflow or PR**, developers MUST verify:
+  - Local environment has .NET 9.0 SDK installed (`dotnet --version` returns 9.0.x)
+  - Aspire workload is installed and functional
+  - All solutions build successfully locally with .NET 9.0
+  - LocalTesting workflow executes successfully locally
+- **Local environment setup requirements**:
+  - .NET 9.0 SDK installation using official Microsoft installer
+  - Aspire workload installation (`dotnet workload install aspire`)
+  - Docker Desktop running for Aspire orchestration
+  - LocalTesting solution builds and runs without errors
+- **GitHub workflow local validation**:
+  - ALL GitHub workflows must pass locally before submission for review
+  - No version compatibility issues between local and CI environments
+  - LocalTesting workflow must execute successfully with Aspire dashboard accessible
+  - Integration tests must pass locally with same results as CI
+- **Environment consistency enforcement**:
+  - Local development environment must match CI environment (.NET 9.0)
+  - global.json version must be respected locally
+  - No .NET version downgrades or workarounds permitted
+  - Aspire orchestration must work locally before CI submission
+- **Verification commands required before PR submission**:
+  ```bash
+  # Verify .NET version
+  dotnet --version  # Must return 9.0.x
+  
+  # Install Aspire workload
+  dotnet workload install aspire
+  
+  # Build all solutions
+  dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
+  dotnet build Sample/Sample.sln --configuration Release  
+  dotnet build LocalTesting/LocalTesting.sln --configuration Release
+  
+  # Test LocalTesting workflow
+  ./test-aspire-localtesting.ps1 -MessageCount 1000
+  ```
 
-**Example Log Entries:**
-```
-2025-01-07T14:30:00Z | ADVANCED_ANALYSIS | WI9 | Complex code analysis for premium usage tracking rule | Medium cost
-2025-01-07T14:35:00Z | PREMIUM_COMPLETION | WI9 | Advanced code generation for enforcement mechanisms | High cost
-2025-01-07T15:00:00Z | ENHANCED_DEBUGGING | WI9 | Sophisticated debugging of test failures | Medium cost
-```
-
-**Monthly Summary Requirements:**
-- Use template in premium-request-tracker/premium-summary-template.md
-- Include cost analysis and optimization recommendations
-- Track trends and patterns in premium usage
-- Provide business justification for premium requests
-
-- **Failure to log premium requests is a MAJOR violation** requiring immediate logging and process review
-
----
-**Authority**: Engineering Leadership  
-**Effective Date**: Implementation Date  
-**Review Cycle**: Quarterly  
-**Compliance Level**: Mandatory
-
-> **Note**: This is the final chunk of default-rules.md covering architecture documentation standards, TDD/BDD enforcement, and Premium AI Usage Tracking. For Work Item enforcement rules, see Parts 5-7.
+> **Note**: This chunk covers architecture documentation standards, TDD/BDD enforcement, and .NET 9.0 environment requirements. For more .NET 9.0 details and AI agent build enforcement, see Part 9-10.

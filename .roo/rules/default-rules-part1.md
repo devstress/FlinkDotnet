@@ -1,6 +1,6 @@
 # # GitHub Copilot Guidelines
 
-This document defines the coding standards and best practices that GitHub Copilot should enforce during code reviews for this .NET project. These guidelines ensure adherence to SOLID principles and .NET best practices, with specialized guidance for BizTalk to Inobiz migrations using .NET 8 and direct XSLT mapping.
+This document defines the coding standards and best practices that GitHub Copilot should enforce during code reviews for this .NET project. These guidelines ensure adherence to SOLID principles and .NET best practices, with specialized guidance for BizTalk to Inobiz migrations using .NET 9 and direct XSLT mapping.
 
 ## SOLID Principles Enforcement
 
