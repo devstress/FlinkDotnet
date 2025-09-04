@@ -1,11 +1,7 @@
 name: Build Solutions
 
 on:
-  pull_request:
-    types: [opened]      # run once when the PR is created
-    branches: ['**']     # target branches (PR base)
   push:
-    branches: ['**'] 
   workflow_dispatch:
 
 env:
@@ -80,5 +76,3 @@ jobs:
   backpressure_tests:
     needs: build
     uses: ./.github/workflows/backpressure-tests.yml
-
-
