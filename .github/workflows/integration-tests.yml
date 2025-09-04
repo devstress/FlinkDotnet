@@ -95,16 +95,41 @@ jobs:
           
           Write-Host "✅ Aspire orchestration health check completed!" -ForegroundColor Green
 
+      - name: Generate Allure reports
+        if: always()
+        run: |
+          Write-Host "📊 Generating Allure reports for BDD integration tests..." -ForegroundColor Green
+          
+          # Find allure-results directories
+          $allureResultsDir = "IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results"
+          
+          if (Test-Path $allureResultsDir) {
+            Write-Host "Found Allure results directory: $allureResultsDir" -ForegroundColor Yellow
+            
+            # Generate Allure report using C# AllureReportGenerator
+            try {
+              Push-Location IntegrationTests/FlinkDotNet.Aspire.IntegrationTests
+              
+              # Generate the Allure report
+              dotnet run --project . --configuration Release -- generate-allure-report "$([System.IO.Path]::GetFullPath("bin/Release/net9.0/allure-results"))" "$([System.IO.Path]::GetFullPath("../../integration-allure-report"))"
+              
+              Pop-Location
+              
+              Write-Host "✅ BDD integration Allure report generated!" -ForegroundColor Green
+            }
+            catch {
+              Write-Host "⚠️ Error generating Allure report: $_" -ForegroundColor Yellow
+            }
+          } else {
+            Write-Host "⚠️ No Allure results found for BDD integration tests" -ForegroundColor Yellow
+          }
+
       - name: Upload BDD integration test results and Allure reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bdd-integration-test-results
+          name: integration-test-results
           path: |
             **/*.trx
-            **/*.log
-            **/*.txt
-            **/allure-results/**
-            **/allure-report/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
+            integration-allure-report/**
+          retention-days: 7

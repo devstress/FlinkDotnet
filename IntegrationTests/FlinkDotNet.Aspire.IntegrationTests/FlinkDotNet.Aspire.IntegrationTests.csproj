@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <OutputType>Exe</OutputType>
     <!-- Disable IDE0005 for BDD test project -->
     <NoWarn>$(NoWarn);IDE0005</NoWarn>
   </PropertyGroup>

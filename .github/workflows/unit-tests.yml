@@ -61,11 +61,11 @@ jobs:
             Write-Host "  Test Result: $($_.FullName)"
           }
 
-      - name: Upload Test Results
+      - name: Upload unit test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-test-results
+          name: unit-test-results
           path: |
             FlinkDotNet/TestResults/**/*.trx
           retention-days: 7

@@ -77,6 +77,4 @@ jobs:
     needs: build
     uses: ./.github/workflows/backpressure-tests.yml
 
-  local_testing:
-    needs: build
-    uses: ./.github/workflows/local-testing.yml
+

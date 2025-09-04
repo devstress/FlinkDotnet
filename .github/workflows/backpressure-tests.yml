@@ -88,17 +88,15 @@ jobs:
             throw
           }
 
-      - name: Upload BDD backpressure test results and Allure reports
+      - name: Upload backpressure test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bdd-backpressure-test-results
+          name: backpressure-test-results
           path: |
             **/*.trx
-            **/allure-results/**
-            **/allure-report/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
+            backpressure-test-summary.md
+          retention-days: 7
 
       - name: Generate Backpressure Test Summary Report
         if: always()
