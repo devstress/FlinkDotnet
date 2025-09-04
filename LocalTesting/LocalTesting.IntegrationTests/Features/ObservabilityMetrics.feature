@@ -7,3 +7,4 @@ Feature: Observability Metrics Validation
   Scenario: Simple Observability Flow
     When I run the entire flow
     Then we print the metrics to the console
+    And we save the metrics to a file

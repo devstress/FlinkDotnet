@@ -53,3 +53,55 @@ jobs:
             --logger "console;verbosity=detailed" \
             --no-build \
             --filter "Category=observability"
+
+      - name: Display Observability Metrics
+        if: always()
+        timeout-minutes: 5
+        env:
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+        run: |
+          echo "📊 Displaying Observability Metrics Summary..."
+          
+          # Find and display metrics files if they exist
+          if [ -d "LocalTesting/metrics" ]; then
+            echo "📁 Metrics files found in LocalTesting/metrics:"
+            ls -la LocalTesting/metrics/
+            
+            # Display the latest metrics file
+            LATEST_METRICS_FILE=$(find LocalTesting/metrics -name "observability-metrics-*.txt" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+            if [ -n "$LATEST_METRICS_FILE" ]; then
+              echo ""
+              echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
+              echo "║                         📊 LATEST OBSERVABILITY METRICS 📊                           ║"
+              echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+              cat "$LATEST_METRICS_FILE"
+              echo ""
+              echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
+              echo "║                               📁 FILE INFORMATION 📁                                 ║"
+              echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+              echo "📄 File: $LATEST_METRICS_FILE"
+              echo "📊 Size: $(stat -c%s "$LATEST_METRICS_FILE") bytes"
+              echo "📅 Created: $(stat -c%y "$LATEST_METRICS_FILE")"
+            else
+              echo "⚠️ No metrics text files found"
+            fi
+            
+            # Display JSON metrics if available
+            LATEST_JSON_FILE=$(find LocalTesting/metrics -name "observability-metrics-*.json" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+            if [ -n "$LATEST_JSON_FILE" ]; then
+              echo ""
+              echo "📄 JSON Metrics File: $LATEST_JSON_FILE"
+              echo "📊 JSON Size: $(stat -c%s "$LATEST_JSON_FILE") bytes"
+            fi
+          else
+            echo "⚠️ No metrics directory found. Metrics may not have been generated."
+          fi
+
+      - name: Upload Observability Metrics Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observability-metrics-${{ github.run_id }}
+          path: |
+            LocalTesting/metrics/
+          retention-days: 7
