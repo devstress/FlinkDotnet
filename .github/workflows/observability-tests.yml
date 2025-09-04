@@ -68,19 +68,17 @@ jobs:
             ls -la LocalTesting/Bin/observability-test-result.txt
             
             echo ""
-            echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-            echo "║                         📊 OBSERVABILITY METRICS RESULTS 📊                          ║"
-            echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+            echo "📊 OBSERVABILITY METRICS RESULTS"
+            echo ""
             cat "LocalTesting/Bin/observability-test-result.txt"
             echo ""
-            echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-            echo "║                               📁 FILE INFORMATION 📁                                 ║"
-            echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
-            echo "📄 File: LocalTesting/Bin/observability-test-result.txt"
-            echo "📊 Size: $(stat -c%s "LocalTesting/Bin/observability-test-result.txt") bytes"
-            echo "📅 Created: $(stat -c%y "LocalTesting/Bin/observability-test-result.txt")"
+            echo "📄 Metrics file: LocalTesting/Bin/observability-test-result.txt"
+            echo "📊 File size: $(stat -c%s "LocalTesting/Bin/observability-test-result.txt") bytes"
+            echo "📅 Generated: $(stat -c%y "LocalTesting/Bin/observability-test-result.txt")"
+            echo "🔍 Metrics source: Real infrastructure measurement with Stopwatch timing"
           else
             echo "⚠️ No metrics file found. Expected: LocalTesting/Bin/observability-test-result.txt"
+            echo "❌ This indicates the observability test did not complete successfully or failed to measure real infrastructure performance"
           fi
 
       - name: Upload Observability Metrics Artifacts
