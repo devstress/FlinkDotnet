@@ -7,12 +7,14 @@ using System.Text.Json;
 using System.Text;
 using System.Net.Http.Json;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace LocalTesting.IntegrationTests.Features;
 
 /// <summary>
-/// Integration tests for observability metrics using LocalTesting Aspire infrastructure
+/// Integration tests for observability metrics using LocalTesting infrastructure
 /// Validates messages-per-second metrics for Kafka, Flink, Temporal, and end-to-end flow
-/// Note: These tests use Aspire testing framework to automatically manage infrastructure
+/// Note: Tests are designed to work with manually started LocalTesting infrastructure
 /// </summary>
 [Binding]
 public class ObservabilityMetricsSteps : IAsyncLifetime
@@ -30,15 +32,15 @@ public class ObservabilityMetricsSteps : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Note: In the actual test environment, this will use Aspire testing framework
-        // to automatically start and manage LocalTesting infrastructure
-        Console.WriteLine("🚀 Initializing observability tests with Aspire testing framework...");
+        Console.WriteLine("🚀 Initializing observability tests...");
         
-        // For now, use a simple HTTP client that will connect to the Aspire-managed infrastructure
+        // Create HTTP client that will connect to LocalTesting infrastructure
+        // In a proper .NET 9.0 + Aspire environment, this would use Aspire testing framework
         _httpClient = new HttpClient();
         _httpClient.BaseAddress = new Uri("http://localhost:18000");
+        _httpClient.Timeout = TimeSpan.FromMinutes(5); // Extended timeout for infrastructure setup
         
-        Console.WriteLine("✅ LocalTesting infrastructure will be managed by Aspire testing framework");
+        Console.WriteLine("✅ HTTP client initialized for LocalTesting infrastructure");
         await Task.CompletedTask;
     }
 
@@ -51,18 +53,32 @@ public class ObservabilityMetricsSteps : IAsyncLifetime
     [Given(@"LocalTesting infrastructure is running with observability enabled")]
     public async Task GivenLocalTestingInfrastructureIsRunningWithObservabilityEnabled()
     {
-        // Verify LocalTesting API is accessible through Aspire
-        var response = await _httpClient!.GetAsync("/health");
-        response.EnsureSuccessStatusCode();
+        if (_httpClient == null)
+        {
+            throw new InvalidOperationException("HttpClient is not initialized. The Aspire testing framework may not have started properly.");
+        }
         
-        Console.WriteLine("✅ LocalTesting infrastructure is accessible via Aspire");
-        
-        // Verify observability endpoint is available
-        var metricsResponse = await _httpClient.GetAsync("/api/observability/metrics/messages-per-second");
-        metricsResponse.EnsureSuccessStatusCode();
-        
-        Console.WriteLine("✅ Observability metrics endpoint is available");
-        _scenarioContext["infrastructure_ready"] = true;
+        try
+        {
+            // Verify LocalTesting API is accessible through Aspire
+            var response = await _httpClient.GetAsync("/health");
+            response.EnsureSuccessStatusCode();
+            
+            Console.WriteLine("✅ LocalTesting infrastructure is accessible via Aspire");
+            
+            // Verify observability endpoint is available
+            var metricsResponse = await _httpClient.GetAsync("/api/observability/metrics/messages-per-second");
+            metricsResponse.EnsureSuccessStatusCode();
+            
+            Console.WriteLine("✅ Observability metrics endpoint is available");
+            _scenarioContext["infrastructure_ready"] = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"❌ Failed to connect to LocalTesting infrastructure: {ex.Message}");
+            Console.WriteLine("🔧 Ensure LocalTesting infrastructure is running or .NET 9.0 with Aspire workload is properly installed");
+            throw new InvalidOperationException($"LocalTesting infrastructure is not accessible: {ex.Message}", ex);
+        }
     }
 
     [When(@"I produce (\d+) messages to Kafka topic ""(.*)""")]
