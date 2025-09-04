@@ -42,7 +42,6 @@ public class ObservabilityMetricsSteps : IAsyncLifetime
         {
             // Use proper Aspire testing framework to automatically manage LocalTesting infrastructure
             var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_AppHost>();
-            builder.ConfigureLogging(logging => logging.AddConsole().SetMinimumLevel(LogLevel.Warning));
             
             // Build and start the distributed application
             _app = await builder.BuildAsync();
