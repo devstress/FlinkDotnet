@@ -9,9 +9,9 @@ namespace FlinkDotNet.Aspire.IntegrationTests;
 public static class AllureReportGenerator
 {
     /// <summary>
-    /// Main entry point for command-line execution
+    /// Entry point for command-line execution - made internal to avoid conflict with auto-generated Program.Main
     /// </summary>
-    public static async Task Main(string[] args)
+    internal static async Task Main(string[] args)
     {
         if (args.Length >= 3 && args[0] == "generate-allure-report")
         {
