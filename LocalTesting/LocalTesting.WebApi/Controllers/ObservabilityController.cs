@@ -47,6 +47,23 @@ public class ObservabilityController : ControllerBase
             // This ensures we get the actual metrics being recorded, not relying on Prometheus export
             var allRates = _metricsService.GetAllMessagesPerSecondRates();
             
+            // Log diagnostic information for investigation
+            _logger.LogInformation("🔍 DEBUG: Retrieved {TotalMetrics} metrics from ObservabilityMetricsService", allRates.Count);
+            foreach (var rate in allRates)
+            {
+                _logger.LogInformation("🔍 DEBUG: Metric {Key} = {Value:F2}", rate.Key, rate.Value);
+            }
+            
+            // If no metrics or all zero, this indicates the flow hasn't been executed or metrics expired
+            var hasNonZeroMetrics = allRates.Values.Any(v => v > 0);
+            if (!hasNonZeroMetrics)
+            {
+                _logger.LogWarning("⚠️ All metrics are zero or empty. This indicates:");
+                _logger.LogWarning("   1. Flow simulation hasn't been executed recently (metrics expire after 30s)");
+                _logger.LogWarning("   2. ObservabilityMetricsService recording is not working");
+                _logger.LogWarning("   3. Integration test should call /simulate endpoint first");
+            }
+            
             // Organize metrics by layer type
             var kafkaMetrics = allRates
                 .Where(kvp => kvp.Key.StartsWith("kafka_producer_"))
@@ -128,7 +145,8 @@ public class ObservabilityController : ControllerBase
                     TotalMessagesPerSecond = Math.Round(kafkaMetrics.Values.Sum() + flinkMetrics.Values.Sum() + 
                                                        temporalMetrics.Values.Sum() + flowMetrics.Values.Sum(), 2),
                     MetricsSource = "Live ObservabilityMetricsService (Real-time)",
-                    InfrastructureNote = "Direct metrics retrieval from service layer - no Prometheus dependency"
+                    InfrastructureNote = "Direct metrics retrieval from service layer - no Prometheus dependency",
+                    DebuggingNote = hasNonZeroMetrics ? "Metrics contain real data" : "All metrics are zero - investigate flow execution or metric expiration"
                 }
             };
 
@@ -253,15 +271,16 @@ public class ObservabilityController : ControllerBase
             // Record actual metrics to the observability infrastructure
             // This will be scraped by Prometheus and become real metrics
             
-            // Record real Kafka producer metrics (per partition)
+            // Record real Kafka producer metrics (per partition for single ingress topic)
+            var ingressTopic = "ingress-topic"; // Single ingress topic as per user requirement
             var partitions = 10; // Based on KAFKA_NUM_PARTITIONS in Program.cs
             var messagesPerPartition = simRequest.KafkaMessages / partitions;
             
             for (int partition = 0; partition < partitions; partition++)
             {
-                var topic = $"test-topic-{partition % 3}"; // 3 topics across 10 partitions
-                _metricsService.RecordKafkaProducerMessage(topic, partition.ToString(), messagesPerPartition, messagesPerPartition * 1024);
-                _metricsService.RecordKafkaProducerLatency(topic, 0.001); // 1ms producer latency
+                // Simple naming: partition0, partition1, etc. for single ingress topic
+                _metricsService.RecordKafkaProducerMessage(ingressTopic, partition.ToString(), messagesPerPartition, messagesPerPartition * 1024);
+                _metricsService.RecordKafkaProducerLatency(ingressTopic, 0.001); // 1ms producer latency
             }
 
             // Record real Flink processing metrics (includes Kafka consuming)
@@ -273,8 +292,9 @@ public class ObservabilityController : ControllerBase
                 // Flink input (Kafka consuming) - this IS the consumer rate
                 _metricsService.RecordFlinkJobMessageIn(jobId, "kafka-source", messagesPerJob);
                 
-                // Flink output (processing and producing to output topics)
-                var outputMessages = (long)(messagesPerJob * 0.99); // 1% processing loss
+                // Flink output (processing complete) - NO ARTIFICIAL LOSS
+                // Real infrastructure should preserve all messages unless there's actual processing failure
+                var outputMessages = messagesPerJob; // No artificial loss - investigate real infrastructure
                 _metricsService.RecordFlinkJobMessageOut(jobId, "kafka-sink", outputMessages);
                 _metricsService.RecordFlinkJobLatency(jobId, 0.002); // 2ms processing latency
             }
