@@ -1,3 +1,34 @@
+### Exception Handling
+- **Flag**: Empty catch blocks
+- **Flag**: Catching `System.Exception` without rethrowing
+- **Flag**: Using exceptions for control flow
+- **Recommend**: Specific exception types
+- **Recommend**: Proper logging in catch blocks
+- **Recommend**: Using `using` statements for disposable resources
+
+```csharp
+// BAD
+try
+{
+    DoSomething();
+}
+catch
+{
+    // Silent failure
+}
+
+// GOOD
+try
+{
+    DoSomething();
+}
+catch (SpecificException ex)
+{
+    _logger.LogError(ex, "Failed to do something");
+    throw; // or handle appropriately
+}
+```
+
 ### Async/Await Best Practices
 - **Flag**: Blocking async calls (`.Wait()`, `.Result`)
 - **Flag**: Not using `ConfigureAwait(false)` in library code
@@ -79,19 +110,4 @@ When reviewing code, ensure the following:
    - [ ] Test coverage is adequate
    - [ ] Tests are readable and maintainable
 
-## Automatic Checks
-
-The following should be automatically flagged during code review:
-
-- Methods with cyclomatic complexity > 10
-- Classes with more than 500 lines
-- Files with more than 1000 lines
-- Public members without XML documentation
-- Use of `var` where the type is not obvious
-- Missing null checks for nullable parameters
-- Incorrect disposal patterns
-- Thread safety issues in shared code
-
-## Review Guidelines for Common Patterns
-
-> **Note**: This chunk covers .NET best practices, code review checklist and automatic checks. For SOLID principles, see Parts 1-2. For specific pattern examples, see Part 4.
+> **Note**: This chunk covers .NET best practices and code review checklist. For automatic checks and pattern guidelines, see Part 9. For SOLID principles, see Parts 1-2.
