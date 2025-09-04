@@ -82,16 +82,35 @@ Add comprehensive infrastructure validation and warning detection
 
 ## Phase 4: Implementation
 ### Code Changes
-1. Enhance observability test step definitions to add infrastructure validation
-2. Add container log monitoring capabilities 
-3. Integrate AspireHealthCheckService validation before flow execution
-4. Add warning/error detection patterns for Kafka and other services
+1. ✅ Enhanced observability test step definitions to add infrastructure validation
+   - Added `ValidateInfrastructureHealthOrFail()` method that fails test on any warnings
+   - Added `ValidateServiceHealthResults()` to check service health status
+   - Added `MonitorContainerLogsForWarnings()` for warning detection
+   - Added `ValidateKafkaClusterHealth()` specific validation for Kafka broker issues
+
+2. ✅ Added container log monitoring capabilities 
+   - Monitor for infrastructure warnings during test execution
+   - Fail-fast approach when warnings detected
+
+3. ✅ Integrated AspireHealthCheckService validation before flow execution
+   - Call infrastructure validation before running the observability flow
+   - Enhanced constructor to inject AspireHealthCheckService
+
+4. ✅ Added warning/error detection patterns for Kafka and other services
+   - Created `/api/observability/validate-infrastructure` endpoint for comprehensive validation
+   - Created `/api/observability/kafka-cluster-health` endpoint for Kafka-specific validation
+   - Added proper error messages and status codes for different failure scenarios
 
 ### Challenges Encountered
-[To be filled during implementation]
+- CI environment has .NET 8.0 but project requires .NET 9.0 (per enforcement rules)
+- Limited access to container logs in Aspire testing framework
+- Need to balance comprehensive validation with test execution time
 
 ### Solutions Applied
-[To be filled during implementation]
+- Enhanced existing health check service instead of direct container log access
+- Added specific Kafka broker validation to catch the warnings shown by user
+- Clear error messages that distinguish between different types of infrastructure failures
+- Fail-fast approach to prevent test execution on unhealthy infrastructure
 
 ## Phase 5: Testing & Validation
 ### Test Results

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using LocalTesting.WebApi.Services;
 using LocalTesting.WebApi.Models;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Text.Json;
 
 namespace LocalTesting.WebApi.Controllers;
 
@@ -13,17 +14,20 @@ public class ObservabilityController : ControllerBase
     private readonly ObservabilityMetricsService _metricsService;
     private readonly PrometheusMetricsService _prometheusService;
     private readonly IMessageStateService _messageStateService;
+    private readonly AspireHealthCheckService _healthCheckService;
     private readonly ILogger<ObservabilityController> _logger;
 
     public ObservabilityController(
         ObservabilityMetricsService metricsService, 
         PrometheusMetricsService prometheusService,
         IMessageStateService messageStateService, 
+        AspireHealthCheckService healthCheckService,
         ILogger<ObservabilityController> logger)
     {
         _metricsService = metricsService;
         _prometheusService = prometheusService;
         _messageStateService = messageStateService;
+        _healthCheckService = healthCheckService;
         _logger = logger;
     }
 
@@ -723,6 +727,210 @@ public class ObservabilityController : ControllerBase
                 Status = "Failed", 
                 Error = ex.Message, 
                 Timestamp = DateTime.UtcNow 
+            });
+        }
+    }
+
+    #endregion
+
+    #region Infrastructure Validation Endpoints - Required for Warning Detection
+
+    [HttpPost("validate-infrastructure")]
+    [SwaggerOperation(
+        Summary = "Validate Complete Infrastructure Health",
+        Description = "Comprehensive infrastructure health validation - FAILS if any warnings detected per user requirement"
+    )]
+    [SwaggerResponse(200, "Infrastructure validation passed - no warnings detected")]
+    [SwaggerResponse(500, "Infrastructure validation failed - warnings/errors detected")]
+    public async Task<IActionResult> ValidateInfrastructure()
+    {
+        try
+        {
+            _logger.LogInformation("🔍 CRITICAL VALIDATION: Starting comprehensive infrastructure health check");
+            _logger.LogInformation("📋 User requirement: ALL warnings should cause test to exit as errors");
+
+            var healthResults = await _healthCheckService.CheckAllServicesAsync();
+            
+            // Check overall health
+            if (healthResults.TryGetValue("overallHealth", out var overallHealthObj))
+            {
+                var overallHealth = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(overallHealthObj));
+                
+                if (overallHealth.TryGetProperty("IsHealthy", out var isHealthyElement) && 
+                    !isHealthyElement.GetBoolean())
+                {
+                    var healthyServices = overallHealth.TryGetProperty("HealthyServices", out var hsElement) ? hsElement.GetInt32() : 0;
+                    var totalServices = overallHealth.TryGetProperty("TotalServices", out var tsElement) ? tsElement.GetInt32() : 0;
+                    
+                    _logger.LogError("❌ Infrastructure unhealthy: {HealthyServices}/{TotalServices} services are healthy", 
+                        healthyServices, totalServices);
+                    
+                    return StatusCode(500, new
+                    {
+                        Status = "InfrastructureValidationFailed",
+                        Message = "Infrastructure validation failed - unhealthy services detected",
+                        HealthyServices = healthyServices,
+                        TotalServices = totalServices,
+                        ValidationResult = "FAILED_UNHEALTHY_SERVICES",
+                        Timestamp = DateTime.UtcNow,
+                        Details = healthResults
+                    });
+                }
+            }
+
+            // Check individual services for detailed validation
+            if (healthResults.TryGetValue("services", out var servicesObj))
+            {
+                var services = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(servicesObj));
+                var failedServices = new List<string>();
+                
+                foreach (var service in services.EnumerateObject())
+                {
+                    if (service.Value.TryGetProperty("IsHealthy", out var isHealthy) && 
+                        !isHealthy.GetBoolean())
+                    {
+                        var serviceName = service.Value.TryGetProperty("ServiceName", out var nameElement) ? 
+                            nameElement.GetString() : service.Name;
+                        var errorMessage = service.Value.TryGetProperty("ErrorMessage", out var errorElement) ? 
+                            errorElement.GetString() : "Unknown error";
+                        
+                        failedServices.Add($"{serviceName}: {errorMessage}");
+                        _logger.LogWarning("⚠️ Service validation warning: {ServiceName} - {ErrorMessage}", serviceName, errorMessage);
+                    }
+                }
+
+                if (failedServices.Count > 0)
+                {
+                    _logger.LogError("❌ Infrastructure validation failed due to service warnings/errors");
+                    
+                    return StatusCode(500, new
+                    {
+                        Status = "InfrastructureValidationFailed",
+                        Message = "Infrastructure validation failed - service warnings/errors detected",
+                        ValidationResult = "FAILED_SERVICE_WARNINGS",
+                        FailedServices = failedServices,
+                        Timestamp = DateTime.UtcNow,
+                        UserRequirement = "ALL warnings should cause test to exit as errors",
+                        Details = healthResults
+                    });
+                }
+            }
+
+            _logger.LogInformation("✅ Infrastructure validation passed - no warnings detected");
+            
+            return Ok(new
+            {
+                Status = "InfrastructureValidationPassed",
+                Message = "Infrastructure validation passed - no warnings detected",
+                ValidationResult = "PASSED",
+                Timestamp = DateTime.UtcNow,
+                UserRequirement = "ALL warnings treated as errors - COMPLIANT",
+                Details = healthResults
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Infrastructure validation failed with exception");
+            
+            return StatusCode(500, new
+            {
+                Status = "InfrastructureValidationException",
+                Message = "Infrastructure validation failed with exception",
+                ValidationResult = "FAILED_EXCEPTION",
+                Error = ex.Message,
+                Timestamp = DateTime.UtcNow,
+                UserRequirement = "ALL warnings should cause test to exit as errors"
+            });
+        }
+    }
+
+    [HttpGet("kafka-cluster-health")]
+    [SwaggerOperation(
+        Summary = "Validate Kafka Cluster Health",
+        Description = "Specific validation for Kafka cluster to detect broker communication warnings"
+    )]
+    [SwaggerResponse(200, "Kafka cluster health validation passed")]
+    [SwaggerResponse(500, "Kafka cluster health validation failed")]
+    public async Task<IActionResult> ValidateKafkaClusterHealth()
+    {
+        try
+        {
+            _logger.LogInformation("🔍 Validating Kafka cluster health specifically for broker communication warnings");
+
+            var healthResults = await _healthCheckService.CheckAllServicesAsync();
+            
+            if (healthResults.TryGetValue("services", out var servicesObj))
+            {
+                var services = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(servicesObj));
+                
+                if (services.TryGetProperty("kafkaBrokers", out var kafkaBrokerHealth))
+                {
+                    var isHealthy = kafkaBrokerHealth.TryGetProperty("IsHealthy", out var healthyElement) && 
+                                   healthyElement.GetBoolean();
+                    
+                    var brokerCount = 0;
+                    var expectedBrokers = 3;
+                    
+                    if (kafkaBrokerHealth.TryGetProperty("Details", out var details) &&
+                        details.TryGetProperty("brokerCount", out var brokerCountElement))
+                    {
+                        brokerCount = brokerCountElement.GetInt32();
+                    }
+
+                    var result = new
+                    {
+                        Status = isHealthy ? "KafkaClusterHealthy" : "KafkaClusterUnhealthy",
+                        brokerCount = brokerCount,
+                        expectedBrokers = expectedBrokers,
+                        hasConnectionIssues = !isHealthy || brokerCount < expectedBrokers,
+                        validationResult = isHealthy && brokerCount >= expectedBrokers ? "PASSED" : "FAILED",
+                        Timestamp = DateTime.UtcNow,
+                        Details = kafkaBrokerHealth
+                    };
+
+                    if (!isHealthy || brokerCount < expectedBrokers)
+                    {
+                        var errorMessage = kafkaBrokerHealth.TryGetProperty("ErrorMessage", out var errorElement) ? 
+                            errorElement.GetString() : $"Expected {expectedBrokers} brokers, found {brokerCount}";
+                        
+                        _logger.LogError("❌ Kafka cluster validation failed: {ErrorMessage}", errorMessage);
+                        
+                        return StatusCode(500, result);
+                    }
+
+                    _logger.LogInformation("✅ Kafka cluster validation passed: {BrokerCount}/{ExpectedBrokers} brokers healthy", 
+                        brokerCount, expectedBrokers);
+                    
+                    return Ok(result);
+                }
+            }
+
+            _logger.LogWarning("⚠️ Kafka broker health information not available");
+            
+            return StatusCode(500, new
+            {
+                Status = "KafkaHealthDataUnavailable",
+                brokerCount = 0,
+                expectedBrokers = 3,
+                hasConnectionIssues = true,
+                validationResult = "FAILED",
+                Message = "Kafka broker health data not available",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Kafka cluster health validation failed with exception");
+            
+            return StatusCode(500, new
+            {
+                Status = "KafkaValidationException",
+                brokerCount = 0,
+                expectedBrokers = 3,
+                hasConnectionIssues = true,
+                validationResult = "FAILED_EXCEPTION",
+                Error = ex.Message,
+                Timestamp = DateTime.UtcNow
             });
         }
     }
