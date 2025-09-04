@@ -1,10 +1,6 @@
 name: Build Solutions
 
 on:
-  push:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
   pull_request:
     paths-ignore:
       - '**.md'
