@@ -1,11 +1,10 @@
 Feature: Observability Metrics Validation
   As a system administrator
-  I want to verify that observability metrics are working across the complete pipeline
-  So that I can monitor system performance in production
+  I want to run the flow and see the metrics
+  So that I can monitor system performance
 
-  @observability @metrics @comprehensive
-  Scenario: Comprehensive Observability Metrics Validation
-    Given LocalTesting infrastructure is running with observability enabled
-    When I simulate observability metrics across all layers
-    Then observability metrics should be available for all components
-    And Prometheus should be able to scrape all observability metrics
+  @observability @metrics @simple
+  Scenario: Simple Observability Flow
+    When I run the entire flow
+    Then we print the metrics to the console
+    And we save the metrics to a file

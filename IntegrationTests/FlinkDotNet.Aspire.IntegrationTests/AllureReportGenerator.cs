@@ -6,12 +6,12 @@ namespace FlinkDotNet.Aspire.IntegrationTests;
 /// <summary>
 /// Generates Allure reports in C# instead of using CLI
 /// </summary>
-public static class AllureReportGenerator
+internal static class AllureReportGenerator
 {
     /// <summary>
-    /// Main entry point for command-line execution
+    /// Entry point for command-line execution when run as standalone tool
     /// </summary>
-    public static async Task Main(string[] args)
+    public static async Task RunAsync(string[] args)
     {
         if (args.Length >= 3 && args[0] == "generate-allure-report")
         {
