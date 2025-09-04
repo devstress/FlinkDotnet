@@ -43,7 +43,7 @@
 - **Key Differences**: 
   - Line 3: .NET 9 vs .NET 8 migration references
   - Lines 790-1007: .github has "Rule 13: .NET 9.0 Environment Requirements"
-  - Lines 790-847: .roo has "Rule 13: Premium AI Usage Tracking"
+  - Lines 790-847: .roo has different Rule 13 content
 - **File Locations**: 
   - /home/runner/work/FlinkDotnet/FlinkDotnet/.github/copilot-instructions.md
   - /home/runner/work/FlinkDotnet/FlinkDotnet/.roo/rules/default-rules.md
@@ -57,7 +57,7 @@
 - Both files share common structure from lines 1-789
 - Divergence starts at Rule 13 implementation
 - .github version includes comprehensive .NET 9.0 environment enforcement
-- .roo version includes premium AI usage tracking rules
+- .roo version includes different Rule 13 content
 - Both end with authority/compliance sections but different content
 
 **Source of Truth Decision**:
