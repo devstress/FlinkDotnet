@@ -9,3 +9,4 @@ Feature: Observability Metrics Validation
     When I simulate observability metrics across all layers
     Then observability metrics should be available for all components
     And Prometheus should be able to scrape all observability metrics
+    And we print the metrics to the console
