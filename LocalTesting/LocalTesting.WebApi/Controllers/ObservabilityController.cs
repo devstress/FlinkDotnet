@@ -34,32 +34,46 @@ public class ObservabilityController : ControllerBase
     [HttpGet("metrics/messages-per-second")]
     [SwaggerOperation(
         Summary = "Get Messages Per Second Metrics",
-        Description = "Retrieve real-time messages-per-second metrics from Prometheus across all layers: Kafka, Flink, Temporal, and end-to-end flow"
+        Description = "Retrieve real-time messages-per-second metrics directly from ObservabilityMetricsService (live metrics, not Prometheus)"
     )]
     [SwaggerResponse(200, "Messages per second metrics retrieved successfully")]
     public async Task<IActionResult> GetMessagesPerSecondMetrics()
     {
         try
         {
-            _logger.LogInformation("📊 Retrieving real messages-per-second metrics from Prometheus infrastructure");
+            _logger.LogInformation("📊 Retrieving real messages-per-second metrics from live ObservabilityMetricsService");
 
-            // Get real metrics from Prometheus instead of simulated data
-            var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
-            var flinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
-            var temporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
-            var flowMetrics = await _prometheusService.GetEndToEndFlowMetricsAsync();
+            // Get real metrics directly from ObservabilityMetricsService instead of Prometheus
+            // This ensures we get the actual metrics being recorded, not relying on Prometheus export
+            var allRates = _metricsService.GetAllMessagesPerSecondRates();
+            
+            // Organize metrics by layer type
+            var kafkaMetrics = allRates
+                .Where(kvp => kvp.Key.StartsWith("kafka_producer_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                
+            var flinkMetrics = allRates
+                .Where(kvp => kvp.Key.StartsWith("flink_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                
+            var temporalMetrics = allRates
+                .Where(kvp => kvp.Key.StartsWith("temporal_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                
+            var flowMetrics = allRates
+                .Where(kvp => kvp.Key.StartsWith("flow_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             
             var metrics = new
             {
                 Status = "Success",
-                Message = "Real messages-per-second metrics from Prometheus infrastructure: Kafka (per-partition) → Flink (includes consuming) → Temporal (workflows) → End-to-End",
+                Message = "Real messages-per-second metrics from live ObservabilityMetricsService: Kafka (per-partition) → Flink (includes consuming) → Temporal (workflows) → End-to-End",
                 Timestamp = DateTime.UtcNow,
                 
                 // Kafka Layer Metrics - Per-Partition and Per-Producer Granularity
                 KafkaMetrics = new
                 {
                     ProducerRates = kafkaMetrics
-                        .Where(kvp => kvp.Key.StartsWith("kafka_producer_"))
                         .ToDictionary(kvp => kvp.Key, kvp => new { MessagesPerSecond = Math.Round(kvp.Value, 2) })
                 },
                 
@@ -68,11 +82,11 @@ public class ObservabilityController : ControllerBase
                 FlinkMetrics = new
                 {
                     InputRates = flinkMetrics
-                        .Where(kvp => kvp.Key.StartsWith("flink_input_"))
+                        .Where(kvp => kvp.Key.Contains("_in_"))
                         .ToDictionary(kvp => kvp.Key, kvp => new { MessagesPerSecond = Math.Round(kvp.Value, 2) }),
                     
                     OutputRates = flinkMetrics
-                        .Where(kvp => kvp.Key.StartsWith("flink_output_"))
+                        .Where(kvp => kvp.Key.Contains("_out_"))
                         .ToDictionary(kvp => kvp.Key, kvp => new { MessagesPerSecond = Math.Round(kvp.Value, 2) })
                 },
                 
@@ -81,11 +95,11 @@ public class ObservabilityController : ControllerBase
                 TemporalMetrics = new
                 {
                     WorkflowRates = temporalMetrics
-                        .Where(kvp => kvp.Key.StartsWith("temporal_workflow_"))
+                        .Where(kvp => kvp.Key.Contains("_workflow_"))
                         .ToDictionary(kvp => kvp.Key, kvp => new { ExecutionsPerSecond = Math.Round(kvp.Value, 2) }),
                     
                     ActivityRates = temporalMetrics
-                        .Where(kvp => kvp.Key.StartsWith("temporal_activity_"))
+                        .Where(kvp => kvp.Key.Contains("_activity_"))
                         .ToDictionary(kvp => kvp.Key, kvp => new { ExecutionsPerSecond = Math.Round(kvp.Value, 2) })
                 },
                 
@@ -113,24 +127,24 @@ public class ObservabilityController : ControllerBase
                     HighestFlinkRate = flinkMetrics.Count > 0 ? Math.Round(flinkMetrics.Values.Max(), 2) : 0,
                     TotalMessagesPerSecond = Math.Round(kafkaMetrics.Values.Sum() + flinkMetrics.Values.Sum() + 
                                                        temporalMetrics.Values.Sum() + flowMetrics.Values.Sum(), 2),
-                    MetricsSource = "Prometheus Infrastructure",
-                    InfrastructureNote = "Kafka consumers are part of Flink input rates. Temporal processes workflow-triggered subset of messages."
+                    MetricsSource = "Live ObservabilityMetricsService (Real-time)",
+                    InfrastructureNote = "Direct metrics retrieval from service layer - no Prometheus dependency"
                 }
             };
 
-            _logger.LogInformation("✅ Real metrics retrieved from Prometheus: {KafkaMetrics} Kafka, {FlinkMetrics} Flink, {TemporalMetrics} Temporal, {FlowMetrics} Flow", 
+            _logger.LogInformation("✅ Real metrics retrieved from ObservabilityMetricsService: {KafkaMetrics} Kafka, {FlinkMetrics} Flink, {TemporalMetrics} Temporal, {FlowMetrics} Flow", 
                 kafkaMetrics.Count, flinkMetrics.Count, temporalMetrics.Count, flowMetrics.Count);
             
             return Ok(metrics);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to retrieve real metrics from Prometheus infrastructure");
+            _logger.LogError(ex, "❌ Failed to retrieve real metrics from ObservabilityMetricsService");
             return StatusCode(500, new { 
                 Status = "Failed", 
                 Error = ex.Message, 
                 Timestamp = DateTime.UtcNow,
-                Note = "Check if Prometheus is accessible at configured endpoint"
+                Note = "Check if ObservabilityMetricsService is properly initialized"
             });
         }
     }
