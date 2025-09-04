@@ -62,39 +62,25 @@ jobs:
         run: |
           echo "📊 Displaying Observability Metrics Summary..."
           
-          # Find and display metrics files if they exist
-          if [ -d "LocalTesting/metrics" ]; then
-            echo "📁 Metrics files found in LocalTesting/metrics:"
-            ls -la LocalTesting/metrics/
+          # Find and display metrics file in Bin directory
+          if [ -f "LocalTesting/Bin/observability-test-result.txt" ]; then
+            echo "📁 Metrics file found in LocalTesting/Bin/"
+            ls -la LocalTesting/Bin/observability-test-result.txt
             
-            # Display the latest metrics file
-            LATEST_METRICS_FILE=$(find LocalTesting/metrics -name "observability-metrics-*.txt" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
-            if [ -n "$LATEST_METRICS_FILE" ]; then
-              echo ""
-              echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-              echo "║                         📊 LATEST OBSERVABILITY METRICS 📊                           ║"
-              echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
-              cat "$LATEST_METRICS_FILE"
-              echo ""
-              echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-              echo "║                               📁 FILE INFORMATION 📁                                 ║"
-              echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
-              echo "📄 File: $LATEST_METRICS_FILE"
-              echo "📊 Size: $(stat -c%s "$LATEST_METRICS_FILE") bytes"
-              echo "📅 Created: $(stat -c%y "$LATEST_METRICS_FILE")"
-            else
-              echo "⚠️ No metrics text files found"
-            fi
-            
-            # Display JSON metrics if available
-            LATEST_JSON_FILE=$(find LocalTesting/metrics -name "observability-metrics-*.json" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
-            if [ -n "$LATEST_JSON_FILE" ]; then
-              echo ""
-              echo "📄 JSON Metrics File: $LATEST_JSON_FILE"
-              echo "📊 JSON Size: $(stat -c%s "$LATEST_JSON_FILE") bytes"
-            fi
+            echo ""
+            echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
+            echo "║                         📊 OBSERVABILITY METRICS RESULTS 📊                          ║"
+            echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+            cat "LocalTesting/Bin/observability-test-result.txt"
+            echo ""
+            echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
+            echo "║                               📁 FILE INFORMATION 📁                                 ║"
+            echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+            echo "📄 File: LocalTesting/Bin/observability-test-result.txt"
+            echo "📊 Size: $(stat -c%s "LocalTesting/Bin/observability-test-result.txt") bytes"
+            echo "📅 Created: $(stat -c%y "LocalTesting/Bin/observability-test-result.txt")"
           else
-            echo "⚠️ No metrics directory found. Metrics may not have been generated."
+            echo "⚠️ No metrics file found. Expected: LocalTesting/Bin/observability-test-result.txt"
           fi
 
       - name: Upload Observability Metrics Artifacts
@@ -103,5 +89,5 @@ jobs:
         with:
           name: observability-metrics-${{ github.run_id }}
           path: |
-            LocalTesting/metrics/
+            LocalTesting/Bin/observability-test-result.txt
           retention-days: 7
