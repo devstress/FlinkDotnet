@@ -1,5 +1,78 @@
 # # GitHub Copilot Guidelines
 
+## .NET 9.0 Local Development Environment Enforcement (MANDATORY)
+
+### Rule 1: .NET 9.0 Environment Requirements (CRITICAL)
+- **MANDATORY .NET 9.0 SDK**: All local development must use .NET 9.0.303 or later
+- **Before submitting any GitHub workflow or PR**, developers MUST verify:
+  - Local environment has .NET 9.0 SDK installed (`dotnet --version` returns 9.0.x)
+  - Aspire workload is installed and functional
+  - All solutions build successfully locally with .NET 9.0
+  - LocalTesting workflow executes successfully locally
+- **Local environment setup requirements**:
+  - .NET 9.0 SDK installation using official Microsoft installer
+  - Aspire workload installation (`dotnet workload install aspire`)
+  - Docker Desktop running for Aspire orchestration
+  - LocalTesting solution builds and runs without errors
+- **GitHub workflow local validation**:
+  - ALL GitHub workflows must pass locally before submission for review
+  - No version compatibility issues between local and CI environments
+  - LocalTesting workflow must execute successfully with Aspire dashboard accessible
+  - Integration tests must pass locally with same results as CI
+- **Environment consistency enforcement**:
+  - Local development environment must match CI environment (.NET 9.0)
+  - global.json version must be respected locally
+  - No .NET version downgrades or workarounds permitted
+  - Aspire orchestration must work locally before CI submission
+- **Verification commands required before PR submission**:
+  ```bash
+  # Verify .NET version
+  dotnet --version  # Must return 9.0.x
+  
+  # Install Aspire workload
+  dotnet workload install aspire
+  
+  # Build all solutions
+  dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
+  dotnet build Sample/Sample.sln --configuration Release  
+  dotnet build LocalTesting/LocalTesting.sln --configuration Release
+  
+  # Test LocalTesting workflow
+  ./test-aspire-localtesting.ps1 -MessageCount 1000
+  ```
+- **Installation verification for new developers**:
+  ```bash
+  # Check if .NET 9.0 is installed
+  dotnet --list-sdks | grep "9.0"
+  
+  # If not installed, download and install .NET 9.0 SDK
+  # Windows: Download from https://dotnet.microsoft.com/download/dotnet/9.0
+  # Linux/macOS: Use the dotnet-install script
+  curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version latest --channel 9.0
+  
+  # Install Aspire workload
+  dotnet workload install aspire
+  
+  # Verify installation
+  dotnet --version  # Should show 9.0.x
+  ```
+- **Project file enforcement**:
+  - All new .csproj files MUST target `net9.0` framework
+  - Existing projects should be updated to .NET 9.0 when modified
+  - global.json MUST specify .NET 9.0 SDK version
+  - No mixed framework targeting (e.g., net8.0 and net9.0 in same solution)
+- **Troubleshooting common issues**:
+  - If `dotnet --version` shows 8.x, ensure .NET 9.0 is installed and PATH is updated
+  - If Aspire workload fails to install, update to latest .NET 9.0 version first
+  - If LocalTesting fails, verify Docker Desktop is running and has sufficient resources
+  - If build errors occur, clean and rebuild: `dotnet clean && dotnet build`
+- **Failure to verify .NET 9.0 environment is a MAJOR violation** requiring complete environment setup before work can proceed
+- **Automated environment verification**:
+  - Add .NET version check to all build scripts
+  - Include environment validation in PR templates
+  - Require .NET 9.0 confirmation in issue templates
+  - Document environment setup in CONTRIBUTING.md
+
 This document defines the coding standards and best practices that GitHub Copilot should enforce during code reviews for this .NET project. These guidelines ensure adherence to SOLID principles and .NET best practices, with specialized guidance for BizTalk to Inobiz migrations using .NET 9 and direct XSLT mapping.
 
 ## SOLID Principles Enforcement
@@ -721,7 +794,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
 
 ## Architecture Documentation Maintenance (MANDATORY)
 
-### Rule 11: System Architecture Documentation Updates (CRITICAL)
+### Rule 9: System Architecture Documentation Updates (CRITICAL)
 - **ALWAYS update system architecture documentation** when making architecture or system design changes
 - **Required file updates for architecture changes**:
   - `docs/system-architecture-diagram.png` - Visual system architecture diagram
@@ -753,7 +826,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
 
 ## Test-Driven Development (TDD) and Behavior-Driven Development (BDD) Enforcement (MANDATORY)
 
-### Rule 12: Test-First Development and Continuous Test Fixing (CRITICAL)
+### Rule 10: Test-First Development and Continuous Test Fixing (CRITICAL)
 - **ALWAYS follow TDD and BDD principles** in all development work
 - **Test-first approach required**:
   - Write failing tests before implementing features
@@ -787,82 +860,9 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - **Test environment consistency** between local and CI must be maintained
 - **Failure to fix all tests is a MAJOR violation** requiring immediate attention and resolution
 
-## .NET 9.0 Local Development Environment Enforcement (MANDATORY)
-
-### Rule 13: .NET 9.0 Environment Requirements (CRITICAL)
-- **MANDATORY .NET 9.0 SDK**: All local development must use .NET 9.0.303 or later
-- **Before submitting any GitHub workflow or PR**, developers MUST verify:
-  - Local environment has .NET 9.0 SDK installed (`dotnet --version` returns 9.0.x)
-  - Aspire workload is installed and functional
-  - All solutions build successfully locally with .NET 9.0
-  - LocalTesting workflow executes successfully locally
-- **Local environment setup requirements**:
-  - .NET 9.0 SDK installation using official Microsoft installer
-  - Aspire workload installation (`dotnet workload install aspire`)
-  - Docker Desktop running for Aspire orchestration
-  - LocalTesting solution builds and runs without errors
-- **GitHub workflow local validation**:
-  - ALL GitHub workflows must pass locally before submission for review
-  - No version compatibility issues between local and CI environments
-  - LocalTesting workflow must execute successfully with Aspire dashboard accessible
-  - Integration tests must pass locally with same results as CI
-- **Environment consistency enforcement**:
-  - Local development environment must match CI environment (.NET 9.0)
-  - global.json version must be respected locally
-  - No .NET version downgrades or workarounds permitted
-  - Aspire orchestration must work locally before CI submission
-- **Verification commands required before PR submission**:
-  ```bash
-  # Verify .NET version
-  dotnet --version  # Must return 9.0.x
-  
-  # Install Aspire workload
-  dotnet workload install aspire
-  
-  # Build all solutions
-  dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
-  dotnet build Sample/Sample.sln --configuration Release  
-  dotnet build LocalTesting/LocalTesting.sln --configuration Release
-  
-  # Test LocalTesting workflow
-  ./test-aspire-localtesting.ps1 -MessageCount 1000
-  ```
-- **Installation verification for new developers**:
-  ```bash
-  # Check if .NET 9.0 is installed
-  dotnet --list-sdks | grep "9.0"
-  
-  # If not installed, download and install .NET 9.0 SDK
-  # Windows: Download from https://dotnet.microsoft.com/download/dotnet/9.0
-  # Linux/macOS: Use the dotnet-install script
-  curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version latest --channel 9.0
-  
-  # Install Aspire workload
-  dotnet workload install aspire
-  
-  # Verify installation
-  dotnet --version  # Should show 9.0.x
-  ```
-- **Project file enforcement**:
-  - All new .csproj files MUST target `net9.0` framework
-  - Existing projects should be updated to .NET 9.0 when modified
-  - global.json MUST specify .NET 9.0 SDK version
-  - No mixed framework targeting (e.g., net8.0 and net9.0 in same solution)
-- **Troubleshooting common issues**:
-  - If `dotnet --version` shows 8.x, ensure .NET 9.0 is installed and PATH is updated
-  - If Aspire workload fails to install, update to latest .NET 9.0 version first
-  - If LocalTesting fails, verify Docker Desktop is running and has sufficient resources
-  - If build errors occur, clean and rebuild: `dotnet clean && dotnet build`
-- **Failure to verify .NET 9.0 environment is a MAJOR violation** requiring complete environment setup before work can proceed
-- **Automated environment verification**:
-  - Add .NET version check to all build scripts
-  - Include environment validation in PR templates
-  - Require .NET 9.0 confirmation in issue templates
-  - Document environment setup in CONTRIBUTING.md
-
 ## AI Agent Build and Test Enforcement (MANDATORY)
 
-### Rule 14: Pre-Change Validation Requirements (CRITICAL)
+### Rule 2: Pre-Change Validation Requirements (CRITICAL)
 - **ALWAYS validate builds and tests** before making ANY functionality changes to code
 - **Zero tolerance for introducing build failures** - all builds must pass before and after changes
 - **MANDATORY validation sequence** for every code change:
@@ -881,7 +881,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - Document any test failures in Work Items with root cause analysis
   - New functionality must include appropriate test coverage
 
-### Rule 15: Validation Script Usage (MANDATORY)
+### Rule 3: Validation Script Usage (MANDATORY)
 - **Primary validation script**: `./validate-build-and-tests.ps1`
 - **Quick build-only validation**: `./validate-build-and-tests.ps1 -SkipTests`
 - **Pre-commit validation**: `./pre-commit-validation.ps1`
@@ -892,7 +892,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - Do NOT bypass or ignore script failures
   - Document failures and resolutions in Work Items
 
-### Rule 16: Build Failure Prevention Strategy (CRITICAL)
+### Rule 4: Build Failure Prevention Strategy (CRITICAL)
 - **Incremental change approach**:
   - Make smallest possible changes to achieve functionality goals
   - Validate after each significant change (not just at the end)
@@ -920,7 +920,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   git checkout <file>  # Revert if necessary
   ```
 
-### Rule 17: Error Resolution Requirements (MANDATORY)
+### Rule 5: Error Resolution Requirements (MANDATORY)
 - **Build errors must be fixed immediately** - no partial commits with build failures
 - **Test regression handling**:
   - New failing tests must be investigated and documented
@@ -936,7 +936,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - Include error messages, root cause analysis, and solution applied
   - Create searchable knowledge base for future similar issues
 
-### Rule 18: Quality Gate Enforcement (CRITICAL)
+### Rule 6: Quality Gate Enforcement (CRITICAL)
 - **No exceptions to build success requirement** - builds MUST pass before any commit
 - **Acceptable test outcomes**:
   - All tests pass: ✅ Ideal outcome
@@ -949,7 +949,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - Cannot proceed from Implementation to Testing without successful builds
   - Cannot close Work Item without full validation success
 
-### Rule 19: Automation and Tool Usage (MANDATORY)
+### Rule 7: Automation and Tool Usage (MANDATORY)
 - **Always use existing automation** rather than manual processes
 - **Available validation tools**:
   - `./validate-build-and-tests.ps1` - Comprehensive validation
@@ -965,7 +965,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - Don't work around tool limitations - fix the tools
   - Maintain and improve automation continuously
 
-### Rule 20: Failure Recovery Procedures (CRITICAL)
+### Rule 8: Failure Recovery Procedures (CRITICAL)
 - **When builds fail after changes**:
   1. Immediately run `git diff` to review all changes made
   2. Identify the minimal change that might have caused the failure
