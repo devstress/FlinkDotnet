@@ -1,4 +1,4 @@
-name: Observability Tests - Message Per Second Metrics (Aspire Testing Framework)
+name: Observability Tests - Comprehensive End-to-End Flow Metrics (Aspire Testing Framework)
 
 on:
   workflow_call:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   run-observability-tests:
-    name: Run Observability Tests with Aspire Testing Framework
+    name: Run Comprehensive End-to-End Observability Test with Aspire Testing Framework
     runs-on: ubuntu-latest
 
     defaults:
@@ -58,15 +58,15 @@ jobs:
           dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore --verbosity minimal
 
       - name: Run Observability Tests Using Aspire Testing Framework
-        timeout-minutes: 15
+        timeout-minutes: 30
         env:
           INTEGRATION_TEST_MODE: "OBSERVABILITY"
           GITHUB_ACTIONS: "true"
           ALLURE_RESULTS_DIRECTORY: "allure-results"
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
         run: |
-          Write-Host "🎭 Running Observability Tests with Aspire Testing Framework..." -ForegroundColor Green
-          Write-Host "📋 Using LocalTesting.IntegrationTests with automatic Aspire infrastructure management" -ForegroundColor Green
+          Write-Host "🎭 Running Single Comprehensive Observability Test with Aspire Testing Framework..." -ForegroundColor Green
+          Write-Host "📋 Testing complete Kafka → Flink → Temporal pipeline with 1M messages" -ForegroundColor Green
           
           # Set environment variables for Aspire testing framework
           $env:INTEGRATION_TEST_MODE = "OBSERVABILITY"
@@ -75,8 +75,8 @@ jobs:
           $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
           
           try {
-            Write-Host "🚀 Starting Aspire testing framework for observability metrics..." -ForegroundColor Yellow
-            Write-Host "  📊 Tests will automatically start LocalTesting infrastructure using DistributedApplicationTestingBuilder" -ForegroundColor Cyan
+            Write-Host "🚀 Starting Aspire testing framework for comprehensive end-to-end flow validation..." -ForegroundColor Yellow
+            Write-Host "  📊 Single test validating complete Kafka → Flink → Temporal pipeline with 1M messages" -ForegroundColor Cyan
             Write-Host "  📈 No manual infrastructure management required" -ForegroundColor Cyan
             
             # Run LocalTesting integration tests with Aspire testing framework
@@ -85,16 +85,16 @@ jobs:
             Pop-Location
             
             if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ Observability tests failed with Aspire testing framework" -ForegroundColor Red
-              throw "Observability tests failed - see detailed output above"
+              Write-Host "❌ Comprehensive observability test failed with Aspire testing framework" -ForegroundColor Red
+              throw "Comprehensive observability test failed - see detailed output above"
             } else {
-              Write-Host "🎉 All observability tests passed using Aspire testing framework!" -ForegroundColor Green
-              Write-Host "  📊 Infrastructure was automatically managed by Aspire testing framework" -ForegroundColor Cyan
+              Write-Host "🎉 Comprehensive observability test passed using Aspire testing framework!" -ForegroundColor Green
+              Write-Host "  📊 Complete Kafka → Flink → Temporal pipeline validated with 1M messages" -ForegroundColor Cyan
               Write-Host "  📈 Tests validated messages-per-second metrics across Kafka, Flink, and Temporal" -ForegroundColor Cyan
             }
           }
           catch {
-            Write-Host "❌ Observability test execution failed: $_" -ForegroundColor Red
+            Write-Host "❌ Comprehensive observability test execution failed: $_" -ForegroundColor Red
             throw
           }
 
