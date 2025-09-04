@@ -101,10 +101,7 @@ var kafkaBroker1 = builder.AddContainer("kafka-broker-1", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3")
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M")
-    .WithEnvironment("KAFKA_BROKER_VERSION_FALLBACK", "3.8.0")
-    .WithEnvironment("KAFKA_INTER_BROKER_PROTOCOL_VERSION", "3.8")
-    .WithEnvironment("KAFKA_LOG_MESSAGE_FORMAT_VERSION", "3.8");
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
 
 var kafkaBroker2 = builder.AddContainer("kafka-broker-2", "apache/kafka:3.8.0")
     .WithEndpoint(9093, 9092, "kafka2")
@@ -122,10 +119,7 @@ var kafkaBroker2 = builder.AddContainer("kafka-broker-2", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3")
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M")
-    .WithEnvironment("KAFKA_BROKER_VERSION_FALLBACK", "3.8.0")
-    .WithEnvironment("KAFKA_INTER_BROKER_PROTOCOL_VERSION", "3.8")
-    .WithEnvironment("KAFKA_LOG_MESSAGE_FORMAT_VERSION", "3.8");
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
     // No WaitFor - Kafka brokers must start simultaneously for KRaft cluster
 
 var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
@@ -144,10 +138,7 @@ var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3")
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M")
-    .WithEnvironment("KAFKA_BROKER_VERSION_FALLBACK", "3.8.0")
-    .WithEnvironment("KAFKA_INTER_BROKER_PROTOCOL_VERSION", "3.8")
-    .WithEnvironment("KAFKA_LOG_MESSAGE_FORMAT_VERSION", "3.8");
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
     // No WaitFor - Kafka brokers must start simultaneously for KRaft cluster
 
 // Kafka UI with staggered startup to reduce DCP load

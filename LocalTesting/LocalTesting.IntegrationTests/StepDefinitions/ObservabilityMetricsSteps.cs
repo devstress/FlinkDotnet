@@ -116,28 +116,80 @@ public class ObservabilityMetricsSteps : IDisposable
         
         Assert.NotNull(_metricsResponse);
         
+        // Display the actual metrics for visibility in the logs
+        Console.WriteLine("=== OBSERVABILITY METRICS RESULTS ===");
+        Console.WriteLine($"Full Metrics Response: {content}");
+        Console.WriteLine("=====================================");
+        
+        // Extract and display key throughput metrics
+        try
+        {
+            var kafkaMetrics = GetNestedProperty(_metricsResponse, "KafkaMetrics") as JsonElement?;
+            if (kafkaMetrics.HasValue && kafkaMetrics.Value.TryGetProperty("ProducerRate", out var producerRate))
+            {
+                Console.WriteLine($"📊 Kafka Producer Rate: {producerRate.GetDouble():F2} messages/second");
+            }
+
+            var flinkMetrics = GetNestedProperty(_metricsResponse, "FlinkMetrics") as JsonElement?;
+            if (flinkMetrics.HasValue && flinkMetrics.Value.TryGetProperty("ProcessingRate", out var processingRate))
+            {
+                Console.WriteLine($"⚡ Flink Processing Rate: {processingRate.GetDouble():F2} messages/second");
+            }
+
+            var temporalMetrics = GetNestedProperty(_metricsResponse, "TemporalMetrics") as JsonElement?;
+            if (temporalMetrics.HasValue && temporalMetrics.Value.TryGetProperty("WorkflowRate", out var workflowRate))
+            {
+                Console.WriteLine($"🔄 Temporal Workflow Rate: {workflowRate.GetDouble():F2} workflows/second");
+            }
+
+            var flowMetrics = GetNestedProperty(_metricsResponse, "FlowMetrics") as JsonElement?;
+            if (flowMetrics.HasValue && flowMetrics.Value.TryGetProperty("EndToEndRate", out var endToEndRate))
+            {
+                Console.WriteLine($"🚀 End-to-End Flow Rate: {endToEndRate.GetDouble():F2} messages/second");
+            }
+
+            var summary = GetNestedProperty(_metricsResponse, "Summary") as JsonElement?;
+            if (summary.HasValue)
+            {
+                if (summary.Value.TryGetProperty("TotalMetricsTracked", out var totalMetrics))
+                {
+                    Console.WriteLine($"📈 Total Metrics Tracked: {totalMetrics.GetInt32()}");
+                }
+                if (summary.Value.TryGetProperty("TotalMessagesProcessed", out var totalMessages))
+                {
+                    Console.WriteLine($"📊 Total Messages Processed: {totalMessages.GetInt64():N0}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error extracting specific metrics: {ex.Message}");
+        }
+        
+        Console.WriteLine("=====================================");
+        
         // Verify Kafka metrics are available
-        var kafkaMetrics = GetNestedProperty(_metricsResponse, "KafkaMetrics") as JsonElement?;
-        Assert.True(kafkaMetrics.HasValue, "Kafka metrics should be available");
+        var kafkaMetricsCheck = GetNestedProperty(_metricsResponse, "KafkaMetrics") as JsonElement?;
+        Assert.True(kafkaMetricsCheck.HasValue, "Kafka metrics should be available");
         
         // Verify Flink metrics are available
-        var flinkMetrics = GetNestedProperty(_metricsResponse, "FlinkMetrics") as JsonElement?;
-        Assert.True(flinkMetrics.HasValue, "Flink metrics should be available");
+        var flinkMetricsCheck = GetNestedProperty(_metricsResponse, "FlinkMetrics") as JsonElement?;
+        Assert.True(flinkMetricsCheck.HasValue, "Flink metrics should be available");
         
         // Verify Temporal metrics are available
-        var temporalMetrics = GetNestedProperty(_metricsResponse, "TemporalMetrics") as JsonElement?;
-        Assert.True(temporalMetrics.HasValue, "Temporal metrics should be available");
+        var temporalMetricsCheck = GetNestedProperty(_metricsResponse, "TemporalMetrics") as JsonElement?;
+        Assert.True(temporalMetricsCheck.HasValue, "Temporal metrics should be available");
         
         // Verify Flow metrics are available
-        var flowMetrics = GetNestedProperty(_metricsResponse, "FlowMetrics") as JsonElement?;
-        Assert.True(flowMetrics.HasValue, "Flow metrics should be available");
+        var flowMetricsCheck = GetNestedProperty(_metricsResponse, "FlowMetrics") as JsonElement?;
+        Assert.True(flowMetricsCheck.HasValue, "Flow metrics should be available");
         
         // Verify Summary indicates metrics are being tracked
-        var summary = GetNestedProperty(_metricsResponse, "Summary") as JsonElement?;
-        Assert.True(summary.HasValue, "Summary metrics should be available");
+        var summaryCheck = GetNestedProperty(_metricsResponse, "Summary") as JsonElement?;
+        Assert.True(summaryCheck.HasValue, "Summary metrics should be available");
         
-        var totalMetrics = summary.Value.GetProperty("TotalMetricsTracked").GetInt32();
-        Assert.True(totalMetrics > 0, $"Should have metrics tracked, got {totalMetrics}");
+        var totalMetricsCheck = summaryCheck.Value.GetProperty("TotalMetricsTracked").GetInt32();
+        Assert.True(totalMetricsCheck > 0, $"Should have metrics tracked, got {totalMetricsCheck}");
     }
 
     [Then(@"Prometheus should be able to scrape all observability metrics")]

@@ -31,12 +31,6 @@ exporters:
   debug:
     verbosity: detailed
 
-  # OTLP exporter for Aspire Dashboard traces
-  otlp/aspire:
-    endpoint: "http://host.docker.internal:4323"
-    tls:
-      insecure: true
-
 service:
   pipelines:
     # Metrics pipeline
@@ -55,6 +49,6 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp/aspire, debug]
+      exporters: [debug]
 
   extensions: []
