@@ -1,0 +1,248 @@
+{
+  "Status": "Success",
+  "Message": "Messages-per-second metrics across Kafka \u2192 Flink \u2192 Temporal \u2192 End-to-End flow",
+  "Timestamp": "2025-09-04T13:01:08.3258253Z",
+  "KafkaMetrics": {
+    "ProducerRates": {
+      "kafka_producer_test-topic-0_0": {
+        "MessagesPerSecond": 2317.55
+      },
+      "kafka_producer_test-topic-1_1": {
+        "MessagesPerSecond": 2317.85
+      },
+      "kafka_producer_test-topic-2_2": {
+        "MessagesPerSecond": 2317.85
+      },
+      "kafka_producer_test-topic-0_3": {
+        "MessagesPerSecond": 2317.82
+      },
+      "kafka_producer_test-topic-1_4": {
+        "MessagesPerSecond": 2317.78
+      },
+      "kafka_producer_test-topic-2_5": {
+        "MessagesPerSecond": 2317.73
+      },
+      "kafka_producer_test-topic-0_6": {
+        "MessagesPerSecond": 2317.7
+      },
+      "kafka_producer_test-topic-1_7": {
+        "MessagesPerSecond": 2317.65
+      },
+      "kafka_producer_test-topic-2_8": {
+        "MessagesPerSecond": 2317.61
+      },
+      "kafka_producer_test-topic-0_9": {
+        "MessagesPerSecond": 2317.57
+      },
+      "kafka_producer_test-topic-1_0": {
+        "MessagesPerSecond": 2317.47
+      },
+      "kafka_producer_test-topic-2_1": {
+        "MessagesPerSecond": 2317.4
+      },
+      "kafka_producer_test-topic-0_2": {
+        "MessagesPerSecond": 2317.51
+      },
+      "kafka_producer_test-topic-1_3": {
+        "MessagesPerSecond": 2317.45
+      },
+      "kafka_producer_test-topic-2_4": {
+        "MessagesPerSecond": 2317.39
+      },
+      "kafka_producer_test-topic-0_5": {
+        "MessagesPerSecond": 2317.32
+      },
+      "kafka_producer_test-topic-1_6": {
+        "MessagesPerSecond": 2317.26
+      },
+      "kafka_producer_test-topic-2_7": {
+        "MessagesPerSecond": 2317.23
+      },
+      "kafka_producer_test-topic-0_8": {
+        "MessagesPerSecond": 2317.19
+      },
+      "kafka_producer_test-topic-1_9": {
+        "MessagesPerSecond": 2317.13
+      },
+      "kafka_producer_test-topic-2_0": {
+        "MessagesPerSecond": 2317.08
+      },
+      "kafka_producer_test-topic-0_1": {
+        "MessagesPerSecond": 2317.04
+      },
+      "kafka_producer_test-topic-1_2": {
+        "MessagesPerSecond": 2316.99
+      },
+      "kafka_producer_test-topic-2_3": {
+        "MessagesPerSecond": 2316.95
+      },
+      "kafka_producer_test-topic-0_4": {
+        "MessagesPerSecond": 2316.91
+      },
+      "kafka_producer_test-topic-1_5": {
+        "MessagesPerSecond": 2316.88
+      },
+      "kafka_producer_test-topic-2_6": {
+        "MessagesPerSecond": 2316.84
+      },
+      "kafka_producer_test-topic-0_7": {
+        "MessagesPerSecond": 2316.81
+      },
+      "kafka_producer_test-topic-1_8": {
+        "MessagesPerSecond": 2316.77
+      },
+      "kafka_producer_test-topic-2_9": {
+        "MessagesPerSecond": 2316.73
+      }
+    },
+    "ConsumerRates": {
+      "kafka_consumer_test-topic-0_0_test-consumer-group": {
+        "MessagesPerSecond": 2317.87
+      },
+      "kafka_consumer_test-topic-1_1_test-consumer-group": {
+        "MessagesPerSecond": 2317.88
+      },
+      "kafka_consumer_test-topic-2_2_test-consumer-group": {
+        "MessagesPerSecond": 2317.84
+      },
+      "kafka_consumer_test-topic-0_3_test-consumer-group": {
+        "MessagesPerSecond": 2317.8
+      },
+      "kafka_consumer_test-topic-1_4_test-consumer-group": {
+        "MessagesPerSecond": 2317.75
+      },
+      "kafka_consumer_test-topic-2_5_test-consumer-group": {
+        "MessagesPerSecond": 2317.71
+      },
+      "kafka_consumer_test-topic-0_6_test-consumer-group": {
+        "MessagesPerSecond": 2317.67
+      },
+      "kafka_consumer_test-topic-1_7_test-consumer-group": {
+        "MessagesPerSecond": 2317.63
+      },
+      "kafka_consumer_test-topic-2_8_test-consumer-group": {
+        "MessagesPerSecond": 2317.59
+      },
+      "kafka_consumer_test-topic-0_9_test-consumer-group": {
+        "MessagesPerSecond": 2317.55
+      },
+      "kafka_consumer_test-topic-1_0_test-consumer-group": {
+        "MessagesPerSecond": 2317.44
+      },
+      "kafka_consumer_test-topic-2_1_test-consumer-group": {
+        "MessagesPerSecond": 2317.54
+      },
+      "kafka_consumer_test-topic-0_2_test-consumer-group": {
+        "MessagesPerSecond": 2317.48
+      },
+      "kafka_consumer_test-topic-1_3_test-consumer-group": {
+        "MessagesPerSecond": 2317.42
+      },
+      "kafka_consumer_test-topic-2_4_test-consumer-group": {
+        "MessagesPerSecond": 2317.36
+      },
+      "kafka_consumer_test-topic-0_5_test-consumer-group": {
+        "MessagesPerSecond": 2317.29
+      },
+      "kafka_consumer_test-topic-1_6_test-consumer-group": {
+        "MessagesPerSecond": 2317.25
+      },
+      "kafka_consumer_test-topic-2_7_test-consumer-group": {
+        "MessagesPerSecond": 2317.21
+      },
+      "kafka_consumer_test-topic-0_8_test-consumer-group": {
+        "MessagesPerSecond": 2317.16
+      },
+      "kafka_consumer_test-topic-1_9_test-consumer-group": {
+        "MessagesPerSecond": 2317.1
+      },
+      "kafka_consumer_test-topic-2_0_test-consumer-group": {
+        "MessagesPerSecond": 2317.06
+      },
+      "kafka_consumer_test-topic-0_1_test-consumer-group": {
+        "MessagesPerSecond": 2317.02
+      },
+      "kafka_consumer_test-topic-1_2_test-consumer-group": {
+        "MessagesPerSecond": 2316.97
+      },
+      "kafka_consumer_test-topic-2_3_test-consumer-group": {
+        "MessagesPerSecond": 2316.93
+      },
+      "kafka_consumer_test-topic-0_4_test-consumer-group": {
+        "MessagesPerSecond": 2316.9
+      },
+      "kafka_consumer_test-topic-1_5_test-consumer-group": {
+        "MessagesPerSecond": 2316.86
+      },
+      "kafka_consumer_test-topic-2_6_test-consumer-group": {
+        "MessagesPerSecond": 2316.83
+      },
+      "kafka_consumer_test-topic-0_7_test-consumer-group": {
+        "MessagesPerSecond": 2316.79
+      },
+      "kafka_consumer_test-topic-1_8_test-consumer-group": {
+        "MessagesPerSecond": 2316.74
+      },
+      "kafka_consumer_test-topic-2_9_test-consumer-group": {
+        "MessagesPerSecond": 2316.71
+      }
+    }
+  },
+  "FlinkMetrics": {
+    "InputRates": {
+      "flink_in_sim-job-1_source": {
+        "MessagesPerSecond": 49475.26
+      },
+      "flink_in_sim-job-2_source": {
+        "MessagesPerSecond": 49474.86
+      }
+    },
+    "OutputRates": {
+      "flink_out_sim-job-1_sink": {
+        "MessagesPerSecond": 49474.66
+      },
+      "flink_out_sim-job-2_sink": {
+        "MessagesPerSecond": 49474.86
+      }
+    }
+  },
+  "TemporalMetrics": {
+    "WorkflowRates": {
+      "temporal_workflow_TestWorkflow1": {
+        "ExecutionsPerSecond": 0.2
+      },
+      "temporal_workflow_TestWorkflow2": {
+        "ExecutionsPerSecond": 0.2
+      },
+      "temporal_workflow_TestWorkflow3": {
+        "ExecutionsPerSecond": 0.1
+      }
+    },
+    "ActivityRates": {
+      "temporal_activity_Activity1": {
+        "ExecutionsPerSecond": 0.3
+      },
+      "temporal_activity_Activity2": {
+        "ExecutionsPerSecond": 0.2
+      }
+    }
+  },
+  "FlowMetrics": {
+    "KafkaToFlinkRate": {
+      "MessagesPerSecond": 98919.34
+    },
+    "FlinkToTemporalRate": {
+      "MessagesPerSecond": 98919.84
+    },
+    "EndToEndRate": {
+      "MessagesPerSecond": 98920.22
+    }
+  },
+  "Summary": {
+    "TotalMetricsTracked": 72,
+    "ActiveFlows": 72,
+    "HighestRate": 98960.52,
+    "AverageRate": 8803.05,
+    "TotalMessagesPerSecond": 633819.7
+  }
+}

@@ -126,8 +126,40 @@ public class ObservabilityMetricsSteps : IDisposable
             ? _scenarioContext["metrics_display"] as string
             : FormatMetricsForDisplay(metricsData);
         
-        // Create metrics directory if it doesn't exist
-        var metricsDir = Path.Combine(Environment.CurrentDirectory, "metrics");
+        // Create metrics directory in LocalTesting folder (where GitHub workflow expects it)
+        // Find the LocalTesting directory by going up from current directory
+        var currentDir = Environment.CurrentDirectory;
+        var localTestingDir = currentDir;
+        
+        // Navigate up to find LocalTesting directory
+        while (!Path.GetFileName(localTestingDir).Equals("LocalTesting", StringComparison.OrdinalIgnoreCase) && 
+               !string.IsNullOrEmpty(localTestingDir) && 
+               localTestingDir != Path.GetDirectoryName(localTestingDir))
+        {
+            localTestingDir = Path.GetDirectoryName(localTestingDir) ?? "";
+        }
+        
+        // If we couldn't find LocalTesting directory, look for it in parent directories
+        if (!Path.GetFileName(localTestingDir).Equals("LocalTesting", StringComparison.OrdinalIgnoreCase))
+        {
+            // Look for LocalTesting in current directory or parent directories
+            var searchDir = currentDir;
+            while (!string.IsNullOrEmpty(searchDir))
+            {
+                var localTestingPath = Path.Combine(searchDir, "LocalTesting");
+                if (Directory.Exists(localTestingPath))
+                {
+                    localTestingDir = localTestingPath;
+                    break;
+                }
+                var parentDir = Path.GetDirectoryName(searchDir);
+                if (parentDir == searchDir) break; // Reached root
+                searchDir = parentDir;
+            }
+        }
+        
+        // Create metrics directory in the LocalTesting folder
+        var metricsDir = Path.Combine(localTestingDir, "metrics");
         Directory.CreateDirectory(metricsDir);
         
         // Generate filename with timestamp
@@ -146,7 +178,8 @@ public class ObservabilityMetricsSteps : IDisposable
         });
         await File.WriteAllTextAsync(jsonFilename, jsonData);
         
-        Console.WriteLine($"📁 Metrics saved to:");
+        Console.WriteLine($"📁 Metrics saved to LocalTesting directory:");
+        Console.WriteLine($"   📂 Directory: {metricsDir}");
         Console.WriteLine($"   📄 Text format: {filename}");
         Console.WriteLine($"   📄 JSON format: {jsonFilename}");
         Console.WriteLine($"   📊 File size: {new FileInfo(filename).Length} bytes");

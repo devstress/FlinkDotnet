@@ -1,0 +1,129 @@
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                         📊 COMPREHENSIVE OBSERVABILITY METRICS 📊                    ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+📋 Status: Success
+📅 Timestamp: 2025-09-04T13:01:08.3258253Z
+⏰ Report Generated: 2025-09-04 13:01:08 UTC
+
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                                📈 SUMMARY STATISTICS 📈                              ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+🚀 Total Messages/Second (All Components): 633819.70 msg/sec
+📊 Total Metrics Tracked: 72
+🌊 Active Processing Flows: 72
+🏆 Highest Component Rate: 98960.52 msg/sec
+📊 Average Component Rate: 8803.05 msg/sec
+
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                            🔧 COMPONENT BREAKDOWN 🔧                                 ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+🔌 KAFKA LAYER METRICS:
+   📤 Kafka Producer Metrics:
+      • kafka_producer_test-topic-0_0: 2317.55 msg/sec
+      • kafka_producer_test-topic-1_1: 2317.85 msg/sec
+      • kafka_producer_test-topic-2_2: 2317.85 msg/sec
+      • kafka_producer_test-topic-0_3: 2317.82 msg/sec
+      • kafka_producer_test-topic-1_4: 2317.78 msg/sec
+      • kafka_producer_test-topic-2_5: 2317.73 msg/sec
+      • kafka_producer_test-topic-0_6: 2317.70 msg/sec
+      • kafka_producer_test-topic-1_7: 2317.65 msg/sec
+      • kafka_producer_test-topic-2_8: 2317.61 msg/sec
+      • kafka_producer_test-topic-0_9: 2317.57 msg/sec
+      • kafka_producer_test-topic-1_0: 2317.47 msg/sec
+      • kafka_producer_test-topic-2_1: 2317.40 msg/sec
+      • kafka_producer_test-topic-0_2: 2317.51 msg/sec
+      • kafka_producer_test-topic-1_3: 2317.45 msg/sec
+      • kafka_producer_test-topic-2_4: 2317.39 msg/sec
+      • kafka_producer_test-topic-0_5: 2317.32 msg/sec
+      • kafka_producer_test-topic-1_6: 2317.26 msg/sec
+      • kafka_producer_test-topic-2_7: 2317.23 msg/sec
+      • kafka_producer_test-topic-0_8: 2317.19 msg/sec
+      • kafka_producer_test-topic-1_9: 2317.13 msg/sec
+      • kafka_producer_test-topic-2_0: 2317.08 msg/sec
+      • kafka_producer_test-topic-0_1: 2317.04 msg/sec
+      • kafka_producer_test-topic-1_2: 2316.99 msg/sec
+      • kafka_producer_test-topic-2_3: 2316.95 msg/sec
+      • kafka_producer_test-topic-0_4: 2316.91 msg/sec
+      • kafka_producer_test-topic-1_5: 2316.88 msg/sec
+      • kafka_producer_test-topic-2_6: 2316.84 msg/sec
+      • kafka_producer_test-topic-0_7: 2316.81 msg/sec
+      • kafka_producer_test-topic-1_8: 2316.77 msg/sec
+      • kafka_producer_test-topic-2_9: 2316.73 msg/sec
+   ➤ Total Kafka Producing Rate: 69519.46 msg/sec (30 producers)
+   📥 Kafka Consumer Metrics:
+      • kafka_consumer_test-topic-0_0_test-consumer-group: 2317.87 msg/sec
+      • kafka_consumer_test-topic-1_1_test-consumer-group: 2317.88 msg/sec
+      • kafka_consumer_test-topic-2_2_test-consumer-group: 2317.84 msg/sec
+      • kafka_consumer_test-topic-0_3_test-consumer-group: 2317.80 msg/sec
+      • kafka_consumer_test-topic-1_4_test-consumer-group: 2317.75 msg/sec
+      • kafka_consumer_test-topic-2_5_test-consumer-group: 2317.71 msg/sec
+      • kafka_consumer_test-topic-0_6_test-consumer-group: 2317.67 msg/sec
+      • kafka_consumer_test-topic-1_7_test-consumer-group: 2317.63 msg/sec
+      • kafka_consumer_test-topic-2_8_test-consumer-group: 2317.59 msg/sec
+      • kafka_consumer_test-topic-0_9_test-consumer-group: 2317.55 msg/sec
+      • kafka_consumer_test-topic-1_0_test-consumer-group: 2317.44 msg/sec
+      • kafka_consumer_test-topic-2_1_test-consumer-group: 2317.54 msg/sec
+      • kafka_consumer_test-topic-0_2_test-consumer-group: 2317.48 msg/sec
+      • kafka_consumer_test-topic-1_3_test-consumer-group: 2317.42 msg/sec
+      • kafka_consumer_test-topic-2_4_test-consumer-group: 2317.36 msg/sec
+      • kafka_consumer_test-topic-0_5_test-consumer-group: 2317.29 msg/sec
+      • kafka_consumer_test-topic-1_6_test-consumer-group: 2317.25 msg/sec
+      • kafka_consumer_test-topic-2_7_test-consumer-group: 2317.21 msg/sec
+      • kafka_consumer_test-topic-0_8_test-consumer-group: 2317.16 msg/sec
+      • kafka_consumer_test-topic-1_9_test-consumer-group: 2317.10 msg/sec
+      • kafka_consumer_test-topic-2_0_test-consumer-group: 2317.06 msg/sec
+      • kafka_consumer_test-topic-0_1_test-consumer-group: 2317.02 msg/sec
+      • kafka_consumer_test-topic-1_2_test-consumer-group: 2316.97 msg/sec
+      • kafka_consumer_test-topic-2_3_test-consumer-group: 2316.93 msg/sec
+      • kafka_consumer_test-topic-0_4_test-consumer-group: 2316.90 msg/sec
+      • kafka_consumer_test-topic-1_5_test-consumer-group: 2316.86 msg/sec
+      • kafka_consumer_test-topic-2_6_test-consumer-group: 2316.83 msg/sec
+      • kafka_consumer_test-topic-0_7_test-consumer-group: 2316.79 msg/sec
+      • kafka_consumer_test-topic-1_8_test-consumer-group: 2316.74 msg/sec
+      • kafka_consumer_test-topic-2_9_test-consumer-group: 2316.71 msg/sec
+   ➤ Total Kafka Consuming Rate: 69519.35 msg/sec (30 consumers)
+
+⚡ FLINK LAYER METRICS:
+   📥 Flink Input Processing:
+      • flink_in_sim-job-1_source: 49475.26 msg/sec
+      • flink_in_sim-job-2_source: 49474.86 msg/sec
+   ➤ Total Flink Processing Rate: 98950.12 msg/sec (2 jobs)
+   📤 Flink Output Processing:
+      • flink_out_sim-job-1_sink: 49474.66 msg/sec
+      • flink_out_sim-job-2_sink: 49474.86 msg/sec
+   ➤ Total Flink Output Rate: 98949.52 msg/sec (2 outputs)
+
+🔄 TEMPORAL LAYER METRICS:
+   🔄 Temporal Workflow Executions:
+      • temporal_workflow_TestWorkflow1: 0.20 exec/sec
+      • temporal_workflow_TestWorkflow2: 0.20 exec/sec
+      • temporal_workflow_TestWorkflow3: 0.10 exec/sec
+   ➤ Total Temporal Processing Rate: 0.50 exec/sec (3 workflows)
+   ⚡ Temporal Activity Executions:
+      • temporal_activity_Activity1: 0.30 exec/sec
+      • temporal_activity_Activity2: 0.20 exec/sec
+   ➤ Total Activity Execution Rate: 0.50 exec/sec (2 activities)
+
+🌊 END-TO-END FLOW METRICS:
+   📊 Kafka → Flink Flow: 98919.34 msg/sec
+   📊 Flink → Temporal Flow: 98919.84 msg/sec
+   📊 Entire Flow Processing: 98920.22 msg/sec
+
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                          📋 REQUESTED METRICS SUMMARY 📋                             ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+📥 Total Messages in Ingress: 1,000,000
+📤 Total Messages in Final Kafka Topic: 1,000,000
+⏱️  Total Processing Time: 10.00 seconds
+
+📊 Messages Per Second Breakdown:
+   🔌 Kafka Producing: 69519.46 msg/sec
+   📥 Kafka Consuming: 69519.35 msg/sec
+   ⚡ Flink Processing: 98949.82 msg/sec
+   🔄 Temporal Processing: 0.50 msg/sec
+   🌊 Entire Flow Processing: 98920.22 msg/sec
+
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                           ✅ METRICS ANALYSIS COMPLETE ✅                            ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
