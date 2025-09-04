@@ -103,6 +103,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 
 // Add custom services
 builder.Services.AddSingleton<ObservabilityMetricsService>();
+builder.Services.AddHttpClient<PrometheusMetricsService>(); // Add HTTP client for Prometheus queries
 builder.Services.AddSingleton<IMessageStateService, MessageStateService>();
 builder.Services.AddSingleton<AspireHealthCheckService>();
 builder.Services.AddSingleton<ComplexLogicStressTestService>();
