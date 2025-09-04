@@ -2,6 +2,10 @@ name: Unit Tests
 
 on:
   workflow_call:
+  pull_request:
+    paths:
+      - 'FlinkDotNet/**'
+      - '.github/workflows/unit-tests.yml'
   workflow_dispatch:
 
 jobs:

@@ -2,6 +2,11 @@ name: Reliability Tests - Back Pressure and Rebalance
 
 on:
   workflow_call:
+  pull_request:
+    paths:
+      - 'IntegrationTests/**'
+      - 'FlinkDotNet/**'
+      - '.github/workflows/reliability-tests.yml'
   workflow_dispatch:
 
 env:

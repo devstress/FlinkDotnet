@@ -2,10 +2,15 @@ name: Observability Tests - Message Per Second Metrics (Aspire Testing Framework
 
 on:
   workflow_call:
+  pull_request:
+    paths:
+      - 'LocalTesting/**'
+      - 'FlinkDotNet/**'
+      - '.github/workflows/observability-tests.yml'
   workflow_dispatch:
 
 concurrency:
-  group: observability-${{ github.ref }}
+  group: observability-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:

@@ -2,6 +2,11 @@ name: Local Testing - Interactive Environment Validation
 
 on:
   workflow_call:
+  pull_request:
+    paths:
+      - 'LocalTesting/**'
+      - 'FlinkDotNet/**'
+      - '.github/workflows/local-testing.yml'
   workflow_dispatch:
 
 jobs:
