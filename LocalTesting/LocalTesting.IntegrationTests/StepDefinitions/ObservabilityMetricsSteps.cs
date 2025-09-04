@@ -48,7 +48,7 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // Create HTTP client with service discovery - use the correct endpoint name "webapi"
         _httpClient = _app.CreateHttpClient("localtesting-webapi", "webapi");
-        _httpClient.Timeout = TimeSpan.FromMinutes(5); // Reasonable timeout for observability tests
+        _httpClient.Timeout = TimeSpan.FromMinutes(30); // Extended timeout for 1M messages processing
 
         lock (_lockObject)
         {
@@ -84,10 +84,10 @@ public class ObservabilityMetricsSteps : IDisposable
     {
         await EnsureInfrastructureInitialized();
         
-        // Use the observability simulation endpoint with reasonable test data
+        // Use the observability simulation endpoint with 1 million messages for real throughput testing
         var simulationRequest = new
         {
-            KafkaMessages = 100,
+            KafkaMessages = 1000000,
             FlinkJobs = 2,
             TemporalWorkflows = 5,
             DurationSeconds = 10
@@ -96,8 +96,8 @@ public class ObservabilityMetricsSteps : IDisposable
         var response = await _httpClient!.PostAsJsonAsync("/api/observability/metrics/simulate", simulationRequest);
         response.EnsureSuccessStatusCode();
         
-        // Wait for metrics to be recorded
-        await Task.Delay(2000);
+        // Wait longer for 1M messages to be processed and metrics to be recorded
+        await Task.Delay(10000);
         
         _scenarioContext["simulation_completed"] = true;
     }
