@@ -15,6 +15,7 @@ public class ObservabilityController : ControllerBase
     private readonly PrometheusMetricsService _prometheusService;
     private readonly IMessageStateService _messageStateService;
     private readonly AspireHealthCheckService _healthCheckService;
+    private readonly KafkaProducerService _kafkaProducerService;
     private readonly ILogger<ObservabilityController> _logger;
 
     public ObservabilityController(
@@ -22,80 +23,90 @@ public class ObservabilityController : ControllerBase
         PrometheusMetricsService prometheusService,
         IMessageStateService messageStateService, 
         AspireHealthCheckService healthCheckService,
+        KafkaProducerService kafkaProducerService,
         ILogger<ObservabilityController> logger)
     {
         _metricsService = metricsService;
         _prometheusService = prometheusService;
         _messageStateService = messageStateService;
         _healthCheckService = healthCheckService;
+        _kafkaProducerService = kafkaProducerService;
         _logger = logger;
     }
 
     [HttpGet("metrics/messages-per-second")]
     [SwaggerOperation(
         Summary = "Get Messages Per Second Metrics",
-        Description = "Retrieve real-time messages-per-second metrics directly from ObservabilityMetricsService (live metrics, not Prometheus)"
+        Description = "Retrieve real-time messages-per-second metrics from Prometheus infrastructure (real metrics, not simulation)"
     )]
     [SwaggerResponse(200, "Messages per second metrics retrieved successfully")]
     public async Task<IActionResult> GetMessagesPerSecondMetrics()
     {
         try
         {
-            _logger.LogInformation("📊 Retrieving real messages-per-second metrics from live ObservabilityMetricsService");
+            _logger.LogInformation("📊 Retrieving REAL messages-per-second metrics from Prometheus infrastructure");
 
-            // Get real metrics directly from ObservabilityMetricsService instead of Prometheus
-            // This ensures we get the actual metrics being recorded, not relying on Prometheus export
-            var allRates = _metricsService.GetAllMessagesPerSecondRates();
+            // Get REAL metrics from Prometheus infrastructure instead of in-memory simulation
+            var allRealMetrics = await _prometheusService.GetAllMetricsAsync();
             
-            // Log diagnostic information for investigation
-            _logger.LogInformation("🔍 DEBUG: Retrieved {TotalMetrics} metrics from ObservabilityMetricsService", allRates.Count);
-            foreach (var rate in allRates)
+            // Also get any local metrics that haven't been exported to Prometheus yet
+            var localMetrics = _metricsService.GetAllMessagesPerSecondRates();
+            
+            // Combine real Prometheus metrics with any local metrics (real data only)
+            var combinedMetrics = new Dictionary<string, double>(allRealMetrics);
+            foreach (var kvp in localMetrics)
             {
-                _logger.LogInformation("🔍 DEBUG: Metric {Key} = {Value:F2}", rate.Key, rate.Value);
+                // Only use local metrics if not already available from Prometheus (prefer Prometheus)
+                if (!combinedMetrics.ContainsKey(kvp.Key))
+                {
+                    combinedMetrics[kvp.Key] = kvp.Value;
+                }
             }
             
-            // If no metrics or all zero, this indicates the flow hasn't been executed or metrics expired
-            var hasNonZeroMetrics = allRates.Values.Any(v => v > 0);
-            if (!hasNonZeroMetrics)
+            _logger.LogInformation("🔍 Retrieved {PrometheusMetrics} metrics from Prometheus, {LocalMetrics} local metrics, {TotalMetrics} total", 
+                allRealMetrics.Count, localMetrics.Count, combinedMetrics.Count);
+            
+            // If no metrics available, this indicates infrastructure hasn't been executed yet
+            var hasRealMetrics = combinedMetrics.Values.Any(v => v > 0);
+            if (!hasRealMetrics)
             {
-                _logger.LogWarning("⚠️ All metrics are zero or empty. This indicates:");
-                _logger.LogWarning("   1. Flow simulation hasn't been executed recently (metrics expire after 30s)");
-                _logger.LogWarning("   2. ObservabilityMetricsService recording is not working");
-                _logger.LogWarning("   3. Integration test should call /simulate endpoint first");
+                _logger.LogWarning("⚠️ No real metrics available. This indicates:");
+                _logger.LogWarning("   1. Real infrastructure flow hasn't been executed (call /simulate endpoint first)");
+                _logger.LogWarning("   2. Prometheus isn't receiving metrics from infrastructure components");
+                _logger.LogWarning("   3. Metrics haven't had time to propagate through the observability stack");
             }
             
-            // Organize metrics by layer type
-            var kafkaMetrics = allRates
+            // Organize metrics by layer type (from real infrastructure data)
+            var kafkaMetrics = combinedMetrics
                 .Where(kvp => kvp.Key.StartsWith("kafka_producer_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
-            var flinkMetrics = allRates
+            var flinkMetrics = combinedMetrics
                 .Where(kvp => kvp.Key.StartsWith("flink_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
-            var temporalMetrics = allRates
+            var temporalMetrics = combinedMetrics
                 .Where(kvp => kvp.Key.StartsWith("temporal_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
-            var flowMetrics = allRates
+            var flowMetrics = combinedMetrics
                 .Where(kvp => kvp.Key.StartsWith("flow_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             
             var metrics = new
             {
                 Status = "Success",
-                Message = "Real messages-per-second metrics from live ObservabilityMetricsService: Kafka (per-partition) → Flink (includes consuming) → Temporal (workflows) → End-to-End",
+                Message = "REAL messages-per-second metrics from Prometheus infrastructure: Kafka (per-partition) → Flink (includes consuming) → Temporal (workflows) → End-to-End",
                 Timestamp = DateTime.UtcNow,
                 
-                // Kafka Layer Metrics - Per-Partition and Per-Producer Granularity
+                // Kafka Layer Metrics - Real Per-Partition and Per-Producer Data
                 KafkaMetrics = new
                 {
                     ProducerRates = kafkaMetrics
                         .ToDictionary(kvp => kvp.Key, kvp => new { MessagesPerSecond = Math.Round(kvp.Value, 2) })
                 },
                 
-                // Flink Layer Metrics - Includes Kafka Consuming (Logical Fix)
-                // Note: Flink input rates ARE the Kafka consuming rates since Flink consumes from Kafka
+                // Flink Layer Metrics - Real Processing Data (Includes Kafka Consuming)
                 FlinkMetrics = new
                 {
                     InputRates = flinkMetrics
@@ -107,8 +118,7 @@ public class ObservabilityController : ControllerBase
                         .ToDictionary(kvp => kvp.Key, kvp => new { MessagesPerSecond = Math.Round(kvp.Value, 2) })
                 },
                 
-                // Temporal Layer Metrics - Workflow Orchestration (Subset of Messages)
-                // Note: Temporal processes workflow-triggered events, not all messages
+                // Temporal Layer Metrics - Real Workflow Data (Subset of Messages)
                 TemporalMetrics = new
                 {
                     WorkflowRates = temporalMetrics
@@ -120,7 +130,7 @@ public class ObservabilityController : ControllerBase
                         .ToDictionary(kvp => kvp.Key, kvp => new { ExecutionsPerSecond = Math.Round(kvp.Value, 2) })
                 },
                 
-                // End-to-End Flow Metrics - Real Pipeline Throughput
+                // End-to-End Flow Metrics - Real Pipeline Data
                 FlowMetrics = new
                 {
                     KafkaToFlinkRate = flowMetrics.ContainsKey("flow_kafka_to_flink") 
@@ -134,7 +144,7 @@ public class ObservabilityController : ControllerBase
                         : new { MessagesPerSecond = 0.0 }
                 },
                 
-                // Summary Statistics from Real Data
+                // Summary Statistics from Real Infrastructure Data
                 Summary = new
                 {
                     TotalMetricsTracked = kafkaMetrics.Count + flinkMetrics.Count + temporalMetrics.Count + flowMetrics.Count,
@@ -144,25 +154,25 @@ public class ObservabilityController : ControllerBase
                     HighestFlinkRate = flinkMetrics.Count > 0 ? Math.Round(flinkMetrics.Values.Max(), 2) : 0,
                     TotalMessagesPerSecond = Math.Round(kafkaMetrics.Values.Sum() + flinkMetrics.Values.Sum() + 
                                                        temporalMetrics.Values.Sum() + flowMetrics.Values.Sum(), 2),
-                    MetricsSource = "Live ObservabilityMetricsService (Real-time)",
-                    InfrastructureNote = "Direct metrics retrieval from service layer - no Prometheus dependency",
-                    DebuggingNote = hasNonZeroMetrics ? "Metrics contain real data" : "All metrics are zero - investigate flow execution or metric expiration"
+                    MetricsSource = "Real Prometheus Infrastructure",
+                    InfrastructureNote = "Metrics from actual Prometheus queries - no simulation or fake data",
+                    DebuggingNote = hasRealMetrics ? "Metrics contain real infrastructure data" : "No real metrics available - execute infrastructure flow first"
                 }
             };
 
-            _logger.LogInformation("✅ Real metrics retrieved from ObservabilityMetricsService: {KafkaMetrics} Kafka, {FlinkMetrics} Flink, {TemporalMetrics} Temporal, {FlowMetrics} Flow", 
+            _logger.LogInformation("✅ REAL metrics retrieved from Prometheus: {KafkaMetrics} Kafka, {FlinkMetrics} Flink, {TemporalMetrics} Temporal, {FlowMetrics} Flow", 
                 kafkaMetrics.Count, flinkMetrics.Count, temporalMetrics.Count, flowMetrics.Count);
             
             return Ok(metrics);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to retrieve real metrics from ObservabilityMetricsService");
+            _logger.LogError(ex, "❌ Failed to retrieve real metrics from Prometheus infrastructure");
             return StatusCode(500, new { 
                 Status = "Failed", 
                 Error = ex.Message, 
                 Timestamp = DateTime.UtcNow,
-                Note = "Check if ObservabilityMetricsService is properly initialized"
+                Note = "Check if Prometheus infrastructure is running and accessible"
             });
         }
     }
@@ -268,99 +278,80 @@ public class ObservabilityController : ControllerBase
             _logger.LogInformation("🚀 Executing REAL infrastructure flow: {KafkaMessages} messages through actual Kafka→Flink→Temporal pipeline", 
                 simRequest.KafkaMessages);
 
-            // TODO: CONNECT TO REAL INFRASTRUCTURE INSTEAD OF GENERATING FAKE METRICS
-            // This should trigger actual:
-            // 1. Kafka producer to send real messages to ingress-topic 
-            // 2. Flink job to consume and process real messages
-            // 3. Temporal workflows to execute real business logic
-            // 4. Prometheus to collect real metrics from each component
+            // REAL INFRASTRUCTURE EXECUTION - Replace fake simulation with actual operations
+            _logger.LogInformation("✅ EXECUTING REAL INFRASTRUCTURE: Kafka producer → Flink jobs → Temporal workflows");
             
-            _logger.LogWarning("⚠️ CURRENT LIMITATION: Still generating simulated metrics instead of triggering real infrastructure");
-            _logger.LogWarning("⚠️ TODO: Replace this with actual Kafka producer calls, Flink job triggers, and Temporal workflow executions");
-            
-            // Record metrics from REAL infrastructure execution (for now, still simulated but with realistic timing)
-            var ingressTopic = "ingress-topic"; // Single ingress topic as per user requirement
+            // Create real messages for production to Kafka
+            var realMessages = new List<ComplexLogicMessage>();
+            var ingressTopic = "ingress-topic"; // Single ingress topic as configured
             var partitions = 10; // Based on KAFKA_NUM_PARTITIONS in Program.cs
-            var messagesPerPartition = simRequest.KafkaMessages / partitions;
             
-            // TEMPORARY: Generate metrics that represent what REAL infrastructure would produce
-            // TODO: Replace with actual infrastructure calls
-            for (int partition = 0; partition < partitions; partition++)
-            {
-                // Simple naming: partition0, partition1, etc. for single ingress topic
-                _metricsService.RecordKafkaProducerMessage(ingressTopic, partition.ToString(), messagesPerPartition, messagesPerPartition * 1024);
-                _metricsService.RecordKafkaProducerLatency(ingressTopic, 0.001); // 1ms producer latency
-            }
-
-            // Record Flink processing metrics based on REAL infrastructure behavior
-            for (int i = 0; i < simRequest.FlinkJobs; i++)
-            {
-                var jobId = $"real-job-{i + 1}";
-                var messagesPerJob = simRequest.KafkaMessages / simRequest.FlinkJobs;
-                
-                // Flink input (Kafka consuming) - this IS the consumer rate
-                _metricsService.RecordFlinkJobMessageIn(jobId, "kafka-source", messagesPerJob);
-                
-                // Flink output (processing complete) - NO ARTIFICIAL LOSS
-                // Real infrastructure should preserve all messages unless there's actual processing failure
-                var outputMessages = messagesPerJob; // No artificial loss - investigate real infrastructure behavior
-                _metricsService.RecordFlinkJobMessageOut(jobId, "kafka-sink", outputMessages);
-                _metricsService.RecordFlinkJobLatency(jobId, 0.002); // 2ms processing latency
-            }
-
-            // Record Temporal workflow metrics - CORRECTLY only a subset of messages trigger workflows
-            var workflowTriggerRate = 0.002; // 0.2% of messages trigger workflows (CORRECT behavior)
-            var workflowMessages = (long)(simRequest.KafkaMessages * workflowTriggerRate);
+            _logger.LogInformation("📝 Generating {MessageCount} real messages for Kafka production", simRequest.KafkaMessages);
             
-            for (int i = 0; i < simRequest.TemporalWorkflows; i++)
+            for (int i = 0; i < simRequest.KafkaMessages; i++)
             {
-                var workflowType = $"RealWorkflow{i % 3 + 1}"; // 3 workflow types
-                var workflowCount = workflowMessages / simRequest.TemporalWorkflows;
-                
-                for (int w = 0; w < workflowCount; w++)
+                var message = new ComplexLogicMessage
                 {
-                    _metricsService.RecordTemporalWorkflowExecution(workflowType);
-                    _metricsService.RecordTemporalActivityExecution($"RealActivity{w % 2 + 1}");
-                    _metricsService.RecordTemporalWorkflowDuration(workflowType, 0.5); // 500ms workflow duration
-                    _metricsService.RecordTemporalWorkflowCompletion(workflowType);
-                }
+                    MessageId = i + 1,
+                    CorrelationId = Guid.NewGuid().ToString(),
+                    Payload = $"Real test message {i + 1} for observability metrics",
+                    Timestamp = DateTime.UtcNow,
+                    BatchNumber = i / 10000, // Batch every 10K messages
+                    PartitionNumber = i % partitions, // Distribute across partitions
+                    ProcessingStage = "initial"
+                };
+                realMessages.Add(message);
             }
-
-            // Record end-to-end flow metrics
-            _metricsService.RecordFlowKafkaToFlink(simRequest.KafkaMessages);
-            _metricsService.RecordFlowFlinkToTemporal(workflowMessages); // Only workflow-triggered messages
-            _metricsService.RecordFlowEndToEnd(simRequest.KafkaMessages);
             
-            // Wait for metrics to be processed by the ObservabilityMetricsService
-            await Task.Delay(1000); // 1 second for metrics propagation
+            _logger.LogInformation("📨 Producing {MessageCount} real messages to Kafka topic '{Topic}'", 
+                realMessages.Count, ingressTopic);
+            
+            // Execute REAL Kafka production - this will generate real metrics
+            await _kafkaProducerService.ProduceMessagesAsync(ingressTopic, realMessages);
+            
+            _logger.LogInformation("✅ Real Kafka production completed. Messages are flowing through real infrastructure.");
+            
+            // Wait for messages to be processed by Flink and Temporal (real processing time)
+            _logger.LogInformation("⏳ Allowing time for real Flink processing and Temporal workflow execution...");
+            await Task.Delay(10000); // 10 seconds for real infrastructure processing
+            
+            // IMPORTANT: Now retrieve metrics from REAL Prometheus instead of generating fake ones
+            _logger.LogInformation("📊 Retrieving REAL metrics from Prometheus infrastructure");
+            
+            // Get real metrics from Prometheus (this will replace the fake generation)
+            var realKafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
+            var realFlinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
+            var realTemporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
+            var realFlowMetrics = await _prometheusService.GetEndToEndFlowMetricsAsync();
+            
+            _logger.LogInformation("📈 Real metrics retrieved: {KafkaMetrics} Kafka, {FlinkMetrics} Flink, {TemporalMetrics} Temporal, {FlowMetrics} Flow", 
+                realKafkaMetrics.Count, realFlinkMetrics.Count, realTemporalMetrics.Count, realFlowMetrics.Count);
 
             var result = new
             {
-                Status = "Real_Infrastructure_Flow_Initiated",
-                Message = "Real message flow initiated through infrastructure. Processing time will be measured by test.",
+                Status = "Real_Infrastructure_Flow_Executed",
+                Message = "Real message flow executed through infrastructure. Metrics retrieved from Prometheus.",
                 ExecutionDetails = simRequest,
                 Timestamp = DateTime.UtcNow,
-                RealMetricsGenerated = new
+                RealInfrastructureResults = new
                 {
-                    KafkaProducerMessages = simRequest.KafkaMessages,
-                    FlinkProcessingMessages = simRequest.KafkaMessages, // Flink processes all Kafka messages
-                    TemporalWorkflowExecutions = workflowMessages, // Only subset triggers workflows (CORRECT)
-                    EndToEndFlowMessages = simRequest.KafkaMessages,
-                    TemporalExplanation = "Temporal processes only 0.2% of messages (workflow-triggered events) - this is CORRECT, not a bottleneck",
-                    MetricsAvailableIn = "ObservabilityMetricsService (recorded immediately)",
-                    Note = "Test will measure actual execution time using Stopwatch - no more hardcoded duration"
+                    KafkaMessagesProduced = simRequest.KafkaMessages,
+                    RealKafkaMetricsRetrieved = realKafkaMetrics.Count,
+                    RealFlinkMetricsRetrieved = realFlinkMetrics.Count, 
+                    RealTemporalMetricsRetrieved = realTemporalMetrics.Count,
+                    RealFlowMetricsRetrieved = realFlowMetrics.Count,
+                    MetricsSource = "Real Prometheus infrastructure",
+                    Note = "All metrics now come from actual infrastructure execution, not simulation"
                 },
                 NextSteps = new
                 {
-                    TODO_1 = "Replace this simulation with real Kafka producer calls",
-                    TODO_2 = "Trigger actual Flink job execution",
-                    TODO_3 = "Execute real Temporal workflows", 
-                    TODO_4 = "Connect to real Prometheus metrics",
-                    TODO_5 = "Read metrics from actual infrastructure instead of generating them"
+                    MetricsAvailable = "Real metrics available via /api/observability/metrics/messages-per-second",
+                    PrometheusAccess = "Metrics also available directly from Prometheus at configured endpoints",
+                    NoMoreFakeData = "No fake or simulated data - only real infrastructure metrics"
                 }
             };
 
-            _logger.LogInformation("✅ Real infrastructure flow initiated. Test will measure actual processing time.");
+            _logger.LogInformation("✅ Real infrastructure flow executed successfully. Real metrics available.");
             return Ok(result);
         }
         catch (Exception ex)
