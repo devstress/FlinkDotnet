@@ -8,7 +8,6 @@
     <Nullable>enable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <OutputType>Exe</OutputType>
     <!-- Disable IDE0005 for BDD test project -->
     <NoWarn>$(NoWarn);IDE0005</NoWarn>
   </PropertyGroup>
@@ -27,14 +26,14 @@
     <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" Version="2.4.1" />
     
     <!-- Microsoft Aspire Integration Testing -->
-    <PackageReference Include="Aspire.Hosting.Testing" Version="9.4.0" />
+    <PackageReference Include="Aspire.Hosting.Testing" Version="9.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
     
     <!-- Application dependencies -->
-    <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.22" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     
     <!-- HTTP testing dependencies -->
@@ -50,6 +49,8 @@
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Temporal\FlinkDotNet.Temporal.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Resilience\FlinkDotNet.Resilience.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
+    <ProjectReference Include="..\LocalTesting.AppHost\LocalTesting.AppHost.csproj" />
+    <ProjectReference Include="..\LocalTesting.WebApi\LocalTesting.WebApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>

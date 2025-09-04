@@ -11,7 +11,7 @@
 #region Designer generated code
 #pragma warning disable
 using Reqnroll;
-namespace FlinkDotNet.Aspire.IntegrationTests.Features
+namespace LocalTesting.IntegrationTests.Features
 {
     
     

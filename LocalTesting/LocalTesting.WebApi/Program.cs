@@ -47,7 +47,12 @@ builder.Services.AddOpenTelemetry()
         .AddOtlpExporter());
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Use PascalCase property names to match test expectations
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

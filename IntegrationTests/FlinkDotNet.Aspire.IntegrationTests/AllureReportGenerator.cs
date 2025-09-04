@@ -9,6 +9,29 @@ namespace FlinkDotNet.Aspire.IntegrationTests;
 public static class AllureReportGenerator
 {
     /// <summary>
+    /// Main entry point for command-line execution
+    /// </summary>
+    public static async Task Main(string[] args)
+    {
+        if (args.Length >= 3 && args[0] == "generate-allure-report")
+        {
+            var resultsPath = args[1];
+            var outputPath = args[2];
+            
+            Console.WriteLine($"📊 Generating Allure report from: {resultsPath}");
+            Console.WriteLine($"📄 Output directory: {outputPath}");
+            
+            var success = await GenerateReportAsync(resultsPath, outputPath);
+            Environment.Exit(success ? 0 : 1);
+        }
+        else
+        {
+            Console.WriteLine("Usage: dotnet run -- generate-allure-report <results-path> <output-path>");
+            Environment.Exit(1);
+        }
+    }
+
+    /// <summary>
     /// Generate Allure HTML report from test results
     /// </summary>
     /// <param name="allureResultsPath">Path to allure-results directory</param>
@@ -181,9 +204,11 @@ public static class AllureReportGenerator
         </div>
         <div class=""card"">
             <h2>🎯 Features Covered</h2>
-            <p>• Stress Test - High Throughput Message Processing</p>
-            <p>• Reliability Test - System Resilience</p>
-            <p>• Integration Test - End-to-End Workflows</p>
+            <p>• Infrastructure Validation - Comprehensive Environment Testing</p>
+            <p>• Observability Tests - End-to-End Flow Metrics</p>
+            <p>• Integration Tests - Container Infrastructure</p>
+            <p>• Reliability Tests - System Resilience</p>
+            <p>• Backpressure Tests - Flow Control</p>
         </div>
     </div>
 

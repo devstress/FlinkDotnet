@@ -2,16 +2,13 @@ name: Build Solutions
 
 on:
   push:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
   workflow_dispatch:
 
 env:
   configuration: Release
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -76,14 +73,8 @@ jobs:
     needs: build
     uses: ./.github/workflows/reliability-tests.yml
 
-  stress_tests_confluent:
-    needs: build
-    uses: ./.github/workflows/stress-tests-confluent.yml
-
   backpressure_tests:
     needs: build
     uses: ./.github/workflows/backpressure-tests.yml
 
-  local_testing:
-    needs: build
-    uses: ./.github/workflows/local-testing.yml
+

@@ -85,14 +85,11 @@ jobs:
             throw
           }
 
-      - name: Upload BDD reliability test results and Allure reports
+      - name: Upload reliability test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bdd-reliability-test-results
+          name: reliability-test-results
           path: |
             **/*.trx
-            **/allure-results/**
-            **/allure-report/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
+          retention-days: 7
