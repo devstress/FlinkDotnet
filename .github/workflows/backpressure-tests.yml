@@ -2,11 +2,6 @@ name: Backpressure Tests - Flow Control and Load Management
 
 on:
   workflow_call:
-  pull_request:
-    paths:
-      - 'IntegrationTests/**'
-      - 'FlinkDotNet/**'
-      - '.github/workflows/backpressure-tests.yml'
   workflow_dispatch:
 
 env:

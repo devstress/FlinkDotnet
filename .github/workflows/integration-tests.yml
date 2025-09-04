@@ -2,11 +2,6 @@ name: Integration Tests - Container Infrastructure
 
 on:
   workflow_call:
-  pull_request:
-    paths:
-      - 'IntegrationTests/**'
-      - 'FlinkDotNet/**'
-      - '.github/workflows/integration-tests.yml'
   workflow_dispatch:
 
 jobs:
