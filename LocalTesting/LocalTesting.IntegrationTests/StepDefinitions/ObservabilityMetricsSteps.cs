@@ -48,8 +48,8 @@ public class ObservabilityMetricsSteps : IDisposable
         _app = await builder.BuildAsync();
         await _app.StartAsync();
         
-        // Create HTTP client with service discovery
-        _httpClient = _app.CreateHttpClient("localtesting-webapi");
+        // Create HTTP client with service discovery - use the correct endpoint name "webapi"
+        _httpClient = _app.CreateHttpClient("localtesting-webapi", "webapi");
         _httpClient.Timeout = TimeSpan.FromMinutes(15); // Extended timeout for 1M messages
 
         lock (_lockObject)
