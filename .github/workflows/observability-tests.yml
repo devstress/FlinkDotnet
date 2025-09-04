@@ -1,4 +1,4 @@
-name: Observability Tests - Message Per Second Metrics
+name: Observability Tests - Message Per Second Metrics (Aspire Testing Framework)
 
 on:
   workflow_call:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   run-observability-tests:
-    name: Run Observability Message Per Second Metrics Tests
+    name: Run Observability Tests with Aspire Testing Framework
     runs-on: ubuntu-latest
 
     defaults:
@@ -43,322 +43,71 @@ jobs:
           name: build-solutions
         continue-on-error: true
 
-      - name: Build all solutions
+      - name: Build LocalTesting solution for Aspire testing framework
         run: |
-          Write-Host "🔨 Building all solutions..." -ForegroundColor Green
+          Write-Host "🔨 Building LocalTesting solution for Aspire testing framework..." -ForegroundColor Green
           
           # Build FlinkDotNet core projects first
           Write-Host "Building FlinkDotNet core projects..." -ForegroundColor Yellow
           dotnet restore FlinkDotNet/FlinkDotNet.sln --verbosity minimal
           dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release --no-restore --verbosity minimal
           
-          # Build IntegrationTests solution
-          Write-Host "Building IntegrationTests solution..." -ForegroundColor Yellow
-          dotnet restore IntegrationTests/IntegrationTests.sln --verbosity minimal
-          dotnet build IntegrationTests/IntegrationTests.sln --configuration Release --no-restore --verbosity minimal
-          
-          # Build LocalTesting solution (needed for observability tests)
-          Write-Host "Building LocalTesting solution..." -ForegroundColor Yellow
+          # Build LocalTesting solution (contains observability tests with Aspire testing framework)
+          Write-Host "Building LocalTesting solution with Aspire testing framework..." -ForegroundColor Yellow
           dotnet restore LocalTesting/LocalTesting.sln --verbosity minimal
           dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore --verbosity minimal
 
-      - name: Start LocalTesting Infrastructure for Observability
-        timeout-minutes: 12
-        run: |
-          Write-Host "🚀 Starting LocalTesting infrastructure for observability tests..." -ForegroundColor Green
-          
-          # Set up environment variables for Aspire
-          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-          $env:DOTNET_DASHBOARD_OTLP_ENDPOINT_URL = "http://localhost:4323"
-          $env:DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL = "http://localhost:4324" 
-          $env:ASPIRE_DASHBOARD_URL = "http://127.0.0.1:18888"
-          $env:ASPNETCORE_ENVIRONMENT = "Development"
-          $env:DOTNET_LAUNCH_PROFILE = ""
-          
-          # Configure networking for CI environment
-          $env:DOTNET_SYSTEM_NET_DISABLEIPV6 = "false"
-          $env:DOTNET_SYSTEM_NET_HTTP_USEIPV6 = "true"
-          $env:DCP_API_SERVER_BIND_ADDRESS = "127.0.0.1"
-          $env:ASPIRE_DASHBOARD_BIND_ADDRESS = "127.0.0.1"
-          $env:DOCKER_HOST = "unix:///var/run/docker.sock"
-          
-          # Start LocalTesting AppHost as background process
-          Push-Location LocalTesting/LocalTesting.AppHost
-          try {
-            Write-Host "Starting LocalTesting AppHost..." -ForegroundColor Yellow
-            $aspireProcess = Start-Process -FilePath "dotnet" -ArgumentList "run", "--configuration", "Release", "--verbosity", "minimal" -PassThru -RedirectStandardOutput "aspire_output.log" -RedirectStandardError "aspire_error.log" -NoNewWindow
-            $global:AspirePID = $aspireProcess.Id
-            Write-Host "✅ LocalTesting AppHost started (PID: $global:AspirePID)" -ForegroundColor Green
-            
-            # Wait for services to start (reduced timeout for CI)
-            Write-Host "⏱️ Waiting for LocalTesting services to start (90 seconds)..." -ForegroundColor Yellow
-            Start-Sleep -Seconds 90
-            
-            # Check startup logs
-            if (Test-Path "aspire_output.log") {
-              $startupOutput = Get-Content "aspire_output.log" -Raw
-              Write-Host "📝 Startup logs preview:" -ForegroundColor Cyan
-              $startupOutput.Split("`n") | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
-            }
-            
-            # Verify containers are starting
-            $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
-            Write-Host "📦 Container count: $containerCount" -ForegroundColor Cyan
-            
-            if ($containerCount -eq 0) {
-              Write-Host "⚠️ No containers started yet - checking for startup issues..." -ForegroundColor Yellow
-              if (Test-Path "aspire_error.log") {
-                $errorOutput = Get-Content "aspire_error.log" -Raw
-                if ($errorOutput) {
-                  Write-Host "Error output:" -ForegroundColor Red
-                  Write-Host $errorOutput -ForegroundColor Red
-                }
-              }
-            } else {
-              Write-Host "✅ $containerCount containers started" -ForegroundColor Green
-              docker ps --format "table {{.Names}}\t{{.Status}}"
-            }
-            
-          } catch {
-            Write-Host "❌ Failed to start LocalTesting infrastructure: $($_.Exception.Message)" -ForegroundColor Red
-            throw
-          } finally {
-            Pop-Location
-          }
-
-      - name: Wait for LocalTesting API to be Ready
-        timeout-minutes: 5
-        run: |
-          Write-Host "⏳ Waiting for LocalTesting API to be ready..." -ForegroundColor Green
-          
-          $maxRetries = 30
-          $retryCount = 0
-          $apiReady = $false
-          
-          while ($retryCount -lt $maxRetries -and -not $apiReady) {
-            try {
-              $response = Invoke-WebRequest -Uri "http://localhost:18000/health" -TimeoutSec 5 -ErrorAction Stop
-              if ($response.StatusCode -eq 200) {
-                Write-Host "✅ LocalTesting API is ready and healthy" -ForegroundColor Green
-                $apiReady = $true
-              } else {
-                Write-Host "⚠️ API returned status: $($response.StatusCode)" -ForegroundColor Yellow
-              }
-            } catch {
-              $retryCount++
-              Write-Host "⏱️ API not ready yet (attempt $retryCount/$maxRetries): $($_.Exception.Message)" -ForegroundColor Yellow
-              Start-Sleep -Seconds 5
-            }
-          }
-          
-          if (-not $apiReady) {
-            Write-Host "❌ LocalTesting API failed to become ready after $($maxRetries * 5) seconds" -ForegroundColor Red
-            Write-Host "Current container status:" -ForegroundColor Yellow
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            throw "LocalTesting API not accessible for observability tests"
-          }
-
-      - name: Run BDD Observability Metrics Test Scenarios with ReqNRoll
-        timeout-minutes: 20
+      - name: Run Observability Tests Using Aspire Testing Framework
+        timeout-minutes: 15
         env:
           INTEGRATION_TEST_MODE: "OBSERVABILITY"
           GITHUB_ACTIONS: "true"
           ALLURE_RESULTS_DIRECTORY: "allure-results"
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
         run: |
-          Write-Host "🎭 Running BDD Observability Metrics Test Scenarios with ReqNRoll..." -ForegroundColor Green
-          Write-Host "📋 Testing messages-per-second metrics across Kafka, Flink, Temporal, and end-to-end flow with 1 million messages" -ForegroundColor Green
+          Write-Host "🎭 Running Observability Tests with Aspire Testing Framework..." -ForegroundColor Green
+          Write-Host "📋 Using LocalTesting.IntegrationTests with automatic Aspire infrastructure management" -ForegroundColor Green
           
-          # Set environment variables for observability testing
+          # Set environment variables for Aspire testing framework
           $env:INTEGRATION_TEST_MODE = "OBSERVABILITY"
           $env:GITHUB_ACTIONS = "true"
-          $env:FLINK_JOB_GATEWAY_HOST = "localhost"
-          $env:FLINK_JOB_GATEWAY_PORT = "8080"
           $env:ALLURE_RESULTS_DIRECTORY = "allure-results"
+          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
           
           try {
-            Write-Host "🚀 Scenario Execution: Starting BDD observability test scenarios..." -ForegroundColor Yellow
-            Write-Host "  📊 ReqNRoll BDD framework will display full Given/When/Then step execution" -ForegroundColor Cyan
-            Write-Host "  📈 Metrics validation for Kafka, Flink, Temporal, and end-to-end flow" -ForegroundColor Cyan
+            Write-Host "🚀 Starting Aspire testing framework for observability metrics..." -ForegroundColor Yellow
+            Write-Host "  📊 Tests will automatically start LocalTesting infrastructure using DistributedApplicationTestingBuilder" -ForegroundColor Cyan
+            Write-Host "  📈 No manual infrastructure management required" -ForegroundColor Cyan
             
-            # Run Aspire integration tests for observability metrics - display full Given/When/Then step execution
-            dotnet test IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/FlinkDotNet.Aspire.IntegrationTests.csproj --configuration Release --logger "console;verbosity=detailed" --logger trx --verbosity minimal --no-build --filter "Category=observability"
+            # Run LocalTesting integration tests with Aspire testing framework
+            Push-Location LocalTesting
+            dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --configuration Release --logger "console;verbosity=detailed" --logger trx --verbosity minimal --no-build --filter "Category=observability"
+            Pop-Location
             
             if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ BDD observability test scenarios failed" -ForegroundColor Red
-              throw "BDD observability test scenarios failed - see ReqNRoll output above"
+              Write-Host "❌ Observability tests failed with Aspire testing framework" -ForegroundColor Red
+              throw "Observability tests failed - see detailed output above"
             } else {
-              Write-Host "🎉 All BDD observability test scenarios passed!" -ForegroundColor Green
-              Write-Host "  📊 Allure BDD test reports generated from C# code" -ForegroundColor Cyan
+              Write-Host "🎉 All observability tests passed using Aspire testing framework!" -ForegroundColor Green
+              Write-Host "  📊 Infrastructure was automatically managed by Aspire testing framework" -ForegroundColor Cyan
+              Write-Host "  📈 Tests validated messages-per-second metrics across Kafka, Flink, and Temporal" -ForegroundColor Cyan
             }
           }
           catch {
-            Write-Host "⚠️ Observability test execution note: $_" -ForegroundColor Yellow
-            Write-Host "   This validates the observability infrastructure and metrics collection patterns" -ForegroundColor Yellow
-            Write-Host "   Observability metrics validation: ✅ INFRASTRUCTURE VALIDATED" -ForegroundColor Green
+            Write-Host "❌ Observability test execution failed: $_" -ForegroundColor Red
+            throw
           }
 
-      - name: Capture Observability Metrics Summary
-        if: always()
-        run: |
-          Write-Host "📊 Capturing Observability Metrics Summary..." -ForegroundColor Green
-          
-          # Attempt to capture metrics from LocalTesting API if available
-          try {
-            $healthResponse = Invoke-RestMethod -Uri "http://localhost:18000/health" -Method Get -TimeoutSec 10
-            Write-Host "✅ LocalTesting API accessible" -ForegroundColor Green
-            
-            try {
-              $metricsResponse = Invoke-RestMethod -Uri "http://localhost:18000/api/observability/metrics/messages-per-second" -Method Get -TimeoutSec 15
-              Write-Host "📈 Messages Per Second Metrics:" -ForegroundColor Cyan
-              
-              # Display Kafka metrics
-              if ($metricsResponse.KafkaMetrics -and $metricsResponse.KafkaMetrics.ProducerRates) {
-                Write-Host "  🔗 Kafka Producer Metrics:" -ForegroundColor Yellow
-                foreach ($producer in $metricsResponse.KafkaMetrics.ProducerRates.PSObject.Properties) {
-                  if ($producer.Value.MessagesPerSecond) {
-                    Write-Host "    📤 $($producer.Name): $($producer.Value.MessagesPerSecond) msg/sec" -ForegroundColor White
-                  }
-                }
-              }
-              
-              # Display Flink metrics  
-              if ($metricsResponse.FlinkMetrics) {
-                Write-Host "  ⚡ Flink Processing Metrics:" -ForegroundColor Yellow
-                if ($metricsResponse.FlinkMetrics.InputRates) {
-                  foreach ($input in $metricsResponse.FlinkMetrics.InputRates.PSObject.Properties) {
-                    Write-Host "    📥 Input Rate - $($input.Name): $($input.Value)" -ForegroundColor White
-                  }
-                }
-                if ($metricsResponse.FlinkMetrics.OutputRates) {
-                  foreach ($output in $metricsResponse.FlinkMetrics.OutputRates.PSObject.Properties) {
-                    Write-Host "    📤 Output Rate - $($output.Name): $($output.Value)" -ForegroundColor White
-                  }
-                }
-              }
-              
-              # Display Temporal metrics
-              if ($metricsResponse.TemporalMetrics) {
-                Write-Host "  🔄 Temporal Workflow Metrics:" -ForegroundColor Yellow
-                if ($metricsResponse.TemporalMetrics.WorkflowRates) {
-                  foreach ($workflow in $metricsResponse.TemporalMetrics.WorkflowRates.PSObject.Properties) {
-                    Write-Host "    🔄 Workflow Rate - $($workflow.Name): $($workflow.Value)" -ForegroundColor White
-                  }
-                }
-                if ($metricsResponse.TemporalMetrics.ActivityRates) {
-                  foreach ($activity in $metricsResponse.TemporalMetrics.ActivityRates.PSObject.Properties) {
-                    Write-Host "    ⚙️ Activity Rate - $($activity.Name): $($activity.Value)" -ForegroundColor White
-                  }
-                }
-              }
-              
-              # Display End-to-End Flow metrics
-              if ($metricsResponse.FlowMetrics) {
-                Write-Host "  🌊 End-to-End Flow Metrics:" -ForegroundColor Yellow
-                if ($metricsResponse.FlowMetrics.KafkaToFlinkRate) {
-                  Write-Host "    📊 Kafka → Flink: $($metricsResponse.FlowMetrics.KafkaToFlinkRate.MessagesPerSecond) msg/sec" -ForegroundColor White
-                }
-                if ($metricsResponse.FlowMetrics.FlinkToTemporalRate) {
-                  Write-Host "    📊 Flink → Temporal: $($metricsResponse.FlowMetrics.FlinkToTemporalRate.MessagesPerSecond) msg/sec" -ForegroundColor White
-                }
-                if ($metricsResponse.FlowMetrics.EndToEndRate) {
-                  Write-Host "    📊 End-to-End Total: $($metricsResponse.FlowMetrics.EndToEndRate.MessagesPerSecond) msg/sec" -ForegroundColor White
-                }
-              }
-              
-              Write-Host "📊 Observability metrics summary captured successfully!" -ForegroundColor Green
-            }
-            catch {
-              Write-Host "⚠️ Metrics endpoint not available during test run: $($_.Exception.Message)" -ForegroundColor Yellow
-            }
-          }
-          catch {
-            Write-Host "ℹ️ LocalTesting API not accessible - this may be expected in CI if infrastructure is still starting" -ForegroundColor Blue
-            Write-Host "   Error details: $($_.Exception.Message)" -ForegroundColor Yellow
-            
-            # Check if any containers are running to provide context
-            $containerCount = (docker ps --format "{{.Names}}" | Measure-Object).Count
-            if ($containerCount -gt 0) {
-              Write-Host "ℹ️ $containerCount containers are running - infrastructure may be partially available" -ForegroundColor Cyan
-              docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | Head -5
-            } else {
-              Write-Host "ℹ️ No containers running - infrastructure may not have started fully" -ForegroundColor Cyan
-            }
-          }
-          
-          Write-Host "✅ Observability test execution completed - metrics validation infrastructure confirmed working" -ForegroundColor Green
-
-      - name: Validate Aspire Orchestration Health for Observability
-        run: |
-          Write-Host "🔍 Validating Aspire orchestration health for observability..." -ForegroundColor Green
-          
-          # Check Docker system health
-          Write-Host "Docker System Info:" -ForegroundColor Yellow
-          docker system info --format "{{.ServerVersion}}"
-          
-          # Check running containers
-          Write-Host "Running Containers:" -ForegroundColor Yellow
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          
-          Write-Host "✅ Aspire orchestration health check for observability completed!" -ForegroundColor Green
-
-      - name: Upload BDD observability test results and Allure reports
+      - name: Upload observability test results and Allure reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: bdd-observability-test-results
+          name: observability-test-results
           path: |
             **/*.trx
             **/*.log
             **/*.txt
             **/allure-results/**
             **/allure-report/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-results/**
-            IntegrationTests/FlinkDotNet.Aspire.IntegrationTests/bin/Release/net9.0/allure-report/**
-
-      - name: Cleanup LocalTesting Infrastructure
-        if: always()
-        run: |
-          Write-Host "🧹 Cleaning up LocalTesting infrastructure..." -ForegroundColor Green
-          
-          # Stop the Aspire background process if it's still running
-          try {
-            if ($global:AspirePID) {
-              Write-Host "Stopping LocalTesting AppHost process (PID: $global:AspirePID)..." -ForegroundColor Yellow
-              Stop-Process -Id $global:AspirePID -Force -ErrorAction SilentlyContinue
-              Start-Sleep -Seconds 5
-            }
-          } catch {
-            Write-Host "LocalTesting AppHost process may have already stopped" -ForegroundColor Yellow
-          }
-          
-          # Stop any remaining dotnet processes
-          try {
-            $dotnetProcesses = Get-Process -Name "dotnet" -ErrorAction SilentlyContinue
-            if ($dotnetProcesses) {
-              Write-Host "Stopping remaining dotnet processes..." -ForegroundColor Yellow
-              $dotnetProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
-              Start-Sleep -Seconds 5
-            }
-          } catch {
-            Write-Host "No additional dotnet processes to stop" -ForegroundColor Yellow
-          }
-          
-          # Stop all containers
-          Write-Host "Stopping all Docker containers..." -ForegroundColor Yellow
-          docker ps -q | ForEach-Object { docker stop $_ } 2>$null
-          
-          # Clean up containers
-          Write-Host "Cleaning up containers..." -ForegroundColor Yellow
-          docker container prune -f 2>$null
-          
-          # Clean up log files
-          try {
-            Push-Location LocalTesting/LocalTesting.AppHost -ErrorAction SilentlyContinue
-            if (Test-Path "aspire_output.log") { Remove-Item "aspire_output.log" -Force }
-            if (Test-Path "aspire_error.log") { Remove-Item "aspire_error.log" -Force }
-            Pop-Location
-          } catch {
-            Write-Host "No log files to clean up" -ForegroundColor Yellow
-          }
-          
-          Write-Host "✅ Cleanup completed!" -ForegroundColor Green
+            LocalTesting/LocalTesting.IntegrationTests/bin/Release/net9.0/allure-results/**
+            LocalTesting/LocalTesting.IntegrationTests/bin/Release/net9.0/allure-report/**

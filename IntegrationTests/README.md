@@ -554,7 +554,7 @@ The integration tests are fully integrated with GitHub Actions:
 ```yaml
 # Workflows that use this infrastructure:
 - integration-tests.yml      # Basic infrastructure validation
-- stress-tests-confluent.yml # High-throughput scenarios  
+- observability-tests.yml # Message per second metrics with Aspire testing framework  
 - reliability-tests.yml      # Back pressure and rebalance
 - backpressure-tests.yml     # Flow control validation
 ```

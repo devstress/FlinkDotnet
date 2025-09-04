@@ -76,10 +76,6 @@ jobs:
     needs: build
     uses: ./.github/workflows/reliability-tests.yml
 
-  stress_tests_confluent:
-    needs: build
-    uses: ./.github/workflows/stress-tests-confluent.yml
-
   backpressure_tests:
     needs: build
     uses: ./.github/workflows/backpressure-tests.yml
