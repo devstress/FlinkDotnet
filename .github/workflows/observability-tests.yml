@@ -1,4 +1,4 @@
-name: Observability Tests - Aspire Testing Framework
+name: Observability Tests
 
 on:
   workflow_call:
@@ -10,12 +10,8 @@ concurrency:
 
 jobs:
   run-observability-tests:
-    name: Run Observability Tests with Aspire Testing Framework
+    name: Run Observability Tests
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        shell: pwsh
 
     steps:
       - name: Checkout code
@@ -30,148 +26,30 @@ jobs:
 
       - name: Install .NET Aspire workload
         run: |
-          Write-Host "📦 Installing .NET Aspire workload..." -ForegroundColor Green
+          echo "📦 Installing .NET Aspire workload..."
           dotnet workload install aspire
-          Write-Host "✅ Aspire workload installed successfully" -ForegroundColor Green
+          echo "✅ Aspire workload installed successfully"
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-solutions
-        continue-on-error: true
-
-      - name: Build Solutions for Observability Testing
+      - name: Build LocalTesting Solution
         run: |
-          Write-Host "🔨 Building solutions for Aspire observability testing..." -ForegroundColor Green
-          
-          # Build LocalTesting solution (contains observability tests with Aspire testing framework)
-          Write-Host "Building LocalTesting solution with Aspire testing framework..." -ForegroundColor Yellow
-          dotnet restore LocalTesting/LocalTesting.sln --verbosity minimal
-          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore --verbosity minimal
-          
-          # Build IntegrationTests solution (contains Allure report generation)
-          Write-Host "Building IntegrationTests solution with Allure reporting..." -ForegroundColor Yellow
-          dotnet restore IntegrationTests/IntegrationTests.sln --verbosity minimal
-          dotnet build IntegrationTests/IntegrationTests.sln --configuration Release --no-restore --verbosity minimal
+          echo "🔨 Building LocalTesting solution for observability testing..."
+          dotnet restore LocalTesting/LocalTesting.sln
+          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
 
-      - name: Run Observability Tests Using Aspire Testing Framework
+      - name: Run Observability Tests
         timeout-minutes: 30
         env:
           INTEGRATION_TEST_MODE: "OBSERVABILITY"
           GITHUB_ACTIONS: "true"
-          ALLURE_RESULTS_DIRECTORY: "allure-results"
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
         run: |
-          Write-Host "🎭 Running observability tests with Aspire testing framework..." -ForegroundColor Green
-          Write-Host "📋 Testing complete Kafka → Flink → Temporal pipeline with 1M messages" -ForegroundColor Green
-          Write-Host "🔧 Aspire testing framework automatically manages all infrastructure" -ForegroundColor Green
+          echo "🎭 Running observability tests..."
+          echo "📋 Testing complete Kafka → Flink → Temporal pipeline with observability metrics"
           
-          # Set environment variables for Aspire testing framework
-          $env:INTEGRATION_TEST_MODE = "OBSERVABILITY"
-          $env:GITHUB_ACTIONS = "true"
-          $env:ALLURE_RESULTS_DIRECTORY = "allure-results"
-          $env:ASPIRE_ALLOW_UNSECURED_TRANSPORT = "true"
-          
-          # Create allure results directory
-          New-Item -ItemType Directory -Force -Path "allure-results"
-          
-          Write-Host "🚀 Starting Aspire testing framework for end-to-end observability validation..." -ForegroundColor Yellow
-          Write-Host "  📊 Single test validating complete Kafka → Flink → Temporal pipeline with 1M messages" -ForegroundColor Cyan
-          Write-Host "  📈 Automated infrastructure management via Aspire testing framework" -ForegroundColor Cyan
-          
-          # Run LocalTesting integration tests with Aspire testing framework
-          Push-Location LocalTesting
-          dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --configuration Release --logger "console;verbosity=detailed" --logger trx --verbosity minimal --no-build --filter "Category=observability"
-          Pop-Location
-          
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "🎉 Observability test passed using Aspire testing framework!" -ForegroundColor Green
-            Write-Host "  📊 Complete Kafka → Flink → Temporal pipeline validated with 1M messages" -ForegroundColor Cyan
-            Write-Host "  📈 Tests validated messages-per-second metrics across all components" -ForegroundColor Cyan
-          } else {
-            Write-Host "❌ Observability test failed - see detailed output above" -ForegroundColor Red
-            exit 1
-          }
-
-      - name: Generate and Upload Allure Reports
-        if: always()
-        run: |
-          Write-Host "📊 Generating Allure reports..." -ForegroundColor Green
-          
-          # Find all allure-results directories
-          $allureResultDirs = @()
-          $allureResultDirs += Get-ChildItem -Path "." -Recurse -Directory -Name "allure-results" -ErrorAction SilentlyContinue
-          
-          Write-Host "Found Allure result directories:" -ForegroundColor Yellow
-          $allureResultDirs | ForEach-Object { Write-Host "  - $_" -ForegroundColor Cyan }
-          
-          # Create consolidated allure results directory
-          $consolidatedResultsDir = "consolidated-allure-results"
-          New-Item -ItemType Directory -Force -Path $consolidatedResultsDir
-          
-          # Copy all Allure result files to consolidated directory
-          foreach ($dir in $allureResultDirs) {
-            if (Test-Path $dir) {
-              $files = Get-ChildItem -Path $dir -File -ErrorAction SilentlyContinue
-              foreach ($file in $files) {
-                Copy-Item -Path $file.FullName -Destination $consolidatedResultsDir -Force
-                Write-Host "  Copied: $($file.Name)" -ForegroundColor Cyan
-              }
-            }
-          }
-          
-          # Generate Allure report using C# AllureReportGenerator
-          try {
-            Write-Host "🎯 Generating Allure report using C# generator..." -ForegroundColor Yellow
-            
-            # Call the AllureReportGenerator from IntegrationTests
-            Push-Location IntegrationTests/FlinkDotNet.Aspire.IntegrationTests
-            
-            # Generate the final Allure report
-            dotnet run --project . --configuration Release -- generate-allure-report "$([System.IO.Path]::GetFullPath("../../$consolidatedResultsDir"))" "$([System.IO.Path]::GetFullPath("../../allure-report"))"
-            
-            Pop-Location
-            
-            if (Test-Path "allure-report") {
-              Write-Host "✅ Allure report generated successfully!" -ForegroundColor Green
-              Write-Host "📋 Report contents:" -ForegroundColor Yellow
-              Get-ChildItem -Path "allure-report" | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Cyan }
-            } else {
-              Write-Host "⚠️ Allure report directory not found, creating basic report..." -ForegroundColor Yellow
-              New-Item -ItemType Directory -Force -Path "allure-report"
-              
-              # Create a basic index.html
-              $basicReport = @"
-<!DOCTYPE html>
-<html>
-<head><title>Observability Test Report</title></head>
-<body>
-<h1>Aspire Observability Test Report</h1>
-<p>Generated: $(Get-Date)</p>
-<p>✅ Observability tests completed using Aspire testing framework</p>
-<p>✅ Kafka → Flink → Temporal pipeline validated with 1M messages</p>
-</body>
-</html>
-"@
-              $basicReport | Out-File -FilePath "allure-report/index.html" -Encoding UTF8
-              Write-Host "✅ Basic Allure report created" -ForegroundColor Green
-            }
-          }
-          catch {
-            Write-Host "⚠️ Error generating Allure report: $_" -ForegroundColor Yellow
-            Write-Host "Creating minimal report structure..." -ForegroundColor Yellow
-            
-            New-Item -ItemType Directory -Force -Path "allure-report"
-            "Observability test execution completed using Aspire testing framework" | Out-File -FilePath "allure-report/summary.txt"
-          }
-
-      - name: Upload Allure Reports and Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: allure-reports
-          path: |
-            allure-report/**
-            consolidated-allure-results/**
-            **/*.trx
-          retention-days: 7
+          # Run LocalTesting integration tests with observability category
+          cd LocalTesting
+          dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
+            --configuration Release \
+            --logger "console;verbosity=detailed" \
+            --no-build \
+            --filter "Category=observability"
