@@ -269,7 +269,7 @@ public class ObservabilityController : ControllerBase
         {
             var simRequest = request ?? new MetricsSimulationRequest
             {
-                KafkaMessages = 1000000, // 1M messages for high throughput test
+                KafkaMessages = 1000000, // 1M messages for high throughput test (test may override this)
                 FlinkJobs = 2,
                 TemporalWorkflows = 5
                 // REMOVED: DurationSeconds - we'll measure actual execution time
@@ -307,13 +307,31 @@ public class ObservabilityController : ControllerBase
                 realMessages.Count, ingressTopic);
             
             // Execute REAL Kafka production - this will generate real metrics
-            await _kafkaProducerService.ProduceMessagesAsync(ingressTopic, realMessages);
-            
-            _logger.LogInformation("✅ Real Kafka production completed. Messages are flowing through real infrastructure.");
+            try
+            {
+                await _kafkaProducerService.ProduceMessagesAsync(ingressTopic, realMessages);
+                _logger.LogInformation("✅ Real Kafka production completed. Messages are flowing through real infrastructure.");
+            }
+            catch (Exception kafkaEx)
+            {
+                _logger.LogError(kafkaEx, "❌ Real Kafka production failed. Infrastructure may not be ready.");
+                return StatusCode(500, new { 
+                    Status = "KafkaProductionFailed", 
+                    Error = kafkaEx.Message, 
+                    Timestamp = DateTime.UtcNow,
+                    Note = "Check if Kafka infrastructure is running and accessible"
+                });
+            }
             
             // Wait for messages to be processed by Flink and Temporal (real processing time)
-            _logger.LogInformation("⏳ Allowing time for real Flink processing and Temporal workflow execution...");
-            await Task.Delay(10000); // 10 seconds for real infrastructure processing
+            // Scale wait time based on message count - larger volumes need more time
+            var baseWaitSeconds = 10;
+            var additionalWaitPerMessage = Math.Min(simRequest.KafkaMessages / 100000.0, 30); // Max 30 extra seconds
+            var totalWaitSeconds = (int)(baseWaitSeconds + additionalWaitPerMessage);
+            
+            _logger.LogInformation("⏳ Allowing {WaitSeconds} seconds for real infrastructure processing of {MessageCount} messages...", 
+                totalWaitSeconds, simRequest.KafkaMessages);
+            await Task.Delay(totalWaitSeconds * 1000);
             
             // IMPORTANT: Now retrieve metrics from REAL Prometheus instead of generating fake ones
             _logger.LogInformation("📊 Retrieving REAL metrics from Prometheus infrastructure");
