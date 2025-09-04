@@ -126,22 +126,74 @@ public class ObservabilityMetricsSteps : IDisposable
             ? _scenarioContext["metrics_display"] as string
             : FormatMetricsForDisplay(metricsData);
         
-        // Save to Bin directory with hard-coded filename as requested
-        var currentDir = Environment.CurrentDirectory;
-        var binDir = Path.Combine(currentDir, "Bin");
+        // Find LocalTesting directory and create Bin subdirectory
+        var localTestingDir = FindLocalTestingDirectory();
+        var binDir = Path.Combine(localTestingDir, "Bin");
         Directory.CreateDirectory(binDir);
         
-        // Hard-coded filename as requested by user
+        // Hard-coded filename as requested by user  
         var filename = Path.Combine(binDir, "observability-test-result.txt");
         
         // Write formatted metrics to file
         await File.WriteAllTextAsync(filename, metricsDisplay);
         
-        Console.WriteLine($"📁 Real observability metrics saved to Bin directory:");
-        Console.WriteLine($"   📂 Directory: {binDir}");
+        Console.WriteLine($"📁 Real observability metrics saved to LocalTesting/Bin directory:");
+        Console.WriteLine($"   📂 LocalTesting Directory: {localTestingDir}");
+        Console.WriteLine($"   📂 Bin Directory: {binDir}");
         Console.WriteLine($"   📄 File: {filename}");
         Console.WriteLine($"   📊 File size: {new FileInfo(filename).Length} bytes");
         Console.WriteLine($"   🔗 Metrics source: Real Prometheus infrastructure");
+        Console.WriteLine($"   ✅ GitHub workflow will find file at: LocalTesting/Bin/observability-test-result.txt");
+    }
+    
+    private string FindLocalTestingDirectory()
+    {
+        var currentDir = Environment.CurrentDirectory;
+        
+        // Try current directory first
+        if (Path.GetFileName(currentDir) == "LocalTesting")
+        {
+            return currentDir;
+        }
+        
+        // Navigate up the directory tree to find LocalTesting folder
+        var searchDir = currentDir;
+        while (!string.IsNullOrEmpty(searchDir))
+        {
+            var localTestingPath = Path.Combine(searchDir, "LocalTesting");
+            if (Directory.Exists(localTestingPath))
+            {
+                return localTestingPath;
+            }
+            
+            var parentDir = Directory.GetParent(searchDir);
+            if (parentDir == null)
+                break;
+            searchDir = parentDir.FullName;
+        }
+        
+        // If not found, try to find LocalTesting in common locations
+        var possiblePaths = new[]
+        {
+            Path.Combine(currentDir, "..", "LocalTesting"),
+            Path.Combine(currentDir, "..", "..", "LocalTesting"),
+            Path.Combine(currentDir, "..", "..", "..", "LocalTesting")
+        };
+        
+        foreach (var path in possiblePaths)
+        {
+            var fullPath = Path.GetFullPath(path);
+            if (Directory.Exists(fullPath))
+            {
+                return fullPath;
+            }
+        }
+        
+        // Fallback: create LocalTesting directory in current location
+        var fallbackPath = Path.Combine(currentDir, "LocalTesting");
+        Directory.CreateDirectory(fallbackPath);
+        Console.WriteLine($"⚠️ LocalTesting directory not found, created at: {fallbackPath}");
+        return fallbackPath;
     }
 
     private static object? GetNestedProperty(Dictionary<string, object> dict, string propertyName)
