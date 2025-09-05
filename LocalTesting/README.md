@@ -70,8 +70,11 @@ Real-time metrics are available via:
 dotnet --version  # Should show 9.0.x
 
 # Build LocalTesting solution
-dotnet build LocalTesting.sln --configuration Release
+dotnet build LocalTesting.sln
 
-# Run integration tests
-dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj
+# Run LocalTesting Aspire orchestrator
+cd LocalTesting.AppHost && dotnet run
+
+# Run Observability tests
+dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --filter "Category=observability"
 ```

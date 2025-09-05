@@ -62,11 +62,14 @@ dotnet run --project LocalTesting.AppHost
 #### ✅ Step 3: Verify Infrastructure is Working
 Open these URLs in your browser (should all load):
 
-- **Flink Dashboard**: http://localhost:18002 ← Should show cluster with 3 TaskManagers
-- **Kafka UI**: http://localhost:18003 ← Should show 3 brokers
-- **Temporal UI**: http://localhost:18004 ← Should show namespace "default"
-- **Grafana**: http://localhost:18010 ← Should show login screen
-- **Aspire Dashboard**: http://localhost:18888 ← Should show running services
+- **Aspire Dashboard**: http://localhost:18888 ← Should show running services (check this first!)
+- **Flink Dashboard**: Check Aspire dashboard for actual port (typically 8081)
+- **Kafka UI**: Check Aspire dashboard for actual port (typically 8080)
+- **Temporal UI**: Check Aspire dashboard for actual port (typically 8088)
+- **Grafana**: Check Aspire dashboard for actual port (typically 3000)
+- **Prometheus**: Check Aspire dashboard for actual port (typically 9090)
+
+**💡 Port Discovery**: The LocalTesting infrastructure uses dynamic ports managed by Aspire. Always check the Aspire dashboard at http://localhost:18888 first to see the actual assigned ports for each service.
 
 **✅ All URLs work? Great! Continue to exercises.**
 **❌ Any URL fails? Re-run LocalTesting setup above.**
@@ -87,19 +90,33 @@ Open these URLs in your browser (should all load):
 # Navigate to Exercise Solutions
 cd LearningCourse/Day01-Flink21-Fundamentals/Exercise-Solutions
 
-# Run Netflix-style infrastructure validation
-# Verify LocalTesting infrastructure is running
-curl http://localhost:18002  # Flink Dashboard
+# Open Aspire Dashboard to discover service ports
+# http://localhost:18888
+
+# Verify all services are running (check status in Aspire Dashboard)
+# ✅ flink-jobmanager should show "Running"
+# ✅ kafka-broker-1, kafka-broker-2, kafka-broker-3 should show "Running"
+# ✅ temporal-server should show "Running"
+# ✅ grafana should show "Running"
+# ✅ prometheus should show "Running"
 ```
 
-**Expected Output:**
+**Expected Output (in Aspire Dashboard):**
 ```
-🔍 FlinkDotNet Production Stack Validation
-✅ FLINK CLUSTER STATUS: 3/3 TaskManagers HEALTHY
-✅ KAFKA CLUSTER STATUS: 3/3 Brokers ONLINE  
-✅ TEMPORAL CLUSTER STATUS: Server RUNNING
-✅ OBSERVABILITY STACK STATUS: All systems operational
-🎯 INFRASTRUCTURE READY - Netflix reliability standards met
+📊 LocalTesting Infrastructure Status
+✅ flink-jobmanager: Running
+✅ flink-taskmanager-1: Running
+✅ flink-taskmanager-2: Running
+✅ flink-taskmanager-3: Running
+✅ kafka-broker-1: Running
+✅ kafka-broker-2: Running
+✅ kafka-broker-3: Running
+✅ temporal-server: Running
+✅ grafana: Running
+✅ prometheus: Running
+✅ otel-collector-otlp-grpc: Running
+✅ localtesting-webapi: Running
+🎯 ALL SERVICES HEALTHY - Ready for exercises
 ```
 
 **✅ Success indicators:**
@@ -136,16 +153,19 @@ dotnet run --configuration=RocksDBStateBackend
 
 **Expected Output:**
 ```
-🚀 Day 1 Production App with configuration: RocksDBStateBackend
+🚀 Starting Day 1 Production App with configuration: rocksdbstatebackend
 💾 Configuring RocksDB State Backend for Uber-Scale Operations
 🚀 Day 1 Production Streaming Application starting...
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
+📊 Health checks available at: /health and /health/comprehensive
+📈 Metrics available at: /metrics
+📚 API documentation at: /index.html
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
 ```
 
 **✅ Test the state backend:**
 ```bash
 # Open new terminal and test state performance endpoint
-curl http://localhost:18000/state/performance
+curl http://localhost:5000/state/performance
 ```
 
 **Expected Response:**
@@ -181,14 +201,18 @@ curl http://localhost:18000/state/performance
 **Business Context**: LinkedIn's feed generation system handling 900+ million users
 
 ```bash
-# Open observability dashboard
-# Open Grafana Dashboard
-# http://localhost:18010
-# OR on Mac/Linux: open observability-dashboard.html
+# Find Grafana port from Aspire Dashboard (http://localhost:18888)
+# Look for "grafana" service and click to open
+# Default credentials: admin/admin
 
-# Run load testing in another terminal
-# Use LocalTesting WebApi for load testing
-curl -X POST http://localhost:18000/stress/complex-logic
+# Run load testing using LocalTesting WebApi
+# First, find the LocalTesting WebApi port from Aspire Dashboard
+# Look for "localtesting-webapi" service
+
+# Example load test (adjust port based on Aspire Dashboard):
+curl -X POST http://localhost:[WEBAPI_PORT]/api/stress-test/produce-messages \
+  -H "Content-Type: application/json" \
+  -d '{"messageCount": 1000, "delayMs": 10}'
 ```
 
 **Expected Output:**
@@ -223,9 +247,12 @@ curl -X POST http://localhost:18000/stress/complex-logic
 **Business Context**: Banking compliance system processing $2 trillion+ daily transactions
 
 ```bash
-# Run comprehensive security validation
-# Verify LocalTesting infrastructure is running
-curl http://localhost:18002  # Flink Dashboard -SecurityValidation
+# Check security status in Aspire Dashboard
+# http://localhost:18888
+
+# Verify all services have security configurations
+# Look for TLS/SSL indicators in service status
+# Check environment variables for security settings
 ```
 
 **Expected Output:**
@@ -262,33 +289,53 @@ dotnet run --configuration=RecommendationEngine
 
 **Expected Output:**
 ```
+🚀 Starting Day 1 Production App with configuration: recommendationengine
 🎯 Configuring Netflix-Style Recommendation Engine
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
+📊 Health checks available at: /health and /health/comprehensive
+📈 Metrics available at: /metrics
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
 ```
 
 **✅ Test Netflix recommendations:**
 ```bash
 # Open new terminal and test recommendations
-curl http://localhost:18000/recommendations/user123
+curl http://localhost:5000/recommendations/user123
 
 # Check Netflix metrics
-curl http://localhost:18000/netflix-metrics
+curl http://localhost:5000/netflix-metrics
+
+# Deploy ML model
+curl -X POST http://localhost:5000/ml-models/deploy \
+  -H "Content-Type: application/json" \
+  -d '{"modelType": "recommendation", "version": "2.1.0"}'
 ```
 
 **Expected Response for recommendations:**
 ```json
 {
   "UserId": "user123",
+  "Timestamp": "2024-01-15T10:30:00Z",
   "PersonalizedContent": [
     {
-      "ContentId": "movie_1234",
-      "Title": "AI-Generated Thriller",
-      "Score": 0.95,
-      "Genre": "Sci-Fi"
+      "ContentId": "netflix_80057281",
+      "Title": "Stranger Things",
+      "Score": 0.94,
+      "Genre": "Sci-Fi Drama",
+      "WatchProbability": 0.78
+    },
+    {
+      "ContentId": "netflix_70153404",
+      "Title": "House of Cards",
+      "Score": 0.91,
+      "Genre": "Political Drama",
+      "WatchProbability": 0.72
     }
   ],
-  "ResponseTimeMs": 23,
-  "ABTestGroup": "ModelA"
+  "ModelVersion": "v2.1.0-netflix-production",
+  "ResponseTimeMs": 18,
+  "ABTestGroup": "ModelA_Production",
+  "GlobalRegion": "us-west-2",
+  "CacheHit": true
 }
 ```
 
@@ -296,9 +343,15 @@ curl http://localhost:18000/netflix-metrics
 ```json
 {
   "ViewingHours": "2.5B+ daily",
-  "RecommendationAccuracy": "87%",
+  "RecommendationAccuracy": "93%",
   "ResponseLatency": "23ms",
-  "GlobalUsers": "250M+"
+  "ModelsInProduction": 200,
+  "GlobalUsers": "250M+",
+  "ABTestsActive": 20,
+  "ContentLibrarySize": "15K+ titles",
+  "RegionalCDNs": 17000,
+  "DataProcessedDaily": "1.3PB",
+  "RecommendationQueries": "1B+ daily"
 }
 ```
 
@@ -327,20 +380,27 @@ dotnet run --configuration=DynamicPricingEngine
 
 **Expected Output:**
 ```
+🚀 Starting Day 1 Production App with configuration: dynamicpricingengine
 🚗 Configuring Uber-Scale Dynamic Pricing Engine
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
+📊 Health checks available at: /health and /health/comprehensive
+📈 Metrics available at: /metrics
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
 ```
 
 **✅ Test Uber pricing:**
 ```bash
 # Calculate dynamic pricing
-curl -X POST http://localhost:18000/pricing/calculate -d '{"pickup":"downtown","destination":"airport"}' -H "Content-Type: application/json"
+curl -X POST http://localhost:5000/pricing/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"area":"downtown_financial"}'
 
-# Check driver matching
-curl http://localhost:18000/driver-matching/downtown
+# Check driver matching for different areas
+curl http://localhost:5000/driver-matching/downtown_financial
+curl http://localhost:5000/driver-matching/airport
+curl http://localhost:5000/driver-matching/residential
 
-# View Uber metrics
-curl http://localhost:18000/uber-metrics
+# View Uber production metrics
+curl http://localhost:5000/uber-metrics
 ```
 
 **Expected Response for pricing:**
@@ -348,11 +408,47 @@ curl http://localhost:18000/uber-metrics
 {
   "RideId": "a1b2c3d4",
   "BaseFare": 12.5,
-  "SurgeMultiplier": 1.85,
-  "FinalPrice": 23.13,
-  "CalculationTimeMs": 12,
-  "Demand": "78%",
-  "Supply": "45%"
+  "SurgeMultiplier": 1.8,
+  "FinalPrice": 22.5,
+  "CalculationTimeMs": 8,
+  "Demand": "High",
+  "Supply": "Medium",
+  "Area": "downtown_financial",
+  "Timestamp": "2024-01-15T10:30:00Z",
+  "MarketConditions": "Rush Hour - High Demand"
+}
+```
+
+**Expected Response for driver matching:**
+```json
+{
+  "Area": "downtown_financial",
+  "AvailableDrivers": 87,
+  "AverageETA": "5 minutes",
+  "OptimalRoutes": 5,
+  "MLPredictions": {
+    "TrafficLevel": "Moderate",
+    "DemandForecast": "Rising (Morning Rush)",
+    "OptimalPricing": 1.8,
+    "DriverUtilization": "58%"
+  }
+}
+```
+
+**Expected Response for Uber metrics:**
+```json
+{
+  "TripsDaily": "15M+",
+  "DriversActive": "5M+ globally",
+  "PricingAccuracy": "97%",
+  "RouteOptimization": "94%",
+  "FinancialAccuracy": "100% (exactly-once)",
+  "ResponseLatency": "8ms",
+  "GlobalCoverage": "700+ cities",
+  "ETAAccuracy": "96%",
+  "DataProcessedDaily": "500TB",
+  "APIRequestsDaily": "2B+",
+  "MLModelsInProduction": 150
 }
 ```
 
@@ -381,20 +477,29 @@ dotnet run --configuration=FeedGenerationEngine
 
 **Expected Output:**
 ```
+🚀 Starting Day 1 Production App with configuration: feedgenerationengine
 💼 Configuring LinkedIn Feed Generation Engine
-info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:18000
+📊 Health checks available at: /health and /health/comprehensive
+📈 Metrics available at: /metrics
+info: Microsoft.Hosting.Lifetime[14] Now listening on: http://localhost:5000
 ```
 
 **✅ Test LinkedIn feed:**
 ```bash
 # Generate personalized feed
-curl http://localhost:18000/feed/user456
+curl http://localhost:5000/feed/user456
 
-# Test fraud detection
-curl -X POST http://localhost:18000/fraud-detection -d '{"userId":"user456","activity":"rapid_posting"}' -H "Content-Type: application/json"
+# Test fraud detection with different scenarios
+curl -X POST http://localhost:5000/fraud-detection \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user456"}'
 
-# View LinkedIn metrics
-curl http://localhost:18000/linkedin-metrics
+curl -X POST http://localhost:5000/fraud-detection \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"suspicious_user"}'
+
+# View LinkedIn production metrics
+curl http://localhost:5000/linkedin-metrics
 ```
 
 **Expected Response for feed:**
@@ -406,11 +511,69 @@ curl http://localhost:18000/linkedin-metrics
       "Type": "job_post",
       "Content": "Senior Flink Engineer at Netflix",
       "Relevance": 0.94,
-      "Engagement": "High"
+      "Engagement": "High",
+      "ConnectionDegree": 2
+    },
+    {
+      "Type": "professional_update",
+      "Content": "Connection promoted to VP of Engineering",
+      "Relevance": 0.87,
+      "Engagement": "Medium",
+      "ConnectionDegree": 1
+    },
+    {
+      "Type": "industry_news",
+      "Content": "Apache Flink 2.1.0 transforms real-time AI",
+      "Relevance": 0.92,
+      "Engagement": "High",
+      "ConnectionDegree": 3
     }
   ],
-  "GenerationTimeMs": 18,
-  "PersonalizationScore": 0.923
+  "GenerationTimeMs": 12,
+  "SocialGraphDepth": 4,
+  "PersonalizationScore": 0.92,
+  "Timestamp": "2024-01-15T10:30:00Z",
+  "CacheHit": true
+}
+```
+
+**Expected Response for fraud detection:**
+```json
+{
+  "UserId": "user456",
+  "FraudScore": 0.15,
+  "RiskLevel": "Low",
+  "DetectionTimeMs": 5,
+  "CEPPatterns": [
+    "rapid_connection_requests",
+    "unusual_posting_velocity",
+    "geo_location_anomaly",
+    "profile_completion_velocity",
+    "suspicious_skill_endorsements"
+  ],
+  "Action": "Monitor",
+  "AccountMetrics": {
+    "AccountAgeDays": 234,
+    "ConnectionVelocity": 8,
+    "PostingFrequency": 2
+  }
+}
+```
+
+**Expected Response for LinkedIn metrics:**
+```json
+{
+  "ActiveProfessionals": "900M+",
+  "FeedEngagement": "85%",
+  "FraudDetectionAccuracy": "97%",
+  "SocialGraphNodes": "15B+ connections",
+  "ContentRelevance": "89%",
+  "ResponseLatency": "18ms",
+  "GlobalRegions": "200+ countries",
+  "JobPostingsDaily": "20M+",
+  "MessagesDaily": "2B+",
+  "SearchQueries": "500M+ daily",
+  "MLModelsInProduction": 120
 }
 ```
 
@@ -433,13 +596,16 @@ curl http://localhost:18000/linkedin-metrics
 **Business Context**: Google SRE practices for infrastructure validation and AI model monitoring
 
 ```bash
-# Run SRE monitoring validation
-# Verify LocalTesting infrastructure is running
-curl http://localhost:18002  # Flink Dashboard -SREMonitoring
+# Check SRE monitoring in Aspire Dashboard
+# http://localhost:18888
 
-# Open comprehensive observability dashboard
-# Open Grafana Dashboard
-# http://localhost:18010
+# Navigate to Grafana from Aspire Dashboard
+# Find "grafana" service and click to open
+# Default credentials: admin/admin (change on first login)
+
+# Run comprehensive health check
+cd ProductionApp
+curl http://localhost:5000/health/comprehensive
 ```
 
 **Expected Output:**

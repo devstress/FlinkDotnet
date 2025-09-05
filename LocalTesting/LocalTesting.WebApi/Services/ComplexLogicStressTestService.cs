@@ -12,6 +12,8 @@ public class ComplexLogicStressTestService
     private readonly KafkaProducerService _kafkaProducer;
     private readonly FlinkJobManagementService _flinkJobService;
     private readonly BackpressureMonitoringService _backpressureService;
+    private readonly ISystemCapacityDetector _capacityDetector;
+    private readonly ITemporalAgentOptimizer _temporalOptimizer;
     private readonly ILogger<ComplexLogicStressTestService> _logger;
     
     private readonly ConcurrentDictionary<string, StressTestStatus> _activeTests = new();
@@ -24,6 +26,8 @@ public class ComplexLogicStressTestService
         KafkaProducerService kafkaProducer,
         FlinkJobManagementService flinkJobService,
         BackpressureMonitoringService backpressureService,
+        ISystemCapacityDetector capacityDetector,
+        ITemporalAgentOptimizer temporalOptimizer,
         ILogger<ComplexLogicStressTestService> logger)
     {
         _redis = redis;
@@ -31,25 +35,41 @@ public class ComplexLogicStressTestService
         _kafkaProducer = kafkaProducer;
         _flinkJobService = flinkJobService;
         _backpressureService = backpressureService;
+        _capacityDetector = capacityDetector;
+        _temporalOptimizer = temporalOptimizer;
         _logger = logger;
     }
 
     public async Task<string> StartStressTestAsync(StressTestConfiguration config)
     {
         var testId = Guid.NewGuid().ToString();
+        
+        // Apply adaptive parameters if capacity detection is available
+        var adaptedConfig = await ApplyAdaptiveParametersAsync(config);
+        
         var status = new StressTestStatus
         {
             TestId = testId,
             Status = "Starting",
-            TotalMessages = config.MessageCount,
+            TotalMessages = adaptedConfig.MessageCount,
             StartTime = DateTime.UtcNow
         };
 
         _activeTests[testId] = status;
-        status.Logs.Add($"Test {testId} started with {config.MessageCount:N0} messages");
+        status.Logs.Add($"Test {testId} started with {adaptedConfig.MessageCount:N0} messages (adaptive parameters applied)");
+        
+        if (adaptedConfig.MessageCount != config.MessageCount)
+        {
+            status.Logs.Add($"Message count adapted from {config.MessageCount:N0} to {adaptedConfig.MessageCount:N0} based on system capacity");
+        }
+        
+        if (adaptedConfig.BatchSize != config.BatchSize)
+        {
+            status.Logs.Add($"Batch size adapted from {config.BatchSize} to {adaptedConfig.BatchSize} based on system capacity");
+        }
 
         // Start the test asynchronously
-        _ = Task.Run(async () => await ExecuteStressTestAsync(testId, config));
+        _ = Task.Run(async () => await ExecuteStressTestAsync(testId, adaptedConfig));
 
         return testId;
     }
@@ -268,6 +288,55 @@ public class ComplexLogicStressTestService
             status.Duration = status.EndTime.Value - status.StartTime;
             status.Logs.Add($"Test failed: {ex.Message}");
             _logger.LogError(ex, "Stress test {TestId} failed", testId);
+        }
+    }
+
+    private async Task<StressTestConfiguration> ApplyAdaptiveParametersAsync(StressTestConfiguration originalConfig)
+    {
+        try
+        {
+            // Get system capacity and calculate adaptive parameters
+            var performanceTarget = new PerformanceTarget { PrimaryGoal = PerformanceGoal.Balanced };
+            var adaptiveParams = await _capacityDetector.CalculateOptimalParametersAsync(performanceTarget);
+            
+            // Create adapted configuration based on system capacity
+            var adaptedConfig = new StressTestConfiguration
+            {
+                MessageCount = Math.Min(originalConfig.MessageCount, adaptiveParams.OptimalKafkaMessages),
+                BatchSize = Math.Min(originalConfig.BatchSize, adaptiveParams.OptimalBatchSize),
+                ConsumerGroup = originalConfig.ConsumerGroup,
+                TokenRenewalInterval = originalConfig.TokenRenewalInterval, // Keep original, no adaptive equivalent
+                LagThreshold = originalConfig.LagThreshold,
+                RateLimit = originalConfig.RateLimit, // Keep original, no adaptive equivalent
+                BurstCapacity = originalConfig.BurstCapacity // Keep original, no adaptive equivalent
+            };
+
+            // Optimize Temporal agents for the workload if we have the optimizer
+            if (_temporalOptimizer != null)
+            {
+                var workloadMetrics = new WorkloadMetrics
+                {
+                    CurrentWorkflowExecutionRate = (double)adaptedConfig.MessageCount / 60, // Assume 1-minute test duration
+                    CurrentActivityExecutionRate = 1024, // Estimate 1KB per message
+                    ActiveWorkflowCount = Math.Max(1, adaptedConfig.MessageCount / adaptedConfig.BatchSize),
+                    AverageWorkflowExecutionTimeSeconds = 1.0
+                };
+
+                var optimizationResult = await _temporalOptimizer.OptimizeForWorkloadAsync(WorkloadPattern.TestingWorkload);
+                
+                if (optimizationResult.Success)
+                {
+                    _logger.LogInformation("Temporal agents optimized for workload: {Message}",
+                        optimizationResult.Message);
+                }
+            }
+
+            return adaptedConfig;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to apply adaptive parameters, using original configuration");
+            return originalConfig;
         }
     }
 }
