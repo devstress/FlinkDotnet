@@ -41,9 +41,7 @@ public class ObservabilityMetricsService
     
     private readonly ILogger<ObservabilityMetricsService> _logger;
     
-    // Rate tracking for throughput calculations
-    private readonly Dictionary<string, RateTracker> _rateTrackers = new();
-    private readonly object _lock = new();
+    // Removed local rate tracking - metrics now only available via Prometheus
 
     public ObservabilityMetricsService(ILogger<ObservabilityMetricsService> logger)
     {
@@ -94,7 +92,7 @@ public class ObservabilityMetricsService
         
         _flinkJobThroughput = _flinkMeter.CreateObservableGauge<double>(
             "flink_job_throughput_messages_per_second",
-            () => GetMessagesPerSecond("flink_throughput_default"),
+            () => 0.0, // No local tracking - metrics available via Prometheus
             "messages/second",
             "Flink job processing throughput");
         
@@ -156,7 +154,7 @@ public class ObservabilityMetricsService
             _kafkaProducerBytesTotal.Add(bytes, tags);
         }
         
-        UpdateRateTracker($"kafka_producer_{topic}_{partition}", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordKafkaConsumerMessage(string topic, string partition, string consumerGroup, long messageCount = 1)
@@ -168,7 +166,7 @@ public class ObservabilityMetricsService
         };
         _kafkaConsumerMessagesTotal.Add(messageCount, tags);
         
-        UpdateRateTracker($"kafka_consumer_{topic}_{partition}_{consumerGroup}", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordKafkaProducerLatency(string topic, double latencySeconds)
@@ -186,7 +184,7 @@ public class ObservabilityMetricsService
         };
         _flinkJobMessagesIn.Add(messageCount, tags);
         
-        UpdateRateTracker($"flink_in_{jobId}_{operatorName}", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordFlinkJobMessageOut(string jobId, string operatorName, long messageCount = 1)
@@ -197,7 +195,7 @@ public class ObservabilityMetricsService
         };
         _flinkJobMessagesOut.Add(messageCount, tags);
         
-        UpdateRateTracker($"flink_out_{jobId}_{operatorName}", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordFlinkJobLatency(string jobId, double latencySeconds)
@@ -212,7 +210,7 @@ public class ObservabilityMetricsService
         var tags = new KeyValuePair<string, object?>[] { new("workflow_type", workflowType) };
         _temporalWorkflowExecutions.Add(1, tags);
         
-        UpdateRateTracker($"temporal_workflow_{workflowType}", 1);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordTemporalActivityExecution(string activityType)
@@ -220,7 +218,7 @@ public class ObservabilityMetricsService
         var tags = new KeyValuePair<string, object?>[] { new("activity_type", activityType) };
         _temporalActivityExecutions.Add(1, tags);
         
-        UpdateRateTracker($"temporal_activity_{activityType}", 1);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordTemporalWorkflowDuration(string workflowType, double durationSeconds)
@@ -239,128 +237,23 @@ public class ObservabilityMetricsService
     public void RecordFlowKafkaToFlink(long messageCount = 1)
     {
         _flowMessagesKafkaToFlink.Add(messageCount);
-        UpdateRateTracker("flow_kafka_to_flink", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordFlowFlinkToTemporal(long messageCount = 1)
     {
         _flowMessagesFlinkToTemporal.Add(messageCount);
-        UpdateRateTracker("flow_flink_to_temporal", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordFlowEndToEnd(long messageCount = 1)
     {
         _flowMessagesEndToEnd.Add(messageCount);
-        UpdateRateTracker("flow_end_to_end", messageCount);
+        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
     }
     
     public void RecordFlowEndToEndLatency(double latencySeconds)
     {
         _flowLatencyEndToEnd.Record(latencySeconds);
-    }
-    
-    // Rate tracking for messages-per-second calculations
-    private void UpdateRateTracker(string key, long messageCount)
-    {
-        lock (_lock)
-        {
-            if (!_rateTrackers.ContainsKey(key))
-            {
-                _rateTrackers[key] = new RateTracker();
-            }
-            _rateTrackers[key].AddMessages(messageCount);
-        }
-    }
-    
-    public double GetMessagesPerSecond(string key)
-    {
-        lock (_lock)
-        {
-            return _rateTrackers.TryGetValue(key, out var tracker) ? tracker.GetRate() : 0.0;
-        }
-    }
-    
-    public Dictionary<string, double> GetAllMessagesPerSecondRates()
-    {
-        lock (_lock)
-        {
-            var rates = new Dictionary<string, double>();
-            foreach (var kvp in _rateTrackers)
-            {
-                rates[kvp.Key] = kvp.Value.GetRate();
-            }
-            return rates;
-        }
-    }
-}
-
-/// <summary>
-/// Helper class to track message rates over time windows
-/// </summary>
-internal class RateTracker
-{
-    private readonly Queue<(DateTime timestamp, long messageCount)> _measurements = new();
-    private readonly TimeSpan _windowSize = TimeSpan.FromSeconds(10); // Reduced to 10-second rolling window for better test responsiveness
-    private long _totalMessagesEver = 0; // Track total messages for immediate rate calculation
-    private DateTime _firstMessageTime = DateTime.MinValue;
-    
-    public void AddMessages(long messageCount)
-    {
-        var now = DateTime.UtcNow;
-        _measurements.Enqueue((now, messageCount));
-        _totalMessagesEver += messageCount;
-        
-        // Track first message time for immediate rate calculation
-        if (_firstMessageTime == DateTime.MinValue)
-        {
-            _firstMessageTime = now;
-        }
-        
-        // Remove old measurements outside the window
-        while (_measurements.Count > 0 && now - _measurements.Peek().timestamp > _windowSize)
-        {
-            _measurements.Dequeue();
-        }
-    }
-    
-    public double GetRate()
-    {
-        if (_measurements.Count == 0) return 0.0;
-        
-        var now = DateTime.UtcNow;
-        var totalMessages = 0L;
-        var oldestTimestamp = now;
-        
-        foreach (var (timestamp, messageCount) in _measurements)
-        {
-            if (now - timestamp <= _windowSize)
-            {
-                totalMessages += messageCount;
-                if (timestamp < oldestTimestamp)
-                    oldestTimestamp = timestamp;
-            }
-        }
-        
-        var windowDuration = (now - oldestTimestamp).TotalSeconds;
-        
-        // IMPROVED: For test scenarios with recent activity, provide immediate feedback
-        if (windowDuration < 1.0 && _totalMessagesEver > 0)
-        {
-            // If we have messages but very short window, calculate rate based on time since first message
-            var timeSinceFirst = (now - _firstMessageTime).TotalSeconds;
-            if (timeSinceFirst >= 0.1) // At least 100ms elapsed
-            {
-                return totalMessages / Math.Max(timeSinceFirst, 0.1);
-            }
-            else
-            {
-                // For burst scenarios (all messages in <100ms), return a high rate based on message count
-                return totalMessages * 10.0; // Assume 100ms window = very high rate
-            }
-        }
-        
-        // Standard rate calculation for normal windows
-        var effectiveWindow = Math.Max(windowDuration, 0.1); // Minimum 100ms window
-        return totalMessages / effectiveWindow;
     }
 }

@@ -22,7 +22,7 @@ public class PrometheusMetricsService
         _prometheusBaseUrl = configuration.GetValue<string>("PROMETHEUS_URL") ?? "http://prometheus:9090";
         
         _httpClient.BaseAddress = new Uri(_prometheusBaseUrl);
-        _httpClient.Timeout = TimeSpan.FromSeconds(30);
+        _httpClient.Timeout = TimeSpan.FromSeconds(60); // Increased timeout for slow scraping
         
         _logger.LogInformation("PrometheusMetricsService initialized with base URL: {PrometheusUrl}", _prometheusBaseUrl);
         
@@ -31,6 +31,9 @@ public class PrometheusMetricsService
         {
             try
             {
+                // Wait a bit for Prometheus to start scraping metrics
+                await Task.Delay(5000);
+                
                 var healthResponse = await _httpClient.GetAsync("/api/v1/label/__name__/values");
                 if (healthResponse.IsSuccessStatusCode)
                 {
@@ -58,7 +61,8 @@ public class PrometheusMetricsService
         try
         {
             // Query for Kafka producer rate metrics per partition and producer
-            var query = "rate(kafka_producer_messages_total[1m])";
+            // Use shorter time range for more immediate results
+            var query = "rate(kafka_producer_messages_total[30s])";
             var results = await QueryPrometheusAsync(query);
             
             foreach (var result in results)
@@ -75,12 +79,35 @@ public class PrometheusMetricsService
                 }
             }
             
-            _logger.LogInformation("Retrieved {Count} Kafka producer metrics from Prometheus", metrics.Count);
-            
-            // Log information about missing metrics but don't fail - allow local metrics to be used
+            // If no rate metrics, try instant vector (current values)
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Kafka producer metrics found in Prometheus yet - this is normal for recent workload execution");
+                _logger.LogInformation("No rate metrics found, trying instant vector query");
+                var instantQuery = "kafka_producer_messages_total";
+                var instantResults = await QueryPrometheusAsync(instantQuery);
+                
+                foreach (var result in instantResults)
+                {
+                    if (result.Metric.TryGetValue("topic", out var topic) &&
+                        result.Metric.TryGetValue("partition", out var partition))
+                    {
+                        var metricKey = $"kafka_producer_{topic}_partition-{partition}";
+                        var value = ParseMetricValue(result.Value);
+                        if (value > 0)
+                        {
+                            // Use simplified rate calculation for instant values
+                            metrics[metricKey] = Math.Round(value / 60.0, 2); // Approximate rate
+                        }
+                    }
+                }
+            }
+            
+            _logger.LogInformation("Retrieved {Count} Kafka producer metrics from Prometheus", metrics.Count);
+            
+            // Log information about missing metrics but don't fail - allow Prometheus time to scrape
+            if (metrics.Count == 0)
+            {
+                _logger.LogInformation("ℹ️ No Kafka producer metrics found in Prometheus yet - metrics may need more time to be scraped");
             }
         }
         catch (Exception ex)
@@ -103,7 +130,7 @@ public class PrometheusMetricsService
         try
         {
             // Query Flink job input rate (this IS the Kafka consuming rate)
-            var inputQuery = "rate(flink_job_messages_in_total[1m])";
+            var inputQuery = "rate(flink_job_messages_in_total[30s])";
             var inputResults = await QueryPrometheusAsync(inputQuery);
             
             foreach (var result in inputResults)
@@ -121,7 +148,7 @@ public class PrometheusMetricsService
             }
             
             // Query Flink job output rate  
-            var outputQuery = "rate(flink_job_messages_out_total[1m])";
+            var outputQuery = "rate(flink_job_messages_out_total[30s])";
             var outputResults = await QueryPrometheusAsync(outputQuery);
             
             foreach (var result in outputResults)
@@ -138,12 +165,35 @@ public class PrometheusMetricsService
                 }
             }
             
-            _logger.LogInformation("Retrieved {Count} Flink processing metrics from Prometheus", metrics.Count);
-            
-            // Log information about missing metrics but don't fail - allow local metrics to be used
+            // If no rate metrics, try instant vector queries
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Flink processing metrics found in Prometheus yet - this is normal for recent workload execution");
+                _logger.LogInformation("No Flink rate metrics found, trying instant vector queries");
+                
+                var instantInputQuery = "flink_job_messages_in_total";
+                var instantInputResults = await QueryPrometheusAsync(instantInputQuery);
+                
+                foreach (var result in instantInputResults)
+                {
+                    if (result.Metric.TryGetValue("job_id", out var jobId) &&
+                        result.Metric.TryGetValue("operator", out var operatorName))
+                    {
+                        var metricKey = $"flink_input_{jobId}_{operatorName}";
+                        var value = ParseMetricValue(result.Value);
+                        if (value > 0)
+                        {
+                            metrics[metricKey] = Math.Round(value / 60.0, 2); // Approximate rate
+                        }
+                    }
+                }
+            }
+            
+            _logger.LogInformation("Retrieved {Count} Flink processing metrics from Prometheus", metrics.Count);
+            
+            // Log information about missing metrics but don't fail
+            if (metrics.Count == 0)
+            {
+                _logger.LogInformation("ℹ️ No Flink processing metrics found in Prometheus yet - metrics may need more time to be scraped");
             }
         }
         catch (Exception ex)
@@ -166,7 +216,7 @@ public class PrometheusMetricsService
         try
         {
             // Query Temporal workflow execution rate
-            var workflowQuery = "rate(temporal_workflow_executions_total[1m])";
+            var workflowQuery = "rate(temporal_workflow_executions_total[30s])";
             var workflowResults = await QueryPrometheusAsync(workflowQuery);
             
             foreach (var result in workflowResults)
@@ -183,7 +233,7 @@ public class PrometheusMetricsService
             }
             
             // Query Temporal activity execution rate
-            var activityQuery = "rate(temporal_activity_executions_total[1m])";
+            var activityQuery = "rate(temporal_activity_executions_total[30s])";
             var activityResults = await QueryPrometheusAsync(activityQuery);
             
             foreach (var result in activityResults)
@@ -199,12 +249,34 @@ public class PrometheusMetricsService
                 }
             }
             
-            _logger.LogInformation("Retrieved {Count} Temporal workflow metrics from Prometheus", metrics.Count);
-            
-            // Log information about missing metrics but don't fail - allow local metrics to be used
+            // If no rate metrics, try instant vector queries
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Temporal workflow metrics found in Prometheus yet - this is normal for recent workload execution");
+                _logger.LogInformation("No Temporal rate metrics found, trying instant vector queries");
+                
+                var instantWorkflowQuery = "temporal_workflow_executions_total";
+                var instantWorkflowResults = await QueryPrometheusAsync(instantWorkflowQuery);
+                
+                foreach (var result in instantWorkflowResults)
+                {
+                    if (result.Metric.TryGetValue("workflow_type", out var workflowType))
+                    {
+                        var metricKey = $"temporal_workflow_{workflowType}";
+                        var value = ParseMetricValue(result.Value);
+                        if (value > 0)
+                        {
+                            metrics[metricKey] = Math.Round(value / 60.0, 2); // Approximate rate
+                        }
+                    }
+                }
+            }
+            
+            _logger.LogInformation("Retrieved {Count} Temporal workflow metrics from Prometheus", metrics.Count);
+            
+            // Log information about missing metrics but don't fail
+            if (metrics.Count == 0)
+            {
+                _logger.LogInformation("ℹ️ No Temporal workflow metrics found in Prometheus yet - metrics may need more time to be scraped");
             }
         }
         catch (Exception ex)

@@ -56,13 +56,9 @@ public class ObservabilityController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("📊 Retrieving REAL messages-per-second metrics from local cache and Prometheus infrastructure");
+            _logger.LogInformation("📊 Retrieving REAL messages-per-second metrics from Prometheus infrastructure");
 
-            // PRIORITIZE local metrics first since they're available immediately after workload execution
-            var localMetrics = _metricsService.GetAllMessagesPerSecondRates();
-            _logger.LogInformation("🔍 Retrieved {LocalMetrics} local metrics from ObservabilityMetricsService", localMetrics.Count);
-            
-            // Try to get REAL metrics from Prometheus infrastructure (may not be available immediately)
+            // Get REAL metrics from Prometheus infrastructure only - no local cache
             var allRealMetrics = new Dictionary<string, double>();
             try
             {
@@ -71,65 +67,68 @@ public class ObservabilityController : ControllerBase
             }
             catch (Exception ex)
             {
-                _logger.LogInformation("⚠️ Prometheus metrics not yet available: {Error}", ex.Message);
+                _logger.LogError(ex, "❌ Failed to retrieve metrics from Prometheus infrastructure");
+                return StatusCode(500, new { 
+                    Status = "Failed", 
+                    Error = $"Prometheus metrics not available: {ex.Message}",
+                    Message = "Real metrics only available from Prometheus - no local cache fallback",
+                    Timestamp = DateTime.UtcNow
+                });
             }
-            
-            // Combine metrics: Start with local metrics (immediate), then add Prometheus metrics (if available)
-            var combinedMetrics = new Dictionary<string, double>(localMetrics);
-            foreach (var kvp in allRealMetrics)
-            {
-                // Prometheus metrics override local metrics when available (more comprehensive)
-                combinedMetrics[kvp.Key] = kvp.Value;
-            }
-            
-            _logger.LogInformation("🔍 Total combined metrics available: {TotalMetrics} (Local: {LocalCount}, Prometheus: {PrometheusCount})", 
-                combinedMetrics.Count, localMetrics.Count, allRealMetrics.Count);
             
             // Debug: Log all available metrics
-            if (combinedMetrics.Count > 0)
+            if (allRealMetrics.Count > 0)
             {
-                _logger.LogInformation("📊 Available metrics:");
-                foreach (var metric in combinedMetrics.Where(m => m.Value > 0).OrderBy(m => m.Key).Take(10)) // Show first 10 non-zero metrics
+                _logger.LogInformation("📊 Available Prometheus metrics:");
+                foreach (var metric in allRealMetrics.Where(m => m.Value > 0).OrderBy(m => m.Key).Take(10)) // Show first 10 non-zero metrics
                 {
                     _logger.LogInformation("  {MetricName}: {Value:F2}", metric.Key, metric.Value);
                 }
-                if (combinedMetrics.Count > 10)
+                if (allRealMetrics.Count > 10)
                 {
-                    _logger.LogInformation("  ... and {MoreCount} more metrics", combinedMetrics.Count - 10);
+                    _logger.LogInformation("  ... and {MoreCount} more metrics", allRealMetrics.Count - 10);
                 }
             }
             
-            // If no metrics available, this indicates infrastructure hasn't been executed yet
-            var hasRealMetrics = combinedMetrics.Values.Any(v => v > 0);
+            // If no metrics available, this indicates Prometheus/OpenTelemetry pipeline issue
+            var hasRealMetrics = allRealMetrics.Values.Any(v => v > 0);
             if (!hasRealMetrics)
             {
-                _logger.LogWarning("⚠️ No real metrics available. This indicates:");
-                _logger.LogWarning("   1. Real infrastructure workload hasn't been executed (call /execute-real-workload endpoint first)");
-                _logger.LogWarning("   2. Metrics recording isn't working properly in ObservabilityMetricsService");
-                _logger.LogWarning("   3. Metrics collection timing issue - try again after workload execution");
+                _logger.LogError("❌ No real metrics available from Prometheus. This indicates:");
+                _logger.LogError("   1. OpenTelemetry pipeline not working (WebApi -> OtelCollector -> Prometheus)");
+                _logger.LogError("   2. Prometheus not scraping metrics from OpenTelemetry Collector");
+                _logger.LogError("   3. Infrastructure workload hasn't been executed yet");
+                
+                return StatusCode(500, new { 
+                    Status = "Failed", 
+                    Error = "No real metrics available from Prometheus",
+                    Message = "Metrics only available from Prometheus infrastructure - check OpenTelemetry pipeline",
+                    MetricsCount = allRealMetrics.Count,
+                    Timestamp = DateTime.UtcNow
+                });
             }
             
-            // Organize metrics by layer type (from real infrastructure data)
-            var kafkaMetrics = combinedMetrics
+            // Organize metrics by layer type (from real Prometheus data only)
+            var kafkaMetrics = allRealMetrics
                 .Where(kvp => kvp.Key.StartsWith("kafka_producer_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
-            var flinkMetrics = combinedMetrics
+            var flinkMetrics = allRealMetrics
                 .Where(kvp => kvp.Key.StartsWith("flink_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
-            var temporalMetrics = combinedMetrics
+            var temporalMetrics = allRealMetrics
                 .Where(kvp => kvp.Key.StartsWith("temporal_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                 
-            var flowMetrics = combinedMetrics
+            var flowMetrics = allRealMetrics
                 .Where(kvp => kvp.Key.StartsWith("flow_"))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             
             var metrics = new
             {
                 Status = "Success",
-                Message = "REAL messages-per-second metrics from Prometheus infrastructure: Kafka (per-partition) → Flink (includes consuming) → Temporal (workflows) → End-to-End",
+                Message = "REAL messages-per-second metrics from Prometheus infrastructure ONLY - NO local cache",
                 Timestamp = DateTime.UtcNow,
                 
                 // Kafka Layer Metrics - Real Per-Partition and Per-Producer Data
@@ -177,7 +176,7 @@ public class ObservabilityController : ControllerBase
                         : new { MessagesPerSecond = 0.0 }
                 },
                 
-                // Summary Statistics from Real Infrastructure Data
+                // Summary Statistics from Real Prometheus Data ONLY
                 Summary = new
                 {
                     TotalMetricsTracked = kafkaMetrics.Count + flinkMetrics.Count + temporalMetrics.Count + flowMetrics.Count,
@@ -187,16 +186,15 @@ public class ObservabilityController : ControllerBase
                     HighestFlinkRate = flinkMetrics.Count > 0 ? Math.Round(flinkMetrics.Values.Max(), 2) : 0,
                     TotalMessagesPerSecond = Math.Round(kafkaMetrics.Values.Sum() + flinkMetrics.Values.Sum() + 
                                                        temporalMetrics.Values.Sum() + flowMetrics.Values.Sum(), 2),
-                    MetricsSource = allRealMetrics.Count > 0 ? "Prometheus Infrastructure" : "Local Metrics Cache",
-                    InfrastructureNote = "Metrics from actual infrastructure execution - no fake data",
-                    DebuggingNote = hasRealMetrics ? "Metrics contain real infrastructure data" :
-                        combinedMetrics.Count > 0 ? "Local metrics available - Prometheus may need time to sync" : "No metrics available - execute infrastructure workload first (/execute-real-workload endpoint)",
+                    MetricsSource = "Prometheus Infrastructure ONLY",
+                    InfrastructureNote = "Metrics from Prometheus via OpenTelemetry pipeline - NO local cache",
+                    DebuggingNote = hasRealMetrics ? "Metrics contain real Prometheus data" : "No metrics available - check OpenTelemetry pipeline",
                     MetricsBreakdown = new
                     {
                         PrometheusMetrics = allRealMetrics.Count,
-                        LocalMetrics = localMetrics.Count,
-                        CombinedTotal = combinedMetrics.Count,
-                        ActiveMetrics = combinedMetrics.Count(m => m.Value > 0)
+                        LocalMetrics = 0, // Removed local cache
+                        CombinedTotal = allRealMetrics.Count,
+                        ActiveMetrics = allRealMetrics.Count(m => m.Value > 0)
                     }
                 }
             };
@@ -225,7 +223,7 @@ public class ObservabilityController : ControllerBase
     )]
     [SwaggerResponse(200, "Layer-specific metrics retrieved successfully")]
     [SwaggerResponse(400, "Invalid layer specified")]
-    public IActionResult GetLayerMetrics(string layer)
+    public async Task<IActionResult> GetLayerMetrics(string layer)
     {
         try
         {
@@ -238,24 +236,41 @@ public class ObservabilityController : ControllerBase
             if (!validLayers.Contains(normalizedLayer))
                 return BadRequest($"Invalid layer. Valid options: {string.Join(", ", validLayers)}");
 
-            _logger.LogInformation("📊 Retrieving {Layer} layer metrics", normalizedLayer);
+            _logger.LogInformation("📊 Retrieving {Layer} layer metrics from Prometheus", normalizedLayer);
 
-            var allRates = _metricsService.GetAllMessagesPerSecondRates();
+            // Get metrics from Prometheus only - no local cache
+            var allRealMetrics = new Dictionary<string, double>();
+            try
+            {
+                allRealMetrics = await _prometheusService.GetAllMetricsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Failed to retrieve Prometheus metrics for {Layer} layer", normalizedLayer);
+                return StatusCode(500, new { 
+                    Status = "Failed", 
+                    Error = $"Prometheus metrics not available: {ex.Message}",
+                    Layer = normalizedLayer,
+                    Message = "Real metrics only available from Prometheus - no local cache fallback",
+                    Timestamp = DateTime.UtcNow 
+                });
+            }
+
             Dictionary<string, double> layerRates;
             
             switch (normalizedLayer)
             {
                 case "kafka":
-                    layerRates = allRates.Where(kvp => kvp.Key.StartsWith("kafka_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    layerRates = allRealMetrics.Where(kvp => kvp.Key.StartsWith("kafka_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                     break;
                 case "flink":
-                    layerRates = allRates.Where(kvp => kvp.Key.StartsWith("flink_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    layerRates = allRealMetrics.Where(kvp => kvp.Key.StartsWith("flink_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                     break;
                 case "temporal":
-                    layerRates = allRates.Where(kvp => kvp.Key.StartsWith("temporal_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    layerRates = allRealMetrics.Where(kvp => kvp.Key.StartsWith("temporal_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                     break;
                 case "flow":
-                    layerRates = allRates.Where(kvp => kvp.Key.StartsWith("flow_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    layerRates = allRealMetrics.Where(kvp => kvp.Key.StartsWith("flow_")).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                     break;
                 default:
                     return BadRequest($"Unsupported layer: {layer}");
@@ -265,7 +280,7 @@ public class ObservabilityController : ControllerBase
             {
                 Status = "Success",
                 Layer = normalizedLayer.ToUpperInvariant(),
-                Message = $"Messages-per-second metrics for {normalizedLayer} layer",
+                Message = $"Messages-per-second metrics for {normalizedLayer} layer from Prometheus ONLY",
                 Timestamp = DateTime.UtcNow,
                 Metrics = layerRates.ToDictionary(kvp => kvp.Key, kvp => new 
                 { 
