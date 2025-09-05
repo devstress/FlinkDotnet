@@ -680,7 +680,7 @@ public class Program
                         .AddConsoleExporter()
                         .AddOtlpExporter(options =>
                         {
-                            options.Endpoint = new Uri("http://localhost:4318");
+                            options.Endpoint = new Uri("http://localhost:18009");
                             options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                         }));
             })
