@@ -441,7 +441,7 @@ class Program
         Console.WriteLine("🏢 Uber-style microservice architecture patterns");
         Console.WriteLine("📈 Real-world service dependencies and latencies");
         Console.WriteLine("🔍 Aspire Dashboard: http://localhost:18888");
-        Console.WriteLine("📊 OpenTelemetry Traces: http://localhost:4318");
+        Console.WriteLine("📊 OpenTelemetry Traces: http://localhost:18009");
         Console.WriteLine("");
 
         var host = Host.CreateDefaultBuilder(args)
@@ -466,9 +466,9 @@ class Program
                             .AddConsoleExporter()
                             .AddOtlpExporter(options =>
                             {
-                                options.Endpoint = new Uri("http://localhost:4318");
+                                options.Endpoint = new Uri("http://localhost:18009");
                                 options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-                            })); // For integration with observability stack
+                            }); // For integration with observability stack
                     });
             })
             .UseSerilog()
@@ -491,7 +491,7 @@ class Program
             Console.WriteLine("");
             Console.WriteLine("🔍 View traces at:");
             Console.WriteLine("   📊 Aspire Dashboard: http://localhost:18888");
-            Console.WriteLine("   📈 OpenTelemetry Endpoint: http://localhost:4318");
+            Console.WriteLine("   📈 OpenTelemetry Endpoint: http://localhost:18009");
             
             Log.Information("Exercise 4.2: Distributed Tracing completed successfully");
         }

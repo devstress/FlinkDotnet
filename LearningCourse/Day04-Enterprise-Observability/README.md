@@ -41,9 +41,8 @@ This course uses the **PGL observability stack** (Prometheus + Grafana + Loki) w
    - **Prometheus Metrics**: http://localhost:18006/
    - **Loki Logs**: http://localhost:18005/
    - **Grafana Dashboards**: http://localhost:18010/ (admin/admin)
-   - **OpenTelemetry Collector**: http://localhost:18009/metrics
+   - **OpenTelemetry Collector**: http://localhost:18009
    - **Aspire Dashboard (Traces)**: http://localhost:18888
-   - **OpenTelemetry Collector**: http://localhost:4318
 
 4. **Generate Training Data**:
    ```bash
@@ -201,7 +200,7 @@ When you execute the observability simulation, here's what happens:
 
 3. **Metric Export Configuration**
    - Ensure OpenTelemetry exporters are configured in `Program.cs`
-   - Verify OTLP endpoint (http://localhost:4318) is accessible
+   - Verify OTLP endpoint (http://localhost:18009) is accessible
    - Check that meters are properly registered
 
 4. **Local vs Prometheus Metrics**
@@ -538,7 +537,7 @@ namespace LearningCourse.Day04
                             .AddConsoleExporter()
                             .AddOtlpExporter(options =>
                             {
-                                options.Endpoint = new Uri("http://localhost:4318");
+                                options.Endpoint = new Uri("http://localhost:18009");
                                 options.Protocol = OtlpExportProtocol.HttpProtobuf;
                             }))
                         .WithMetrics(metrics => metrics
@@ -546,7 +545,7 @@ namespace LearningCourse.Day04
                             .AddConsoleExporter()
                             .AddOtlpExporter(options =>
                             {
-                                options.Endpoint = new Uri("http://localhost:4318");
+                                options.Endpoint = new Uri("http://localhost:18009");
                                 options.Protocol = OtlpExportProtocol.HttpProtobuf;
                             }));
                 })
@@ -1376,7 +1375,7 @@ curl -X POST http://localhost:5000/stress/complex-logic -MessageCount 1000
 # Watch for observability validation output:
 # 🔍 OBSERVABILITY VALIDATION:
 # ✅ Prometheus (12/12 services), Grafana (3/3 datasources)
-# ✅ OpenTelemetry (HTTP: 4318, gRPC: 4317), Aspire (18888)
+# ✅ OpenTelemetry (HTTP: 18009, gRPC: 4317), Aspire (18888)
 # 📊 HTTP Request Activity: +3,276 requests during test execution
 # 🎯 Message Flow Monitoring: Successfully tracked throughout test execution
 ```
@@ -1399,7 +1398,7 @@ curl "http://localhost:18006/api/v1/query?query=up{job='localtesting-webapi'}"
 curl -u admin:admin http://localhost:18010/api/health
 
 # Test OpenTelemetry endpoints
-curl http://localhost:4318/v1/metrics
+curl http://localhost:18009/v1/metrics
 
 # Verify service discovery
 curl http://localhost:18006/api/v1/targets

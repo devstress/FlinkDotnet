@@ -16,7 +16,7 @@ Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS",
 Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_NO_AUTH", "true");
 
 // Configure OpenTelemetry endpoints for applications
-Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318");
+Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:18009");
 Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
 
 // Configure .NET HTTP client to properly handle IPv6 localhost connections to Aspire DCP
@@ -281,8 +281,8 @@ var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
 // OpenTelemetry Collector with minimal, stable configuration
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
     .WithHttpEndpoint(18007, 4317, "otlp-grpc")
-    .WithHttpEndpoint(18008, 4318, "otlp-http")
-    .WithHttpEndpoint(18009, 8889, "prometheus-metrics")
+    .WithHttpEndpoint(18009, 4318, "otlp-http")
+    .WithHttpEndpoint(18008, 8889, "prometheus-metrics")
     .WithEnvironment("OTEL_LOG_LEVEL", "INFO")
     .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=otel-collector,service.version=1.0.0")
     .WithBindMount("./otel-config-training-minimal.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")

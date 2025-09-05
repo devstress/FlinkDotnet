@@ -255,7 +255,7 @@ Applications → Prometheus → Grafana ← Loki ← Container Logs
               ┌─────────────────────────────────────┐
               │    OpenTelemetry Collector (OTEL)   │
               │    🔧 FIXED: Debug Exporter + Config │
-              │    HTTP: 4318 | gRPC: 4317         │
+              │    HTTP: 18009 | gRPC: 4317        │
               │    Self-Monitor: 8889               │
               │    ✅ STABLE & RUNNING              │
               └─────────────────────────────────────┘
@@ -520,7 +520,7 @@ curl http://localhost:18004             # Temporal UI (workflow orchestration)
 curl http://localhost:18009/metrics | grep otelcol
 
 # 2. Send test telemetry
-curl -X POST http://localhost:4318/v1/metrics \
+curl -X POST http://localhost:18009/v1/metrics \
   -H "Content-Type: application/json" \
   -d '{"resourceMetrics":[{"scopeMetrics":[{"metrics":[{"name":"test_metric","gauge":{"dataPoints":[{"value":42}]}}]}]}]}'
 
