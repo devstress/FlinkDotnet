@@ -355,7 +355,7 @@ public class SystemCapacityDetector : ISystemCapacityDetector
             parameters.OptimalFlinkJobs = Math.Max(1, Math.Min(flinkCapacity.RecommendedJobCount, 6));
             
             // Calculate optimal Temporal workflow count (subset of messages)
-            var workflowRatio = target.PrimaryGoal == PerformanceGoal.MaxThroughput ? 0.005 : 0.002; // 0.5% or 0.2% of messages
+            var workflowRatio = target.PrimaryGoal == PerformanceGoal.MaxThroughput ? 0.1 : 0.1; // 10% of messages
             parameters.OptimalTemporalWorkflows = (int)Math.Max(1, Math.Min(parameters.OptimalKafkaMessages * workflowRatio, temporalCapacity.MaxConcurrentWorkflows));
             
             // Calculate execution time and throughput
@@ -369,7 +369,7 @@ public class SystemCapacityDetector : ISystemCapacityDetector
             // Create justification
             justification.KafkaMessageCountReason = $"Limited by system bottleneck: Kafka={kafkaLimit:F0}, Flink={flinkLimit:F0}, Temporal={temporalLimit:F0} msg/s";
             justification.FlinkJobCountReason = $"Based on available task slots ({flinkCapacity.AvailableTaskSlots}) with 4 slots per job";
-            justification.TemporalWorkflowCountReason = $"Set to {workflowRatio:P} of messages for {target.PrimaryGoal} goal";
+            justification.TemporalWorkflowCountReason = $"Set to {workflowRatio:P} of messages for {target.PrimaryGoal} goal (adjusted to 10% volume)";
             justification.ExecutionTimeReason = $"Estimated based on {estimatedThroughput:F0} msg/s throughput";
             
             // Identify capacity limitations
