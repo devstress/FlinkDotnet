@@ -355,37 +355,58 @@ public class ObservabilityController : ControllerBase
                 });
             }
             
-            // FIRE AND FORGET - Start real infrastructure workload
-            _ = Task.Run(async () =>
+            // SYNCHRONOUS EXECUTION - Wait for workload completion before returning
+            try
             {
-                try
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                _logger.LogInformation("🚀 Starting synchronous Kafka message production for {MessageCount} messages", workloadRequest.KafkaMessages);
+                
+                await _kafkaProducerService.ProduceMessagesAsync(ingressTopic, realMessages);
+                stopwatch.Stop();
+                
+                _logger.LogInformation("✅ Kafka production completed in {ElapsedMs}ms", stopwatch.ElapsedMilliseconds);
+                
+                // Record metrics immediately after production
+                var metricsRecorded = 0;
+                for (int p = 0; p < partitions; p++)
                 {
-                    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                    await _kafkaProducerService.ProduceMessagesAsync(ingressTopic, realMessages);
-                    stopwatch.Stop();
-                    
-                    _logger.LogInformation("🔥 Background: Real Kafka production completed in {ElapsedMs}ms", stopwatch.ElapsedMilliseconds);
-                    
-                    // Record metrics in background
-                    for (int p = 0; p < partitions; p++)
+                    var messagesThisPartition = realMessages.Count(m => m.PartitionNumber == p);
+                    if (messagesThisPartition > 0)
                     {
-                        var messagesThisPartition = realMessages.Count(m => m.PartitionNumber == p);
-                        if (messagesThisPartition > 0)
-                        {
-                            _metricsService.RecordKafkaProducerMessage(ingressTopic, p.ToString(), messagesThisPartition, messagesThisPartition * 1024);
-                        }
+                        _metricsService.RecordKafkaProducerMessage(ingressTopic, $"partition-{p}", messagesThisPartition, messagesThisPartition * 1024);
+                        metricsRecorded++;
+                        _logger.LogDebug("📊 Recorded {MessageCount} messages for {Topic} partition-{Partition}", messagesThisPartition, ingressTopic, p);
                     }
-                    
-                    _metricsService.RecordFlowKafkaToFlink(workloadRequest.KafkaMessages);
-                    
-                    // Start Temporal optimization in background
-                    _ = _temporalOptimizer.OptimizeForWorkloadAsync(WorkloadPattern.TestingWorkload);
                 }
-                catch (Exception ex)
+                
+                _logger.LogInformation("📊 Recorded metrics for {MetricsCount} partitions", metricsRecorded);
+                
+                _metricsService.RecordFlowKafkaToFlink(workloadRequest.KafkaMessages);
+                
+                // Start Temporal optimization in background (non-blocking)
+                _ = Task.Run(async () =>
                 {
-                    _logger.LogError(ex, "🔥 Background workload execution failed");
-                }
-            });
+                    try
+                    {
+                        await _temporalOptimizer.OptimizeForWorkloadAsync(WorkloadPattern.TestingWorkload);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "🔥 Background Temporal optimization failed");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Synchronous workload execution failed");
+                return StatusCode(500, new
+                {
+                    Status = "WorkloadExecutionFailed",
+                    Message = "Failed to execute real infrastructure workload",
+                    Error = ex.Message,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
 
             // RETURN IMMEDIATELY - Real-world observability pattern
             var result = new

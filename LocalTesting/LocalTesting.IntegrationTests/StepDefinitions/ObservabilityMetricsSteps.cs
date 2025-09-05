@@ -119,7 +119,7 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // Wait for metrics to be processed by infrastructure - but with actual time measurement
         var metricsWaitStart = DateTime.UtcNow;
-        await Task.Delay(5000); // 5 seconds for metrics propagation (reduced since we measured real time)
+        await Task.Delay(12000); // 12 seconds for metrics propagation - increased to allow rate tracker window to populate
         
         // Verify metrics are available with real infrastructure
         var maxRetries = 3;

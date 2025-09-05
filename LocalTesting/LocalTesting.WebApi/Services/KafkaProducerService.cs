@@ -99,7 +99,7 @@ public class KafkaProducerService : IDisposable
             };
 
             var messageStartTime = DateTime.UtcNow;
-            var partition = message.PartitionNumber.ToString();
+            var partition = $"partition-{message.PartitionNumber}";
             
             var task = producer.ProduceAsync(topic, kafkaMessage)
                 .ContinueWith(async deliveryReport =>
