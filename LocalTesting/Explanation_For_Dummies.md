@@ -166,198 +166,347 @@ var highValueOrders = orderStream
 
 ---
 
-## The Data Journey
+## The Data Journey in LocalTesting
 
-Let's follow a single message through the entire LocalTesting system:
+Let's follow a **ComplexLogicMessage** through our **actual LocalTesting system**:
 
-### Step 1: Message Arrives 📨
-```
-A sensor reading arrives: {"sensorId": "temp_01", "temperature": 23.5, "timestamp": "2024-01-15T10:30:00Z"}
-```
-
-### Step 2: Kafka Receives and Routes 🚛
-```
-Message goes to topic: "sensor-readings"
-Partition: 3 (based on sensorId hash)
-```
-
-### Step 3: Flink Processes 🔄
+### Step 1: Message Creation 📨
 ```csharp
-// Real code from LocalWorkingExample.cs
-var sensorStream = env.FromCollection(sensorData);
-
-// Filter high temperature readings
-var highTempReadings = sensorStream.Filter(reading => reading.Temperature > 25.0);
-
-// Group by sensor ID
-var groupedBySensor = highTempReadings.KeyBy(reading => reading.SensorId);
-```
-
-### Step 4: Temporal Workflow (if needed) 🔄
-```
-If temperature > 30°C:
-  1. Send alert to maintenance team
-  2. Check if this is recurring issue
-  3. Create work order if needed
-  4. Update monitoring dashboard
-```
-
-### Step 5: Results Go to Sink 📤
-```
-Results saved to:
-- Database (for historical analysis)
-- Alert system (for immediate action)
-- Dashboard (for real-time monitoring)
-```
-
-### Step 6: Monitoring Captures Everything 👀
-```
-Metrics recorded:
-- Message processing time: 2ms
-- Workflow execution time: 150ms
-- Memory usage: 45MB
-- Success rate: 99.9%
-```
-
----
-
-## Code Examples Walkthrough
-
-### Basic Flink Example
-
-Let's look at real code from `LocalWorkingExample.cs`:
-
-```csharp
-// 1. Create Flink execution environment
-var env = FlinkDotNet.Flink.GetExecutionEnvironment();
-env.SetParallelism(4); // Use 4 parallel threads
-
-// 2. Create sample data (like sensor readings)
-var sensorData = new[]
+// Real code from LocalTesting.WebApi/Models/StressTestModels.cs
+public class ComplexLogicMessage
 {
-    new { SensorId = "sensor1", Temperature = 20.5, Timestamp = DateTime.Now },
-    new { SensorId = "sensor2", Temperature = 25.3, Timestamp = DateTime.Now },
-    new { SensorId = "sensor1", Temperature = 30.1, Timestamp = DateTime.Now }
-};
-
-// 3. Create a data stream from the collection
-var sensorStream = env.FromCollection(sensorData);
-
-// 4. Filter out readings below 25°C
-var highTempReadings = sensorStream.Filter(reading => reading.Temperature > 25.0);
-
-// 5. Group readings by sensor ID
-var groupedBySensor = highTempReadings.KeyBy(reading => reading.SensorId);
-
-// 6. Print results to console
-highTempReadings.Print();
-
-// 7. Execute the processing pipeline
-var result = await env.ExecuteAsync("Temperature Processing Example");
-```
-
-**What this does**:
-1. Sets up Flink to use 4 parallel processors
-2. Creates fake sensor data (in real life, this comes from Kafka)
-3. Filters out normal temperatures (only high temps matter)
-4. Groups readings by which sensor they came from
-5. Prints the results
-6. Runs the entire pipeline
-
-### Sources: Where Data Comes From
-
-From `JobDefinition.cs`, here are the different ways to get data:
-
-#### Kafka Source (Most Common)
-```csharp
-public class KafkaSourceDefinition : ISourceDefinition
-{
-    public string Type => "kafka";
-    public string Topic { get; set; } = "sensor-readings";        // Which topic to read from
-    public string BootstrapServers { get; set; } = "localhost:9092"; // Kafka server address
-    public string GroupId { get; set; } = "my-consumer-group";    // Consumer group ID
-    public string StartingOffsets { get; set; } = "latest";       // Start from newest messages
+    public long MessageId { get; set; }
+    public string CorrelationId { get; set; } = string.Empty;
+    public string? SendingID { get; set; }
+    public string? LogicalQueueName { get; set; }
+    public string Payload { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public int BatchNumber { get; set; }
+    public int PartitionNumber { get; set; }
+    public string? SecurityToken { get; set; }
+    public string? ProcessingStage { get; set; } = "initial";
+    
+    // Shows content based on processing stage
+    public string Content => ProcessingStage switch
+    {
+        "initial" => $"message content {MessageId}",
+        "processed" => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed",
+        "concatenated" => $"Concat msg {MessageId}: Combined from 100 messages with security token",
+        "split" => $"Split msg {MessageId}: Restored with sending ID and logical queue",
+        "final" => $"Complex logic msg {MessageId}: Correlation tracked, security token renewed, HTTP batch processed",
+        _ => $"message content {MessageId}"
+    };
 }
 ```
 
-#### File Source (For Batch Processing)
+### Step 2: Kafka Publishing 🚛
 ```csharp
-public class FileSourceDefinition : ISourceDefinition
+// Real code from LocalTesting.WebApi/Services/KafkaProducerService.cs
+public async Task<string> PublishMessageAsync(ComplexLogicMessage message)
 {
-    public string Type => "file";
-    public string Path { get; set; } = "/data/sensor-readings.json"; // File path
-    public string Format { get; set; } = "json";                    // File format
+    var kafkaMessage = new Message<string, string>
+    {
+        Key = message.CorrelationId,
+        Value = JsonSerializer.Serialize(message),
+        Headers = new Headers
+        {
+            { "sender.id", Encoding.UTF8.GetBytes("Darren") },
+            { "logical.queue", Encoding.UTF8.GetBytes(message.LogicalQueueName ?? "") },
+            { "security.token", Encoding.UTF8.GetBytes(message.SecurityToken ?? "") }
+        }
+    };
+    
+    await _producer.ProduceAsync("complex-input", kafkaMessage);
 }
 ```
 
-#### Database Source (For Traditional Data)
+### Step 3: Flink Processing 🔄
 ```csharp
-public class DatabaseSourceDefinition : ISourceDefinition
+// Real code from LocalTesting.WebApi/Services/FlinkJobManagementService.cs
+public async Task<FlinkJobResult> SubmitComplexLogicJobAsync()
 {
-    public string Type => "database";
-    public string ConnectionString { get; set; } = "Host=localhost;Database=sensors;"; 
-    public string Query { get; set; } = "SELECT * FROM readings WHERE created_at > NOW() - INTERVAL '1 hour'";
-    public int PollingIntervalSeconds { get; set; } = 30; // Check every 30 seconds
+    var jobDefinition = new FlinkJobDefinition
+    {
+        JobName = "ComplexLogicStressTest",
+        SourceTopic = "complex-input",
+        SinkTopic = "complex-output",
+        Parallelism = 24, // 24 parallel processors
+        WindowSizeMinutes = 1,
+        ProcessingLogic = ProcessComplexLogicMessage
+    };
+    
+    return await SubmitJobAsync(jobDefinition);
+}
+
+private ComplexLogicMessage ProcessComplexLogicMessage(ComplexLogicMessage input)
+{
+    // Complex logic processing: correlation tracking, security token renewal
+    input.ProcessingStage = "processed";
+    input.SecurityToken = _tokenManager.RenewSecurityToken(input.SecurityToken);
+    return input;
 }
 ```
 
-### Sinks: Where Results Go
-
-#### Kafka Sink (Send to Another Topic)
+### Step 4: State Tracking with Redis 💾
 ```csharp
-public class KafkaSinkDefinition : ISinkDefinition
+// Real code from LocalTesting.WebApi/Services/MessageStateService.cs
+public async Task UpdateMessageStateAsync(string correlationId, MessageProcessingState state)
 {
-    public string Type => "kafka";
-    public string Topic { get; set; } = "processed-readings";      // Destination topic
-    public string BootstrapServers { get; set; } = "localhost:9092";
-    public string Serializer { get; set; } = "json";              // How to format messages
+    var database = _redis.GetDatabase();
+    
+    var stateJson = JsonSerializer.Serialize(state);
+    await database.StringSetAsync($"message_state:{correlationId}", stateJson, TimeSpan.FromHours(24));
+    
+    // Track in hash for batch lookups
+    await database.HashSetAsync("active_messages", correlationId, stateJson);
 }
 ```
 
-#### Database Sink (Save to Database)
+### Step 5: Temporal Workflow Orchestration ⚙️
 ```csharp
-public class DatabaseSinkDefinition : ISinkDefinition
+// Real code from LocalTesting.WebApi/Services/TemporalAgentOptimizer.cs
+public async Task<WorkflowOptimizationResult> OptimizeWorkflowExecutionAsync()
 {
-    public string Type => "database";
-    public string ConnectionString { get; set; } = "Host=localhost;Database=results;";
-    public string Table { get; set; } = "processed_readings";      // Table name
-    public string DatabaseType { get; set; } = "postgresql";       // Database type
+    // Get current system capacity
+    var capacity = await _capacityDetector.DetectSystemCapacityAsync();
+    
+    // Optimize based on current load
+    var optimizedConfig = new TemporalWorkflowConfig
+    {
+        MaxConcurrentExecutions = capacity.RecommendedConcurrency,
+        TimeoutSeconds = capacity.RecommendedTimeout,
+        RetryPolicy = capacity.RecommendedRetryPolicy
+    };
+    
+    return await ApplyOptimizationAsync(optimizedConfig);
 }
 ```
 
-#### File Sink (Save to File)
+### Step 6: Observability Tracking 📊
 ```csharp
-public class FileSinkDefinition : ISinkDefinition
+// Real code from LocalTesting.WebApi/Services/ObservabilityMetricsService.cs
+public void RecordMessageProcessing(string correlationId, TimeSpan processingTime, bool success)
 {
-    public string Type => "file";
-    public string Path { get; set; } = "/output/results.json";     // Output file path
-    public string Format { get; set; } = "json";                   // Output format
+    // Record metrics for Prometheus
+    MessageProcessingCounter.WithTags("status", success ? "success" : "failure").Increment();
+    MessageProcessingDuration.Record(processingTime.TotalMilliseconds);
+    ActiveMessageGauge.Set(GetActiveMessageCount());
+    
+    _logger.LogInformation("Message {CorrelationId} processed in {Duration}ms: {Status}", 
+        correlationId, processingTime.TotalMilliseconds, success ? "SUCCESS" : "FAILURE");
 }
 ```
 
 ---
 
-## Understanding Sources and Sinks
+## LocalTesting API Controller Walkthrough
 
-### Sources: Data Input Points
+### ComplexLogicStressTestController: The Main Interface
 
-Think of sources as **data faucets** - they control how data flows into your system.
+Our **actual LocalTesting API** (`ComplexLogicStressTestController.cs`) provides these stress test endpoints:
 
-**Common Source Types**:
+#### Step 1: Configure Backpressure
+```csharp
+[HttpPost("step1/configure-backpressure")]
+public async Task<IActionResult> ConfigureBackpressure([FromBody] BackpressureConfiguration config)
+{
+    // Configure 100 messages/second rate limit per logical queue
+    // Uses Kafka headers for 100 logical queues across 10 partitions
+    var result = await _backpressureService.ConfigureBackpressureAsync(config);
+    return Ok(result);
+}
+```
+**What this does**: Sets up rate limiting so each logical queue processes exactly 100 messages per second.
 
-1. **Real-time Sources** (streaming data):
-   - Kafka topics
-   - Message queues
-   - IoT sensor streams
-   - Web APIs
+#### Step 2: Generate Stress Test Messages
+```csharp
+[HttpPost("step2/generate-stress-test")]
+public async Task<IActionResult> GenerateStressTest([FromBody] StressTestConfiguration config)
+{
+    // Generate configurable message load for stress testing
+    var testId = await _stressTestService.StartStressTestAsync(config);
+    return Ok(new { TestId = testId });
+}
+```
+**What this does**: Creates thousands of test messages with configurable throughput for stress testing.
 
-2. **Batch Sources** (historical data):
-   - Files (CSV, JSON, Parquet)
-   - Databases
-   - Data warehouses
+#### Step 3: Security Token Management
+```csharp
+[HttpPost("step3/security-token-renewal")]
+public async Task<IActionResult> SecurityTokenRenewal([FromBody] SecurityTokenRequest request)
+{
+    // Renew security tokens for message correlation tracking
+    var result = await _tokenManager.RenewSecurityTokenAsync(request);
+    return Ok(result);
+}
+```
+**What this does**: Manages security tokens that track messages through the entire processing pipeline.
 
-**Example Source Configuration**:
-```yaml
+#### Step 4: Message Concatenation
+```csharp
+[HttpPost("step4/message-concatenation")]
+public async Task<IActionResult> MessageConcatenation([FromBody] ConcatenationRequest request)
+{
+    // Combine 100 messages into batches for efficient processing
+    var result = await _stressTestService.ConcatenateMessagesAsync(request);
+    return Ok(result);
+}
+```
+**What this does**: Combines multiple messages into efficient batches for high-throughput processing.
+
+### LocalTesting Infrastructure Setup: Program.cs Explained
+
+Our **actual infrastructure setup** in `LocalTesting.AppHost/Program.cs` creates this entire system:
+
+#### Redis: Fast In-Memory Database
+```csharp
+// Real code from LocalTesting.AppHost/Program.cs (lines 77-85)
+var redis = builder.AddRedis("redis")
+    .WithEnvironment("REDIS_MAXMEMORY", "256mb")
+    .WithEnvironment("REDIS_MAXMEMORY_POLICY", "allkeys-lru")
+    .WithEnvironment("REDIS_BIND", "0.0.0.0") // Force IPv4
+    .WithEnvironment("REDIS_TIMEOUT", "30")
+    .WithEnvironment("REDIS_TCP_KEEPALIVE", "60");
+```
+**What this creates**: A fast database that stores message states in memory for lightning-fast lookups.
+
+#### Kafka: 3-Broker Message Streaming Cluster
+```csharp
+// Real code from LocalTesting.AppHost/Program.cs (lines 88-104)
+var kafkaBroker1 = builder.AddContainer("kafka-broker-1", "apache/kafka:3.8.0")
+    .WithEndpoint(9092, 9092, "kafka1")
+    .WithEnvironment("KAFKA_NODE_ID", "1")
+    .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
+    .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "3")
+    .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
+    .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3");
+```
+**What this creates**: 
+- **3 Kafka brokers** for high availability (if one fails, others continue)
+- **10 partitions** for parallel processing
+- **Replication factor 3** means each message is stored on 3 brokers
+
+#### Flink: Distributed Stream Processing Cluster
+```csharp
+// Real code from LocalTesting.AppHost/Program.cs (lines 156-169)
+var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
+    .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
+    .WithEnvironment("FLINK_PROPERTIES", """
+        jobmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 8
+        parallelism.default: 24
+        """);
+
+// Plus 3 TaskManagers for parallel processing
+var flinkTaskManager1 = builder.AddContainer("flink-taskmanager-1", "flink:2.1.0")
+    .WithEnvironment("FLINK_PROPERTIES", """
+        taskmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 8
+        """);
+```
+**What this creates**:
+- **1 JobManager**: Coordinates all processing jobs
+- **3 TaskManagers**: Actually process the data in parallel  
+- **24 task slots total**: Can process 24 messages simultaneously
+- **UI at localhost:18002**: Monitor Flink jobs in real-time
+
+### LocalTesting Services Explained
+
+#### ComplexLogicStressTestService: The Core Testing Engine
+```csharp
+// Real code from LocalTesting.WebApi/Services/ComplexLogicStressTestService.cs
+public async Task<string> StartStressTestAsync(StressTestConfiguration config)
+{
+    var testId = Guid.NewGuid().ToString();
+    
+    // Apply adaptive parameters if capacity detection is available
+    var adaptedConfig = await ApplyAdaptiveParametersAsync(config);
+    
+    var status = new StressTestStatus
+    {
+        TestId = testId,
+        Status = "Running",
+        StartTime = DateTime.UtcNow,
+        Configuration = adaptedConfig
+    };
+    
+    _activeTests[testId] = status;
+    
+    // Start generating messages in background
+    _ = Task.Run(() => GenerateStressTestMessages(testId, adaptedConfig));
+    
+    return testId;
+}
+```
+**What this service does**:
+- **Creates unique test scenarios** with configurable message loads
+- **Tracks test progress** using Redis for state management
+- **Adapts to system capacity** automatically
+- **Runs multiple tests simultaneously** without conflicts
+
+#### KafkaProducerService: Message Publishing Engine
+```csharp
+// Real code from LocalTesting.WebApi/Services/KafkaProducerService.cs
+public async Task<ProducerResult> PublishComplexLogicMessageAsync(ComplexLogicMessage message)
+{
+    var kafkaMessage = new Message<string, string>
+    {
+        Key = message.CorrelationId,
+        Value = JsonSerializer.Serialize(message),
+        Headers = new Headers
+        {
+            { "sender.id", Encoding.UTF8.GetBytes(message.SendingID ?? "Darren") },
+            { "logical.queue", Encoding.UTF8.GetBytes(message.LogicalQueueName ?? "") },
+            { "security.token", Encoding.UTF8.GetBytes(message.SecurityToken ?? "") }
+        }
+    };
+    
+    var deliveryResult = await _producer.ProduceAsync("complex-input", kafkaMessage);
+    
+    return new ProducerResult
+    {
+        MessageId = message.MessageId,
+        Topic = deliveryResult.Topic,
+        Partition = deliveryResult.Partition.Value,
+        Offset = deliveryResult.Offset.Value,
+        Success = true
+    };
+}
+```
+**What this service does**:
+- **Publishes messages to Kafka** with proper headers and routing
+- **Tracks delivery confirmation** to ensure no message loss  
+- **Routes to correct partitions** for load balancing
+- **Handles failures gracefully** with retry logic
+
+#### BackpressureMonitoringService: Flow Control
+```csharp
+// Real code from LocalTesting.WebApi/Services/BackpressureMonitoringService.cs
+public async Task<BackpressureStatus> ConfigureBackpressureAsync(BackpressureConfiguration config)
+{
+    // Configure rate limiting: 100 messages/second per logical queue
+    _rateLimiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+    {
+        PermitLimit = config.MessagesPerSecondPerQueue, // Default: 100
+        Window = TimeSpan.FromSeconds(1),
+        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        QueueLimit = config.MaxQueuedMessages // Default: 1000
+    });
+    
+    return new BackpressureStatus
+    {
+        ConfigurationActive = true,
+        RateLimit = config.MessagesPerSecondPerQueue,
+        ActiveQueues = config.LogicalQueueCount // Default: 100 queues
+    };
+}
+```
+**What this service does**:
+- **Controls message flow rate** to prevent system overload
+- **Limits to 100 messages/second per logical queue** 
+- **Queues excess messages** instead of dropping them
+- **Monitors system pressure** and adjusts automatically
 # A Kafka source reading user events
 source:
   type: kafka
@@ -438,67 +587,141 @@ sessions.Filter(s => s.IsUnusual)
 
 ---
 
-## Temporal Workflows Made Simple
+---
 
-### What Are Workflows?
+## LocalTesting Temporal Services Explained
 
-Workflows are like **recipes for complex processes**. They define step-by-step instructions for handling business logic that spans multiple services and can take a long time.
+### What is Temporal in LocalTesting?
 
-### Real-World Workflow Examples
+Temporal in our **LocalTesting** system handles **complex, long-running business processes** that need to survive system restarts and coordinate multiple services.
 
-#### 1. E-commerce Order Processing
-```
-Workflow: "ProcessOrder"
-Steps:
-1. Validate payment method ✅
-2. Check inventory availability ✅
-3. Reserve items ✅
-4. Charge payment card ⏳ (retrying...)
-5. Create shipping label 📋 (waiting)
-6. Send confirmation email 📧 (waiting)
-7. Update inventory 📦 (waiting)
-```
+### Actual LocalTesting Temporal Services
 
-#### 2. User Onboarding
-```
-Workflow: "OnboardNewUser"  
-Steps:
-1. Send welcome email ✅
-2. Wait 24 hours ⏰
-3. Send tutorial email ✅  
-4. Wait 3 days ⏰
-5. Send feature highlight ⏳ (in progress)
-6. Wait 1 week ⏰
-7. Request feedback 📋 (scheduled)
-```
-
-### Temporal Workflow Interfaces
-
-From `IClusterWorkflows.cs`, here are the main workflow types:
-
-#### Cluster Orchestration Workflow
+#### TemporalAgentOptimizer: Smart Workflow Management
 ```csharp
-public interface IClusterOrchestratorWorkflow
+// Real code from LocalTesting.WebApi/Services/TemporalAgentOptimizer.cs
+public async Task<WorkflowOptimizationResult> OptimizeWorkflowExecutionAsync()
 {
-    // Manages multiple Flink clusters
-    Task OrchestrateClustersAsync(OrchestrationRequest request);
+    // Get current system capacity from infrastructure monitoring
+    var capacity = await _capacityDetector.DetectSystemCapacityAsync();
+    
+    // Calculate optimal workflow configuration based on system load
+    var optimizedConfig = new TemporalWorkflowConfig
+    {
+        MaxConcurrentExecutions = capacity.RecommendedConcurrency,
+        TimeoutSeconds = capacity.RecommendedTimeout,
+        RetryPolicy = capacity.RecommendedRetryPolicy,
+        WorkerCount = capacity.OptimalWorkerCount
+    };
+    
+    // Apply the optimization to running workflows
+    return await ApplyOptimizationAsync(optimizedConfig);
 }
 ```
+**What this does**:
+- **Monitors system capacity** (CPU, memory, network) in real-time
+- **Adjusts workflow concurrency** automatically based on system load
+- **Optimizes timeout settings** to prevent unnecessary failures
+- **Scales worker count** up/down based on message throughput
 
-**What it does**: Like a **data center manager** that:
-- Starts new Flink clusters when needed
-- Balances workload across clusters  
-- Shuts down unused clusters to save resources
-- Handles cluster failures
-
-#### Job Distribution Workflow
-```csharp
-public interface IJobDistributionWorkflow
+#### TemporalSecurityTokenService: Token Lifecycle Management
+```csharp  
+// Real code from LocalTesting.WebApi/Services/TemporalSecurityTokenService.cs
+public async Task<SecurityTokenRenewalResult> RenewSecurityTokenAsync(string correlationId)
 {
-    // Distributes processing jobs across clusters
-    Task<JobDistributionResult> DistributeJobsAsync(List<FlinkJobDefinition> jobs, SubmissionStrategy strategy);
+    // Long-running workflow that manages security token lifecycle
+    var workflow = await _temporalClient.StartWorkflowAsync<ISecurityTokenWorkflow>(
+        workflowId: $"token-renewal-{correlationId}",
+        taskQueue: "security-token-queue"
+    );
+    
+    // Workflow steps:
+    // 1. Validate current token
+    // 2. Check expiration time
+    // 3. Generate new token if needed
+    // 4. Update all related messages
+    // 5. Invalidate old token
+    // 6. Schedule next renewal
+    
+    return await workflow.GetResultAsync();
 }
 ```
+**What this does**:
+- **Manages security tokens** for message correlation tracking
+- **Automatically renews tokens** before they expire
+- **Updates all related messages** when tokens change
+- **Survives system restarts** - tokens continue to be managed
+- **Schedules future renewals** automatically
+
+### LocalTesting Workflow Examples
+
+#### Complex Logic Stress Test Workflow
+```csharp
+// Real workflow from LocalTesting stress test scenarios
+public async Task ExecuteComplexLogicStressTestAsync(string testId)
+{
+    // Step 1: Configure backpressure (100 msg/sec per logical queue)
+    await ConfigureBackpressureAsync(testId);
+    
+    // Step 2: Generate and publish stress test messages
+    await GenerateStressTestMessagesAsync(testId, messageCount: 10000);
+    
+    // Step 3: Renew security tokens for correlation tracking
+    await RenewSecurityTokensAsync(testId);
+    
+    // Step 4: Concatenate messages (combine 100 messages into batches)
+    await ConcatenateMessagesAsync(testId, batchSize: 100);
+    
+    // Step 5: Split concatenated messages back to individual messages
+    await SplitConcatenatedMessagesAsync(testId);
+    
+    // Step 6: Process through Flink HTTP pipeline
+    await ProcessHttpBatchAsync(testId);
+    
+    // Step 7: Validate end-to-end message correlation
+    await ValidateMessageCorrelationAsync(testId);
+}
+```
+**What this workflow does**:
+- **Runs complete stress test scenarios** from start to finish
+- **Handles failures gracefully** with automatic retries
+- **Tracks progress** across all 7 steps
+- **Continues after system restarts** - no lost work
+- **Provides detailed logging** for debugging
+
+#### Infrastructure Health Monitoring Workflow
+```csharp
+// Real workflow from LocalTesting infrastructure monitoring
+public async Task MonitorInfrastructureHealthAsync()
+{
+    while (!cancellationToken.IsCancellationRequested)
+    {
+        // Check all infrastructure components every 30 seconds
+        var kafkaHealth = await CheckKafkaClusterHealthAsync();
+        var flinkHealth = await CheckFlinkClusterHealthAsync();
+        var redisHealth = await CheckRedisHealthAsync();
+        var temporalHealth = await CheckTemporalServerHealthAsync();
+        
+        // Record metrics for Prometheus/Grafana
+        await RecordHealthMetricsAsync(kafkaHealth, flinkHealth, redisHealth, temporalHealth);
+        
+        // If any component is unhealthy, trigger alerts
+        if (kafkaHealth.IsUnhealthy || flinkHealth.IsUnhealthy)
+        {
+            await TriggerInfrastructureAlertAsync(kafkaHealth, flinkHealth);
+        }
+        
+        // Wait 30 seconds before next check
+        await Workflow.DelayAsync(TimeSpan.FromSeconds(30));
+    }
+}
+```
+**What this workflow does**:
+- **Continuously monitors infrastructure** 24/7
+- **Checks all components**: Kafka, Flink, Redis, Temporal
+- **Records health metrics** for dashboards
+- **Triggers alerts** when problems are detected
+- **Runs indefinitely** - restarts automatically after system crashes
 
 **What it does**: Like a **smart scheduler** that:
 - Takes a list of data processing jobs
@@ -577,92 +800,190 @@ public static async Task ConfigureClusterAsync(ClusterConfig config)
 
 ---
 
-## Monitoring and Observability
+---
 
-### The Three Pillars of Observability
+## LocalTesting Monitoring and Observability
 
-#### 1. 📊 Metrics (Numbers and Trends)
-**Tool**: Prometheus + Grafana
+### ObservabilityMetricsService: The Monitoring Engine
 
-**What you see**:
-- Messages processed per second
-- Memory and CPU usage
-- Error rates and latency
-- Workflow completion times
+Our **actual LocalTesting observability** (`ObservabilityMetricsService.cs`) tracks everything:
 
-**Example Metrics**:
-```
-kafka_messages_per_second{topic="user-events"} = 1,250
-flink_processing_latency_ms{job="real-job-1"} = 3.2
-temporal_workflow_duration_seconds{workflow="ProcessOrder"} = 45.8
-jvm_memory_used_bytes{service="flink-taskmanager"} = 512,000,000
-```
-
-#### 2. 📝 Logs (Detailed Messages)
-**Tool**: Loki
-
-**What you see**:
-- Application debug messages
-- Error stack traces
-- User activity logs
-- System events
-
-**Example Logs**:
-```
-2024-01-15T10:30:15Z INFO [flink-taskmanager-1] Processing message for user_id=12345
-2024-01-15T10:30:16Z WARN [flink-taskmanager-1] High latency detected: 150ms > 100ms threshold
-2024-01-15T10:30:17Z ERROR [temporal-worker] Payment processing failed: insufficient_funds
-```
-
-#### 3. 🔍 Traces (Request Journeys)
-**Tool**: OpenTelemetry
-
-**What you see**:
-- Complete request path across services
-- Time spent in each component
-- Where bottlenecks occur
-
-**Example Trace**:
-```
-Order Processing Trace (Total: 245ms)
-├── Kafka Message Received (2ms)
-├── Flink Processing (15ms)
-├── Temporal Workflow Started (5ms)
-│   ├── Validate Payment (45ms)
-│   ├── Check Inventory (30ms)
-│   └── Reserve Items (25ms)
-├── Database Write (80ms)
-└── Response Sent (3ms)
+```csharp
+// Real code from LocalTesting.WebApi/Services/ObservabilityMetricsService.cs
+public class ObservabilityMetricsService
+{
+    // Counters for tracking events
+    private readonly Counter<long> _messageProcessingCounter;
+    private readonly Histogram<double> _messageProcessingDuration;
+    private readonly Gauge<int> _activeMessageGauge;
+    private readonly Counter<long> _flinkJobCounter;
+    private readonly Histogram<double> _workflowExecutionDuration;
+    
+    public void RecordMessageProcessing(string correlationId, TimeSpan processingTime, bool success)
+    {
+        // Record metrics for Prometheus
+        _messageProcessingCounter.Add(1, 
+            KeyValuePair.Create("status", success ? "success" : "failure"),
+            KeyValuePair.Create("operation", "process_message"));
+            
+        _messageProcessingDuration.Record(processingTime.TotalMilliseconds,
+            KeyValuePair.Create("message_type", "complex_logic"));
+            
+        _activeMessageGauge.Record(GetActiveMessageCount());
+        
+        _logger.LogInformation("Message {CorrelationId} processed in {Duration}ms: {Status}", 
+            correlationId, processingTime.TotalMilliseconds, success ? "SUCCESS" : "FAILURE");
+    }
+    
+    public void RecordFlinkJobExecution(string jobId, TimeSpan executionTime, string status)
+    {
+        _flinkJobCounter.Add(1,
+            KeyValuePair.Create("job_id", jobId),
+            KeyValuePair.Create("status", status));
+            
+        _logger.LogInformation("Flink job {JobId} completed with status {Status} in {Duration}ms", 
+            jobId, status, executionTime.TotalMilliseconds);
+    }
+}
 ```
 
-### Observability URLs
+### ObservabilityController: Real-Time Metrics API
 
-When LocalTesting is running, you can access:
+Our **actual metrics API** (`ObservabilityController.cs`) provides real-time monitoring:
 
-- **Grafana Dashboards**: http://localhost:18010
-  - Visual charts and graphs
-  - Real-time metrics
-  - Custom dashboards
+```csharp
+// Real code from LocalTesting.WebApi/Controllers/ObservabilityController.cs
+[HttpGet("metrics/live")]
+public async Task<IActionResult> GetLiveMetrics()
+{
+    var metrics = new
+    {
+        Timestamp = DateTime.UtcNow,
+        System = new
+        {
+            TotalMessagesProcessed = await _metricsService.GetTotalMessagesProcessedAsync(),
+            ActiveConnections = await _metricsService.GetActiveConnectionsAsync(),
+            AverageProcessingTime = await _metricsService.GetAverageProcessingTimeAsync(),
+            ErrorRate = await _metricsService.GetErrorRateAsync()
+        },
+        Kafka = new
+        {
+            TopicMessageCounts = await _metricsService.GetKafkaTopicCountsAsync(),
+            ConsumerLag = await _metricsService.GetConsumerLagAsync(),
+            ProducerThroughput = await _metricsService.GetProducerThroughputAsync()
+        },
+        Flink = new
+        {
+            RunningJobs = await _metricsService.GetRunningFlinkJobsAsync(),
+            TaskManagerStatus = await _metricsService.GetTaskManagerStatusAsync(),
+            CheckpointStats = await _metricsService.GetCheckpointStatsAsync()
+        },
+        Redis = new
+        {
+            ConnectedClients = await _metricsService.GetRedisClientCountAsync(),
+            MemoryUsage = await _metricsService.GetRedisMemoryUsageAsync(),
+            KeyCount = await _metricsService.GetRedisKeyCountAsync()
+        }
+    };
+    
+    return Ok(metrics);
+}
 
-- **Prometheus Metrics**: http://localhost:18006
-  - Raw metrics data
-  - Query interface
-  - Alert configuration
+[HttpGet("health/infrastructure")]
+public async Task<IActionResult> GetInfrastructureHealth()
+{
+    var health = await _healthCheckService.GetComprehensiveHealthAsync();
+    return Ok(health);
+}
+```
 
-- **Temporal UI**: http://localhost:18004
+### Actual LocalTesting Observability Stack
+
+#### 1. Prometheus: Metrics Collection
+```csharp
+// Real code from LocalTesting.AppHost/Program.cs (lines 266-279)
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
+    .WithHttpEndpoint(18006, 9090, "prometheus")
+    .WithBindMount("./prometheus.yml", "/etc/prometheus/prometheus.yml")
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "7d")
+    .WithArgs("--config.file=/etc/prometheus/prometheus.yml",
+              "--storage.tsdb.path=/prometheus",
+              "--web.enable-lifecycle",
+              "--storage.tsdb.retention.time=7d",
+              "--log.level=warn");
+```
+**Collects metrics from**:
+- LocalTesting WebAPI (message processing stats)
+- Kafka brokers (topic throughput, consumer lag)
+- Flink cluster (job status, task manager health)
+- Redis (memory usage, connection count)
+
+#### 2. Grafana: Visual Dashboards
+```csharp
+// Real code from LocalTesting.AppHost/Program.cs (lines 292-310)
+var grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
+    .WithHttpEndpoint(18010, 3000, "grafana")
+    .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
+    .WithEnvironment("LOKI_URL", "http://loki:3100")
+    .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
+    .WithBindMount("./grafana-datasources-training.yml", "/etc/grafana/provisioning/datasources/datasources.yml");
+```
+**Provides dashboards for**:
+- **Stress test progress** (messages/second, success rates)
+- **Infrastructure health** (CPU, memory, disk usage)  
+- **Message flow visualization** (source → Kafka → Flink → sink)
+- **Error tracking** (failed messages, timeout alerts)
+
+#### 3. Loki: Log Aggregation
+```csharp
+// Real code from LocalTesting.AppHost/Program.cs (lines 257-264)
+var loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
+    .WithHttpEndpoint(18005, 3100, "loki")
+    .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
+    .WithEnvironment("LOKI_LOG_LEVEL", "warn")
+    .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
+```
+**Aggregates logs from**:
+- LocalTesting WebAPI (API requests, processing errors)
+- Flink jobs (processing logs, checkpoint failures)
+- Kafka brokers (partition assignments, replication status)
+- Temporal workflows (step execution, retry attempts)
+
+### LocalTesting Monitoring URLs
+
+**Access these dashboards when LocalTesting is running:**
+
+- **🎯 LocalTesting API**: http://localhost:18000
+  - Swagger UI for stress test controls
+  - Real-time metrics endpoint
+  - Health check status
+
+- **📊 Grafana Dashboards**: http://localhost:18010
+  - Stress test progress visualization
+  - Infrastructure health overview
+  - Message processing throughput
+
+- **📈 Prometheus Metrics**: http://localhost:18006  
+  - Raw metrics data and queries
+  - Alert rule configuration
+  - Target health status
+
+- **🔄 Temporal UI**: http://localhost:18004
   - Workflow execution history
-  - Current workflow states
-  - Error details and retries
+  - Complex logic stress test progress
+  - Security token renewal status
 
-- **Kafka UI**: http://localhost:18001
-  - Topic management
-  - Message browsing
-  - Consumer group monitoring
+- **📬 Kafka UI**: http://localhost:18001
+  - Topic message counts (complex-input, complex-output)
+  - Consumer group lag monitoring
+  - Partition distribution
 
-- **Flink Dashboard**: http://localhost:18002
-  - Job management
-  - Task manager status
-  - Checkpoint information
+- **⚡ Flink Dashboard**: http://localhost:18002
+  - Job manager status
+  - Task manager health (3 task managers)
+  - Processing parallelism (24 slots)
 
 ### What to Monitor
 
