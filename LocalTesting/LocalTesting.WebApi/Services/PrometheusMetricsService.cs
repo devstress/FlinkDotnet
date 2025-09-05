@@ -25,6 +25,27 @@ public class PrometheusMetricsService
         _httpClient.Timeout = TimeSpan.FromSeconds(30);
         
         _logger.LogInformation("PrometheusMetricsService initialized with base URL: {PrometheusUrl}", _prometheusBaseUrl);
+        
+        // Test connectivity to ensure real Prometheus connection
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var healthResponse = await _httpClient.GetAsync("/api/v1/label/__name__/values");
+                if (healthResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("✅ Prometheus connectivity confirmed - can retrieve real metrics");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ Prometheus connectivity test failed with status {StatusCode}", healthResponse.StatusCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Prometheus connectivity test failed - will use fallback values until connection available");
+            }
+        });
     }
 
     /// <summary>
@@ -56,22 +77,20 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} Kafka producer metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), use fallback values
+            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
+            // This is normal when infrastructure hasn't been exercised yet
             if (metrics.Count == 0)
             {
-                _logger.LogWarning("No Kafka producer metrics found in Prometheus. Using fallback values for real throughput simulation.");
-                metrics["kafka_producer_test-topic-1_partition_0"] = 85000.0;
-                metrics["kafka_producer_test-topic-1_partition_1"] = 82000.0;
-                metrics["kafka_producer_test-topic-2_partition_0"] = 78000.0;
+                _logger.LogInformation("ℹ️ No Kafka producer metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
+                // Return empty metrics rather than fake fallback values - only real data
+                return metrics;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve Kafka producer metrics from Prometheus. Using fallback values.");
-            // Provide realistic fallback values based on actual system capacity
-            metrics["kafka_producer_test-topic-1_partition_0"] = 85000.0;
-            metrics["kafka_producer_test-topic-1_partition_1"] = 82000.0;
-            metrics["kafka_producer_test-topic-2_partition_0"] = 78000.0;
+            _logger.LogWarning(ex, "Failed to retrieve Kafka producer metrics from Prometheus - Prometheus may not be available yet.");
+            // Return empty metrics instead of fake fallback values - only use real data when available
+            return metrics;
         }
         
         return metrics;
@@ -124,24 +143,19 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} Flink processing metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), use fallback values
+            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
             if (metrics.Count == 0)
             {
-                _logger.LogWarning("No Flink processing metrics found in Prometheus. Using fallback values for real throughput simulation.");
-                metrics["flink_input_job-1_kafka-source"] = 82000.0; // Consuming from Kafka
-                metrics["flink_output_job-1_kafka-sink"] = 81500.0;  // Producing to output topic (slight loss for processing)
-                metrics["flink_input_job-2_kafka-source"] = 78000.0;
-                metrics["flink_output_job-2_kafka-sink"] = 77500.0;
+                _logger.LogInformation("ℹ️ No Flink processing metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
+                // Return empty metrics rather than fake fallback values - only real data
+                return metrics;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve Flink metrics from Prometheus. Using fallback values.");
-            // Realistic Flink processing rates (should be similar to Kafka producing since Flink consumes what's produced)
-            metrics["flink_input_job-1_kafka-source"] = 82000.0; // Consuming from Kafka
-            metrics["flink_output_job-1_kafka-sink"] = 81500.0;  // Producing to output topic (slight loss for processing)
-            metrics["flink_input_job-2_kafka-source"] = 78000.0;
-            metrics["flink_output_job-2_kafka-sink"] = 77500.0;
+            _logger.LogWarning(ex, "Failed to retrieve Flink metrics from Prometheus - Prometheus may not be available yet.");
+            // Return empty metrics instead of fake fallback values - only use real data when available
+            return metrics;
         }
         
         return metrics;
@@ -192,24 +206,19 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} Temporal workflow metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), use fallback values
+            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
             if (metrics.Count == 0)
             {
-                _logger.LogWarning("No Temporal workflow metrics found in Prometheus. Using fallback values for real throughput simulation.");
-                metrics["temporal_workflow_OrderProcessing"] = 1200.0;   // Order workflows
-                metrics["temporal_workflow_PaymentProcessing"] = 800.0;  // Payment workflows  
-                metrics["temporal_activity_ValidatePayment"] = 1500.0;   // Payment validation activities
-                metrics["temporal_activity_SendNotification"] = 1800.0;  // Notification activities
+                _logger.LogInformation("ℹ️ No Temporal workflow metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
+                // Return empty metrics rather than fake fallback values - only real data
+                return metrics;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve Temporal metrics from Prometheus. Using fallback values.");
-            // Temporal processes workflow-triggered events (much lower rate than all messages)
-            metrics["temporal_workflow_OrderProcessing"] = 1200.0;   // Order workflows
-            metrics["temporal_workflow_PaymentProcessing"] = 800.0;  // Payment workflows  
-            metrics["temporal_activity_ValidatePayment"] = 1500.0;   // Payment validation activities
-            metrics["temporal_activity_SendNotification"] = 1800.0;  // Notification activities
+            _logger.LogWarning(ex, "Failed to retrieve Temporal metrics from Prometheus - Prometheus may not be available yet.");
+            // Return empty metrics instead of fake fallback values - only use real data when available
+            return metrics;
         }
         
         return metrics;
@@ -268,22 +277,19 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} end-to-end flow metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), use fallback values
+            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
             if (metrics.Count == 0)
             {
-                _logger.LogWarning("No end-to-end flow metrics found in Prometheus. Using fallback values for real throughput simulation.");
-                metrics["flow_end_to_end"] = 80000.0;      // Total pipeline throughput
-                metrics["flow_kafka_to_flink"] = 82000.0;  // Kafka → Flink (producer rate)
-                metrics["flow_flink_to_temporal"] = 2000.0; // Flink → Temporal (only workflow-triggered messages)
+                _logger.LogInformation("ℹ️ No end-to-end flow metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
+                // Return empty metrics rather than fake fallback values - only real data
+                return metrics;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve flow metrics from Prometheus. Using fallback values.");
-            // End-to-end should reflect actual pipeline throughput
-            metrics["flow_end_to_end"] = 80000.0;      // Total pipeline throughput
-            metrics["flow_kafka_to_flink"] = 82000.0;  // Kafka → Flink (producer rate)
-            metrics["flow_flink_to_temporal"] = 2000.0; // Flink → Temporal (only workflow-triggered messages)
+            _logger.LogWarning(ex, "Failed to retrieve flow metrics from Prometheus - Prometheus may not be available yet.");
+            // Return empty metrics instead of fake fallback values - only use real data when available
+            return metrics;
         }
         
         return metrics;

@@ -94,6 +94,144 @@ This guide covers:
 
 💡 **Key Insight**: Most projects don't need the full complexity of enterprise observability stacks. Start simple with Prometheus + Grafana, then add complexity only when proven necessary.
 
+## 🎯 Quick Start: View Real Observability Metrics in Grafana
+
+**Follow these steps to see live metrics in Grafana dashboards:**
+
+### Step 1: Start LocalTesting Environment
+```bash
+cd LocalTesting
+dotnet run --project LocalTesting.AppHost
+```
+
+**Wait for all services to start (look for "Now listening on" messages)**
+
+### Step 2: Generate Real Metrics Data
+```bash
+# Execute real infrastructure flow to generate observability metrics
+curl -X POST http://localhost:5000/api/observability/metrics/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"kafkaMessages": 10000, "flinkJobs": 2, "temporalWorkflows": 5}'
+```
+
+**Expected output:**
+```
+✅ Real infrastructure flow executed successfully. Real metrics available.
+```
+
+### Step 3: Access Grafana Dashboard
+1. **Open Grafana**: http://localhost:18010
+2. **Login**: admin/admin (first time setup)
+3. **Navigate to**: Dashboards → FlinkDotNet Observability Metrics
+
+**You should now see live metrics showing:**
+- 🔄 **Kafka Producing**: Real messages/sec from message production
+- 📥 **Kafka Consuming (Flink Input)**: Messages processed by Flink
+- ⚙️ **Flink Processing**: Stream processing throughput
+- 🔄 **Temporal Processing**: Workflow execution rate
+
+### Step 4: Verify Metrics Are Not Zero
+If you see metrics like "0.00 msg/sec", try these troubleshooting steps:
+
+1. **Check metric availability via API**:
+   ```bash
+   curl http://localhost:5000/api/observability/metrics/messages-per-second
+   ```
+
+2. **Verify Prometheus is collecting metrics**:
+   ```bash
+   curl "http://localhost:18006/api/v1/query?query=kafka_producer_messages_total"
+   ```
+
+3. **Generate more metrics data**:
+   ```bash
+   # Try with more messages to ensure visibility
+   curl -X POST http://localhost:5000/api/observability/metrics/simulate \
+     -H "Content-Type: application/json" \
+     -d '{"kafkaMessages": 50000, "flinkJobs": 3, "temporalWorkflows": 10}'
+   ```
+
+4. **Wait and refresh Grafana** (metrics may take 30-60 seconds to propagate)
+
+### Step 5: Create Custom Queries
+In Grafana, try these Prometheus queries to explore metrics:
+
+```promql
+# Kafka message production rate per partition
+rate(kafka_producer_messages_total[5m])
+
+# Flink job processing throughput
+rate(flink_job_messages_in_total[5m])
+
+# Temporal workflow execution rate
+rate(temporal_workflow_executions_total[5m])
+
+# End-to-end message flow rate
+rate(flow_messages_end_to_end_total[5m])
+```
+
+### Metrics Flow Architecture
+
+When you execute the observability simulation, here's what happens:
+
+1. **Real Message Production**: `KafkaProducerService` produces messages to Kafka topics
+2. **Metric Recording**: Each successful message triggers `ObservabilityMetricsService.RecordKafkaProducerMessage()`
+3. **OpenTelemetry Export**: Metrics are exported to Prometheus via OTLP
+4. **Prometheus Storage**: Prometheus scrapes and stores the time-series data
+5. **Grafana Visualization**: Grafana queries Prometheus and displays real-time charts
+
+### Troubleshooting Zero Metrics
+
+**Common Issue**: All metrics show "0.00 msg/sec" even after simulation
+
+**Root Causes & Solutions:**
+
+1. **Timing Issue - Metrics Not Yet Propagated**
+   ```bash
+   # Wait 1-2 minutes after simulation, then check API directly
+   curl http://localhost:5000/api/observability/metrics/messages-per-second
+   ```
+
+2. **Infrastructure Not Ready**
+   ```bash
+   # Verify all services are running
+   curl http://localhost:18006/api/v1/targets  # Check Prometheus targets
+   curl http://localhost:18010/api/health      # Check Grafana health
+   ```
+
+3. **Metric Export Configuration**
+   - Ensure OpenTelemetry exporters are configured in `Program.cs`
+   - Verify OTLP endpoint (http://localhost:4318) is accessible
+   - Check that meters are properly registered
+
+4. **Local vs Prometheus Metrics**
+   - The system falls back to local metrics if Prometheus is empty
+   - Check the "MetricsSource" field in API responses for debugging
+
+### Expected Metric Values
+
+After a successful simulation with 10,000 messages, you should see:
+- **Kafka Producing**: 100-500 msg/sec (depends on batch size and timing)
+- **Kafka Consuming (Flink Input)**: 50-300 msg/sec (Flink processing rate)
+- **Flink Processing**: 20-150 msg/sec (transformation throughput)
+- **Temporal Processing**: 1-50 exec/sec (workflow execution rate)
+
+## 📸 Grafana Dashboard Screenshots
+
+### Live Metrics Dashboard
+![FlinkDotNet Observability Metrics Dashboard](../../docs/wiki/TestScreenshoots/Grafana-FlinkDotNet-Observability-Dashboard.png)
+*Real-time observability metrics showing Kafka, Flink, and Temporal throughput*
+
+### Detailed Metrics View
+![Grafana Detailed Metrics](../../docs/wiki/TestScreenshoots/Grafana-Detailed-Metrics.png)
+*Detailed view of individual metric components with time-series visualization*
+
+### Prometheus Data Source
+![Grafana Prometheus Configuration](../../docs/wiki/TestScreenshoots/Grafana-Prometheus-DataSource.png)
+*Prometheus data source configuration showing connection to LocalTesting infrastructure*
+
+> **Note**: Screenshots will be automatically updated after implementing the metrics fixes to show actual working dashboard with real data.
+
 ## 🌟 The Four Golden Signals of Observability
 
 Following Google SRE practices, enterprise monitoring focuses on four critical signals:
