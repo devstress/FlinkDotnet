@@ -110,8 +110,10 @@ dotnet run --project LocalTesting.AppHost
 # Execute real infrastructure flow to generate observability metrics
 curl -X POST http://localhost:5000/api/observability/metrics/simulate \
   -H "Content-Type: application/json" \
-  -d '{"kafkaMessages": 10000, "flinkJobs": 2, "temporalWorkflows": 5}'
+  -d '{"kafkaMessages": 10000, "flinkJobs": 2, "temporalWorkflows": 1000}'
 ```
+
+**Note:** Temporal workflows are triggered for ~10% of messages, so 10,000 messages generate approximately 1,000 workflows.
 
 **Expected output:**
 ```
@@ -147,8 +149,10 @@ If you see metrics like "0.00 msg/sec", try these troubleshooting steps:
    # Try with more messages to ensure visibility
    curl -X POST http://localhost:5000/api/observability/metrics/simulate \
      -H "Content-Type: application/json" \
-     -d '{"kafkaMessages": 50000, "flinkJobs": 3, "temporalWorkflows": 10}'
+     -d '{"kafkaMessages": 50000, "flinkJobs": 3, "temporalWorkflows": 5000}'
    ```
+
+   **Note:** With 10% workflow volume, 50,000 messages generate approximately 5,000 workflows.
 
 4. **Wait and refresh Grafana** (metrics may take 30-60 seconds to propagate)
 
