@@ -365,15 +365,6 @@ public class ObservabilityMetricsSteps : IDisposable
             var temporalWorkflowCount = CalculateTemporalWorkflowCount(temporalMetrics);
             var temporalPercentage = totalIngressMessages > 0 ? (double)temporalWorkflowCount / totalIngressMessages * 100 : 0;
             
-            output.AppendLine($"🔄 Temporal Processing: {temporalWorkflowCount:N0} workflows ({temporalPercentage:F2}% of total messages)");
-            output.AppendLine($"   Purpose: Workflow orchestration for complex business logic processing");
-            output.AppendLine($"   Role: Handles stateful workflows triggered by specific message patterns");
-            output.AppendLine($"   Performance: Temporal processes only subset of messages requiring workflows");
-            output.AppendLine($"   ✅ CORRECT BEHAVIOR: Temporal is NOT a bottleneck - it should only process workflow-triggered events");
-            output.AppendLine($"   ❌ WRONG ASSUMPTION: Temporal should NOT process all {totalIngressMessages:N0} messages");
-            output.AppendLine($"   📈 Scaling: Increase Temporal instances only if workflow processing latency is high");
-            output.AppendLine();
-            
             // Component-specific processing times and rates
             output.AppendLine("🏗️ Component Performance Breakdown:");
             
@@ -501,7 +492,6 @@ public class ObservabilityMetricsSteps : IDisposable
             
             // Validation of metrics realism
             var isRealistic = totalProcessingTime > 0 && overallMsgPerSec > 0 && totalProcessingTime < 300; // Less than 5 minutes is reasonable
-            output.AppendLine($"  🎯 Metrics realism check: {(isRealistic ? "REALISTIC" : "SUSPICIOUS")}");
             
             if (!isRealistic)
             {
