@@ -1181,9 +1181,12 @@ During test execution, the GitHub Actions workflow displays real-time metrics:
 📈 Flink Processing Metrics:  
   📥 Input Rate - job-1: 15,200 msg/sec
   📤 Output Rate - job-1: 15,195 msg/sec
+📈 Temporal Workflow Metrics:
+  📊 Workflow Rate: 1,520 workflows/sec (10% of message volume)
+  📊 Orchestration Processing: Cluster management, job distribution, auto-scaling
 📈 End-to-End Flow Metrics:
   📊 Kafka → Flink: 15,247.5 msg/sec
-  📊 End-to-End Total: 15,180.2 msg/sec
+  📊 Kafka → Flink → Temporal: 15,180.2 msg/sec (total pipeline)
 ```
 
 ### **High-Throughput Validation**
