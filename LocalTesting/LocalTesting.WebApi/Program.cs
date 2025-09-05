@@ -1,3 +1,4 @@
+using LocalTesting.WebApi.Configuration;
 using LocalTesting.WebApi.Services;
 using LocalTesting.WebApi.Services.Temporal;
 using FlinkDotNet.Orchestration.Interfaces;
@@ -65,41 +66,21 @@ builder.Services.AddSwaggerGen(c =>
     c.EnableAnnotations();
 });
 
-// Add Redis connection as a lazy singleton for Aspire compatibility
-builder.Services.AddSingleton<Lazy<IConnectionMultiplexer>>(provider =>
-{
-    return new Lazy<IConnectionMultiplexer>(() =>
-    {
-        var logger = provider.GetRequiredService<ILogger<Program>>();
-        var connectionString = builder.Configuration.GetConnectionString("redis") ?? "localhost:6379";
-        
-        // Retry logic for Aspire orchestration - Redis might not be ready immediately
-        for (int attempt = 1; attempt <= 5; attempt++)
-        {
-            try
-            {
-                logger.LogInformation("Attempting to connect to Redis (attempt {Attempt}/5): {ConnectionString}", attempt, connectionString);
-                return ConnectionMultiplexer.Connect(connectionString);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Redis connection attempt {Attempt} failed", attempt);
-                if (attempt == 5)
-                {
-                    logger.LogError(ex, "Failed to connect to Redis after 5 attempts. Application will continue but Redis features may not work.");
-                    throw; // Re-throw on final attempt
-                }
-                Thread.Sleep(attempt * 1000); // 1s, 2s, 3s, 4s delays
-            }
-        }
-        
-        throw new InvalidOperationException("This should never be reached");
-    });
-});
+// Add Redis connection service - individual services will connect when needed
+builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>();
 
-// Add IConnectionMultiplexer as a service that gets the value from the lazy instance
+// Add Redis connection as a singleton that doesn't connect during startup
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
-    provider.GetRequiredService<Lazy<IConnectionMultiplexer>>().Value);
+{
+    // Don't establish connection during startup - let individual services handle this
+    var connectionString = builder.Configuration.GetConnectionString("redis") ?? "localhost:6379";
+    var configOptions = ConfigurationOptions.Parse(connectionString);
+    configOptions.ConnectTimeout = 5000;
+    configOptions.AbortOnConnectFail = false; // Critical: don't fail startup if Redis unavailable
+    
+    // This will only connect when first accessed, not during registration
+    return ConnectionMultiplexer.Connect(configOptions);
+});
 
 // Add custom services
 builder.Services.AddSingleton<ObservabilityMetricsService>();
@@ -113,8 +94,26 @@ builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddSingleton<FlinkJobManagementService>();
 builder.Services.AddSingleton<BackpressureMonitoringService>();
 
+// Add Infrastructure Readiness and Prometheus Warmup services (Phase 1 & Phase 2 implementation)
+builder.Services.AddSingleton<IInfrastructureReadinessService, InfrastructureReadinessService>();
+builder.Services.AddSingleton<PrometheusWarmupService>();
+builder.Services.AddHttpClient<InfrastructureReadinessService>(); // HTTP client for infrastructure connectivity checks
+
+// Configure strongly-typed configuration sections
+builder.Services.Configure<TemporalConfiguration>(
+    builder.Configuration.GetSection(TemporalConfiguration.SectionName));
+
+// Add Adaptive Parameters and Temporal Optimization services (Phase 3 & Phase 4 implementation)
+builder.Services.AddSingleton<ISystemCapacityDetector, SystemCapacityDetector>();
+builder.Services.AddSingleton<ITemporalAgentOptimizer, TemporalAgentOptimizer>();
+builder.Services.AddHttpClient<SystemCapacityDetector>(); // HTTP client for infrastructure API calls
+builder.Services.AddHttpClient<TemporalAgentOptimizer>(); // HTTP client for Temporal API calls
+
 // Add orchestration services for latest architecture
 builder.Services.AddSingleton<IFlinkOrchestra, FlinkOrchestra>();
+
+// Add Orchestra background service for non-blocking initialization
+builder.Services.AddHostedService<OrchestraInitializationService>();
 
 // Add HTTP client for external calls with extended timeout for complex operations
 builder.Services.AddHttpClient().ConfigureHttpClientDefaults(clientBuilder =>
@@ -129,15 +128,8 @@ try
 {
     var app = builder.Build();
 
-    // Initialize Orchestra with test clusters for LocalTesting
-    try
-    {
-        await InitializeOrchestraForLocalTestingAsync(app.Services);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Orchestra initialization failed but continuing: {ex.Message}");
-    }
+    // Orchestra initialization is now handled by OrchestraInitializationService background service
+    // This allows the application to start immediately without waiting for Orchestra setup
 
     // Configure the HTTP request pipeline
     app.UseSwagger();
@@ -171,208 +163,5 @@ catch (Exception ex)
     Environment.Exit(1);
 }
 
-/// <summary>
-/// Initialize Orchestra with test clusters for LocalTesting environment
-/// </summary>
-static async Task InitializeOrchestraForLocalTestingAsync(IServiceProvider services)
-{
-    try
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        var orchestra = services.GetRequiredService<IFlinkOrchestra>();
-        
-        logger.LogInformation("Initializing Orchestra with test clusters for LocalTesting...");
-        
-        // Create test cluster configurations for LocalTesting
-        var testClusters = new[]
-        {
-            new { 
-                Config = new FlinkDotNet.Orchestration.Models.ClusterConfiguration
-                {
-                    Name = "localtesting-cluster-1",
-                    TaskSlots = 10,
-                    TaskManagers = 2,
-                    Region = "local-testing", 
-                    Zone = "zone-a",
-                    HighAvailability = true,
-                    FlinkVersion = "2.0.0"
-                },
-                AvailableSlots = 20,
-                TotalSlots = 20
-            },
-            new {
-                Config = new FlinkDotNet.Orchestration.Models.ClusterConfiguration
-                {
-                    Name = "localtesting-cluster-2",
-                    TaskSlots = 8,
-                    TaskManagers = 2,
-                    Region = "local-testing",
-                    Zone = "zone-b", 
-                    HighAvailability = true,
-                    FlinkVersion = "2.0.0"
-                },
-                AvailableSlots = 16,
-                TotalSlots = 16
-            },
-            new {
-                Config = new FlinkDotNet.Orchestration.Models.ClusterConfiguration
-                {
-                    Name = "localtesting-cluster-3",
-                    TaskSlots = 6,
-                    TaskManagers = 1,
-                    Region = "local-testing",
-                    Zone = "zone-c",
-                    HighAvailability = false,
-                    FlinkVersion = "2.0.0"
-                },
-                AvailableSlots = 6,
-                TotalSlots = 6
-            }
-        };
-        
-        // Provision simulated clusters for testing
-        foreach (var testCluster in testClusters)
-        {
-            try
-            {
-                // Create a simulated cluster actor for LocalTesting
-                var simulatedActor = new SimulatedClusterActor(
-                    $"sim-cluster-{Guid.NewGuid():N}[..8]",
-                    testCluster.Config.Name,
-                    testCluster.AvailableSlots,
-                    testCluster.TotalSlots
-                );
-                
-                // Add directly to orchestra's internal clusters dictionary
-                // Using reflection to access private field for LocalTesting
-                var clustersField = orchestra.GetType().GetField("_clusters", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (clustersField?.GetValue(orchestra) is IDictionary<string, IFlinkClusterActor> clusters)
-                {
-                    clusters[simulatedActor.ClusterId] = simulatedActor;
-                    logger.LogInformation("Added simulated test cluster: {ClusterName} with {AvailableSlots}/{TotalSlots} slots", 
-                        testCluster.Config.Name, testCluster.AvailableSlots, testCluster.TotalSlots);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to create simulated test cluster {ClusterName}, continuing with other clusters", 
-                    testCluster.Config.Name);
-            }
-        }
-        
-        // Verify clusters are available
-        var availableClusters = await orchestra.GetAvailableClustersAsync();
-        logger.LogInformation("Orchestra initialization completed. Available clusters: {ClusterCount}", 
-            availableClusters.Length);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Failed to initialize Orchestra with test clusters");
-        // Don't throw - allow the app to continue running even if Orchestra initialization fails
-    }
-}
-
-/// <summary>
-/// Simulated cluster actor for LocalTesting environment
-/// </summary>
-internal class SimulatedClusterActor : IFlinkClusterActor
-{
-    public string ClusterId { get; }
-    private readonly string _clusterName;
-    private readonly int _availableSlots;
-    private readonly int _totalSlots;
-
-    public SimulatedClusterActor(string clusterId, string clusterName, int availableSlots, int totalSlots)
-    {
-        ClusterId = clusterId;
-        _clusterName = clusterName;
-        _availableSlots = availableSlots;
-        _totalSlots = totalSlots;
-    }
-
-    public Task<ClusterStatus> GetStatusAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(new ClusterStatus
-        {
-            ClusterId = ClusterId,
-            Health = ClusterHealthState.Healthy, // Always healthy for simulation
-            AvailableSlots = _availableSlots,
-            TotalSlots = _totalSlots,
-            RunningJobs = 0,
-            LastHealthCheck = DateTime.UtcNow,
-            Version = "2.0.0-simulated",
-            AdditionalMetrics = new Dictionary<string, object>
-            {
-                ["ClusterName"] = _clusterName,
-                ["Environment"] = "LocalTesting-Simulation"
-            }
-        });
-    }
-
-    public Task<JobSubmissionResult> SubmitJobAsync(FlinkJobDefinition job, CancellationToken cancellationToken = default)
-    {
-        // Simulate successful job submission
-        return Task.FromResult(new JobSubmissionResult
-        {
-            JobId = job.JobId,
-            ClusterId = ClusterId,
-            Success = true,
-            FlinkJobId = $"flink-job-{Guid.NewGuid():N}[..8]",
-            SubmissionTime = DateTime.UtcNow,
-            PlacementInfo = new JobPlacementInfo
-            {
-                ClusterId = ClusterId,
-                Reason = $"Simulated job placement on {_clusterName}",
-                AssignedSlots = job.Parallelism,
-                Strategy = SubmissionStrategy.BestFit,
-                PlacementMetadata = new Dictionary<string, object>
-                {
-                    ["SimulatedCluster"] = _clusterName,
-                    ["Environment"] = "LocalTesting"
-                }
-            }
-        });
-    }
-
-    public Task<bool> ScaleAsync(int parallelism, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true); // Simulate successful scaling
-    }
-
-    public Task RestartAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask; // Simulate successful restart
-    }
-
-    public Task ShutdownAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask; // Simulate successful shutdown
-    }
-
-    public Task StartHealthMonitoringAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask; // Simulate health monitoring start
-    }
-
-    public Task<ClusterMetrics> GetMetricsAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(new ClusterMetrics
-        {
-            ClusterId = ClusterId,
-            CpuUtilization = 0.65, // Simulate 65% CPU usage
-            MemoryUtilization = 0.72, // Simulate 72% memory usage
-            ProcessedRecords = 150000,
-            Throughput = 5000.0,
-            BackpressureRatio = 0.05,
-            Timestamp = DateTime.UtcNow,
-            CustomMetrics = new Dictionary<string, double>
-            {
-                ["AvailableSlots"] = _availableSlots,
-                ["TotalSlots"] = _totalSlots,
-                ["UtilizationPercentage"] = (_totalSlots - _availableSlots) / (double)_totalSlots * 100.0
-            }
-        });
-    }
-}
+// Orchestra initialization is now handled by OrchestraInitializationService background service
+// All Orchestra-related initialization logic has been moved to that service to avoid blocking startup

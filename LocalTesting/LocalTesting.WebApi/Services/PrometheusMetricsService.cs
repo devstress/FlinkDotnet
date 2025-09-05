@@ -66,7 +66,7 @@ public class PrometheusMetricsService
                 if (result.Metric.TryGetValue("topic", out var topic) &&
                     result.Metric.TryGetValue("partition", out var partition))
                 {
-                    var metricKey = $"kafka_producer_{topic}_partition_{partition}";
+                    var metricKey = $"kafka_producer_{topic}_partition-{partition}";
                     var rate = ParseMetricValue(result.Value);
                     if (rate > 0)
                     {
@@ -77,13 +77,10 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} Kafka producer metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
-            // This is normal when infrastructure hasn't been exercised yet
+            // MANDATORY VALIDATION: Fail if no metrics when infrastructure should have data
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Kafka producer metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
-                // Return empty metrics rather than fake fallback values - only real data
-                return metrics;
+                throw new InfrastructureNotReadyException("No Kafka producer metrics found in Prometheus. Infrastructure must be executed before metric retrieval. Run warmup protocol first.");
             }
         }
         catch (Exception ex)
@@ -143,12 +140,10 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} Flink processing metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
+            // MANDATORY VALIDATION: Fail if no metrics when infrastructure should have data
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Flink processing metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
-                // Return empty metrics rather than fake fallback values - only real data
-                return metrics;
+                throw new InfrastructureNotReadyException("No Flink processing metrics found in Prometheus. Infrastructure must be executed before metric retrieval. Run warmup protocol first.");
             }
         }
         catch (Exception ex)
@@ -206,12 +201,10 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} Temporal workflow metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
+            // MANDATORY VALIDATION: Fail if no metrics when infrastructure should have data
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Temporal workflow metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
-                // Return empty metrics rather than fake fallback values - only real data
-                return metrics;
+                throw new InfrastructureNotReadyException("No Temporal workflow metrics found in Prometheus. Infrastructure must be executed before metric retrieval. Run warmup protocol first.");
             }
         }
         catch (Exception ex)
@@ -277,12 +270,10 @@ public class PrometheusMetricsService
             
             _logger.LogInformation("Retrieved {Count} end-to-end flow metrics from Prometheus", metrics.Count);
             
-            // If no metrics retrieved (Prometheus empty results), log this as INFO not WARNING
+            // MANDATORY VALIDATION: Fail if no metrics when infrastructure should have data
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No end-to-end flow metrics found in Prometheus yet. This is normal if infrastructure flow hasn't been executed.");
-                // Return empty metrics rather than fake fallback values - only real data
-                return metrics;
+                throw new InfrastructureNotReadyException("No end-to-end flow metrics found in Prometheus. Infrastructure must be executed before metric retrieval. Run warmup protocol first.");
             }
         }
         catch (Exception ex)

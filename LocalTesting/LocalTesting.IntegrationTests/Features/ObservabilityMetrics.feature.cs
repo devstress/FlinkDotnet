@@ -24,8 +24,8 @@ namespace LocalTesting.IntegrationTests.Features
         
         private static string[] featureTags = ((string[])(null));
         
-        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Observability Metrics Validation", "  As a system administrator\n  I want to run the flow and see the metrics\n  So tha" +
-                "t I can monitor system performance", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
+        private static global::Reqnroll.FeatureInfo featureInfo = new global::Reqnroll.FeatureInfo(new global::System.Globalization.CultureInfo("en-US"), "Features", "Observability Metrics Validation", "  As a system administrator\r\n  I want to run the flow and see the metrics\r\n  So t" +
+                "hat I can monitor system performance", global::Reqnroll.ProgrammingLanguage.CSharp, featureTags);
         
         private Xunit.Abstractions.ITestOutputHelper _testOutputHelper;
         

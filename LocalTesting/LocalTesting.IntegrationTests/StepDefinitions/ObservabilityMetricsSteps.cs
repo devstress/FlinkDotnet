@@ -53,7 +53,9 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // StartAsync will wait for all services to be ready based on their configured health checks
         // This automatically handles service readiness - no manual validation needed
-        await _app.StartAsync();
+        // Use extended timeout for complex infrastructure (Kafka cluster + Prometheus + Grafana + Loki)
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10)); // 10 minutes for complex infrastructure
+        await _app.StartAsync(cts.Token);
         
         Console.WriteLine("✅ All Aspire services started and ready (validated by framework)");
         
@@ -102,7 +104,7 @@ public class ObservabilityMetricsSteps : IDisposable
         };
 
         Console.WriteLine($"🔄 Executing real flow through infrastructure at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC...");
-        var flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/metrics/simulate", flowRequest);
+        var flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
         flowResponse.EnsureSuccessStatusCode();
         
         // MEASURE ACTUAL COMPLETION TIME
