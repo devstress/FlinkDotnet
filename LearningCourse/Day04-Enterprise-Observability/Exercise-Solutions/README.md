@@ -245,7 +245,7 @@ Applications → Prometheus → Grafana ← Loki ← Container Logs
 ┌─────────────────┐  │  ┌─────────────────┐  │  ┌─────────────────┐
 │   LOKI (L)      │◄─┘  │  PROMETHEUS (P) │  └─►│   ASPIRE        │
 │   Logs          │     │  Metrics        │     │   Dashboard     │
-│   Port: 3100    │     │  Port: 9090     │     │   Port: 18888   │
+│   Port: 18005   │     │  Port: 18006    │     │   Port: 18888   │
 │   ✅ ACTIVE     │     │   ✅ ACTIVE     │     │   ✅ ACTIVE     │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
          ▲                        ▲                        ▲

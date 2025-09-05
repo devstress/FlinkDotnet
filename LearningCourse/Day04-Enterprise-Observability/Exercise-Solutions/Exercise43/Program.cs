@@ -886,13 +886,15 @@ class Program
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {SourceContext} {Message:lj} {Properties:j}{NewLine}{Exception}")
             .CreateLogger();
 
-        Console.WriteLine("🚀 Day 4 Exercise 4.3: Log Aggregation");
-        Console.WriteLine("".PadRight(70, '='));
+        Console.WriteLine("🚀 Day 4 Exercise 4.3: Enterprise Log Aggregation");
+        Console.WriteLine("=============================================================");
         Console.WriteLine("📊 Enterprise-grade log aggregation and management");
         Console.WriteLine("🏢 ELK Stack patterns with structured logging");
         Console.WriteLine("📈 High-volume log processing simulation");
         Console.WriteLine("🔍 Correlation IDs and centralized collection");
-        Console.WriteLine("".PadRight(70, '='));
+        Console.WriteLine("📋 Loki Logs: http://localhost:18005");
+        Console.WriteLine("📊 Grafana Dashboard: http://localhost:18010");
+        Console.WriteLine("");
 
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
@@ -920,6 +922,10 @@ class Program
             Console.WriteLine("\n📁 Log files generated:");
             Console.WriteLine("   • logs/exercise43-log-aggregation-*.json (Structured JSON)");
             Console.WriteLine("   • logs/exercise43-log-aggregation-*.log (Human-readable)");
+            Console.WriteLine("");
+            Console.WriteLine("🔍 View logs at:");
+            Console.WriteLine("   📋 Loki Logs: http://localhost:18005");
+            Console.WriteLine("   📊 Grafana Dashboard: http://localhost:18010");
             
             Log.Information("Exercise 4.3: Log Aggregation completed successfully");
         }

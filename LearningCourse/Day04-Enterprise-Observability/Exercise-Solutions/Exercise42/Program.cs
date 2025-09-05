@@ -435,12 +435,14 @@ class Program
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
             .CreateLogger();
 
-        Console.WriteLine("🚀 Day 4 Exercise 4.2: Distributed Tracing");
-        Console.WriteLine("".PadRight(70, '='));
+        Console.WriteLine("🚀 Day 4 Exercise 4.2: Uber-Style Distributed Tracing");
+        Console.WriteLine("================================================================");
         Console.WriteLine("📊 Enterprise-grade distributed tracing with OpenTelemetry");
         Console.WriteLine("🏢 Uber-style microservice architecture patterns");
         Console.WriteLine("📈 Real-world service dependencies and latencies");
-        Console.WriteLine("".PadRight(70, '='));
+        Console.WriteLine("🔍 Aspire Dashboard: http://localhost:18888");
+        Console.WriteLine("📊 OpenTelemetry Traces: http://localhost:4318");
+        Console.WriteLine("");
 
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
@@ -462,7 +464,11 @@ class Program
                                 }))
                             .AddSource("FlinkDotNet.Exercise42.DistributedTracing")
                             .AddConsoleExporter()
-                            .AddOtlpExporter(); // For integration with observability stack
+                            .AddOtlpExporter(options =>
+                            {
+                                options.Endpoint = new Uri("http://localhost:4318");
+                                options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                            })); // For integration with observability stack
                     });
             })
             .UseSerilog()
@@ -482,6 +488,10 @@ class Program
             Console.WriteLine("   • Realistic latency simulation and error handling");
             Console.WriteLine("   • Correlation ID propagation through request flows");
             Console.WriteLine("   • Production-grade observability patterns");
+            Console.WriteLine("");
+            Console.WriteLine("🔍 View traces at:");
+            Console.WriteLine("   📊 Aspire Dashboard: http://localhost:18888");
+            Console.WriteLine("   📈 OpenTelemetry Endpoint: http://localhost:4318");
             
             Log.Information("Exercise 4.2: Distributed Tracing completed successfully");
         }

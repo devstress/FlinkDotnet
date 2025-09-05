@@ -849,13 +849,15 @@ class Program
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
             .CreateLogger();
 
-        Console.WriteLine("🚀 Day 4 Exercise 4.4: Alert Configuration");
-        Console.WriteLine("".PadRight(70, '='));
+        Console.WriteLine("🚀 Day 4 Exercise 4.4: Google SRE Alert Configuration");
+        Console.WriteLine("=======================================================");
         Console.WriteLine("📊 Google SRE alert configuration and SLO monitoring");
         Console.WriteLine("🏢 SLI/SLO based alerting with error budget tracking");
         Console.WriteLine("📈 Alert escalation and fatigue prevention strategies");
         Console.WriteLine("🔔 Production-grade alerting best practices");
-        Console.WriteLine("".PadRight(70, '='));
+        Console.WriteLine("📊 Grafana Dashboard: http://localhost:18010");
+        Console.WriteLine("🔍 Prometheus Metrics: http://localhost:18006");
+        Console.WriteLine("");
 
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices(services =>
@@ -882,6 +884,10 @@ class Program
             Console.WriteLine("   • Google SRE alerting best practices");
             Console.WriteLine("\n📁 Log files generated:");
             Console.WriteLine("   • logs/exercise44-alert-configuration-*.log");
+            Console.WriteLine("");
+            Console.WriteLine("🔍 View alerts at:");
+            Console.WriteLine("   📊 Grafana Dashboard: http://localhost:18010");
+            Console.WriteLine("   🔍 Prometheus Metrics: http://localhost:18006");
             
             Log.Information("Exercise 4.4: Alert Configuration completed successfully");
         }
