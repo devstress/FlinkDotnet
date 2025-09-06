@@ -60,60 +60,94 @@ public class PrometheusMetricsService
         
         try
         {
-            // Query for Kafka producer rate metrics per partition and producer
-            // Use shorter time range for more immediate results
-            var query = "rate(kafka_producer_messages_total[30s])";
-            var results = await QueryPrometheusAsync(query);
+            // Debug: First check what metrics are actually available
+            var availableMetrics = await GetAvailableMetricsAsync();
+            var kafkaMetricNames = availableMetrics.Where(m => m.StartsWith("kafka_")).ToList();
             
-            foreach (var result in results)
-            {
-                if (result.Metric.TryGetValue("topic", out var topic) &&
-                    result.Metric.TryGetValue("partition", out var partition))
-                {
-                    var metricKey = $"kafka_producer_{topic}_partition-{partition}";
-                    var rate = ParseMetricValue(result.Value);
-                    if (rate > 0)
-                    {
-                        metrics[metricKey] = rate;
-                    }
-                }
-            }
+            _logger.LogInformation("Available Kafka metrics in Prometheus: {KafkaMetrics}", string.Join(", ", kafkaMetricNames));
             
-            // If no rate metrics, try instant vector (current values)
-            if (metrics.Count == 0)
+            // Try multiple query patterns to find the actual metrics
+            var queries = new[]
             {
-                _logger.LogInformation("No rate metrics found, trying instant vector query");
-                var instantQuery = "kafka_producer_messages_total";
-                var instantResults = await QueryPrometheusAsync(instantQuery);
+                "rate(kafka_producer_messages_total[1m])",  // 1 minute range
+                "rate(kafka_producer_messages_total[30s])", // 30 second range  
+                "kafka_producer_messages_total",            // Instant vector
+                "increase(kafka_producer_messages_total[1m])", // Increase over 1 minute
+                // Try without rate if counters are not incrementing fast enough
+                "{__name__=~\"kafka_producer.*\"}"           // All kafka producer metrics
+            };
+            
+            foreach (var query in queries)
+            {
+                _logger.LogDebug("Trying Kafka query: {Query}", query);
+                var results = await QueryPrometheusAsync(query);
                 
-                foreach (var result in instantResults)
+                if (results.Count > 0)
                 {
-                    if (result.Metric.TryGetValue("topic", out var topic) &&
-                        result.Metric.TryGetValue("partition", out var partition))
+                    _logger.LogInformation("Found {Count} results with query: {Query}", results.Count, query);
+                    
+                    foreach (var result in results)
                     {
-                        var metricKey = $"kafka_producer_{topic}_partition-{partition}";
+                        string metricKey;
+                        
+                        // Try different label combinations to build metric key
+                        if (result.Metric.TryGetValue("topic", out var topic) &&
+                            result.Metric.TryGetValue("partition", out var partition))
+                        {
+                            metricKey = $"kafka_producer_{topic}_partition-{partition}";
+                        }
+                        else if (result.Metric.TryGetValue("__name__", out var metricName))
+                        {
+                            metricKey = metricName;
+                        }
+                        else
+                        {
+                            // Use all available labels to create unique key
+                            var labels = string.Join("_", result.Metric.Select(kvp => $"{kvp.Key}-{kvp.Value}"));
+                            metricKey = $"kafka_metric_{labels}";
+                        }
+                        
                         var value = ParseMetricValue(result.Value);
                         if (value > 0)
                         {
-                            // Use simplified rate calculation for instant values
-                            metrics[metricKey] = Math.Round(value / 60.0, 2); // Approximate rate
+                            metrics[metricKey] = value;
+                            _logger.LogDebug("Added Kafka metric: {Key} = {Value}", metricKey, value);
                         }
+                    }
+                    
+                    // If we found metrics with this query, break out of the loop
+                    if (metrics.Count > 0)
+                    {
+                        _logger.LogInformation("Successfully retrieved {Count} Kafka metrics using query: {Query}", metrics.Count, query);
+                        break;
                     }
                 }
             }
             
             _logger.LogInformation("Retrieved {Count} Kafka producer metrics from Prometheus", metrics.Count);
             
-            // Log information about missing metrics but don't fail - allow Prometheus time to scrape
+            // Enhanced debugging for missing metrics
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Kafka producer metrics found in Prometheus yet - metrics may need more time to be scraped");
+                _logger.LogWarning("⚠️ No Kafka producer metrics found in Prometheus");
+                _logger.LogInformation("Available metric names starting with 'kafka': {KafkaMetrics}", 
+                    string.Join(", ", kafkaMetricNames.Take(10)));
+                _logger.LogInformation("Total metrics available in Prometheus: {TotalMetrics}", availableMetrics.Count);
+                
+                // Wait a bit and try one more time for metrics that might just be appearing
+                await Task.Delay(2000);
+                var retryQuery = "kafka_producer_messages_total";
+                var retryResults = await QueryPrometheusAsync(retryQuery);
+                if (retryResults.Count > 0)
+                {
+                    _logger.LogInformation("Retry found {Count} Kafka metrics after delay", retryResults.Count);
+                }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve Kafka producer metrics from Prometheus - Prometheus may not be available yet.");
-            // Return empty metrics instead of fake fallback values - only use real data when available
+            _logger.LogError(ex, "Failed to retrieve Kafka producer metrics from Prometheus");
+            // Return empty metrics - no fallbacks
             return metrics;
         }
         
@@ -129,77 +163,84 @@ public class PrometheusMetricsService
         
         try
         {
-            // Query Flink job input rate (this IS the Kafka consuming rate)
-            var inputQuery = "rate(flink_job_messages_in_total[30s])";
-            var inputResults = await QueryPrometheusAsync(inputQuery);
+            // Debug: Check what Flink metrics are available
+            var availableMetrics = await GetAvailableMetricsAsync();
+            var flinkMetricNames = availableMetrics.Where(m => m.StartsWith("flink_")).ToList();
             
-            foreach (var result in inputResults)
+            _logger.LogInformation("Available Flink metrics in Prometheus: {FlinkMetrics}", string.Join(", ", flinkMetricNames));
+            
+            // Try multiple query patterns for Flink metrics
+            var queries = new[]
             {
-                if (result.Metric.TryGetValue("job_id", out var jobId) &&
-                    result.Metric.TryGetValue("operator", out var operatorName))
-                {
-                    var metricKey = $"flink_input_{jobId}_{operatorName}";
-                    var rate = ParseMetricValue(result.Value);
-                    if (rate > 0)
-                    {
-                        metrics[metricKey] = rate;
-                    }
-                }
-            }
+                "rate(flink_job_messages_in_total[1m])",      // Input rate
+                "rate(flink_job_messages_out_total[1m])",     // Output rate
+                "flink_job_messages_in_total",                // Instant input
+                "flink_job_messages_out_total",               // Instant output
+                "increase(flink_job_messages_in_total[1m])",  // Increase input
+                "increase(flink_job_messages_out_total[1m])", // Increase output
+                "{__name__=~\"flink_.*\"}"                    // All Flink metrics
+            };
             
-            // Query Flink job output rate  
-            var outputQuery = "rate(flink_job_messages_out_total[30s])";
-            var outputResults = await QueryPrometheusAsync(outputQuery);
-            
-            foreach (var result in outputResults)
+            foreach (var query in queries)
             {
-                if (result.Metric.TryGetValue("job_id", out var jobId) &&
-                    result.Metric.TryGetValue("operator", out var operatorName))
-                {
-                    var metricKey = $"flink_output_{jobId}_{operatorName}";
-                    var rate = ParseMetricValue(result.Value);
-                    if (rate > 0)
-                    {
-                        metrics[metricKey] = rate;
-                    }
-                }
-            }
-            
-            // If no rate metrics, try instant vector queries
-            if (metrics.Count == 0)
-            {
-                _logger.LogInformation("No Flink rate metrics found, trying instant vector queries");
+                _logger.LogDebug("Trying Flink query: {Query}", query);
+                var results = await QueryPrometheusAsync(query);
                 
-                var instantInputQuery = "flink_job_messages_in_total";
-                var instantInputResults = await QueryPrometheusAsync(instantInputQuery);
-                
-                foreach (var result in instantInputResults)
+                if (results.Count > 0)
                 {
-                    if (result.Metric.TryGetValue("job_id", out var jobId) &&
-                        result.Metric.TryGetValue("operator", out var operatorName))
+                    _logger.LogInformation("Found {Count} results with Flink query: {Query}", results.Count, query);
+                    
+                    foreach (var result in results)
                     {
-                        var metricKey = $"flink_input_{jobId}_{operatorName}";
+                        string metricKey;
+                        
+                        // Try different label combinations
+                        if (result.Metric.TryGetValue("job_id", out var jobId) &&
+                            result.Metric.TryGetValue("operator", out var operatorName))
+                        {
+                            // Determine if this is input or output based on metric name or query
+                            var direction = query.Contains("_in_") || query.Contains("input") ? "input" : 
+                                          query.Contains("_out_") || query.Contains("output") ? "output" : "processing";
+                            metricKey = $"flink_{direction}_{jobId}_{operatorName}";
+                        }
+                        else if (result.Metric.TryGetValue("__name__", out var metricName))
+                        {
+                            metricKey = metricName;
+                        }
+                        else
+                        {
+                            var labels = string.Join("_", result.Metric.Select(kvp => $"{kvp.Key}-{kvp.Value}"));
+                            metricKey = $"flink_metric_{labels}";
+                        }
+                        
                         var value = ParseMetricValue(result.Value);
                         if (value > 0)
                         {
-                            metrics[metricKey] = Math.Round(value / 60.0, 2); // Approximate rate
+                            metrics[metricKey] = value;
+                            _logger.LogDebug("Added Flink metric: {Key} = {Value}", metricKey, value);
                         }
+                    }
+                    
+                    if (metrics.Count > 0)
+                    {
+                        _logger.LogInformation("Successfully retrieved {Count} Flink metrics using query: {Query}", metrics.Count, query);
+                        break;
                     }
                 }
             }
             
             _logger.LogInformation("Retrieved {Count} Flink processing metrics from Prometheus", metrics.Count);
             
-            // Log information about missing metrics but don't fail
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Flink processing metrics found in Prometheus yet - metrics may need more time to be scraped");
+                _logger.LogWarning("⚠️ No Flink processing metrics found in Prometheus");
+                _logger.LogInformation("Available metric names starting with 'flink': {FlinkMetrics}", 
+                    string.Join(", ", flinkMetricNames.Take(10)));
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve Flink metrics from Prometheus - Prometheus may not be available yet.");
-            // Return empty metrics instead of fake fallback values - only use real data when available
+            _logger.LogError(ex, "Failed to retrieve Flink metrics from Prometheus");
             return metrics;
         }
         
@@ -215,74 +256,84 @@ public class PrometheusMetricsService
         
         try
         {
-            // Query Temporal workflow execution rate
-            var workflowQuery = "rate(temporal_workflow_executions_total[30s])";
-            var workflowResults = await QueryPrometheusAsync(workflowQuery);
+            // Debug: Check what Temporal metrics are available
+            var availableMetrics = await GetAvailableMetricsAsync();
+            var temporalMetricNames = availableMetrics.Where(m => m.StartsWith("temporal_")).ToList();
             
-            foreach (var result in workflowResults)
+            _logger.LogInformation("Available Temporal metrics in Prometheus: {TemporalMetrics}", string.Join(", ", temporalMetricNames));
+            
+            // Try multiple query patterns for Temporal metrics
+            var queries = new[]
             {
-                if (result.Metric.TryGetValue("workflow_type", out var workflowType))
-                {
-                    var metricKey = $"temporal_workflow_{workflowType}";
-                    var rate = ParseMetricValue(result.Value);
-                    if (rate > 0)
-                    {
-                        metrics[metricKey] = rate;
-                    }
-                }
-            }
+                "rate(temporal_workflow_executions_total[1m])",    // Workflow rate
+                "rate(temporal_activity_executions_total[1m])",    // Activity rate
+                "temporal_workflow_executions_total",              // Instant workflow
+                "temporal_activity_executions_total",              // Instant activity
+                "increase(temporal_workflow_executions_total[1m])", // Increase workflow
+                "increase(temporal_activity_executions_total[1m])", // Increase activity
+                "{__name__=~\"temporal_.*\"}"                       // All Temporal metrics
+            };
             
-            // Query Temporal activity execution rate
-            var activityQuery = "rate(temporal_activity_executions_total[30s])";
-            var activityResults = await QueryPrometheusAsync(activityQuery);
-            
-            foreach (var result in activityResults)
+            foreach (var query in queries)
             {
-                if (result.Metric.TryGetValue("activity_type", out var activityType))
-                {
-                    var metricKey = $"temporal_activity_{activityType}";
-                    var rate = ParseMetricValue(result.Value);
-                    if (rate > 0)
-                    {
-                        metrics[metricKey] = rate;
-                    }
-                }
-            }
-            
-            // If no rate metrics, try instant vector queries
-            if (metrics.Count == 0)
-            {
-                _logger.LogInformation("No Temporal rate metrics found, trying instant vector queries");
+                _logger.LogDebug("Trying Temporal query: {Query}", query);
+                var results = await QueryPrometheusAsync(query);
                 
-                var instantWorkflowQuery = "temporal_workflow_executions_total";
-                var instantWorkflowResults = await QueryPrometheusAsync(instantWorkflowQuery);
-                
-                foreach (var result in instantWorkflowResults)
+                if (results.Count > 0)
                 {
-                    if (result.Metric.TryGetValue("workflow_type", out var workflowType))
+                    _logger.LogInformation("Found {Count} results with Temporal query: {Query}", results.Count, query);
+                    
+                    foreach (var result in results)
                     {
-                        var metricKey = $"temporal_workflow_{workflowType}";
+                        string metricKey;
+                        
+                        // Try different label combinations
+                        if (result.Metric.TryGetValue("workflow_type", out var workflowType))
+                        {
+                            metricKey = $"temporal_workflow_{workflowType}";
+                        }
+                        else if (result.Metric.TryGetValue("activity_type", out var activityType))
+                        {
+                            metricKey = $"temporal_activity_{activityType}";
+                        }
+                        else if (result.Metric.TryGetValue("__name__", out var metricName))
+                        {
+                            metricKey = metricName;
+                        }
+                        else
+                        {
+                            var labels = string.Join("_", result.Metric.Select(kvp => $"{kvp.Key}-{kvp.Value}"));
+                            metricKey = $"temporal_metric_{labels}";
+                        }
+                        
                         var value = ParseMetricValue(result.Value);
                         if (value > 0)
                         {
-                            metrics[metricKey] = Math.Round(value / 60.0, 2); // Approximate rate
+                            metrics[metricKey] = value;
+                            _logger.LogDebug("Added Temporal metric: {Key} = {Value}", metricKey, value);
                         }
+                    }
+                    
+                    if (metrics.Count > 0)
+                    {
+                        _logger.LogInformation("Successfully retrieved {Count} Temporal metrics using query: {Query}", metrics.Count, query);
+                        break;
                     }
                 }
             }
             
             _logger.LogInformation("Retrieved {Count} Temporal workflow metrics from Prometheus", metrics.Count);
             
-            // Log information about missing metrics but don't fail
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No Temporal workflow metrics found in Prometheus yet - metrics may need more time to be scraped");
+                _logger.LogWarning("⚠️ No Temporal workflow metrics found in Prometheus");
+                _logger.LogInformation("Available metric names starting with 'temporal': {TemporalMetrics}", 
+                    string.Join(", ", temporalMetricNames.Take(10)));
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve Temporal metrics from Prometheus - Prometheus may not be available yet.");
-            // Return empty metrics instead of fake fallback values - only use real data when available
+            _logger.LogError(ex, "Failed to retrieve Temporal metrics from Prometheus");
             return metrics;
         }
         
@@ -298,64 +349,123 @@ public class PrometheusMetricsService
         
         try
         {
-            // Query end-to-end flow metrics
-            var flowQuery = "rate(flow_messages_end_to_end_total[1m])";
-            var flowResults = await QueryPrometheusAsync(flowQuery);
+            // Debug: Check what Flow metrics are available
+            var availableMetrics = await GetAvailableMetricsAsync();
+            var flowMetricNames = availableMetrics.Where(m => m.StartsWith("flow_")).ToList();
             
-            foreach (var result in flowResults)
+            _logger.LogInformation("Available Flow metrics in Prometheus: {FlowMetrics}", string.Join(", ", flowMetricNames));
+            
+            // Try multiple query patterns for Flow metrics
+            var queries = new[]
             {
-                var metricKey = "flow_end_to_end";
-                var rate = ParseMetricValue(result.Value);
-                if (rate > 0)
-                {
-                    metrics[metricKey] = rate;
-                }
-            }
+                "rate(flow_messages_end_to_end_total[1m])",         // End-to-end rate
+                "rate(flow_messages_kafka_to_flink_total[1m])",     // Kafka to Flink rate
+                "rate(flow_messages_flink_to_temporal_total[1m])",  // Flink to Temporal rate
+                "flow_messages_end_to_end_total",                   // Instant end-to-end
+                "flow_messages_kafka_to_flink_total",               // Instant kafka to flink
+                "flow_messages_flink_to_temporal_total",            // Instant flink to temporal
+                "{__name__=~\"flow_.*\"}"                           // All Flow metrics
+            };
             
-            // Query Kafka to Flink flow
-            var kafkaToFlinkQuery = "rate(flow_messages_kafka_to_flink_total[1m])";
-            var kafkaToFlinkResults = await QueryPrometheusAsync(kafkaToFlinkQuery);
-            
-            foreach (var result in kafkaToFlinkResults)
+            foreach (var query in queries)
             {
-                var metricKey = "flow_kafka_to_flink";
-                var rate = ParseMetricValue(result.Value);
-                if (rate > 0)
+                _logger.LogDebug("Trying Flow query: {Query}", query);
+                var results = await QueryPrometheusAsync(query);
+                
+                if (results.Count > 0)
                 {
-                    metrics[metricKey] = rate;
-                }
-            }
-            
-            // Query Flink to Temporal flow
-            var flinkToTemporalQuery = "rate(flow_messages_flink_to_temporal_total[1m])";
-            var flinkToTemporalResults = await QueryPrometheusAsync(flinkToTemporalQuery);
-            
-            foreach (var result in flinkToTemporalResults)
-            {
-                var metricKey = "flow_flink_to_temporal";
-                var rate = ParseMetricValue(result.Value);
-                if (rate > 0)
-                {
-                    metrics[metricKey] = rate;
+                    _logger.LogInformation("Found {Count} results with Flow query: {Query}", results.Count, query);
+                    
+                    foreach (var result in results)
+                    {
+                        string metricKey;
+                        
+                        // Extract flow type from metric name
+                        if (result.Metric.TryGetValue("__name__", out var metricName))
+                        {
+                            if (metricName.Contains("kafka_to_flink"))
+                                metricKey = "flow_kafka_to_flink";
+                            else if (metricName.Contains("flink_to_temporal"))
+                                metricKey = "flow_flink_to_temporal";
+                            else if (metricName.Contains("end_to_end"))
+                                metricKey = "flow_end_to_end";
+                            else
+                                metricKey = metricName;
+                        }
+                        else
+                        {
+                            var labels = string.Join("_", result.Metric.Select(kvp => $"{kvp.Key}-{kvp.Value}"));
+                            metricKey = $"flow_metric_{labels}";
+                        }
+                        
+                        var value = ParseMetricValue(result.Value);
+                        if (value > 0)
+                        {
+                            metrics[metricKey] = value;
+                            _logger.LogDebug("Added Flow metric: {Key} = {Value}", metricKey, value);
+                        }
+                    }
+                    
+                    if (metrics.Count > 0)
+                    {
+                        _logger.LogInformation("Successfully retrieved {Count} Flow metrics using query: {Query}", metrics.Count, query);
+                        break;
+                    }
                 }
             }
             
             _logger.LogInformation("Retrieved {Count} end-to-end flow metrics from Prometheus", metrics.Count);
             
-            // Log information about missing metrics but don't fail - allow local metrics to be used
             if (metrics.Count == 0)
             {
-                _logger.LogInformation("ℹ️ No end-to-end flow metrics found in Prometheus yet - this is normal for recent workload execution");
+                _logger.LogWarning("⚠️ No end-to-end flow metrics found in Prometheus");
+                _logger.LogInformation("Available metric names starting with 'flow': {FlowMetrics}", 
+                    string.Join(", ", flowMetricNames.Take(10)));
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve flow metrics from Prometheus - Prometheus may not be available yet.");
-            // Return empty metrics instead of fake fallback values - only use real data when available
+            _logger.LogError(ex, "Failed to retrieve flow metrics from Prometheus");
             return metrics;
         }
         
         return metrics;
+    }
+
+    /// <summary>
+    /// Get list of all available metric names in Prometheus for debugging
+    /// </summary>
+    private async Task<List<string>> GetAvailableMetricsAsync()
+    {
+        try
+        {
+            var url = "/api/v1/label/__name__/values";
+            var response = await _httpClient.GetAsync(url);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to get available metrics from Prometheus: {StatusCode}", response.StatusCode);
+                return new List<string>();
+            }
+            
+            var content = await response.Content.ReadAsStringAsync();
+            var prometheusResponse = JsonSerializer.Deserialize<PrometheusLabelResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            
+            if (prometheusResponse?.Status == "success" && prometheusResponse.Data != null)
+            {
+                return prometheusResponse.Data.ToList();
+            }
+            
+            return new List<string>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting available metrics from Prometheus");
+            return new List<string>();
+        }
     }
 
     /// <summary>
@@ -459,6 +569,18 @@ public class PrometheusResponse
     
     [JsonPropertyName("data")]
     public PrometheusData? Data { get; set; }
+}
+
+/// <summary>
+/// Prometheus label values API response structure
+/// </summary>
+public class PrometheusLabelResponse
+{
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+    
+    [JsonPropertyName("data")]
+    public string[]? Data { get; set; }
 }
 
 public class PrometheusData

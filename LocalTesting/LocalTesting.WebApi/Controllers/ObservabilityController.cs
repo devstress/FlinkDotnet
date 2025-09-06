@@ -1440,6 +1440,167 @@ public class ObservabilityController : ControllerBase
             throw new InvalidOperationException($"Cannot retrieve real workload metrics: {ex.Message}");
         }
     }
+
+    #region Debug Endpoints for Prometheus Metrics Investigation
+
+    [HttpGet("debug/prometheus-metrics")]
+    [SwaggerOperation(
+        Summary = "Debug Prometheus Metrics Availability",
+        Description = "Debug endpoint to see what metrics are actually available in Prometheus - helps diagnose empty metrics issue"
+    )]
+    [SwaggerResponse(200, "Prometheus metrics debug information retrieved")]
+    [SwaggerResponse(500, "Failed to retrieve debug information")]
+    public async Task<IActionResult> DebugPrometheusMetrics()
+    {
+        try
+        {
+            _logger.LogInformation("🔍 DEBUG: Investigating Prometheus metrics availability");
+            
+            // Get all available metric names
+            var allMetrics = new List<string>();
+            try
+            {
+                var response = await _prometheusService.GetType()
+                    .GetMethod("GetAvailableMetricsAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.Invoke(_prometheusService, null) as Task<List<string>>;
+                
+                if (response != null)
+                {
+                    allMetrics = await response;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get available metrics list");
+            }
+            
+            // Try to get metrics from each category
+            var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
+            var flinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
+            var temporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
+            var flowMetrics = await _prometheusService.GetEndToEndFlowMetricsAsync();
+            var allCombinedMetrics = await _prometheusService.GetAllMetricsAsync();
+            
+            // Categorize available metrics
+            var kafkaAvailable = allMetrics.Where(m => m.StartsWith("kafka_")).ToList();
+            var flinkAvailable = allMetrics.Where(m => m.StartsWith("flink_")).ToList();
+            var temporalAvailable = allMetrics.Where(m => m.StartsWith("temporal_")).ToList();
+            var flowAvailable = allMetrics.Where(m => m.StartsWith("flow_")).ToList();
+            var otherMetrics = allMetrics.Where(m => !m.StartsWith("kafka_") && !m.StartsWith("flink_") && !m.StartsWith("temporal_") && !m.StartsWith("flow_")).Take(20).ToList();
+            
+            var debugInfo = new
+            {
+                Status = "DebugInfo",
+                Message = "Prometheus metrics availability debug information",
+                Timestamp = DateTime.UtcNow,
+                
+                Summary = new
+                {
+                    TotalMetricsInPrometheus = allMetrics.Count,
+                    KafkaMetricsAvailable = kafkaAvailable.Count,
+                    FlinkMetricsAvailable = flinkAvailable.Count,
+                    TemporalMetricsAvailable = temporalAvailable.Count,
+                    FlowMetricsAvailable = flowAvailable.Count,
+                    
+                    // Results from our queries
+                    KafkaMetricsRetrieved = kafkaMetrics.Count,
+                    FlinkMetricsRetrieved = flinkMetrics.Count,
+                    TemporalMetricsRetrieved = temporalMetrics.Count,
+                    FlowMetricsRetrieved = flowMetrics.Count,
+                    AllMetricsRetrieved = allCombinedMetrics.Count
+                },
+                
+                AvailableMetricNames = new
+                {
+                    Kafka = kafkaAvailable,
+                    Flink = flinkAvailable,
+                    Temporal = temporalAvailable,
+                    Flow = flowAvailable,
+                    OtherExamples = otherMetrics
+                },
+                
+                RetrievedMetricValues = new
+                {
+                    Kafka = kafkaMetrics.Take(10).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                    Flink = flinkMetrics.Take(10).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                    Temporal = temporalMetrics.Take(10).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                    Flow = flowMetrics.Take(10).ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+                },
+                
+                DiagnosticAnalysis = new
+                {
+                    HasAnyMetrics = allMetrics.Count > 0,
+                    HasExpectedCategories = kafkaAvailable.Count > 0 || flinkAvailable.Count > 0 || temporalAvailable.Count > 0 || flowAvailable.Count > 0,
+                    QueryResultsEmpty = kafkaMetrics.Count == 0 && flinkMetrics.Count == 0 && temporalMetrics.Count == 0 && flowMetrics.Count == 0,
+                    PossibleIssues = GenerateDiagnosticIssues(allMetrics.Count, kafkaAvailable.Count, flinkAvailable.Count, temporalAvailable.Count, flowAvailable.Count, kafkaMetrics.Count + flinkMetrics.Count + temporalMetrics.Count + flowMetrics.Count),
+                    Recommendations = GenerateDiagnosticRecommendations(allMetrics.Count, kafkaMetrics.Count + flinkMetrics.Count + temporalMetrics.Count + flowMetrics.Count)
+                }
+            };
+            
+            return Ok(debugInfo);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve Prometheus debug information");
+            return StatusCode(500, new { 
+                Status = "DebugFailed", 
+                Error = ex.Message, 
+                Timestamp = DateTime.UtcNow 
+            });
+        }
+    }
+    
+    private static List<string> GenerateDiagnosticIssues(int totalMetrics, int kafkaAvailable, int flinkAvailable, int temporalAvailable, int flowAvailable, int retrievedMetrics)
+    {
+        var issues = new List<string>();
+        
+        if (totalMetrics == 0)
+        {
+            issues.Add("No metrics found in Prometheus at all - Prometheus may not be scraping any targets");
+        }
+        else if (kafkaAvailable == 0 && flinkAvailable == 0 && temporalAvailable == 0 && flowAvailable == 0)
+        {
+            issues.Add("No FlinkDotNet application metrics found - OpenTelemetry may not be exporting to Prometheus correctly");
+        }
+        else if (retrievedMetrics == 0)
+        {
+            issues.Add("Metrics exist in Prometheus but queries are not returning results - query patterns may be incorrect");
+        }
+        
+        if (kafkaAvailable > 0 && retrievedMetrics == 0)
+        {
+            issues.Add("Kafka metrics exist but not being retrieved - check query syntax and label matching");
+        }
+        
+        return issues;
+    }
+    
+    private static List<string> GenerateDiagnosticRecommendations(int totalMetrics, int retrievedMetrics)
+    {
+        var recommendations = new List<string>();
+        
+        if (totalMetrics == 0)
+        {
+            recommendations.Add("Verify Prometheus is running and configured to scrape OpenTelemetry collector");
+            recommendations.Add("Check that OpenTelemetry collector is receiving metrics from application");
+            recommendations.Add("Ensure application is recording metrics via ObservabilityMetricsService");
+        }
+        else if (retrievedMetrics == 0)
+        {
+            recommendations.Add("Wait longer for metrics to be scraped (try again in 30-60 seconds)");
+            recommendations.Add("Check metric query patterns match actual metric names in Prometheus");
+            recommendations.Add("Verify metric labels match expected format (topic, partition, job_id, etc.)");
+            recommendations.Add("Execute workload first to generate metrics (/api/observability/execute-real-workload)");
+        }
+        else
+        {
+            recommendations.Add("Metrics are being retrieved successfully");
+        }
+        
+        return recommendations;
+    }
+
+    #endregion
 }
 
 public class RealWorkloadRequest

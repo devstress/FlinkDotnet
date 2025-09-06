@@ -117,18 +117,44 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   End:   {endTime:HH:mm:ss.fff} UTC");
         Console.WriteLine($"   REAL Duration: {actualProcessingTime:F2} seconds");
         
-        // Wait for metrics to be processed by infrastructure - but with actual time measurement
+        // Wait for metrics to be processed by infrastructure and scraped by Prometheus
         var metricsWaitStart = DateTime.UtcNow;
-        await Task.Delay(12000); // 12 seconds for metrics propagation - increased to allow rate tracker window to populate
+        Console.WriteLine("⏳ Waiting for metrics to be scraped by Prometheus...");
+        await Task.Delay(30000); // 30 seconds for metrics propagation to Prometheus - increased for better reliability
         
-        // Verify metrics are available with real infrastructure
-        var maxRetries = 3;
+        // Verify metrics are available with real infrastructure and debug if not
+        var maxRetries = 5; // Increased retries
         var hasMetrics = false;
         
         for (int retry = 0; retry < maxRetries; retry++)
         {
             try
             {
+                // First, check debug endpoint to see what's available in Prometheus
+                if (retry == 0)
+                {
+                    try
+                    {
+                        var debugResponse = await _httpClient!.GetAsync("/api/observability/debug/prometheus-metrics");
+                        if (debugResponse.IsSuccessStatusCode)
+                        {
+                            var debugContent = await debugResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine($"📊 DEBUG: Prometheus metrics availability check completed");
+                            // Log only summary to avoid overwhelming output
+                            var debugData = JsonSerializer.Deserialize<Dictionary<string, object>>(debugContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            if (debugData != null && debugData.TryGetValue("Summary", out var summaryObj))
+                            {
+                                var summary = JsonSerializer.Serialize(summaryObj, new JsonSerializerOptions { WriteIndented = false });
+                                Console.WriteLine($"📈 Metrics Summary: {summary}");
+                            }
+                        }
+                    }
+                    catch (Exception debugEx)
+                    {
+                        Console.WriteLine($"⚠️ Debug endpoint failed: {debugEx.Message}");
+                    }
+                }
+                
                 var checkResponse = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
                 if (checkResponse.IsSuccessStatusCode)
                 {
@@ -162,8 +188,8 @@ public class ObservabilityMetricsSteps : IDisposable
             
             if (retry < maxRetries - 1)
             {
-                Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries})...");
-                await Task.Delay(3000); // Wait 3 more seconds before retry
+                Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries}) - Prometheus may still be scraping...");
+                await Task.Delay(10000); // Wait 10 seconds before retry - longer for Prometheus scraping
             }
         }
         
