@@ -73,7 +73,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 });
 
 // Load testing endpoints
-app.MapPost("/load-test/start", (LoadTestRequest request) => 
+app.MapPost("/load-test/start", (LoadTesting.LoadTestRequest request) => 
 {
     Log.Information("Starting load test with {MessageCount} messages over {DurationSeconds} seconds", 
         request.MessageCount, request.DurationSeconds);
@@ -137,4 +137,7 @@ app.MapGet("/load-test/metrics", () =>
 Log.Information("⚡ Load Testing Service started on port {Port}", 5002);
 await app.RunAsync();
 
-public record LoadTestRequest(int MessageCount, int DurationSeconds);
+namespace LoadTesting
+{
+    public record LoadTestRequest(int MessageCount, int DurationSeconds);
+}

@@ -1,5 +1,38 @@
 # Day 4: Enterprise Observability - Choosing the Right Stack
 
+## 🚀 QUICK START - Follow These Steps
+
+> **Students: Complete these observability exercises in order - no experience needed!**
+
+### 📋 Prerequisites (MUST DO FIRST)
+
+#### ✅ Step 1: Verify Infrastructure is Running
+```bash
+# Check if LocalTesting from Day 1 is still running
+curl http://localhost:18010/api/health
+curl http://localhost:18006/targets
+```
+
+**Expected Output:**
+- Grafana should return health status
+- Prometheus should show targets
+
+**❌ If any fail:**
+```bash
+# Restart infrastructure from Day 1
+cd LocalTesting
+dotnet run --project LocalTesting.AppHost
+# Wait 90 seconds for all services to start
+```
+
+#### ✅ Step 2: Navigate to Day 4 Exercises
+```bash
+# Navigate to Day 4 exercise solutions
+cd LearningCourse/Day04-Enterprise-Observability/Exercise-Solutions
+```
+
+---
+
 ## 🎯 Learning Objectives
 - **Understand when you need each observability component**
 - **Choose between simple Prometheus vs. full LGTM stack**

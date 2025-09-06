@@ -1,7 +1,37 @@
 # Day 11 Exercise Solutions - Disaster Recovery & Multi-Region
 
-> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](this comprehensive guide below)**  
-> Follow the simple guide above - no experience needed! ⬆️
+## 🚀 QUICK START - Follow These Steps
+
+> **Students: Complete these disaster recovery exercises in order - no experience needed!**
+
+### 📋 Prerequisites (MUST DO FIRST)
+
+#### ✅ Step 1: Verify Infrastructure is Running
+```bash
+# Check if LocalTesting from Day 1 is still running
+curl http://localhost:18002/overview
+curl http://localhost:18010/api/health
+```
+
+**Expected Output:**
+- Flink cluster should show running TaskManagers  
+- Grafana should return health status
+
+**❌ If any fail:**
+```bash
+# Restart infrastructure from Day 1
+cd LocalTesting
+dotnet run --project LocalTesting.AppHost
+# Wait 90 seconds for all services to start
+```
+
+#### ✅ Step 2: Navigate to Day 11 Exercises
+```bash
+# Navigate to Day 11 exercise solutions
+cd LearningCourse/Day11-Disaster-Recovery-Multi-Region/Exercise-Solutions
+```
+
+---
 
 This directory contains complete working solutions for all Day 11 exercises, implementing **real-world disaster recovery patterns** from Netflix, AWS, and Azure.
 
