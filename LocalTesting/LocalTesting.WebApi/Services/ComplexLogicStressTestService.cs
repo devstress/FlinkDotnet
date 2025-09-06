@@ -114,7 +114,8 @@ public class ComplexLogicStressTestService
                 CorrelationId = $"corr-{i:D6}",
                 Payload = $"message-payload-{i}",
                 Timestamp = DateTime.UtcNow,
-                BatchNumber = (i - 1) / 100 + 1
+                BatchNumber = (i - 1) / 100 + 1,
+                PartitionNumber = (i - 1) % 10  // Distribute evenly across 10 partitions (0-9)
             };
             messages.Add(message);
         }
