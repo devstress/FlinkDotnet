@@ -1,7 +1,37 @@
 # Day 12 Exercise Solutions - Advanced Streaming Patterns
 
-> **🚀 STUDENTS START HERE: [Complete Step-by-Step Instructions](this comprehensive guide below)**  
-> Follow the simple guide above - no experience needed! ⬆️
+## 🚀 QUICK START - Follow These Steps
+
+> **Students: Complete these advanced streaming exercises in order - no experience needed!**
+
+### 📋 Prerequisites (MUST DO FIRST)
+
+#### ✅ Step 1: Verify Infrastructure is Running
+```bash
+# Check if LocalTesting from Day 1 is still running
+curl http://localhost:18002/overview
+curl http://localhost:18010/api/health
+```
+
+**Expected Output:**
+- Flink cluster should show running TaskManagers
+- Grafana should return health status
+
+**❌ If any fail:**
+```bash
+# Restart infrastructure from Day 1
+cd LocalTesting
+dotnet run --project LocalTesting.AppHost
+# Wait 90 seconds for all services to start
+```
+
+#### ✅ Step 2: Navigate to Day 12 Exercises
+```bash
+# Navigate to Day 12 exercise solutions
+cd LearningCourse/Day12-Advanced-Streaming-Patterns/Exercise-Solutions
+```
+
+---
 
 This directory contains complete working solutions for all Day 12 exercises, implementing **real-world advanced streaming patterns** from Uber, LinkedIn, and Airbnb.
 
