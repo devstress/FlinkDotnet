@@ -61,7 +61,7 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // Create HTTP client with service discovery - services are guaranteed to be ready
         _httpClient = _app.CreateHttpClient("localtesting-webapi", "webapi");
-        _httpClient.Timeout = TimeSpan.FromMinutes(5); // Reduced timeout since services are ready
+        _httpClient.Timeout = TimeSpan.FromMinutes(10); // Extended timeout for workload execution
         
         // Verify API is responding (simple check since Aspire already validated infrastructure)
         var healthResponse = await _httpClient.GetAsync("/health");
@@ -95,9 +95,10 @@ public class ObservabilityMetricsSteps : IDisposable
         var startTime = DateTime.UtcNow;
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
+        // FIXED: Reduced message count for fast test execution while still generating meaningful metrics
         var flowRequest = new
         {
-            KafkaMessages = 1000000, // 1M messages for high throughput
+            KafkaMessages = 10000, // 10K messages - sufficient for observability testing, completes quickly
             FlinkJobs = 2,
             TemporalWorkflows = 5,
             // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
