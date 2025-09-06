@@ -48,11 +48,26 @@ jobs:
           
           # Run LocalTesting integration tests with observability category
           cd LocalTesting
+          
+          # Run tests and capture both output and exit code
+          set +e  # Don't exit on error immediately
           dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
             --configuration Release \
             --logger "console;verbosity=detailed" \
             --no-build \
-            --filter "Category=observability" 2>&1 | tee test-output.log || echo "TEST_FAILED=true" >> $GITHUB_ENV
+            --filter "Category=observability" 2>&1 | tee test-output.log
+          
+          TEST_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
+          # Set environment variable for later steps
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "TEST_FAILED=true" >> $GITHUB_ENV
+            echo "TEST_EXIT_CODE=$TEST_EXIT_CODE" >> $GITHUB_ENV
+          else
+            echo "TEST_FAILED=false" >> $GITHUB_ENV
+            echo "TEST_EXIT_CODE=0" >> $GITHUB_ENV
+          fi
 
       - name: Display Observability Report
         if: always()
@@ -68,6 +83,9 @@ jobs:
             echo ""
             echo "🚨 ERRORS DETECTED 🚨"
             echo "========================================"
+            echo "❌ Test Exit Code: ${TEST_EXIT_CODE:-unknown}"
+            echo "❌ Test Failed Status: ${TEST_FAILED:-unknown}"
+            echo ""
             
             # Extract and display key error information from test output
             if [ -f "LocalTesting/test-output.log" ]; then
@@ -78,8 +96,8 @@ jobs:
               grep -A 5 -B 2 "Failed\|Error\|Exception\|Timeout" LocalTesting/test-output.log | head -50 || echo "No specific error patterns found in test output"
               
               echo ""
-              echo "🔍 Last 20 lines of test output:"
-              tail -20 LocalTesting/test-output.log
+              echo "🔍 Last 100 lines of test output:"
+              tail -100 LocalTesting/test-output.log
               
               echo ""
               echo "📊 Test Summary from log:"
@@ -94,6 +112,7 @@ jobs:
             echo "• Verify Aspire workload installation"
             echo "• Ensure Docker is running for containerized services"
             echo "• Check infrastructure startup timeout (currently 45 minutes)"
+            echo "• Verify Prometheus and Kafka services are accessible"
             echo ""
           fi
           
@@ -119,6 +138,17 @@ jobs:
           echo ""
           echo "📋 REPORT COMPLETE"
           echo "========================================"
+
+      - name: Fail Workflow on Test Failure
+        if: always()
+        run: |
+          if [ "$TEST_FAILED" = "true" ]; then
+            echo "❌ WORKFLOW FAILURE: Observability tests failed with exit code ${TEST_EXIT_CODE:-unknown}"
+            echo "❌ This workflow must fail to indicate test failure"
+            exit 1
+          else
+            echo "✅ All observability tests passed successfully"
+          fi
 
       - name: Upload Observability Artifacts
         if: always()
