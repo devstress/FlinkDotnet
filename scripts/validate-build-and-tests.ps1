@@ -143,9 +143,12 @@ if (-not $BuildFailed -and -not $SkipTests) {
     $TestFailed = $false
     
     # Test solutions that have test projects
+    # Note: Excluding IntegrationTests/IntegrationTests.sln from CI validation
+    # These tests require infrastructure to be pre-started and take 10+ minutes
+    # Use LocalTesting integration tests for proper infrastructure testing
     $TestSolutions = @(
-        "FlinkDotNet/FlinkDotNet.sln",
-        "IntegrationTests/IntegrationTests.sln"
+        "FlinkDotNet/FlinkDotNet.sln"
+        # "IntegrationTests/IntegrationTests.sln"  # Excluded - requires pre-started infrastructure
     )
     
     foreach ($sln in $TestSolutions) {
