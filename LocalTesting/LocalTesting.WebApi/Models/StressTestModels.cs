@@ -26,19 +26,19 @@ public class ComplexLogicMessage
         _ => $"message content {MessageId}"
     };
     
-    // Calculate proper logical queue based on MessageId for even distribution across 1000 queues
+    // Calculate proper logical queue based on MessageId for even distribution across 100 queues (1 queue per customer)
     private string GetLogicalQueueName()
     {
-        // Use hash-based distribution to ensure messages spread across all 1000 logical queues
-        var queueIndex = MessageId % 1000;
-        return $"queue-{queueIndex}";
+        // Use hash-based distribution to ensure messages spread across all 100 logical queues (1 per customer)
+        var queueIndex = MessageId % 100;
+        return $"customer-queue-{queueIndex}";
     }
     
-    // Calculate partition number using hash for proper load balancing across 10 partitions
+    // Calculate partition number using hash for proper load balancing across 20 partitions
     private int GetPartitionNumber()
     {
-        // Use message ID hash to distribute across 10 partitions
-        return (int)(MessageId % 10);
+        // Use message ID hash to distribute across 20 partitions for better throughput
+        return (int)(MessageId % 20);
     }
     
     public Dictionary<string, string> Headers => ProcessingStage switch

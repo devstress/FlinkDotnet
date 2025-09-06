@@ -33,18 +33,23 @@ public class KafkaProducerService : IDisposable
                     var config = new ProducerConfig
                     {
                         BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
-                        ClientId = "LocalTesting.WebApi.Producer",
-                        Acks = Acks.All,
-                        MessageTimeoutMs = 30000,
-                        RequestTimeoutMs = 30000,
-                        EnableIdempotence = true,
-                        CompressionType = CompressionType.Snappy,
-                        BatchSize = 65536,  // Increased batch size for better throughput
-                        LingerMs = 10,      // Increased linger time for better batching
-                        QueueBufferingMaxMessages = 1000000,  // Increase buffer for high throughput
-                        QueueBufferingMaxKbytes = 1024 * 1024,  // 1GB buffer
-                        MessageSendMaxRetries = 3,
-                        RetryBackoffMs = 100
+                        ClientId = "LocalTesting.WebApi.Producer.HighThroughput",
+                        Acks = Acks.Leader,  // Use leader ack for maximum speed (instead of All)
+                        MessageTimeoutMs = 60000,  // Increased timeout
+                        RequestTimeoutMs = 45000,
+                        EnableIdempotence = false,  // Disable for maximum speed
+                        CompressionType = CompressionType.Lz4,  // Faster compression than Snappy
+                        BatchSize = 131072,  // 128KB batch size for maximum throughput
+                        LingerMs = 5,        // Shorter linger for faster delivery
+                        QueueBufferingMaxMessages = 2000000,  // 2M message buffer
+                        QueueBufferingMaxKbytes = 2048 * 1024,  // 2GB buffer for high-speed production
+                        MessageSendMaxRetries = 1,  // Fewer retries for speed
+                        RetryBackoffMs = 50,        // Faster retry
+                        // High performance settings
+                        MaxInFlight = 10,           // More in-flight requests
+                        DeliveryReportFields = "key,value,timestamp", // Minimal delivery report for speed
+                        ApiVersionRequest = true,   // Enable for better performance
+                        BrokerVersionFallback = "2.8.0"
                     };
 
                     _producer = new ProducerBuilder<string, string>(config)
