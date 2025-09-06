@@ -19,12 +19,13 @@ public class PrometheusMetricsService
         _logger = logger;
         
         // Use internal Prometheus URL for container-to-container communication
+        // Prometheus scrapes from OTel Collector (port 8889) so app metrics will be available here
         _prometheusBaseUrl = configuration.GetValue<string>("PROMETHEUS_URL") ?? "http://prometheus:9090";
         
         _httpClient.BaseAddress = new Uri(_prometheusBaseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(60); // Increased timeout for slow scraping
         
-        _logger.LogInformation("PrometheusMetricsService initialized with base URL: {PrometheusUrl}", _prometheusBaseUrl);
+        _logger.LogInformation("PrometheusMetricsService initialized with base URL: {PrometheusUrl} (scrapes from OTel Collector)", _prometheusBaseUrl);
         
         // Test connectivity to ensure real Prometheus connection
         _ = Task.Run(async () =>
@@ -62,19 +63,25 @@ public class PrometheusMetricsService
         {
             // Debug: First check what metrics are actually available
             var availableMetrics = await GetAvailableMetricsAsync();
-            var kafkaMetricNames = availableMetrics.Where(m => m.StartsWith("kafka_")).ToList();
+            var kafkaMetricNames = availableMetrics.Where(m => m.StartsWith("kafka_") || m.StartsWith("localtesting_kafka_")).ToList();
             
             _logger.LogInformation("Available Kafka metrics in Prometheus: {KafkaMetrics}", string.Join(", ", kafkaMetricNames));
             
             // Try multiple query patterns to find the actual metrics
+            // FIXED: Add OTel Collector namespace prefix "localtesting_" to queries
             var queries = new[]
             {
-                "rate(kafka_producer_messages_total[1m])",  // 1 minute range
-                "rate(kafka_producer_messages_total[30s])", // 30 second range  
-                "kafka_producer_messages_total",            // Instant vector
-                "increase(kafka_producer_messages_total[1m])", // Increase over 1 minute
-                // Try without rate if counters are not incrementing fast enough
-                "{__name__=~\"kafka_producer.*\"}"           // All kafka producer metrics
+                "rate(localtesting_kafka_producer_messages_total[1m])",  // 1 minute range with namespace
+                "rate(localtesting_kafka_producer_messages_total[30s])", // 30 second range with namespace
+                "localtesting_kafka_producer_messages_total",            // Instant vector with namespace
+                "increase(localtesting_kafka_producer_messages_total[1m])", // Increase over 1 minute with namespace
+                // Fallback queries without namespace in case config changes
+                "rate(kafka_producer_messages_total[1m])",  // Original queries as fallback
+                "rate(kafka_producer_messages_total[30s])", 
+                "kafka_producer_messages_total",            
+                "increase(kafka_producer_messages_total[1m])",
+                // Pattern matching for any Kafka metrics (with or without namespace)
+                "{__name__=~\".*kafka_producer.*\"}"           // All kafka producer metrics (any namespace)
             };
             
             foreach (var query in queries)
@@ -165,20 +172,29 @@ public class PrometheusMetricsService
         {
             // Debug: Check what Flink metrics are available
             var availableMetrics = await GetAvailableMetricsAsync();
-            var flinkMetricNames = availableMetrics.Where(m => m.StartsWith("flink_")).ToList();
+            var flinkMetricNames = availableMetrics.Where(m => m.StartsWith("flink_") || m.StartsWith("localtesting_flink_")).ToList();
             
             _logger.LogInformation("Available Flink metrics in Prometheus: {FlinkMetrics}", string.Join(", ", flinkMetricNames));
             
             // Try multiple query patterns for Flink metrics
+            // FIXED: Add OTel Collector namespace prefix "localtesting_" to queries
             var queries = new[]
             {
-                "rate(flink_job_messages_in_total[1m])",      // Input rate
-                "rate(flink_job_messages_out_total[1m])",     // Output rate
-                "flink_job_messages_in_total",                // Instant input
-                "flink_job_messages_out_total",               // Instant output
-                "increase(flink_job_messages_in_total[1m])",  // Increase input
-                "increase(flink_job_messages_out_total[1m])", // Increase output
-                "{__name__=~\"flink_.*\"}"                    // All Flink metrics
+                "rate(localtesting_flink_job_messages_in_total[1m])",      // Input rate with namespace
+                "rate(localtesting_flink_job_messages_out_total[1m])",     // Output rate with namespace
+                "localtesting_flink_job_messages_in_total",                // Instant input with namespace
+                "localtesting_flink_job_messages_out_total",               // Instant output with namespace
+                "increase(localtesting_flink_job_messages_in_total[1m])",  // Increase input with namespace
+                "increase(localtesting_flink_job_messages_out_total[1m])", // Increase output with namespace
+                // Fallback queries without namespace
+                "rate(flink_job_messages_in_total[1m])",      // Original queries as fallback
+                "rate(flink_job_messages_out_total[1m])",     
+                "flink_job_messages_in_total",                
+                "flink_job_messages_out_total",               
+                "increase(flink_job_messages_in_total[1m])",  
+                "increase(flink_job_messages_out_total[1m])", 
+                // Pattern matching for any Flink metrics
+                "{__name__=~\".*flink_.*\"}"                    // All Flink metrics (any namespace)
             };
             
             foreach (var query in queries)
@@ -258,20 +274,29 @@ public class PrometheusMetricsService
         {
             // Debug: Check what Temporal metrics are available
             var availableMetrics = await GetAvailableMetricsAsync();
-            var temporalMetricNames = availableMetrics.Where(m => m.StartsWith("temporal_")).ToList();
+            var temporalMetricNames = availableMetrics.Where(m => m.StartsWith("temporal_") || m.StartsWith("localtesting_temporal_")).ToList();
             
             _logger.LogInformation("Available Temporal metrics in Prometheus: {TemporalMetrics}", string.Join(", ", temporalMetricNames));
             
             // Try multiple query patterns for Temporal metrics
+            // FIXED: Add OTel Collector namespace prefix "localtesting_" to queries
             var queries = new[]
             {
-                "rate(temporal_workflow_executions_total[1m])",    // Workflow rate
-                "rate(temporal_activity_executions_total[1m])",    // Activity rate
-                "temporal_workflow_executions_total",              // Instant workflow
-                "temporal_activity_executions_total",              // Instant activity
-                "increase(temporal_workflow_executions_total[1m])", // Increase workflow
-                "increase(temporal_activity_executions_total[1m])", // Increase activity
-                "{__name__=~\"temporal_.*\"}"                       // All Temporal metrics
+                "rate(localtesting_temporal_workflow_executions_total[1m])",    // Workflow rate with namespace
+                "rate(localtesting_temporal_activity_executions_total[1m])",    // Activity rate with namespace
+                "localtesting_temporal_workflow_executions_total",              // Instant workflow with namespace
+                "localtesting_temporal_activity_executions_total",              // Instant activity with namespace
+                "increase(localtesting_temporal_workflow_executions_total[1m])", // Increase workflow with namespace
+                "increase(localtesting_temporal_activity_executions_total[1m])", // Increase activity with namespace
+                // Fallback queries without namespace
+                "rate(temporal_workflow_executions_total[1m])",    // Original queries as fallback
+                "rate(temporal_activity_executions_total[1m])",    
+                "temporal_workflow_executions_total",              
+                "temporal_activity_executions_total",              
+                "increase(temporal_workflow_executions_total[1m])", 
+                "increase(temporal_activity_executions_total[1m])", 
+                // Pattern matching for any Temporal metrics
+                "{__name__=~\".*temporal_.*\"}"                       // All Temporal metrics (any namespace)
             };
             
             foreach (var query in queries)
@@ -351,20 +376,29 @@ public class PrometheusMetricsService
         {
             // Debug: Check what Flow metrics are available
             var availableMetrics = await GetAvailableMetricsAsync();
-            var flowMetricNames = availableMetrics.Where(m => m.StartsWith("flow_")).ToList();
+            var flowMetricNames = availableMetrics.Where(m => m.StartsWith("flow_") || m.StartsWith("localtesting_flow_")).ToList();
             
             _logger.LogInformation("Available Flow metrics in Prometheus: {FlowMetrics}", string.Join(", ", flowMetricNames));
             
             // Try multiple query patterns for Flow metrics
+            // FIXED: Add OTel Collector namespace prefix "localtesting_" to queries
             var queries = new[]
             {
-                "rate(flow_messages_end_to_end_total[1m])",         // End-to-end rate
-                "rate(flow_messages_kafka_to_flink_total[1m])",     // Kafka to Flink rate
-                "rate(flow_messages_flink_to_temporal_total[1m])",  // Flink to Temporal rate
-                "flow_messages_end_to_end_total",                   // Instant end-to-end
-                "flow_messages_kafka_to_flink_total",               // Instant kafka to flink
-                "flow_messages_flink_to_temporal_total",            // Instant flink to temporal
-                "{__name__=~\"flow_.*\"}"                           // All Flow metrics
+                "rate(localtesting_flow_messages_end_to_end_total[1m])",         // End-to-end rate with namespace
+                "rate(localtesting_flow_messages_kafka_to_flink_total[1m])",     // Kafka to Flink rate with namespace
+                "rate(localtesting_flow_messages_flink_to_temporal_total[1m])",  // Flink to Temporal rate with namespace
+                "localtesting_flow_messages_end_to_end_total",                   // Instant end-to-end with namespace
+                "localtesting_flow_messages_kafka_to_flink_total",               // Instant kafka to flink with namespace
+                "localtesting_flow_messages_flink_to_temporal_total",            // Instant flink to temporal with namespace
+                // Fallback queries without namespace
+                "rate(flow_messages_end_to_end_total[1m])",         // Original queries as fallback
+                "rate(flow_messages_kafka_to_flink_total[1m])",     
+                "rate(flow_messages_flink_to_temporal_total[1m])",  
+                "flow_messages_end_to_end_total",                   
+                "flow_messages_kafka_to_flink_total",               
+                "flow_messages_flink_to_temporal_total",            
+                // Pattern matching for any Flow metrics
+                "{__name__=~\".*flow_.*\"}"                           // All Flow metrics (any namespace)
             };
             
             foreach (var query in queries)
