@@ -95,10 +95,14 @@ public class ObservabilityMetricsSteps : IDisposable
         var startTime = DateTime.UtcNow;
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
-        // FIXED: Reduced message count for fast test execution while still generating meaningful metrics
+        // Message count configuration: GitHub workflow uses 100K, normal operation uses 1M
+        var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
+            ? 100000  // 100K messages for GitHub workflow - balance between meaningful metrics and execution time
+            : 1000000; // 1M messages for normal local operation - full stress test
+            
         var flowRequest = new
         {
-            KafkaMessages = 10000, // 10K messages - sufficient for observability testing, completes quickly
+            KafkaMessages = messageCount,
             FlinkJobs = 2,
             TemporalWorkflows = 5,
             // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
@@ -217,6 +221,38 @@ public class ObservabilityMetricsSteps : IDisposable
     public async Task ThenWePrintTheMetricsToTheConsole()
     {
         await EnsureInfrastructureInitialized();
+        
+        // First, debug what metrics are actually available in Prometheus
+        Console.WriteLine("🔍 DEBUG: Checking Prometheus metrics availability...");
+        try
+        {
+            var debugResponse = await _httpClient!.GetAsync("/api/observability/debug/prometheus-metrics");
+            if (debugResponse.IsSuccessStatusCode)
+            {
+                var debugContent = await debugResponse.Content.ReadAsStringAsync();
+                var debugData = JsonSerializer.Deserialize<Dictionary<string, object>>(debugContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (debugData != null)
+                {
+                    Console.WriteLine("📊 DEBUG: Prometheus debug data retrieved successfully");
+                    if (debugData.TryGetValue("Summary", out var summaryObj))
+                    {
+                        Console.WriteLine($"📈 Metrics Summary: {JsonSerializer.Serialize(summaryObj, new JsonSerializerOptions { WriteIndented = true })}");
+                    }
+                    if (debugData.TryGetValue("TotalMetricsAvailable", out var totalMetrics))
+                    {
+                        Console.WriteLine($"📊 Total metrics available in Prometheus: {totalMetrics}");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ DEBUG: Debug endpoint returned {debugResponse.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ DEBUG: Failed to get debug metrics: {ex.Message}");
+        }
         
         var metricsData = await GetDetailedMetrics();
         var metricsDisplay = FormatMetricsForDisplay(metricsData);
@@ -353,6 +389,27 @@ public class ObservabilityMetricsSteps : IDisposable
         {
             PropertyNameCaseInsensitive = true
         });
+        
+        // Debug: Print the actual metrics response structure
+        Console.WriteLine("🔍 DEBUG: Metrics response structure:");
+        var keys = metricsResponse?.Keys.ToArray() ?? Array.Empty<string>();
+        Console.WriteLine($"📊 Raw metrics response keys: {string.Join(", ", keys)}");
+        
+        if (metricsResponse != null)
+        {
+            foreach (var kvp in metricsResponse)
+            {
+                Console.WriteLine($"  🔑 {kvp.Key}: {kvp.Value?.GetType().Name ?? "null"}");
+                if (kvp.Value is JsonElement element)
+                {
+                    if (element.ValueKind == JsonValueKind.Object)
+                    {
+                        var objKeys = element.EnumerateObject().Select(p => p.Name).ToArray();
+                        Console.WriteLine($"      📋 Object keys: {string.Join(", ", objKeys)}");
+                    }
+                }
+            }
+        }
         
         Assert.NotNull(metricsResponse);
         return metricsResponse;
