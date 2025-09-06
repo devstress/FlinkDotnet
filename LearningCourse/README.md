@@ -61,11 +61,19 @@ dotnet run --project LocalTesting.AppHost
 Open these URLs - all should work:
 - **Aspire Dashboard**: http://localhost:18888 (Main orchestration dashboard)
 - **LocalTesting WebApi**: http://localhost:18000/ (API documentation and testing)
-- **Kafka UI**: http://localhost:18001 (Message broker management)
-- **Flink Dashboard**: http://localhost:18002 (Job management and monitoring)
-- **Temporal UI**: http://localhost:18004 (Workflow orchestration)
-- **Prometheus**: http://localhost:18006 (Metrics collection)
-- **Grafana**: http://localhost:18010 (Unified observability dashboard)
+- **Kafka UI**: http://localhost:18001 (Message broker management - 3-broker KRaft cluster)
+- **Flink Dashboard**: http://localhost:18002 (Job management - JobManager + 3 TaskManagers)
+- **Temporal Server**: http://localhost:18003 (Workflow server API)
+- **Temporal UI**: http://localhost:18004 (Workflow orchestration dashboard)
+- **Loki**: http://localhost:18005 (Log aggregation service)
+- **Prometheus**: http://localhost:18006 (Metrics collection with localtesting_ namespace)
+- **Grafana**: http://localhost:18010 (Unified PGL observability dashboard)
+
+**Current Architecture Highlights:**
+- **100 Logical Customer Queues** (1 per customer)
+- **20 Kafka Partitions** (enhanced distribution)
+- **10% Temporal Processing** (first 10 customers out of 100)
+- **PGL + OpenTelemetry Stack** (Prometheus + Grafana + Loki + OpenTelemetry + Aspire)
 
 **Note: Please press Control + C to stop Aspire. It will stop and delete all the related containers in Docker.**  
 **✅ All working? You're ready to start Day 1!**  

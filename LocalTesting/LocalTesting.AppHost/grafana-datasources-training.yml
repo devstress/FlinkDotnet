@@ -1,11 +1,11 @@
-# Grafana Datasources Configuration for Training
-# PGL Stack: Prometheus + Grafana + Loki
-# Comprehensive observability coverage for learning
+# Grafana Datasources Configuration for Current Implementation
+# PGL + OpenTelemetry Stack: Prometheus + Grafana + Loki + OpenTelemetry + Aspire
+# Optimized for current LocalTesting infrastructure
 
 apiVersion: 1
 
 datasources:
-  # Prometheus - Metrics and Service Health
+  # Prometheus - Metrics and Service Health (Primary metrics source)
   - name: Prometheus
     type: prometheus
     access: proxy
@@ -21,44 +21,59 @@ datasources:
       disableRecordingRules: false
       incrementalQueryOverlapWindow: 10m
       queryTimeout: 60s
-    secureJsonFields: {}
+      # Custom interval for better performance with high-throughput metrics
+      scrapeInterval: '5s'
+      # Support for localtesting_ namespace prefix
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: aspire-traces
 
-  # Loki - Centralized Logs
+  # Loki - Centralized Logs (All LocalTesting components)
   - name: Loki
     type: loki
     access: proxy
     url: http://loki:3100
     editable: true
     jsonData:
-      maxLines: 1000
+      maxLines: 5000
+      # Enhanced log correlation
       derivedFields:
-        - datasourceUid: 'prometheus-uid'
+        - datasourceUid: prometheus
           matcherRegex: 'trace_id=(\w+)'
           name: 'TraceID'
           url: '$${__value.raw}'
+        - datasourceUid: prometheus
+          matcherRegex: 'localtesting_([a-z_]+)'
+          name: 'Metrics'
+          url: '/explore?datasource=prometheus&queries=[{"expr":"${__value.text}","refId":"A"}]'
 
-  # OpenTelemetry Traces (via Aspire Dashboard)
+  # Aspire Dashboard - OpenTelemetry Traces and Application Insights
   - name: Aspire-Traces
     type: jaeger
     access: proxy
     url: http://host.docker.internal:18888
     editable: true
     jsonData:
+      # Correlation with logs and metrics
       tracesToLogsV2:
-        datasourceUid: 'loki-uid'
-        tags: ['service.name', 'service.namespace']
+        datasourceUid: loki
+        tags: ['service.name', 'service.namespace', 'localtesting.component']
         mappedTags:
           - key: 'service.name'
             value: 'service_name'
+          - key: 'localtesting.component'
+            value: 'component'
         mapTagNamesEnabled: true
         spanStartTimeShift: '-1h'
         spanEndTimeShift: '1h'
       tracesToMetrics:
-        datasourceUid: 'prometheus-uid'
-        tags: [{ key: 'service.name', value: 'service' }]
+        datasourceUid: prometheus
+        tags: [{ key: 'service.name', value: 'service' }, { key: 'localtesting.component', value: 'component' }]
         queries:
-          - name: 'Sample query'
-            query: 'sum(rate(traces_spanmetrics_latency_bucket{service="$service"}[5m]))'
+          - name: 'LocalTesting Metrics'
+            query: 'sum(rate(localtesting_${component}_${service}_total[5m]))'
+          - name: 'Message Rate'  
+            query: 'sum(rate(localtesting_kafka_producer_messages_total[5m]))'
         spanStartTimeShift: '-1h'
         spanEndTimeShift: '1h'
       nodeGraph:
@@ -67,7 +82,18 @@ datasources:
         hide: false
       spanBar:
         type: 'Tag'
-        tag: 'http.path'
+        tag: 'localtesting.operation'
+
+  # OpenTelemetry Metrics (Alternative access via OTLP)
+  - name: OTLP-Metrics
+    type: prometheus
+    access: proxy
+    url: http://otel-collector:8889
+    editable: true
+    jsonData:
+      httpMethod: GET
+      # Specifically for OpenTelemetry collector metrics endpoint
+      customQueryParameters: 'match[]=localtesting_*'
 
 deleteDatasources:
   - name: TestData DB

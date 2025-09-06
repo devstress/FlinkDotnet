@@ -4,74 +4,86 @@ This Aspire setup provides the infrastructure environment for the [LearningCours
 
 ## Message Flow Architecture
 
-The LocalTesting environment implements a comprehensive message processing pipeline with real-time observability:
+The LocalTesting environment implements a comprehensive message processing pipeline with real-time observability using optimized current architecture:
 
 ```
-📥 Ingress (Single Topic)
+📥 100 Logical Customer Queues (1 queue per customer)
     ↓
-🔀 Kafka Producers (10 partitions)
-  • Single ingress topic: "ingress-topic"
-  • Partitions: partition0, partition1, ..., partition9
-  • Rate: ~80,000+ msg/sec per partition
+🔀 Enhanced Kafka Production (20 partitions)
+  • 3-broker KRaft cluster: kafka-broker-1, kafka-broker-2, kafka-broker-3
+  • Topics: "ingress-topic" with auto-partitioning to 20 partitions
+  • Optimized producer: LZ4 compression, 128KB batches, 2GB buffers
+  • Distribution: Round-robin across partitions for load balancing
+  • Rate: ~80,000+ msg/sec per partition (target performance)
     ↓
-📨 Kafka → Flink Processing
-  • Flink consumes from all partitions
-  • Input rate = Kafka consuming rate  
-  • Processing: Real-time stream processing
+📨 Kafka → Flink Processing (Apache Flink 2.1.0)
+  • JobManager + 3 TaskManagers (8 slots each = 24 total slots)
+  • Enhanced memory configuration: 1024m process size per component
+  • Input rate = Kafka consuming rate from all 20 partitions
+  • Processing: Real-time stream processing with low latency
     ↓
-⚡ Flink Jobs (2 parallel jobs)
-  • Job: real-job-1, real-job-2
-  • Input operators: kafka-source
-  • Output operators: kafka-sink
-  • Processing latency: ~2ms per message
+⚡ Flink Jobs (Parallel processing)
+  • Jobs: real-job-1, real-job-2 (parallel execution)
+  • Input operators: kafka-source (consuming from all partitions)
+  • Output operators: kafka-sink (optimized output)
+  • Processing latency: ~2ms per message with enhanced configuration
     ↓
-🔄 Temporal Workflows (Subset Processing)
-  • Triggered by: ~10% of messages (workflow patterns)
-  • Purpose: Stateful workflow orchestration
-  • Types: RealWorkflow1, RealWorkflow2, RealWorkflow3
-  • Activities: RealActivity1, RealActivity2
+🔄 Temporal Workflows (10% Enhanced Processing)
+  • Triggered by: First 10 customers (out of 100) = 10% of total messages
+  • Purpose: Complex orchestration workflows for enterprise patterns
+  • Types: ClusterOrchestrationWorkflow, JobDistributionWorkflow, LifecycleWorkflow
+  • Activities: Cluster provisioning, resource allocation, scaling operations
     ↓
 📤 Final Output Topic
-  • All messages processed through pipeline
+  • All messages processed through optimized pipeline
   • Expected: Same count as ingress (no loss in healthy system)
-  • Rate: ~99,000+ msg/sec end-to-end
+  • Rate: ~1,600,000+ msg/sec end-to-end (target with 20 partitions)
 ```
 
-### Component Performance Characteristics
+### Component Performance Characteristics (Current Optimized Implementation)
 
-- **Kafka Producing**: ~80,000 msg/sec per partition
-- **Kafka Consuming**: Flink input rate (same as producing)
-- **Flink Processing**: ~99,000 msg/sec (parallel jobs)
-- **Temporal Processing**: ~10 workflows/sec (subset of messages, 10% volume)
-- **End-to-End**: ~99,000 msg/sec (total pipeline throughput)
+- **100 Customer Queues**: Even distribution across logical customer segments
+- **Kafka Producing**: ~80,000 msg/sec per partition × 20 partitions = 1,600,000 msg/sec total
+- **Kafka Consuming**: Flink input rate (distributed across 20 partitions)
+- **Flink Processing**: ~1,600,000 msg/sec (parallel jobs across 24 task slots)
+- **Temporal Processing**: ~160,000 workflows/sec (10% of message volume from first 10 customers)
+- **End-to-End**: ~1,600,000 msg/sec (total optimized pipeline throughput)
 
 ## Temporal Workflow Complex Orchestration Tasks
 
-The Temporal workflows in LocalTesting implement enterprise-scale orchestration patterns for managing Flink clusters and job distribution. Here's what each workflow type actually executes:
+The Temporal workflows in LocalTesting implement enterprise-scale orchestration patterns for managing Flink clusters and job distribution. The current implementation processes **10% of messages** (first 10 customers out of 100 logical customer queues) through complex workflows.
 
-### Core Workflow Types
+### Current Workflow Trigger Logic
+```csharp
+// From ComplexLogicStressTestService.cs - Current implementation
+var customerIndex = (i - 1) % 100; // 100 logical queues = 100 customers  
+var requiresTemporalProcessing = customerIndex < 10; // First 10 customers = 10% of messages
+```
+
+### Core Workflow Types (Current Implementation)
 
 #### 1. Cluster Orchestration Workflow (`IClusterOrchestratorWorkflow`)
 **Purpose**: Enterprise actor workflow patterns for massive scale cluster management
 
 **Complex Orchestration Tasks**:
 - **Multi-Cluster Provisioning**: Dynamically provisions new Flink clusters based on workload demand
-- **Resource Allocation**: Intelligent allocation of CPU, memory, and network resources across clusters
+- **Resource Allocation**: Intelligent allocation of CPU, memory, and network resources across clusters  
 - **Auto-Scaling Logic**: Monitors cluster utilization and scales clusters up/down based on thresholds
 - **Health Monitoring**: Continuous health checks across all managed clusters
 - **Failure Recovery**: Automatic detection and recovery from cluster failures
 - **Load Balancing**: Distributes workload evenly across available clusters
+- **Customer Queue Management**: Handles routing for 100 logical customer queues to optimal clusters
 
-**Example Execution Flow**:
+**Example Execution Flow** (Enhanced for 100 Customer Queues):
 ```
-1. Receive orchestration request (target: 50 clusters, min: 5, max: 100)
-2. Assess current cluster inventory and capacity
-3. Calculate optimal cluster distribution across availability zones
-4. Provision new clusters in parallel (if needed)
-5. Configure cluster networking and security settings
-6. Register clusters with service discovery
-7. Validate cluster health and readiness
-8. Begin workload distribution
+1. Receive orchestration request (100 customer queues → target: 50 clusters, min: 5, max: 100)
+2. Assess current cluster inventory and capacity for customer queue distribution
+3. Calculate optimal cluster distribution across availability zones for 100 customers
+4. Provision new clusters in parallel based on customer queue load patterns
+5. Configure cluster networking and security settings for customer isolation
+6. Register clusters with service discovery and customer queue routing
+7. Validate cluster health and readiness for customer queue assignment
+8. Begin customer queue to cluster assignment and workload distribution
 ```
 
 #### 2. Job Distribution Workflow (`IJobDistributionWorkflow`)  

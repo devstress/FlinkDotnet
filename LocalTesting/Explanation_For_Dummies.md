@@ -311,12 +311,12 @@ Our **actual LocalTesting API** (`ComplexLogicStressTestController.cs`) provides
 public async Task<IActionResult> ConfigureBackpressure([FromBody] BackpressureConfiguration config)
 {
     // Configure 100 messages/second rate limit per logical queue
-    // Uses Kafka headers for 100 logical queues across 10 partitions
+    // Uses Kafka headers for 100 logical customer queues across 20 partitions  
     var result = await _backpressureService.ConfigureBackpressureAsync(config);
     return Ok(result);
 }
 ```
-**What this does**: Sets up rate limiting so each logical queue processes exactly 100 messages per second.
+**What this does**: Sets up rate limiting so each of the 100 logical customer queues processes exactly 100 messages per second.
 
 #### Step 2: Generate Stress Test Messages
 ```csharp
@@ -379,12 +379,12 @@ var kafkaBroker1 = builder.AddContainer("kafka-broker-1", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
     .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "3")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
-    .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", "20")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3");
 ```
 **What this creates**: 
 - **3 Kafka brokers** for high availability (if one fails, others continue)
-- **10 partitions** for parallel processing
+- **20 partitions** for enhanced parallel processing (doubled from previous 10)
 - **Replication factor 3** means each message is stored on 3 brokers
 
 #### Flink: Distributed Stream Processing Cluster
@@ -1073,10 +1073,10 @@ For comparison:
 
 ### Q: How much data can this handle?
 
-**A**: LocalTesting performance:
-- **Kafka**: ~800,000 messages/second (10 partitions × 80k each)
-- **Flink**: ~99,000 messages/second processed
-- **Temporal**: ~10 workflows/second (complex orchestration)
+**A**: LocalTesting current optimized performance:
+- **Kafka**: ~1,600,000 messages/second (20 partitions × 80k each)
+- **Flink**: ~1,600,000 messages/second processed (with 24 task slots)
+- **Temporal**: ~160,000 workflows/second (10% of messages from first 10 out of 100 customer queues)
 
 Real production systems handle millions of messages/second!
 
