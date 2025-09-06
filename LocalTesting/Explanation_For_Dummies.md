@@ -311,9 +311,62 @@ TemporalReceived → TemporalProcessing → TemporalCompleted → Delivered
 **Final state**: `Delivered` when message successfully written to `sample_response` topic
 
 ### Monitoring and Observability
-- **Grafana dashboards**: Real-time throughput, latency, error rates for complete pipeline
-- **Prometheus metrics**: kafka_producer_messages, flink_job_latency, temporal_workflow_duration  
+
+#### Real-Time Messages Per Second Metrics
+- **Kafka Producer Rate**: `/api/observability/metrics/layer/kafka` - Messages/sec entering each partition
+- **Flink Processing Rate**: `/api/observability/metrics/layer/flink` - Messages/sec being processed by Flink jobs
+- **Temporal Workflow Rate**: `/api/observability/metrics/layer/temporal` - Messages/sec proceeding through Temporal workflows
+- **End-to-End Flow Rate**: `/api/observability/metrics/messages-per-second` - Complete pipeline throughput
+
+#### Temporal-Specific Observability
+```csharp
+// Real-time Temporal messages per second tracking
+GET /api/observability/metrics/layer/temporal
+{
+  "TemporalMetrics": {
+    "WorkflowRates": {
+      "temporal_workflow_complex_business_logic": { "ExecutionsPerSecond": 2.5 },
+      "temporal_workflow_data_enrichment": { "ExecutionsPerSecond": 1.8 }
+    },
+    "ActivityRates": {
+      "temporal_activity_enrich_data": { "ExecutionsPerSecond": 3.2 },
+      "temporal_activity_validate_business_rules": { "ExecutionsPerSecond": 2.1 }
+    }
+  },
+  "Summary": {
+    "TotalTemporalRate": 9.6,
+    "ActiveWorkflows": 2,
+    "ActiveActivities": 2
+  }
+}
+```
+
+#### Message Flow Tracking Through Temporal
+- **Entry Rate**: Messages entering Temporal workflows (subset of total Flink output)
+- **Processing Rate**: Messages being actively processed by Temporal activities  
+- **Completion Rate**: Messages completing Temporal workflows and writing to final results
+- **State Persistence**: Real-time tracking of workflow execution states
+
+#### Grafana Dashboard Integration
+- **Real-time throughput**: Live graphs of messages/sec at each pipeline stage
+- **Temporal workflow metrics**: Execution rates, completion rates, error rates
 - **Message tracking**: Query any message state by ID across the entire journey
 - **Performance metrics**: End-to-end latency from HTTP API to sample_response topic
 
-**Performance**: With optimizations, 1 million messages complete the full journey in under 10 seconds with strict FIFO ordering preserved per logical queue.
+#### Prometheus Metrics Available
+```bash
+# Temporal workflow execution rates
+temporal_workflow_executions_per_second
+temporal_activity_executions_per_second
+temporal_workflow_completion_rate
+temporal_workflow_error_rate
+
+# Pipeline flow rates  
+kafka_producer_messages_per_second
+flink_job_messages_per_second
+flow_kafka_to_flink_rate
+flow_flink_to_temporal_rate
+flow_temporal_to_results_rate
+```
+
+**Performance**: With optimizations, 1 million messages complete the full journey in under 10 seconds with strict FIFO ordering preserved per logical queue. Real-time observability shows exactly how many messages per second are proceeding through each component, including detailed Temporal workflow metrics.
