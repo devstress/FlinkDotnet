@@ -127,6 +127,24 @@ public class ObservabilityController : ControllerBase
                 });
             }
             
+            // Organize metrics by layer type (from real Prometheus data only)
+            // FIXED: Account for OpenTelemetry namespace prefix "localtesting_" in metric names
+            var kafkaMetrics = allRealMetrics
+                .Where(kvp => kvp.Key.StartsWith("kafka_producer_") || kvp.Key.StartsWith("localtesting_kafka_producer_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                
+            var flinkMetrics = allRealMetrics
+                .Where(kvp => kvp.Key.StartsWith("flink_") || kvp.Key.StartsWith("localtesting_flink_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                
+            var temporalMetrics = allRealMetrics
+                .Where(kvp => kvp.Key.StartsWith("temporal_") || kvp.Key.StartsWith("localtesting_temporal_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                
+            var flowMetrics = allRealMetrics
+                .Where(kvp => kvp.Key.StartsWith("flow_") || kvp.Key.StartsWith("localtesting_flow_"))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
             // Debug: Log all available metrics
             if (allRealMetrics.Count > 0)
             {
@@ -139,24 +157,14 @@ public class ObservabilityController : ControllerBase
                 {
                     _logger.LogInformation("  ... and {MoreCount} more metrics", allRealMetrics.Count - 10);
                 }
+                
+                // Debug: Show metrics by category after filtering
+                _logger.LogInformation("📊 Metrics found by category:");
+                _logger.LogInformation("  📨 Kafka metrics: {KafkaCount}", kafkaMetrics.Count);
+                _logger.LogInformation("  ⚡ Flink metrics: {FlinkCount}", flinkMetrics.Count);
+                _logger.LogInformation("  🔄 Temporal metrics: {TemporalCount}", temporalMetrics.Count);
+                _logger.LogInformation("  🌊 Flow metrics: {FlowCount}", flowMetrics.Count);
             }
-            
-            // Organize metrics by layer type (from real Prometheus data only)
-            var kafkaMetrics = allRealMetrics
-                .Where(kvp => kvp.Key.StartsWith("kafka_producer_"))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                
-            var flinkMetrics = allRealMetrics
-                .Where(kvp => kvp.Key.StartsWith("flink_"))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                
-            var temporalMetrics = allRealMetrics
-                .Where(kvp => kvp.Key.StartsWith("temporal_"))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                
-            var flowMetrics = allRealMetrics
-                .Where(kvp => kvp.Key.StartsWith("flow_"))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             
             var metrics = new
             {
@@ -198,14 +206,14 @@ public class ObservabilityController : ControllerBase
                 // End-to-End Flow Metrics - Real Pipeline Data
                 FlowMetrics = new
                 {
-                    KafkaToFlinkRate = flowMetrics.ContainsKey("flow_kafka_to_flink") 
-                        ? new { MessagesPerSecond = Math.Round(flowMetrics["flow_kafka_to_flink"], 2) }
+                    KafkaToFlinkRate = flowMetrics.ContainsKey("flow_kafka_to_flink") || flowMetrics.ContainsKey("localtesting_flow_kafka_to_flink")
+                        ? new { MessagesPerSecond = Math.Round(flowMetrics.GetValueOrDefault("flow_kafka_to_flink", flowMetrics.GetValueOrDefault("localtesting_flow_kafka_to_flink", 0)), 2) }
                         : new { MessagesPerSecond = 0.0 },
-                    FlinkToTemporalRate = flowMetrics.ContainsKey("flow_flink_to_temporal")
-                        ? new { MessagesPerSecond = Math.Round(flowMetrics["flow_flink_to_temporal"], 2) }
+                    FlinkToTemporalRate = flowMetrics.ContainsKey("flow_flink_to_temporal") || flowMetrics.ContainsKey("localtesting_flow_flink_to_temporal")
+                        ? new { MessagesPerSecond = Math.Round(flowMetrics.GetValueOrDefault("flow_flink_to_temporal", flowMetrics.GetValueOrDefault("localtesting_flow_flink_to_temporal", 0)), 2) }
                         : new { MessagesPerSecond = 0.0 },
-                    EndToEndRate = flowMetrics.ContainsKey("flow_end_to_end")
-                        ? new { MessagesPerSecond = Math.Round(flowMetrics["flow_end_to_end"], 2) }
+                    EndToEndRate = flowMetrics.ContainsKey("flow_end_to_end") || flowMetrics.ContainsKey("localtesting_flow_end_to_end")
+                        ? new { MessagesPerSecond = Math.Round(flowMetrics.GetValueOrDefault("flow_end_to_end", flowMetrics.GetValueOrDefault("localtesting_flow_end_to_end", 0)), 2) }
                         : new { MessagesPerSecond = 0.0 }
                 },
                 
