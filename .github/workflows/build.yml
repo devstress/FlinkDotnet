@@ -26,10 +26,10 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Set up .NET 9.0 RC
+      - name: Set up .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.100-rc.2.24474.11'
+          dotnet-version: '9.0.x'
 
       - name: Restore .NET Solutions
         run: |
