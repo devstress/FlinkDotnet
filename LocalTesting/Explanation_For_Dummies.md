@@ -3,11 +3,16 @@
 ## Processing Flow
 
 ```
-HTTP API → Kafka → Flink → Redis/Temporal → Results
-   ↓        ↓       ↓          ↓           ↓
- Send   Queue   Process   Track/Orchestrate Monitor
-1M msgs  msgs    msgs      workflows    everything
+HTTP API → Kafka → Flink → Redis/Temporal → sample_response Topic
+   ↓        ↓       ↓          ↓                    ↓
+ Send   Queue   Process   Complex Logic      Final Results
+1M msgs  msgs    msgs    + Atomic Redis      (with metadata)
 ```
+
+**Routing Logic**: 
+- **Simple transformations** → Direct Flink processing → sample_response
+- **Complex operations** → Flink → Temporal workflows → Redis atomic transactions → sample_response
+- **All messages** → End up in `sample_response` Kafka topic as final destination
 
 ## What Each Component Does
 
@@ -26,14 +31,19 @@ HTTP API → Kafka → Flink → Redis/Temporal → Results
 - **What it does**: Business logic, data enrichment, validation, routing decisions
 - **Parallelism**: Runs across multiple workers for high throughput
 
-### Temporal - Workflow Orchestrator
-- **Purpose**: Manages complex multi-step business processes that span time
-- **What it does exactly**: 
-  - Handles long-running workflows (minutes/hours/days)
-  - Manages retry logic and error recovery
-  - Coordinates between different services
-  - Maintains workflow state even if services restart
-  - Example: "Send email → wait 24 hours → send reminder → wait 3 days → escalate"
+### Temporal - Complex Business Logic Orchestrator
+- **Purpose**: Handles complex multi-step operations that require atomic transactions and state persistence
+- **Routing Logic to Temporal**: Messages route to Temporal when they need:
+  - Atomic Redis operations (unique ID generation, state updates)
+  - Multi-step workflows that must complete together or fail together
+  - Complex business rules that span multiple services
+  - Time-based operations (delays, scheduling, retries)
+- **Specific Complex Jobs in LocalTesting**:
+  - **Unique ID Generation**: Create unique tracking IDs in Redis with atomic transactions
+  - **Message State Management**: Update message status atomically (Produced → Delivered)
+  - **Error Recovery**: Retry failed operations with exponential backoff
+  - **FIFO Queue Coordination**: Ensure message ordering within logical queues
+  - **Multi-Service Orchestration**: Coordinate between Kafka, Flink, and Redis
 
 ### Redis - State Store
 - **Purpose**: Fast memory storage for message tracking and intermediate results
@@ -80,39 +90,44 @@ DataStream<ComplexLogicMessage> stream = env
     .process(new ComplexProcessingFunction());
 ```
 
-### Step 4: Temporal Orchestrates Workflows
+### Step 4: Temporal Orchestrates Complex Operations
 ```csharp
-// TemporalArchitectureTestController.cs
+// TemporalSecurityTokenService.cs - Real workflow orchestration
 @WorkflowMethod
-public void processMessageWorkflow(ComplexLogicMessage message) {
-    // Step 1: Validate message
-    boolean isValid = activities.validateMessage(message);
+public async Task ProcessMessageWorkflow(ComplexLogicMessage message) {
+    // Step 1: Create unique tracking ID in Redis (atomic operation)
+    string uniqueId = await activities.CreateUniqueIdAsync(message.MessageId);
+    await activities.StoreInRedisAsync($"message:{uniqueId}", message, TimeSpan.FromHours(24));
     
-    // Step 2: Process business logic  
-    ProcessingResult result = activities.processBusinessLogic(message);
+    // Step 2: Update message state atomically 
+    await activities.UpdateMessageStateAsync(message.MessageId, MessageState.TemporalProcessing);
     
-    // Step 3: If failed, retry with exponential backoff
-    if (!result.isSuccess()) {
-        Workflow.sleep(Duration.ofSeconds(30));  // Wait 30 seconds
-        result = activities.retryProcessing(message);  // Retry
+    // Step 3: Apply complex business logic with error handling
+    ComplexLogicResult result;
+    try {
+        result = await activities.ProcessComplexLogicAsync(message);
+        await activities.UpdateMessageStateAsync(message.MessageId, MessageState.TemporalCompleted);
+    }
+    catch (Exception ex) {
+        // Temporal's built-in retry with exponential backoff
+        await Workflow.Sleep(TimeSpan.FromSeconds(Math.Pow(2, attempt))); 
+        result = await activities.RetryProcessingAsync(message);
     }
     
-    // Step 4: Send notification after processing
-    activities.sendNotification(result);
-    
-    // Step 5: Schedule follow-up workflow for tomorrow
-    Workflow.newChildWorkflowStub(FollowUpWorkflow.class)
-           .execute(message.getId());
+    // Step 4: Atomic final state update and result storage
+    await activities.AtomicFinalizationAsync(message.MessageId, result);
 }
 ```
 
-**What Temporal Does Exactly:**
-- **Reliability**: If your server crashes, Temporal restarts the workflow from last checkpoint
-- **Retries**: Built-in retry logic with exponential backoff
-- **Scheduling**: Run workflows at specific times or after delays  
-- **State Management**: Maintains workflow state across service restarts
-- **Timeouts**: Handles long-running operations with timeouts
-- **Error Handling**: Sophisticated error handling and compensation logic
+**Temporal's Exact Role in LocalTesting**:
+- **Routing Condition**: Messages enter Temporal workflows when they require complex operations like:
+  - Creating unique IDs with Redis atomic transactions: `INCR message_counter` + `SET unique:{id}`
+  - Multi-step state updates that must succeed together or rollback
+  - Business logic requiring retry with state preservation
+  - Coordination between Kafka, Flink, and Redis operations
+- **State Persistence**: If the system crashes, Temporal resumes exactly where it left off
+- **Atomic Operations**: Redis commands are grouped into atomic transactions to prevent data loss
+- **Error Recovery**: Built-in exponential backoff retry logic with state management
 
 ### Step 5: Redis Tracks Everything
 ```csharp
@@ -188,19 +203,117 @@ await Task.WhenAll(producerTasks);
 - **1 million messages**: Under 10 seconds
 - **Hardware dependent**: SSD storage, fast network, sufficient RAM
 
-## Message State Tracking
+## Final Results and Data Flow
 
-Every message flows through these states:
+### Result Destination: `sample_response` Kafka Topic
+- **Final output topic**: All processed messages end up in the `sample_response` Kafka topic
+- **Topic structure**: 10 partitions, 3 replicas for high availability
+- **Message format**: Contains original message + processing metadata + unique tracking ID
+
+### How Components Write to Final Results
+
+#### Flink to sample_response Topic
+```csharp
+// Flink job writes processed messages to sample_response
+DataStream<ComplexLogicMessage> processedStream = env
+    .addSource(new KafkaSource<>("api-retrieved-messages"))
+    .map(message -> applyBusinessLogic(message))
+    .addSink(new KafkaSink<>("sample_response"));
+```
+
+#### Temporal to sample_response Topic  
+```csharp
+// Temporal workflow writes final results after complex operations
+public async Task FinalizeMessageAsync(ComplexLogicMessage message, ComplexLogicResult result) {
+    // Create final message with all processing metadata
+    var finalMessage = new ComplexLogicMessage {
+        MessageId = message.MessageId,
+        Content = result.ProcessedContent,
+        UniqueTrackingId = result.UniqueId,
+        ProcessingTimestamp = DateTime.UtcNow,
+        LogicalQueueName = message.LogicalQueueName,
+        FinalState = MessageState.Delivered
+    };
+    
+    // Write to sample_response topic with FIFO preservation
+    await kafkaProducer.ProduceAsync("sample_response", finalMessage);
+    
+    // Update Redis with final state atomically
+    await redis.SetAsync($"final:{message.MessageId}", finalMessage);
+}
+```
+
+### FIFO Protection per Logical Queue
+
+#### Partition-Level FIFO
+- **Kafka guarantee**: Messages within same partition maintain strict ordering
+- **Logical queue mapping**: Each logical queue maps to consistent partition using hash
+- **Hash function**: `partition = hash(logicalQueueName) % partitionCount`
+
+#### Processing Order Preservation
+```csharp
+// FIFO protection across the entire pipeline
+public class FIFOMessageProcessor {
+    // Step 1: Kafka producer preserves order per logical queue
+    var partition = GetPartitionForLogicalQueue(message.LogicalQueueName);
+    await producer.ProduceAsync(new TopicPartition("input-topic", partition), message);
+    
+    // Step 2: Flink processes messages in partition order
+    dataStream.keyBy(msg => msg.LogicalQueueName)  // Maintains order per logical queue
+              .process(new OrderPreservingProcessFunction());
+    
+    // Step 3: Temporal workflows execute sequentially per logical queue
+    var workflowId = $"queue-{message.LogicalQueueName}-{message.SequenceNumber}";
+    await temporalClient.StartWorkflowAsync(workflowId, message);
+    
+    // Step 4: Results written to sample_response maintain order
+    var outputPartition = GetPartitionForLogicalQueue(message.LogicalQueueName);
+    await producer.ProduceAsync(new TopicPartition("sample_response", outputPartition), result);
+}
+```
+
+#### Atomic Order Protection
+- **Redis sequence tracking**: `INCR queue:{logicalQueueName}:sequence` ensures no gaps
+- **Temporal workflow chaining**: Each workflow waits for previous sequence number
+- **Error handling**: Failed messages don't block queue processing (moved to dead letter queue)
+
+### Message Journey Summary
+```
+1M messages → HTTP API → Kafka (10 partitions)
+                ↓
+         Flink processing (preserves partition order)
+                ↓
+      Temporal workflows (complex operations + Redis atomic transactions)
+                ↓
+         sample_response topic (final results with FIFO per logical queue)
+```
+
+### Message Journey Summary
+```
+1M messages → HTTP API → Kafka (10 partitions)
+                ↓
+         Flink processing (preserves partition order)
+                ↓
+      Temporal workflows (complex operations + Redis atomic transactions)
+                ↓
+         sample_response topic (final results with FIFO per logical queue)
+```
+
+### Complete Message State Pipeline
+Every message flows through these tracked states:
 ```
 Produced → Consumed → FlinkProcessing → FlinkProcessed → 
 TemporalReceived → TemporalProcessing → TemporalCompleted → Delivered
 ```
 
-**Failed states** can occur at any point and trigger Temporal retry workflows.
+**State tracking in Redis**: Each state change is atomically updated in Redis with timestamps
+**Failed states**: Can occur at any point and trigger Temporal retry workflows with exponential backoff
+**Final state**: `Delivered` when message successfully written to `sample_response` topic
 
-## Monitoring and Observability
-
-- **Grafana dashboards**: Real-time throughput, latency, error rates
+### Monitoring and Observability
+- **Grafana dashboards**: Real-time throughput, latency, error rates for complete pipeline
 - **Prometheus metrics**: kafka_producer_messages, flink_job_latency, temporal_workflow_duration  
-- **Message tracking**: Query any message state by ID
-- **Performance metrics**: Messages/second per partition, end-to-end latency
+- **Message tracking**: Query any message state by ID across the entire journey
+- **Performance metrics**: End-to-end latency from HTTP API to sample_response topic
+
+**Performance**: With optimizations, 1 million messages complete the full journey in under 10 seconds with strict FIFO ordering preserved per logical queue.
