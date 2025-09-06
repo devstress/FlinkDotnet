@@ -1460,14 +1460,7 @@ public class ObservabilityController : ControllerBase
             var allMetrics = new List<string>();
             try
             {
-                var response = await _prometheusService.GetType()
-                    .GetMethod("GetAvailableMetricsAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.Invoke(_prometheusService, null) as Task<List<string>>;
-                
-                if (response != null)
-                {
-                    allMetrics = await response;
-                }
+                allMetrics = await _prometheusService.GetAvailableMetricsAsync();
             }
             catch (Exception ex)
             {

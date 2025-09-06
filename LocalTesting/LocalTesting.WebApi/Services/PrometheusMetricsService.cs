@@ -435,7 +435,7 @@ public class PrometheusMetricsService
     /// <summary>
     /// Get list of all available metric names in Prometheus for debugging
     /// </summary>
-    private async Task<List<string>> GetAvailableMetricsAsync()
+    public async Task<List<string>> GetAvailableMetricsAsync()
     {
         try
         {
