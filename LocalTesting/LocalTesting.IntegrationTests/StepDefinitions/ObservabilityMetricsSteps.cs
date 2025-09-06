@@ -512,7 +512,7 @@ public class ObservabilityMetricsSteps : IDisposable
                         {
                             var rateValue = rate.GetDouble();
                             var processingTime = rateValue > 0 ? 1000.0 / rateValue : 0;
-                            output.AppendLine($"    • {workflow.Name}: {rateValue:F2} exec/sec ({processingTime:F1} ms/exec)");
+                            output.AppendLine($"    • {workflow.Name}: {rateValue:F2} msg/sec ({processingTime:F1} ms/msg)");
                         }
                     }
                 }
@@ -526,7 +526,7 @@ public class ObservabilityMetricsSteps : IDisposable
                         {
                             var rateValue = rate.GetDouble();
                             var processingTime = rateValue > 0 ? 1000.0 / rateValue : 0;
-                            output.AppendLine($"      • {activity.Name}: {rateValue:F2} exec/sec ({processingTime:F1} ms/exec)");
+                            output.AppendLine($"      • {activity.Name}: {rateValue:F2} msg/sec ({processingTime:F1} ms/msg)");
                         }
                     }
                 }
@@ -556,7 +556,7 @@ public class ObservabilityMetricsSteps : IDisposable
             output.AppendLine($"  • Kafka Producing: {kafkaProducingRate:F2} msg/sec");
             output.AppendLine($"  • Kafka Consuming (Flink Input): {flinkProcessingRate:F2} msg/sec");
             output.AppendLine($"  • Flink Processing: {flinkProcessingRate:F2} msg/sec");
-            output.AppendLine($"  • Temporal Processing: {temporalProcessingRate:F2} exec/sec");
+            output.AppendLine($"  • Temporal Processing: {temporalProcessingRate:F2} msg/sec");
             output.AppendLine($"  • Entire Flow: {overallMsgPerSec:F2} msg/sec");
             output.AppendLine();
             
