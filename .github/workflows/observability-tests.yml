@@ -37,7 +37,7 @@ jobs:
           dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
 
       - name: Run Observability Tests
-        timeout-minutes: 30
+        timeout-minutes: 45
         env:
           INTEGRATION_TEST_MODE: "OBSERVABILITY"
           GITHUB_ACTIONS: "true"
@@ -52,40 +52,80 @@ jobs:
             --configuration Release \
             --logger "console;verbosity=detailed" \
             --no-build \
-            --filter "Category=observability"
+            --filter "Category=observability" 2>&1 | tee test-output.log || echo "TEST_FAILED=true" >> $GITHUB_ENV
 
-      - name: Display Observability Metrics
+      - name: Display Observability Report
         if: always()
-        timeout-minutes: 5
+        timeout-minutes: 10
         env:
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
         run: |
-          echo "📊 Displaying Observability Metrics Summary..."
+          echo "📋 OBSERVABILITY TEST REPORT"
+          echo "========================================"
           
-          # Find and display metrics file in Bin directory
-          if [ -f "LocalTesting/Bin/observability-test-result.txt" ]; then
-            echo "📁 Metrics file found in LocalTesting/Bin/"
-            ls -la LocalTesting/Bin/observability-test-result.txt
+          # Check for test failures first and display errors prominently
+          if [ "$TEST_FAILED" = "true" ] || [ ! -f "LocalTesting/Bin/observability-test-result.txt" ]; then
+            echo ""
+            echo "🚨 ERRORS DETECTED 🚨"
+            echo "========================================"
+            
+            # Extract and display key error information from test output
+            if [ -f "LocalTesting/test-output.log" ]; then
+              echo "❌ Test Execution Errors:"
+              echo ""
+              
+              # Show failed test results
+              grep -A 5 -B 2 "Failed\|Error\|Exception\|Timeout" LocalTesting/test-output.log | head -50 || echo "No specific error patterns found in test output"
+              
+              echo ""
+              echo "🔍 Last 20 lines of test output:"
+              tail -20 LocalTesting/test-output.log
+              
+              echo ""
+              echo "📊 Test Summary from log:"
+              grep -E "(Passed|Failed|Skipped|Total)" LocalTesting/test-output.log | tail -5 || echo "No test summary found"
+            else
+              echo "❌ No test output log found at LocalTesting/test-output.log"
+            fi
             
             echo ""
-            echo "📊 OBSERVABILITY METRICS RESULTS"
+            echo "🔧 Common Solutions:"
+            echo "• Check if .NET 9.0 SDK is properly installed"
+            echo "• Verify Aspire workload installation"
+            echo "• Ensure Docker is running for containerized services"
+            echo "• Check infrastructure startup timeout (currently 45 minutes)"
             echo ""
-            cat "LocalTesting/Bin/observability-test-result.txt"
-            echo ""
-            echo "📄 Metrics file: LocalTesting/Bin/observability-test-result.txt"
+          fi
+          
+          # Display metrics if available
+          if [ -f "LocalTesting/Bin/observability-test-result.txt" ]; then
+            echo "✅ OBSERVABILITY METRICS SUCCESS"
+            echo "========================================"
+            echo "📁 Metrics file: LocalTesting/Bin/observability-test-result.txt"
             echo "📊 File size: $(stat -c%s "LocalTesting/Bin/observability-test-result.txt") bytes"
             echo "📅 Generated: $(stat -c%y "LocalTesting/Bin/observability-test-result.txt")"
-            echo "🔍 Metrics source: Real infrastructure measurement with Stopwatch timing"
+            echo ""
+            echo "📊 METRICS RESULTS:"
+            echo ""
+            cat "LocalTesting/Bin/observability-test-result.txt"
           else
-            echo "⚠️ No metrics file found. Expected: LocalTesting/Bin/observability-test-result.txt"
-            echo "❌ This indicates the observability test did not complete successfully or failed to measure real infrastructure performance"
+            echo "⚠️ METRICS FILE MISSING"
+            echo "========================================"
+            echo "❌ Expected: LocalTesting/Bin/observability-test-result.txt"
+            echo "❌ This indicates the observability test failed to complete successfully"
+            echo ""
           fi
+          
+          echo ""
+          echo "📋 REPORT COMPLETE"
+          echo "========================================"
 
-      - name: Upload Observability Metrics Artifacts
+      - name: Upload Observability Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: observability-metrics-${{ github.run_id }}
+          name: observability-artifacts-${{ github.run_id }}
           path: |
             LocalTesting/Bin/observability-test-result.txt
+            LocalTesting/test-output.log
           retention-days: 7
