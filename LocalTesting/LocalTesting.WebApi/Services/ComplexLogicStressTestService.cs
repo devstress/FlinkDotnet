@@ -103,30 +103,52 @@ public class ComplexLogicStressTestService
         }
 
         status.Status = "Producing Messages";
-        status.Logs.Add($"Producing {messageCount:N0} messages with unique correlation IDs...");
+        status.Logs.Add($"Producing {messageCount:N0} messages with 100 logical queues and 10% Temporal processing...");
 
-        var messages = new List<ComplexLogicMessage>();
-        for (int i = 1; i <= messageCount; i++)
+        // Parallel message generation for maximum speed
+        var messages = new ConcurrentBag<ComplexLogicMessage>();
+        var batchSize = Math.Max(1000, messageCount / Environment.ProcessorCount); // Optimize batch size per CPU core
+        var batches = Enumerable.Range(0, (messageCount + batchSize - 1) / batchSize);
+
+        await Task.WhenAll(batches.Select(batchIndex => Task.Run(() =>
         {
-            var message = new ComplexLogicMessage
+            var startId = batchIndex * batchSize + 1;
+            var endId = Math.Min(startId + batchSize - 1, messageCount);
+            
+            for (int i = startId; i <= endId; i++)
             {
-                MessageId = i,
-                CorrelationId = $"corr-{i:D6}",
-                Payload = $"message-payload-{i}",
-                Timestamp = DateTime.UtcNow,
-                BatchNumber = (i - 1) / 100 + 1
-            };
-            messages.Add(message);
-        }
+                // Determine if this message should trigger Temporal workflow (10% for 10 customers)
+                var customerIndex = (i - 1) % 100; // 100 logical queues = 100 customers
+                var requiresTemporalProcessing = customerIndex < 10; // First 10 customers = 10% of messages
+                
+                var message = new ComplexLogicMessage
+                {
+                    MessageId = i,
+                    CorrelationId = $"corr-{i:D6}",
+                    Payload = requiresTemporalProcessing ? 
+                        $"temporal-workflow-{i}" : $"standard-message-{i}",
+                    Timestamp = DateTime.UtcNow,
+                    BatchNumber = (i - 1) / 100 + 1,
+                    PartitionNumber = (i - 1) % 20,  // Increase to 20 partitions for better distribution
+                    LogicalQueueName = $"customer-queue-{customerIndex}",  // Explicit customer queue assignment
+                    SecurityToken = requiresTemporalProcessing ? $"temporal-token-{i}" : $"standard-token-{i}",
+                    ProcessingStage = requiresTemporalProcessing ? "temporal-required" : "initial"
+                };
+                messages.Add(message);
+            }
+        })));
 
-        _testMessages[testId] = messages;
-        status.Logs.Add($"Successfully generated {messageCount:N0} messages with unique correlation IDs");
+        var messageList = messages.ToList().OrderBy(m => m.MessageId).ToList();
+        _testMessages[testId] = messageList;
+        
+        var temporalMessages = messageList.Count(m => m.ProcessingStage == "temporal-required");
+        status.Logs.Add($"Generated {messageCount:N0} messages: {temporalMessages:N0} for Temporal processing ({temporalMessages * 100.0 / messageCount:F1}%)");
 
         // Attempt to produce to Kafka with resilient error handling
         try
         {
-            await _kafkaProducer.ProduceMessagesAsync("complex-input", messages);
-            status.Logs.Add($"Messages sent to Kafka topic 'complex-input'");
+            await _kafkaProducer.ProduceMessagesAsync("complex-input", messageList);
+            status.Logs.Add($"Messages sent to Kafka topic 'complex-input' with optimized high-throughput configuration");
         }
         catch (Exception ex)
         {
@@ -135,7 +157,7 @@ public class ComplexLogicStressTestService
             status.Logs.Add($"Messages generated but not sent to Kafka due to infrastructure issues");
         }
 
-        return messages;
+        return messageList;
     }
 
     public async Task<string> StartFlinkJobAsync(string testId, Dictionary<string, object> pipelineConfig)
@@ -161,57 +183,74 @@ public class ComplexLogicStressTestService
             throw new InvalidOperationException($"No messages found for test {testId}");
 
         status.Status = "Processing Batches";
-        status.Logs.Add($"Processing messages in batches of {batchSize}...");
+        status.Logs.Add($"Processing messages in parallel batches of {batchSize} for maximum speed...");
 
-        var results = new List<BatchProcessingResult>();
         var batches = messages.Chunk(batchSize).ToList();
+        var maxConcurrentBatches = Math.Min(Environment.ProcessorCount, 8); // Limit concurrent batches
+        var semaphore = new SemaphoreSlim(maxConcurrentBatches, maxConcurrentBatches);
+        var results = new ConcurrentBag<BatchProcessingResult>();
 
-        for (int i = 0; i < batches.Count; i++)
+        // Process batches in parallel for maximum throughput
+        await Task.WhenAll(batches.Select(async (batch, index) =>
         {
-            var batch = batches[i];
-            var startTime = DateTime.UtcNow;
-
-            // Get security token for this batch
-            var token = await _tokenManager.GetTokenAsync();
-            
-            var result = new BatchProcessingResult
+            await semaphore.WaitAsync();
+            try
             {
-                BatchNumber = i + 1,
-                MessageCount = batch.Length,
-                Success = true,
-                ProcessingTime = DateTime.UtcNow - startTime,
-                CorrelationIds = batch.Select(m => m.CorrelationId).ToList(),
-                Status = "Processed"
-            };
+                var startTime = DateTime.UtcNow;
 
-            // Simulate HTTP endpoint processing (save to memory, assign SendingID)
-            var processedBatch = batch.Select(msg => new ComplexLogicMessage
-            {
-                MessageId = msg.MessageId,
-                CorrelationId = msg.CorrelationId,
-                SendingID = $"send-{msg.MessageId:D6}",
-                Payload = msg.Payload,
-                Timestamp = DateTime.UtcNow,
-                BatchNumber = msg.BatchNumber
-            }).ToList();
+                // Get security token for this batch
+                var token = await _tokenManager.GetTokenAsync();
+                
+                var result = new BatchProcessingResult
+                {
+                    BatchNumber = index + 1,
+                    MessageCount = batch.Length,
+                    Success = true,
+                    ProcessingTime = DateTime.UtcNow - startTime,
+                    CorrelationIds = batch.Select(m => m.CorrelationId).ToList(),
+                    Status = "Processed"
+                };
 
-            // Store processed messages
-            if (!_processedMessages.TryGetValue(testId, out var allProcessed))
-            {
-                allProcessed = new List<ComplexLogicMessage>();
-                _processedMessages[testId] = allProcessed;
+                // Simulate high-speed HTTP endpoint processing (save to memory, assign SendingID)
+                var processedBatch = batch.Select(msg => new ComplexLogicMessage
+                {
+                    MessageId = msg.MessageId,
+                    CorrelationId = msg.CorrelationId,
+                    SendingID = $"send-{msg.MessageId:D6}",
+                    Payload = msg.Payload,
+                    Timestamp = DateTime.UtcNow,
+                    BatchNumber = msg.BatchNumber,
+                    LogicalQueueName = msg.LogicalQueueName, // Preserve customer queue assignment
+                    ProcessingStage = msg.ProcessingStage == "temporal-required" ? "temporal-processed" : "standard-processed"
+                }).ToList();
+
+                // Store processed messages with thread-safe operations
+                if (!_processedMessages.TryGetValue(testId, out var allProcessed))
+                {
+                    allProcessed = new List<ComplexLogicMessage>();
+                    _processedMessages[testId] = allProcessed;
+                }
+                
+                lock (allProcessed) // Thread-safe addition
+                {
+                    allProcessed.AddRange(processedBatch);
+                }
+
+                results.Add(result);
+                status.ProcessedMessages += batch.Length;
+
+                // Update token renewal count
+                status.TokenRenewals = _tokenManager.GetRenewalCount();
             }
-            allProcessed.AddRange(processedBatch);
+            finally
+            {
+                semaphore.Release();
+            }
+        }));
 
-            results.Add(result);
-            status.ProcessedMessages += batch.Length;
-
-            // Update token renewal count
-            status.TokenRenewals = _tokenManager.GetRenewalCount();
-        }
-
-        status.Logs.Add($"Processed {results.Count} batches ({status.ProcessedMessages:N0} messages)");
-        return results;
+        var resultList = results.OrderBy(r => r.BatchNumber).ToList();
+        status.Logs.Add($"Processed {resultList.Count} batches ({status.ProcessedMessages:N0} messages) in parallel with high throughput");
+        return resultList;
     }
 
     public async Task<MessageVerificationResult> VerifyMessagesAsync(string testId, int topCount = 100, int lastCount = 100)

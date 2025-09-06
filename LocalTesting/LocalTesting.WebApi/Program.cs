@@ -84,7 +84,20 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 
 // Add custom services
 builder.Services.AddSingleton<ObservabilityMetricsService>();
-builder.Services.AddHttpClient<PrometheusMetricsService>(); // Add HTTP client for Prometheus queries
+
+// Configure HTTP client for Prometheus with enhanced timeouts for infrastructure delays
+builder.Services.AddHttpClient<PrometheusMetricsService>(client =>
+{
+    var prometheusUrl = Environment.GetEnvironmentVariable("PROMETHEUS_URL") ?? "http://prometheus:9090";
+    client.BaseAddress = new Uri(prometheusUrl);
+    client.Timeout = TimeSpan.FromSeconds(30); // Increased timeout for infrastructure delays
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+{
+    // Configure for container networking reliability
+    MaxConnectionsPerServer = 10,
+    UseCookies = false
+});
 builder.Services.AddSingleton<IMessageStateService, MessageStateService>();
 builder.Services.AddSingleton<AspireHealthCheckService>();
 builder.Services.AddSingleton<ComplexLogicStressTestService>();

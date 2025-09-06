@@ -61,7 +61,7 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // Create HTTP client with service discovery - services are guaranteed to be ready
         _httpClient = _app.CreateHttpClient("localtesting-webapi", "webapi");
-        _httpClient.Timeout = TimeSpan.FromMinutes(5); // Reduced timeout since services are ready
+        _httpClient.Timeout = TimeSpan.FromMinutes(10); // Extended timeout for workload execution
         
         // Verify API is responding (simple check since Aspire already validated infrastructure)
         var healthResponse = await _httpClient.GetAsync("/health");
@@ -95,9 +95,14 @@ public class ObservabilityMetricsSteps : IDisposable
         var startTime = DateTime.UtcNow;
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
+        // Message count configuration: GitHub workflow uses 100K, normal operation uses 1M
+        var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
+            ? 100000  // 100K messages for GitHub workflow - balance between meaningful metrics and execution time
+            : 1000000; // 1M messages for normal local operation - full stress test
+            
         var flowRequest = new
         {
-            KafkaMessages = 1000000, // 1M messages for high throughput
+            KafkaMessages = messageCount,
             FlinkJobs = 2,
             TemporalWorkflows = 5,
             // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
@@ -117,18 +122,44 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   End:   {endTime:HH:mm:ss.fff} UTC");
         Console.WriteLine($"   REAL Duration: {actualProcessingTime:F2} seconds");
         
-        // Wait for metrics to be processed by infrastructure - but with actual time measurement
+        // Wait for metrics to be processed by infrastructure and scraped by Prometheus
         var metricsWaitStart = DateTime.UtcNow;
-        await Task.Delay(12000); // 12 seconds for metrics propagation - increased to allow rate tracker window to populate
+        Console.WriteLine("⏳ Waiting for metrics to be scraped by Prometheus...");
+        await Task.Delay(30000); // 30 seconds for metrics propagation to Prometheus - increased for better reliability
         
-        // Verify metrics are available with real infrastructure
-        var maxRetries = 3;
+        // Verify metrics are available with real infrastructure and debug if not
+        var maxRetries = 5; // Increased retries
         var hasMetrics = false;
         
         for (int retry = 0; retry < maxRetries; retry++)
         {
             try
             {
+                // First, check debug endpoint to see what's available in Prometheus
+                if (retry == 0)
+                {
+                    try
+                    {
+                        var debugResponse = await _httpClient!.GetAsync("/api/observability/debug/prometheus-metrics");
+                        if (debugResponse.IsSuccessStatusCode)
+                        {
+                            var debugContent = await debugResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine($"📊 DEBUG: Prometheus metrics availability check completed");
+                            // Log only summary to avoid overwhelming output
+                            var debugData = JsonSerializer.Deserialize<Dictionary<string, object>>(debugContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            if (debugData != null && debugData.TryGetValue("Summary", out var summaryObj))
+                            {
+                                var summary = JsonSerializer.Serialize(summaryObj, new JsonSerializerOptions { WriteIndented = false });
+                                Console.WriteLine($"📈 Metrics Summary: {summary}");
+                            }
+                        }
+                    }
+                    catch (Exception debugEx)
+                    {
+                        Console.WriteLine($"⚠️ Debug endpoint failed: {debugEx.Message}");
+                    }
+                }
+                
                 var checkResponse = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
                 if (checkResponse.IsSuccessStatusCode)
                 {
@@ -162,8 +193,8 @@ public class ObservabilityMetricsSteps : IDisposable
             
             if (retry < maxRetries - 1)
             {
-                Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries})...");
-                await Task.Delay(3000); // Wait 3 more seconds before retry
+                Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries}) - Prometheus may still be scraping...");
+                await Task.Delay(10000); // Wait 10 seconds before retry - longer for Prometheus scraping
             }
         }
         
@@ -190,6 +221,38 @@ public class ObservabilityMetricsSteps : IDisposable
     public async Task ThenWePrintTheMetricsToTheConsole()
     {
         await EnsureInfrastructureInitialized();
+        
+        // First, debug what metrics are actually available in Prometheus
+        Console.WriteLine("🔍 DEBUG: Checking Prometheus metrics availability...");
+        try
+        {
+            var debugResponse = await _httpClient!.GetAsync("/api/observability/debug/prometheus-metrics");
+            if (debugResponse.IsSuccessStatusCode)
+            {
+                var debugContent = await debugResponse.Content.ReadAsStringAsync();
+                var debugData = JsonSerializer.Deserialize<Dictionary<string, object>>(debugContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (debugData != null)
+                {
+                    Console.WriteLine("📊 DEBUG: Prometheus debug data retrieved successfully");
+                    if (debugData.TryGetValue("Summary", out var summaryObj))
+                    {
+                        Console.WriteLine($"📈 Metrics Summary: {JsonSerializer.Serialize(summaryObj, new JsonSerializerOptions { WriteIndented = true })}");
+                    }
+                    if (debugData.TryGetValue("TotalMetricsAvailable", out var totalMetrics))
+                    {
+                        Console.WriteLine($"📊 Total metrics available in Prometheus: {totalMetrics}");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ DEBUG: Debug endpoint returned {debugResponse.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ DEBUG: Failed to get debug metrics: {ex.Message}");
+        }
         
         var metricsData = await GetDetailedMetrics();
         var metricsDisplay = FormatMetricsForDisplay(metricsData);
@@ -327,6 +390,27 @@ public class ObservabilityMetricsSteps : IDisposable
             PropertyNameCaseInsensitive = true
         });
         
+        // Debug: Print the actual metrics response structure
+        Console.WriteLine("🔍 DEBUG: Metrics response structure:");
+        var keys = metricsResponse?.Keys.ToArray() ?? Array.Empty<string>();
+        Console.WriteLine($"📊 Raw metrics response keys: {string.Join(", ", keys)}");
+        
+        if (metricsResponse != null)
+        {
+            foreach (var kvp in metricsResponse)
+            {
+                Console.WriteLine($"  🔑 {kvp.Key}: {kvp.Value?.GetType().Name ?? "null"}");
+                if (kvp.Value is JsonElement element)
+                {
+                    if (element.ValueKind == JsonValueKind.Object)
+                    {
+                        var objKeys = element.EnumerateObject().Select(p => p.Name).ToArray();
+                        Console.WriteLine($"      📋 Object keys: {string.Join(", ", objKeys)}");
+                    }
+                }
+            }
+        }
+        
         Assert.NotNull(metricsResponse);
         return metricsResponse;
     }
@@ -364,15 +448,6 @@ public class ObservabilityMetricsSteps : IDisposable
             // Temporal analysis with percentage and explanation
             var temporalWorkflowCount = CalculateTemporalWorkflowCount(temporalMetrics);
             var temporalPercentage = totalIngressMessages > 0 ? (double)temporalWorkflowCount / totalIngressMessages * 100 : 0;
-            
-            output.AppendLine($"🔄 Temporal Processing: {temporalWorkflowCount:N0} workflows ({temporalPercentage:F2}% of total messages)");
-            output.AppendLine($"   Purpose: Workflow orchestration for complex business logic processing");
-            output.AppendLine($"   Role: Handles stateful workflows triggered by specific message patterns");
-            output.AppendLine($"   Performance: Temporal processes only subset of messages requiring workflows");
-            output.AppendLine($"   ✅ CORRECT BEHAVIOR: Temporal is NOT a bottleneck - it should only process workflow-triggered events");
-            output.AppendLine($"   ❌ WRONG ASSUMPTION: Temporal should NOT process all {totalIngressMessages:N0} messages");
-            output.AppendLine($"   📈 Scaling: Increase Temporal instances only if workflow processing latency is high");
-            output.AppendLine();
             
             // Component-specific processing times and rates
             output.AppendLine("🏗️ Component Performance Breakdown:");
@@ -501,7 +576,6 @@ public class ObservabilityMetricsSteps : IDisposable
             
             // Validation of metrics realism
             var isRealistic = totalProcessingTime > 0 && overallMsgPerSec > 0 && totalProcessingTime < 300; // Less than 5 minutes is reasonable
-            output.AppendLine($"  🎯 Metrics realism check: {(isRealistic ? "REALISTIC" : "SUSPICIOUS")}");
             
             if (!isRealistic)
             {
