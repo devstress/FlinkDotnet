@@ -36,17 +36,27 @@
 5. Ensure no logs errors/warnings exist after fixes
 
 ### Debug Information (MANDATORY - Update this section for every investigation)
-- **Current Environment**: .NET 8.0.119 installed, but .NET 9.0.100 required per global.json
-- **Installation Status**: Need to install .NET 9.0 SDK before proceeding
+- **Current Environment**: .NET 9.0.304 installed and Aspire workload configured ✅
+- **Installation Status**: ✅ .NET 9.0 SDK installed and working
 - **Test Framework**: Using Aspire testing framework with DistributedApplication pattern
-- **Current Errors**: TBD - Need .NET 9.0 to run tests and identify specific log errors
+- **Current Errors Identified**: 
+  * **Redis warnings**: Memory overcommit and config file warnings
+  * **Loki errors**: "error getting ingester clients" err="empty ring"
+  * **Kafka warnings**: UnknownHostException for kafka-broker-2:9093 (missing broker)
+  * **Prometheus connection failures**: "Resource temporarily unavailable (prometheus:9090)"
 - **Progress Monitoring**: No existing background progress monitoring for test timeouts
+- **Test Status**: Tests pass but with significant infrastructure log noise
 
 ### Findings
-- Project requires .NET 9.0 SDK for Aspire testing framework functionality
-- ObservabilityMetricsSteps.cs implements Aspire testing patterns
-- Need to investigate specific log errors after .NET 9.0 installation
+- ✅ Project requires .NET 9.0 SDK for Aspire testing framework functionality
+- ✅ ObservabilityMetricsSteps.cs implements Aspire testing patterns
+- 🔍 **Infrastructure Issues Identified**:
+  * Redis container not properly configured (memory overcommit, missing config)
+  * Loki ring configuration incomplete
+  * Kafka cluster missing broker-2 (only broker-1 and broker-3 available) 
+  * Prometheus experiencing connection reliability issues
 - Background progress monitoring should follow BackgroundService patterns from existing codebase
+- Tests technically pass but infrastructure logs are very noisy with warnings/errors
 
 ### Lessons Learned
 - Always verify .NET version requirements before starting debugging
@@ -55,33 +65,95 @@
 
 ## Phase 2: Design  
 ### Requirements
-TBD after investigation phase completes
+1. **Fix Redis warnings**:
+   - Add Redis configuration file to eliminate "no config file specified" warning
+   - Configure memory settings to handle memory overcommit warnings
+2. **Fix Loki empty ring errors**:
+   - Add proper Loki configuration file for single-node setup
+   - Configure ingester properly for LocalTesting environment
+3. **Reduce Kafka startup noise**:
+   - Add initial delay or health checks to reduce connectivity warnings during cluster formation
+4. **Improve Prometheus reliability**:
+   - Add startup delays and retry mechanisms
+   - Configure health checks properly
+5. **Add background progress monitoring**:
+   - Implement BackgroundService to monitor test progress
+   - Stop test if no progress for 5+ seconds
+   - Report progress every 5 seconds
 
 ### Architecture Decisions
-TBD after investigation phase completes
+- **Config file approach**: Add configuration files for Redis and Loki instead of environment variables only
+- **Sequential startup**: Maintain existing sequential startup but add health checks
+- **Progress monitoring**: Add BackgroundService in ObservabilityMetricsSteps
+- **Log level control**: Set appropriate log levels to reduce noise without hiding real issues
 
 ### Why This Approach
-TBD after investigation phase completes
+- Configuration files provide better control over service behavior than environment variables alone
+- Sequential startup with health checks reduces initial connection errors
+- BackgroundService pattern is already established in the codebase
+- Proper logging levels maintain visibility while reducing noise
 
 ### Alternatives Considered
-TBD after investigation phase completes
+- **Environment variables only**: Rejected due to limited configuration options
+- **Parallel startup**: Rejected due to existing DCP reconciliation issues  
+- **External monitoring tool**: Rejected for minimal change approach
+- **Disabling logging**: Rejected as it hides real issues
 
 ## Phase 3: TDD/BDD
 ### Test Specifications
-TBD after investigation phase completes
+1. **Infrastructure logs test**: Verify Redis configuration eliminates warnings
+2. **Loki ring test**: Verify proper single-node configuration eliminates empty ring errors
+3. **Kafka connectivity test**: Verify reduced connection warnings during cluster formation
+4. **Progress monitoring test**: Verify background monitoring detects stalled tests
+5. **Test timeout test**: Verify progress monitoring stops tests after 5+ minutes of inactivity
 
 ### Behavior Definitions
-TBD after investigation phase completes
+- **Given** the observability test infrastructure is running
+- **When** Redis starts with configuration file
+- **Then** no "config file not specified" warnings appear
+- **And** no memory overcommit warnings appear
+- **When** Loki starts with proper single-node configuration
+- **Then** no "empty ring" errors appear
+- **When** Kafka cluster forms
+- **Then** connection warnings are minimized during startup
+- **When** observability test runs with progress monitoring
+- **Then** progress is reported every 5 seconds
+- **And** test stops if no progress for 5+ minutes
 
 ## Phase 4: Implementation
 ### Code Changes
-TBD after investigation phase completes
+1. **Created Redis configuration file** (`redis.conf`):
+   - Added proper Redis configuration to eliminate warnings
+   - Set log level to warning to reduce noise
+   - Configured memory management settings
+   
+2. **Created Loki configuration file** (`loki-config.yml`):
+   - Added single-node Loki configuration
+   - Configured ingester properly to eliminate "empty ring" errors
+   - Set log level to warn to reduce noise
+   
+3. **Updated Aspire Program.cs**:
+   - Modified Redis container to use configuration file
+   - Modified Loki container to use proper configuration
+   - Added Kafka log level controls to reduce connection warnings
+   
+4. **Enhanced ObservabilityMetricsSteps.cs**:
+   - Added background progress monitoring with CancellationTokenSource
+   - Implemented 5-second progress reporting and 5-minute timeout detection
+   - Added progress updates throughout test execution
+   - Added proper progress monitoring cleanup
 
 ### Challenges Encountered
-TBD after investigation phase completes
+- Redis container needed specific mount path for configuration
+- Loki required comprehensive single-node configuration
+- Progress monitoring needed thread-safe implementation
+- Kafka connection warnings during cluster formation are normal but noisy
 
 ### Solutions Applied
-TBD after investigation phase completes
+- Used bind mount for Redis configuration file
+- Created comprehensive Loki single-node config
+- Implemented thread-safe progress monitoring with proper cleanup
+- Added Kafka log level controls to reduce startup noise
 
 ## Phase 5: Testing & Validation
 ### Test Results

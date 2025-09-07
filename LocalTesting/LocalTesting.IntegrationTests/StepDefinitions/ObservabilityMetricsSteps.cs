@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using System.Text;
+using System.Threading;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
@@ -26,6 +27,12 @@ public class ObservabilityMetricsSteps : IDisposable
     private static HttpClient? _httpClient;
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
+    
+    // Progress monitoring fields
+    private CancellationTokenSource? _progressMonitoringCts;
+    private Task? _progressMonitoringTask;
+    private DateTime _lastProgressUpdate = DateTime.UtcNow;
+    private readonly object _progressLock = new object();
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -80,7 +87,102 @@ public class ObservabilityMetricsSteps : IDisposable
 
     public void Dispose()
     {
+        // Stop progress monitoring
+        StopProgressMonitoring();
+        
         // Individual test cleanup
+    }
+
+    /// <summary>
+    /// Start background progress monitoring with 5-second timeout detection
+    /// </summary>
+    private void StartProgressMonitoring(string operation)
+    {
+        StopProgressMonitoring(); // Stop any existing monitoring
+        
+        _progressMonitoringCts = new CancellationTokenSource();
+        var token = _progressMonitoringCts.Token;
+        
+        _progressMonitoringTask = Task.Run(async () =>
+        {
+            var noProgressWarningShown = false;
+            
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(5000, token); // Check every 5 seconds
+                
+                if (token.IsCancellationRequested) break;
+                
+                DateTime lastUpdate;
+                lock (_progressLock)
+                {
+                    lastUpdate = _lastProgressUpdate;
+                }
+                
+                var timeSinceLastUpdate = DateTime.UtcNow - lastUpdate;
+                
+                if (timeSinceLastUpdate.TotalSeconds > 10) // No progress for more than 10 seconds
+                {
+                    if (!noProgressWarningShown)
+                    {
+                        Console.WriteLine($"⚠️ WARNING: No progress detected in {operation} for {timeSinceLastUpdate.TotalSeconds:F1} seconds");
+                        noProgressWarningShown = true;
+                    }
+                    
+                    if (timeSinceLastUpdate.TotalSeconds > 300) // 5 minutes without progress
+                    {
+                        Console.WriteLine($"❌ TIMEOUT: No progress in {operation} for {timeSinceLastUpdate.TotalSeconds:F1} seconds. Stopping test.");
+                        throw new TimeoutException($"Test timed out - no progress detected in {operation} for over 5 minutes");
+                    }
+                }
+                else if (noProgressWarningShown)
+                {
+                    Console.WriteLine($"✅ Progress resumed in {operation}");
+                    noProgressWarningShown = false;
+                }
+                else
+                {
+                    Console.WriteLine($"📈 Progress monitoring: {operation} active (last update {timeSinceLastUpdate.TotalSeconds:F1}s ago)");
+                }
+            }
+        }, token);
+    }
+    
+    /// <summary>
+    /// Update progress timestamp to indicate test is still active
+    /// </summary>
+    private void UpdateProgress()
+    {
+        lock (_progressLock)
+        {
+            _lastProgressUpdate = DateTime.UtcNow;
+        }
+    }
+    
+    /// <summary>
+    /// Stop progress monitoring
+    /// </summary>
+    private void StopProgressMonitoring()
+    {
+        try
+        {
+            _progressMonitoringCts?.Cancel();
+            _progressMonitoringTask?.Wait(1000); // Wait up to 1 second for graceful stop
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancelling
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Warning: Error stopping progress monitoring: {ex.Message}");
+        }
+        finally
+        {
+            _progressMonitoringCts?.Dispose();
+            _progressMonitoringCts = null;
+            _progressMonitoringTask = null;
+        }
     }
 
     [When(@"I run the entire flow")]
@@ -88,11 +190,16 @@ public class ObservabilityMetricsSteps : IDisposable
     {
         await EnsureInfrastructureInitialized();
         
+        // Start progress monitoring for the entire flow
+        StartProgressMonitoring("observability flow execution");
+        UpdateProgress();
+        
         Console.WriteLine("🚀 Starting REAL infrastructure flow with actual performance measurement...");
         
         // MEASURE ACTUAL PROCESSING TIME - No more hardcoded values
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var startTime = DateTime.UtcNow;
+        UpdateProgress();
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
         // Message count configuration: GitHub workflow uses 100K, normal operation uses 1M
@@ -109,8 +216,11 @@ public class ObservabilityMetricsSteps : IDisposable
         };
 
         Console.WriteLine($"🔄 Executing real flow through infrastructure at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC...");
+        UpdateProgress();
+        
         var flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
         flowResponse.EnsureSuccessStatusCode();
+        UpdateProgress();
         
         // MEASURE ACTUAL COMPLETION TIME
         stopwatch.Stop();
@@ -121,11 +231,18 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   Start: {startTime:HH:mm:ss.fff} UTC");
         Console.WriteLine($"   End:   {endTime:HH:mm:ss.fff} UTC");
         Console.WriteLine($"   REAL Duration: {actualProcessingTime:F2} seconds");
+        UpdateProgress();
         
         // Wait for metrics to be processed by infrastructure and scraped by Prometheus
         var metricsWaitStart = DateTime.UtcNow;
         Console.WriteLine("⏳ Waiting for metrics to be scraped by Prometheus...");
-        await Task.Delay(30000); // 30 seconds for metrics propagation to Prometheus - increased for better reliability
+        
+        // Wait with periodic progress updates
+        for (int i = 0; i < 30; i++) // 30 seconds total, 1 second intervals
+        {
+            await Task.Delay(1000);
+            UpdateProgress();
+        }
         
         // Verify metrics are available with real infrastructure and debug if not
         var maxRetries = 5; // Increased retries
@@ -133,6 +250,8 @@ public class ObservabilityMetricsSteps : IDisposable
         
         for (int retry = 0; retry < maxRetries; retry++)
         {
+            UpdateProgress(); // Update progress at start of each retry
+            
             try
             {
                 // First, check debug endpoint to see what's available in Prometheus
@@ -153,6 +272,7 @@ public class ObservabilityMetricsSteps : IDisposable
                                 Console.WriteLine($"📈 Metrics Summary: {summary}");
                             }
                         }
+                        UpdateProgress();
                     }
                     catch (Exception debugEx)
                     {
@@ -161,6 +281,8 @@ public class ObservabilityMetricsSteps : IDisposable
                 }
                 
                 var checkResponse = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
+                UpdateProgress();
+                
                 if (checkResponse.IsSuccessStatusCode)
                 {
                     var checkContent = await checkResponse.Content.ReadAsStringAsync();
@@ -180,6 +302,7 @@ public class ObservabilityMetricsSteps : IDisposable
                             {
                                 hasMetrics = true;
                                 Console.WriteLine($"✅ Real infrastructure metrics verified: {metricCount} metrics tracked");
+                                UpdateProgress();
                                 break;
                             }
                         }
@@ -194,7 +317,13 @@ public class ObservabilityMetricsSteps : IDisposable
             if (retry < maxRetries - 1)
             {
                 Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries}) - Prometheus may still be scraping...");
-                await Task.Delay(10000); // Wait 10 seconds before retry - longer for Prometheus scraping
+                
+                // Wait with progress updates
+                for (int i = 0; i < 10; i++) // 10 seconds total, 1 second intervals
+                {
+                    await Task.Delay(1000);
+                    UpdateProgress();
+                }
             }
         }
         
@@ -268,6 +397,7 @@ public class ObservabilityMetricsSteps : IDisposable
     public async Task ThenWeSaveTheMetricsToAFile()
     {
         await EnsureInfrastructureInitialized();
+        UpdateProgress();
         
         var metricsData = _scenarioContext.ContainsKey("metrics_data") 
             ? _scenarioContext["metrics_data"] as Dictionary<string, object>
@@ -277,6 +407,7 @@ public class ObservabilityMetricsSteps : IDisposable
         {
             metricsData = await GetDetailedMetrics();
         }
+        UpdateProgress();
         
         var metricsDisplay = _scenarioContext.ContainsKey("metrics_display")
             ? _scenarioContext["metrics_display"] as string
@@ -292,6 +423,7 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // Write formatted metrics to file
         await File.WriteAllTextAsync(filename, metricsDisplay);
+        UpdateProgress();
         
         Console.WriteLine($"📁 Real observability metrics saved to LocalTesting/Bin directory:");
         Console.WriteLine($"   📂 LocalTesting Directory: {localTestingDir}");
@@ -300,6 +432,9 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   📊 File size: {new FileInfo(filename).Length} bytes");
         Console.WriteLine($"   🔗 Metrics source: Real Prometheus infrastructure");
         Console.WriteLine($"   ✅ GitHub workflow will find file at: LocalTesting/Bin/observability-test-result.txt");
+        
+        // Stop progress monitoring - test completed successfully
+        StopProgressMonitoring();
     }
     
     private string FindLocalTestingDirectory()

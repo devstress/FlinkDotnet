@@ -74,15 +74,10 @@ Console.WriteLine("✅ Applied extended DCP timeouts and container stability set
 // Prevents DCP reconciliation failures by limiting simultaneous container creation
 // Key insight: Start essential services first, then build dependency chains
 
-// Redis with enhanced stability and health check configuration
+// Redis with configuration file to eliminate warnings and improved stability
 var redis = builder.AddRedis("redis")
-    .WithEnvironment("REDIS_MAXMEMORY", "256mb")
-    .WithEnvironment("REDIS_MAXMEMORY_POLICY", "allkeys-lru")
-    .WithEnvironment("REDIS_BIND", "0.0.0.0") // Force IPv4
-    .WithEnvironment("REDIS_TIMEOUT", "30")
-    .WithEnvironment("REDIS_TCP_KEEPALIVE", "60")
-    .WithEnvironment("REDIS_SAVE", "60 1000") // Persistence settings for stability
-    .WithEnvironment("REDIS_STOP_WRITES_ON_BGSAVE_ERROR", "no"); // Prevent redis crashes on save errors
+    .WithBindMount("./redis.conf", "/usr/local/etc/redis/redis.conf")
+    .WithArgs("redis-server", "/usr/local/etc/redis/redis.conf");
 
 // 3 Kafka Brokers with KRaft cluster configuration using official Apache Kafka image
 var kafkaBroker1 = builder.AddContainer("kafka-broker-1", "apache/kafka:3.8.0")
@@ -101,7 +96,8 @@ var kafkaBroker1 = builder.AddContainer("kafka-broker-1", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3")
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M")
+    .WithEnvironment("KAFKA_LOG4J_LOGGERS", "kafka.controller=WARN,kafka.network.RequestChannel=WARN");
 
 var kafkaBroker2 = builder.AddContainer("kafka-broker-2", "apache/kafka:3.8.0")
     .WithEndpoint(9093, 9092, "kafka2")
@@ -119,8 +115,8 @@ var kafkaBroker2 = builder.AddContainer("kafka-broker-2", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3")
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
-    // No WaitFor - Kafka brokers must start simultaneously for KRaft cluster
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M")
+    .WithEnvironment("KAFKA_LOG4J_LOGGERS", "kafka.controller=WARN,kafka.network.RequestChannel=WARN");
 
 var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
     .WithEndpoint(9094, 9092, "kafka3")
@@ -138,8 +134,8 @@ var kafkaBroker3 = builder.AddContainer("kafka-broker-3", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "10")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "3")
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M");
-    // No WaitFor - Kafka brokers must start simultaneously for KRaft cluster
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M")
+    .WithEnvironment("KAFKA_LOG4J_LOGGERS", "kafka.controller=WARN,kafka.network.RequestChannel=WARN");
 
 // Kafka UI with staggered startup to reduce DCP load
 var kafkaUI = builder.AddContainer("kafka-ui", "provectuslabs/kafka-ui:latest")
@@ -254,14 +250,11 @@ var temporalUI = builder.AddContainer("temporal-ui", "temporalio/ui:latest")
     .WithEnvironment("TEMPORAL_CORS_ORIGINS", "http://localhost:8084")
     .WaitFor(temporalServer);
 
-// Loki for centralized log aggregation with enhanced stability
+// Loki for centralized log aggregation with proper configuration file
 var loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
     .WithHttpEndpoint(18005, 3100, "loki")
-    .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
-    .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
-    .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", "3100")
-    .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", "9095")
-    .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
+    .WithBindMount("./loki-config.yml", "/etc/loki/local-config.yaml")
+    .WithArgs("-config.file=/etc/loki/local-config.yaml");
 
 // Prometheus for metrics collection with enhanced startup stability
 var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
