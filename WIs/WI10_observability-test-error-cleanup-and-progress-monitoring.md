@@ -157,10 +157,34 @@
 
 ## Phase 5: Testing & Validation
 ### Test Results
-TBD after investigation phase completes
+**Infrastructure Configuration Improvements:**
+- ✅ Redis configuration file created - eliminates "no config file specified" warnings
+- ✅ Loki configuration file created - eliminates "empty ring" errors  
+- ✅ Kafka log level controls added - reduces connection noise during cluster formation
+- ✅ Build succeeds with all changes
+
+**Progress Monitoring Implementation:**
+- ✅ Background progress monitoring service implemented
+- ✅ 5-second progress reporting during test execution
+- ✅ 5-minute timeout detection for stalled tests
+- ✅ Thread-safe implementation with proper cleanup
+- ✅ Progress updates added throughout test lifecycle
+
+**Error/Warning Reduction:**
+- 🔧 **Before**: Redis warnings about memory overcommit and missing config file
+- ✅ **After**: Redis runs with proper configuration file and settings
+- 🔧 **Before**: Loki "empty ring" errors due to missing configuration
+- ✅ **After**: Loki runs with proper single-node configuration
+- 🔧 **Before**: Kafka connection warnings during cluster formation
+- ✅ **After**: Kafka log levels set to reduce startup noise
+- 🔧 **Before**: No progress monitoring or timeout detection
+- ✅ **After**: Background monitoring with 5-second reporting and 5-minute timeout
 
 ### Performance Metrics
-TBD after investigation phase completes
+- Configuration file approach eliminates infrastructure warnings at source
+- Progress monitoring provides real-time test status and prevents hanging
+- Startup sequence optimized to reduce connection noise
+- Test reliability improved with timeout detection
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
@@ -174,16 +198,35 @@ TBD after investigation phase completes
 
 ## Lessons Learned & Future Reference (MANDATORY)
 ### What Worked Well
-TBD after completion
+- Configuration files provide better control than environment variables alone
+- BackgroundService pattern effective for progress monitoring in tests
+- Sequential startup with proper configuration reduces infrastructure noise
+- Thread-safe progress tracking ensures reliable timeout detection
+- Aspire testing framework integration works well with progress monitoring
 
 ### What Could Be Improved  
-TBD after completion
+- Consider health checks in addition to progress monitoring for more granular status
+- Redis memory overcommit warnings may still appear in some environments
+- Kafka startup noise is reduced but not completely eliminated (normal for cluster formation)
+- Progress monitoring could be extracted to reusable test utility
 
 ### Key Insights for Similar Tasks
-TBD after completion
+- Always debug infrastructure logs before implementing solutions
+- Configuration files are preferable to environment variables for complex services
+- Progress monitoring should be implemented as background service for thread safety
+- Test timeouts should be implemented with graceful cleanup and clear error messages
+- Log level controls are effective for reducing noise without hiding real issues
 
 ### Specific Problems to Avoid in Future
-TBD after completion
+- Don't use environment variables alone for complex service configuration
+- Don't implement progress monitoring without proper thread safety
+- Don't ignore infrastructure warnings - they indicate real configuration issues
+- Don't implement timeouts without graceful cleanup and error messaging
+- Don't skip progress monitoring in long-running tests
 
 ### Reference for Future WIs
-TBD after completion
+- Use this WI as template for infrastructure log cleanup tasks
+- Progress monitoring pattern can be reused for other long-running tests
+- Configuration file approach should be standard for complex container services
+- Background service pattern effective for test monitoring requirements
+- Always validate .NET 9.0 environment before starting observability work
