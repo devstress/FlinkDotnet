@@ -204,7 +204,8 @@ public class ObservabilityMetricsSteps : IDisposable
         
         if (!hasMetrics)
         {
-            Console.WriteLine("⚠️ No real metrics detected after flow execution. This indicates a real infrastructure issue.");
+            Console.WriteLine("❌ CRITICAL: No real metrics detected after flow execution. This indicates a real infrastructure issue.");
+            throw new InvalidOperationException("Observability test failed: No metrics detected after infrastructure execution. This indicates infrastructure failure and must fail the test.");
         }
         
         _scenarioContext["flow_completed"] = true;
@@ -574,8 +575,9 @@ public class ObservabilityMetricsSteps : IDisposable
             }
             else
             {
-                output.AppendLine($"  ❌ ERROR: Processing time is 0 - indicates test measurement problem");
+                output.AppendLine($"  ❌ CRITICAL ERROR: Processing time is 0 - indicates test measurement problem");
                 output.AppendLine($"  ❌ This suggests metrics are not from real infrastructure execution");
+                throw new InvalidOperationException("Observability test failed: Processing time is 0, indicating test measurement failure. This must fail the test.");
             }
             
             // Validation of metrics realism
@@ -583,8 +585,9 @@ public class ObservabilityMetricsSteps : IDisposable
             
             if (!isRealistic)
             {
-                output.AppendLine($"  ⚠️  WARNING: Metrics may be generated instead of measured from real infrastructure");
-                output.AppendLine($"  🔧 RECOMMENDATION: Verify Stopwatch measurement and real infrastructure connection");
+                output.AppendLine($"  ❌ CRITICAL: Metrics are unrealistic and may be generated instead of measured from real infrastructure");
+                output.AppendLine($"  🔧 ERROR: Processing time: {totalProcessingTime:F2}s, Rate: {overallMsgPerSec:F2} msg/sec");
+                throw new InvalidOperationException($"Observability test failed: Unrealistic metrics detected (time: {totalProcessingTime:F2}s, rate: {overallMsgPerSec:F2} msg/sec). This indicates infrastructure failure and must fail the test.");
             }
             
         }
@@ -653,8 +656,8 @@ public class ObservabilityMetricsSteps : IDisposable
         }
         
         // If no real measurement available, this indicates a test problem
-        Console.WriteLine("❌ ERROR: No real processing time measurement available. Test should measure actual infrastructure performance.");
-        return 0.0; // Return 0 to indicate measurement issue, not fake default
+        Console.WriteLine("❌ CRITICAL ERROR: No real processing time measurement available. Test should measure actual infrastructure performance.");
+        throw new InvalidOperationException("Observability test failed: No processing time measurement available. This indicates test measurement failure and must fail the test.");
     }
 
     private double CalculateKafkaProducingRate(JsonElement? kafkaMetrics)
