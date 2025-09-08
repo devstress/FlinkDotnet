@@ -33,26 +33,28 @@ public class KafkaProducerService : IDisposable
                     var config = new ProducerConfig
                     {
                         BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
-                        ClientId = "LocalTesting.WebApi.Producer.ThousandMsgPerSec",
+                        ClientId = "LocalTesting.WebApi.Producer.UltraHighPerformance",
                         Acks = Acks.Leader,  // Use leader ack for maximum speed (instead of All)
-                        MessageTimeoutMs = 60000,   // Reduced timeout for faster failure detection
-                        RequestTimeoutMs = 30000,   // Reduced request timeout for speed
+                        MessageTimeoutMs = 30000,   // Reduced timeout for faster failure detection
+                        RequestTimeoutMs = 15000,   // Reduced request timeout for speed
                         EnableIdempotence = false,  // Disable for maximum speed
                         CompressionType = CompressionType.Lz4,  // Faster compression than Snappy
-                        BatchSize = 1048576,  // 1MB batch size for maximum throughput (increased from 512KB)
-                        LingerMs = 5,        // Slightly longer linger for better batching efficiency
-                        QueueBufferingMaxMessages = 10000000,  // 10M message buffer for ultra-high throughput
-                        QueueBufferingMaxKbytes = 8192 * 1024,  // 8GB buffer for ultra-high-speed production
+                        BatchSize = 2097152,  // 2MB batch size for ultra-high throughput (doubled from 1MB)
+                        LingerMs = 10,       // Optimized linger time for batch efficiency vs latency
+                        QueueBufferingMaxMessages = 50000000,  // 50M message buffer for ultra-high throughput
+                        QueueBufferingMaxKbytes = 16384 * 1024,  // 16GB buffer for ultra-high-speed production
                         MessageSendMaxRetries = 0,  // No retries for maximum speed
-                        RetryBackoffMs = 10,        // Minimal retry backoff
+                        RetryBackoffMs = 5,         // Minimal retry backoff
                         // Ultra-high performance settings optimized for thousands msg/sec
-                        MaxInFlight = 50,           // Increased in-flight requests for maximum parallelism
+                        MaxInFlight = 100,          // Maximum in-flight requests for ultimate parallelism
                         DeliveryReportFields = "none", // No delivery reports for maximum speed
                         ApiVersionRequest = true,   // Enable for better performance
                         BrokerVersionFallback = "2.8.0",
-                        // Additional high-throughput optimizations
+                        // Additional ultra-high-throughput optimizations
                         SocketKeepaliveEnable = true,
-                        SocketNagleDisable = true   // Disable Nagle algorithm for low latency
+                        SocketNagleDisable = true,  // Disable Nagle algorithm for low latency
+                        // Performance optimizations for synchronous Produce calls
+                        StatisticsIntervalMs = 0    // Disable statistics for performance
                     };
 
                     _producer = new ProducerBuilder<string, string>(config)
@@ -70,8 +72,6 @@ public class KafkaProducerService : IDisposable
     public async Task ProduceMessagesAsync(string topic, List<ComplexLogicMessage> messages)
     {
         var startTime = DateTime.UtcNow;
-        var totalSuccessCount = 0;
-        var totalFailureCount = 0;
         
         // Check for high-performance mode configuration
         var highPerformanceMode = _configuration.GetValue<bool>("Kafka:HighPerformanceMode", false);
@@ -94,8 +94,8 @@ public class KafkaProducerService : IDisposable
     }
 
     /// <summary>
-    /// High-performance message production with minimal per-message overhead
-    /// Optimized for thousands of messages per second throughput
+    /// High-performance message production with batch submission and direct flush
+    /// Optimized for thousands of messages per second throughput using synchronous Produce calls
     /// </summary>
     private async Task ProduceMessagesHighPerformanceAsync(string topic, List<ComplexLogicMessage> messages, 
         IProducer<string, string> producer, DateTime startTime)
@@ -108,11 +108,11 @@ public class KafkaProducerService : IDisposable
             .GroupBy(m => m.PartitionNumber)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.MessageId).ToList());
 
-        _logger.LogInformation("HIGH PERFORMANCE: Messages distributed across {PartitionCount} partitions: {PartitionDistribution}", 
+        _logger.LogInformation("HIGH PERFORMANCE BATCH: Messages distributed across {PartitionCount} partitions: {PartitionDistribution}", 
             messagesByPartition.Count, 
             string.Join(", ", messagesByPartition.Select(kv => $"P{kv.Key}={kv.Value.Count}")));
 
-        // Process partitions in parallel with maximum performance
+        // Process partitions in parallel with BATCH SUBMISSION and DIRECT FLUSH
         var partitionTasks = messagesByPartition.Select(async partitionGroup =>
         {
             var partitionNumber = partitionGroup.Key;
@@ -120,79 +120,94 @@ public class KafkaProducerService : IDisposable
             var partitionSuccessCount = 0;
             var partitionFailureCount = 0;
 
-            // ULTRA-HIGH PERFORMANCE: Large batches with minimal overhead
-            const int ultraBatchSize = 5000; // Larger batches for maximum throughput
+            // BATCH SUBMISSION: Use synchronous Produce calls for maximum speed
+            const int batchSize = 1000; // Optimized batch size for thousands msg/sec
             var messageBatches = partitionMessages
                 .Select((message, index) => new { message, index })
-                .GroupBy(x => x.index / ultraBatchSize)
+                .GroupBy(x => x.index / batchSize)
                 .Select(g => g.Select(x => x.message).ToList())
                 .ToList();
             
+            _logger.LogDebug("HIGH PERFORMANCE Partition {PartitionNumber}: Processing {MessageCount} messages in {BatchCount} batches", 
+                partitionNumber, partitionMessages.Count, messageBatches.Count);
+            
             foreach (var messageBatch in messageBatches)
             {
-                var batchTasks = new List<Task>();
+                var batchStartTime = DateTime.UtcNow;
+                var topicPartition = new TopicPartition(topic, new Partition(partitionNumber));
                 
-                // MINIMAL OVERHEAD: Simple message creation without headers or state tracking
-                foreach (var message in messageBatch)
+                // SYNCHRONOUS BATCH SUBMISSION: No async overhead per message
+                await Task.Run(() =>
                 {
-                    var jsonMessage = JsonSerializer.Serialize(message);
-                    
-                    var kafkaMessage = new Message<string, string>
+                    foreach (var message in messageBatch)
                     {
-                        Key = message.CorrelationId,
-                        Value = jsonMessage
-                        // NO HEADERS: Eliminates per-message UTF8 encoding overhead
-                    };
-                    
-                    // Use TopicPartition to explicitly specify the partition
-                    var topicPartition = new TopicPartition(topic, new Partition(partitionNumber));
-                    
-                    // FIRE-AND-FORGET: Minimal delivery report processing
-                    var produceTask = producer.ProduceAsync(topicPartition, kafkaMessage)
-                        .ContinueWith(deliveryReportTask =>
+                        try
                         {
-                            if (deliveryReportTask.IsCompletedSuccessfully && 
-                                deliveryReportTask.Result.Status == PersistenceStatus.Persisted)
+                            var jsonMessage = JsonSerializer.Serialize(message);
+                            
+                            var kafkaMessage = new Message<string, string>
                             {
-                                Interlocked.Increment(ref partitionSuccessCount);
-                            }
-                            else
+                                Key = message.CorrelationId,
+                                Value = jsonMessage
+                                // NO HEADERS: Maximum performance with minimal overhead
+                            };
+                            
+                            // SYNCHRONOUS PRODUCE: Eliminates async task overhead
+                            producer.Produce(topicPartition, kafkaMessage, (deliveryReport) =>
                             {
-                                Interlocked.Increment(ref partitionFailureCount);
-                            }
-                        }, TaskContinuationOptions.ExecuteSynchronously);
-
-                    batchTasks.Add(produceTask);
+                                if (deliveryReport.Status == PersistenceStatus.Persisted)
+                                {
+                                    Interlocked.Increment(ref partitionSuccessCount);
+                                }
+                                else
+                                {
+                                    Interlocked.Increment(ref partitionFailureCount);
+                                    _logger.LogWarning("Failed to produce message to partition {PartitionNumber}: {Status}", 
+                                        partitionNumber, deliveryReport.Status);
+                                }
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Interlocked.Increment(ref partitionFailureCount);
+                            _logger.LogError(ex, "Error producing message {MessageId} to partition {PartitionNumber}", 
+                                message.MessageId, partitionNumber);
+                        }
+                    }
                     
-                    // NO STATE TRACKING: Eliminates async Task.Run overhead per message
-                }
+                    // DIRECT FLUSH: Force immediate batch submission
+                    producer.Flush(TimeSpan.FromSeconds(10));
+                });
                 
-                // Wait for all messages in this batch to complete
-                await Task.WhenAll(batchTasks);
+                var batchLatency = (DateTime.UtcNow - batchStartTime).TotalMilliseconds;
+                var batchThroughput = messageBatch.Count / Math.Max(batchLatency / 1000.0, 0.001);
                 
-                // BATCH METRICS: Record metrics per batch instead of per message
+                _logger.LogDebug("HIGH PERFORMANCE Partition {PartitionNumber} batch: {BatchSize} messages in {LatencyMs}ms = {Throughput:F0} msg/sec", 
+                    partitionNumber, messageBatch.Count, batchLatency, batchThroughput);
+                
+                // BATCH METRICS: Record metrics per batch for efficiency
                 _metricsService.RecordKafkaProducerMessage(topic, $"partition-{partitionNumber}", 
                     messageBatch.Count, messageBatch.Count * 1024); // Estimated size
             }
 
+            _logger.LogInformation("HIGH PERFORMANCE Partition {PartitionNumber}: {SuccessCount} successful, {FailureCount} failed", 
+                partitionNumber, partitionSuccessCount, partitionFailureCount);
+            
             // Add partition results to total
             Interlocked.Add(ref totalSuccessCount, partitionSuccessCount);
             Interlocked.Add(ref totalFailureCount, partitionFailureCount);
-
-            _logger.LogInformation("HIGH PERFORMANCE Partition {PartitionNumber}: {SuccessCount} successful, {FailureCount} failed", 
-                partitionNumber, partitionSuccessCount, partitionFailureCount);
         });
 
         // Wait for all partitions to complete
         await Task.WhenAll(partitionTasks);
         
-        // Quick flush for high performance
+        // FINAL FLUSH: Ensure all messages are committed
         producer.Flush(TimeSpan.FromSeconds(30));
 
         var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
         var messagesPerSecond = totalSuccessCount / Math.Max(totalTime, 1.0);
         
-        _logger.LogInformation("HIGH PERFORMANCE production completed: {SuccessCount} successful, {FailureCount} failed, {MessagesPerSecond:F2} msg/sec", 
+        _logger.LogInformation("HIGH PERFORMANCE BATCH production completed: {SuccessCount} successful, {FailureCount} failed, {MessagesPerSecond:F2} msg/sec", 
             totalSuccessCount, totalFailureCount, messagesPerSecond);
             
         // Log per-partition throughput for performance analysis
