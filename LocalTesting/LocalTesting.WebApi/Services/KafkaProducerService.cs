@@ -72,18 +72,154 @@ public class KafkaProducerService : IDisposable
         var startTime = DateTime.UtcNow;
         var totalSuccessCount = 0;
         var totalFailureCount = 0;
+        
+        // Check for high-performance mode configuration
+        var highPerformanceMode = _configuration.GetValue<bool>("Kafka:HighPerformanceMode", false);
 
-        _logger.LogInformation("Producing {MessageCount} messages to topic '{Topic}' with parallel partition strategy", 
-            messages.Count, topic);
+        _logger.LogInformation("Producing {MessageCount} messages to topic '{Topic}' with {Mode} mode", 
+            messages.Count, topic, highPerformanceMode ? "HIGH PERFORMANCE" : "FULL OBSERVABILITY");
 
         var producer = GetOrCreateProducer(); // Lazy initialization
+
+        if (highPerformanceMode)
+        {
+            // OPTIMIZED HIGH-PERFORMANCE MODE: Minimal overhead for thousands msg/sec
+            await ProduceMessagesHighPerformanceAsync(topic, messages, producer, startTime);
+        }
+        else
+        {
+            // FULL OBSERVABILITY MODE: Complete tracking and state management
+            await ProduceMessagesFullObservabilityAsync(topic, messages, producer, startTime);
+        }
+    }
+
+    /// <summary>
+    /// High-performance message production with minimal per-message overhead
+    /// Optimized for thousands of messages per second throughput
+    /// </summary>
+    private async Task ProduceMessagesHighPerformanceAsync(string topic, List<ComplexLogicMessage> messages, 
+        IProducer<string, string> producer, DateTime startTime)
+    {
+        var totalSuccessCount = 0;
+        var totalFailureCount = 0;
+
+        // Group messages by partition for parallel processing
+        var messagesByPartition = messages
+            .GroupBy(m => m.PartitionNumber)
+            .ToDictionary(g => g.Key, g => g.OrderBy(m => m.MessageId).ToList());
+
+        _logger.LogInformation("HIGH PERFORMANCE: Messages distributed across {PartitionCount} partitions: {PartitionDistribution}", 
+            messagesByPartition.Count, 
+            string.Join(", ", messagesByPartition.Select(kv => $"P{kv.Key}={kv.Value.Count}")));
+
+        // Process partitions in parallel with maximum performance
+        var partitionTasks = messagesByPartition.Select(async partitionGroup =>
+        {
+            var partitionNumber = partitionGroup.Key;
+            var partitionMessages = partitionGroup.Value;
+            var partitionSuccessCount = 0;
+            var partitionFailureCount = 0;
+
+            // ULTRA-HIGH PERFORMANCE: Large batches with minimal overhead
+            const int ultraBatchSize = 5000; // Larger batches for maximum throughput
+            var messageBatches = partitionMessages
+                .Select((message, index) => new { message, index })
+                .GroupBy(x => x.index / ultraBatchSize)
+                .Select(g => g.Select(x => x.message).ToList())
+                .ToList();
+            
+            foreach (var messageBatch in messageBatches)
+            {
+                var batchTasks = new List<Task>();
+                
+                // MINIMAL OVERHEAD: Simple message creation without headers or state tracking
+                foreach (var message in messageBatch)
+                {
+                    var jsonMessage = JsonSerializer.Serialize(message);
+                    
+                    var kafkaMessage = new Message<string, string>
+                    {
+                        Key = message.CorrelationId,
+                        Value = jsonMessage
+                        // NO HEADERS: Eliminates per-message UTF8 encoding overhead
+                    };
+                    
+                    // Use TopicPartition to explicitly specify the partition
+                    var topicPartition = new TopicPartition(topic, new Partition(partitionNumber));
+                    
+                    // FIRE-AND-FORGET: Minimal delivery report processing
+                    var produceTask = producer.ProduceAsync(topicPartition, kafkaMessage)
+                        .ContinueWith(deliveryReportTask =>
+                        {
+                            if (deliveryReportTask.IsCompletedSuccessfully && 
+                                deliveryReportTask.Result.Status == PersistenceStatus.Persisted)
+                            {
+                                Interlocked.Increment(ref partitionSuccessCount);
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref partitionFailureCount);
+                            }
+                        }, TaskContinuationOptions.ExecuteSynchronously);
+
+                    batchTasks.Add(produceTask);
+                    
+                    // NO STATE TRACKING: Eliminates async Task.Run overhead per message
+                }
+                
+                // Wait for all messages in this batch to complete
+                await Task.WhenAll(batchTasks);
+                
+                // BATCH METRICS: Record metrics per batch instead of per message
+                _metricsService.RecordKafkaProducerMessage(topic, $"partition-{partitionNumber}", 
+                    messageBatch.Count, messageBatch.Count * 1024); // Estimated size
+            }
+
+            // Add partition results to total
+            Interlocked.Add(ref totalSuccessCount, partitionSuccessCount);
+            Interlocked.Add(ref totalFailureCount, partitionFailureCount);
+
+            _logger.LogInformation("HIGH PERFORMANCE Partition {PartitionNumber}: {SuccessCount} successful, {FailureCount} failed", 
+                partitionNumber, partitionSuccessCount, partitionFailureCount);
+        });
+
+        // Wait for all partitions to complete
+        await Task.WhenAll(partitionTasks);
+        
+        // Quick flush for high performance
+        producer.Flush(TimeSpan.FromSeconds(30));
+
+        var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
+        var messagesPerSecond = totalSuccessCount / Math.Max(totalTime, 1.0);
+        
+        _logger.LogInformation("HIGH PERFORMANCE production completed: {SuccessCount} successful, {FailureCount} failed, {MessagesPerSecond:F2} msg/sec", 
+            totalSuccessCount, totalFailureCount, messagesPerSecond);
+            
+        // Log per-partition throughput for performance analysis
+        foreach (var partitionGroup in messagesByPartition)
+        {
+            var partitionThroughput = partitionGroup.Value.Count / Math.Max(totalTime, 1.0);
+            _logger.LogInformation("HIGH PERFORMANCE Partition {PartitionNumber}: {MessagesPerSecond:F2} msg/sec", 
+                partitionGroup.Key, partitionThroughput);
+        }
+    }
+
+    /// <summary>
+    /// Full observability message production with complete tracking and state management
+    /// Used when detailed monitoring and debugging is needed
+    /// </summary>
+    private async Task ProduceMessagesFullObservabilityAsync(string topic, List<ComplexLogicMessage> messages, 
+        IProducer<string, string> producer, DateTime startTime)
+    {
+        var totalSuccessCount = 0;
+        var totalFailureCount = 0;
 
         // Group messages by partition for parallel processing while maintaining FIFO within each partition
         var messagesByPartition = messages
             .GroupBy(m => m.PartitionNumber)
             .ToDictionary(g => g.Key, g => g.OrderBy(m => m.MessageId).ToList());
 
-        _logger.LogInformation("Messages distributed across {PartitionCount} partitions: {PartitionDistribution}", 
+        _logger.LogInformation("FULL OBSERVABILITY: Messages distributed across {PartitionCount} partitions: {PartitionDistribution}", 
             messagesByPartition.Count, 
             string.Join(", ", messagesByPartition.Select(kv => $"P{kv.Key}={kv.Value.Count}")));
 
@@ -237,7 +373,7 @@ public class KafkaProducerService : IDisposable
         var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
         var messagesPerSecond = totalSuccessCount / Math.Max(totalTime, 1.0);
         
-        _logger.LogInformation("Message production completed: {SuccessCount} successful, {FailureCount} failed, {MessagesPerSecond:F2} msg/sec total", 
+        _logger.LogInformation("FULL OBSERVABILITY production completed: {SuccessCount} successful, {FailureCount} failed, {MessagesPerSecond:F2} msg/sec", 
             totalSuccessCount, totalFailureCount, messagesPerSecond);
             
         // Log per-partition throughput for performance analysis
