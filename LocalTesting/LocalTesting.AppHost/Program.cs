@@ -70,6 +70,9 @@ Environment.SetEnvironmentVariable("DOCKER_BUILDKIT", "1");
 
 Console.WriteLine("✅ Applied extended DCP timeouts and container stability settings");
 
+// PERFORMANCE OPTIMIZATION: Detect test mode for performance optimizations
+var isTestMode = args.Contains("--test-mode") || Environment.GetEnvironmentVariable("TESTING_MODE") == "true";
+
 // Enhanced sequential container startup with reduced parallel load
 // Prevents DCP reconciliation failures by limiting simultaneous container creation
 // Key insight: Start essential services first, then build dependency chains
@@ -155,29 +158,43 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("SQL_MAX_CONN_LIFETIME", "3600") // 1 hour connection lifetime
     .WaitFor(temporalPostgres);
 
-// Loki for centralized log aggregation with enhanced stability
-var loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
-    .WithHttpEndpoint(18005, 3100, "loki")
-    .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
-    .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
-    .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", "3100")
-    .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", "9095")
-    .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
+// Loki for centralized log aggregation with enhanced stability  
+// PERFORMANCE OPTIMIZATION: Disable Loki when running tests for faster execution
+IResourceBuilder<ContainerResource>? loki = null;
+if (!isTestMode)
+{
+    loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
+        .WithHttpEndpoint(18005, 3100, "loki")
+        .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
+        .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
+        .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", "3100")
+        .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", "9095")
+        .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
+        
+    Console.WriteLine("📝 Loki logging enabled for development mode");
+}
+else 
+{
+    Console.WriteLine("⚡ Loki logging disabled for test mode (performance optimization)");
+}
 
 // Prometheus for metrics collection with enhanced startup stability
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
+// PERFORMANCE OPTIMIZATION: Simplified Prometheus configuration for test mode
+var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:latest")
     .WithHttpEndpoint(18006, 9090, "prometheus")
     .WithBindMount("./prometheus.yml", "/etc/prometheus/prometheus.yml")
-    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "7d")
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", isTestMode ? "1h" : "7d") // Shorter retention for tests
     .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", "0.0.0.0:9090")
     .WithArgs("--config.file=/etc/prometheus/prometheus.yml",
               "--storage.tsdb.path=/prometheus",
               "--web.console.libraries=/etc/prometheus/console_libraries",
               "--web.console.templates=/etc/prometheus/consoles",
               "--web.enable-lifecycle",
-              "--storage.tsdb.retention.time=7d",
+              "--storage.tsdb.retention.time=" + (isTestMode ? "1h" : "7d"),
               "--log.level=warn",
               "--web.listen-address=0.0.0.0:9090");
+
+var prometheus = prometheusBuilder;
 
 // OpenTelemetry Collector with minimal, stable configuration
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
@@ -192,8 +209,6 @@ var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-c
 
 // Grafana with PGL stack integration and enhanced startup reliability
 // PERFORMANCE OPTIMIZATION: Disable Grafana and Temporal UI when running tests for faster execution  
-var isTestMode = args.Contains("--test-mode") || Environment.GetEnvironmentVariable("TESTING_MODE") == "true";
-
 IResourceBuilder<ContainerResource>? grafana = null;
 if (!isTestMode)
 {
@@ -209,12 +224,17 @@ if (!isTestMode)
         .WithEnvironment("GF_INSTALL_PLUGINS", "") // Disable plugin installation for faster startup
         .WithEnvironment("GF_ANALYTICS_REPORTING_ENABLED", "false")
         .WithEnvironment("GF_ANALYTICS_CHECK_FOR_UPDATES", "false")
-        .WithEnvironment("LOKI_URL", "http://loki:3100")
+        .WithEnvironment("LOKI_URL", loki != null ? "http://loki:3100" : "")
         .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
         .WithBindMount("./grafana-datasources-training.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
-        .WaitFor(loki)
         .WaitFor(prometheus)
         .WaitFor(otelCollector);
+        
+    // Only wait for Loki if it exists
+    if (loki != null)
+    {
+        grafana = grafana.WaitFor(loki);
+    }
         
     Console.WriteLine("🎨 Grafana UI enabled for development mode");
 }
@@ -235,7 +255,7 @@ var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("l
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
     .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
     .WithEnvironment("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://otel-collector:4317")
-    .WithEnvironment("LOKI_ENDPOINT", "http://loki:3100")
+    .WithEnvironment("LOKI_ENDPOINT", loki != null ? "http://loki:3100" : "")
     .WithEnvironment("GRAFANA_URL", "http://grafana:3000")
     .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
     .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")

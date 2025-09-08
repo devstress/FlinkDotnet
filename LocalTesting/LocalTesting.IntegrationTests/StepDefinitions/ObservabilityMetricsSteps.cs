@@ -57,8 +57,8 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // StartAsync will wait for all services to be ready based on their configured health checks
         // This automatically handles service readiness - no manual validation needed
-        // Use optimized timeout for performance testing (under 1 minute requirement)
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3)); // 3 minutes for infrastructure startup - optimized
+        // Use heavily optimized timeout for performance testing (under 1 minute requirement)
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2)); // 2 minutes for infrastructure startup - heavily optimized
         await _app.StartAsync(cts.Token);
         
         Console.WriteLine("✅ All Aspire services started and ready (validated by framework)");
@@ -101,14 +101,14 @@ public class ObservabilityMetricsSteps : IDisposable
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
         // Message count configuration: Optimized for performance - under 1 minute execution
         var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
-            ? 1000    // 1K messages for GitHub workflow - optimized for <1 minute execution
-            : 5000;   // 5K messages for local operation - balance between performance and meaningful metrics
+            ? 100     // 100 messages for GitHub workflow - optimized for <1 minute execution
+            : 500;    // 500 messages for local operation - minimal test for performance
             
         var flowRequest = new
         {
             KafkaMessages = messageCount,
-            FlinkJobs = 2,
-            TemporalWorkflows = 5,
+            FlinkJobs = 1, // Reduced from 2 for performance
+            TemporalWorkflows = 2, // Reduced from 5 for performance
             // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
         };
 
@@ -129,10 +129,10 @@ public class ObservabilityMetricsSteps : IDisposable
         // Wait for metrics to be processed by infrastructure and scraped by Prometheus
         var metricsWaitStart = DateTime.UtcNow;
         Console.WriteLine("⏳ Waiting for metrics to be scraped by Prometheus...");
-        await Task.Delay(10000); // 10 seconds for metrics propagation to Prometheus - optimized for performance
+        await Task.Delay(5000); // 5 seconds for metrics propagation to Prometheus - heavily optimized for performance
         
         // Verify metrics are available with real infrastructure and debug if not
-        var maxRetries = 5; // Increased retries
+        var maxRetries = 3; // Reduced retries for performance
         var hasMetrics = false;
         
         for (int retry = 0; retry < maxRetries; retry++)
@@ -198,7 +198,7 @@ public class ObservabilityMetricsSteps : IDisposable
             if (retry < maxRetries - 1)
             {
                 Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries}) - Prometheus may still be scraping...");
-                await Task.Delay(5000); // Wait 5 seconds before retry - optimized for performance
+                await Task.Delay(3000); // Wait 3 seconds before retry - heavily optimized for performance
             }
         }
         
