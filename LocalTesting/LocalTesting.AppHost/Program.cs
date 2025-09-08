@@ -237,7 +237,7 @@ var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-c
     .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=local-otel-collector,service.version=1.0.0,deployment.environment=local-testing")
     .WithEnvironment("GOMAXPROCS", "4") // Optimize Go runtime for high-performance
     .WithEnvironment("GOMEMLIMIT", "1GiB") // Memory limit for collector
-    .WithBindMount("./otel-config-high-performance.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
+    .WithBindMount(Path.GetFullPath("otel-config-simple.yaml"), "/etc/otelcol-contrib/otel-collector-config.yaml")
     .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml")
     .WaitFor(prometheus); // Only wait for Prometheus (Loki integration removed for stability)
 
