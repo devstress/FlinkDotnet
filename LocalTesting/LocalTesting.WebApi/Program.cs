@@ -24,7 +24,14 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
 
 // Configure OpenTelemetry with local collector pattern for high-performance
-// Pattern: WebAPI → local OTel Collector (localhost) → backend observability stack
+// Pattern: WebAPI → local OTel Collector (service discovery) → backend observability stack
+var otlpTracesEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") ?? "http://otel-collector:4317";
+var otlpMetricsEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://otel-collector:4318";
+
+Console.WriteLine($"📊 OpenTelemetry Configuration:");
+Console.WriteLine($"   • Traces Endpoint: {otlpTracesEndpoint}");
+Console.WriteLine($"   • Metrics Endpoint: {otlpMetricsEndpoint}");
+
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService("LocalTesting.WebApi")
@@ -39,8 +46,8 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddOtlpExporter(options =>
         {
-            // Point to local OTel Collector for high-performance async forwarding
-            options.Endpoint = new Uri("http://localhost:4317"); // Local collector gRPC endpoint
+            // Use environment-configured collector endpoint for traces (gRPC)
+            options.Endpoint = new Uri(otlpTracesEndpoint);
             options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
         }))
     .WithMetrics(metrics => metrics
@@ -52,16 +59,16 @@ builder.Services.AddOpenTelemetry()
         .AddMeter("FlinkDotNet.Flow")
         .AddOtlpExporter(options =>
         {
-            // Point to local OTel Collector for high-performance async forwarding
-            options.Endpoint = new Uri("http://localhost:4317"); // Local collector gRPC endpoint
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+            // Use environment-configured collector endpoint for metrics (HTTP)
+            options.Endpoint = new Uri(otlpMetricsEndpoint);
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
         }))
     .WithLogging(logging => logging
         .AddOtlpExporter(options =>
         {
-            // Point to local OTel Collector for high-performance async forwarding
-            options.Endpoint = new Uri("http://localhost:4317"); // Local collector gRPC endpoint
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+            // Use environment-configured collector endpoint for logs (HTTP)  
+            options.Endpoint = new Uri(otlpMetricsEndpoint);
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
         }));
 
 // Add services to the container
