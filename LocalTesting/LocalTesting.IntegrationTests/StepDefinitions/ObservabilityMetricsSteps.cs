@@ -267,12 +267,33 @@ public class ObservabilityMetricsSteps : IDisposable
         // Store for potential file output
         _scenarioContext["metrics_data"] = metricsData;
         _scenarioContext["metrics_display"] = metricsDisplay;
+        
+        // CRITICAL: Set validation flag only if metrics processing completed without exceptions
+        // If FormatMetricsForDisplay threw any validation exceptions, this line won't be reached
+        Console.WriteLine("✅ VALIDATION PASSED: All metrics validation checks completed successfully");
+        _scenarioContext["metrics_validated"] = true;
     }
 
     [Then(@"we save the metrics to a file")]
     public async Task ThenWeSaveTheMetricsToAFile()
     {
         await EnsureInfrastructureInitialized();
+        
+        // CRITICAL: Only save results file if ALL previous validations passed
+        // This ensures GitHub workflow fails when test validations fail
+        if (!_scenarioContext.ContainsKey("flow_completed") || 
+            !_scenarioContext.ContainsKey("metrics_validated"))
+        {
+            var errorMessage = "❌ CRITICAL ERROR: Cannot save results - test validation failed or flow incomplete";
+            Console.WriteLine(errorMessage);
+            Console.WriteLine("❌ Missing validation flags:");
+            if (!_scenarioContext.ContainsKey("flow_completed"))
+                Console.WriteLine("  • flow_completed flag missing");
+            if (!_scenarioContext.ContainsKey("metrics_validated"))  
+                Console.WriteLine("  • metrics_validated flag missing");
+            Console.WriteLine("❌ This will cause GitHub workflow to fail as expected");
+            throw new InvalidOperationException("Test validation failed - results file will not be created to ensure GitHub workflow failure");
+        }
         
         var metricsData = _scenarioContext.ContainsKey("metrics_data") 
             ? _scenarioContext["metrics_data"] as Dictionary<string, object>
@@ -295,7 +316,7 @@ public class ObservabilityMetricsSteps : IDisposable
         // Hard-coded filename as requested by user  
         var filename = Path.Combine(binDir, "observability-test-result.txt");
         
-        // Write formatted metrics to file
+        // Write formatted metrics to file ONLY after all validations pass
         await File.WriteAllTextAsync(filename, metricsDisplay);
         
         Console.WriteLine($"📁 Real observability metrics saved to LocalTesting/Bin directory:");
@@ -305,6 +326,7 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   📊 File size: {new FileInfo(filename).Length} bytes");
         Console.WriteLine($"   🔗 Metrics source: Real Prometheus infrastructure");
         Console.WriteLine($"   ✅ GitHub workflow will find file at: LocalTesting/Bin/observability-test-result.txt");
+        Console.WriteLine("   ✅ File created only after ALL test validations passed");
     }
     
     private string FindLocalTestingDirectory()
@@ -590,6 +612,13 @@ public class ObservabilityMetricsSteps : IDisposable
                 throw new InvalidOperationException($"Observability test failed: Unrealistic metrics detected (time: {totalProcessingTime:F2}s, rate: {overallMsgPerSec:F2} msg/sec). This indicates infrastructure failure and must fail the test.");
             }
             
+        }
+        catch (InvalidOperationException validationEx) when (validationEx.Message.Contains("Observability test failed"))
+        {
+            // CRITICAL: Re-throw validation exceptions to ensure test failure propagation to GitHub workflow
+            Console.WriteLine($"❌ CRITICAL VALIDATION FAILURE: {validationEx.Message}");
+            Console.WriteLine("❌ This validation failure will cause the test to fail and GitHub workflow to fail as expected");
+            throw; // Re-throw to ensure test fails and GitHub workflow detects failure
         }
         catch (Exception ex)
         {
