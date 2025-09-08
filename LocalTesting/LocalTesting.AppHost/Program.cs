@@ -87,8 +87,24 @@ var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_SAVE", "60 1000") // Persistence settings for stability
     .WithEnvironment("REDIS_STOP_WRITES_ON_BGSAVE_ERROR", "no"); // Prevent redis crashes on save errors
 
-// Single Kafka instance using Aspire's built-in Kafka resource - Simplified for LocalTesting
-var kafka = builder.AddKafka("kafka");
+// Single Kafka instance using manual configuration (AddKafka had connection issues)
+var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
+    .WithEndpoint(9092, 9092, "kafka")
+    .WithEnvironment("KAFKA_NODE_ID", "1")
+    .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
+    .WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093")
+    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092")
+    .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
+    .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT")
+    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", "1@kafka:9093")
+    .WithEnvironment("CLUSTER_ID", "LOCAL_TESTING_KRAFT_CLUSTER_2024")
+    .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1") // Single broker
+    .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
+    .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1") // Single broker
+    .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", "3") // Reduced for performance
+    .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1") // Single broker
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx256M -Xms128M"); // Reduced for performance
 
 // Single Flink JobManager with simplified configuration - Updated to 2.1.0 for latest AI capabilities
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
@@ -246,8 +262,8 @@ else
 // LocalTesting Web API with simplified dependency chain to prevent DCP reconciliation failures
 var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
-    .WithReference(kafka)
-    .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", "10")
+    .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092") // Single Kafka broker
+    .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", "3")
     .WithEnvironment("KAFKA_REQUEST_TIMEOUT_MS", "30000")
     .WithEnvironment("KAFKA_RETRY_BACKOFF_MS", "1000")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
