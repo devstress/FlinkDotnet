@@ -429,7 +429,7 @@ public class ObservabilityController : ControllerBase
             // Generate real messages
             var realMessages = new List<ComplexLogicMessage>();
             var ingressTopic = "ingress-topic";
-            var partitions = 10;
+            var partitions = 20; // Match Kafka configuration for million msg/sec throughput
             
             for (int i = 0; i < workloadRequest.KafkaMessages; i++)
             {
@@ -439,7 +439,7 @@ public class ObservabilityController : ControllerBase
                     CorrelationId = Guid.NewGuid().ToString(),
                     Payload = $"Real workload message {i + 1}",
                     Timestamp = DateTime.UtcNow,
-                    BatchNumber = i / 10000,
+                    BatchNumber = i / 5000,  // Smaller batches for 100k messages (20 batches)
                     PartitionNumber = i % partitions,
                     ProcessingStage = "initial"
                 });

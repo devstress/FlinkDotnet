@@ -33,23 +33,28 @@ public class KafkaProducerService : IDisposable
                     var config = new ProducerConfig
                     {
                         BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
-                        ClientId = "LocalTesting.WebApi.Producer.HighThroughput",
+                        ClientId = "LocalTesting.WebApi.Producer.MillionMsgPerSec",
                         Acks = Acks.Leader,  // Use leader ack for maximum speed (instead of All)
-                        MessageTimeoutMs = 60000,  // Increased timeout
-                        RequestTimeoutMs = 45000,
+                        MessageTimeoutMs = 120000,  // Increased timeout for high-volume processing
+                        RequestTimeoutMs = 90000,   // Increased request timeout
                         EnableIdempotence = false,  // Disable for maximum speed
                         CompressionType = CompressionType.Lz4,  // Faster compression than Snappy
-                        BatchSize = 131072,  // 128KB batch size for maximum throughput
-                        LingerMs = 5,        // Shorter linger for faster delivery
-                        QueueBufferingMaxMessages = 2000000,  // 2M message buffer
-                        QueueBufferingMaxKbytes = 2048 * 1024,  // 2GB buffer for high-speed production
+                        BatchSize = 524288,  // 512KB batch size for maximum throughput (increased from 128KB)
+                        LingerMs = 1,        // Ultra-short linger for million msg/sec speed
+                        QueueBufferingMaxMessages = 5000000,  // 5M message buffer (increased from 2M)
+                        QueueBufferingMaxKbytes = 4096 * 1024,  // 4GB buffer for ultra-high-speed production
                         MessageSendMaxRetries = 1,  // Fewer retries for speed
-                        RetryBackoffMs = 50,        // Faster retry
-                        // High performance settings
-                        MaxInFlight = 10,           // More in-flight requests
-                        DeliveryReportFields = "key,value,timestamp", // Minimal delivery report for speed
+                        RetryBackoffMs = 25,        // Faster retry (reduced from 50ms)
+                        // Ultra-high performance settings
+                        MaxInFlight = 20,           // More in-flight requests for million msg/sec
+                        DeliveryReportFields = "key,timestamp", // Minimal delivery report for maximum speed
                         ApiVersionRequest = true,   // Enable for better performance
-                        BrokerVersionFallback = "2.8.0"
+                        BrokerVersionFallback = "2.8.0",
+                        // Additional high-throughput optimizations
+                        SendBuffer = 131072,        // 128KB send buffer
+                        ReceiveBuffer = 131072,     // 128KB receive buffer
+                        SocketKeepaliveEnable = true,
+                        SocketNagleDisable = true   // Disable Nagle algorithm for low latency
                     };
 
                     _producer = new ProducerBuilder<string, string>(config)
@@ -96,87 +101,105 @@ public class KafkaProducerService : IDisposable
             _logger.LogDebug("Starting partition {PartitionNumber} with {MessageCount} messages", 
                 partitionNumber, partitionMessages.Count);
 
-            // Process messages within this partition sequentially to maintain FIFO ordering
-            var partitionTasks = new List<Task>();
+            // Ultra-high-speed batch processing for million msg/sec throughput
+            // Process messages in micro-batches within partition to reduce overhead
+            const int microBatchSize = 100; // Process 100 messages at a time for optimal speed
+            var messageBatches = partitionMessages
+                .Select((message, index) => new { message, index })
+                .GroupBy(x => x.index / microBatchSize)
+                .Select(g => g.Select(x => x.message).ToList())
+                .ToList();
             
-            foreach (var message in partitionMessages)
+            _logger.LogDebug("Partition {PartitionNumber}: Processing {MessageCount} messages in {BatchCount} micro-batches", 
+                partitionNumber, partitionMessages.Count, messageBatches.Count);
+            
+            var batchTasks = messageBatches.Select(async messageBatch =>
             {
-                var jsonMessage = JsonSerializer.Serialize(message);
-                var messageBytes = System.Text.Encoding.UTF8.GetByteCount(jsonMessage);
+                var batchTasks = new List<Task>();
                 
-                // Generate unique message ID for tracking
-                var trackingId = _messageStateService.GenerateMessageId("kafka");
-                
-                // Start message state tracking
-                await _messageStateService.StartTrackingAsync(trackingId, MessageState.Produced, new Dictionary<string, object?>
+                foreach (var message in messageBatch)
                 {
-                    ["topic"] = topic,
-                    ["partition"] = partitionNumber.ToString(),
-                    ["correlationId"] = message.CorrelationId,
-                    ["originalMessageId"] = message.MessageId.ToString(),
-                    ["messageSize"] = messageBytes
-                });
-                
-                var kafkaMessage = new Message<string, string>
-                {
-                    Key = message.CorrelationId,
-                    Value = jsonMessage,
-                    Headers = new Headers
+                    var jsonMessage = JsonSerializer.Serialize(message);
+                    var messageBytes = System.Text.Encoding.UTF8.GetByteCount(jsonMessage);
+                    
+                    // Simplified tracking ID generation for speed
+                    var trackingId = $"kafka-{partitionNumber}-{message.MessageId}";
+                    
+                    // Batch message state tracking (reduce async overhead)
+                    var trackingTask = _messageStateService.StartTrackingAsync(trackingId, MessageState.Produced, new Dictionary<string, object?>
                     {
-                        { "correlation.id", System.Text.Encoding.UTF8.GetBytes(message.CorrelationId) },
-                        { "message.id", System.Text.Encoding.UTF8.GetBytes(message.MessageId.ToString()) },
-                        { "tracking.id", System.Text.Encoding.UTF8.GetBytes(trackingId) },
-                        { "batch.number", System.Text.Encoding.UTF8.GetBytes(message.BatchNumber.ToString()) },
-                        { "timestamp", System.Text.Encoding.UTF8.GetBytes(message.Timestamp.ToString("O")) },
-                        { "partition.number", System.Text.Encoding.UTF8.GetBytes(partitionNumber.ToString()) }
-                    }
-                };
-
-                var messageStartTime = DateTime.UtcNow;
-                
-                // Use TopicPartition to explicitly specify the partition
-                var topicPartition = new TopicPartition(topic, new Partition(partitionNumber));
-                
-                var task = producer.ProduceAsync(topicPartition, kafkaMessage)
-                    .ContinueWith(async deliveryReport =>
-                    {
-                        var latencySeconds = (DateTime.UtcNow - messageStartTime).TotalSeconds;
-                        
-                        if (deliveryReport.Result.Status == PersistenceStatus.Persisted)
-                        {
-                            Interlocked.Increment(ref partitionSuccessCount);
-                            
-                            // Record observability metrics for successful message production
-                            _metricsService.RecordKafkaProducerMessage(topic, partitionName, 1, messageBytes);
-                            _metricsService.RecordKafkaProducerLatency(topic, latencySeconds);
-                            _metricsService.RecordFlowKafkaToFlink(1); // Track flow progression
-                            
-                            // Update message state to show successful production
-                            await _messageStateService.UpdateMetadataAsync(trackingId, new Dictionary<string, object?>
-                            {
-                                ["kafka.persistenceStatus"] = deliveryReport.Result.Status.ToString(),
-                                ["kafka.offset"] = deliveryReport.Result.Offset.Value,
-                                ["kafka.latencySeconds"] = latencySeconds,
-                                ["kafka.actualPartition"] = deliveryReport.Result.Partition.Value
-                            });
-                        }
-                        else
-                        {
-                            Interlocked.Increment(ref partitionFailureCount);
-                            _logger.LogWarning("Failed to produce message {MessageId} to partition {PartitionNumber}: {Status}", 
-                                message.MessageId, partitionNumber, deliveryReport.Result.Status);
-                            
-                            // Mark message as failed in state tracking
-                            await _messageStateService.MarkAsFailedAsync(trackingId, 
-                                $"Kafka production failed: {deliveryReport.Result.Status}", "KafkaProducer");
-                        }
+                        ["topic"] = topic,
+                        ["partition"] = partitionNumber.ToString(),
+                        ["correlationId"] = message.CorrelationId,
+                        ["originalMessageId"] = message.MessageId.ToString(),
+                        ["messageSize"] = messageBytes
                     });
+                    
+                    var kafkaMessage = new Message<string, string>
+                    {
+                        Key = message.CorrelationId,
+                        Value = jsonMessage,
+                        Headers = new Headers
+                        {
+                            { "correlation.id", System.Text.Encoding.UTF8.GetBytes(message.CorrelationId) },
+                            { "message.id", System.Text.Encoding.UTF8.GetBytes(message.MessageId.ToString()) },
+                            { "tracking.id", System.Text.Encoding.UTF8.GetBytes(trackingId) },
+                            { "batch.number", System.Text.Encoding.UTF8.GetBytes(message.BatchNumber.ToString()) },
+                            { "timestamp", System.Text.Encoding.UTF8.GetBytes(message.Timestamp.ToString("O")) },
+                            { "partition.number", System.Text.Encoding.UTF8.GetBytes(partitionNumber.ToString()) }
+                        }
+                    };
 
-                partitionTasks.Add(task);
-            }
+                    var messageStartTime = DateTime.UtcNow;
+                    
+                    // Use TopicPartition to explicitly specify the partition
+                    var topicPartition = new TopicPartition(topic, new Partition(partitionNumber));
+                    
+                    var produceTask = producer.ProduceAsync(topicPartition, kafkaMessage)
+                        .ContinueWith(async deliveryReport =>
+                        {
+                            var latencySeconds = (DateTime.UtcNow - messageStartTime).TotalSeconds;
+                            
+                            if (deliveryReport.Result.Status == PersistenceStatus.Persisted)
+                            {
+                                Interlocked.Increment(ref partitionSuccessCount);
+                                
+                                // Record observability metrics for successful message production
+                                _metricsService.RecordKafkaProducerMessage(topic, partitionName, 1, messageBytes);
+                                _metricsService.RecordKafkaProducerLatency(topic, latencySeconds);
+                                _metricsService.RecordFlowKafkaToFlink(1); // Track flow progression
+                                
+                                // Update message state to show successful production (batch optimized)
+                                await _messageStateService.UpdateMetadataAsync(trackingId, new Dictionary<string, object?>
+                                {
+                                    ["kafka.persistenceStatus"] = deliveryReport.Result.Status.ToString(),
+                                    ["kafka.offset"] = deliveryReport.Result.Offset.Value,
+                                    ["kafka.latencySeconds"] = latencySeconds,
+                                    ["kafka.actualPartition"] = deliveryReport.Result.Partition.Value
+                                });
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref partitionFailureCount);
+                                _logger.LogWarning("Failed to produce message {MessageId} to partition {PartitionNumber}: {Status}", 
+                                    message.MessageId, partitionNumber, deliveryReport.Result.Status);
+                                
+                                // Mark message as failed in state tracking
+                                await _messageStateService.MarkAsFailedAsync(trackingId, 
+                                    $"Kafka production failed: {deliveryReport.Result.Status}", "KafkaProducer");
+                            }
+                        });
 
-            // Wait for all messages in this partition to complete
-            await Task.WhenAll(partitionTasks);
+                    batchTasks.Add(produceTask);
+                    batchTasks.Add(trackingTask); // Include tracking task in batch
+                }
+                
+                // Wait for all messages in this micro-batch to complete
+                await Task.WhenAll(batchTasks);
+            });
+            
+            // Wait for all micro-batches in this partition to complete
+            await Task.WhenAll(batchTasks);
             
             // Add partition results to total
             Interlocked.Add(ref totalSuccessCount, partitionSuccessCount);
@@ -189,8 +212,8 @@ public class KafkaProducerService : IDisposable
         // Wait for all partitions to complete
         await Task.WhenAll(partitionTasks);
         
-        // Ensure all messages are flushed
-        producer.Flush(TimeSpan.FromSeconds(30));
+        // Ensure all messages are flushed with extended timeout for high volume
+        producer.Flush(TimeSpan.FromMinutes(2)); // 2 minutes flush timeout for 100k messages
 
         var totalTime = (DateTime.UtcNow - startTime).TotalSeconds;
         var messagesPerSecond = totalSuccessCount / Math.Max(totalTime, 1.0);

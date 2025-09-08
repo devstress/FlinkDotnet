@@ -102,9 +102,16 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1") // Single broker
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
-    .WithEnvironment("KAFKA_NUM_PARTITIONS", "3") // Reduced for performance
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", "20") // Increased partitions for million msg/sec throughput
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1") // Single broker
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx256M -Xms128M"); // Reduced for performance
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx1G -Xms512M") // Increased memory for high-volume processing
+    .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "1073741824") // 1GB segments for high throughput
+    .WithEnvironment("KAFKA_LOG_RETENTION_BYTES", "2147483648") // 2GB retention for performance
+    .WithEnvironment("KAFKA_SOCKET_SEND_BUFFER_BYTES", "102400") // 100KB send buffer
+    .WithEnvironment("KAFKA_SOCKET_RECEIVE_BUFFER_BYTES", "102400") // 100KB receive buffer
+    .WithEnvironment("KAFKA_SOCKET_REQUEST_MAX_BYTES", "104857600") // 100MB max request size
+    .WithEnvironment("KAFKA_REPLICA_FETCH_MAX_BYTES", "1048576") // 1MB fetch size
+    .WithEnvironment("KAFKA_MESSAGE_MAX_BYTES", "1000000"); // 1MB max message size
 
 // Single Flink JobManager with simplified configuration - Updated to 2.1.0 for latest AI capabilities
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")

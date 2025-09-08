@@ -57,15 +57,15 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // StartAsync will wait for all services to be ready based on their configured health checks
         // This automatically handles service readiness - no manual validation needed
-        // Use heavily optimized timeout for performance testing (under 1 minute requirement)
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2)); // 2 minutes for infrastructure startup - heavily optimized
+        // Use optimized timeout for high-volume infrastructure startup
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minutes for infrastructure startup with 1GB Kafka
         await _app.StartAsync(cts.Token);
         
         Console.WriteLine("✅ All Aspire services started and ready (validated by framework)");
         
         // Create HTTP client with service discovery - services are guaranteed to be ready
         _httpClient = _app.CreateHttpClient("localtesting-webapi", "webapi");
-        _httpClient.Timeout = TimeSpan.FromMinutes(10); // Extended timeout for workload execution
+        _httpClient.Timeout = TimeSpan.FromMinutes(20); // Extended timeout for 100k message workload execution
         
         // Verify API is responding (simple check since Aspire already validated infrastructure)
         var healthResponse = await _httpClient.GetAsync("/health");
@@ -99,10 +99,10 @@ public class ObservabilityMetricsSteps : IDisposable
         var startTime = DateTime.UtcNow;
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
-        // Message count configuration: Optimized for performance - under 1 minute execution
+        // Message count configuration: High-volume testing for Kafka + Flink performance
         var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
-            ? 100     // 100 messages for GitHub workflow - optimized for <1 minute execution
-            : 500;    // 500 messages for local operation - minimal test for performance
+            ? 100000  // 100k messages for GitHub workflow - target million messages per second
+            : 100000; // 100k messages for local operation - high-performance testing
             
         var flowRequest = new
         {
@@ -620,8 +620,8 @@ public class ObservabilityMetricsSteps : IDisposable
             }
         }
         
-        // Default to 1M messages as configured in the real flow
-        return 1000000;
+        // Default to 100k messages as configured for high-performance testing
+        return 100000;
     }
 
     private long CalculateTotalFinalKafkaMessages(Dictionary<string, object> metricsData)
