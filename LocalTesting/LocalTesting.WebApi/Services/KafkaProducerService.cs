@@ -51,8 +51,6 @@ public class KafkaProducerService : IDisposable
                         ApiVersionRequest = true,   // Enable for better performance
                         BrokerVersionFallback = "2.8.0",
                         // Additional high-throughput optimizations
-                        SendBuffer = 131072,        // 128KB send buffer
-                        ReceiveBuffer = 131072,     // 128KB receive buffer
                         SocketKeepaliveEnable = true,
                         SocketNagleDisable = true   // Disable Nagle algorithm for low latency
                     };
