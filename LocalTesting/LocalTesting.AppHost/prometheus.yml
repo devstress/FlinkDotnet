@@ -16,7 +16,7 @@ scrape_configs:
 
   - job_name: 'localtesting-webapi'
     static_configs:
-      - targets: ['localtesting-webapi:5001']
+      - targets: ['localtesting-webapi:13001']
 
   - job_name: 'flink-jobmanager'
     static_configs:

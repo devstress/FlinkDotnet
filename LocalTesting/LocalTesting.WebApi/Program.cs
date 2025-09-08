@@ -14,10 +14,10 @@ using System.Diagnostics.Metrics;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure IPv4-only binding compatible with Aspire orchestration
-// Use a different internal port to avoid conflicts with Aspire's proxy
+// Use port 13001 (13000+ range as required)
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5001); // Internal port for Aspire
+    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 13001); // Internal port for Aspire
 });
 
 // Configure Flink job management defaults

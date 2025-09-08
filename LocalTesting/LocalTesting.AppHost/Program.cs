@@ -4,8 +4,8 @@ using Microsoft.Extensions.Hosting;
 // Configure Aspire dashboard and OTLP environment variables
 // These settings eliminate the need for manual environment variable setup
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:4324");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:13324");
 
 // Configure Aspire dashboard URL - required for dashboard initialization
 Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
@@ -274,9 +274,9 @@ var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("l
     .WithEnvironment("LOKI_ENDPOINT", loki != null ? "http://loki:3100" : "")
     .WithEnvironment("GRAFANA_URL", "http://grafana:3000")
     .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
-    .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")
-    .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:4323")
-    .WithHttpEndpoint(18000, 5001, name: "webapi") // External port 18000 -> Internal port 5001
+    .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323")
+    .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323")
+    .WithHttpEndpoint(18000, 13001, name: "webapi") // External port 18000 -> Internal port 13001
     // Simplified dependency chain prevents DCP reconciliation race conditions
     .WaitFor(redis)
     .WaitFor(kafka)              // Single Kafka instance

@@ -147,8 +147,8 @@ OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://otel-collector:4317"
 LOKI_ENDPOINT="http://loki:3100"
 GRAFANA_URL="http://grafana:3000"
 PROMETHEUS_URL="http://prometheus:9090"
-ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL="http://localhost:4323"
-DOTNET_DASHBOARD_OTLP_ENDPOINT_URL="http://localhost:4323"
+ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL="http://localhost:13323"
+DOTNET_DASHBOARD_OTLP_ENDPOINT_URL="http://localhost:13323"
 ```
 
 **Service Port Mappings** (from Program.cs WithHttpEndpoint calls):
