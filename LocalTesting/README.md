@@ -1,242 +1,179 @@
-# LocalTesting - Aspire Environment for LearningCourse
+# LocalTesting - FlinkDotNet Observability Environment
 
-This Aspire setup provides the infrastructure environment for the [LearningCourse](../LearningCourse/README.md). Please refer to the LearningCourse documentation for complete usage instructions and examples.
-
-## Message Flow Architecture
-
-The LocalTesting environment implements a comprehensive message processing pipeline with real-time observability using optimized current architecture:
+## 1. Business Flow Diagram
 
 ```
-📥 100 Logical Customer Queues (1 queue per customer)
-    ↓
-🔀 Enhanced Kafka Production (20 partitions)
-  • 3-broker KRaft cluster: kafka-broker-1, kafka-broker-2, kafka-broker-3
-  • Topics: "ingress-topic" with auto-partitioning to 20 partitions
-  • Optimized producer: LZ4 compression, 128KB batches, 2GB buffers
-  • Distribution: Round-robin across partitions for load balancing
-  • Rate: ~80,000+ msg/sec per partition (target performance)
-    ↓
-📨 Kafka → Flink Processing (Apache Flink 2.1.0)
-  • JobManager + 3 TaskManagers (8 slots each = 24 total slots)
-  • Enhanced memory configuration: 1024m process size per component
-  • Input rate = Kafka consuming rate from all 20 partitions
-  • Processing: Real-time stream processing with low latency
-    ↓
-⚡ Flink Jobs (Parallel processing)
-  • Jobs: real-job-1, real-job-2 (parallel execution)
-  • Input operators: kafka-source (consuming from all partitions)
-  • Output operators: kafka-sink (optimized output)
-  • Processing latency: ~2ms per message with enhanced configuration
-    ↓
-🔄 Temporal Workflows (10% Enhanced Processing)
-  • Triggered by: First 10 customers (out of 100) = 10% of total messages
-  • Purpose: Complex orchestration workflows for enterprise patterns
-  • Types: ClusterOrchestrationWorkflow, JobDistributionWorkflow, LifecycleWorkflow
-  • Activities: Cluster provisioning, resource allocation, scaling operations
-    ↓
-📤 Final Output Topic
-  • All messages processed through optimized pipeline
-  • Expected: Same count as ingress (no loss in healthy system)
-  • Rate: ~1,600,000+ msg/sec end-to-end (target with 20 partitions)
+📥 100 Customer Queues
+         ↓
+🔀 Kafka (20 Partitions)
+   • 3-broker cluster
+   • LZ4 compression
+   • 128KB batches
+         ↓
+⚡ Flink Processing
+   • JobManager + 3 TaskManagers
+   • 24 total slots (8 each)
+   • Real-time stream processing
+         ↓
+🔄 Temporal Workflows (10%)
+   • First 10 customers trigger workflows
+   • Complex orchestration patterns
+         ↓
+📤 Output Processing
+   • End-to-end pipeline
+   • Full observability
 ```
 
-### Component Performance Characteristics (Current Optimized Implementation)
+## 2. Component Configuration
 
-- **100 Customer Queues**: Even distribution across logical customer segments
-- **Kafka Producing**: ~80,000 msg/sec per partition × 20 partitions = 1,600,000 msg/sec total
-- **Kafka Consuming**: Flink input rate (distributed across 20 partitions)
-- **Flink Processing**: ~1,600,000 msg/sec (parallel jobs across 24 task slots)
-- **Temporal Processing**: ~160,000 workflows/sec (10% of message volume from first 10 customers)
-- **End-to-End**: ~1,600,000 msg/sec (total optimized pipeline throughput)
-
-## Temporal Workflow Complex Orchestration Tasks
-
-The Temporal workflows in LocalTesting implement enterprise-scale orchestration patterns for managing Flink clusters and job distribution. The current implementation processes **10% of messages** (first 10 customers out of 100 logical customer queues) through complex workflows.
-
-### Current Workflow Trigger Logic
-```csharp
-// From ComplexLogicStressTestService.cs - Current implementation
-var customerIndex = (i - 1) % 100; // 100 logical queues = 100 customers  
-var requiresTemporalProcessing = customerIndex < 10; // First 10 customers = 10% of messages
-```
-
-### Core Workflow Types (Current Implementation)
-
-#### 1. Cluster Orchestration Workflow (`IClusterOrchestratorWorkflow`)
-**Purpose**: Enterprise actor workflow patterns for massive scale cluster management
-
-**Complex Orchestration Tasks**:
-- **Multi-Cluster Provisioning**: Dynamically provisions new Flink clusters based on workload demand
-- **Resource Allocation**: Intelligent allocation of CPU, memory, and network resources across clusters  
-- **Auto-Scaling Logic**: Monitors cluster utilization and scales clusters up/down based on thresholds
-- **Health Monitoring**: Continuous health checks across all managed clusters
-- **Failure Recovery**: Automatic detection and recovery from cluster failures
-- **Load Balancing**: Distributes workload evenly across available clusters
-- **Customer Queue Management**: Handles routing for 100 logical customer queues to optimal clusters
-
-**Example Execution Flow** (Enhanced for 100 Customer Queues):
-```
-1. Receive orchestration request (100 customer queues → target: 50 clusters, min: 5, max: 100)
-2. Assess current cluster inventory and capacity for customer queue distribution
-3. Calculate optimal cluster distribution across availability zones for 100 customers
-4. Provision new clusters in parallel based on customer queue load patterns
-5. Configure cluster networking and security settings for customer isolation
-6. Register clusters with service discovery and customer queue routing
-7. Validate cluster health and readiness for customer queue assignment
-8. Begin customer queue to cluster assignment and workload distribution
-```
-
-#### 2. Job Distribution Workflow (`IJobDistributionWorkflow`)  
-**Purpose**: Intelligent job distribution across multiple clusters with placement strategies
-
-**Complex Orchestration Tasks**:
-- **Job Placement Strategies**: Implements BestFit, LeastLoaded, RoundRobin, and LocalityFirst algorithms
-- **Resource Matching**: Matches job requirements (CPU, memory, parallelism) with cluster capacity
-- **Dependency Resolution**: Handles job dependencies and execution ordering
-- **Backpressure Management**: Monitors and responds to cluster backpressure conditions
-- **Failover Orchestration**: Automatically migrates jobs from failed clusters
-- **Performance Optimization**: Continuously optimizes job placement for maximum throughput
-
-**Example Execution Flow**:
-```
-1. Receive job distribution request (1000 jobs, BestFit strategy)
-2. Analyze job resource requirements and constraints
-3. Query cluster capacity and current utilization
-4. Calculate optimal placement using BestFit algorithm
-5. Submit jobs to selected clusters in parallel
-6. Monitor job startup and validate successful deployment
-7. Track job progress and handle any placement failures
-8. Report distribution results with placement metrics
-```
-
-#### 3. Cluster Lifecycle Workflow (`IClusterLifecycleWorkflow`)
-**Purpose**: Complete lifecycle management from provisioning to decommissioning
-
-**Complex Orchestration Tasks**:
-- **Cluster Provisioning**: Creates new Flink clusters with specified configurations
-- **Configuration Management**: Applies cluster-specific configurations and policies
-- **Service Integration**: Integrates clusters with monitoring, logging, and service mesh
-- **Upgrade Management**: Handles rolling upgrades and version migrations
-- **Capacity Planning**: Manages cluster scaling based on historical usage patterns
-- **Decommissioning**: Safely drains and removes clusters when no longer needed
-
-**Example Execution Flow**:
-```
-1. Start cluster lifecycle management (cluster-id: prod-cluster-01)
-2. Provision infrastructure resources (VMs, networking, storage)
-3. Install and configure Flink software stack
-4. Set up monitoring and alerting for the cluster
-5. Register cluster with load balancer and service discovery
-6. Run health validation tests
-7. Mark cluster as ready for workload
-8. Monitor throughout operational lifetime
-9. Handle upgrade/migration requests
-10. Gracefully decommission when lifecycle ends
-```
-
-#### 4. Auto-Scaling Workflow (`IAutoScalingWorkflow`)
-**Purpose**: Continuous monitoring and automatic scaling based on demand
-
-**Complex Orchestration Tasks**:
-- **Metrics Collection**: Continuously gathers CPU, memory, and throughput metrics
-- **Threshold Analysis**: Analyzes metrics against configured scaling thresholds
-- **Scaling Decisions**: Calculates optimal scaling actions (scale up/down/maintain)
-- **Coordination**: Coordinates scaling actions across multiple clusters
-- **Cooldown Management**: Implements cooldown periods to prevent oscillation
-- **Predictive Scaling**: Uses historical patterns for proactive scaling
-
-**Example Execution Flow**:
-```
-1. Start continuous auto-scaling monitoring
-2. Collect metrics from all managed clusters every 5 minutes
-3. Analyze CPU utilization against thresholds (scale up >80%, scale down <30%)
-4. Calculate scaling requirements based on current and predicted load
-5. If scaling needed, coordinate with cluster orchestration workflow
-6. Execute scaling actions (add/remove task managers)
-7. Wait for cooldown period (10 minutes)
-8. Validate scaling effectiveness
-9. Continue monitoring loop
-```
-
-### Workflow Execution Context
-
-#### Activity Types Executed
-
-**RealActivity1 - Resource Provisioning**:
-- Creates cloud infrastructure resources (VMs, networks, storage)
-- Configures security groups and access policies
-- Sets up monitoring and logging agents
-
-**RealActivity2 - Configuration Management**:
-- Applies Flink cluster configurations
-- Manages application-specific settings
-- Handles configuration validation and rollback
-
-**RealActivity3 - Health Validation** (Additional):
-- Performs cluster health checks
-- Validates network connectivity
-- Tests job submission capabilities
-
-#### Workflow Patterns and Execution
-
-**Message Volume Triggering**:
-- **10% of messages** now trigger Temporal workflows (updated from 0.2%)
-- Higher volume enables more comprehensive orchestration testing
-- Workflows execute in parallel for maximum throughput
-
-**Execution Characteristics**:
-- **Parallel Execution**: Multiple workflows run concurrently for different clusters
-- **State Management**: Workflows maintain state across long-running operations
-- **Error Handling**: Comprehensive retry logic and failure recovery
-- **Timeout Management**: Configurable timeouts for different operation types
-
-**Performance Impact**:
-- Temporal workflows handle complex stateful orchestration tasks
-- Each workflow may manage multiple clusters simultaneously  
-- Execution time varies from seconds (health checks) to hours (cluster lifecycle)
-- Resource requirements scale with cluster count and complexity
-
-### Integration with Flink Pipeline
-
-The Temporal workflows integrate with the main Flink processing pipeline in several ways:
-
-1. **Triggered by Message Patterns**: Specific message types trigger workflow execution
-2. **Cluster Management**: Workflows manage the Flink clusters that process the main message flow
-3. **Dynamic Scaling**: Auto-scaling workflows adjust cluster capacity based on message throughput
-4. **Job Distribution**: Job distribution workflows place Flink jobs for optimal message processing
-
-This creates a complete orchestration system where Temporal manages the infrastructure that processes the high-volume message streams.
-
-### Observability Metrics
-
-Real-time metrics are available via:
-- **Prometheus**: http://localhost:18006 (metrics collection)
-- **Grafana**: http://localhost:18007 (dashboards)
-- **WebAPI**: http://localhost:44273/api/observability/metrics/messages-per-second
-
-## Prerequisites
-
-### .NET SDK Requirements
-- **.NET 9.0 SDK or later** is required for proper Aspire testing framework functionality
-- Check your version: `dotnet --version` (should show 9.0.x)
-- Install from: https://dotnet.microsoft.com/download/dotnet/9.0
-
-### Why .NET 9.0 is Required
-- Aspire testing framework (`Aspire.Hosting.Testing`) is designed for .NET 9.0
-- Integration tests will fail to build or run properly with .NET 8.0
-- The observability test uses `DistributedApplicationTestingBuilder` which requires .NET 9.0
-
-### Environment Verification
+### Kafka Connection Strings & Environment Variables
+**File**: [`LocalTesting.AppHost/Program.cs`](LocalTesting.AppHost/Program.cs) lines 315-318, 88-141
 ```bash
-# Verify .NET version
-dotnet --version  # Should show 9.0.x
+# WebAPI Environment Variables (lines 315-318)
+KAFKA_BOOTSTRAP_SERVERS="kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+KAFKA_DEFAULT_PARTITIONS="10"
+KAFKA_REQUEST_TIMEOUT_MS="30000"
+KAFKA_RETRY_BACKOFF_MS="1000"
 
-# Build LocalTesting solution
-dotnet build LocalTesting.sln
+# Kafka Broker Container Configuration (lines 88-141)
+KAFKA_NODE_ID="1|2|3"
+KAFKA_PROCESS_ROLES="broker,controller"
+KAFKA_LISTENERS="PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://kafka-broker-X:9092"
+KAFKA_CONTROLLER_QUORUM_VOTERS="1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093"
+CLUSTER_ID="LOCAL_TESTING_KRAFT_CLUSTER_2024"
+KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR="3"
+KAFKA_AUTO_CREATE_TOPICS_ENABLE="true"
+KAFKA_NUM_PARTITIONS="10"
+KAFKA_HEAP_OPTS="-Xmx512M -Xms256M"
+```
 
-# Run LocalTesting Aspire orchestrator
+**File**: [`LocalTesting.WebApi/appsettings.json`](LocalTesting.WebApi/appsettings.json) lines 13-15
+```json
+"Kafka": {
+  "BootstrapServers": "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+}
+```
+
+### Flink Connection Strings & Configuration
+**File**: [`LocalTesting.AppHost/Program.cs`](LocalTesting.AppHost/Program.cs) lines 157-209, 319
+```bash
+# WebAPI Environment Variable (line 319)
+FLINK_JOBMANAGER_URL="http://flink-jobmanager:8081"
+
+# Flink JobManager Properties (lines 160-169)
+FLINK_PROPERTIES="
+jobmanager.rpc.address: flink-jobmanager
+jobmanager.rpc.port: 6123
+jobmanager.memory.process.size: 1024m
+jobmanager.memory.off-heap.size: 64m
+taskmanager.numberOfTaskSlots: 8
+parallelism.default: 24
+rest.bind-address: 0.0.0.0
+rest.port: 8081"
+
+# TaskManager Properties (lines 175-181, 189-195, 203-209)
+taskmanager.memory.process.size: 1024m
+taskmanager.numberOfTaskSlots: 8
+taskmanager.host: flink-taskmanager-X
+```
+
+**File**: [`LocalTesting.WebApi/appsettings.json`](LocalTesting.WebApi/appsettings.json) lines 8-12
+```json
+"Flink": {
+  "UseFlinkDotNet": true,
+  "JobManagerUrl": "http://localhost:8081",
+  "SqlGatewayUrl": "http://localhost:8083"
+}
+```
+
+### Temporal Connection Strings & Configuration
+**File**: [`LocalTesting.AppHost/Program.cs`](LocalTesting.AppHost/Program.cs) lines 228-248, 320
+```bash
+# WebAPI Environment Variable (line 320)
+TEMPORAL_SERVER_URL="temporal-server:7233"
+
+# Temporal Server Container Configuration (lines 230-247)
+DB="postgres12"
+DB_PORT="5432"
+POSTGRES_SEEDS="temporal-postgres"
+POSTGRES_USER="temporal"
+POSTGRES_PWD="temporal"
+DBNAME="temporal"
+VISIBILITY_DBNAME="temporal_visibility"
+TEMPORAL_CLI_ADDRESS="temporal-server:7233"
+```
+
+**File**: [`LocalTesting.WebApi/appsettings.json`](LocalTesting.WebApi/appsettings.json) lines 16-39
+```json
+"Temporal": {
+  "ServerUrl": "temporal-server:7233",
+  "Namespace": "default",
+  "AgentOptimization": {
+    "MaxConcurrentActivities": 100,
+    "MaxConcurrentWorkflowTasks": 100,
+    "MaxConcurrentLocalActivities": 100,
+    "WorkerCount": 10,
+    "ActivityTaskTimeout": "00:05:00",
+    "WorkflowTaskTimeout": "00:01:00",
+    "HeartbeatTimeout": "00:00:30",
+    "ScheduleToCloseTimeout": "00:10:00",
+    "ScheduleToStartTimeout": "00:01:00",
+    "StartToCloseTimeout": "00:05:00"
+  }
+}
+```
+
+### Database Connection String
+**File**: [`LocalTesting.AppHost/Program.cs`](LocalTesting.AppHost/Program.cs) lines 212-225
+```bash
+# PostgreSQL for Temporal Container (lines 213-220)
+POSTGRES_DB="temporal"
+POSTGRES_USER="temporal"
+POSTGRES_PASSWORD="temporal"
+POSTGRES_HOST_AUTH_METHOD="trust"
+POSTGRES_INITDB_ARGS="--auth-host=trust"
+POSTGRES_MAX_CONNECTIONS="100"
+POSTGRES_SHARED_BUFFERS="128MB"
+```
+
+### OpenTelemetry & Observability Endpoints
+**File**: [`LocalTesting.AppHost/Program.cs`](LocalTesting.AppHost/Program.cs) lines 321-328
+```bash
+# WebAPI OpenTelemetry Configuration (lines 321-328)
+OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4318"
+OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="http://otel-collector:4317"
+LOKI_ENDPOINT="http://loki:3100"
+GRAFANA_URL="http://grafana:3000"
+PROMETHEUS_URL="http://prometheus:9090"
+ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL="http://localhost:4323"
+DOTNET_DASHBOARD_OTLP_ENDPOINT_URL="http://localhost:4323"
+```
+
+**Service Port Mappings** (from Program.cs WithHttpEndpoint calls):
+- **Kafka UI**: http://localhost:18001 (line 146)
+- **Flink UI**: http://localhost:18002 (line 158)
+- **Temporal Server**: http://localhost:18003 (line 229)
+- **Temporal UI**: http://localhost:18004 (line 252)
+- **Loki**: http://localhost:18005 (line 259)
+- **Prometheus**: http://localhost:18006 (line 268)
+- **Grafana**: http://localhost:18010 (line 294)
+- **WebAPI**: http://localhost:18000 (line 329)
+
+## 3. Run Observability Tests
+
+### Prerequisites
+```bash
+# Verify .NET 9.0 requirement
+dotnet --version  # Must show 9.0.x
+```
+
+### Quick Test Commands
+```bash
+# Run Aspire environment
 cd LocalTesting.AppHost && dotnet run
 
-# Run Observability tests
+# Run observability tests. No need to run `cd LocalTesting.AppHost && dotnet run` first
 dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --filter "Category=observability"
 ```

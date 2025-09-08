@@ -2,6 +2,20 @@
 
 **FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.1.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
 
+## 📚 Learning Course
+
+**New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 14 days of hands-on exercises covering:
+
+- **Day 1-2**: Flink 2.1 fundamentals and AI stream processing
+- **Day 3-4**: Production backpressure and enterprise observability  
+- **Day 5-6**: Temporal workflows and advanced windowing
+- **Day 7-8**: Stress testing and exactly-once semantics
+- **Day 9-10**: Performance optimization and security compliance
+- **Day 11-12**: Disaster recovery and advanced streaming patterns
+- **Day 13-14**: Chaos engineering and capstone project
+
+Each day includes complete exercise solutions, production-ready code examples, and real-world implementation patterns. Perfect for developers transitioning to enterprise-scale stream processing with .NET.
+
 # Why Kafka + FlinkDotNet + Temporal? Strategic Architecture Decision Guide
 
 In today's data-driven enterprise landscape, choosing the right messaging and stream processing architecture is critical for scalability, reliability, and maintainability. This section provides a comprehensive analysis of why **Kafka + FlinkDotNet + Temporal** represents the optimal choice for modern real-time data processing at enterprise scale.
