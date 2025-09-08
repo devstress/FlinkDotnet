@@ -9,17 +9,17 @@ public class KafkaProducerService : IDisposable
     private IProducer<string, string>? _producer;
     private readonly ILogger<KafkaProducerService> _logger;
     private readonly IConfiguration _configuration;
-    private readonly ObservabilityMetricsService _metricsService;
+    private readonly AsyncBufferedObservabilityService _asyncMetricsService;
     private readonly IMessageStateService _messageStateService;
     private readonly object _lock = new object();
 
-    public KafkaProducerService(ILogger<KafkaProducerService> logger, IConfiguration configuration, ObservabilityMetricsService metricsService, IMessageStateService messageStateService)
+    public KafkaProducerService(ILogger<KafkaProducerService> logger, IConfiguration configuration, AsyncBufferedObservabilityService asyncMetricsService, IMessageStateService messageStateService)
     {
         _logger = logger;
         _configuration = configuration;
-        _metricsService = metricsService;
+        _asyncMetricsService = asyncMetricsService;
         _messageStateService = messageStateService;
-        _logger.LogInformation("KafkaProducerService created (producer will be initialized on first use)");
+        _logger.LogInformation("KafkaProducerService created with AsyncBufferedObservabilityService for high-performance metrics (producer will be initialized on first use)");
     }
 
     private IProducer<string, string> GetOrCreateProducer()
@@ -185,8 +185,8 @@ public class KafkaProducerService : IDisposable
                 _logger.LogDebug("HIGH PERFORMANCE Partition {PartitionNumber} batch: {BatchSize} messages in {LatencyMs}ms = {Throughput:F0} msg/sec", 
                     partitionNumber, messageBatch.Count, batchLatency, batchThroughput);
                 
-                // BATCH METRICS: Record metrics per batch for efficiency
-                _metricsService.RecordKafkaProducerMessage(topic, $"partition-{partitionNumber}", 
+                // ASYNC BUFFERED METRICS: Fire-and-forget, no blocking
+                _asyncMetricsService.RecordKafkaProducerMessage(topic, $"partition-{partitionNumber}", 
                     messageBatch.Count, messageBatch.Count * 1024); // Estimated size
             }
 
@@ -350,11 +350,10 @@ public class KafkaProducerService : IDisposable
                 {
                     var batchLatency = (DateTime.UtcNow - batchStartTime).TotalSeconds;
                     
-                    // Record metrics for all successful messages in this batch
-                    _metricsService.RecordKafkaProducerMessage(topic, partitionName, batchStateUpdates.Count, 
+                    // ASYNC BUFFERED METRICS: Fire-and-forget high-performance recording
+                    _asyncMetricsService.RecordKafkaProducerMessage(topic, partitionName, batchStateUpdates.Count, 
                         batchStateUpdates.Sum(x => (int)x.metadata["messageSize"]!));
-                    _metricsService.RecordKafkaProducerLatency(topic, batchLatency);
-                    _metricsService.RecordFlowKafkaToFlink(batchStateUpdates.Count);
+                    _asyncMetricsService.RecordKafkaProducerLatency(topic, batchLatency);
                     
                     // Update all message states in batch (fire-and-forget for performance)
                     _ = Task.Run(async () =>
@@ -449,10 +448,9 @@ public class KafkaProducerService : IDisposable
                                 trackingId = System.Text.Encoding.UTF8.GetString(trackingHeader.GetValueBytes());
                             }
                             
-                            // Record observability metrics for message consumption
+                            // ASYNC BUFFERED METRICS: Fire-and-forget high-performance recording
                             var partition = result.Partition.Value.ToString();
-                            _metricsService.RecordKafkaConsumerMessage(topic, partition, consumerGroup, 1);
-                            _metricsService.RecordFlowFlinkToTemporal(1); // Track flow progression
+                            _asyncMetricsService.RecordKafkaConsumerMessage(topic, partition, consumerGroup, 1);
                             
                             // Update message state if tracking ID is available
                             if (!string.IsNullOrEmpty(trackingId))

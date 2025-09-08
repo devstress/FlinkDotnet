@@ -227,14 +227,17 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
 
 var prometheus = prometheusBuilder;
 
-// OpenTelemetry Collector with minimal, stable configuration
+// OpenTelemetry Collector with high-performance configuration for thousands msg/sec
+// Implements pattern: App → local OTel Collector (localhost gRPC/HTTP) → backend
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
     .WithHttpEndpoint(18007, 4317, "otlp-grpc")
     .WithHttpEndpoint(18009, 4318, "otlp-http")
     .WithHttpEndpoint(18008, 8889, "prometheus-metrics")
-    .WithEnvironment("OTEL_LOG_LEVEL", "INFO")
-    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=otel-collector,service.version=1.0.0")
-    .WithBindMount("./otel-config-training-minimal.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
+    .WithEnvironment("OTEL_LOG_LEVEL", "WARN") // Reduced logging for performance
+    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=local-otel-collector,service.version=1.0.0,deployment.environment=local-testing")
+    .WithEnvironment("GOMAXPROCS", "4") // Optimize Go runtime for high-performance
+    .WithEnvironment("GOMEMLIMIT", "1GiB") // Memory limit for collector
+    .WithBindMount("./otel-config-high-performance.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
     .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml")
     .WaitFor(prometheus); // Only wait for Prometheus (Loki integration removed for stability)
 

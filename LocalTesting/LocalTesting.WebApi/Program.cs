@@ -23,19 +23,26 @@ builder.WebHost.ConfigureKestrel(options =>
 // Configure Flink job management defaults
 builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
 
-// Configure OpenTelemetry with comprehensive observability metrics
+// Configure OpenTelemetry with local collector pattern for high-performance
+// Pattern: WebAPI → local OTel Collector (localhost) → backend observability stack
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService("LocalTesting.WebApi")
         .AddAttributes(new Dictionary<string, object>
         {
             ["deployment.environment"] = "local-testing",
-            ["service.version"] = "1.0.0"
+            ["service.version"] = "1.0.0",
+            ["observability.pattern"] = "local-collector"
         }))
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
-        .AddOtlpExporter())
+        .AddOtlpExporter(options =>
+        {
+            // Point to local OTel Collector for high-performance async forwarding
+            options.Endpoint = new Uri("http://localhost:4317"); // Local collector gRPC endpoint
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+        }))
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
@@ -43,9 +50,19 @@ builder.Services.AddOpenTelemetry()
         .AddMeter("FlinkDotNet.Flink") 
         .AddMeter("FlinkDotNet.Temporal")
         .AddMeter("FlinkDotNet.Flow")
-        .AddOtlpExporter())
+        .AddOtlpExporter(options =>
+        {
+            // Point to local OTel Collector for high-performance async forwarding
+            options.Endpoint = new Uri("http://localhost:4317"); // Local collector gRPC endpoint
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+        }))
     .WithLogging(logging => logging
-        .AddOtlpExporter());
+        .AddOtlpExporter(options =>
+        {
+            // Point to local OTel Collector for high-performance async forwarding
+            options.Endpoint = new Uri("http://localhost:4317"); // Local collector gRPC endpoint
+            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+        }));
 
 // Add services to the container
 builder.Services.AddControllers()
@@ -83,6 +100,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 });
 
 // Add custom services
+// Replace synchronous observability with high-performance async buffered service
+builder.Services.AddSingleton<AsyncBufferedObservabilityService>();
+// Keep existing service for backward compatibility during transition
 builder.Services.AddSingleton<ObservabilityMetricsService>();
 
 // Configure HTTP client for Prometheus with enhanced timeouts for infrastructure delays
