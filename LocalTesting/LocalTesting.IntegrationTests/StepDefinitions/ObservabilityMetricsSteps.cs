@@ -44,6 +44,10 @@ public class ObservabilityMetricsSteps : IDisposable
         }
 
         Console.WriteLine("🚀 Starting Aspire testing framework with automatic service readiness...");
+        Console.WriteLine("⚡ Performance mode: Grafana and UI components disabled for faster execution");
+        
+        // Enable test mode for performance optimization
+        Environment.SetEnvironmentVariable("TESTING_MODE", "true");
         
         // Follow Microsoft Aspire testing framework pattern - let Aspire handle service readiness
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_AppHost>();
@@ -53,8 +57,8 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // StartAsync will wait for all services to be ready based on their configured health checks
         // This automatically handles service readiness - no manual validation needed
-        // Use extended timeout for complex infrastructure (Kafka cluster + Prometheus + Grafana + Loki)
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10)); // 10 minutes for complex infrastructure
+        // Use optimized timeout for performance testing (under 1 minute requirement)
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3)); // 3 minutes for infrastructure startup - optimized
         await _app.StartAsync(cts.Token);
         
         Console.WriteLine("✅ All Aspire services started and ready (validated by framework)");
@@ -95,10 +99,10 @@ public class ObservabilityMetricsSteps : IDisposable
         var startTime = DateTime.UtcNow;
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
-        // Message count configuration: GitHub workflow uses 100K, normal operation uses 1M
+        // Message count configuration: Optimized for performance - under 1 minute execution
         var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
-            ? 100000  // 100K messages for GitHub workflow - balance between meaningful metrics and execution time
-            : 1000000; // 1M messages for normal local operation - full stress test
+            ? 1000    // 1K messages for GitHub workflow - optimized for <1 minute execution
+            : 5000;   // 5K messages for local operation - balance between performance and meaningful metrics
             
         var flowRequest = new
         {
@@ -125,7 +129,7 @@ public class ObservabilityMetricsSteps : IDisposable
         // Wait for metrics to be processed by infrastructure and scraped by Prometheus
         var metricsWaitStart = DateTime.UtcNow;
         Console.WriteLine("⏳ Waiting for metrics to be scraped by Prometheus...");
-        await Task.Delay(30000); // 30 seconds for metrics propagation to Prometheus - increased for better reliability
+        await Task.Delay(10000); // 10 seconds for metrics propagation to Prometheus - optimized for performance
         
         // Verify metrics are available with real infrastructure and debug if not
         var maxRetries = 5; // Increased retries
@@ -194,7 +198,7 @@ public class ObservabilityMetricsSteps : IDisposable
             if (retry < maxRetries - 1)
             {
                 Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries}) - Prometheus may still be scraping...");
-                await Task.Delay(10000); // Wait 10 seconds before retry - longer for Prometheus scraping
+                await Task.Delay(5000); // Wait 5 seconds before retry - optimized for performance
             }
         }
         
