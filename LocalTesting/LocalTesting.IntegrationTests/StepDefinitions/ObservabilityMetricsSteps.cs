@@ -382,6 +382,7 @@ public class ObservabilityMetricsSteps : IDisposable
             Console.WriteLine($"❌ This indicates Prometheus or backend metrics services are not available");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
             Assert.Fail("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical metrics infrastructure not available.");
+            return; // Unreachable but satisfies compiler
         }
         catch (HttpRequestException httpEx)
         {
@@ -389,6 +390,7 @@ public class ObservabilityMetricsSteps : IDisposable
             Console.WriteLine($"❌ Error: {httpEx.Message}");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
             Assert.Fail($"Observability test failed: Infrastructure HTTP failure during metrics retrieval - {httpEx.Message}. Critical metrics services not responding.");
+            return; // Unreachable but satisfies compiler
         }
         
         var metricsDisplay = FormatMetricsForDisplay(metricsData);
@@ -559,11 +561,13 @@ public class ObservabilityMetricsSteps : IDisposable
         {
             Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: Connection reset by peer during detailed metrics retrieval");
             Assert.Fail("Infrastructure connection reset by peer during metrics API call. Critical metrics services not available.");
+            throw; // Unreachable but satisfies compiler
         }
         catch (HttpRequestException httpEx)
         {
             Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: HTTP request failed during detailed metrics retrieval: {httpEx.Message}");
             Assert.Fail($"Infrastructure HTTP failure during metrics API call: {httpEx.Message}. Critical metrics services not responding.");
+            throw; // Unreachable but satisfies compiler
         }
         
         var content = await response.Content.ReadAsStringAsync();
@@ -842,6 +846,7 @@ public class ObservabilityMetricsSteps : IDisposable
         // If no real measurement available, this indicates a test problem
         Console.WriteLine("❌ CRITICAL ERROR: No real processing time measurement available. Test should measure actual infrastructure performance.");
         Assert.Fail("Observability test failed: No processing time measurement available. This indicates test measurement failure and must fail the test.");
+        return 0; // Unreachable but satisfies compiler
     }
 
     private double CalculateKafkaProducingRate(JsonElement? kafkaMetrics)
