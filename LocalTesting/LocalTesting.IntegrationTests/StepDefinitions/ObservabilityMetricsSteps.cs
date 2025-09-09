@@ -58,7 +58,9 @@ public class ObservabilityMetricsSteps : IDisposable
         // StartAsync will wait for all services to be ready based on their configured health checks
         // This automatically handles service readiness - no manual validation needed
         // Use optimized timeout for high-volume infrastructure startup
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minutes for infrastructure startup with 1GB Kafka
+        // GitHub Actions needs more time due to container image downloads and resource constraints
+        var timeoutMinutes = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? 15 : 5;
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(timeoutMinutes));
         await _app.StartAsync(cts.Token);
         
         Console.WriteLine("✅ All Aspire services started and ready (validated by framework)");
@@ -71,7 +73,7 @@ public class ObservabilityMetricsSteps : IDisposable
         var healthResponse = await _httpClient.GetAsync("/health");
         if (!healthResponse.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"API health check failed: {healthResponse.StatusCode}. Aspire services are ready but API is not responding.");
+            Assert.Fail($"API health check failed: {healthResponse.StatusCode}. Aspire services are ready but API is not responding.");
         }
         
         Console.WriteLine("🌐 API endpoint confirmed responsive after Aspire service readiness");
@@ -99,12 +101,12 @@ public class ObservabilityMetricsSteps : IDisposable
             var healthResponse = await _httpClient!.GetAsync("/health");
             if (!healthResponse.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException($"API health check failed: {healthResponse.StatusCode}");
+                Assert.Fail($"API health check failed: {healthResponse.StatusCode}");
             }
         }
         catch (HttpRequestException httpEx)
         {
-            throw new InvalidOperationException($"API health check connection failed: {httpEx.Message}", httpEx);
+            Assert.Fail($"API health check connection failed: {httpEx.Message}");
         }
 
         // Verify OpenTelemetry collector connectivity through debug endpoint
@@ -113,7 +115,7 @@ public class ObservabilityMetricsSteps : IDisposable
             var otelCheckResponse = await _httpClient!.GetAsync("/api/observability/debug/prometheus-metrics");
             if (!otelCheckResponse.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException($"OpenTelemetry collector health check failed: {otelCheckResponse.StatusCode}");
+                Assert.Fail($"OpenTelemetry collector health check failed: {otelCheckResponse.StatusCode}");
             }
             Console.WriteLine("✅ OpenTelemetry collector connectivity verified");
         }
@@ -121,11 +123,11 @@ public class ObservabilityMetricsSteps : IDisposable
                                                   ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
                                                   sockEx.Message.Contains("Connection reset by peer"))
         {
-            throw new InvalidOperationException("OpenTelemetry collector connection reset by peer - service not available", httpEx);
+            Assert.Fail("OpenTelemetry collector connection reset by peer - service not available");
         }
         catch (HttpRequestException httpEx)
         {
-            throw new InvalidOperationException($"OpenTelemetry collector health check connection failed: {httpEx.Message}", httpEx);
+            Assert.Fail($"OpenTelemetry collector health check connection failed: {httpEx.Message}");
         }
 
         // Verify Prometheus connectivity through metrics endpoint  
@@ -134,13 +136,13 @@ public class ObservabilityMetricsSteps : IDisposable
             var prometheusCheckResponse = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
             if (!prometheusCheckResponse.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException($"Prometheus health check failed: {prometheusCheckResponse.StatusCode}");
+                Assert.Fail($"Prometheus health check failed: {prometheusCheckResponse.StatusCode}");
             }
             Console.WriteLine("✅ Prometheus connectivity verified");
         }
         catch (HttpRequestException httpEx)
         {
-            throw new InvalidOperationException($"Prometheus health check connection failed: {httpEx.Message}", httpEx);
+            Assert.Fail($"Prometheus health check connection failed: {httpEx.Message}");
         }
 
         Console.WriteLine("✅ All critical infrastructure components are healthy");
@@ -166,7 +168,7 @@ public class ObservabilityMetricsSteps : IDisposable
             Console.WriteLine($"❌ INFRASTRUCTURE HEALTH CHECK FAILED: {infraEx.Message}");
             Console.WriteLine("❌ This indicates critical infrastructure components are not available");
             Console.WriteLine("❌ Test must fail to prevent false positive results in GitHub workflow");
-            throw new InvalidOperationException($"Observability test failed: Infrastructure health check failed - {infraEx.Message}. Critical services not available.");
+            Assert.Fail($"Observability test failed: Infrastructure health check failed - {infraEx.Message}. Critical services not available.");
         }
         
         // MEASURE ACTUAL PROCESSING TIME - No more hardcoded values
@@ -204,14 +206,14 @@ public class ObservabilityMetricsSteps : IDisposable
             Console.WriteLine($"❌ This indicates OpenTelemetry collector or other infrastructure is not available");
             Console.WriteLine($"❌ Full error: {httpEx.Message}");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            throw new InvalidOperationException("Observability test failed: Infrastructure connection reset by peer. Critical observability infrastructure not available.");
+            Assert.Fail("Observability test failed: Infrastructure connection reset by peer. Critical observability infrastructure not available.");
         }
         catch (HttpRequestException httpEx)
         {
             Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during workload execution");
             Console.WriteLine($"❌ Error: {httpEx.Message}");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            throw new InvalidOperationException($"Observability test failed: Infrastructure HTTP failure - {httpEx.Message}. Critical services not responding.");
+            Assert.Fail($"Observability test failed: Infrastructure HTTP failure - {httpEx.Message}. Critical services not responding.");
         }
         
         // MEASURE ACTUAL COMPLETION TIME
@@ -303,7 +305,7 @@ public class ObservabilityMetricsSteps : IDisposable
         if (!hasMetrics)
         {
             Console.WriteLine("❌ CRITICAL: No real metrics detected after flow execution. This indicates a real infrastructure issue.");
-            throw new InvalidOperationException("Observability test failed: No metrics detected after infrastructure execution. This indicates infrastructure failure and must fail the test.");
+            Assert.Fail("Observability test failed: No metrics detected after infrastructure execution. This indicates infrastructure failure and must fail the test.");
         }
         
         _scenarioContext["flow_completed"] = true;
@@ -359,7 +361,7 @@ public class ObservabilityMetricsSteps : IDisposable
             Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics debug");
             Console.WriteLine($"❌ This indicates OpenTelemetry collector or Prometheus is not available");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            throw new InvalidOperationException("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical observability infrastructure not available.");
+            Assert.Fail("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical observability infrastructure not available.");
         }
         catch (Exception ex)
         {
@@ -379,14 +381,14 @@ public class ObservabilityMetricsSteps : IDisposable
             Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics retrieval");
             Console.WriteLine($"❌ This indicates Prometheus or backend metrics services are not available");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            throw new InvalidOperationException("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical metrics infrastructure not available.");
+            Assert.Fail("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical metrics infrastructure not available.");
         }
         catch (HttpRequestException httpEx)
         {
             Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during metrics retrieval");
             Console.WriteLine($"❌ Error: {httpEx.Message}");
             Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            throw new InvalidOperationException($"Observability test failed: Infrastructure HTTP failure during metrics retrieval - {httpEx.Message}. Critical metrics services not responding.");
+            Assert.Fail($"Observability test failed: Infrastructure HTTP failure during metrics retrieval - {httpEx.Message}. Critical metrics services not responding.");
         }
         
         var metricsDisplay = FormatMetricsForDisplay(metricsData);
@@ -428,7 +430,7 @@ public class ObservabilityMetricsSteps : IDisposable
             if (!_scenarioContext.ContainsKey("infrastructure_healthy"))
                 Console.WriteLine("  • infrastructure_healthy flag missing - infrastructure connection failures occurred");
             Console.WriteLine("❌ This will cause GitHub workflow to fail as expected");
-            throw new InvalidOperationException("Test validation or infrastructure health check failed - results file will not be created to ensure GitHub workflow failure");
+            Assert.Fail("Test validation or infrastructure health check failed - results file will not be created to ensure GitHub workflow failure");
         }
         
         var metricsData = _scenarioContext.ContainsKey("metrics_data") 
@@ -556,12 +558,12 @@ public class ObservabilityMetricsSteps : IDisposable
                                                   sockEx.Message.Contains("Connection reset by peer"))
         {
             Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: Connection reset by peer during detailed metrics retrieval");
-            throw new InvalidOperationException("Infrastructure connection reset by peer during metrics API call. Critical metrics services not available.", httpEx);
+            Assert.Fail("Infrastructure connection reset by peer during metrics API call. Critical metrics services not available.");
         }
         catch (HttpRequestException httpEx)
         {
             Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: HTTP request failed during detailed metrics retrieval: {httpEx.Message}");
-            throw new InvalidOperationException($"Infrastructure HTTP failure during metrics API call: {httpEx.Message}. Critical metrics services not responding.", httpEx);
+            Assert.Fail($"Infrastructure HTTP failure during metrics API call: {httpEx.Message}. Critical metrics services not responding.");
         }
         
         var content = await response.Content.ReadAsStringAsync();
@@ -752,7 +754,7 @@ public class ObservabilityMetricsSteps : IDisposable
             {
                 output.AppendLine($"  ❌ CRITICAL ERROR: Processing time is 0 - indicates test measurement problem");
                 output.AppendLine($"  ❌ This suggests metrics are not from real infrastructure execution");
-                throw new InvalidOperationException("Observability test failed: Processing time is 0, indicating test measurement failure. This must fail the test.");
+                Assert.Fail("Observability test failed: Processing time is 0, indicating test measurement failure. This must fail the test.");
             }
             
             // Validation of metrics realism
@@ -762,7 +764,7 @@ public class ObservabilityMetricsSteps : IDisposable
             {
                 output.AppendLine($"  ❌ CRITICAL: Metrics are unrealistic and may be generated instead of measured from real infrastructure");
                 output.AppendLine($"  🔧 ERROR: Processing time: {totalProcessingTime:F2}s, Rate: {overallMsgPerSec:F2} msg/sec");
-                throw new InvalidOperationException($"Observability test failed: Unrealistic metrics detected (time: {totalProcessingTime:F2}s, rate: {overallMsgPerSec:F2} msg/sec). This indicates infrastructure failure and must fail the test.");
+                Assert.Fail($"Observability test failed: Unrealistic metrics detected (time: {totalProcessingTime:F2}s, rate: {overallMsgPerSec:F2} msg/sec). This indicates infrastructure failure and must fail the test.");
             }
             
         }
@@ -771,7 +773,7 @@ public class ObservabilityMetricsSteps : IDisposable
             // CRITICAL: Re-throw validation exceptions to ensure test failure propagation to GitHub workflow
             Console.WriteLine($"❌ CRITICAL VALIDATION FAILURE: {validationEx.Message}");
             Console.WriteLine("❌ This validation failure will cause the test to fail and GitHub workflow to fail as expected");
-            throw; // Re-throw to ensure test fails and GitHub workflow detects failure
+            Assert.Fail($"CRITICAL VALIDATION FAILURE: {validationEx.Message}"); // Convert to Assert.Fail for proper test failure
         }
         catch (Exception ex)
         {
@@ -839,7 +841,7 @@ public class ObservabilityMetricsSteps : IDisposable
         
         // If no real measurement available, this indicates a test problem
         Console.WriteLine("❌ CRITICAL ERROR: No real processing time measurement available. Test should measure actual infrastructure performance.");
-        throw new InvalidOperationException("Observability test failed: No processing time measurement available. This indicates test measurement failure and must fail the test.");
+        Assert.Fail("Observability test failed: No processing time measurement available. This indicates test measurement failure and must fail the test.");
     }
 
     private double CalculateKafkaProducingRate(JsonElement? kafkaMetrics)
