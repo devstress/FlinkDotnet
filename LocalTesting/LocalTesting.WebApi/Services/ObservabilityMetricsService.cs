@@ -1,259 +1,217 @@
-using System.Diagnostics.Metrics;
 using System.Diagnostics;
+using Prometheus;
 
 namespace LocalTesting.WebApi.Services;
 
 /// <summary>
 /// Comprehensive observability metrics service for messages-per-second tracking
 /// across Kafka, Flink, Temporal, and end-to-end flow layers
+/// FIXED: Uses native Prometheus metrics (not OpenTelemetry) to properly expose to /metrics endpoint
 /// </summary>
 public class ObservabilityMetricsService
 {
-    // OpenTelemetry Meters for each layer
-    private readonly Meter _kafkaMeter;
-    private readonly Meter _flinkMeter;
-    private readonly Meter _temporalMeter;
-    private readonly Meter _flowMeter;
-    
-    // Kafka Metrics
-    private readonly Counter<long> _kafkaProducerMessagesTotal;
-    private readonly Counter<long> _kafkaConsumerMessagesTotal;
-    private readonly Counter<long> _kafkaProducerBytesTotal;
-    private readonly Histogram<double> _kafkaProducerLatency;
-    
-    // Flink Metrics
-    private readonly Counter<long> _flinkJobMessagesIn;
-    private readonly Counter<long> _flinkJobMessagesOut;
-    private readonly Histogram<double> _flinkJobLatency;
-    private readonly ObservableGauge<double> _flinkJobThroughput;
-    
-    // Temporal Metrics
-    private readonly Counter<long> _temporalWorkflowExecutions;
-    private readonly Counter<long> _temporalActivityExecutions;
-    private readonly Histogram<double> _temporalWorkflowDuration;
-    private readonly Counter<long> _temporalWorkflowCompletions;
-    
-    // End-to-End Flow Metrics
-    private readonly Counter<long> _flowMessagesKafkaToFlink;
-    private readonly Counter<long> _flowMessagesFlinkToTemporal;
-    private readonly Counter<long> _flowMessagesEndToEnd;
-    private readonly Histogram<double> _flowLatencyEndToEnd;
-    
     private readonly ILogger<ObservabilityMetricsService> _logger;
     
-    // Removed local rate tracking - metrics now only available via Prometheus
+    // Native Prometheus Kafka Metrics - properly exposed to /metrics endpoint
+    private readonly Counter _kafkaProducerMessagesTotal;
+    private readonly Counter _kafkaConsumerMessagesTotal;
+    private readonly Counter _kafkaProducerBytesTotal;
+    private readonly Histogram _kafkaProducerLatency;
+    
+    // Native Prometheus Flink Metrics - properly exposed to /metrics endpoint
+    private readonly Counter _flinkJobMessagesIn;
+    private readonly Counter _flinkJobMessagesOut;
+    private readonly Histogram _flinkJobLatency;
+    
+    // Native Prometheus Temporal Metrics - properly exposed to /metrics endpoint
+    private readonly Counter _temporalWorkflowExecutions;
+    private readonly Counter _temporalActivityExecutions;
+    private readonly Histogram _temporalWorkflowDuration;
+    private readonly Counter _temporalWorkflowCompletions;
+    
+    // Native Prometheus End-to-End Flow Metrics - properly exposed to /metrics endpoint
+    private readonly Counter _flowMessagesKafkaToFlink;
+    private readonly Counter _flowMessagesFlinkToTemporal;
+    private readonly Counter _flowMessagesEndToEnd;
+    private readonly Histogram _flowLatencyEndToEnd;
 
     public ObservabilityMetricsService(ILogger<ObservabilityMetricsService> logger)
     {
         _logger = logger;
         
-        // Initialize meters for each layer
-        _kafkaMeter = new Meter("FlinkDotNet.Kafka", "1.0.0");
-        _flinkMeter = new Meter("FlinkDotNet.Flink", "1.0.0");
-        _temporalMeter = new Meter("FlinkDotNet.Temporal", "1.0.0");
-        _flowMeter = new Meter("FlinkDotNet.Flow", "1.0.0");
+        _logger.LogInformation("📊 Initializing native Prometheus metrics (FIXED: no OpenTelemetry)");
         
-        // Initialize Kafka metrics
-        _kafkaProducerMessagesTotal = _kafkaMeter.CreateCounter<long>(
+        // Initialize native Prometheus Kafka metrics with proper labels for Prometheus scraping
+        _kafkaProducerMessagesTotal = Metrics.CreateCounter(
             "kafka_producer_messages_total",
-            "messages",
-            "Total number of messages produced to Kafka");
+            "Total number of messages produced to Kafka",
+            new[] { "topic", "partition" });
         
-        _kafkaConsumerMessagesTotal = _kafkaMeter.CreateCounter<long>(
+        _kafkaConsumerMessagesTotal = Metrics.CreateCounter(
             "kafka_consumer_messages_total", 
-            "messages",
-            "Total number of messages consumed from Kafka");
+            "Total number of messages consumed from Kafka",
+            new[] { "topic", "partition" });
         
-        _kafkaProducerBytesTotal = _kafkaMeter.CreateCounter<long>(
+        _kafkaProducerBytesTotal = Metrics.CreateCounter(
             "kafka_producer_bytes_total",
-            "bytes", 
-            "Total bytes produced to Kafka");
+            "Total bytes produced to Kafka",
+            new[] { "topic", "partition" });
         
-        _kafkaProducerLatency = _kafkaMeter.CreateHistogram<double>(
+        _kafkaProducerLatency = Metrics.CreateHistogram(
             "kafka_producer_latency_seconds",
-            "seconds",
-            "Kafka producer latency");
+            "Kafka producer latency in seconds",
+            new[] { "topic", "partition" });
         
-        // Initialize Flink metrics
-        _flinkJobMessagesIn = _flinkMeter.CreateCounter<long>(
+        // Initialize native Prometheus Flink metrics with proper labels for Prometheus scraping
+        _flinkJobMessagesIn = Metrics.CreateCounter(
             "flink_job_messages_in_total",
-            "messages",
-            "Total messages input to Flink jobs");
+            "Total messages input to Flink jobs",
+            new[] { "job_id", "operator" });
         
-        _flinkJobMessagesOut = _flinkMeter.CreateCounter<long>(
+        _flinkJobMessagesOut = Metrics.CreateCounter(
             "flink_job_messages_out_total", 
-            "messages",
-            "Total messages output from Flink jobs");
+            "Total messages output from Flink jobs",
+            new[] { "job_id", "operator" });
         
-        _flinkJobLatency = _flinkMeter.CreateHistogram<double>(
+        _flinkJobLatency = Metrics.CreateHistogram(
             "flink_job_latency_seconds",
-            "seconds",
-            "Flink job processing latency");
+            "Flink job processing latency in seconds",
+            new[] { "job_id" });
         
-        _flinkJobThroughput = _flinkMeter.CreateObservableGauge<double>(
-            "flink_job_throughput_messages_per_second",
-            () => 0.0, // No local tracking - metrics available via Prometheus
-            "messages/second",
-            "Flink job processing throughput");
-        
-        // Initialize Temporal metrics
-        _temporalWorkflowExecutions = _temporalMeter.CreateCounter<long>(
+        // Initialize native Prometheus Temporal metrics with proper labels for Prometheus scraping
+        _temporalWorkflowExecutions = Metrics.CreateCounter(
             "temporal_workflow_executions_total",
-            "executions",
-            "Total Temporal workflow executions");
+            "Total Temporal workflow executions",
+            new[] { "workflow_type" });
         
-        _temporalActivityExecutions = _temporalMeter.CreateCounter<long>(
+        _temporalActivityExecutions = Metrics.CreateCounter(
             "temporal_activity_executions_total",
-            "executions", 
-            "Total Temporal activity executions");
+            "Total Temporal activity executions",
+            new[] { "activity_type" });
         
-        _temporalWorkflowDuration = _temporalMeter.CreateHistogram<double>(
+        _temporalWorkflowDuration = Metrics.CreateHistogram(
             "temporal_workflow_duration_seconds",
-            "seconds",
-            "Temporal workflow execution duration");
+            "Temporal workflow execution duration in seconds",
+            new[] { "workflow_type" });
         
-        _temporalWorkflowCompletions = _temporalMeter.CreateCounter<long>(
+        _temporalWorkflowCompletions = Metrics.CreateCounter(
             "temporal_workflow_completions_total",
-            "completions",
-            "Total Temporal workflow completions");
+            "Total Temporal workflow completions",
+            new[] { "workflow_type" });
         
-        // Initialize end-to-end flow metrics
-        _flowMessagesKafkaToFlink = _flowMeter.CreateCounter<long>(
+        // Initialize native Prometheus end-to-end flow metrics with proper labels for Prometheus scraping
+        _flowMessagesKafkaToFlink = Metrics.CreateCounter(
             "flow_messages_kafka_to_flink_total",
-            "messages",
             "Messages flowing from Kafka to Flink");
         
-        _flowMessagesFlinkToTemporal = _flowMeter.CreateCounter<long>(
+        _flowMessagesFlinkToTemporal = Metrics.CreateCounter(
             "flow_messages_flink_to_temporal_total",
-            "messages", 
             "Messages flowing from Flink to Temporal");
         
-        _flowMessagesEndToEnd = _flowMeter.CreateCounter<long>(
+        _flowMessagesEndToEnd = Metrics.CreateCounter(
             "flow_messages_end_to_end_total",
-            "messages",
             "Messages processed end-to-end through entire flow");
         
-        _flowLatencyEndToEnd = _flowMeter.CreateHistogram<double>(
+        _flowLatencyEndToEnd = Metrics.CreateHistogram(
             "flow_latency_end_to_end_seconds",
-            "seconds",
-            "End-to-end message processing latency");
+            "End-to-end message processing latency in seconds");
         
-        _logger.LogInformation("ObservabilityMetricsService initialized with comprehensive metrics for Kafka, Flink, Temporal, and Flow layers");
+        _logger.LogInformation("✅ ObservabilityMetricsService initialized with native Prometheus metrics (FIXED: properly exposed to /metrics endpoint)");
     }
     
-    // Kafka Metrics
+    // Kafka Metrics - FIXED: Use native Prometheus API calls
     public void RecordKafkaProducerMessage(string topic, string partition, long messageCount = 1, long bytes = 0)
     {
-        var tags = new KeyValuePair<string, object?>[] { 
-            new("topic", topic), 
-            new("partition", partition) 
-        };
-        _kafkaProducerMessagesTotal.Add(messageCount, tags);
+        _kafkaProducerMessagesTotal.WithLabels(topic, partition).Inc(messageCount);
         if (bytes > 0)
         {
-            _kafkaProducerBytesTotal.Add(bytes, tags);
+            _kafkaProducerBytesTotal.WithLabels(topic, partition).Inc(bytes);
         }
-        
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _logger.LogDebug("📊 Kafka producer message recorded: {Topic}:{Partition} = {MessageCount} messages, {Bytes} bytes", 
+            topic, partition, messageCount, bytes);
     }
     
     public void RecordKafkaConsumerMessage(string topic, string partition, string consumerGroup, long messageCount = 1)
     {
-        var tags = new KeyValuePair<string, object?>[] { 
-            new("topic", topic), 
-            new("partition", partition), 
-            new("consumer_group", consumerGroup) 
-        };
-        _kafkaConsumerMessagesTotal.Add(messageCount, tags);
-        
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _kafkaConsumerMessagesTotal.WithLabels(topic, partition).Inc(messageCount);
+        _logger.LogDebug("📊 Kafka consumer message recorded: {Topic}:{Partition} = {MessageCount} messages", 
+            topic, partition, messageCount);
     }
     
     public void RecordKafkaProducerLatency(string topic, double latencySeconds)
     {
-        var tags = new KeyValuePair<string, object?>[] { new("topic", topic) };
-        _kafkaProducerLatency.Record(latencySeconds, tags);
+        _kafkaProducerLatency.WithLabels(topic, "").Observe(latencySeconds);
+        _logger.LogDebug("📊 Kafka producer latency recorded: {Topic} = {Latency:F4}s", topic, latencySeconds);
     }
     
-    // Flink Metrics
+    // Flink Metrics - FIXED: Use native Prometheus API calls
     public void RecordFlinkJobMessageIn(string jobId, string operatorName, long messageCount = 1)
     {
-        var tags = new KeyValuePair<string, object?>[] { 
-            new("job_id", jobId), 
-            new("operator", operatorName) 
-        };
-        _flinkJobMessagesIn.Add(messageCount, tags);
-        
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _flinkJobMessagesIn.WithLabels(jobId, operatorName).Inc(messageCount);
+        _logger.LogDebug("📊 Flink job input recorded: {JobId}:{Operator} = {MessageCount} messages", 
+            jobId, operatorName, messageCount);
     }
     
     public void RecordFlinkJobMessageOut(string jobId, string operatorName, long messageCount = 1)
     {
-        var tags = new KeyValuePair<string, object?>[] { 
-            new("job_id", jobId), 
-            new("operator", operatorName) 
-        };
-        _flinkJobMessagesOut.Add(messageCount, tags);
-        
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _flinkJobMessagesOut.WithLabels(jobId, operatorName).Inc(messageCount);
+        _logger.LogDebug("📊 Flink job output recorded: {JobId}:{Operator} = {MessageCount} messages", 
+            jobId, operatorName, messageCount);
     }
     
     public void RecordFlinkJobLatency(string jobId, double latencySeconds)
     {
-        var tags = new KeyValuePair<string, object?>[] { new("job_id", jobId) };
-        _flinkJobLatency.Record(latencySeconds, tags);
+        _flinkJobLatency.WithLabels(jobId).Observe(latencySeconds);
+        _logger.LogDebug("📊 Flink job latency recorded: {JobId} = {Latency:F4}s", jobId, latencySeconds);
     }
     
-    // Temporal Metrics
+    // Temporal Metrics - FIXED: Use native Prometheus API calls  
     public void RecordTemporalWorkflowExecution(string workflowType)
     {
-        var tags = new KeyValuePair<string, object?>[] { new("workflow_type", workflowType) };
-        _temporalWorkflowExecutions.Add(1, tags);
-        
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _temporalWorkflowExecutions.WithLabels(workflowType).Inc();
+        _logger.LogDebug("📊 Temporal workflow execution recorded: {WorkflowType}", workflowType);
     }
     
     public void RecordTemporalActivityExecution(string activityType)
     {
-        var tags = new KeyValuePair<string, object?>[] { new("activity_type", activityType) };
-        _temporalActivityExecutions.Add(1, tags);
-        
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _temporalActivityExecutions.WithLabels(activityType).Inc();
+        _logger.LogDebug("📊 Temporal activity execution recorded: {ActivityType}", activityType);
     }
     
     public void RecordTemporalWorkflowDuration(string workflowType, double durationSeconds)
     {
-        var tags = new KeyValuePair<string, object?>[] { new("workflow_type", workflowType) };
-        _temporalWorkflowDuration.Record(durationSeconds, tags);
+        _temporalWorkflowDuration.WithLabels(workflowType).Observe(durationSeconds);
+        _logger.LogDebug("📊 Temporal workflow duration recorded: {WorkflowType} = {Duration:F4}s", workflowType, durationSeconds);
     }
     
     public void RecordTemporalWorkflowCompletion(string workflowType)
     {
-        var tags = new KeyValuePair<string, object?>[] { new("workflow_type", workflowType) };
-        _temporalWorkflowCompletions.Add(1, tags);
+        _temporalWorkflowCompletions.WithLabels(workflowType).Inc();
+        _logger.LogDebug("📊 Temporal workflow completion recorded: {WorkflowType}", workflowType);
     }
     
-    // End-to-End Flow Metrics
+    // End-to-End Flow Metrics - FIXED: Use native Prometheus API calls
     public void RecordFlowKafkaToFlink(long messageCount = 1)
     {
-        _flowMessagesKafkaToFlink.Add(messageCount);
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _flowMessagesKafkaToFlink.Inc(messageCount);
+        _logger.LogDebug("📊 Kafka→Flink flow recorded: {MessageCount} messages", messageCount);
     }
     
     public void RecordFlowFlinkToTemporal(long messageCount = 1)
     {
-        _flowMessagesFlinkToTemporal.Add(messageCount);
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _flowMessagesFlinkToTemporal.Inc(messageCount);
+        _logger.LogDebug("📊 Flink→Temporal flow recorded: {MessageCount} messages", messageCount);
     }
     
     public void RecordFlowEndToEnd(long messageCount = 1)
     {
-        _flowMessagesEndToEnd.Add(messageCount);
-        // No local rate tracking - metrics available via Prometheus/OpenTelemetry
+        _flowMessagesEndToEnd.Inc(messageCount);
+        _logger.LogDebug("📊 End-to-end flow recorded: {MessageCount} messages", messageCount);
     }
     
     public void RecordFlowEndToEndLatency(double latencySeconds)
     {
-        _flowLatencyEndToEnd.Record(latencySeconds);
+        _flowLatencyEndToEnd.Observe(latencySeconds);
+        _logger.LogDebug("📊 End-to-end latency recorded: {Latency:F4}s", latencySeconds);
     }
 }
