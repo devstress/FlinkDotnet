@@ -74,49 +74,65 @@ public class ObservabilityController : ControllerBase
                 prometheusAvailable = false;
             }
             
-            // If no Prometheus metrics available, generate realistic synthetic metrics based on workload execution
+            // If no Prometheus metrics available, return error - ONLY real observability data allowed
             if (!prometheusAvailable)
             {
-                _logger.LogInformation("📊 Prometheus not available - generating synthetic metrics based on workload execution");
+                _logger.LogError("❌ No real observability data available - Prometheus infrastructure not accessible");
                 
-                // Generate realistic component metrics based on typical workload patterns
-                // This ensures observability tests show meaningful data even when Prometheus has connectivity issues
-                var syntheticMetrics = await GenerateSyntheticComponentMetrics();
-                
-                return Ok(new {
-                    Status = "Success",
-                    Message = "Synthetic metrics based on workload execution (Prometheus unavailable)",
+                return StatusCode(503, new {
+                    Status = "NoRealObservabilityData", 
+                    Message = "REAL observability data not available - Prometheus infrastructure required",
                     Timestamp = DateTime.UtcNow,
+                    RequiredAction = "Ensure Prometheus is running and scraping metrics from application components",
+                    Note = "Only real metrics from actual infrastructure execution are returned - NO synthetic data",
                     
-                    // Generate realistic Kafka producer metrics (10 partitions)
+                    // Empty structure for API compatibility but clearly marked as unavailable
                     KafkaMetrics = new
                     {
-                        ProducerRates = syntheticMetrics.KafkaProducerRates
+                        ProducerRates = new Dictionary<string, object>(),
+                        Status = "REAL_DATA_UNAVAILABLE"
                     },
                     
-                    // Generate realistic Flink processing metrics
                     FlinkMetrics = new
                     {
-                        InputRates = syntheticMetrics.FlinkInputRates,
-                        OutputRates = syntheticMetrics.FlinkOutputRates
+                        InputRates = new Dictionary<string, object>(),
+                        OutputRates = new Dictionary<string, object>(),
+                        Status = "REAL_DATA_UNAVAILABLE"
                     },
                     
-                    // Generate realistic Temporal workflow metrics (subset of messages)
                     TemporalMetrics = new
                     {
-                        WorkflowRates = syntheticMetrics.TemporalWorkflowRates,
-                        ActivityRates = syntheticMetrics.TemporalActivityRates
+                        WorkflowRates = new Dictionary<string, object>(),
+                        ActivityRates = new Dictionary<string, object>(),
+                        Status = "REAL_DATA_UNAVAILABLE"
                     },
                     
-                    // Generate realistic flow metrics
                     FlowMetrics = new
                     {
-                        KafkaToFlinkRate = new { MessagesPerSecond = syntheticMetrics.KafkaToFlinkRate },
-                        FlinkToTemporalRate = new { MessagesPerSecond = syntheticMetrics.FlinkToTemporalRate },
-                        EndToEndRate = new { MessagesPerSecond = syntheticMetrics.EndToEndRate }
+                        KafkaToFlinkRate = new { MessagesPerSecond = 0.0, Status = "REAL_DATA_UNAVAILABLE" },
+                        FlinkToTemporalRate = new { MessagesPerSecond = 0.0, Status = "REAL_DATA_UNAVAILABLE" },
+                        EndToEndRate = new { MessagesPerSecond = 0.0, Status = "REAL_DATA_UNAVAILABLE" }
                     },
                     
-                    Summary = syntheticMetrics.Summary
+                    Summary = new
+                    {
+                        TotalMetricsTracked = 0,
+                        ActiveFlows = 0,
+                        HighestKafkaRate = 0.0,
+                        HighestFlinkRate = 0.0,
+                        TotalMessagesPerSecond = 0.0,
+                        MetricsSource = "REAL_DATA_REQUIRED",
+                        InfrastructureNote = "Real Prometheus infrastructure required - NO synthetic fallbacks",
+                        DebuggingNote = "Execute real workload and ensure Prometheus is collecting metrics",
+                        MetricsBreakdown = new
+                        {
+                            PrometheusMetrics = 0,
+                            LocalMetrics = 0,
+                            CombinedTotal = 0,
+                            ActiveMetrics = 0,
+                            Status = "REAL_OBSERVABILITY_DATA_REQUIRED"
+                        }
+                    }
                 });
             }
             
@@ -242,33 +258,38 @@ public class ObservabilityController : ControllerBase
         {
             _logger.LogError(ex, "❌ Failed to retrieve real metrics from Prometheus infrastructure");
             
-            // Return graceful fallback instead of 500 error for test compatibility
-            return Ok(new { 
-                Status = "Fallback", 
-                Message = "Prometheus infrastructure not available - using fallback metrics for test compatibility",
+            // Return error response for infrastructure unavailability - NO synthetic data fallbacks
+            return StatusCode(503, new { 
+                Status = "PrometheusInfrastructureUnavailable", 
+                Message = "Real Prometheus infrastructure not available - only real observability data returned",
                 Error = ex.Message, 
                 Timestamp = DateTime.UtcNow,
+                RequiredAction = "Ensure Prometheus infrastructure is running and accessible",
+                Note = "No synthetic fallbacks - real observability data only",
                 
-                // Basic structure for test compatibility
+                // Empty structure for API compatibility but clearly marked as unavailable
                 KafkaMetrics = new
                 {
-                    ProducerRates = new Dictionary<string, object>()
+                    ProducerRates = new Dictionary<string, object>(),
+                    Status = "INFRASTRUCTURE_ERROR"
                 },
                 FlinkMetrics = new
                 {
                     InputRates = new Dictionary<string, object>(),
-                    OutputRates = new Dictionary<string, object>()
+                    OutputRates = new Dictionary<string, object>(),
+                    Status = "INFRASTRUCTURE_ERROR"
                 },
                 TemporalMetrics = new
                 {
                     WorkflowRates = new Dictionary<string, object>(),
-                    ActivityRates = new Dictionary<string, object>()
+                    ActivityRates = new Dictionary<string, object>(),
+                    Status = "INFRASTRUCTURE_ERROR"
                 },
                 FlowMetrics = new
                 {
-                    KafkaToFlinkRate = new { MessagesPerSecond = 0.0 },
-                    FlinkToTemporalRate = new { MessagesPerSecond = 0.0 },
-                    EndToEndRate = new { MessagesPerSecond = 0.0 }
+                    KafkaToFlinkRate = new { MessagesPerSecond = 0.0, Status = "INFRASTRUCTURE_ERROR" },
+                    FlinkToTemporalRate = new { MessagesPerSecond = 0.0, Status = "INFRASTRUCTURE_ERROR" },
+                    EndToEndRate = new { MessagesPerSecond = 0.0, Status = "INFRASTRUCTURE_ERROR" }
                 },
                 
                 Summary = new
@@ -278,15 +299,16 @@ public class ObservabilityController : ControllerBase
                     HighestKafkaRate = 0.0,
                     HighestFlinkRate = 0.0,
                     TotalMessagesPerSecond = 0.0,
-                    MetricsSource = "Fallback Mode (Infrastructure Not Available)",
-                    InfrastructureNote = "Fallback metrics for test compatibility",
-                    DebuggingNote = "Infrastructure connection failed - using fallback response",
+                    MetricsSource = "INFRASTRUCTURE_ERROR",
+                    InfrastructureNote = "Real Prometheus infrastructure failed - NO synthetic data provided",
+                    DebuggingNote = "Fix infrastructure connection to get real observability data",
                     MetricsBreakdown = new
                     {
                         PrometheusMetrics = 0,
                         LocalMetrics = 0,
                         CombinedTotal = 0,
-                        ActiveMetrics = 0
+                        ActiveMetrics = 0,
+                        Status = "INFRASTRUCTURE_ERROR"
                     }
                 }
             });
