@@ -29,10 +29,9 @@ public class ObservabilityMetricsSteps : IDisposable
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
     
-    // Environment-specific infrastructure timeout - GitHub Actions needs more time for container startup
-    private static readonly TimeSpan InfrastructureTimeout = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
-        ? TimeSpan.FromMinutes(10)  // 10 minutes for GitHub Actions - sufficient for container download/startup
-        : TimeSpan.FromMinutes(2);  // 2 minutes for local development - faster iteration
+    // USER REQUIREMENT: 45-second maximum timeout with immediate start when infrastructure is ready
+    // "Health Check should work less than 1 minute...If the infrastructure is ready sooner, the test should start as soon as possible"
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(45);
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -54,15 +53,15 @@ public class ObservabilityMetricsSteps : IDisposable
         await VerifyContainerEnvironment();
         
         Console.WriteLine("🚀 Starting Aspire integration test with framework-managed service readiness...");
-        Console.WriteLine($"🕒 Infrastructure timeout: {InfrastructureTimeout.TotalMinutes} minutes for {(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? "GitHub Actions" : "local")} environment");
+        Console.WriteLine($"🕒 Health check timeout: {HealthCheckTimeout.TotalSeconds} seconds (user requirement: 45-second maximum with immediate start when ready)");
         
         // Enable test mode for performance optimization  
         Environment.SetEnvironmentVariable("TESTING_MODE", "true");
         
         try 
         {
-            // Follow Microsoft Aspire testing framework pattern with environment-specific timeout
-            using var cts = new CancellationTokenSource(InfrastructureTimeout);
+            // Follow Microsoft Aspire testing framework pattern with USER-SPECIFIED 45-second timeout
+            using var cts = new CancellationTokenSource(HealthCheckTimeout);
             var cancellationToken = cts.Token;
             
             Console.WriteLine("📦 Creating Aspire testing application builder...");
@@ -111,15 +110,15 @@ public class ObservabilityMetricsSteps : IDisposable
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
         {
-            // EXPLICIT TEST FAILURE for infrastructure timeout
+            // EXPLICIT TEST FAILURE for 45-second infrastructure timeout (user requirement)
             Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE TIMEOUT FAILURE");
-            Console.WriteLine($"❌ Infrastructure failed to start within {InfrastructureTimeout.TotalMinutes} minutes");
-            Console.WriteLine($"❌ Environment: {(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? "GitHub Actions" : "Local")}");
-            Console.WriteLine($"❌ This indicates container startup failure or resource constraints");
+            Console.WriteLine($"❌ Infrastructure failed to become healthy within {HealthCheckTimeout.TotalSeconds} seconds (user requirement)");
+            Console.WriteLine($"❌ User specified: Health check should work less than 1 minute (45 seconds)");
+            Console.WriteLine($"❌ This indicates container startup is too slow or has configuration issues");
             Console.WriteLine($"❌ Test MUST fail to ensure GitHub workflow failure detection");
             
-            // Explicit test failure with multiple mechanisms for reliability
-            Assert.Fail($"INFRASTRUCTURE TIMEOUT: Services failed to start within {InfrastructureTimeout.TotalMinutes} minutes. Container startup failure in CI environment.");
+            // Explicit test failure ensuring non-zero exit code
+            Assert.Fail($"INFRASTRUCTURE TIMEOUT: Services failed to become healthy within {HealthCheckTimeout.TotalSeconds} seconds as required by user specification.");
         }
         catch (Exception ex)
         {
@@ -137,17 +136,8 @@ public class ObservabilityMetricsSteps : IDisposable
     private async Task VerifyContainerEnvironment()
     {
         Console.WriteLine("🔍 PRE-CHECK: Verifying container environment before Aspire startup...");
-        
-        // Check if we're in an environment where containers can start
-        if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
-        {
-            Console.WriteLine("📦 GitHub Actions environment detected - using extended timeout for container startup");
-            Console.WriteLine("⚠️ Note: Container image downloads may take several minutes in CI environment");
-        }
-        else
-        {
-            Console.WriteLine("🏠 Local environment detected - using standard timeout");
-        }
+        Console.WriteLine($"⏱️ USER REQUIREMENT: 45-second health check timeout with immediate start when ready");
+        Console.WriteLine($"⚠️ NOTE: If infrastructure takes longer than 45 seconds, test will fail as requested");
         
         // Allow async context but no actual async operations needed here
         await Task.CompletedTask;

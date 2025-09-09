@@ -190,6 +190,11 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     // Fix namespace setup to prevent "Namespace default is not found" errors
     .WithEnvironment("DEFAULT_NAMESPACE", "default")
     .WithEnvironment("DEFAULT_NAMESPACE_RETENTION", "72h")
+    // Additional namespace configuration to prevent errors
+    .WithEnvironment("TEMPORAL_NAMESPACE", "default")
+    .WithEnvironment("TEMPORAL_AUTO_SETUP", "true")
+    .WithEnvironment("TEMPORAL_ENABLE_NAMESPACES", "true")
+    .WithEnvironment("TEMPORAL_DEFAULT_NAMESPACE", "default")
     // Connection optimization
     .WithEnvironment("SQL_MAX_CONNS", "20") // Limit connections for stability
     .WithEnvironment("SQL_MAX_IDLE_CONNS", "10")
@@ -239,18 +244,19 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
 
 var prometheus = prometheusBuilder;
 
-// OpenTelemetry Collector with high-performance configuration for thousands msg/sec
+// OpenTelemetry Collector with corrected file mounting approach
 // Implements pattern: App → local OTel Collector (localhost gRPC/HTTP) → backend
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
     .WithHttpEndpoint(18007, 4317, "otlp-grpc")
     .WithHttpEndpoint(18009, 4318, "otlp-http")
     .WithHttpEndpoint(18008, 8889, "prometheus-metrics")
     .WithEnvironment("OTEL_LOG_LEVEL", "WARN") // Reduced logging for performance
-    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=local-otel-collector,service.version=1.0.0,deployment.environment=local-testing")
+    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=local-otel-collector,source.version=1.0.0,deployment.environment=local-testing")
     .WithEnvironment("GOMAXPROCS", "4") // Optimize Go runtime for high-performance
     .WithEnvironment("GOMEMLIMIT", "1GiB") // Memory limit for collector
-    .WithBindMount(Path.GetFullPath("otel-config-simple.yaml"), "/etc/otelcol-contrib/otel-collector-config.yaml")
-    .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml")
+    // CORRECTED APPROACH: Use absolute path and ensure proper file mount
+    .WithBindMount(Path.Combine(AppContext.BaseDirectory, "otel-config-simple.yaml"), "/etc/otelcol-contrib/config.yaml")
+    .WithArgs("--config=/etc/otelcol-contrib/config.yaml")
     .WaitFor(prometheus); // Only wait for Prometheus (Loki integration removed for stability)
 
 // Grafana with PGL stack integration and enhanced startup reliability
