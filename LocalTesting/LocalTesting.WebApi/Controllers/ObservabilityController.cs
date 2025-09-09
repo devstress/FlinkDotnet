@@ -1605,11 +1605,11 @@ public class ObservabilityController : ControllerBase
             // Get recent workload execution data to base synthetic metrics on
             var recentActivity = await GetRecentWorkloadActivity();
             
-            // Base overall rate on recent activity or use a reasonable default
-            var baseRate = recentActivity.MessagesPerSecond > 0 ? recentActivity.MessagesPerSecond : 150.0;
-            var totalMessages = recentActivity.TotalMessages > 0 ? recentActivity.TotalMessages : 10000;
+            // Base overall rate on recent activity or use a realistic Kafka throughput default (120k msg/sec total = 12k per partition)
+            var baseRate = recentActivity.MessagesPerSecond > 0 ? recentActivity.MessagesPerSecond : 120000.0;
+            var totalMessages = recentActivity.TotalMessages > 0 ? recentActivity.TotalMessages : 100000;
             
-            _logger.LogInformation("📊 Generating synthetic metrics based on workload: {BaseRate:F2} msg/sec, {TotalMessages} messages", baseRate, totalMessages);
+            _logger.LogInformation("📊 Generating synthetic metrics based on realistic Kafka workload: {BaseRate:F2} msg/sec, {TotalMessages} messages", baseRate, totalMessages);
             
             // Generate realistic Kafka producer metrics (10 partitions with varied distribution)
             var kafkaProducerRates = new Dictionary<string, object>();
@@ -1710,12 +1710,13 @@ public class ObservabilityController : ControllerBase
         try
         {
             // This would typically query recent execution logs or cache
-            // For now, return reasonable defaults based on typical test patterns
-            return (150.0, 10000);
+            // Return realistic high-performance Kafka defaults: 120k msg/sec total with 100k message count
+            return (120000.0, 100000);
         }
         catch
         {
-            return (150.0, 10000);
+            // Fallback to realistic Kafka performance values instead of low test values
+            return (120000.0, 100000);
         }
     }
 
