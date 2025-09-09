@@ -29,8 +29,8 @@ public class ObservabilityMetricsSteps : IDisposable
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
     
-    // Microsoft Aspire standard timeout - optimized per user requirement (under 1 minute)
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    // Microsoft Aspire standard timeout - optimized per user requirement (45 seconds maximum)
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(45);
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -49,7 +49,7 @@ public class ObservabilityMetricsSteps : IDisposable
         }
 
         Console.WriteLine("🚀 Starting Aspire integration test with framework-managed service readiness...");
-        Console.WriteLine("⚡ Performance mode: Using Microsoft Aspire testing pattern with 60s timeout");
+        Console.WriteLine("⚡ Performance mode: Using Microsoft Aspire testing pattern with 45s maximum timeout");
         
         // Enable test mode for performance optimization  
         Environment.SetEnvironmentVariable("TESTING_MODE", "true");
