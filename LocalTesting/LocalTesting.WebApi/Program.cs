@@ -4,12 +4,8 @@ using LocalTesting.WebApi.Services.Temporal;
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Services;
 using FlinkDotNet.Orchestration.Models;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using StackExchange.Redis;
-using System.Diagnostics.Metrics;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,53 +19,12 @@ builder.WebHost.ConfigureKestrel(options =>
 // Configure Flink job management defaults
 builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
 
-// Configure OpenTelemetry with local collector pattern for high-performance
-// Pattern: WebAPI → local OTel Collector (service discovery) → backend observability stack
-var otlpTracesEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") ?? "http://otel-collector:4317";
-var otlpMetricsEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://otel-collector:4318";
-
-Console.WriteLine($"📊 OpenTelemetry Configuration:");
-Console.WriteLine($"   • Traces Endpoint: {otlpTracesEndpoint}");
-Console.WriteLine($"   • Metrics Endpoint: {otlpMetricsEndpoint}");
-
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(resource => resource
-        .AddService("LocalTesting.WebApi")
-        .AddAttributes(new Dictionary<string, object>
-        {
-            ["deployment.environment"] = "local-testing",
-            ["service.version"] = "1.0.0",
-            ["observability.pattern"] = "local-collector"
-        }))
-    .WithTracing(tracing => tracing
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddOtlpExporter(options =>
-        {
-            // Use environment-configured collector endpoint for traces (gRPC)
-            options.Endpoint = new Uri(otlpTracesEndpoint);
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
-        }))
-    .WithMetrics(metrics => metrics
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddMeter("FlinkDotNet.Kafka")
-        .AddMeter("FlinkDotNet.Flink") 
-        .AddMeter("FlinkDotNet.Temporal")
-        .AddMeter("FlinkDotNet.Flow")
-        .AddOtlpExporter(options =>
-        {
-            // Use environment-configured collector endpoint for metrics (HTTP)
-            options.Endpoint = new Uri(otlpMetricsEndpoint);
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-        }))
-    .WithLogging(logging => logging
-        .AddOtlpExporter(options =>
-        {
-            // Use environment-configured collector endpoint for logs (HTTP)  
-            options.Endpoint = new Uri(otlpMetricsEndpoint);
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-        }));
+// Configure native Prometheus metrics endpoint
+// Replaced OpenTelemetry with direct Prometheus metrics for simplified architecture
+Console.WriteLine($"📊 Native Prometheus Configuration:");
+Console.WriteLine($"   • Metrics Endpoint: /metrics");
+Console.WriteLine($"   • Architecture: Direct scraping (no OpenTelemetry collector)");
+Console.WriteLine($"   • User Requirement: Complete OTel removal with native metrics");
 
 // Add services to the container
 builder.Services.AddControllers()
@@ -172,6 +127,12 @@ try
     // This allows the application to start immediately without waiting for Orchestra setup
 
     // Configure the HTTP request pipeline
+    
+    // Add Prometheus metrics endpoint before other middleware
+    app.UseRouting();
+    app.UseHttpMetrics(); // Enable HTTP metrics collection
+    app.MapMetrics(); // Expose /metrics endpoint
+    
     app.UseSwagger();
     app.UseSwaggerUI(c => 
     {

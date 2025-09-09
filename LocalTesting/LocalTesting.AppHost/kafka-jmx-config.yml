@@ -1,0 +1,67 @@
+# Kafka JMX Exporter Configuration for Bitnami JMX Exporter
+# Exposes Kafka JMX metrics in Prometheus format
+# Documentation: https://github.com/prometheus/jmx_exporter
+
+# Kafka Broker metrics patterns
+rules:
+  # Basic Kafka Server metrics
+  - pattern: kafka.server<type=(.+), name=(.+)><>Count
+    name: kafka_server_$1_$2_total
+    type: COUNTER
+    help: "Kafka server $1 $2 total"
+
+  - pattern: kafka.server<type=(.+), name=(.+)><>Value
+    name: kafka_server_$1_$2
+    type: GAUGE
+    help: "Kafka server $1 $2"
+
+  # Network request metrics - simplified
+  - pattern: kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>Count
+    name: kafka_network_request_$1_total
+    labels:
+      request: "$2"
+    type: COUNTER
+    help: "Kafka network request $1 total"
+
+  # Topic and partition metrics - basic
+  - pattern: kafka.log<type=LogSize, name=Size, topic=(.+), partition=(.+)><>Value
+    name: kafka_log_size_bytes
+    labels:
+      topic: "$1"
+      partition: "$2"
+    type: GAUGE
+    help: "Kafka log size in bytes"
+
+  # Producer metrics - basic
+  - pattern: kafka.producer<type=producer-metrics, client-id=(.+)><>(.+)
+    name: kafka_producer_$2
+    labels:
+      client_id: "$1"
+    type: GAUGE
+    help: "Kafka producer metric"
+
+  # Consumer metrics - basic  
+  - pattern: kafka.consumer<type=consumer-fetch-manager-metrics, client-id=(.+)><>(.+)
+    name: kafka_consumer_$2
+    labels:
+      client_id: "$1"
+    type: GAUGE
+    help: "Kafka consumer metric"
+
+# Simplified include/exclude patterns
+includeObjectNames:
+  - "kafka.server:type=BrokerTopicMetrics,*"
+  - "kafka.server:type=ReplicaManager,*" 
+  - "kafka.network:type=RequestMetrics,*"
+  - "kafka.log:*"
+  - "java.lang:type=Memory"
+  - "java.lang:type=GarbageCollector,*"
+
+excludeObjectNames:
+  - "kafka.server:type=kafka-metrics-reporters,*"
+  - "kafka.server:type=app-info,*"
+  - "kafka.utils:*"
+
+# Basic configuration
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false

@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-// Configure Aspire dashboard and OTLP environment variables
-// These settings eliminate the need for manual environment variable setup
+// Configure Aspire dashboard and Prometheus environment variables
+// OpenTelemetry completely removed per user request - native Prometheus only
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:13324");
@@ -14,10 +14,6 @@ Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:188
 // Disable Aspire dashboard authentication for easier local development access
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS", "true");
 Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_NO_AUTH", "true");
-
-// Configure OpenTelemetry endpoints for applications
-Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:18009");
-Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
 
 // Configure .NET HTTP client to properly handle IPv6 localhost connections to Aspire DCP
 // Aspire DCP binds to IPv6 (::1) by design, so we need to ensure IPv6 connectivity works
@@ -87,9 +83,10 @@ var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_SAVE", "60 1000") // Persistence settings for stability
     .WithEnvironment("REDIS_STOP_WRITES_ON_BGSAVE_ERROR", "no"); // Prevent redis crashes on save errors
 
-// Single Kafka instance using manual configuration (AddKafka had connection issues)
+// Single Kafka instance with JMX metrics enabled for Prometheus collection
 var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEndpoint(9092, 9092, "kafka")
+    .WithEndpoint(9999, 9999, "jmx") // JMX port for metrics export
     .WithEnvironment("KAFKA_NODE_ID", "1")
     .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
     .WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093")
@@ -119,7 +116,20 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_NUM_NETWORK_THREADS", "8") // Increased network threads for better parallelism
     .WithEnvironment("KAFKA_NUM_IO_THREADS", "8") // Increased I/O threads for better performance
     .WithEnvironment("KAFKA_QUEUED_MAX_REQUESTS", "1000") // Increased request queue for higher throughput
-    .WithEnvironment("KAFKA_BATCH_SIZE", "65536"); // 64KB batch size for optimal producer batching
+    .WithEnvironment("KAFKA_BATCH_SIZE", "65536") // 64KB batch size for optimal producer batching
+    // NEW: JMX configuration for Prometheus metrics collection
+    .WithEnvironment("KAFKA_JMX_OPTS", "-Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.rmi.port=9999 -Djava.rmi.server.hostname=kafka");
+
+// NEW: Kafka JMX Exporter for Prometheus metrics collection
+// Replaces OpenTelemetry Collector for Kafka metrics as requested by user
+var kafkaJmxExporter = builder.AddContainer("kafka-jmx-exporter", "bitnami/jmx-exporter:latest")
+    .WithHttpEndpoint(18053, 5556, "kafka-metrics") // Prometheus metrics endpoint
+    .WithBindMount("./kafka-jmx-config.yml", "/opt/bitnami/jmx-exporter/config.yml")
+    .WithEnvironment("JMX_EXPORTER_CONFIG_FILE", "/opt/bitnami/jmx-exporter/config.yml")
+    .WithEnvironment("JMX_EXPORTER_JMX_URL", "service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi")
+    .WithEnvironment("JMX_EXPORTER_HTTP_PORT", "5556")
+    .WithArgs("5556", "/opt/bitnami/jmx-exporter/config.yml")
+    .WaitFor(kafka);
 
 // Single Flink JobManager with native Prometheus metrics support - Updated to 2.1.0 for latest AI capabilities
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
@@ -258,90 +268,6 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
 
 var prometheus = prometheusBuilder;
 
-// OpenTelemetry Collector with optimized configuration for selective component support
-// OPTIMIZATION: Flink and Temporal now use native Prometheus endpoints directly
-// OTel Collector now focuses on: .NET WebAPI metrics/traces, Kafka metrics, Redis metrics, PostgreSQL metrics, and centralized logging
-// This reduces complexity and eliminates OTel Collector as single point of failure for all metrics
-var configPaths = new[]
-{
-    // 1. Try current AppHost source directory (most reliable for development)
-    Path.Combine(Directory.GetCurrentDirectory(), "otel-config-simple.yaml"),
-    // 2. Try assembly location directory (for published apps)
-    Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", "otel-config-simple.yaml"),
-    // 3. Try AppContext base directory
-    Path.Combine(AppContext.BaseDirectory, "otel-config-simple.yaml"),
-    // 4. Try relative to LocalTesting folder (for integration tests)
-    Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "LocalTesting", "LocalTesting.AppHost", "otel-config-simple.yaml")
-};
-
-string? configSourcePath = null;
-foreach (var path in configPaths)
-{
-    if (File.Exists(path))
-    {
-        configSourcePath = Path.GetFullPath(path);
-        break;
-    }
-}
-
-// If still not found, create a minimal config file in temp directory as fallback
-if (configSourcePath == null)
-{
-    var tempDir = Path.GetTempPath();
-    configSourcePath = Path.Combine(tempDir, "otel-config-simple.yaml");
-    
-    var minimalConfig = @"
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-processors:
-  batch:
-    timeout: 1s
-exporters:
-  prometheus:
-    endpoint: ""0.0.0.0:8889""
-  debug: {}
-service:
-  pipelines:
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheus]
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]
-";
-    
-    await File.WriteAllTextAsync(configSourcePath, minimalConfig);
-    Console.WriteLine($"🔧 Created fallback OTel config at: {configSourcePath}");
-}
-else
-{
-    Console.WriteLine($"✅ Found OTel config at: {configSourcePath}");
-}
-
-var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
-    .WithHttpEndpoint(18007, 4317, "otlp-grpc") 
-    .WithHttpEndpoint(18009, 4318, "otlp-http")
-    .WithHttpEndpoint(18008, 8889, "prometheus-metrics")
-    .WithEnvironment("OTEL_LOG_LEVEL", "WARN") // Reduced logging for performance
-    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=local-otel-collector,source.version=1.0.0,deployment.environment=local-testing")
-    .WithEnvironment("GOMAXPROCS", "2") // Reduced for faster startup
-    .WithEnvironment("GOMEMLIMIT", "512MiB") // Reduced memory for faster startup
-    // FIXED: Use verified config file path with robust fallback
-    .WithBindMount(configSourcePath, "/etc/otelcol-contrib/config.yaml")
-    .WithArgs("--config=/etc/otelcol-contrib/config.yaml")
-    .WaitFor(prometheus); // Only wait for Prometheus
-
 // Grafana with PGL stack integration and enhanced startup reliability
 // PERFORMANCE OPTIMIZATION: Disable Grafana and Temporal UI when running tests for faster execution  
 IResourceBuilder<ContainerResource>? grafana = null;
@@ -362,8 +288,7 @@ if (!isTestMode)
         .WithEnvironment("LOKI_URL", loki != null ? "http://loki:3100" : "")
         .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
         .WithBindMount("./grafana-datasources-training.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
-        .WaitFor(prometheus)
-        .WaitFor(otelCollector);
+        .WaitFor(prometheus);
         
     // Only wait for Loki if it exists
     if (loki != null)
@@ -378,7 +303,7 @@ else
     Console.WriteLine("⚡ Grafana UI disabled for test mode (performance optimization)");
 }
 
-// LocalTesting Web API with simplified dependency chain to prevent DCP reconciliation failures
+// LocalTesting Web API with native Prometheus metrics and direct scraping architecture  
 var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092") // Single Kafka broker
@@ -387,21 +312,19 @@ var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("l
     .WithEnvironment("KAFKA_RETRY_BACKOFF_MS", "1000")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://otel-collector:4317")
+    // REMOVED: OTel configuration - now using native Prometheus metrics
     .WithEnvironment("LOKI_ENDPOINT", loki != null ? "http://loki:3100" : "")
     .WithEnvironment("GRAFANA_URL", "http://grafana:3000")
     .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
     .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323")
     .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323")
     .WithHttpEndpoint(18000, 13001, name: "webapi") // External port 18000 -> Internal port 13001
-    // Simplified dependency chain prevents DCP reconciliation race conditions
+    // Simplified dependency chain without OTel Collector
     .WaitFor(redis)
     .WaitFor(kafka)              // Single Kafka instance
     .WaitFor(flinkTaskManager)   // Single Flink TaskManager (which waits for JobManager)
     .WaitFor(temporalServer)     // Single Temporal Server (which waits for Postgres)
-    .WaitFor(otelCollector);     // Wait for observability stack except Grafana (conditionally disabled for tests)
+    .WaitFor(kafkaJmxExporter);  // Wait for Kafka JMX exporter instead of OTel Collector
 
 // Conditionally wait for Grafana if it's enabled
 var localTestingApi = grafana != null 
@@ -411,9 +334,10 @@ var localTestingApi = grafana != null
 // Enhanced application startup with DCP timeout fixes and comprehensive error handling
 try
 {
-    Console.WriteLine("🚀 Starting LocalTesting infrastructure with simplified setup...");
-    Console.WriteLine("📊 PGL Observability Stack: Prometheus + Grafana + Loki + OpenTelemetry");
-    Console.WriteLine("⚙️  Simplified setup: 1 Kafka + 1 Flink + 1 Temporal + Full Observability");
+    Console.WriteLine("🚀 Starting LocalTesting infrastructure with direct Prometheus metrics...");
+    Console.WriteLine("📊 Native Prometheus Architecture: All components expose metrics directly");
+    Console.WriteLine("⚙️  Components: 1 Kafka + JMX Exporter + 1 Flink + 1 Temporal + 1 WebAPI + Prometheus");
+    Console.WriteLine("🔧 User Requirement: Complete OpenTelemetry removal with JMX exporter for Kafka");
     Console.WriteLine("⏱️  Expected startup time: 2-3 minutes for complete infrastructure (optimized for performance)");
     Console.WriteLine();
     

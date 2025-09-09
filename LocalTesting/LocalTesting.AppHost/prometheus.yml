@@ -11,8 +11,8 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # OPTIMIZED: Direct Prometheus scraping for components with native support
-  # This reduces OTel Collector dependency and improves reliability
+  # NATIVE PROMETHEUS ARCHITECTURE: All components expose metrics directly
+  # User requested: Complete OpenTelemetry removal with JMX exporter for Kafka
   
   # Flink JobManager - Native Prometheus metrics endpoint
   - job_name: 'flink-jobmanager'
@@ -35,11 +35,17 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: /metrics
 
-  # OpenTelemetry Collector - For components without native Prometheus support
-  # Now handles: .NET WebAPI, Kafka, Redis, PostgreSQL metrics + traces/logs
-  - job_name: 'otel-collector'
+  # NEW: Kafka metrics via JMX Exporter - Replaced OpenTelemetry Collector
+  - job_name: 'kafka-jmx-exporter'
     static_configs:
-      - targets: ['otel-collector:8889']
+      - targets: ['kafka-jmx-exporter:5556']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # NEW: LocalTesting WebAPI - Native Prometheus metrics endpoint
+  - job_name: 'localtesting-webapi'
+    static_configs:
+      - targets: ['localtesting-webapi:13001']
     scrape_interval: 15s
     metrics_path: /metrics
 
@@ -48,12 +54,3 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:18888']
     scrape_interval: 30s
-    
-  # LocalTesting WebAPI - Application metrics (via OTel Collector)
-  # Note: This is scraped via OTel Collector, not directly
-  - job_name: 'localtesting-webapi'
-    static_configs:
-      - targets: ['localtesting-webapi:13001']
-    scrape_interval: 15s
-    metrics_path: /metrics
-    # This may not expose /metrics directly yet, handled via OTel

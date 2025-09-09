@@ -1,7 +1,14 @@
-# Optimized OpenTelemetry Collector Configuration
-# Focused on components without native Prometheus support + traces/logs
-# Flink and Temporal now use direct Prometheus scraping for better reliability
+# DEPRECATED - OpenTelemetry Collector Configuration
+# User requested complete OpenTelemetry removal (WI17)
+# This file is no longer used - all components now use native Prometheus metrics
+# Architecture changed to: Direct Prometheus scraping for all components
+# - Flink: Native Prometheus endpoints (ports 9249/9250)  
+# - Temporal: Native Prometheus endpoint (port 8000)
+# - Kafka: JMX Exporter (port 8080)
+# - WebAPI: Native /metrics endpoint (port 13001)
+# Keep this file for reference only - not used in runtime
 
+# Original configuration retained for reference:
 receivers:
   otlp:
     protocols:
