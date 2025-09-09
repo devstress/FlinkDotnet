@@ -104,8 +104,8 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
     .WithEnvironment("KAFKA_NUM_PARTITIONS", "20") // Optimized for high throughput distribution
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1") // Single broker
-    // OPTIMIZED: Memory configuration for thousands msg/sec throughput
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx2G -Xms1G") // Increased from 1G to 2G for better performance
+    // OPTIMIZED: Memory configuration for fast startup (reduced for 45-second requirement)
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx1G -Xms512M") // Reduced for faster startup
     // OPTIMIZED: Storage configuration for high-volume processing (fixed integer overflow)
     .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "1073741824") // 1GB segments (max safe Java int value)
     .WithEnvironment("KAFKA_LOG_RETENTION_BYTES", "2147483647") // Max Java int retention (~2GB)
@@ -128,10 +128,10 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        jobmanager.memory.process.size: 1024m
-        jobmanager.memory.off-heap.size: 64m
-        taskmanager.numberOfTaskSlots: 8
-        parallelism.default: 8
+        jobmanager.memory.process.size: 512m
+        jobmanager.memory.off-heap.size: 32m
+        taskmanager.numberOfTaskSlots: 4
+        parallelism.default: 4
         rest.bind-address: 0.0.0.0
         rest.port: 8081
         """)
@@ -143,8 +143,8 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 1024m
-        taskmanager.numberOfTaskSlots: 8
+        taskmanager.memory.process.size: 512m
+        taskmanager.numberOfTaskSlots: 4
         taskmanager.host: flink-taskmanager
         """)
     .WithArgs("taskmanager")
@@ -157,9 +157,9 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
     .WithEnvironment("POSTGRES_PASSWORD", "temporal")
     .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")
     .WithEnvironment("POSTGRES_INITDB_ARGS", "--auth-host=trust")
-    .WithEnvironment("POSTGRES_MAX_CONNECTIONS", "100")
-    .WithEnvironment("POSTGRES_SHARED_BUFFERS", "128MB")
-    .WithEnvironment("POSTGRES_INITDB_WAIT_TIMEOUT", "60") // Extended init timeout
+    .WithEnvironment("POSTGRES_MAX_CONNECTIONS", "50") // Reduced for faster startup
+    .WithEnvironment("POSTGRES_SHARED_BUFFERS", "64MB") // Reduced for faster startup
+    .WithEnvironment("POSTGRES_INITDB_WAIT_TIMEOUT", "30") // Reduced timeout for faster failure detection
     .WithEnvironment("POSTGRES_LOG_STATEMENT", "none") // Reduce logging for stability
     .WithEnvironment("POSTGRES_LOG_MIN_MESSAGES", "warning") // Reduce log noise
     .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data")
@@ -244,20 +244,87 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
 
 var prometheus = prometheusBuilder;
 
-// OpenTelemetry Collector with corrected file mounting approach
-// Implements pattern: App → local OTel Collector (localhost gRPC/HTTP) → backend
+// OpenTelemetry Collector with robust configuration path resolution
+// FIXED: Multiple fallback strategies to find configuration file reliably
+var configPaths = new[]
+{
+    // 1. Try current AppHost source directory (most reliable for development)
+    Path.Combine(Directory.GetCurrentDirectory(), "otel-config-simple.yaml"),
+    // 2. Try assembly location directory (for published apps)
+    Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "", "otel-config-simple.yaml"),
+    // 3. Try AppContext base directory
+    Path.Combine(AppContext.BaseDirectory, "otel-config-simple.yaml"),
+    // 4. Try relative to LocalTesting folder (for integration tests)
+    Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "LocalTesting", "LocalTesting.AppHost", "otel-config-simple.yaml")
+};
+
+string? configSourcePath = null;
+foreach (var path in configPaths)
+{
+    if (File.Exists(path))
+    {
+        configSourcePath = Path.GetFullPath(path);
+        break;
+    }
+}
+
+// If still not found, create a minimal config file in temp directory as fallback
+if (configSourcePath == null)
+{
+    var tempDir = Path.GetTempPath();
+    configSourcePath = Path.Combine(tempDir, "otel-config-simple.yaml");
+    
+    var minimalConfig = @"
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  batch:
+    timeout: 1s
+exporters:
+  prometheus:
+    endpoint: ""0.0.0.0:8889""
+  debug: {}
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+";
+    
+    await File.WriteAllTextAsync(configSourcePath, minimalConfig);
+    Console.WriteLine($"🔧 Created fallback OTel config at: {configSourcePath}");
+}
+else
+{
+    Console.WriteLine($"✅ Found OTel config at: {configSourcePath}");
+}
+
 var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
-    .WithHttpEndpoint(18007, 4317, "otlp-grpc")
+    .WithHttpEndpoint(18007, 4317, "otlp-grpc") 
     .WithHttpEndpoint(18009, 4318, "otlp-http")
     .WithHttpEndpoint(18008, 8889, "prometheus-metrics")
     .WithEnvironment("OTEL_LOG_LEVEL", "WARN") // Reduced logging for performance
     .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=local-otel-collector,source.version=1.0.0,deployment.environment=local-testing")
-    .WithEnvironment("GOMAXPROCS", "4") // Optimize Go runtime for high-performance
-    .WithEnvironment("GOMEMLIMIT", "1GiB") // Memory limit for collector
-    // CORRECTED APPROACH: Use absolute path and ensure proper file mount
-    .WithBindMount(Path.Combine(AppContext.BaseDirectory, "otel-config-simple.yaml"), "/etc/otelcol-contrib/config.yaml")
+    .WithEnvironment("GOMAXPROCS", "2") // Reduced for faster startup
+    .WithEnvironment("GOMEMLIMIT", "512MiB") // Reduced memory for faster startup
+    // FIXED: Use verified config file path with robust fallback
+    .WithBindMount(configSourcePath, "/etc/otelcol-contrib/config.yaml")
     .WithArgs("--config=/etc/otelcol-contrib/config.yaml")
-    .WaitFor(prometheus); // Only wait for Prometheus (Loki integration removed for stability)
+    .WaitFor(prometheus); // Only wait for Prometheus
 
 // Grafana with PGL stack integration and enhanced startup reliability
 // PERFORMANCE OPTIMIZATION: Disable Grafana and Temporal UI when running tests for faster execution  
