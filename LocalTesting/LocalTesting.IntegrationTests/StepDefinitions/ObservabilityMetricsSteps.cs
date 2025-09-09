@@ -29,8 +29,8 @@ public class ObservabilityMetricsSteps : IDisposable
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
     
-    // Microsoft Aspire standard timeout - increased for CI/CD container startup
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(3);
+    // Microsoft Aspire standard timeout - optimized per user requirement (under 1 minute)
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {

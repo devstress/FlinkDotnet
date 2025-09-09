@@ -106,9 +106,9 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1") // Single broker
     // OPTIMIZED: Memory configuration for thousands msg/sec throughput
     .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx2G -Xms1G") // Increased from 1G to 2G for better performance
-    // OPTIMIZED: Storage configuration for high-volume processing
-    .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "2147483648") // 2GB segments (increased from 1GB)
-    .WithEnvironment("KAFKA_LOG_RETENTION_BYTES", "4294967296") // 4GB retention (increased from 2GB)
+    // OPTIMIZED: Storage configuration for high-volume processing (fixed integer overflow)
+    .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "1073741824") // 1GB segments (max safe Java int value)
+    .WithEnvironment("KAFKA_LOG_RETENTION_BYTES", "2147483647") // Max Java int retention (~2GB)
     // OPTIMIZED: Network configuration for thousands msg/sec
     .WithEnvironment("KAFKA_SOCKET_SEND_BUFFER_BYTES", "131072") // 128KB send buffer (increased from 100KB)
     .WithEnvironment("KAFKA_SOCKET_RECEIVE_BUFFER_BYTES", "131072") // 128KB receive buffer (increased from 100KB)
