@@ -1,43 +1,56 @@
 global:
   scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # Add any alerting rules here if needed
 
 scrape_configs:
+  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'otel-collector'
-    static_configs:
-      - targets: ['otel-collector:8889']
-
-  - job_name: 'aspire-dashboard'
-    static_configs:
-      - targets: ['aspire-dashboard:18888']
-
-  - job_name: 'localtesting-webapi'
-    static_configs:
-      - targets: ['localtesting-webapi:5001']
-
+  # NATIVE PROMETHEUS ARCHITECTURE: All components expose metrics directly
+  # User requested: Complete OpenTelemetry removal with JMX exporter for Kafka
+  
+  # Flink JobManager - Native Prometheus metrics endpoint
   - job_name: 'flink-jobmanager'
     static_configs:
-      - targets: ['flink-jobmanager:8081']
-
-  - job_name: 'kafka-broker-1'
+      - targets: ['flink-jobmanager:9249']
+    scrape_interval: 15s
+    metrics_path: /
+    
+  # Flink TaskManager - Native Prometheus metrics endpoint
+  - job_name: 'flink-taskmanager'
     static_configs:
-      - targets: ['kafka-broker-1:9092']
+      - targets: ['flink-taskmanager:9250']
+    scrape_interval: 15s  
+    metrics_path: /
 
-  - job_name: 'kafka-broker-2'
-    static_configs:
-      - targets: ['kafka-broker-2:9092']
-
-  - job_name: 'kafka-broker-3'
-    static_configs:
-      - targets: ['kafka-broker-3:9092']
-
+  # Temporal Server - Native Prometheus metrics endpoint
   - job_name: 'temporal-server'
     static_configs:
-      - targets: ['temporal-server:7233']
+      - targets: ['temporal-server:8000']
+    scrape_interval: 15s
+    metrics_path: /metrics
 
-  - job_name: 'grafana'
+  # NEW: Kafka metrics via JMX Exporter - Replaced OpenTelemetry Collector
+  - job_name: 'kafka-jmx-exporter'
     static_configs:
-      - targets: ['grafana:3000']
+      - targets: ['kafka-jmx-exporter:5556']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # NEW: LocalTesting WebAPI - Native Prometheus metrics endpoint
+  - job_name: 'localtesting-webapi'
+    static_configs:
+      - targets: ['localtesting-webapi:13001']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Aspire Dashboard - For development observability
+  - job_name: 'aspire-dashboard'
+    static_configs:
+      - targets: ['localhost:18888']
+    scrape_interval: 30s

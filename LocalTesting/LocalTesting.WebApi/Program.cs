@@ -4,48 +4,27 @@ using LocalTesting.WebApi.Services.Temporal;
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Services;
 using FlinkDotNet.Orchestration.Models;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using StackExchange.Redis;
-using System.Diagnostics.Metrics;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure IPv4-only binding compatible with Aspire orchestration
-// Use a different internal port to avoid conflicts with Aspire's proxy
+// Use port 13001 (13000+ range as required)
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 5001); // Internal port for Aspire
+    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 13001); // Internal port for Aspire
 });
 
 // Configure Flink job management defaults
 builder.Configuration["Flink:UseFlinkDotNet"] = "true"; // Default to FlinkDotNet
 
-// Configure OpenTelemetry with comprehensive observability metrics
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(resource => resource
-        .AddService("LocalTesting.WebApi")
-        .AddAttributes(new Dictionary<string, object>
-        {
-            ["deployment.environment"] = "local-testing",
-            ["service.version"] = "1.0.0"
-        }))
-    .WithTracing(tracing => tracing
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddOtlpExporter())
-    .WithMetrics(metrics => metrics
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddMeter("FlinkDotNet.Kafka")
-        .AddMeter("FlinkDotNet.Flink") 
-        .AddMeter("FlinkDotNet.Temporal")
-        .AddMeter("FlinkDotNet.Flow")
-        .AddOtlpExporter())
-    .WithLogging(logging => logging
-        .AddOtlpExporter());
+// Configure native Prometheus metrics endpoint
+// Replaced OpenTelemetry with direct Prometheus metrics for simplified architecture
+Console.WriteLine($"📊 Native Prometheus Configuration:");
+Console.WriteLine($"   • Metrics Endpoint: /metrics");
+Console.WriteLine($"   • Architecture: Direct scraping (no OpenTelemetry collector)");
+Console.WriteLine($"   • User Requirement: Complete OTel removal with native metrics");
 
 // Add services to the container
 builder.Services.AddControllers()
@@ -83,6 +62,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 });
 
 // Add custom services
+// Replace synchronous observability with high-performance async buffered service
+builder.Services.AddSingleton<AsyncBufferedObservabilityService>();
+// Keep existing service for backward compatibility during transition
 builder.Services.AddSingleton<ObservabilityMetricsService>();
 
 // Configure HTTP client for Prometheus with enhanced timeouts for infrastructure delays
@@ -145,6 +127,12 @@ try
     // This allows the application to start immediately without waiting for Orchestra setup
 
     // Configure the HTTP request pipeline
+    
+    // Add Prometheus metrics endpoint before other middleware
+    app.UseRouting();
+    app.UseHttpMetrics(); // Enable HTTP metrics collection
+    app.MapMetrics(); // Expose /metrics endpoint
+    
     app.UseSwagger();
     app.UseSwaggerUI(c => 
     {

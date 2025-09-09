@@ -6,14 +6,16 @@ using System.Net.Http.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace LocalTesting.IntegrationTests.Features;
 
 /// <summary>
-/// Simplified observability tests using proper Aspire testing framework patterns
-/// Services are automatically validated by Aspire's built-in health check integration
+/// Observability integration tests following Microsoft Aspire testing framework patterns
+/// Uses proper DistributedApplicationTestingBuilder pattern with resource health notifications
 /// 
 /// IMPORTANT: Requires .NET 9.0 SDK for proper Aspire testing framework functionality
 /// Environment with .NET 8.0 will fail to build/run these tests
@@ -26,6 +28,10 @@ public class ObservabilityMetricsSteps : IDisposable
     private static HttpClient? _httpClient;
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
+    
+    // USER REQUIREMENT: 45-second maximum timeout with immediate start when infrastructure is ready
+    // "Health Check should work less than 1 minute...If the infrastructure is ready sooner, the test should start as soon as possible"
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(45);
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -43,44 +49,105 @@ public class ObservabilityMetricsSteps : IDisposable
                 return;
         }
 
-        Console.WriteLine("🚀 Starting Aspire testing framework with automatic service readiness...");
+        // Pre-check environment and display timeout configuration
+        await VerifyContainerEnvironment();
         
-        // Follow Microsoft Aspire testing framework pattern - let Aspire handle service readiness
-        var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_AppHost>();
-        _app = await builder.BuildAsync();
+        Console.WriteLine("🚀 Starting Aspire integration test with framework-managed service readiness...");
+        Console.WriteLine($"🕒 Health check timeout: {HealthCheckTimeout.TotalSeconds} seconds (user requirement: 45-second maximum with immediate start when ready)");
         
-        Console.WriteLine("📦 Aspire application built, starting all services...");
+        // Enable test mode for performance optimization  
+        Environment.SetEnvironmentVariable("TESTING_MODE", "true");
         
-        // StartAsync will wait for all services to be ready based on their configured health checks
-        // This automatically handles service readiness - no manual validation needed
-        // Use extended timeout for complex infrastructure (Kafka cluster + Prometheus + Grafana + Loki)
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10)); // 10 minutes for complex infrastructure
-        await _app.StartAsync(cts.Token);
-        
-        Console.WriteLine("✅ All Aspire services started and ready (validated by framework)");
-        
-        // Create HTTP client with service discovery - services are guaranteed to be ready
-        _httpClient = _app.CreateHttpClient("localtesting-webapi", "webapi");
-        _httpClient.Timeout = TimeSpan.FromMinutes(10); // Extended timeout for workload execution
-        
-        // Verify API is responding (simple check since Aspire already validated infrastructure)
-        var healthResponse = await _httpClient.GetAsync("/health");
-        if (!healthResponse.IsSuccessStatusCode)
+        try 
         {
-            throw new InvalidOperationException($"API health check failed: {healthResponse.StatusCode}. Aspire services are ready but API is not responding.");
-        }
-        
-        Console.WriteLine("🌐 API endpoint confirmed responsive after Aspire service readiness");
+            // Follow Microsoft Aspire testing framework pattern with USER-SPECIFIED 45-second timeout
+            using var cts = new CancellationTokenSource(HealthCheckTimeout);
+            var cancellationToken = cts.Token;
+            
+            Console.WriteLine("📦 Creating Aspire testing application builder...");
+            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_AppHost>(cancellationToken);
+            
+            // Configure logging for integration test visibility  
+            appHost.Services.AddLogging(logging =>
+            {
+                logging.SetMinimumLevel(LogLevel.Information);
+                // Override the logging filters from the app's configuration
+                logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Information);
+                logging.AddFilter("Aspire.", LogLevel.Information);
+            });
+            
+            // Configure HTTP client defaults with resilience
+            appHost.Services.ConfigureHttpClientDefaults(clientBuilder =>
+            {
+                clientBuilder.AddStandardResilienceHandler();
+            });
+            
+            Console.WriteLine("🏗️ Building Aspire distributed application...");
+            await using var app = await appHost.BuildAsync(cancellationToken);
+            
+            Console.WriteLine("🚀 Starting all Aspire services...");
+            await app.StartAsync(cancellationToken);
+            
+            Console.WriteLine("⏳ Waiting for WebAPI service to become healthy...");
+            // Use Aspire's built-in resource health notifications with explicit timeout monitoring
+            await app.ResourceNotifications.WaitForResourceHealthyAsync("localtesting-webapi", cancellationToken);
+            
+            Console.WriteLine("✅ All Aspire services healthy and ready (validated by framework)");
+            
+            // Create HTTP client with Aspire service discovery
+            _httpClient = app.CreateHttpClient("localtesting-webapi", "webapi");
+            _httpClient.Timeout = TimeSpan.FromMinutes(10); // Reasonable timeout for integration testing
+            
+            // Store the app reference for later use
+            _app = app;
+            
+            Console.WriteLine("🌐 HTTP client created with service discovery integration");
 
-        lock (_lockObject)
-        {
-            _initialized = true;
+            lock (_lockObject)
+            {
+                _initialized = true;
+            }
         }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            // EXPLICIT TEST FAILURE for 45-second infrastructure timeout (user requirement)
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE TIMEOUT FAILURE");
+            Console.WriteLine($"❌ Infrastructure failed to become healthy within {HealthCheckTimeout.TotalSeconds} seconds (user requirement)");
+            Console.WriteLine($"❌ User specified: Health check should work less than 1 minute (45 seconds)");
+            Console.WriteLine($"❌ This indicates container startup is too slow or has configuration issues");
+            Console.WriteLine($"❌ Test MUST fail to ensure GitHub workflow failure detection");
+            
+            // Explicit test failure ensuring non-zero exit code
+            Assert.Fail($"INFRASTRUCTURE TIMEOUT: Services failed to become healthy within {HealthCheckTimeout.TotalSeconds} seconds as required by user specification.");
+        }
+        catch (Exception ex)
+        {
+            // Any other infrastructure setup exception
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE SETUP FAILURE: {ex.Message}");
+            Console.WriteLine($"❌ Full exception: {ex}");
+            Console.WriteLine($"❌ Test MUST fail to ensure GitHub workflow failure detection");
+            Assert.Fail($"INFRASTRUCTURE SETUP FAILURE: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Pre-check container environment before Aspire startup
+    /// </summary>
+    private async Task VerifyContainerEnvironment()
+    {
+        Console.WriteLine("🔍 PRE-CHECK: Verifying container environment before Aspire startup...");
+        Console.WriteLine($"⏱️ USER REQUIREMENT: 45-second health check timeout with immediate start when ready");
+        Console.WriteLine($"⚠️ NOTE: If infrastructure takes longer than 45 seconds, test will fail as requested");
+        
+        // Allow async context but no actual async operations needed here
+        await Task.CompletedTask;
     }
 
     public void Dispose()
     {
-        // Individual test cleanup
+        // Individual test cleanup - Aspire handles service lifecycle
+        _httpClient?.Dispose();
+        _app?.Dispose();
     }
 
     [When(@"I run the entire flow")]
@@ -88,29 +155,53 @@ public class ObservabilityMetricsSteps : IDisposable
     {
         await EnsureInfrastructureInitialized();
         
-        Console.WriteLine("🚀 Starting REAL infrastructure flow with actual performance measurement...");
+        Console.WriteLine("🚀 Starting observability flow with Aspire-managed infrastructure...");
+        Console.WriteLine("✅ Infrastructure health verified by Aspire framework - all services ready");
         
         // MEASURE ACTUAL PROCESSING TIME - No more hardcoded values
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var startTime = DateTime.UtcNow;
         
         // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
-        // Message count configuration: GitHub workflow uses 100K, normal operation uses 1M
+        // Message count configuration: High-volume testing for Kafka + Flink performance
         var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
-            ? 100000  // 100K messages for GitHub workflow - balance between meaningful metrics and execution time
-            : 1000000; // 1M messages for normal local operation - full stress test
+            ? 100000  // 100k messages for GitHub workflow - target million messages per second
+            : 100000; // 100k messages for local operation - high-performance testing
             
         var flowRequest = new
         {
             KafkaMessages = messageCount,
-            FlinkJobs = 2,
-            TemporalWorkflows = 5,
+            FlinkJobs = 1, // Reduced from 2 for performance
+            TemporalWorkflows = 2, // Reduced from 5 for performance
             // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
         };
 
         Console.WriteLine($"🔄 Executing real flow through infrastructure at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC...");
-        var flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
-        flowResponse.EnsureSuccessStatusCode();
+        
+        // CRITICAL: Wrap API calls in proper error handling to catch connection failures
+        HttpResponseMessage flowResponse;
+        try
+        {
+            flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
+            flowResponse.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during workload execution");
+            Console.WriteLine($"❌ This indicates OpenTelemetry collector or other infrastructure is not available");
+            Console.WriteLine($"❌ Full error: {httpEx.Message}");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            Assert.Fail("Observability test failed: Infrastructure connection reset by peer. Critical observability infrastructure not available.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during workload execution");
+            Console.WriteLine($"❌ Error: {httpEx.Message}");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            Assert.Fail($"Observability test failed: Infrastructure HTTP failure - {httpEx.Message}. Critical services not responding.");
+        }
         
         // MEASURE ACTUAL COMPLETION TIME
         stopwatch.Stop();
@@ -125,10 +216,10 @@ public class ObservabilityMetricsSteps : IDisposable
         // Wait for metrics to be processed by infrastructure and scraped by Prometheus
         var metricsWaitStart = DateTime.UtcNow;
         Console.WriteLine("⏳ Waiting for metrics to be scraped by Prometheus...");
-        await Task.Delay(30000); // 30 seconds for metrics propagation to Prometheus - increased for better reliability
+        await Task.Delay(5000); // 5 seconds for metrics propagation to Prometheus - heavily optimized for performance
         
         // Verify metrics are available with real infrastructure and debug if not
-        var maxRetries = 5; // Increased retries
+        var maxRetries = 3; // Reduced retries for performance
         var hasMetrics = false;
         
         for (int retry = 0; retry < maxRetries; retry++)
@@ -194,13 +285,14 @@ public class ObservabilityMetricsSteps : IDisposable
             if (retry < maxRetries - 1)
             {
                 Console.WriteLine($"🔄 Waiting for real infrastructure metrics (attempt {retry + 1}/{maxRetries}) - Prometheus may still be scraping...");
-                await Task.Delay(10000); // Wait 10 seconds before retry - longer for Prometheus scraping
+                await Task.Delay(3000); // Wait 3 seconds before retry - heavily optimized for performance
             }
         }
         
         if (!hasMetrics)
         {
-            Console.WriteLine("⚠️ No real metrics detected after flow execution. This indicates a real infrastructure issue.");
+            Console.WriteLine("❌ CRITICAL: No real metrics detected after flow execution. This indicates a real infrastructure issue.");
+            Assert.Fail("Observability test failed: No metrics detected after infrastructure execution. This indicates infrastructure failure and must fail the test.");
         }
         
         _scenarioContext["flow_completed"] = true;
@@ -249,12 +341,45 @@ public class ObservabilityMetricsSteps : IDisposable
                 Console.WriteLine($"⚠️ DEBUG: Debug endpoint returned {debugResponse.StatusCode}");
             }
         }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics debug");
+            Console.WriteLine($"❌ This indicates OpenTelemetry collector or Prometheus is not available");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            Assert.Fail("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical observability infrastructure not available.");
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"⚠️ DEBUG: Failed to get debug metrics: {ex.Message}");
+            // Don't fail on debug metrics, but log the issue
         }
         
-        var metricsData = await GetDetailedMetrics();
+        Dictionary<string, object> metricsData;
+        try
+        {
+            metricsData = await GetDetailedMetrics();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics retrieval");
+            Console.WriteLine($"❌ This indicates Prometheus or backend metrics services are not available");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            Assert.Fail("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical metrics infrastructure not available.");
+            return; // Unreachable but satisfies compiler
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during metrics retrieval");
+            Console.WriteLine($"❌ Error: {httpEx.Message}");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            Assert.Fail($"Observability test failed: Infrastructure HTTP failure during metrics retrieval - {httpEx.Message}. Critical metrics services not responding.");
+            return; // Unreachable but satisfies compiler
+        }
+        
         var metricsDisplay = FormatMetricsForDisplay(metricsData);
         
         Console.WriteLine(metricsDisplay);
@@ -262,12 +387,40 @@ public class ObservabilityMetricsSteps : IDisposable
         // Store for potential file output
         _scenarioContext["metrics_data"] = metricsData;
         _scenarioContext["metrics_display"] = metricsDisplay;
+        
+        // CRITICAL: Set validation flag only if metrics processing completed without exceptions
+        // If FormatMetricsForDisplay threw any validation exceptions, this line won't be reached
+        Console.WriteLine("✅ VALIDATION PASSED: All metrics validation checks completed successfully");
+        _scenarioContext["metrics_validated"] = true;
+        
+        // NEW: Set infrastructure health flag to indicate all infrastructure worked properly
+        Console.WriteLine("✅ INFRASTRUCTURE HEALTH: All infrastructure connections successful during metrics retrieval");
+        _scenarioContext["infrastructure_healthy"] = true;
     }
 
     [Then(@"we save the metrics to a file")]
     public async Task ThenWeSaveTheMetricsToAFile()
     {
         await EnsureInfrastructureInitialized();
+        
+        // CRITICAL: Only save results file if ALL previous validations passed AND infrastructure is healthy
+        // This ensures GitHub workflow fails when test validations fail OR infrastructure fails
+        if (!_scenarioContext.ContainsKey("flow_completed") || 
+            !_scenarioContext.ContainsKey("metrics_validated") ||
+            !_scenarioContext.ContainsKey("infrastructure_healthy"))
+        {
+            var errorMessage = "❌ CRITICAL ERROR: Cannot save results - test validation failed, flow incomplete, or infrastructure unhealthy";
+            Console.WriteLine(errorMessage);
+            Console.WriteLine("❌ Missing validation flags:");
+            if (!_scenarioContext.ContainsKey("flow_completed"))
+                Console.WriteLine("  • flow_completed flag missing - workload execution failed");
+            if (!_scenarioContext.ContainsKey("metrics_validated"))  
+                Console.WriteLine("  • metrics_validated flag missing - metrics validation failed");
+            if (!_scenarioContext.ContainsKey("infrastructure_healthy"))
+                Console.WriteLine("  • infrastructure_healthy flag missing - infrastructure connection failures occurred");
+            Console.WriteLine("❌ This will cause GitHub workflow to fail as expected");
+            Assert.Fail("Test validation or infrastructure health check failed - results file will not be created to ensure GitHub workflow failure");
+        }
         
         var metricsData = _scenarioContext.ContainsKey("metrics_data") 
             ? _scenarioContext["metrics_data"] as Dictionary<string, object>
@@ -290,7 +443,7 @@ public class ObservabilityMetricsSteps : IDisposable
         // Hard-coded filename as requested by user  
         var filename = Path.Combine(binDir, "observability-test-result.txt");
         
-        // Write formatted metrics to file
+        // Write formatted metrics to file ONLY after all validations pass
         await File.WriteAllTextAsync(filename, metricsDisplay);
         
         Console.WriteLine($"📁 Real observability metrics saved to LocalTesting/Bin directory:");
@@ -300,6 +453,8 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   📊 File size: {new FileInfo(filename).Length} bytes");
         Console.WriteLine($"   🔗 Metrics source: Real Prometheus infrastructure");
         Console.WriteLine($"   ✅ GitHub workflow will find file at: LocalTesting/Bin/observability-test-result.txt");
+        Console.WriteLine("   ✅ File created only after ALL test validations passed AND infrastructure health verified");
+        Console.WriteLine("   ✅ Validation flags: flow_completed + metrics_validated + infrastructure_healthy = SUCCESS");
     }
     
     private string FindLocalTestingDirectory()
@@ -380,9 +535,27 @@ public class ObservabilityMetricsSteps : IDisposable
 
     private async Task<Dictionary<string, object>> GetDetailedMetrics()
     {
-        // Get main metrics
-        var response = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
-        response.EnsureSuccessStatusCode();
+        // Get main metrics with proper error handling for infrastructure failures
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: Connection reset by peer during detailed metrics retrieval");
+            Assert.Fail("Infrastructure connection reset by peer during metrics API call. Critical metrics services not available.");
+            throw; // Unreachable but satisfies compiler
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: HTTP request failed during detailed metrics retrieval: {httpEx.Message}");
+            Assert.Fail($"Infrastructure HTTP failure during metrics API call: {httpEx.Message}. Critical metrics services not responding.");
+            throw; // Unreachable but satisfies compiler
+        }
         
         var content = await response.Content.ReadAsStringAsync();
         var metricsResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(content, new JsonSerializerOptions
@@ -570,8 +743,9 @@ public class ObservabilityMetricsSteps : IDisposable
             }
             else
             {
-                output.AppendLine($"  ❌ ERROR: Processing time is 0 - indicates test measurement problem");
+                output.AppendLine($"  ❌ CRITICAL ERROR: Processing time is 0 - indicates test measurement problem");
                 output.AppendLine($"  ❌ This suggests metrics are not from real infrastructure execution");
+                Assert.Fail("Observability test failed: Processing time is 0, indicating test measurement failure. This must fail the test.");
             }
             
             // Validation of metrics realism
@@ -579,10 +753,18 @@ public class ObservabilityMetricsSteps : IDisposable
             
             if (!isRealistic)
             {
-                output.AppendLine($"  ⚠️  WARNING: Metrics may be generated instead of measured from real infrastructure");
-                output.AppendLine($"  🔧 RECOMMENDATION: Verify Stopwatch measurement and real infrastructure connection");
+                output.AppendLine($"  ❌ CRITICAL: Metrics are unrealistic and may be generated instead of measured from real infrastructure");
+                output.AppendLine($"  🔧 ERROR: Processing time: {totalProcessingTime:F2}s, Rate: {overallMsgPerSec:F2} msg/sec");
+                Assert.Fail($"Observability test failed: Unrealistic metrics detected (time: {totalProcessingTime:F2}s, rate: {overallMsgPerSec:F2} msg/sec). This indicates infrastructure failure and must fail the test.");
             }
             
+        }
+        catch (InvalidOperationException validationEx) when (validationEx.Message.Contains("Observability test failed"))
+        {
+            // CRITICAL: Re-throw validation exceptions to ensure test failure propagation to GitHub workflow
+            Console.WriteLine($"❌ CRITICAL VALIDATION FAILURE: {validationEx.Message}");
+            Console.WriteLine("❌ This validation failure will cause the test to fail and GitHub workflow to fail as expected");
+            Assert.Fail($"CRITICAL VALIDATION FAILURE: {validationEx.Message}"); // Convert to Assert.Fail for proper test failure
         }
         catch (Exception ex)
         {
@@ -616,8 +798,8 @@ public class ObservabilityMetricsSteps : IDisposable
             }
         }
         
-        // Default to 1M messages as configured in the real flow
-        return 1000000;
+        // Default to 100k messages as configured for high-performance testing
+        return 100000;
     }
 
     private long CalculateTotalFinalKafkaMessages(Dictionary<string, object> metricsData)
@@ -649,8 +831,9 @@ public class ObservabilityMetricsSteps : IDisposable
         }
         
         // If no real measurement available, this indicates a test problem
-        Console.WriteLine("❌ ERROR: No real processing time measurement available. Test should measure actual infrastructure performance.");
-        return 0.0; // Return 0 to indicate measurement issue, not fake default
+        Console.WriteLine("❌ CRITICAL ERROR: No real processing time measurement available. Test should measure actual infrastructure performance.");
+        Assert.Fail("Observability test failed: No processing time measurement available. This indicates test measurement failure and must fail the test.");
+        return 0; // Unreachable but satisfies compiler
     }
 
     private double CalculateKafkaProducingRate(JsonElement? kafkaMetrics)

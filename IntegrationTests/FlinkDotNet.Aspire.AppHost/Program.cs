@@ -180,39 +180,14 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.0.0")
         "taskmanager.memory.managed.fraction: 0.4")
     .WithArgs("taskmanager");
 
-// Observability Stack for Integration Testing - Essential metrics collection
-// Simplified Prometheus + OpenTelemetry setup for CI/CD compatibility
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
-    .WithHttpEndpoint(18006, 9090, "prometheus")
-    .WithBindMount("./prometheus-integration.yml", "/etc/prometheus/prometheus.yml")
-    .WithArgs("--config.file=/etc/prometheus/prometheus.yml",
-              "--storage.tsdb.path=/prometheus",
-              "--web.console.libraries=/etc/prometheus/console_libraries",
-              "--web.console.templates=/etc/prometheus/consoles",
-              "--web.enable-lifecycle",
-              "--storage.tsdb.retention.time=1h", // Short retention for integration tests
-              "--log.level=warn",
-              "--web.listen-address=0.0.0.0:9090");
-
-var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector-contrib:latest")
-    .WithHttpEndpoint(18007, 4317, "otlp-grpc")
-    .WithHttpEndpoint(18008, 4318, "otlp-http")
-    .WithHttpEndpoint(18009, 8889, "prometheus-metrics")
-    .WithEnvironment("OTEL_LOG_LEVEL", "WARN") // Reduced logging for CI/CD
-    .WithEnvironment("OTEL_RESOURCE_ATTRIBUTES", "service.name=integration-test-collector,service.version=1.0.0")
-    .WithBindMount("./otel-config-integration.yaml", "/etc/otelcol-contrib/otel-collector-config.yaml")
-    .WithArgs("--config=/etc/otelcol-contrib/otel-collector-config.yaml")
-    .WaitFor(prometheus);
+// No observability stack - removed for simplified integration testing
 
 Console.WriteLine("🎯 Integration Test Infrastructure Setup Complete");
 Console.WriteLine("📊 Aspire Dashboard: http://localhost:18889");
 Console.WriteLine("🔥 Flink Dashboard: http://localhost:18002");
 Console.WriteLine("📨 Kafka UI: http://localhost:18001");
 Console.WriteLine("🔧 Redis: Available for distributed caching");
-Console.WriteLine("📈 Prometheus: http://localhost:18006 (metrics collection)");
-Console.WriteLine("🔍 OpenTelemetry: http://localhost:18009/metrics (metrics export)");
 Console.WriteLine("");
-Console.WriteLine("💡 Observability metrics enabled for integration testing");
-Console.WriteLine("   Simplified setup optimized for CI/CD execution");
+Console.WriteLine("💡 Simplified setup optimized for CI/CD execution (no observability stack)");
 
 builder.Build().Run();

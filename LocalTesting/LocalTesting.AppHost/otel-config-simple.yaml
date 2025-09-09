@@ -1,0 +1,59 @@
+# DEPRECATED - OpenTelemetry Collector Configuration
+# User requested complete OpenTelemetry removal (WI17)
+# This file is no longer used - all components now use native Prometheus metrics
+# Architecture changed to: Direct Prometheus scraping for all components
+# - Flink: Native Prometheus endpoints (ports 9249/9250)  
+# - Temporal: Native Prometheus endpoint (port 8000)
+# - Kafka: JMX Exporter (port 8080)
+# - WebAPI: Native /metrics endpoint (port 13001)
+# Keep this file for reference only - not used in runtime
+
+# Original configuration retained for reference:
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    limit_mib: 256  # Reduced since we're handling fewer metrics
+    check_interval: 1s
+  batch:
+    timeout: 1s
+    send_batch_size: 512  # Reduced batch size for better performance
+    send_batch_max_size: 1024
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: "localtesting"
+    # Only export metrics from components without native Prometheus support
+    const_labels:
+      collector: "otel"
+      
+  debug:
+    verbosity: basic
+    # Reduced verbosity for production-like performance
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+      # Note: Flink and Temporal metrics now bypassed - handled natively
+    
+    traces:
+      receivers: [otlp] 
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+      # Traces still go through OTel Collector (no native Prometheus traces)
+      
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch] 
+      exporters: [debug]
+      # Logs still go through OTel Collector (centralized log processing)
