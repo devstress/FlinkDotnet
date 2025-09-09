@@ -184,9 +184,21 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("LOG_LEVEL", "warn") // Reduce log noise for stability
     .WithEnvironment("AUTO_SETUP", "true")
     .WithEnvironment("TEMPORAL_DYNAMIC_CONFIG_FILE_PATH", "/etc/temporal/config/dynamicconfig/development.yaml")
+    // Fix authentication warnings by disabling auth for local testing
+    .WithEnvironment("TEMPORAL_AUTH_ENABLED", "false")
+    .WithEnvironment("TEMPORAL_TLS_ENABLED", "false")
+    // Fix namespace setup to prevent "Namespace default is not found" errors
+    .WithEnvironment("DEFAULT_NAMESPACE", "default")
+    .WithEnvironment("DEFAULT_NAMESPACE_RETENTION", "72h")
+    // Connection optimization
     .WithEnvironment("SQL_MAX_CONNS", "20") // Limit connections for stability
     .WithEnvironment("SQL_MAX_IDLE_CONNS", "10")
     .WithEnvironment("SQL_MAX_CONN_LIFETIME", "3600") // 1 hour connection lifetime
+    // Add command line flags to suppress warnings and improve startup
+    .WithArgs("temporal-server", 
+              "--allow-no-auth",  // Suppress auth warning 
+              "--log-level", "warn",  // Reduce log noise
+              "start")
     .WaitFor(temporalPostgres);
 
 // Loki for centralized log aggregation with enhanced stability  
