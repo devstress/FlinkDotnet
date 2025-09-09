@@ -87,12 +87,87 @@ public class ObservabilityMetricsSteps : IDisposable
         // Individual test cleanup
     }
 
+    /// <summary>
+    /// Verifies that critical infrastructure components are healthy before running workload
+    /// This prevents test from creating results when OpenTelemetry/Prometheus are not available
+    /// </summary>
+    private async Task VerifyInfrastructureHealth()
+    {
+        // Verify API health
+        try
+        {
+            var healthResponse = await _httpClient!.GetAsync("/health");
+            if (!healthResponse.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"API health check failed: {healthResponse.StatusCode}");
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            throw new InvalidOperationException($"API health check connection failed: {httpEx.Message}", httpEx);
+        }
+
+        // Verify OpenTelemetry collector connectivity through debug endpoint
+        try
+        {
+            var otelCheckResponse = await _httpClient!.GetAsync("/api/observability/debug/prometheus-metrics");
+            if (!otelCheckResponse.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"OpenTelemetry collector health check failed: {otelCheckResponse.StatusCode}");
+            }
+            Console.WriteLine("✅ OpenTelemetry collector connectivity verified");
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            throw new InvalidOperationException("OpenTelemetry collector connection reset by peer - service not available", httpEx);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            throw new InvalidOperationException($"OpenTelemetry collector health check connection failed: {httpEx.Message}", httpEx);
+        }
+
+        // Verify Prometheus connectivity through metrics endpoint  
+        try
+        {
+            var prometheusCheckResponse = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
+            if (!prometheusCheckResponse.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"Prometheus health check failed: {prometheusCheckResponse.StatusCode}");
+            }
+            Console.WriteLine("✅ Prometheus connectivity verified");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            throw new InvalidOperationException($"Prometheus health check connection failed: {httpEx.Message}", httpEx);
+        }
+
+        Console.WriteLine("✅ All critical infrastructure components are healthy");
+    }
+
     [When(@"I run the entire flow")]
     public async Task WhenIRunTheEntireFlow()
     {
         await EnsureInfrastructureInitialized();
         
         Console.WriteLine("🚀 Starting REAL infrastructure flow with actual performance measurement...");
+        
+        // CRITICAL: Verify infrastructure health before running workload
+        // This prevents test from continuing when OpenTelemetry/Prometheus are not available
+        try
+        {
+            Console.WriteLine("🔍 Verifying infrastructure health before workload execution...");
+            await VerifyInfrastructureHealth();
+            Console.WriteLine("✅ Infrastructure health verification passed - proceeding with workload");
+        }
+        catch (Exception infraEx)
+        {
+            Console.WriteLine($"❌ INFRASTRUCTURE HEALTH CHECK FAILED: {infraEx.Message}");
+            Console.WriteLine("❌ This indicates critical infrastructure components are not available");
+            Console.WriteLine("❌ Test must fail to prevent false positive results in GitHub workflow");
+            throw new InvalidOperationException($"Observability test failed: Infrastructure health check failed - {infraEx.Message}. Critical services not available.");
+        }
         
         // MEASURE ACTUAL PROCESSING TIME - No more hardcoded values
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -113,8 +188,31 @@ public class ObservabilityMetricsSteps : IDisposable
         };
 
         Console.WriteLine($"🔄 Executing real flow through infrastructure at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC...");
-        var flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
-        flowResponse.EnsureSuccessStatusCode();
+        
+        // CRITICAL: Wrap API calls in proper error handling to catch connection failures
+        HttpResponseMessage flowResponse;
+        try
+        {
+            flowResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
+            flowResponse.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during workload execution");
+            Console.WriteLine($"❌ This indicates OpenTelemetry collector or other infrastructure is not available");
+            Console.WriteLine($"❌ Full error: {httpEx.Message}");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            throw new InvalidOperationException("Observability test failed: Infrastructure connection reset by peer. Critical observability infrastructure not available.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during workload execution");
+            Console.WriteLine($"❌ Error: {httpEx.Message}");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            throw new InvalidOperationException($"Observability test failed: Infrastructure HTTP failure - {httpEx.Message}. Critical services not responding.");
+        }
         
         // MEASURE ACTUAL COMPLETION TIME
         stopwatch.Stop();
@@ -254,12 +352,43 @@ public class ObservabilityMetricsSteps : IDisposable
                 Console.WriteLine($"⚠️ DEBUG: Debug endpoint returned {debugResponse.StatusCode}");
             }
         }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics debug");
+            Console.WriteLine($"❌ This indicates OpenTelemetry collector or Prometheus is not available");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            throw new InvalidOperationException("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical observability infrastructure not available.");
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"⚠️ DEBUG: Failed to get debug metrics: {ex.Message}");
+            // Don't fail on debug metrics, but log the issue
         }
         
-        var metricsData = await GetDetailedMetrics();
+        Dictionary<string, object> metricsData;
+        try
+        {
+            metricsData = await GetDetailedMetrics();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics retrieval");
+            Console.WriteLine($"❌ This indicates Prometheus or backend metrics services are not available");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            throw new InvalidOperationException("Observability test failed: Infrastructure connection reset by peer during metrics retrieval. Critical metrics infrastructure not available.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during metrics retrieval");
+            Console.WriteLine($"❌ Error: {httpEx.Message}");
+            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
+            throw new InvalidOperationException($"Observability test failed: Infrastructure HTTP failure during metrics retrieval - {httpEx.Message}. Critical metrics services not responding.");
+        }
+        
         var metricsDisplay = FormatMetricsForDisplay(metricsData);
         
         Console.WriteLine(metricsDisplay);
@@ -272,6 +401,10 @@ public class ObservabilityMetricsSteps : IDisposable
         // If FormatMetricsForDisplay threw any validation exceptions, this line won't be reached
         Console.WriteLine("✅ VALIDATION PASSED: All metrics validation checks completed successfully");
         _scenarioContext["metrics_validated"] = true;
+        
+        // NEW: Set infrastructure health flag to indicate all infrastructure worked properly
+        Console.WriteLine("✅ INFRASTRUCTURE HEALTH: All infrastructure connections successful during metrics retrieval");
+        _scenarioContext["infrastructure_healthy"] = true;
     }
 
     [Then(@"we save the metrics to a file")]
@@ -279,20 +412,23 @@ public class ObservabilityMetricsSteps : IDisposable
     {
         await EnsureInfrastructureInitialized();
         
-        // CRITICAL: Only save results file if ALL previous validations passed
-        // This ensures GitHub workflow fails when test validations fail
+        // CRITICAL: Only save results file if ALL previous validations passed AND infrastructure is healthy
+        // This ensures GitHub workflow fails when test validations fail OR infrastructure fails
         if (!_scenarioContext.ContainsKey("flow_completed") || 
-            !_scenarioContext.ContainsKey("metrics_validated"))
+            !_scenarioContext.ContainsKey("metrics_validated") ||
+            !_scenarioContext.ContainsKey("infrastructure_healthy"))
         {
-            var errorMessage = "❌ CRITICAL ERROR: Cannot save results - test validation failed or flow incomplete";
+            var errorMessage = "❌ CRITICAL ERROR: Cannot save results - test validation failed, flow incomplete, or infrastructure unhealthy";
             Console.WriteLine(errorMessage);
             Console.WriteLine("❌ Missing validation flags:");
             if (!_scenarioContext.ContainsKey("flow_completed"))
-                Console.WriteLine("  • flow_completed flag missing");
+                Console.WriteLine("  • flow_completed flag missing - workload execution failed");
             if (!_scenarioContext.ContainsKey("metrics_validated"))  
-                Console.WriteLine("  • metrics_validated flag missing");
+                Console.WriteLine("  • metrics_validated flag missing - metrics validation failed");
+            if (!_scenarioContext.ContainsKey("infrastructure_healthy"))
+                Console.WriteLine("  • infrastructure_healthy flag missing - infrastructure connection failures occurred");
             Console.WriteLine("❌ This will cause GitHub workflow to fail as expected");
-            throw new InvalidOperationException("Test validation failed - results file will not be created to ensure GitHub workflow failure");
+            throw new InvalidOperationException("Test validation or infrastructure health check failed - results file will not be created to ensure GitHub workflow failure");
         }
         
         var metricsData = _scenarioContext.ContainsKey("metrics_data") 
@@ -326,7 +462,8 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine($"   📊 File size: {new FileInfo(filename).Length} bytes");
         Console.WriteLine($"   🔗 Metrics source: Real Prometheus infrastructure");
         Console.WriteLine($"   ✅ GitHub workflow will find file at: LocalTesting/Bin/observability-test-result.txt");
-        Console.WriteLine("   ✅ File created only after ALL test validations passed");
+        Console.WriteLine("   ✅ File created only after ALL test validations passed AND infrastructure health verified");
+        Console.WriteLine("   ✅ Validation flags: flow_completed + metrics_validated + infrastructure_healthy = SUCCESS");
     }
     
     private string FindLocalTestingDirectory()
@@ -407,9 +544,25 @@ public class ObservabilityMetricsSteps : IDisposable
 
     private async Task<Dictionary<string, object>> GetDetailedMetrics()
     {
-        // Get main metrics
-        var response = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
-        response.EnsureSuccessStatusCode();
+        // Get main metrics with proper error handling for infrastructure failures
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
+                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
+                                                  sockEx.Message.Contains("Connection reset by peer"))
+        {
+            Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: Connection reset by peer during detailed metrics retrieval");
+            throw new InvalidOperationException("Infrastructure connection reset by peer during metrics API call. Critical metrics services not available.", httpEx);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"❌ INFRASTRUCTURE FAILURE: HTTP request failed during detailed metrics retrieval: {httpEx.Message}");
+            throw new InvalidOperationException($"Infrastructure HTTP failure during metrics API call: {httpEx.Message}. Critical metrics services not responding.", httpEx);
+        }
         
         var content = await response.Content.ReadAsStringAsync();
         var metricsResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(content, new JsonSerializerOptions
