@@ -29,8 +29,10 @@ public class ObservabilityMetricsSteps : IDisposable
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
     
-    // Microsoft Aspire standard timeout - optimized per user requirement (45 seconds maximum)
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(45);
+    // Environment-specific infrastructure timeout - GitHub Actions needs more time for container startup
+    private static readonly TimeSpan InfrastructureTimeout = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
+        ? TimeSpan.FromMinutes(10)  // 10 minutes for GitHub Actions - sufficient for container download/startup
+        : TimeSpan.FromMinutes(2);  // 2 minutes for local development - faster iteration
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -48,59 +50,107 @@ public class ObservabilityMetricsSteps : IDisposable
                 return;
         }
 
+        // Pre-check environment and display timeout configuration
+        await VerifyContainerEnvironment();
+        
         Console.WriteLine("🚀 Starting Aspire integration test with framework-managed service readiness...");
-        Console.WriteLine("⚡ Performance mode: Using Microsoft Aspire testing pattern with 45s maximum timeout");
+        Console.WriteLine($"🕒 Infrastructure timeout: {InfrastructureTimeout.TotalMinutes} minutes for {(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? "GitHub Actions" : "local")} environment");
         
         // Enable test mode for performance optimization  
         Environment.SetEnvironmentVariable("TESTING_MODE", "true");
         
-        // Follow Microsoft Aspire testing framework pattern exactly
-        using var cts = new CancellationTokenSource(DefaultTimeout);
-        var cancellationToken = cts.Token;
-        
-        Console.WriteLine("📦 Creating Aspire testing application builder...");
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_AppHost>(cancellationToken);
-        
-        // Configure logging for integration test visibility  
-        appHost.Services.AddLogging(logging =>
+        try 
         {
-            logging.SetMinimumLevel(LogLevel.Information);
-            // Override the logging filters from the app's configuration
-            logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Information);
-            logging.AddFilter("Aspire.", LogLevel.Information);
-        });
-        
-        // Configure HTTP client defaults with resilience
-        appHost.Services.ConfigureHttpClientDefaults(clientBuilder =>
-        {
-            clientBuilder.AddStandardResilienceHandler();
-        });
-        
-        Console.WriteLine("🏗️ Building Aspire distributed application...");
-        await using var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        
-        Console.WriteLine("🚀 Starting all Aspire services...");
-        await app.StartAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        
-        Console.WriteLine("⏳ Waiting for WebAPI service to become healthy...");
-        // Use Aspire's built-in resource health notifications - this is the key difference
-        await app.ResourceNotifications.WaitForResourceHealthyAsync("localtesting-webapi", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        
-        Console.WriteLine("✅ All Aspire services healthy and ready (validated by framework)");
-        
-        // Create HTTP client with Aspire service discovery
-        _httpClient = app.CreateHttpClient("localtesting-webapi", "webapi");
-        _httpClient.Timeout = TimeSpan.FromMinutes(10); // Reasonable timeout for integration testing
-        
-        // Store the app reference for later use
-        _app = app;
-        
-        Console.WriteLine("🌐 HTTP client created with service discovery integration");
+            // Follow Microsoft Aspire testing framework pattern with environment-specific timeout
+            using var cts = new CancellationTokenSource(InfrastructureTimeout);
+            var cancellationToken = cts.Token;
+            
+            Console.WriteLine("📦 Creating Aspire testing application builder...");
+            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_AppHost>(cancellationToken);
+            
+            // Configure logging for integration test visibility  
+            appHost.Services.AddLogging(logging =>
+            {
+                logging.SetMinimumLevel(LogLevel.Information);
+                // Override the logging filters from the app's configuration
+                logging.AddFilter(appHost.Environment.ApplicationName, LogLevel.Information);
+                logging.AddFilter("Aspire.", LogLevel.Information);
+            });
+            
+            // Configure HTTP client defaults with resilience
+            appHost.Services.ConfigureHttpClientDefaults(clientBuilder =>
+            {
+                clientBuilder.AddStandardResilienceHandler();
+            });
+            
+            Console.WriteLine("🏗️ Building Aspire distributed application...");
+            await using var app = await appHost.BuildAsync(cancellationToken);
+            
+            Console.WriteLine("🚀 Starting all Aspire services...");
+            await app.StartAsync(cancellationToken);
+            
+            Console.WriteLine("⏳ Waiting for WebAPI service to become healthy...");
+            // Use Aspire's built-in resource health notifications with explicit timeout monitoring
+            await app.ResourceNotifications.WaitForResourceHealthyAsync("localtesting-webapi", cancellationToken);
+            
+            Console.WriteLine("✅ All Aspire services healthy and ready (validated by framework)");
+            
+            // Create HTTP client with Aspire service discovery
+            _httpClient = app.CreateHttpClient("localtesting-webapi", "webapi");
+            _httpClient.Timeout = TimeSpan.FromMinutes(10); // Reasonable timeout for integration testing
+            
+            // Store the app reference for later use
+            _app = app;
+            
+            Console.WriteLine("🌐 HTTP client created with service discovery integration");
 
-        lock (_lockObject)
-        {
-            _initialized = true;
+            lock (_lockObject)
+            {
+                _initialized = true;
+            }
         }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
+        {
+            // EXPLICIT TEST FAILURE for infrastructure timeout
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE TIMEOUT FAILURE");
+            Console.WriteLine($"❌ Infrastructure failed to start within {InfrastructureTimeout.TotalMinutes} minutes");
+            Console.WriteLine($"❌ Environment: {(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? "GitHub Actions" : "Local")}");
+            Console.WriteLine($"❌ This indicates container startup failure or resource constraints");
+            Console.WriteLine($"❌ Test MUST fail to ensure GitHub workflow failure detection");
+            
+            // Explicit test failure with multiple mechanisms for reliability
+            Assert.Fail($"INFRASTRUCTURE TIMEOUT: Services failed to start within {InfrastructureTimeout.TotalMinutes} minutes. Container startup failure in CI environment.");
+        }
+        catch (Exception ex)
+        {
+            // Any other infrastructure setup exception
+            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE SETUP FAILURE: {ex.Message}");
+            Console.WriteLine($"❌ Full exception: {ex}");
+            Console.WriteLine($"❌ Test MUST fail to ensure GitHub workflow failure detection");
+            Assert.Fail($"INFRASTRUCTURE SETUP FAILURE: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Pre-check container environment before Aspire startup
+    /// </summary>
+    private async Task VerifyContainerEnvironment()
+    {
+        Console.WriteLine("🔍 PRE-CHECK: Verifying container environment before Aspire startup...");
+        
+        // Check if we're in an environment where containers can start
+        if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+        {
+            Console.WriteLine("📦 GitHub Actions environment detected - using extended timeout for container startup");
+            Console.WriteLine("⚠️ Note: Container image downloads may take several minutes in CI environment");
+        }
+        else
+        {
+            Console.WriteLine("🏠 Local environment detected - using standard timeout");
+        }
+        
+        // Allow async context but no actual async operations needed here
+        await Task.CompletedTask;
     }
 
     public void Dispose()
