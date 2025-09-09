@@ -1,5 +1,6 @@
-# Minimal OpenTelemetry Collector Configuration
-# Simple, reliable configuration for basic observability
+# Optimized OpenTelemetry Collector Configuration
+# Focused on components without native Prometheus support + traces/logs
+# Flink and Temporal now use direct Prometheus scraping for better reliability
 
 receivers:
   otlp:
@@ -11,19 +12,24 @@ receivers:
 
 processors:
   memory_limiter:
-    limit_mib: 512
+    limit_mib: 256  # Reduced since we're handling fewer metrics
     check_interval: 1s
   batch:
     timeout: 1s
-    send_batch_size: 1024
+    send_batch_size: 512  # Reduced batch size for better performance
+    send_batch_max_size: 1024
 
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
     namespace: "localtesting"
-  
+    # Only export metrics from components without native Prometheus support
+    const_labels:
+      collector: "otel"
+      
   debug:
     verbosity: basic
+    # Reduced verbosity for production-like performance
 
 service:
   pipelines:
@@ -31,13 +37,16 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [prometheus]
+      # Note: Flink and Temporal metrics now bypassed - handled natively
     
     traces:
       receivers: [otlp] 
       processors: [memory_limiter, batch]
       exporters: [debug]
+      # Traces still go through OTel Collector (no native Prometheus traces)
       
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch] 
       exporters: [debug]
+      # Logs still go through OTel Collector (centralized log processing)

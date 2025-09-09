@@ -121,9 +121,10 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_QUEUED_MAX_REQUESTS", "1000") // Increased request queue for higher throughput
     .WithEnvironment("KAFKA_BATCH_SIZE", "65536"); // 64KB batch size for optimal producer batching
 
-// Single Flink JobManager with simplified configuration - Updated to 2.1.0 for latest AI capabilities
+// Single Flink JobManager with native Prometheus metrics support - Updated to 2.1.0 for latest AI capabilities
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
+    .WithHttpEndpoint(18050, 9249, "prometheus-metrics") // Native Prometheus endpoint
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
@@ -134,11 +135,16 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
         parallelism.default: 4
         rest.bind-address: 0.0.0.0
         rest.port: 8081
+        # Native Prometheus metrics configuration
+        metrics.reporters: prom
+        metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+        metrics.reporter.prom.port: 9249
         """)
     .WithArgs("jobmanager");
 
-// Single Flink TaskManager with simplified configuration - Updated to 2.1.0 for latest AI capabilities
+// Single Flink TaskManager with native Prometheus metrics support - Updated to 2.1.0 for latest AI capabilities
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
+    .WithHttpEndpoint(18051, 9250, "prometheus-metrics") // Native Prometheus endpoint
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
@@ -146,6 +152,10 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
         taskmanager.memory.process.size: 512m
         taskmanager.numberOfTaskSlots: 4
         taskmanager.host: flink-taskmanager
+        # Native Prometheus metrics configuration
+        metrics.reporters: prom
+        metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+        metrics.reporter.prom.port: 9250
         """)
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
@@ -166,9 +176,10 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
     .WithEndpoint(5432, 5432, "postgres")
     .WaitFor(redis); // Sequence after Redis to spread DCP load
 
-// Single Temporal Server for durable execution workflows with enhanced startup reliability
+// Single Temporal Server with native Prometheus metrics for durable execution workflows
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
     .WithHttpEndpoint(18003, 7233, "temporal-server")
+    .WithHttpEndpoint(18052, 8000, "prometheus-metrics") // Native Prometheus endpoint
     .WithEnvironment("DB", "postgres12")
     .WithEnvironment("DB_PORT", "5432")
     .WithEnvironment("POSTGRES_SEEDS", "temporal-postgres")
@@ -199,6 +210,9 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("SQL_MAX_CONNS", "20") // Limit connections for stability
     .WithEnvironment("SQL_MAX_IDLE_CONNS", "10")
     .WithEnvironment("SQL_MAX_CONN_LIFETIME", "3600") // 1 hour connection lifetime
+    // Native Prometheus metrics configuration
+    .WithEnvironment("TEMPORAL_PROMETHEUS_ENDPOINT", "0.0.0.0:8000")
+    .WithEnvironment("PROMETHEUS_LISTEN_ADDRESS", "0.0.0.0:8000")
     // Add command line flags to suppress warnings and improve startup
     .WithArgs("temporal-server", 
               "--allow-no-auth",  // Suppress auth warning 
@@ -244,8 +258,10 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
 
 var prometheus = prometheusBuilder;
 
-// OpenTelemetry Collector with robust configuration path resolution
-// FIXED: Multiple fallback strategies to find configuration file reliably
+// OpenTelemetry Collector with optimized configuration for selective component support
+// OPTIMIZATION: Flink and Temporal now use native Prometheus endpoints directly
+// OTel Collector now focuses on: .NET WebAPI metrics/traces, Kafka metrics, Redis metrics, PostgreSQL metrics, and centralized logging
+// This reduces complexity and eliminates OTel Collector as single point of failure for all metrics
 var configPaths = new[]
 {
     // 1. Try current AppHost source directory (most reliable for development)
