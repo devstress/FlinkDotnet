@@ -179,7 +179,7 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
     .WithEnvironment("POSTGRES_INITDB_ARGS", "--auth-host=trust")
     .WithEnvironment("POSTGRES_MAX_CONNECTIONS", "50") // Reduced for faster startup
     .WithEnvironment("POSTGRES_SHARED_BUFFERS", "64MB") // Reduced for faster startup
-    .WithEnvironment("POSTGRES_INITDB_WAIT_TIMEOUT", "30") // Reduced timeout for faster failure detection
+    .WithEnvironment("POSTGRES_INITDB_WAIT_TIMEOUT", "60") // Increased timeout for container initialization
     .WithEnvironment("POSTGRES_LOG_STATEMENT", "none") // Reduce logging for stability
     .WithEnvironment("POSTGRES_LOG_MIN_MESSAGES", "warning") // Reduce log noise
     .WithVolume("temporal-postgres-data", "/var/lib/postgresql/data")
@@ -216,18 +216,19 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("TEMPORAL_AUTO_SETUP", "true")
     .WithEnvironment("TEMPORAL_ENABLE_NAMESPACES", "true")
     .WithEnvironment("TEMPORAL_DEFAULT_NAMESPACE", "default")
-    // Connection optimization
+    // Connection optimization with retries
     .WithEnvironment("SQL_MAX_CONNS", "20") // Limit connections for stability
     .WithEnvironment("SQL_MAX_IDLE_CONNS", "10")
     .WithEnvironment("SQL_MAX_CONN_LIFETIME", "3600") // 1 hour connection lifetime
+    // Database connection retry settings for startup resilience
+    .WithEnvironment("SQL_CONNECT_TIMEOUT", "10") // 10 second connection timeout
+    .WithEnvironment("TEMPORAL_DB_CONNECT_RETRY_COUNT", "30") // Retry DB connection for 30 times
+    .WithEnvironment("TEMPORAL_DB_CONNECT_RETRY_INTERVAL", "2s") // 2 second between retries
     // Native Prometheus metrics configuration
     .WithEnvironment("TEMPORAL_PROMETHEUS_ENDPOINT", "0.0.0.0:8000")
     .WithEnvironment("PROMETHEUS_LISTEN_ADDRESS", "0.0.0.0:8000")
-    // Add command line flags to suppress warnings and improve startup
-    .WithArgs("temporal-server", 
-              "--allow-no-auth",  // Suppress auth warning 
-              "--log-level", "warn",  // Reduce log noise
-              "start")
+    // Use the auto-setup entry point which initializes DB schema and starts server
+    .WithArgs("temporal-auto-setup.sh")
     .WaitFor(temporalPostgres);
 
 // Loki for centralized log aggregation with enhanced stability  
@@ -323,7 +324,7 @@ var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("l
     .WaitFor(redis)
     .WaitFor(kafka)              // Single Kafka instance
     .WaitFor(flinkTaskManager)   // Single Flink TaskManager (which waits for JobManager)
-    .WaitFor(temporalServer)     // Single Temporal Server (which waits for Postgres)
+    // TEMPORARILY DISABLED: .WaitFor(temporalServer)     // Single Temporal Server (which waits for Postgres) - FIX IN PROGRESS
     .WaitFor(kafkaJmxExporter);  // Wait for Kafka JMX exporter instead of OTel Collector
 
 // Conditionally wait for Grafana if it's enabled

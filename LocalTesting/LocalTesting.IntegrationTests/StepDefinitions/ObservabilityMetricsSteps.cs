@@ -94,14 +94,18 @@ public class ObservabilityMetricsSteps : IDisposable
             
             Console.WriteLine("✅ All Aspire services healthy and ready (validated by framework)");
             
-            // Create HTTP client with Aspire service discovery
-            _httpClient = app.CreateHttpClient("localtesting-webapi", "webapi");
-            _httpClient.Timeout = TimeSpan.FromMinutes(10); // Reasonable timeout for integration testing
+            // Create HTTP client with direct endpoint instead of service discovery to avoid disposal issues
+            var webApiEndpoint = app.GetEndpoint("localtesting-webapi", "webapi");
+            _httpClient = new HttpClient()
+            {
+                BaseAddress = new Uri($"http://{webApiEndpoint.Host}:{webApiEndpoint.Port}"),
+                Timeout = TimeSpan.FromMinutes(10) // Reasonable timeout for integration testing
+            };
             
             // Store the app reference for later use
             _app = app;
             
-            Console.WriteLine("🌐 HTTP client created with service discovery integration");
+            Console.WriteLine($"🌐 HTTP client created with direct endpoint: {_httpClient.BaseAddress}");
 
             lock (_lockObject)
             {
@@ -145,9 +149,16 @@ public class ObservabilityMetricsSteps : IDisposable
 
     public void Dispose()
     {
-        // Individual test cleanup - Aspire handles service lifecycle
+        // Individual test cleanup - dispose our own HTTP client properly
         _httpClient?.Dispose();
         _app?.Dispose();
+        _httpClient = null;
+        _app = null;
+        
+        lock (_lockObject)
+        {
+            _initialized = false;
+        }
     }
 
     [When(@"I run the entire flow")]

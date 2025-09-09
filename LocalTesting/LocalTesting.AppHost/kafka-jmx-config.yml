@@ -65,3 +65,7 @@ excludeObjectNames:
 # Basic configuration
 lowercaseOutputName: false
 lowercaseOutputLabelNames: false
+
+# JMX connection configuration for standalone mode
+# Connect to Kafka JMX server running on port 9999
+jmxUrl: service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi
