@@ -186,7 +186,25 @@ var temporalPostgres = builder.AddContainer("temporal-postgres", "postgres:13")
     .WithEndpoint(5432, 5432, "postgres")
     .WaitFor(redis); // Sequence after Redis to spread DCP load
 
-// Single Temporal Server with native Prometheus metrics for durable execution workflows
+// FIXED: Temporal Schema Initialization (Phase 2 - separate from server startup)
+// This addresses the root cause: schema must be initialized before server startup
+var temporalSchemaInit = builder.AddContainer("temporal-schema-init", "temporalio/admin-tools:latest")
+    .WithEnvironment("SQL_PLUGIN", "postgres12")
+    .WithEnvironment("SQL_HOST", "temporal-postgres")
+    .WithEnvironment("SQL_PORT", "5432")
+    .WithEnvironment("SQL_USER", "temporal")
+    .WithEnvironment("SQL_PASSWORD", "temporal")
+    .WithEnvironment("SQL_DATABASE", "temporal")
+    .WithArgs("temporal-sql-tool", 
+              "--ep", "temporal-postgres:5432", 
+              "--u", "temporal", 
+              "--pw", "temporal", 
+              "--db", "temporal", 
+              "setup-schema", 
+              "--v", "0.0")
+    .WaitFor(temporalPostgres);
+
+// FIXED: Temporal Server with proper schema dependency and authentication configuration
 var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-setup:latest")
     .WithHttpEndpoint(18003, 7233, "temporal-server")
     .WithHttpEndpoint(18052, 8000, "prometheus-metrics") // Native Prometheus endpoint
@@ -199,16 +217,16 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")
     .WithEnvironment("TEMPORAL_CLI_ADDRESS", "temporal-server:7233")
     .WithEnvironment("SERVICES", "history,matching,worker,frontend")
-    .WithEnvironment("SKIP_DB_CREATE", "false")
-    .WithEnvironment("SKIP_SCHEMA_SETUP", "false")
+    .WithEnvironment("SKIP_DB_CREATE", "true") // Database already exists
+    .WithEnvironment("SKIP_SCHEMA_SETUP", "true") // Schema already initialized in previous step
     .WithEnvironment("ENABLE_ES", "false")
     .WithEnvironment("LOG_LEVEL", "warn") // Reduce log noise for stability
     .WithEnvironment("AUTO_SETUP", "true")
     .WithEnvironment("TEMPORAL_DYNAMIC_CONFIG_FILE_PATH", "/etc/temporal/config/dynamicconfig/development.yaml")
-    // Fix authentication warnings by disabling auth for local testing
+    // FIXED: Authentication configuration with proper flag
     .WithEnvironment("TEMPORAL_AUTH_ENABLED", "false")
     .WithEnvironment("TEMPORAL_TLS_ENABLED", "false")
-    // Fix namespace setup to prevent "Namespace default is not found" errors
+    // FIXED: Namespace setup to prevent "Namespace default is not found" errors
     .WithEnvironment("DEFAULT_NAMESPACE", "default")
     .WithEnvironment("DEFAULT_NAMESPACE_RETENTION", "72h")
     // Additional namespace configuration to prevent errors
@@ -227,9 +245,9 @@ var temporalServer = builder.AddContainer("temporal-server", "temporalio/auto-se
     // Native Prometheus metrics configuration
     .WithEnvironment("TEMPORAL_PROMETHEUS_ENDPOINT", "0.0.0.0:8000")
     .WithEnvironment("PROMETHEUS_LISTEN_ADDRESS", "0.0.0.0:8000")
-    // Use the auto-setup entry point which initializes DB schema and starts server
-    .WithArgs("temporal-auto-setup.sh")
-    .WaitFor(temporalPostgres);
+    // FIXED: Use proper server startup with authentication flag and wait for schema initialization
+    .WithArgs("temporal-auto-setup.sh", "--allow-no-auth")
+    .WaitFor(temporalSchemaInit); // FIXED: Wait for schema initialization, not just database
 
 // Loki for centralized log aggregation with enhanced stability  
 // PERFORMANCE OPTIMIZATION: Disable Loki when running tests for faster execution
@@ -324,7 +342,7 @@ var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("l
     .WaitFor(redis)
     .WaitFor(kafka)              // Single Kafka instance
     .WaitFor(flinkTaskManager)   // Single Flink TaskManager (which waits for JobManager)
-    // TEMPORARILY DISABLED: .WaitFor(temporalServer)     // Single Temporal Server (which waits for Postgres) - FIX IN PROGRESS
+    .WaitFor(temporalServer)     // FIXED: Re-enabled Temporal Server with proper schema initialization
     .WaitFor(kafkaJmxExporter);  // Wait for Kafka JMX exporter instead of OTel Collector
 
 // Conditionally wait for Grafana if it's enabled
