@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.ClusterManager\FlinkDotNet.ClusterManager.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Temporal\FlinkDotNet.Temporal.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Resilience\FlinkDotNet.Resilience.csproj" />
+    <ProjectReference Include="..\LocalTesting.Shared\LocalTesting.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using StackExchange.Redis;
+using LocalTesting.Shared.Constants;
 
 namespace LocalTesting.WebApi.Services
 {
@@ -72,7 +73,7 @@ namespace LocalTesting.WebApi.Services
 
         private async Task<IConnectionMultiplexer> EstablishConnectionAsync(CancellationToken cancellationToken)
         {
-            var connectionString = _configuration.GetConnectionString("redis") ?? "localhost:6379";
+            var connectionString = _configuration.GetConnectionString("redis") ?? PortConstants.RedisConnectionString();
             _logger.LogInformation("Attempting to establish Redis connection: {ConnectionString}", connectionString);
 
             try

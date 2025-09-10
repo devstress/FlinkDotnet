@@ -1,4 +1,5 @@
 using LocalTesting.WebApi.Models;
+using LocalTesting.Shared.Constants;
 using System.Text.Json;
 using System.Text;
 using Flink.JobBuilder;
@@ -22,8 +23,8 @@ public class FlinkJobManagementService
         _httpClient = httpClient;
         _logger = logger;
         _configuration = configuration;
-        _flinkJobManagerUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? "http://localhost:8081";
-        _flinkSqlGatewayUrl = _configuration["FLINK_SQL_GATEWAY_URL"] ?? "http://localhost:8083";
+        _flinkJobManagerUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? PortConstants.FlinkJobManagerUrl("localhost");
+        _flinkSqlGatewayUrl = _configuration["FLINK_SQL_GATEWAY_URL"] ?? PortConstants.FlinkSqlGatewayUrl();
         
         // Initialize FlinkDotNet services
         _flinkJobGatewayService = new FlinkJobGatewayService();
@@ -155,7 +156,7 @@ public class FlinkJobManagementService
             ) WITH (
                 'connector' = 'kafka',
                 'topic' = '{inputTopic}',
-                'properties.bootstrap.servers' = 'kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092',
+                'properties.bootstrap.servers' = '{PortConstants.KafkaBootstrapServers()}',
                 'properties.group.id' = '{consumerGroup}',
                 'format' = 'json',
                 'scan.startup.mode' = 'latest-offset'
@@ -175,7 +176,7 @@ public class FlinkJobManagementService
             ) WITH (
                 'connector' = 'kafka',
                 'topic' = '{outputTopic}',
-                'properties.bootstrap.servers' = 'kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092',
+                'properties.bootstrap.servers' = '{PortConstants.KafkaBootstrapServers()}',
                 'format' = 'json'
             );
             """);

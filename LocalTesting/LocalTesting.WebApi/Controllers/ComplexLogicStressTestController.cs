@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using LocalTesting.WebApi.Models;
 using LocalTesting.WebApi.Services;
+using LocalTesting.Shared.Constants;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace LocalTesting.WebApi.Controllers;
@@ -464,7 +465,7 @@ public class ComplexLogicStressTestController : ControllerBase
                     Configuration = pipelineConfig,
                     TaskManagers = new List<FlinkTaskManagerInfo>
                     {
-                        new() { TaskManagerId = "concat-tm-1", Address = "simulation:6122", SlotsTotal = 4, SlotsAvailable = 2, Status = "RUNNING" }
+                        new() { TaskManagerId = "concat-tm-1", Address = PortConstants.TaskManagerAddress("simulation", 1), SlotsTotal = 4, SlotsAvailable = 2, Status = "RUNNING" }
                     }
                 };
                 status = "Started_Simulation";
@@ -715,7 +716,7 @@ public class ComplexLogicStressTestController : ControllerBase
                     Configuration = pipelineConfig,
                     TaskManagers = new List<FlinkTaskManagerInfo>
                     {
-                        new() { TaskManagerId = "split-tm-1", Address = "simulation:6123", SlotsTotal = 4, SlotsAvailable = 2, Status = "RUNNING" }
+                        new() { TaskManagerId = "split-tm-1", Address = PortConstants.TaskManagerAddress("simulation", 2), SlotsTotal = 4, SlotsAvailable = 2, Status = "RUNNING" }
                     }
                 };
                 status = "Started_Simulation";
@@ -1193,7 +1194,7 @@ public class ComplexLogicStressTestController : ControllerBase
                     Configuration = pipelineConfig,
                     TaskManagers = new List<FlinkTaskManagerInfo>
                     {
-                        new() { TaskManagerId = "sim-tm-1", Address = "simulation:6122", SlotsTotal = config.Parallelism, SlotsAvailable = config.Parallelism / 2, Status = "RUNNING" }
+                        new() { TaskManagerId = "sim-tm-1", Address = PortConstants.TaskManagerAddress("simulation", 1), SlotsTotal = config.Parallelism, SlotsAvailable = config.Parallelism / 2, Status = "RUNNING" }
                     }
                 };
                 status = "Started_Simulation";

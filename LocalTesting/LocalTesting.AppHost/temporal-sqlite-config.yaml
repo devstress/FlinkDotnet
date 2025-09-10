@@ -1,0 +1,95 @@
+global:
+  membership:
+    maxJoinDuration: 30s
+    broadcastAddress: "0.0.0.0"
+  pprof:
+    port: 7936
+
+services:
+  frontend:
+    rpc:
+      grpcPort: 7233
+      membershipPort: 6933
+      bindOnLocalHost: false
+    metrics:
+      prometheus:
+        timerType: "histogram"
+        listenAddress: "0.0.0.0:8000"
+
+  history:
+    rpc:
+      grpcPort: 7234
+      membershipPort: 6934
+      bindOnLocalHost: false
+
+  matching:
+    rpc:
+      grpcPort: 7235
+      membershipPort: 6935
+      bindOnLocalHost: false
+
+  worker:
+    rpc:
+      grpcPort: 7239
+      membershipPort: 6939
+      bindOnLocalHost: false
+
+clusterMetadata:
+  enableGlobalNamespace: false
+  failoverVersionIncrement: 10
+  masterClusterName: "active"
+  currentClusterName: "active"
+  clusterInformation:
+    active:
+      enabled: true
+      initialFailoverVersion: 1
+      rpcName: "frontend"
+      rpcAddress: "localhost:7233"
+
+dcRedirectionPolicy:
+  policy: "noop"
+
+archival:
+  history:
+    state: "disabled"
+  visibility:
+    state: "disabled"
+
+persistence:
+  defaultStore: default
+  visibilityStore: visibility
+  numHistoryShards: 4
+  datastores:
+    default:
+      driver: "sqlite3"
+      sqlite:
+        databaseName: "/tmp/temporal.sqlite"
+        connectTimeout: "2s"
+        connectAttributes:
+          cache: shared
+          mode: rwc
+          _journal_mode: WAL
+          _synchronous: NORMAL
+          _cache_size: -64000
+    visibility:
+      driver: "sqlite3"  
+      sqlite:
+        databaseName: "/tmp/temporal_visibility.sqlite"
+        connectTimeout: "2s"
+        connectAttributes:
+          cache: shared
+          mode: rwc
+          _journal_mode: WAL
+          _synchronous: NORMAL
+          _cache_size: -64000
+
+dynamicConfigClient:
+  filepath: "/etc/temporal/config/dynamicconfig/development-sqlite.yaml"
+  pollInterval: "10s"
+
+namespaceDefaults:
+  archival:
+    history:
+      state: "disabled"
+    visibility:
+      state: "disabled"

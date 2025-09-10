@@ -1,5 +1,6 @@
 using Flink.JobBuilder.Backpressure;
 using LocalTesting.WebApi.Models;
+using LocalTesting.Shared.Constants;
 using System.Collections.Concurrent;
 using Confluent.Kafka;
 
@@ -196,7 +197,7 @@ public class RealKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
     {
         try
         {
-            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092";
+            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost");
             
             // Simplified lag monitoring - connect to Kafka to verify it's working
             using var consumer = new ConsumerBuilder<string, string>(new ConsumerConfig

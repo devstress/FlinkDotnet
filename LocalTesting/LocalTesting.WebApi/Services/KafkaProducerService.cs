@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using LocalTesting.WebApi.Models;
+using LocalTesting.Shared.Constants;
 using System.Text.Json;
 
 namespace LocalTesting.WebApi.Services;
@@ -32,7 +33,7 @@ public class KafkaProducerService : IDisposable
                 {
                     var config = new ProducerConfig
                     {
-                        BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
+                        BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
                         ClientId = "LocalTesting.WebApi.Producer.UltraHighPerformance",
                         Acks = Acks.Leader,  // Use leader ack for maximum speed (instead of All)
                         MessageTimeoutMs = 30000,   // Reduced timeout for faster failure detection
@@ -403,7 +404,7 @@ public class KafkaProducerService : IDisposable
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
+            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
             GroupId = consumerGroup,
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false,
@@ -491,6 +492,60 @@ public class KafkaProducerService : IDisposable
         _logger.LogInformation("Consumed {MessageCount} messages from topic '{Topic}', {MessagesPerSecond:F2} msg/sec", 
             messages.Count, topic, messagesPerSecond);
         return messages;
+    }
+
+    /// <summary>
+    /// Test Kafka connectivity without producing messages - for infrastructure readiness validation
+    /// </summary>
+    public async Task<bool> TestConnectionAsync()
+    {
+        try
+        {
+            _logger.LogDebug("🔍 Testing Kafka connectivity...");
+            
+            // Create a temporary producer just for connection testing
+            var config = new ProducerConfig
+            {
+                BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
+                ClientId = "LocalTesting.HealthCheck.Producer",
+                MessageTimeoutMs = 15000,  // Increased timeout for container startup (5s -> 15s)
+                RequestTimeoutMs = 10000,  // Increased request timeout (3s -> 10s)  
+                SocketTimeoutMs = 8000,    // Increased socket timeout (2s -> 8s)
+                // Minimal settings for quick connection test
+                Acks = Acks.None,          // No acknowledgment needed for health check
+                EnableIdempotence = false, // Disable for speed
+                MessageSendMaxRetries = 2, // Allow some retries for container startup (0 -> 2)
+                QueueBufferingMaxMessages = 1000 // Minimal buffer for health check
+            };
+
+            using var testProducer = new ProducerBuilder<string, string>(config).Build();
+            
+            // Test connectivity by attempting a simple produce operation with test message
+            var testMessage = new Message<string, string> 
+            { 
+                Key = $"health-check-{Guid.NewGuid():N}",
+                Value = $"health-check-{DateTime.UtcNow:O}" 
+            };
+            
+            // Use a test topic (will be created automatically or fail gracefully)
+            var deliveryReport = await testProducer.ProduceAsync("health-check-topic", testMessage);
+            
+            if (deliveryReport.Status == PersistenceStatus.Persisted || deliveryReport.Status == PersistenceStatus.PossiblyPersisted)
+            {
+                _logger.LogDebug("✅ Kafka connectivity test successful - message produced to partition {Partition}", deliveryReport.Partition.Value);
+                return true;
+            }
+            else
+            {
+                _logger.LogDebug("⚠️ Kafka connectivity test failed - message not persisted: {Status}", deliveryReport.Status);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("⚠️ Kafka connectivity test failed: {Error}", ex.Message);
+            return false;
+        }
     }
 
     public void Dispose()

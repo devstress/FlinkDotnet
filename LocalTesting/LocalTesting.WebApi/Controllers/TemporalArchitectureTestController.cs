@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Models;
+using LocalTesting.Shared.Constants;
 
 namespace LocalTesting.WebApi.Controllers;
 
@@ -272,7 +273,7 @@ public class TemporalArchitectureTestController : ControllerBase
                 ClusterId = clusterId,
                 Configuration = new
                 {
-                    JobManagerUrl = request.JobManagerUrl ?? "http://localhost:8081",
+                    JobManagerUrl = request.JobManagerUrl ?? PortConstants.FlinkJobManagerUrl("localhost"),
                     TaskManagerCount = request.TaskManagerCount ?? 1,
                     SlotsPerTaskManager = request.SlotsPerTaskManager ?? 4,
                     HealthCheckIntervalSeconds = request.HealthCheckIntervalSeconds ?? 30

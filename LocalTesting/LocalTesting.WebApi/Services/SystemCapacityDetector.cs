@@ -1,4 +1,5 @@
 using LocalTesting.WebApi.Models;
+using LocalTesting.Shared.Constants;
 using System.Text.Json;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
@@ -50,7 +51,7 @@ public class SystemCapacityDetector : ISystemCapacityDetector
             var capacity = new KafkaCapacity();
             
             // Get Kafka configuration from environment
-            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092";
+            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost");
             var defaultPartitions = int.Parse(_configuration["KAFKA_DEFAULT_PARTITIONS"] ?? "10");
             
             // Create admin client to query cluster metadata
@@ -129,7 +130,7 @@ public class SystemCapacityDetector : ISystemCapacityDetector
             var capacity = new FlinkCapacity();
             
             // Get Flink JobManager URL from configuration
-            var jobManagerUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? "http://localhost:8081";
+            var jobManagerUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? PortConstants.FlinkJobManagerUrl("localhost");
             
             using var httpClient = _httpClientFactory.CreateClient();
             httpClient.Timeout = TimeSpan.FromSeconds(30);

@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Text.Json;
 using Confluent.Kafka;
 using StackExchange.Redis;
+using LocalTesting.Shared.Constants;
 
 namespace LocalTesting.WebApi.Services;
 
@@ -69,7 +70,7 @@ public class AspireHealthCheckService
     {
         try
         {
-            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092";
+            var bootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost");
             
             using var adminClient = new AdminClientBuilder(new AdminClientConfig
             {
@@ -160,7 +161,7 @@ public class AspireHealthCheckService
     {
         try
         {
-            var flinkUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? "http://localhost:8081";
+            var flinkUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? PortConstants.FlinkJobManagerUrl("localhost");
             var startTime = DateTime.UtcNow;
             
             var response = await _httpClient.GetAsync($"{flinkUrl}/overview");
@@ -215,7 +216,7 @@ public class AspireHealthCheckService
     {
         try
         {
-            var flinkUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? "http://localhost:8081";
+            var flinkUrl = _configuration["FLINK_JOBMANAGER_URL"] ?? PortConstants.FlinkJobManagerUrl("localhost");
             var startTime = DateTime.UtcNow;
             
             var response = await _httpClient.GetAsync($"{flinkUrl}/taskmanagers");
@@ -282,7 +283,7 @@ public class AspireHealthCheckService
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:8082");
+            var response = await _httpClient.GetAsync($"http://localhost:{PortConstants.FlinkSqlGatewayInternal}");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -292,7 +293,7 @@ public class AspireHealthCheckService
                 Details = new Dictionary<string, object>
                 {
                     ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:8082"
+                    ["endpoint"] = $"http://localhost:{PortConstants.FlinkSqlGatewayInternal}"
                 },
                 ResponseTime = responseTime,
                 LastCheck = DateTime.UtcNow,
@@ -316,7 +317,7 @@ public class AspireHealthCheckService
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:3000/login");
+            var response = await _httpClient.GetAsync(PortConstants.GrafanaUrl("localhost") + "/login");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -326,7 +327,7 @@ public class AspireHealthCheckService
                 Details = new Dictionary<string, object>
                 {
                     ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:3000"
+                    ["endpoint"] = PortConstants.GrafanaUrl("localhost")
                 },
                 ResponseTime = responseTime,
                 LastCheck = DateTime.UtcNow,
@@ -350,7 +351,7 @@ public class AspireHealthCheckService
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:7233/api/v1/namespaces");
+            var response = await _httpClient.GetAsync($"http://localhost:{PortConstants.TemporalServerInternal}/api/v1/namespaces");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -360,8 +361,8 @@ public class AspireHealthCheckService
                 Details = new Dictionary<string, object>
                 {
                     ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:7233",
-                    ["uiEndpoint"] = "http://localhost:8081"
+                    ["endpoint"] = $"http://localhost:{PortConstants.TemporalServerInternal}",
+                    ["uiEndpoint"] = PortConstants.FlinkJobManagerUrl("localhost")
                 },
                 ResponseTime = responseTime,
                 LastCheck = DateTime.UtcNow,
@@ -385,7 +386,7 @@ public class AspireHealthCheckService
         try
         {
             var startTime = DateTime.UtcNow;
-            var response = await _httpClient.GetAsync("http://localhost:8084");
+            var response = await _httpClient.GetAsync($"http://localhost:{PortConstants.FlinkSqlGatewayExternal}");
             var responseTime = DateTime.UtcNow - startTime;
             
             return new ServiceHealthStatus
@@ -395,7 +396,7 @@ public class AspireHealthCheckService
                 Details = new Dictionary<string, object>
                 {
                     ["statusCode"] = (int)response.StatusCode,
-                    ["endpoint"] = "http://localhost:8084",
+                    ["endpoint"] = $"http://localhost:{PortConstants.FlinkSqlGatewayExternal}",
                     ["description"] = "Temporal Web UI for workflow monitoring and debugging"
                 },
                 ResponseTime = responseTime,
