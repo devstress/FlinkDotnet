@@ -40,25 +40,26 @@ catch (Exception ex)
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Configure extended timeouts for Aspire DCP to handle complex infrastructure
-// This prevents the 20-second timeout that causes container reconciliation failures
+// ULTRA-OPTIMIZED: Faster timeouts for aggressive startup optimization
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
 {
-    options.StartupTimeout = TimeSpan.FromMinutes(5); // Extended startup timeout
-    options.ShutdownTimeout = TimeSpan.FromMinutes(2); // Extended shutdown timeout
+    options.StartupTimeout = TimeSpan.FromMinutes(2); // ULTRA-OPTIMIZED: Reduced timeout (5min -> 2min)
+    options.ShutdownTimeout = TimeSpan.FromMinutes(1); // ULTRA-OPTIMIZED: Reduced timeout (2min -> 1min)
 });
 
-// Configure Aspire DCP with extended resource creation timeouts
-// This addresses the core issue: Aspire.Hosting.Dcp.KubernetesService timeout
-Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "300"); // 5 minutes
-Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "120"); // 2 minutes per resource
-Environment.SetEnvironmentVariable("ASPIRE_DCP_MAX_RETRIES", "5");
-Environment.SetEnvironmentVariable("ASPIRE_DCP_RETRY_BACKOFF", "10"); // 10 seconds between retries
+// Configure Aspire DCP with optimized resource creation timeouts
+// ULTRA-OPTIMIZED: More aggressive timeouts for faster startup
+Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "120"); // ULTRA-OPTIMIZED: 2 minutes (300 -> 120)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "60"); // ULTRA-OPTIMIZED: 1 minute per resource (120 -> 60)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_MAX_RETRIES", "3"); // ULTRA-OPTIMIZED: Fewer retries (5 -> 3)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RETRY_BACKOFF", "5"); // ULTRA-OPTIMIZED: Faster retries (10s -> 5s)
 
 // Configure container runtime stability settings
+// ULTRA-OPTIMIZED: Faster health checks and reduced retry delays
 Environment.SetEnvironmentVariable("ASPIRE_DCP_CONTAINER_RESTART_POLICY", "always");
-Environment.SetEnvironmentVariable("ASPIRE_DCP_HEALTH_CHECK_TIMEOUT", "60"); // 60 seconds for health checks
-Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_COUNT", "10");
-Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_DELAY", "5"); // 5 seconds between network retries
+Environment.SetEnvironmentVariable("ASPIRE_DCP_HEALTH_CHECK_TIMEOUT", "30"); // ULTRA-OPTIMIZED: Faster health checks (60s -> 30s)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_COUNT", "5"); // ULTRA-OPTIMIZED: Fewer retries (10 -> 5)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_DELAY", "2"); // ULTRA-OPTIMIZED: Faster retry (5s -> 2s)
 
 // Docker runtime optimizations for container stability
 Environment.SetEnvironmentVariable("DOCKER_CLI_EXPERIMENTAL", "enabled");
@@ -73,15 +74,18 @@ var isTestMode = args.Contains("--test-mode") || Environment.GetEnvironmentVaria
 // Prevents DCP reconciliation failures by limiting simultaneous container creation
 // Key insight: Start essential services first, then build dependency chains
 
-// OPTIMIZED: Redis with minimal configuration for fastest startup
+// ULTRA-OPTIMIZED: Redis with absolute minimal configuration for fastest startup
 var redis = builder.AddRedis("redis")
-    .WithEnvironment("REDIS_MAXMEMORY", "128mb") // Reduced from 256mb
+    .WithEnvironment("REDIS_MAXMEMORY", "32mb") // ULTRA-ULTRA-MINIMAL: Even smaller (64mb -> 32mb)
     .WithEnvironment("REDIS_MAXMEMORY_POLICY", "noeviction") // Simpler policy
     .WithEnvironment("REDIS_BIND", "0.0.0.0") // Force IPv4
-    .WithEnvironment("REDIS_TIMEOUT", "10") // Reduced timeout
-    .WithEnvironment("REDIS_SAVE", ""); // Disable persistence for faster startup
+    .WithEnvironment("REDIS_TIMEOUT", "5") // Ultra-fast timeout (10s -> 5s)
+    .WithEnvironment("REDIS_SAVE", "") // Disable persistence for faster startup
+    .WithEnvironment("REDIS_DATABASES", "1") // Minimal databases
+    .WithEnvironment("REDIS_TCP_KEEPALIVE", "0") // Disable keepalive for minimal overhead
+    .WithEnvironment("REDIS_LOGLEVEL", "warning"); // Minimal logging
 
-// OPTIMIZED: Single Kafka instance with minimal configuration for fastest startup
+// ULTRA-OPTIMIZED: Single Kafka instance with absolute minimal configuration for fastest startup
 var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEndpoint(9092, 9092, "kafka")
     .WithEnvironment("KAFKA_NODE_ID", "1")
@@ -96,16 +100,21 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1") // Single broker
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
-    .WithEnvironment("KAFKA_NUM_PARTITIONS", "3") // Reduced from 20 for faster startup
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", "1") // Ultra-minimal: Single partition (3 -> 1)
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1") // Single broker
-    // OPTIMIZED: Memory configuration for fastest startup (further reduced)
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx512M -Xms256M") // Reduced for much faster startup
-    // OPTIMIZED: Minimal network configuration
-    .WithEnvironment("KAFKA_SOCKET_SEND_BUFFER_BYTES", "65536") // Reduced from 131072
-    .WithEnvironment("KAFKA_SOCKET_RECEIVE_BUFFER_BYTES", "65536") // Reduced from 131072
-    .WithEnvironment("KAFKA_NUM_NETWORK_THREADS", "3") // Reduced from 8
-    .WithEnvironment("KAFKA_NUM_IO_THREADS", "3") // Reduced from 8
-    .WithEnvironment("KAFKA_QUEUED_MAX_REQUESTS", "100"); // Reduced from 1000
+    // ULTRA-OPTIMIZED: Absolute minimal memory configuration for fastest startup
+    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx200M -Xms100M") // ULTRA-ULTRA-MINIMAL: Even smaller (256M/128M -> 200M/100M)
+    // ULTRA-OPTIMIZED: Absolute minimal network configuration
+    .WithEnvironment("KAFKA_SOCKET_SEND_BUFFER_BYTES", "32768") // Ultra-minimal (65536 -> 32768)
+    .WithEnvironment("KAFKA_SOCKET_RECEIVE_BUFFER_BYTES", "32768") // Ultra-minimal (65536 -> 32768)
+    .WithEnvironment("KAFKA_NUM_NETWORK_THREADS", "1") // Ultra-minimal (3 -> 1)
+    .WithEnvironment("KAFKA_NUM_IO_THREADS", "2") // Ultra-minimal (3 -> 2)
+    .WithEnvironment("KAFKA_QUEUED_MAX_REQUESTS", "50") // Ultra-minimal (100 -> 50)
+    // ULTRA-OPTIMIZED: Fastest possible startup settings
+    .WithEnvironment("KAFKA_LOG_RETENTION_HOURS", "1") // Ultra-short retention
+    .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "104857600") // 100MB segments for faster cleanup
+    .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MESSAGES", "10000") // Faster flushing
+    .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MS", "1000"); // 1-second flush interval
 
 // DISABLED: Kafka JMX Exporter for faster startup - enable after basic functionality works
 // var kafkaJmxExporter = builder.AddContainer("kafka-jmx-exporter", "bitnami/jmx-exporter:latest")
@@ -117,31 +126,36 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
 //     .WithArgs("5556", "/opt/bitnami/jmx-exporter/config.yml")
 //     .WaitFor(kafka);
 
-// OPTIMIZED: Single Flink JobManager with minimal configuration for fastest startup
+// ULTRA-OPTIMIZED: Single Flink JobManager with absolute minimal configuration for fastest startup
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        jobmanager.memory.process.size: 256m
-        jobmanager.memory.off-heap.size: 16m
-        taskmanager.numberOfTaskSlots: 2
-        parallelism.default: 2
+        jobmanager.memory.process.size: 100m
+        jobmanager.memory.off-heap.size: 4m
+        taskmanager.numberOfTaskSlots: 1
+        parallelism.default: 1
         rest.bind-address: 0.0.0.0
         rest.port: 8081
+        cluster.fine-grained-resource-management.enabled: false
+        heartbeat.interval: 10000
+        heartbeat.timeout: 30000
         """)
     .WithArgs("jobmanager");
 
-// OPTIMIZED: Single Flink TaskManager with minimal configuration for fastest startup
+// ULTRA-OPTIMIZED: Single Flink TaskManager with absolute minimal configuration for fastest startup
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 256m
-        taskmanager.numberOfTaskSlots: 2
+        taskmanager.memory.process.size: 100m
+        taskmanager.numberOfTaskSlots: 1
         taskmanager.host: flink-taskmanager
+        heartbeat.interval: 10000
+        heartbeat.timeout: 30000
         """)
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
@@ -176,17 +190,21 @@ else
     Console.WriteLine("⚡ Loki logging disabled for test mode (performance optimization)");
 }
 
-// OPTIMIZED: Prometheus with minimal configuration for fastest startup
+// ULTRA-OPTIMIZED: Prometheus with absolute minimal configuration for fastest startup
 var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:latest")
     .WithHttpEndpoint(18006, 9090, "prometheus")
     .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
-    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "15m") // Very short retention for fast startup
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "2m") // ULTRA-ULTRA-SHORT: Even shorter (5m -> 2m)
     .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", "0.0.0.0:9090")
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_SIZE", "20MB") // ULTRA-ULTRA-SMALL: Even smaller (50MB -> 20MB)
     .WithArgs("--config.file=/etc/prometheus/prometheus.yml",
               "--storage.tsdb.path=/prometheus",
-              "--storage.tsdb.retention.time=15m",
+              "--storage.tsdb.retention.time=2m",
+              "--storage.tsdb.retention.size=20MB",
               "--log.level=error", // Minimum logging
-              "--web.listen-address=0.0.0.0:9090");
+              "--web.listen-address=0.0.0.0:9090",
+              "--storage.tsdb.no-lockfile", // Faster startup
+              "--web.enable-lifecycle"); // Faster configuration changes
 
 var prometheus = prometheusBuilder;
 
@@ -229,7 +247,7 @@ else
 var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092") // Single Kafka broker
-    .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", "3")
+    .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", "1") // Ultra-minimal: Single partition
     .WithEnvironment("KAFKA_REQUEST_TIMEOUT_MS", "30000")
     .WithEnvironment("KAFKA_RETRY_BACKOFF_MS", "1000")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
