@@ -507,13 +507,13 @@ public class KafkaProducerService : IDisposable
             {
                 BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
                 ClientId = "LocalTesting.HealthCheck.Producer",
-                MessageTimeoutMs = 5000,   // Short timeout for health check
-                RequestTimeoutMs = 3000,   // Short request timeout  
-                SocketTimeoutMs = 2000,    // Short socket timeout
+                MessageTimeoutMs = 15000,  // Increased timeout for container startup (5s -> 15s)
+                RequestTimeoutMs = 10000,  // Increased request timeout (3s -> 10s)  
+                SocketTimeoutMs = 8000,    // Increased socket timeout (2s -> 8s)
                 // Minimal settings for quick connection test
                 Acks = Acks.None,          // No acknowledgment needed for health check
                 EnableIdempotence = false, // Disable for speed
-                MessageSendMaxRetries = 0, // No retries for health check
+                MessageSendMaxRetries = 2, // Allow some retries for container startup (0 -> 2)
                 QueueBufferingMaxMessages = 1000 // Minimal buffer for health check
             };
 

@@ -293,8 +293,8 @@ public class InfrastructureReadinessService : IInfrastructureReadinessService
             _logger.LogDebug("🔍 Validating Kafka connectivity with enhanced health checks...");
             
             // ENHANCED: Multi-stage Kafka connectivity validation for test reliability
-            var maxRetries = 10;
-            var retryDelay = TimeSpan.FromSeconds(3);
+            var maxRetries = 20;     // Increased retries for container startup (10 -> 20)
+            var retryDelay = TimeSpan.FromSeconds(2);  // Reduced delay for more frequent checks (3s -> 2s)
             
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
