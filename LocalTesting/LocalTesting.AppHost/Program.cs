@@ -1,16 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using LocalTesting.AppHost.Services;
+using LocalTesting.Shared.Constants;
 
 // Configure Aspire dashboard and Prometheus environment variables
 // OpenTelemetry completely removed per user request - native Prometheus only
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
-Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:13324");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", PortConstants.AspireOtlpEndpointUrl());
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", PortConstants.AspireOtlpHttpEndpointUrl());
 
 // Configure Aspire dashboard URL - required for dashboard initialization
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", "http://localhost:18888");
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://localhost:{PortConstants.AspireDashboard}");
+Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_URL", $"http://localhost:{PortConstants.AspireDashboard}");
 
 // Disable Aspire dashboard authentication for easier local development access
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS", "true");
@@ -101,14 +102,14 @@ var redis = builder.AddRedis("redis")
 // DYNAMIC: Single Kafka instance with adaptive memory allocation based on system resources
 // ENHANCED: Add proper health checks and connection validation for test reliability
 var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
-    .WithEndpoint(9092, 9092, "kafka")
+    .WithEndpoint(PortConstants.KafkaInternal, PortConstants.KafkaInternal, "kafka")
     .WithEnvironment("KAFKA_NODE_ID", "1")
     .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
-    .WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093")
-    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092")
+    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{PortConstants.KafkaInternal},CONTROLLER://0.0.0.0:{PortConstants.KafkaControllerInternal}")
+    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{PortConstants.KafkaInternal}")
     .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
     .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT")
-    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", "1@kafka:9093")
+    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{PortConstants.KafkaControllerInternal}")
     .WithEnvironment("CLUSTER_ID", "LOCAL_TESTING_KRAFT_CLUSTER_2024")
     .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1") // Single broker
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
@@ -140,10 +141,10 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
 
 // DISABLED: Kafka JMX Exporter for faster startup - enable after basic functionality works
 // var kafkaJmxExporter = builder.AddContainer("kafka-jmx-exporter", "bitnami/jmx-exporter:latest")
-//     .WithHttpEndpoint(18053, 5556, "kafka-metrics") // Prometheus metrics endpoint
+//     .WithHttpEndpoint(PortConstants.KafkaJmxExternal, 5556, "kafka-metrics") // Prometheus metrics endpoint
 //     .WithBindMount("./kafka-jmx-config.yml", "/opt/bitnami/jmx-exporter/config.yml")
 //     .WithEnvironment("JMX_EXPORTER_CONFIG_FILE", "/opt/bitnami/jmx-exporter/config.yml")
-//     .WithEnvironment("JMX_EXPORTER_JMX_URL", "service:jmx:rmi:///jndi/rmi://kafka:9999/jmxrmi")
+//     .WithEnvironment("JMX_EXPORTER_JMX_URL", $"service:jmx:rmi:///jndi/rmi://kafka:{PortConstants.KafkaJmxInternal}/jmxrmi")
 //     .WithEnvironment("JMX_EXPORTER_HTTP_PORT", "5556")
 //     .WithArgs("5556", "/opt/bitnami/jmx-exporter/config.yml")
 //     .WaitFor(kafka);
@@ -151,7 +152,7 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
 // DYNAMIC: Single Flink JobManager with adaptive memory allocation based on system resources
 var jobManagerProperties = $"""
         jobmanager.rpc.address: flink-jobmanager
-        jobmanager.rpc.port: 6123
+        jobmanager.rpc.port: {PortConstants.FlinkJobManagerRpcInternal}
         jobmanager.memory.process.size: {resourceAllocation.FlinkJobManagerTotalMemoryMB}m
         jobmanager.memory.jvm-metaspace.size: {resourceAllocation.FlinkJobManagerMetaspaceMemoryMB}m
         jobmanager.memory.jvm-overhead.min: {resourceAllocation.FlinkJobManagerOverheadMemoryMB}m
@@ -160,14 +161,14 @@ var jobManagerProperties = $"""
         taskmanager.numberOfTaskSlots: {resourceAllocation.TaskSlots}
         parallelism.default: {resourceAllocation.FlinkParallelism}
         rest.bind-address: 0.0.0.0
-        rest.port: 8081
+        rest.port: {PortConstants.FlinkJobManagerWebInternal}
         cluster.fine-grained-resource-management.enabled: false
         heartbeat.interval: 10000
         heartbeat.timeout: 30000
         """;
 
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
-    .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
+    .WithHttpEndpoint(PortConstants.FlinkJobManagerWebExternal, PortConstants.FlinkJobManagerWebInternal, "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", jobManagerProperties)
     .WithArgs("jobmanager");
@@ -175,7 +176,7 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
 // DYNAMIC: Single Flink TaskManager with adaptive memory allocation based on system resources
 var taskManagerProperties = $"""
         jobmanager.rpc.address: flink-jobmanager
-        jobmanager.rpc.port: 6123
+        jobmanager.rpc.port: {PortConstants.FlinkJobManagerRpcInternal}
         taskmanager.memory.process.size: {resourceAllocation.FlinkTaskManagerTotalMemoryMB}m
         taskmanager.memory.jvm-metaspace.size: {resourceAllocation.FlinkTaskManagerMetaspaceMemoryMB}m
         taskmanager.memory.jvm-overhead.min: {resourceAllocation.FlinkTaskManagerOverheadMemoryMB}m
@@ -203,8 +204,8 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
 // TEMPORARILY DISABLED: Temporal Server for initial testing - enable after basic infrastructure works
 // This allows us to get the observability test running first, then fix temporal separately
 // var temporalServer = builder.AddContainer("temporal-server", "temporalio/server:latest")
-//     .WithHttpEndpoint(18003, 7233, "temporal-server")
-//     .WithHttpEndpoint(18052, 8000, "prometheus-metrics")
+//     .WithHttpEndpoint(PortConstants.TemporalServerExternal, PortConstants.TemporalServerInternal, "temporal-server")
+//     .WithHttpEndpoint(PortConstants.TemporalMetricsExternal, PortConstants.TemporalMetricsInternal, "prometheus-metrics")
 //     .WaitFor(redis);
 
 // Loki for centralized log aggregation with enhanced stability  
@@ -213,11 +214,11 @@ IResourceBuilder<ContainerResource>? loki = null;
 if (!isTestMode)
 {
     loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
-        .WithHttpEndpoint(18005, 3100, "loki")
-        .WithEnvironment("LOKI_ADDR", "0.0.0.0:3100")
+        .WithHttpEndpoint(PortConstants.LokiExternal, PortConstants.LokiInternal, "loki")
+        .WithEnvironment("LOKI_ADDR", $"0.0.0.0:{PortConstants.LokiInternal}")
         .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
-        .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", "3100")
-        .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", "9095")
+        .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", PortConstants.LokiInternal.ToString())
+        .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", PortConstants.LokiGrpcInternal.ToString())
         .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
         
     Console.WriteLine("📝 Loki logging enabled for development mode");
@@ -235,16 +236,16 @@ var prometheusArgs = new[]
     $"--storage.tsdb.retention.time={resourceAllocation.PrometheusRetention}",
     $"--storage.tsdb.retention.size={resourceAllocation.PrometheusStorageSize}",
     "--log.level=error", // Minimum logging
-    "--web.listen-address=0.0.0.0:9090",
+    "--web.listen-address=0.0.0.0:" + PortConstants.PrometheusInternal,
     "--storage.tsdb.no-lockfile", // Faster startup
     "--web.enable-lifecycle" // Faster configuration changes
 };
 
 var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:latest")
-    .WithHttpEndpoint(18006, 9090, "prometheus")
+    .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, "prometheus")
     .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", resourceAllocation.PrometheusRetention) // DYNAMIC: Adaptive retention
-    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", "0.0.0.0:9090")
+    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", $"0.0.0.0:{PortConstants.PrometheusInternal}")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_SIZE", resourceAllocation.PrometheusStorageSize) // DYNAMIC: Adaptive storage
     .WithArgs(prometheusArgs);
 
@@ -256,19 +257,19 @@ IResourceBuilder<ContainerResource>? grafana = null;
 if (!isTestMode)
 {
     grafana = builder.AddContainer("grafana", "grafana/grafana:latest")
-        .WithHttpEndpoint(18010, 3000, "grafana")
+        .WithHttpEndpoint(PortConstants.GrafanaExternal, PortConstants.GrafanaInternal, "grafana")
         .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
         .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
         .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
         .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
         .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0") // Force IPv4
-        .WithEnvironment("GF_SERVER_HTTP_PORT", "3000")
+        .WithEnvironment("GF_SERVER_HTTP_PORT", PortConstants.GrafanaInternal.ToString())
         .WithEnvironment("GF_LOG_LEVEL", "warn") // Reduce log noise
         .WithEnvironment("GF_INSTALL_PLUGINS", "") // Disable plugin installation for faster startup
         .WithEnvironment("GF_ANALYTICS_REPORTING_ENABLED", "false")
         .WithEnvironment("GF_ANALYTICS_CHECK_FOR_UPDATES", "false")
-        .WithEnvironment("LOKI_URL", loki != null ? "http://loki:3100" : "")
-        .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
+        .WithEnvironment("LOKI_URL", loki != null ? PortConstants.LokiUrl() : "")
+        .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
         .WithBindMount("./grafana-datasources-training.yml", "/etc/grafana/provisioning/datasources/datasources.yml")
         .WaitFor(prometheus);
         
@@ -288,19 +289,19 @@ else
 // LocalTesting Web API with native Prometheus metrics and direct scraping architecture  
 var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
-    .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092") // Single Kafka broker
+    .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", PortConstants.KafkaBootstrapServers()) // Single Kafka broker
     .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", kafkaPartitionsStr) // DYNAMIC: Adaptive partitions
     .WithEnvironment("KAFKA_REQUEST_TIMEOUT_MS", "30000")
     .WithEnvironment("KAFKA_RETRY_BACKOFF_MS", "1000")
-    .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
-    .WithEnvironment("TEMPORAL_SERVER_URL", "temporal-server:7233")
+    .WithEnvironment("FLINK_JOBMANAGER_URL", PortConstants.FlinkJobManagerUrl())
+    .WithEnvironment("TEMPORAL_SERVER_URL", PortConstants.TemporalServerUrl())
     // REMOVED: OTel configuration - now using native Prometheus metrics
-    .WithEnvironment("LOKI_ENDPOINT", loki != null ? "http://loki:3100" : "")
-    .WithEnvironment("GRAFANA_URL", "http://grafana:3000")
-    .WithEnvironment("PROMETHEUS_URL", "http://prometheus:9090")
-    .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323")
-    .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323")
-    .WithHttpEndpoint(18000, 13001, name: "webapi") // External port 18000 -> Internal port 13001
+    .WithEnvironment("LOKI_ENDPOINT", loki != null ? PortConstants.LokiUrl() : "")
+    .WithEnvironment("GRAFANA_URL", PortConstants.GrafanaUrl())
+    .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
+    .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", PortConstants.AspireOtlpEndpointUrl())
+    .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", PortConstants.AspireOtlpEndpointUrl())
+    .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi") // External port 18000 -> Internal port 13001
     // OPTIMIZED: Simplified dependency chain - only essential services for fastest startup
     .WaitFor(redis)
     .WaitFor(kafka)              // Single Kafka instance

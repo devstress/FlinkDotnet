@@ -1,6 +1,7 @@
 using LocalTesting.WebApi.Configuration;
 using LocalTesting.WebApi.Services;
 using LocalTesting.WebApi.Services.Temporal;
+using LocalTesting.Shared.Constants;
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Services;
 using FlinkDotNet.Orchestration.Models;
@@ -13,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Use port 13001 (13000+ range as required)
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), 13001); // Internal port for Aspire
+    options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), PortConstants.WebApiInternal); // Internal port for Aspire
 });
 
 // Configure Flink job management defaults
@@ -52,7 +53,7 @@ builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>()
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 {
     // Don't establish connection during startup - let individual services handle this
-    var connectionString = builder.Configuration.GetConnectionString("redis") ?? "localhost:6379";
+    var connectionString = builder.Configuration.GetConnectionString("redis") ?? PortConstants.RedisConnectionString();
     var configOptions = ConfigurationOptions.Parse(connectionString);
     configOptions.ConnectTimeout = 2000; // Reduced from 5000 for faster startup
     configOptions.AbortOnConnectFail = false; // Critical: don't fail startup if Redis unavailable
@@ -71,7 +72,7 @@ builder.Services.AddSingleton<ObservabilityMetricsService>();
 // OPTIMIZED: Configure HTTP client for Prometheus with shorter timeouts for faster startup
 builder.Services.AddHttpClient<PrometheusMetricsService>(client =>
 {
-    var prometheusUrl = Environment.GetEnvironmentVariable("PROMETHEUS_URL") ?? "http://prometheus:9090";
+    var prometheusUrl = Environment.GetEnvironmentVariable("PROMETHEUS_URL") ?? PortConstants.PrometheusUrl();
     client.BaseAddress = new Uri(prometheusUrl);
     client.Timeout = TimeSpan.FromSeconds(10); // Reduced from 30 for faster startup
 })

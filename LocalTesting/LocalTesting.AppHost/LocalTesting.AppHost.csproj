@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\LocalTesting.WebApi\LocalTesting.WebApi.csproj" />
+    <ProjectReference Include="..\LocalTesting.Shared\LocalTesting.Shared.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
 
 </Project>

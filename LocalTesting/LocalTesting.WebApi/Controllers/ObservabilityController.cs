@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using LocalTesting.WebApi.Services;
 using LocalTesting.WebApi.Models;
+using LocalTesting.Shared.Constants;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Text.Json;
 
@@ -2263,7 +2264,7 @@ public class ObservabilityController : ControllerBase
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(2); // Quick check
             
-            var metricsEndpoint = await httpClient.GetAsync("http://localhost:13001/metrics");
+            var metricsEndpoint = await httpClient.GetAsync(PortConstants.WebApiMetricsUrl());
             if (metricsEndpoint.IsSuccessStatusCode)
             {
                 var metricsContent = await metricsEndpoint.Content.ReadAsStringAsync();

@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using LocalTesting.WebApi.Models;
+using LocalTesting.Shared.Constants;
 using System.Text.Json;
 
 namespace LocalTesting.WebApi.Services;
@@ -32,7 +33,7 @@ public class KafkaProducerService : IDisposable
                 {
                     var config = new ProducerConfig
                     {
-                        BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
+                        BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
                         ClientId = "LocalTesting.WebApi.Producer.UltraHighPerformance",
                         Acks = Acks.Leader,  // Use leader ack for maximum speed (instead of All)
                         MessageTimeoutMs = 30000,   // Reduced timeout for faster failure detection
@@ -403,7 +404,7 @@ public class KafkaProducerService : IDisposable
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
+            BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
             GroupId = consumerGroup,
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false,
@@ -505,7 +506,7 @@ public class KafkaProducerService : IDisposable
             // Create a temporary producer just for connection testing
             var config = new ProducerConfig
             {
-                BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? "localhost:9092",
+                BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
                 ClientId = "LocalTesting.HealthCheck.Producer",
                 MessageTimeoutMs = 15000,  // Increased timeout for container startup (5s -> 15s)
                 RequestTimeoutMs = 10000,  // Increased request timeout (3s -> 10s)  

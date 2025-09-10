@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LocalTesting.Shared.Constants;
 
 namespace LocalTesting.WebApi.Services;
 
@@ -20,7 +21,7 @@ public class PrometheusMetricsService
         
         // Use internal Prometheus URL for container-to-container communication
         // Prometheus scrapes from OTel Collector (port 8889) so app metrics will be available here
-        _prometheusBaseUrl = configuration.GetValue<string>("PROMETHEUS_URL") ?? "http://prometheus:9090";
+        _prometheusBaseUrl = configuration.GetValue<string>("PROMETHEUS_URL") ?? PortConstants.PrometheusUrl();
         
         _httpClient.BaseAddress = new Uri(_prometheusBaseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(60); // Increased timeout for slow scraping
