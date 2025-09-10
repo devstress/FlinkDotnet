@@ -5,7 +5,6 @@ using LocalTesting.Shared.Constants;
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Services;
 using FlinkDotNet.Orchestration.Models;
-using StackExchange.Redis;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,19 +51,8 @@ builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>()
 // Add Aspire Kafka producer client integration
 builder.AddKafkaProducer<string, string>("kafka");
 
-// OPTIMIZED: Add Redis connection as a singleton that doesn't connect during startup
-builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
-{
-    // Don't establish connection during startup - let individual services handle this
-    var connectionString = builder.Configuration.GetConnectionString("redis") ?? PortConstants.RedisConnectionString();
-    var configOptions = ConfigurationOptions.Parse(connectionString);
-    configOptions.ConnectTimeout = 2000; // Reduced from 5000 for faster startup
-    configOptions.AbortOnConnectFail = false; // Critical: don't fail startup if Redis unavailable
-    configOptions.ConnectRetry = 1; // Reduced retries
-    
-    // This will only connect when first accessed, not during registration
-    return ConnectionMultiplexer.Connect(configOptions);
-});
+// Add Aspire Redis client integration - replaces manual StackExchange.Redis setup
+builder.AddRedisClient("redis");
 
 // Add custom services
 // Replace synchronous observability with high-performance async buffered service
