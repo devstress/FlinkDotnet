@@ -11,7 +11,7 @@ using Prometheus;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure IPv4-only binding compatible with Aspire orchestration
-// Use port 13001 (13000+ range as required)
+// Use port 8080 internally (standard ASP.NET Core default), exposed externally on 13001
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Listen(System.Net.IPAddress.Parse("127.0.0.1"), PortConstants.WebApiInternal); // Internal port for Aspire

@@ -102,14 +102,14 @@ var redis = builder.AddRedis("redis")
 // DYNAMIC: Single Kafka instance with adaptive memory allocation based on system resources
 // ENHANCED: Add proper health checks and connection validation for test reliability
 var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
-    .WithEndpoint(PortConstants.KafkaInternal, PortConstants.KafkaInternal, "kafka")
+    .WithEndpoint(PortConstants.KafkaExternal, PortConstants.KafkaInternal, "kafka")
     .WithEnvironment("KAFKA_NODE_ID", "1")
     .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
-    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{PortConstants.KafkaInternal},CONTROLLER://0.0.0.0:{PortConstants.KafkaControllerInternal}")
-    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{PortConstants.KafkaInternal}")
+    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{PortConstants.KafkaInternal.ToString()},CONTROLLER://0.0.0.0:{PortConstants.KafkaControllerInternal.ToString()}")
+    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{PortConstants.KafkaInternal.ToString()}")
     .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
     .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT")
-    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{PortConstants.KafkaControllerInternal}")
+    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{PortConstants.KafkaControllerInternal.ToString()}")
     .WithEnvironment("CLUSTER_ID", "LOCAL_TESTING_KRAFT_CLUSTER_2024")
     .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1") // Single broker
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
@@ -215,7 +215,7 @@ if (!isTestMode)
 {
     loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
         .WithHttpEndpoint(PortConstants.LokiExternal, PortConstants.LokiInternal, "loki")
-        .WithEnvironment("LOKI_ADDR", $"0.0.0.0:{PortConstants.LokiInternal}")
+        .WithEnvironment("LOKI_ADDR", $"0.0.0.0:{PortConstants.LokiInternal.ToString()}")
         .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
         .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", PortConstants.LokiInternal.ToString())
         .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", PortConstants.LokiGrpcInternal.ToString())
@@ -245,7 +245,7 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
     .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, "prometheus")
     .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", resourceAllocation.PrometheusRetention) // DYNAMIC: Adaptive retention
-    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", $"0.0.0.0:{PortConstants.PrometheusInternal}")
+    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", $"0.0.0.0:{PortConstants.PrometheusInternal.ToString()}")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_SIZE", resourceAllocation.PrometheusStorageSize) // DYNAMIC: Adaptive storage
     .WithArgs(prometheusArgs);
 
@@ -301,7 +301,7 @@ var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("l
     .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
     .WithEnvironment("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", PortConstants.AspireOtlpEndpointUrl())
     .WithEnvironment("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", PortConstants.AspireOtlpEndpointUrl())
-    .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi") // External port 18000 -> Internal port 13001
+    .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi") // External port 13001 -> Internal port 8080
     // OPTIMIZED: Simplified dependency chain - only essential services for fastest startup
     .WaitFor(redis)
     .WaitFor(kafka)              // Single Kafka instance
@@ -386,7 +386,7 @@ catch (Exception ex)
     Console.WriteLine($"❌ LocalTesting infrastructure startup failed: {ex.Message}");
     Console.WriteLine("🔧 Troubleshooting steps:");
     Console.WriteLine("1. Ensure Docker Desktop is running with 8GB+ RAM");
-    Console.WriteLine("2. Check if ports 5000, 8081, 8084, 9090, 3000, 4317, 4318 are available");
+    Console.WriteLine("2. Check if external ports 13000+ range and internal ports (9092, 6123, 8081, 9090, 3000, etc.) are available");
     Console.WriteLine("3. Run: docker system prune -f --volumes");
     Console.WriteLine("4. Restart Docker Desktop if issues persist");
     Console.WriteLine("5. Check Windows Defender/Antivirus is not blocking Docker");
