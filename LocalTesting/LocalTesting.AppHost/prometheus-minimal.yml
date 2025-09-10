@@ -1,19 +1,19 @@
 global:
-  scrape_interval: 60s  # ULTRA-OPTIMIZED: Even longer interval for minimal CPU usage (30s -> 60s)
-  evaluation_interval: 60s
+  scrape_interval: 15s  # BACKPRESSURE-OPTIMIZED: Faster scraping for MetricsRecording progress (60s -> 15s)
+  evaluation_interval: 15s
   external_labels:
-    monitor: 'ultra-minimal'
+    monitor: 'backpressure-optimized'
 
 scrape_configs:
   # Only essential metrics for basic functionality
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
-    scrape_interval: 60s
+    scrape_interval: 30s
 
-  # LocalTesting WebAPI - Essential for observability test
+  # LocalTesting WebAPI - Critical for observability test MetricsRecording progress
   - job_name: 'localtesting-webapi'
     static_configs:
       - targets: ['localtesting-webapi:13001']
     metrics_path: '/metrics'
-    scrape_interval: 30s  # ULTRA-OPTIMIZED: Less frequent scraping (15s -> 30s)
+    scrape_interval: 5s  # BACKPRESSURE-OPTIMIZED: Fast scraping for immediate metrics availability (30s -> 5s)

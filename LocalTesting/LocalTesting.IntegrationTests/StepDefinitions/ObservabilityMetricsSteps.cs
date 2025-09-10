@@ -354,14 +354,30 @@ public class ObservabilityMetricsSteps : IDisposable
                                 {
                                     // Check if component is stalled
                                     var componentStallTime = currentTime - componentStallTimes[componentName];
-                                    if (componentStallTime > stallTimeout && componentPercentage < 100.0)
+                                    
+                                    // BACKPRESSURE HANDLING: MetricsRecording gets extended stall tolerance due to Prometheus scraping intervals
+                                    var effectiveStallTimeout = componentName == "MetricsRecording" 
+                                        ? TimeSpan.FromSeconds(15)  // 15s tolerance for MetricsRecording due to 5s Prometheus scraping + processing time
+                                        : stallTimeout;             // 5s tolerance for other components
+                                    
+                                    if (componentStallTime > effectiveStallTimeout && componentPercentage < 100.0)
                                     {
-                                        stalledComponents.Add($"{componentName} (stalled at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s)");
-                                        Console.WriteLine($"  ⚠️ {componentName}: STALLED at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s - {componentInfo.Status}");
+                                        // Special messaging for MetricsRecording stalls
+                                        if (componentName == "MetricsRecording")
+                                        {
+                                            stalledComponents.Add($"{componentName} (stalled at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s - may be waiting for Prometheus scraping interval)");
+                                            Console.WriteLine($"  ⚠️ {componentName}: STALLED at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s - {componentInfo.Status} (Prometheus scraping: 5s interval)");
+                                        }
+                                        else
+                                        {
+                                            stalledComponents.Add($"{componentName} (stalled at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s)");
+                                            Console.WriteLine($"  ⚠️ {componentName}: STALLED at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s - {componentInfo.Status}");
+                                        }
                                     }
                                     else if (componentPercentage < 100.0)
                                     {
-                                        Console.WriteLine($"  🔸 {componentName}: {componentPercentage}% ({componentInfo.Status}) - stable for {componentStallTime.TotalSeconds:F1}s");
+                                        var toleranceInfo = componentName == "MetricsRecording" ? " (15s tolerance)" : " (5s tolerance)";
+                                        Console.WriteLine($"  🔸 {componentName}: {componentPercentage}% ({componentInfo.Status}) - stable for {componentStallTime.TotalSeconds:F1}s{toleranceInfo}");
                                     }
                                     else
                                     {
@@ -446,29 +462,46 @@ public class ObservabilityMetricsSteps : IDisposable
                     break;
                 }
                 
-                // Start workload execution when infrastructure is ready (around 70% progress)
-                if (!workloadStarted && currentProgress.InfrastructurePercentage >= 70.0)
+                // Start workload execution when infrastructure is ready (LOWERED THRESHOLD: 50% to fix component stall issue)
+                // BACKPRESSURE FIX: Reduced from 70% to 50% since component averages (60%+50%+40%)/3 = 50%
+                if (!workloadStarted && currentProgress.InfrastructurePercentage >= 50.0)
                 {
-                    Console.WriteLine("🚀 Infrastructure ready - starting workload execution...");
+                    Console.WriteLine($"🚀 Infrastructure ready at {currentProgress.InfrastructurePercentage}% - starting workload execution...");
+                    workloadStarted = true; // Mark as started immediately to prevent multiple attempts
+                    
                     _ = Task.Run(async () =>
                     {
                         try
                         {
                             Console.WriteLine($"📊 Executing workload with {messageCount:N0} messages...");
-                            var workloadResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
-                            workloadResponse.EnsureSuccessStatusCode();
-                            var workloadContent = await workloadResponse.Content.ReadAsStringAsync();
                             
-                            Console.WriteLine("✅ Background workload execution completed");
+                            // ENHANCED ERROR HANDLING: Add timeout and detailed error reporting
+                            using var workloadHttpClient = new HttpClient();
+                            workloadHttpClient.Timeout = TimeSpan.FromSeconds(60); // 60s timeout for workload execution
+                            workloadHttpClient.BaseAddress = _httpClient!.BaseAddress;
+                            
+                            var workloadResponse = await workloadHttpClient.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
+                            
+                            if (workloadResponse.IsSuccessStatusCode)
+                            {
+                                var workloadContent = await workloadResponse.Content.ReadAsStringAsync();
+                                Console.WriteLine("✅ Background workload execution completed successfully");
+                                Console.WriteLine($"📊 Workload response: {workloadContent.Substring(0, Math.Min(200, workloadContent.Length))}...");
+                            }
+                            else
+                            {
+                                var errorContent = await workloadResponse.Content.ReadAsStringAsync();
+                                Console.WriteLine($"❌ Workload execution failed with status {workloadResponse.StatusCode}: {errorContent}");
+                            }
                             
                             // FIXED: Wait additional time for metrics to be recorded and scraped by Prometheus
-                            Console.WriteLine("⏳ Waiting additional 5 seconds for metrics to be available in Prometheus...");
-                            await Task.Delay(5000);
+                            Console.WriteLine("⏳ Waiting additional 10 seconds for metrics to be available in Prometheus...");
+                            await Task.Delay(10000); // Increased from 5s to 10s for better Prometheus scraping
                             
                             // FIXED: Verify metrics are available after workload execution
                             try
                             {
-                                var metricsVerification = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
+                                var metricsVerification = await workloadHttpClient.GetAsync("/api/observability/metrics/messages-per-second");
                                 if (metricsVerification.IsSuccessStatusCode)
                                 {
                                     var verificationContent = await metricsVerification.Content.ReadAsStringAsync();
@@ -477,12 +510,16 @@ public class ObservabilityMetricsSteps : IDisposable
                                     // Check if we now have non-zero metrics
                                     if (verificationContent.Contains("TotalMetricsTracked") && verificationContent.Contains("\"TotalMetricsTracked\":0"))
                                     {
-                                        Console.WriteLine("⚠️ Metrics endpoint still shows zero metrics - may need more time");
+                                        Console.WriteLine("⚠️ Metrics endpoint still shows zero metrics - may need more time for Prometheus scraping");
                                     }
                                     else
                                     {
-                                        Console.WriteLine("✅ Metrics endpoint shows non-zero metrics after workload");
+                                        Console.WriteLine("✅ Metrics endpoint shows non-zero metrics after workload - progress should advance");
                                     }
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"⚠️ Metrics verification failed with status {metricsVerification.StatusCode}");
                                 }
                             }
                             catch (Exception verifyEx)
@@ -492,10 +529,13 @@ public class ObservabilityMetricsSteps : IDisposable
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"⚠️ Background workload execution failed: {ex.Message}");
+                            Console.WriteLine($"❌ CRITICAL: Background workload execution failed: {ex.Message}");
+                            Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+                            
+                            // Mark workload as failed so we know why progress stalled
+                            Console.WriteLine("❌ This workload failure will cause component progress to remain at infrastructure readiness levels");
                         }
                     });
-                    workloadStarted = true;
                 }
                 
                 // Wait for next progress check

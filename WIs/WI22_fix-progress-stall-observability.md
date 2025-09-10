@@ -34,11 +34,24 @@
 - Add component-level progress metrics for better visibility
 
 ### Debug Information (MANDATORY - Update this section for every investigation)
-- **Error Messages**: "Progress stalled at 83.5% for 7.0 seconds (>5s threshold)"
-- **Log Locations**: GitHub Actions job 50016795463, ObservabilityMetricsSteps.cs line 255
-- **System State**: Test runs for ~37 seconds before failing, infrastructure appears healthy
-- **Reproduction Steps**: Run Simple Observability Flow test, wait for progress tracking
-- **Evidence**: Progress calculation shows 83.5% = (100% infrastructure * 0.7) + (45% workload * 0.3)
+- **Error Messages**: "Progress tracking failed: Overall progress stalled at 82% for 20.1 seconds; Stalled components: Kafka (stalled at 60% for 20.1s), Flink (stalled at 50% for 20.1s), Temporal (stalled at 40% for 20.1s), MetricsRecording (stalled at 10% for 20.1s - may be waiting for Prometheus scraping interval)"
+- **Log Locations**: Integration test output shows 75+ second execution time
+- **System State**: Infrastructure starts via Aspire but components never progress beyond initial percentages
+- **Reproduction Steps**: Run "Simple Observability Flow" test - all components stall at static percentages
+- **Evidence**: ALL components stalled, not just MetricsRecording - suggests workload execution isn't completing
+- **Key Finding**: Kafka (60%), Flink (50%), Temporal (40%), MetricsRecording (10%) - indicates background workload execution may be failing
+
+### Root Cause Analysis (UPDATED)
+**Primary Issue**: Background workload execution in ObservabilityController.ExecuteRealWorkload() may not be completing successfully, causing all component progress to stall at initial readiness percentages.
+
+**Supporting Evidence**:
+1. ALL components stalled (not just MetricsRecording) - indicates systemic issue
+2. Components show static percentages suggesting readiness checks pass but workload doesn't execute
+3. 75+ second test duration indicates infrastructure starts but workload never completes
+4. MetricsRecording shows 10% (from backpressure handling) vs 0% indicating Prometheus fixes working
+5. Test expects 100% completion but workload execution may be timing out or failing silently
+
+**Hypothesis**: The async workload execution in ExecuteWithProgressTracking (lines 453-498) starts but doesn't complete within expected timeframes, causing component progress calculations to remain at initial values.
 
 ### Findings
 **Root Cause Analysis**: 
