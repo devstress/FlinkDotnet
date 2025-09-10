@@ -354,7 +354,7 @@ public class ObservabilityMetricsSteps : IDisposable
                             // FIXED: Verify metrics are available after workload execution
                             try
                             {
-                                var metricsVerification = await _httpClient.GetAsync("/api/observability/metrics/messages-per-second");
+                                var metricsVerification = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
                                 if (metricsVerification.IsSuccessStatusCode)
                                 {
                                     var verificationContent = await metricsVerification.Content.ReadAsStringAsync();
