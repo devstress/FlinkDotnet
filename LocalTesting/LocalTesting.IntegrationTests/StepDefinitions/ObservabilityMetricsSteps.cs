@@ -279,14 +279,18 @@ public class ObservabilityMetricsSteps : IDisposable
         {
             Console.WriteLine("🎯 PROGRESS TRACKING: Starting infrastructure and workload progress monitoring...");
             
-            // Progress tracking variables  
+            // ENHANCED: Component-aware progress tracking variables  
             var lastProgressTime = DateTime.UtcNow;
             var stallTimeout = TimeSpan.FromSeconds(5); // 5 seconds stall tolerance
             var maxProgressTime = TimeSpan.FromMinutes(3); // Maximum time allowed even with progress
             var progressStartTime = DateTime.UtcNow;
             var progressCheckInterval = TimeSpan.FromSeconds(2); // Check progress every 2 seconds
             
-            Console.WriteLine($"📊 Progress tracking parameters: stallTimeout={stallTimeout.TotalSeconds}s, maxTime={maxProgressTime.TotalMinutes}m, checkInterval={progressCheckInterval.TotalSeconds}s");
+            // ENHANCED: Component progress tracking
+            var componentProgressHistory = new Dictionary<string, double>();
+            var componentStallTimes = new Dictionary<string, DateTime>();
+            
+            Console.WriteLine($"📊 ENHANCED Progress tracking parameters: stallTimeout={stallTimeout.TotalSeconds}s, maxTime={maxProgressTime.TotalMinutes}m, checkInterval={progressCheckInterval.TotalSeconds}s");
             
             // Start workload execution (non-blocking)
             var workloadStarted = false;
@@ -306,16 +310,108 @@ public class ObservabilityMetricsSteps : IDisposable
                     break;
                 }
                 
-                // Get current progress
+                // Get current progress with enhanced component details
                 var currentProgress = await GetCurrentProgress();
                 result.FinalProgress = currentProgress.OverallPercentage;
                 
-                Console.WriteLine($"📊 Progress: {currentProgress.OverallPercentage}% (Infrastructure: {currentProgress.InfrastructurePercentage}%, Workload: {currentProgress.WorkloadPercentage}%) - Phase: {currentProgress.Phase}");
+                // ENHANCED: Display component-level progress breakdown
+                Console.WriteLine($"📊 Overall Progress: {currentProgress.OverallPercentage}% (Infrastructure: {currentProgress.InfrastructurePercentage}%, Workload: {currentProgress.WorkloadPercentage}%) - Phase: {currentProgress.Phase}");
                 
-                // Check if progress has changed
-                if (Math.Abs(currentProgress.OverallPercentage - lastProgress) > 0.1) // 0.1% minimum change
+                // ENHANCED: Component-level progress analysis and bottleneck detection
+                var componentProgressChanged = false;
+                var stalledComponents = new List<string>();
+                var progressingComponents = new List<string>();
+                
+                try
                 {
-                    Console.WriteLine($"✅ Progress change detected: {lastProgress}% → {currentProgress.OverallPercentage}% (extending timeout by 5 seconds)");
+                    // Parse component progress from response if available
+                    if (currentProgress.ComponentProgress != null)
+                    {
+                        foreach (var component in currentProgress.ComponentProgress)
+                        {
+                            var componentName = component.Key;
+                            var componentInfo = component.Value;
+                            var componentPercentage = componentInfo.Percentage;
+                            
+                            // Track component progress changes
+                            if (!componentProgressHistory.ContainsKey(componentName))
+                            {
+                                componentProgressHistory[componentName] = componentPercentage;
+                                componentStallTimes[componentName] = currentTime;
+                            }
+                            else
+                            {
+                                var lastComponentProgress = componentProgressHistory[componentName];
+                                if (Math.Abs(componentPercentage - lastComponentProgress) > 0.1) // 0.1% minimum change
+                                {
+                                    Console.WriteLine($"  🔹 {componentName}: {lastComponentProgress}% → {componentPercentage}% ({componentInfo.Status}) - {componentInfo.Details}");
+                                    componentProgressHistory[componentName] = componentPercentage;
+                                    componentStallTimes[componentName] = currentTime;
+                                    componentProgressChanged = true;
+                                    progressingComponents.Add(componentName);
+                                }
+                                else
+                                {
+                                    // Check if component is stalled
+                                    var componentStallTime = currentTime - componentStallTimes[componentName];
+                                    if (componentStallTime > stallTimeout && componentPercentage < 100.0)
+                                    {
+                                        stalledComponents.Add($"{componentName} (stalled at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s)");
+                                        Console.WriteLine($"  ⚠️ {componentName}: STALLED at {componentPercentage}% for {componentStallTime.TotalSeconds:F1}s - {componentInfo.Status}");
+                                    }
+                                    else if (componentPercentage < 100.0)
+                                    {
+                                        Console.WriteLine($"  🔸 {componentName}: {componentPercentage}% ({componentInfo.Status}) - stable for {componentStallTime.TotalSeconds:F1}s");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine($"  ✅ {componentName}: COMPLETE (100%)");
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // ENHANCED: Bottleneck detection and resource analysis
+                        if (currentProgress.BottleneckDetection != null)
+                        {
+                            var bottleneck = currentProgress.BottleneckDetection;
+                            if (bottleneck.StalledComponents.Any())
+                            {
+                                Console.WriteLine($"⚠️ BOTTLENECK DETECTED - Severity: {bottleneck.Severity}");
+                                Console.WriteLine($"   Stalled: {string.Join(", ", bottleneck.StalledComponents)}");
+                                if (!string.IsNullOrEmpty(bottleneck.Recommendation))
+                                {
+                                    Console.WriteLine($"   💡 Recommendation: {bottleneck.Recommendation}");
+                                }
+                            }
+                        }
+                        
+                        // ENHANCED: Resource usage monitoring
+                        if (currentProgress.ResourceUsage != null)
+                        {
+                            var resources = currentProgress.ResourceUsage;
+                            Console.WriteLine($"💻 Resources: CPU {resources.CpuUsagePercent}%, Memory {resources.MemoryUsageDescription}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ Component progress analysis failed: {ex.Message}");
+                }
+                
+                // ENHANCED: Component-aware progress change detection
+                var overallProgressChanged = Math.Abs(currentProgress.OverallPercentage - lastProgress) > 0.1; // 0.1% minimum change
+                if (overallProgressChanged || componentProgressChanged)
+                {
+                    if (overallProgressChanged)
+                    {
+                        Console.WriteLine($"✅ Overall progress change detected: {lastProgress}% → {currentProgress.OverallPercentage}% (extending timeout by 5 seconds)");
+                    }
+                    if (componentProgressChanged)
+                    {
+                        Console.WriteLine($"✅ Component progress detected in: {string.Join(", ", progressingComponents)} (extending timeout)");
+                    }
+                    
                     lastProgress = currentProgress.OverallPercentage;
                     lastProgressTime = currentTime;
                 }
@@ -330,14 +426,23 @@ public class ObservabilityMetricsSteps : IDisposable
                     break;
                 }
                 
-                // Check for stall (no progress change for 5 seconds)
+                // ENHANCED: Component-aware stall detection
                 var timeSinceLastProgress = currentTime - lastProgressTime;
                 if (timeSinceLastProgress > stallTimeout)
                 {
+                    // Provide detailed stall analysis
+                    var stallReason = new List<string>();
+                    stallReason.Add($"Overall progress stalled at {lastProgress}% for {timeSinceLastProgress.TotalSeconds:F1} seconds");
+                    
+                    if (stalledComponents.Any())
+                    {
+                        stallReason.Add($"Stalled components: {string.Join(", ", stalledComponents)}");
+                    }
+                    
                     result.Success = false;
-                    result.FailureReason = $"Progress stalled at {lastProgress}% for {timeSinceLastProgress.TotalSeconds:F1} seconds (>{stallTimeout.TotalSeconds}s threshold)";
+                    result.FailureReason = string.Join("; ", stallReason);
                     result.FinalProgress = lastProgress;
-                    Console.WriteLine($"❌ PROGRESS TRACKING: Progress stalled at {lastProgress}% for {timeSinceLastProgress.TotalSeconds:F1} seconds");
+                    Console.WriteLine($"❌ PROGRESS TRACKING FAILED: {result.FailureReason}");
                     break;
                 }
                 
@@ -425,32 +530,104 @@ public class ObservabilityMetricsSteps : IDisposable
                 PropertyNameCaseInsensitive = true
             });
             
+            var progressInfo = new ProgressInfo();
+            
             if (progressData != null && progressData.TryGetValue("Progress", out var progressObj))
             {
                 var progressElement = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(progressObj));
                 
-                var overallPercentage = progressElement.TryGetProperty("OverallPercentage", out var overallElement) 
+                progressInfo.OverallPercentage = progressElement.TryGetProperty("OverallPercentage", out var overallElement) 
                     ? overallElement.GetDouble() : 0.0;
                     
-                var infraPercentage = progressElement.TryGetProperty("InfrastructurePercentage", out var infraElement) 
+                progressInfo.InfrastructurePercentage = progressElement.TryGetProperty("InfrastructurePercentage", out var infraElement) 
                     ? infraElement.GetDouble() : 0.0;
                     
-                var workloadPercentage = progressElement.TryGetProperty("WorkloadPercentage", out var workloadElement) 
+                progressInfo.WorkloadPercentage = progressElement.TryGetProperty("WorkloadPercentage", out var workloadElement) 
                     ? workloadElement.GetDouble() : 0.0;
                     
-                var phase = progressElement.TryGetProperty("Phase", out var phaseElement) 
+                progressInfo.Phase = progressElement.TryGetProperty("Phase", out var phaseElement) 
                     ? phaseElement.GetString() ?? "Unknown" : "Unknown";
-                
-                return new ProgressInfo
-                {
-                    OverallPercentage = overallPercentage,
-                    InfrastructurePercentage = infraPercentage,
-                    WorkloadPercentage = workloadPercentage,
-                    Phase = phase
-                };
             }
             
-            return new ProgressInfo(); // Default 0% progress
+            // ENHANCED: Parse workload progress with component details
+            if (progressData != null && progressData.TryGetValue("WorkloadProgress", out var workloadProgressObj))
+            {
+                var workloadElement = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(workloadProgressObj));
+                
+                // Parse component progress
+                if (workloadElement.TryGetProperty("ComponentProgress", out var componentProgressElement))
+                {
+                    progressInfo.ComponentProgress = new Dictionary<string, ComponentProgressInfo>();
+                    
+                    foreach (var component in componentProgressElement.EnumerateObject())
+                    {
+                        var componentName = component.Name;
+                        var componentData = component.Value;
+                        
+                        progressInfo.ComponentProgress[componentName] = new ComponentProgressInfo
+                        {
+                            Percentage = componentData.TryGetProperty("Percentage", out var pctElement) ? pctElement.GetDouble() : 0.0,
+                            Status = componentData.TryGetProperty("Status", out var statusElement) ? statusElement.GetString() ?? "Unknown" : "Unknown",
+                            Details = componentData.TryGetProperty("Details", out var detailsElement) ? detailsElement.GetString() ?? "" : "",
+                            MetricCount = componentData.TryGetProperty("MetricCount", out var metricElement) ? metricElement.GetInt32() : 0,
+                            ActiveMetricCount = componentData.TryGetProperty("ActiveMetricCount", out var activeElement) ? activeElement.GetInt32() : 0
+                        };
+                    }
+                }
+                
+                // Parse bottleneck detection
+                if (workloadElement.TryGetProperty("BottleneckDetection", out var bottleneckElement))
+                {
+                    progressInfo.BottleneckDetection = new BottleneckDetectionInfo
+                    {
+                        Severity = bottleneckElement.TryGetProperty("Severity", out var severityElement) ? severityElement.GetString() ?? "None" : "None",
+                        Recommendation = bottleneckElement.TryGetProperty("Recommendation", out var recElement) ? recElement.GetString() ?? "" : "",
+                        StalledComponents = new List<string>(),
+                        ProgressingComponents = new List<string>(),
+                        CompletedComponents = new List<string>()
+                    };
+                    
+                    if (bottleneckElement.TryGetProperty("StalledComponents", out var stalledElement))
+                    {
+                        foreach (var item in stalledElement.EnumerateArray())
+                        {
+                            if (item.GetString() is string stalledComponent)
+                                progressInfo.BottleneckDetection.StalledComponents.Add(stalledComponent);
+                        }
+                    }
+                    
+                    if (bottleneckElement.TryGetProperty("ProgressingComponents", out var progressingElement))
+                    {
+                        foreach (var item in progressingElement.EnumerateArray())
+                        {
+                            if (item.GetString() is string progressingComponent)
+                                progressInfo.BottleneckDetection.ProgressingComponents.Add(progressingComponent);
+                        }
+                    }
+                    
+                    if (bottleneckElement.TryGetProperty("CompletedComponents", out var completedElement))
+                    {
+                        foreach (var item in completedElement.EnumerateArray())
+                        {
+                            if (item.GetString() is string completedComponent)
+                                progressInfo.BottleneckDetection.CompletedComponents.Add(completedComponent);
+                        }
+                    }
+                }
+                
+                // Parse resource usage
+                if (workloadElement.TryGetProperty("ResourceUsage", out var resourceElement))
+                {
+                    progressInfo.ResourceUsage = new ResourceUsageInfo
+                    {
+                        CpuUsagePercent = resourceElement.TryGetProperty("CpuUsagePercent", out var cpuElement) ? cpuElement.GetDouble() : 0.0,
+                        MemoryUsageDescription = resourceElement.TryGetProperty("MemoryUsageDescription", out var memDescElement) ? memDescElement.GetString() ?? "" : "",
+                        ProcessorCount = resourceElement.TryGetProperty("ProcessorCount", out var procElement) ? procElement.GetInt32() : 0
+                    };
+                }
+            }
+            
+            return progressInfo;
         }
         catch (Exception ex)
         {
@@ -473,6 +650,39 @@ public class ObservabilityMetricsSteps : IDisposable
         public double InfrastructurePercentage { get; set; }
         public double WorkloadPercentage { get; set; }
         public string Phase { get; set; } = "Unknown";
+        
+        // ENHANCED: Component-level progress tracking
+        public Dictionary<string, ComponentProgressInfo>? ComponentProgress { get; set; }
+        public BottleneckDetectionInfo? BottleneckDetection { get; set; }
+        public ResourceUsageInfo? ResourceUsage { get; set; }
+    }
+    
+    // ENHANCED: Component progress information
+    private class ComponentProgressInfo
+    {
+        public double Percentage { get; set; }
+        public string Status { get; set; } = "Unknown";
+        public string Details { get; set; } = "";
+        public int MetricCount { get; set; }
+        public int ActiveMetricCount { get; set; }
+    }
+    
+    // ENHANCED: Bottleneck detection information
+    private class BottleneckDetectionInfo
+    {
+        public string Severity { get; set; } = "None";
+        public string Recommendation { get; set; } = "";
+        public List<string> StalledComponents { get; set; } = new();
+        public List<string> ProgressingComponents { get; set; } = new();
+        public List<string> CompletedComponents { get; set; } = new();
+    }
+    
+    // ENHANCED: Resource usage information
+    private class ResourceUsageInfo
+    {
+        public double CpuUsagePercent { get; set; }
+        public string MemoryUsageDescription { get; set; } = "";
+        public int ProcessorCount { get; set; }
     }
 
     [Then(@"we print the metrics to the console")]

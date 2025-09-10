@@ -1739,84 +1739,66 @@ public class ObservabilityController : ControllerBase
             var flinkMetrics = allMetrics.Where(kvp => kvp.Key.StartsWith("flink_") || kvp.Key.StartsWith("localtesting_flink_")).ToList();
             var temporalMetrics = allMetrics.Where(kvp => kvp.Key.StartsWith("temporal_") || kvp.Key.StartsWith("localtesting_temporal_")).ToList();
             
-            // FIXED: Improved workload progress calculation to handle metric recording delays
-            var workloadStages = new Dictionary<string, double>();
+            // ENHANCED: Individual component progress tracking with detailed status
+            var componentProgress = await CalculateIndividualComponentProgressAsync(kafkaMetrics, flinkMetrics, temporalMetrics, allMetrics.ToList());
             
-            // Kafka production stage - check both metric existence and values
-            if (kafkaMetrics.Any(m => m.Value > 0))
-            {
-                workloadStages["KafkaProduction"] = 100.0; // Metrics with values = complete
-            }
-            else if (kafkaMetrics.Any())
-            {
-                workloadStages["KafkaProduction"] = 75.0; // Metrics exist but no values yet = mostly complete
-            }
-            else
-            {
-                // Check if any metrics were recently recorded (even if not scraped by Prometheus yet)
-                var recentlyExecuted = await CheckRecentWorkloadExecution();
-                workloadStages["KafkaProduction"] = recentlyExecuted ? 60.0 : 0.0; // Recent execution = partially complete
-            }
+            // ENHANCED: Bottleneck detection - identify which components are stalling
+            var bottleneckInfo = await DetectBottlenecksAsync(componentProgress);
             
-            // Flink processing stage - similar logic
-            if (flinkMetrics.Any(m => m.Value > 0))
-            {
-                workloadStages["FlinkProcessing"] = 100.0;
-            }
-            else if (flinkMetrics.Any())
-            {
-                workloadStages["FlinkProcessing"] = 75.0;
-            }
-            else
-            {
-                // Flink processes Kafka messages, so if Kafka is done, Flink should follow
-                workloadStages["FlinkProcessing"] = workloadStages["KafkaProduction"] >= 60.0 ? 50.0 : 0.0;
-            }
+            // ENHANCED: Resource monitoring for infrastructure capacity analysis
+            var resourceUsage = await GetSystemResourceUsageAsync();
             
-            // Temporal workflows stage - similar logic
-            if (temporalMetrics.Any(m => m.Value > 0))
-            {
-                workloadStages["TemporalWorkflows"] = 100.0;
-            }
-            else if (temporalMetrics.Any())
-            {
-                workloadStages["TemporalWorkflows"] = 75.0;
-            }
-            else
-            {
-                // Temporal processes subset of messages, so if Kafka is done, Temporal should follow
-                workloadStages["TemporalWorkflows"] = workloadStages["KafkaProduction"] >= 60.0 ? 40.0 : 0.0;
-            }
-            
-            // Metrics recording stage - any metrics available = progress
-            if (allMetrics.Count > 0)
-            {
-                workloadStages["MetricsRecording"] = 100.0;
-            }
-            else
-            {
-                // Check if we expect metrics soon based on other stages
-                var expectingMetrics = workloadStages.Values.Any(v => v >= 50.0);
-                workloadStages["MetricsRecording"] = expectingMetrics ? 30.0 : 0.0;
-            }
-            
-            var averageWorkloadProgress = workloadStages.Values.Average();
+            // Calculate average workload progress from individual components
+            var averageWorkloadProgress = componentProgress.Values.Select(c => c.Percentage).Average();
             var workloadPercentage = Math.Round(averageWorkloadProgress, 1);
             
-            // FIXED: Log detailed workload progress for debugging
-            _logger.LogInformation("📊 Workload progress calculation: Kafka={KafkaProgress}%, Flink={FlinkProgress}%, Temporal={TemporalProgress}%, Metrics={MetricsProgress}% → Overall={OverallProgress}%",
-                workloadStages["KafkaProduction"], workloadStages["FlinkProcessing"], workloadStages["TemporalWorkflows"], workloadStages["MetricsRecording"], workloadPercentage);
+            // ENHANCED: Detailed logging for each component
+            _logger.LogInformation("📊 ENHANCED Workload Progress Breakdown:");
+            foreach (var component in componentProgress)
+            {
+                var info = component.Value;
+                _logger.LogInformation("  🔹 {Component}: {Percentage}% - {Status} (Last Update: {LastUpdate}, Metrics: {MetricCount})", 
+                    component.Key, info.Percentage, info.Status, info.LastUpdate, info.MetricCount);
+            }
+            
+            // Log bottleneck detection results
+            if (bottleneckInfo.StalledComponents.Any())
+            {
+                _logger.LogWarning("⚠️ BOTTLENECK DETECTED: Components stalled: {StalledComponents}", 
+                    string.Join(", ", bottleneckInfo.StalledComponents));
+            }
+            
+            // Log resource usage for capacity analysis
+            _logger.LogInformation("💻 System Resources: CPU {CpuUsage}%, Memory {MemoryUsage}", 
+                resourceUsage.CpuUsagePercent, resourceUsage.MemoryUsageDescription);
             
             return new
             {
                 ProgressPercentage = workloadPercentage,
-                WorkloadStages = workloadStages,
+                
+                // ENHANCED: Individual component progress instead of just stages
+                ComponentProgress = componentProgress,
+                
+                // ENHANCED: Bottleneck detection results
+                BottleneckDetection = bottleneckInfo,
+                
+                // ENHANCED: System resource monitoring
+                ResourceUsage = resourceUsage,
+                
+                // Legacy compatibility - keep existing fields
+                WorkloadStages = componentProgress.ToDictionary(
+                    kvp => kvp.Key, 
+                    kvp => kvp.Value.Percentage
+                ),
+                
                 TotalMetricsRecorded = allMetrics.Count,
                 ActiveKafkaMetrics = kafkaMetrics.Count(m => m.Value > 0),
                 ActiveFlinkMetrics = flinkMetrics.Count(m => m.Value > 0),
                 ActiveTemporalMetrics = temporalMetrics.Count(m => m.Value > 0),
                 Status = workloadPercentage >= 100 ? "Complete" : workloadPercentage > 0 ? "InProgress" : "NotStarted",
                 Details = $"Workload execution {workloadPercentage}% complete with {allMetrics.Count} metrics recorded",
+                
+                // ENHANCED: More detailed metric breakdown
                 MetricCounts = new
                 {
                     TotalKafkaMetrics = kafkaMetrics.Count,
@@ -1830,7 +1812,7 @@ public class ObservabilityController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error calculating workload progress");
+            _logger.LogError(ex, "Error calculating enhanced workload progress");
             return new
             {
                 ProgressPercentage = 0.0,
@@ -1863,6 +1845,471 @@ public class ObservabilityController : ControllerBase
         {
             _logger.LogDebug("Error checking recent workload execution: {Error}", ex.Message);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// ENHANCED: Calculate individual component progress with detailed status information
+    /// </summary>
+    private async Task<Dictionary<string, ComponentProgressInfo>> CalculateIndividualComponentProgressAsync(
+        IList<KeyValuePair<string, double>> kafkaMetrics, 
+        IList<KeyValuePair<string, double>> flinkMetrics, 
+        IList<KeyValuePair<string, double>> temporalMetrics, 
+        IList<KeyValuePair<string, double>> allMetrics)
+    {
+        var componentProgress = new Dictionary<string, ComponentProgressInfo>();
+        var now = DateTime.UtcNow;
+        
+        // Kafka Production Component
+        var kafkaProgress = await CalculateKafkaProgressAsync(kafkaMetrics);
+        componentProgress["Kafka"] = new ComponentProgressInfo
+        {
+            Percentage = kafkaProgress.Percentage,
+            Status = kafkaProgress.Status,
+            LastUpdate = now,
+            MetricCount = kafkaMetrics.Count,
+            ActiveMetricCount = kafkaMetrics.Count(m => m.Value > 0),
+            Details = kafkaProgress.Details
+        };
+        
+        // Flink Processing Component  
+        var flinkProgress = await CalculateFlinkProgressAsync(flinkMetrics, kafkaProgress.Percentage);
+        componentProgress["Flink"] = new ComponentProgressInfo
+        {
+            Percentage = flinkProgress.Percentage,
+            Status = flinkProgress.Status,
+            LastUpdate = now,
+            MetricCount = flinkMetrics.Count,
+            ActiveMetricCount = flinkMetrics.Count(m => m.Value > 0),
+            Details = flinkProgress.Details
+        };
+        
+        // Temporal Workflows Component
+        var temporalProgress = await CalculateTemporalProgressAsync(temporalMetrics, kafkaProgress.Percentage);
+        componentProgress["Temporal"] = new ComponentProgressInfo
+        {
+            Percentage = temporalProgress.Percentage,
+            Status = temporalProgress.Status,
+            LastUpdate = now,
+            MetricCount = temporalMetrics.Count,
+            ActiveMetricCount = temporalMetrics.Count(m => m.Value > 0),
+            Details = temporalProgress.Details
+        };
+        
+        // Metrics Recording Component
+        var metricsProgress = await CalculateMetricsRecordingProgressAsync(allMetrics);
+        componentProgress["MetricsRecording"] = new ComponentProgressInfo
+        {
+            Percentage = metricsProgress.Percentage,
+            Status = metricsProgress.Status,
+            LastUpdate = now,
+            MetricCount = allMetrics.Count,
+            ActiveMetricCount = allMetrics.Count(m => m.Value > 0),
+            Details = metricsProgress.Details
+        };
+        
+        return componentProgress;
+    }
+
+    /// <summary>
+    /// ENHANCED: Calculate Kafka component progress with detailed analysis
+    /// </summary>
+    private async Task<ComponentProgressResult> CalculateKafkaProgressAsync(IList<KeyValuePair<string, double>> kafkaMetrics)
+    {
+        try
+        {
+            if (kafkaMetrics.Any(m => m.Value > 0))
+            {
+                var totalThroughput = kafkaMetrics.Where(m => m.Value > 0).Sum(m => m.Value);
+                return new ComponentProgressResult
+                {
+                    Percentage = 100.0,
+                    Status = "Complete",
+                    Details = $"Active metrics with {totalThroughput:F1} msg/sec total throughput"
+                };
+            }
+            else if (kafkaMetrics.Any())
+            {
+                return new ComponentProgressResult
+                {
+                    Percentage = 75.0,
+                    Status = "MetricsRecorded",
+                    Details = $"Metrics exist ({kafkaMetrics.Count}) but no active values - Prometheus may still be scraping"
+                };
+            }
+            else
+            {
+                // Check if workload was recently executed
+                var recentlyExecuted = await CheckRecentWorkloadExecution();
+                if (recentlyExecuted)
+                {
+                    return new ComponentProgressResult
+                    {
+                        Percentage = 60.0,
+                        Status = "RecentlyExecuted",
+                        Details = "Workload executed recently but metrics not yet available in Prometheus"
+                    };
+                }
+                else
+                {
+                    return new ComponentProgressResult
+                    {
+                        Percentage = 0.0,
+                        Status = "NotStarted",
+                        Details = "No Kafka metrics detected - workload may not have started"
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating Kafka progress");
+            return new ComponentProgressResult
+            {
+                Percentage = 0.0,
+                Status = "Error",
+                Details = $"Kafka progress calculation failed: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// ENHANCED: Calculate Flink component progress with dependency awareness
+    /// </summary>
+    private async Task<ComponentProgressResult> CalculateFlinkProgressAsync(IList<KeyValuePair<string, double>> flinkMetrics, double kafkaProgress)
+    {
+        try
+        {
+            if (flinkMetrics.Any(m => m.Value > 0))
+            {
+                var processingMetrics = flinkMetrics.Where(m => m.Value > 0).ToList();
+                return new ComponentProgressResult
+                {
+                    Percentage = 100.0,
+                    Status = "Processing",
+                    Details = $"Active processing with {processingMetrics.Count} active metrics"
+                };
+            }
+            else if (flinkMetrics.Any())
+            {
+                return new ComponentProgressResult
+                {
+                    Percentage = 75.0,
+                    Status = "MetricsRecorded",
+                    Details = $"Flink metrics exist ({flinkMetrics.Count}) but no active processing detected"
+                };
+            }
+            else
+            {
+                // Flink depends on Kafka - progress based on Kafka readiness
+                if (kafkaProgress >= 60.0)
+                {
+                    return new ComponentProgressResult
+                    {
+                        Percentage = 50.0,
+                        Status = "WaitingForData",
+                        Details = "Kafka is producing data - Flink should start processing soon"
+                    };
+                }
+                else
+                {
+                    return new ComponentProgressResult
+                    {
+                        Percentage = 0.0,
+                        Status = "WaitingForKafka",
+                        Details = "Waiting for Kafka messages to be available for processing"
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating Flink progress");
+            return new ComponentProgressResult
+            {
+                Percentage = 0.0,
+                Status = "Error",
+                Details = $"Flink progress calculation failed: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// ENHANCED: Calculate Temporal component progress with workflow awareness
+    /// </summary>
+    private async Task<ComponentProgressResult> CalculateTemporalProgressAsync(IList<KeyValuePair<string, double>> temporalMetrics, double kafkaProgress)
+    {
+        try
+        {
+            if (temporalMetrics.Any(m => m.Value > 0))
+            {
+                var workflowMetrics = temporalMetrics.Where(m => m.Value > 0).ToList();
+                return new ComponentProgressResult
+                {
+                    Percentage = 100.0,
+                    Status = "ProcessingWorkflows",
+                    Details = $"Active workflows with {workflowMetrics.Count} active metrics"
+                };
+            }
+            else if (temporalMetrics.Any())
+            {
+                return new ComponentProgressResult
+                {
+                    Percentage = 75.0,
+                    Status = "MetricsRecorded",
+                    Details = $"Temporal metrics exist ({temporalMetrics.Count}) but no active workflows detected"
+                };
+            }
+            else
+            {
+                // Temporal processes subset of Kafka messages
+                if (kafkaProgress >= 60.0)
+                {
+                    return new ComponentProgressResult
+                    {
+                        Percentage = 40.0,
+                        Status = "WaitingForWorkflows",
+                        Details = "Kafka is producing - Temporal workflows should start soon"
+                    };
+                }
+                else
+                {
+                    return new ComponentProgressResult
+                    {
+                        Percentage = 0.0,
+                        Status = "WaitingForData",
+                        Details = "Waiting for data flow to trigger Temporal workflows"
+                    };
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating Temporal progress");
+            return new ComponentProgressResult
+            {
+                Percentage = 0.0,
+                Status = "Error",
+                Details = $"Temporal progress calculation failed: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// ENHANCED: Calculate metrics recording progress
+    /// </summary>
+    private async Task<ComponentProgressResult> CalculateMetricsRecordingProgressAsync(IList<KeyValuePair<string, double>> allMetrics)
+    {
+        try
+        {
+            if (allMetrics.Count > 0)
+            {
+                var activeMetrics = allMetrics.Count(m => m.Value > 0);
+                var recordingPercentage = allMetrics.Count > 0 ? Math.Min(100.0, (double)activeMetrics / Math.Max(1, allMetrics.Count) * 100) : 0.0;
+                
+                return new ComponentProgressResult
+                {
+                    Percentage = recordingPercentage,
+                    Status = recordingPercentage >= 100 ? "Complete" : recordingPercentage > 0 ? "Recording" : "MetricsAvailable",
+                    Details = $"Recording {activeMetrics}/{allMetrics.Count} metrics in Prometheus"
+                };
+            }
+            else
+            {
+                return new ComponentProgressResult
+                {
+                    Percentage = 0.0,
+                    Status = "NoMetrics",
+                    Details = "No metrics available - workload execution may not have started"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating metrics recording progress");
+            return new ComponentProgressResult
+            {
+                Percentage = 0.0,
+                Status = "Error",
+                Details = $"Metrics recording progress calculation failed: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// ENHANCED: Detect bottlenecks by analyzing component progress patterns
+    /// </summary>
+    private async Task<BottleneckDetectionResult> DetectBottlenecksAsync(Dictionary<string, ComponentProgressInfo> componentProgress)
+    {
+        try
+        {
+            var stalledComponents = new List<string>();
+            var progressingComponents = new List<string>();
+            var completedComponents = new List<string>();
+            
+            foreach (var component in componentProgress)
+            {
+                var info = component.Value;
+                
+                if (info.Percentage >= 100.0)
+                {
+                    completedComponents.Add(component.Key);
+                }
+                else if (info.Percentage > 0.0 && info.Status != "Error")
+                {
+                    progressingComponents.Add(component.Key);
+                    
+                    // Detect if component should be progressing but isn't
+                    // For example, if Kafka is complete but Flink is still at 0%
+                    if (component.Key == "Flink" && componentProgress["Kafka"].Percentage >= 75.0 && info.Percentage < 50.0)
+                    {
+                        stalledComponents.Add($"{component.Key} (should be processing Kafka data)");
+                    }
+                    else if (component.Key == "Temporal" && componentProgress["Kafka"].Percentage >= 75.0 && info.Percentage < 40.0)
+                    {
+                        stalledComponents.Add($"{component.Key} (should be processing workflows)");
+                    }
+                }
+                else
+                {
+                    // Check if component should have started by now
+                    var totalProgress = componentProgress.Values.Average(c => c.Percentage);
+                    if (totalProgress > 30.0 && info.Percentage == 0.0)
+                    {
+                        stalledComponents.Add($"{component.Key} (not started despite overall progress)");
+                    }
+                }
+            }
+            
+            // Determine overall bottleneck severity
+            var severity = "None";
+            if (stalledComponents.Any())
+            {
+                severity = stalledComponents.Count >= 2 ? "Critical" : "Moderate";
+            }
+            else if (progressingComponents.Count == 0 && completedComponents.Count == 0)
+            {
+                severity = "Infrastructure";
+            }
+            
+            return new BottleneckDetectionResult
+            {
+                StalledComponents = stalledComponents,
+                ProgressingComponents = progressingComponents,
+                CompletedComponents = completedComponents,
+                Severity = severity,
+                Recommendation = GenerateBottleneckRecommendation(stalledComponents, progressingComponents, completedComponents)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error detecting bottlenecks");
+            return new BottleneckDetectionResult
+            {
+                StalledComponents = new List<string>(),
+                ProgressingComponents = new List<string>(),
+                CompletedComponents = new List<string>(),
+                Severity = "Unknown",
+                Recommendation = $"Bottleneck detection failed: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Generate actionable recommendations based on bottleneck analysis
+    /// </summary>
+    private string GenerateBottleneckRecommendation(List<string> stalledComponents, List<string> progressingComponents, List<string> completedComponents)
+    {
+        if (!stalledComponents.Any())
+        {
+            if (completedComponents.Count == 4) return "All components completed successfully";
+            if (progressingComponents.Any()) return "Components progressing normally - continue monitoring";
+            return "Components starting up - wait for initialization to complete";
+        }
+        
+        var recommendations = new List<string>();
+        
+        if (stalledComponents.Any(c => c.Contains("Flink")))
+        {
+            recommendations.Add("Check Flink JobManager/TaskManager logs for processing errors or resource constraints");
+        }
+        
+        if (stalledComponents.Any(c => c.Contains("Temporal")))
+        {
+            recommendations.Add("Verify Temporal server connectivity and workflow registration");
+        }
+        
+        if (stalledComponents.Any(c => c.Contains("Kafka")))
+        {
+            recommendations.Add("Check Kafka broker availability and message production");
+        }
+        
+        if (stalledComponents.Any(c => c.Contains("MetricsRecording")))
+        {
+            recommendations.Add("Verify Prometheus scraping configuration and target availability");
+        }
+        
+        if (stalledComponents.Count >= 2)
+        {
+            recommendations.Add("Multiple components stalled - check system resource availability (CPU/Memory)");
+        }
+        
+        return string.Join("; ", recommendations);
+    }
+
+    /// <summary>
+    /// ENHANCED: Get system resource usage for capacity analysis
+    /// </summary>
+    private async Task<ResourceUsageInfo> GetSystemResourceUsageAsync()
+    {
+        try
+        {
+            // Get current process information
+            var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+            
+            // Calculate memory usage
+            var workingSet = currentProcess.WorkingSet64;
+            var privateMemory = currentProcess.PrivateMemorySize64;
+            
+            // Get CPU usage (approximate)
+            var startTime = DateTime.UtcNow;
+            var startCpuUsage = currentProcess.TotalProcessorTime;
+            await Task.Delay(100); // Small delay to measure CPU usage
+            var endTime = DateTime.UtcNow;
+            var endCpuUsage = currentProcess.TotalProcessorTime;
+            
+            var cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
+            var totalMsPassed = (endTime - startTime).TotalMilliseconds;
+            var cpuUsagePercent = Math.Round((cpuUsedMs / (Environment.ProcessorCount * totalMsPassed)) * 100, 1);
+            
+            // Get system memory info (approximate)
+            var availableMemory = GC.GetTotalMemory(false);
+            
+            return new ResourceUsageInfo
+            {
+                CpuUsagePercent = Math.Max(0, Math.Min(100, cpuUsagePercent)), // Clamp between 0-100
+                MemoryUsageMB = Math.Round(workingSet / (1024.0 * 1024.0), 1),
+                PrivateMemoryMB = Math.Round(privateMemory / (1024.0 * 1024.0), 1),
+                AvailableMemoryMB = Math.Round(availableMemory / (1024.0 * 1024.0), 1),
+                ProcessorCount = Environment.ProcessorCount,
+                MemoryUsageDescription = $"{Math.Round(workingSet / (1024.0 * 1024.0), 1)}MB working set",
+                Timestamp = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting system resource usage");
+            return new ResourceUsageInfo
+            {
+                CpuUsagePercent = 0,
+                MemoryUsageMB = 0,
+                PrivateMemoryMB = 0,
+                AvailableMemoryMB = 0,
+                ProcessorCount = Environment.ProcessorCount,
+                MemoryUsageDescription = "Resource monitoring unavailable",
+                Timestamp = DateTime.UtcNow,
+                Error = ex.Message
+            };
         }
     }
     
@@ -2360,4 +2807,54 @@ public class UpdateStateRequest
     public MessageState NewState { get; set; }
     public string? Component { get; set; }
     public string? Details { get; set; }
+}
+
+/// <summary>
+/// ENHANCED: Component progress information with detailed status
+/// </summary>
+public class ComponentProgressInfo
+{
+    public double Percentage { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime LastUpdate { get; set; }
+    public int MetricCount { get; set; }
+    public int ActiveMetricCount { get; set; }
+    public string Details { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// ENHANCED: Individual component progress calculation result
+/// </summary>
+public class ComponentProgressResult
+{
+    public double Percentage { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// ENHANCED: Bottleneck detection analysis results
+/// </summary>
+public class BottleneckDetectionResult
+{
+    public List<string> StalledComponents { get; set; } = new();
+    public List<string> ProgressingComponents { get; set; } = new();
+    public List<string> CompletedComponents { get; set; } = new();
+    public string Severity { get; set; } = "None";
+    public string Recommendation { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// ENHANCED: System resource usage information
+/// </summary>
+public class ResourceUsageInfo
+{
+    public double CpuUsagePercent { get; set; }
+    public double MemoryUsageMB { get; set; }
+    public double PrivateMemoryMB { get; set; }
+    public double AvailableMemoryMB { get; set; }
+    public int ProcessorCount { get; set; }
+    public string MemoryUsageDescription { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public string? Error { get; set; }
 }
