@@ -53,16 +53,16 @@ var kafkaHeapOptsStr = $"-Xmx{resourceAllocation.KafkaHeapMemoryMB}M -Xms{resour
 var kafkaPartitionsStr = resourceAllocation.KafkaPartitions.ToString();
 
 // Configure extended timeouts for Aspire DCP to handle complex infrastructure
-// OPTIMIZED: Ultra-aggressive timeouts for 60-second infrastructure startup requirement
+// UPDATED: 90-second timeouts for infrastructure startup per user requirement
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
 {
-    options.StartupTimeout = TimeSpan.FromSeconds(60); // OPTIMIZED: Must start within 60s per user requirement
+    options.StartupTimeout = TimeSpan.FromSeconds(90); // UPDATED: Must start within 90s per user requirement
     options.ShutdownTimeout = TimeSpan.FromSeconds(30); // OPTIMIZED: Fast shutdown (1min -> 30s)
 });
 
 // Configure Aspire DCP with optimized resource creation timeouts
-// OPTIMIZED: Ultra-aggressive timeouts for 60-second infrastructure startup requirement
-Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "60"); // OPTIMIZED: Must start within 60s per user requirement
+// UPDATED: 90-second timeouts for infrastructure startup per user requirement
+Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "90"); // UPDATED: Must start within 90s per user requirement
 Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "30"); // OPTIMIZED: 30s per resource maximum (120 -> 30)
 Environment.SetEnvironmentVariable("ASPIRE_DCP_MAX_RETRIES", "2"); // OPTIMIZED: Minimal retries (3 -> 2)
 Environment.SetEnvironmentVariable("ASPIRE_DCP_RETRY_BACKOFF", "2"); // OPTIMIZED: Fastest retries (5s -> 2s)

@@ -29,9 +29,9 @@ public class ObservabilityMetricsSteps : IDisposable
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
     
-    // USER REQUIREMENT: 60-second infrastructure startup with immediate start when infrastructure is ready
-    // OPTIMIZED: Aggressive 60-second timeout for ultra-fast failure detection and startup validation
-    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(60); // OPTIMIZED: Must start within 60s per user requirement
+    // USER REQUIREMENT: 90-second infrastructure startup with immediate start when infrastructure is ready
+    // UPDATED: 90-second timeout for infrastructure startup per user requirement
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(90); // UPDATED: Must start within 90s per user requirement
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -53,7 +53,7 @@ public class ObservabilityMetricsSteps : IDisposable
         await VerifyContainerEnvironment();
         
         Console.WriteLine("🚀 Starting Aspire integration test with framework-managed service readiness...");
-        Console.WriteLine($"🕒 Health check timeout: {HealthCheckTimeout.TotalSeconds} seconds (OPTIMIZED: 60-second infrastructure startup requirement)");
+        Console.WriteLine($"🕒 Health check timeout: {HealthCheckTimeout.TotalSeconds} seconds (UPDATED: 90-second infrastructure startup requirement)");
         
         // Enable test mode for performance optimization  
         Environment.SetEnvironmentVariable("TESTING_MODE", "true");
@@ -104,7 +104,7 @@ public class ObservabilityMetricsSteps : IDisposable
             // Direct health check with retries - OPTIMIZED for 60-second startup requirement
             var healthCheckSucceeded = false;
             var healthCheckAttempts = 0;
-            var maxHealthCheckAttempts = 120; // 120 attempts * 0.5s = 60s max (ultra-aggressive)
+            var maxHealthCheckAttempts = 180; // 180 attempts * 0.5s = 90s max (updated for 90s timeout)
             
             while (!healthCheckSucceeded && healthCheckAttempts < maxHealthCheckAttempts && !cancellationToken.IsCancellationRequested)
             {
@@ -295,7 +295,7 @@ public class ObservabilityMetricsSteps : IDisposable
             
             var stallTimeout = TimeSpan.FromSeconds(stallTimeoutSeconds);
             var maxProgressTime = TimeSpan.FromMinutes(isCI ? 10 : 3); // CI gets longer overall timeout
-            var progressCheckInterval = TimeSpan.FromSeconds(2); // Check progress every 2 seconds
+            var progressCheckInterval = TimeSpan.FromSeconds(5); // Check progress every 5 seconds per user requirement
             
             // ENHANCED: Component-aware progress tracking variables  
             var lastProgressTime = DateTime.UtcNow;
