@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using LocalTesting.AppHost.Services;
 
 // Configure Aspire dashboard and Prometheus environment variables
 // OpenTelemetry completely removed per user request - native Prometheus only
@@ -39,6 +40,18 @@ catch (Exception ex)
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+// 🎯 DYNAMIC RESOURCE ALLOCATION: Calculate optimal container resources based on current machine
+// Replaces hardcoded memory values with adaptive allocation based on available system resources
+Console.WriteLine("🔍 Detecting system resources for dynamic container allocation...");
+var resourceAllocation = DynamicResourceAllocator.CalculateOptimalAllocation();
+Console.WriteLine("✅ Dynamic resource allocation calculated successfully");
+Console.WriteLine();
+
+// Pre-create all string values to avoid Aspire string interpolation issues
+var redisMemoryStr = $"{resourceAllocation.RedisMemoryMB}mb";
+var kafkaHeapOptsStr = $"-Xmx{resourceAllocation.KafkaHeapMemoryMB}M -Xms{resourceAllocation.KafkaMinMemoryMB}M";
+var kafkaPartitionsStr = resourceAllocation.KafkaPartitions.ToString();
+
 // Configure extended timeouts for Aspire DCP to handle complex infrastructure
 // ULTRA-OPTIMIZED: Faster timeouts for aggressive startup optimization
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
@@ -74,9 +87,9 @@ var isTestMode = args.Contains("--test-mode") || Environment.GetEnvironmentVaria
 // Prevents DCP reconciliation failures by limiting simultaneous container creation
 // Key insight: Start essential services first, then build dependency chains
 
-// ULTRA-OPTIMIZED: Redis with absolute minimal configuration for fastest startup
+// DYNAMIC: Redis with adaptive memory allocation based on system resources
 var redis = builder.AddRedis("redis")
-    .WithEnvironment("REDIS_MAXMEMORY", "32mb") // ULTRA-ULTRA-MINIMAL: Even smaller (64mb -> 32mb)
+    .WithEnvironment("REDIS_MAXMEMORY", redisMemoryStr) // DYNAMIC: Adaptive memory allocation
     .WithEnvironment("REDIS_MAXMEMORY_POLICY", "noeviction") // Simpler policy
     .WithEnvironment("REDIS_BIND", "0.0.0.0") // Force IPv4
     .WithEnvironment("REDIS_TIMEOUT", "5") // Ultra-fast timeout (10s -> 5s)
@@ -85,7 +98,7 @@ var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_TCP_KEEPALIVE", "0") // Disable keepalive for minimal overhead
     .WithEnvironment("REDIS_LOGLEVEL", "warning"); // Minimal logging
 
-// ULTRA-OPTIMIZED: Single Kafka instance with absolute minimal configuration for fastest startup
+// DYNAMIC: Single Kafka instance with adaptive memory allocation based on system resources
 var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEndpoint(9092, 9092, "kafka")
     .WithEnvironment("KAFKA_NODE_ID", "1")
@@ -100,17 +113,17 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1") // Single broker
     .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
-    .WithEnvironment("KAFKA_NUM_PARTITIONS", "1") // Ultra-minimal: Single partition (3 -> 1)
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", kafkaPartitionsStr) // DYNAMIC: Adaptive partitions
     .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1") // Single broker
-    // ULTRA-OPTIMIZED: Absolute minimal memory configuration for fastest startup
-    .WithEnvironment("KAFKA_HEAP_OPTS", "-Xmx200M -Xms100M") // ULTRA-ULTRA-MINIMAL: Even smaller (256M/128M -> 200M/100M)
-    // ULTRA-OPTIMIZED: Absolute minimal network configuration
+    // DYNAMIC: Adaptive memory configuration based on system resources
+    .WithEnvironment("KAFKA_HEAP_OPTS", kafkaHeapOptsStr) // DYNAMIC: Adaptive memory allocation
+    // DYNAMIC: Network configuration scaled with memory
     .WithEnvironment("KAFKA_SOCKET_SEND_BUFFER_BYTES", "32768") // Ultra-minimal (65536 -> 32768)
     .WithEnvironment("KAFKA_SOCKET_RECEIVE_BUFFER_BYTES", "32768") // Ultra-minimal (65536 -> 32768)
     .WithEnvironment("KAFKA_NUM_NETWORK_THREADS", "1") // Ultra-minimal (3 -> 1)
     .WithEnvironment("KAFKA_NUM_IO_THREADS", "2") // Ultra-minimal (3 -> 2)
     .WithEnvironment("KAFKA_QUEUED_MAX_REQUESTS", "50") // Ultra-minimal (100 -> 50)
-    // ULTRA-OPTIMIZED: Fastest possible startup settings
+    // DYNAMIC: Retention settings
     .WithEnvironment("KAFKA_LOG_RETENTION_HOURS", "1") // Ultra-short retention
     .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "104857600") // 100MB segments for faster cleanup
     .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MESSAGES", "10000") // Faster flushing
@@ -126,48 +139,52 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
 //     .WithArgs("5556", "/opt/bitnami/jmx-exporter/config.yml")
 //     .WaitFor(kafka);
 
-// ULTRA-OPTIMIZED: Single Flink JobManager with absolute minimal configuration for fastest startup
-var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
-    .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("FLINK_PROPERTIES", """
+// DYNAMIC: Single Flink JobManager with adaptive memory allocation based on system resources
+var jobManagerProperties = $"""
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        jobmanager.memory.process.size: 480m
-        jobmanager.memory.jvm-metaspace.size: 128m
-        jobmanager.memory.jvm-overhead.min: 128m
-        jobmanager.memory.jvm-overhead.max: 128m
+        jobmanager.memory.process.size: {resourceAllocation.FlinkJobManagerTotalMemoryMB}m
+        jobmanager.memory.jvm-metaspace.size: {resourceAllocation.FlinkJobManagerMetaspaceMemoryMB}m
+        jobmanager.memory.jvm-overhead.min: {resourceAllocation.FlinkJobManagerOverheadMemoryMB}m
+        jobmanager.memory.jvm-overhead.max: {resourceAllocation.FlinkJobManagerOverheadMemoryMB}m
         jobmanager.memory.off-heap.size: 4m
-        taskmanager.numberOfTaskSlots: 1
-        parallelism.default: 1
+        taskmanager.numberOfTaskSlots: {resourceAllocation.TaskSlots}
+        parallelism.default: {resourceAllocation.FlinkParallelism}
         rest.bind-address: 0.0.0.0
         rest.port: 8081
         cluster.fine-grained-resource-management.enabled: false
         heartbeat.interval: 10000
         heartbeat.timeout: 30000
-        """)
+        """;
+
+var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
+    .WithHttpEndpoint(18002, 8081, "jobmanager-ui")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("FLINK_PROPERTIES", jobManagerProperties)
     .WithArgs("jobmanager");
 
-// ULTRA-OPTIMIZED: Single Flink TaskManager with absolute minimal configuration for fastest startup
-var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("FLINK_PROPERTIES", """
+// DYNAMIC: Single Flink TaskManager with adaptive memory allocation based on system resources
+var taskManagerProperties = $"""
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 640m
-        taskmanager.memory.jvm-metaspace.size: 64m
-        taskmanager.memory.jvm-overhead.min: 64m
-        taskmanager.memory.jvm-overhead.max: 64m
-        taskmanager.memory.framework.heap.size: 64m
-        taskmanager.memory.framework.off-heap.size: 64m
-        taskmanager.memory.managed.size: 64m
-        taskmanager.memory.network.min: 64m
-        taskmanager.memory.network.max: 64m
-        taskmanager.numberOfTaskSlots: 1
+        taskmanager.memory.process.size: {resourceAllocation.FlinkTaskManagerTotalMemoryMB}m
+        taskmanager.memory.jvm-metaspace.size: {resourceAllocation.FlinkTaskManagerMetaspaceMemoryMB}m
+        taskmanager.memory.jvm-overhead.min: {resourceAllocation.FlinkTaskManagerOverheadMemoryMB}m
+        taskmanager.memory.jvm-overhead.max: {resourceAllocation.FlinkTaskManagerOverheadMemoryMB}m
+        taskmanager.memory.framework.heap.size: {resourceAllocation.FlinkTaskManagerFrameworkHeapMemoryMB}m
+        taskmanager.memory.framework.off-heap.size: {resourceAllocation.FlinkTaskManagerFrameworkOffHeapMemoryMB}m
+        taskmanager.memory.managed.size: {resourceAllocation.FlinkTaskManagerManagedMemoryMB}m
+        taskmanager.memory.network.min: {resourceAllocation.FlinkTaskManagerNetworkMemoryMB}m
+        taskmanager.memory.network.max: {resourceAllocation.FlinkTaskManagerNetworkMemoryMB}m
+        taskmanager.numberOfTaskSlots: {resourceAllocation.TaskSlots}
         taskmanager.host: flink-taskmanager
         heartbeat.interval: 10000
         heartbeat.timeout: 30000
-        """)
+        """;
+
+var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("FLINK_PROPERTIES", taskManagerProperties)
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
@@ -201,21 +218,26 @@ else
     Console.WriteLine("⚡ Loki logging disabled for test mode (performance optimization)");
 }
 
-// ULTRA-OPTIMIZED: Prometheus with absolute minimal configuration for fastest startup
+// DYNAMIC: Prometheus with adaptive storage allocation based on system resources
+var prometheusArgs = new[]
+{
+    "--config.file=/etc/prometheus/prometheus.yml",
+    "--storage.tsdb.path=/prometheus",
+    $"--storage.tsdb.retention.time={resourceAllocation.PrometheusRetention}",
+    $"--storage.tsdb.retention.size={resourceAllocation.PrometheusStorageSize}",
+    "--log.level=error", // Minimum logging
+    "--web.listen-address=0.0.0.0:9090",
+    "--storage.tsdb.no-lockfile", // Faster startup
+    "--web.enable-lifecycle" // Faster configuration changes
+};
+
 var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:latest")
     .WithHttpEndpoint(18006, 9090, "prometheus")
     .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
-    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", "2m") // ULTRA-ULTRA-SHORT: Even shorter (5m -> 2m)
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", resourceAllocation.PrometheusRetention) // DYNAMIC: Adaptive retention
     .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", "0.0.0.0:9090")
-    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_SIZE", "20MB") // ULTRA-ULTRA-SMALL: Even smaller (50MB -> 20MB)
-    .WithArgs("--config.file=/etc/prometheus/prometheus.yml",
-              "--storage.tsdb.path=/prometheus",
-              "--storage.tsdb.retention.time=2m",
-              "--storage.tsdb.retention.size=20MB",
-              "--log.level=error", // Minimum logging
-              "--web.listen-address=0.0.0.0:9090",
-              "--storage.tsdb.no-lockfile", // Faster startup
-              "--web.enable-lifecycle"); // Faster configuration changes
+    .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_SIZE", resourceAllocation.PrometheusStorageSize) // DYNAMIC: Adaptive storage
+    .WithArgs(prometheusArgs);
 
 var prometheus = prometheusBuilder;
 
@@ -258,7 +280,7 @@ else
 var localTestingApiBuilder = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092") // Single Kafka broker
-    .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", "1") // Ultra-minimal: Single partition
+    .WithEnvironment("KAFKA_DEFAULT_PARTITIONS", kafkaPartitionsStr) // DYNAMIC: Adaptive partitions
     .WithEnvironment("KAFKA_REQUEST_TIMEOUT_MS", "30000")
     .WithEnvironment("KAFKA_RETRY_BACKOFF_MS", "1000")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
@@ -285,12 +307,12 @@ var localTestingApi = grafana != null
 // Enhanced application startup with DCP timeout fixes and comprehensive error handling
 try
 {
-    Console.WriteLine("🚀 Starting LocalTesting infrastructure with direct Prometheus metrics...");
+    Console.WriteLine("🚀 Starting LocalTesting infrastructure with dynamic resource allocation...");
     Console.WriteLine("📊 Native Prometheus Architecture: All components expose metrics directly");
-    Console.WriteLine("⚙️  Components: 1 Kafka + JMX Exporter + 1 Flink + 1 Temporal (SQLite) + 1 WebAPI + Prometheus");
+    Console.WriteLine($"⚙️  Components: 1 Kafka + JMX Exporter + 1 Flink + 1 Temporal (SQLite) + 1 WebAPI + Prometheus");
     Console.WriteLine("🔧 User Requirement: Complete OpenTelemetry removal with JMX exporter for Kafka");
-    Console.WriteLine("⏱️  Expected startup time: 1-2 minutes for complete infrastructure (optimized with SQLite)");
-    Console.WriteLine("🚀 PERFORMANCE BOOST: SQLite replaces PostgreSQL for 50%+ faster Temporal startup");
+    Console.WriteLine($"🎯 DYNAMIC ALLOCATION: Resources adapted to current system ({resourceAllocation.FlinkTaskManagerTotalMemoryMB}MB TaskManager, {resourceAllocation.KafkaHeapMemoryMB}MB Kafka)");
+    Console.WriteLine($"⏱️  Expected startup time: 1-2 minutes for complete infrastructure (optimized with SQLite)");
     Console.WriteLine();
     
     var app = builder.Build();
