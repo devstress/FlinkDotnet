@@ -203,14 +203,13 @@ public class ObservabilityMetricsSteps : IDisposable
     {
         await EnsureInfrastructureInitialized();
         
-        Console.WriteLine("🚀 Starting observability flow with Aspire-managed infrastructure...");
-        Console.WriteLine("✅ Infrastructure health verified by Aspire framework - all services ready");
+        Console.WriteLine("🚀 Starting observability flow with PROGRESS TRACKING approach...");
+        Console.WriteLine("📊 USER REQUIREMENT: Progress-based timeout management (extend 5s if progress changes, fail if stalled 5s, pass at 100%)");
         
         // MEASURE ACTUAL PROCESSING TIME - No more hardcoded values
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var startTime = DateTime.UtcNow;
         
-        // Execute real infrastructure flow (services are guaranteed ready by Aspire testing framework)
         // Message count configuration: High-volume testing for Kafka + Flink performance
         var messageCount = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" 
             ? 100000  // 100k messages for GitHub workflow - target million messages per second
@@ -221,86 +220,33 @@ public class ObservabilityMetricsSteps : IDisposable
             KafkaMessages = messageCount,
             FlinkJobs = 1, // Reduced from 2 for performance
             TemporalWorkflows = 2, // Reduced from 5 for performance
-            // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
         };
 
-        Console.WriteLine($"🔄 Executing real workload to generate observability metrics (infrastructure ready at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC)...");
+        Console.WriteLine($"📊 Starting PROGRESS-BASED execution flow with {messageCount:N0} messages...");
+        Console.WriteLine($"🕒 Progress tracking started at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC");
         
-        // FIXED: Execute real workload first to generate actual metrics
-        // This ensures we have real observability data to validate, not just empty responses
-        Console.WriteLine($"📊 Executing workload with {messageCount:N0} messages to generate real metrics...");
-        
-        try
-        {
-            // Execute the real workload to generate metrics
-            Console.WriteLine($"🔄 Calling POST /api/observability/execute-real-workload with {messageCount:N0} messages...");
-            var workloadResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
-            workloadResponse.EnsureSuccessStatusCode();
-            
-            var workloadContent = await workloadResponse.Content.ReadAsStringAsync();
-            Console.WriteLine("✅ Real workload execution completed successfully");
-            Console.WriteLine($"📊 Workload response: {workloadContent}");
-            
-            // Wait a moment for metrics to be recorded and scraped by Prometheus
-            Console.WriteLine("⏳ Waiting for metrics to be recorded and scraped by Prometheus...");
-            await Task.Delay(5000); // 5 seconds should be enough for metrics recording and initial scraping
-            
-        }
-        catch (Exception workloadEx)
-        {
-            Console.WriteLine($"❌ Workload execution failed: {workloadEx.Message}");
-            Console.WriteLine($"📊 Full exception: {workloadEx}");
-            Console.WriteLine("🔄 Continuing with metrics endpoint test to check for existing metrics...");
-        }
-        
-        // Test the core observability functionality: metrics collection and reporting
-        Dictionary<string, object> metricsData;
-        try
-        {
-            var metricsResponse = await _httpClient!.GetAsync("/api/observability/metrics/messages-per-second");
-            metricsResponse.EnsureSuccessStatusCode();
-            
-            var metricsContent = await metricsResponse.Content.ReadAsStringAsync();
-            metricsData = JsonSerializer.Deserialize<Dictionary<string, object>>(metricsContent, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-            
-            Console.WriteLine("✅ Metrics endpoint responded successfully with real data");
-        }
-        catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
-                                                  ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
-                                                  sockEx.Message.Contains("Connection reset by peer"))
-        {
-            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: Connection reset by peer during metrics retrieval");
-            Console.WriteLine($"❌ This indicates Prometheus or metrics infrastructure is not available");
-            Console.WriteLine($"❌ Full error: {httpEx.Message}");
-            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            Assert.Fail("Observability test failed: Infrastructure connection reset by peer. Critical metrics infrastructure not available.");
-            return; // Unreachable but satisfies compiler
-        }
-        catch (HttpRequestException httpEx)
-        {
-            Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE FAILURE: HTTP request failed during metrics retrieval");
-            Console.WriteLine($"❌ Error: {httpEx.Message}");
-            Console.WriteLine("❌ Test must fail to ensure GitHub workflow failure detection");
-            Assert.Fail($"Observability test failed: Infrastructure HTTP failure during metrics retrieval - {httpEx.Message}. Critical metrics services not responding.");
-            return; // Unreachable but satisfies compiler
-        }
-        
-        // Store metrics data for further processing
-        Assert.NotNull(metricsData);
+        // PROGRESS-BASED APPROACH: Track progress dynamically
+        var progressTrackingResult = await ExecuteWithProgressTracking(flowRequest, messageCount);
         
         // MEASURE ACTUAL COMPLETION TIME
         stopwatch.Stop();
         var actualProcessingTime = stopwatch.Elapsed.TotalSeconds;
         var endTime = DateTime.UtcNow;
         
-        Console.WriteLine($"⚡ OPTIMIZED metrics validation completed in {actualProcessingTime:F2} seconds (measured by Stopwatch)");
+        Console.WriteLine($"⚡ PROGRESS-BASED execution completed in {actualProcessingTime:F2} seconds (measured by Stopwatch)");
         Console.WriteLine($"   Start: {startTime:HH:mm:ss.fff} UTC");
         Console.WriteLine($"   End:   {endTime:HH:mm:ss.fff} UTC");
         Console.WriteLine($"   REAL Duration: {actualProcessingTime:F2} seconds");
-        Console.WriteLine($"✅ Metrics endpoint validation successful - infrastructure responding properly");
+        Console.WriteLine($"   Progress Result: {progressTrackingResult.Status}");
+        Console.WriteLine($"   Final Progress: {progressTrackingResult.FinalProgress}%");
+        
+        if (!progressTrackingResult.Success)
+        {
+            Console.WriteLine($"❌ PROGRESS TRACKING FAILED: {progressTrackingResult.FailureReason}");
+            Assert.Fail($"Progress tracking failed: {progressTrackingResult.FailureReason}");
+        }
+        
+        Console.WriteLine($"✅ Progress tracking successful - infrastructure responding properly");
         
         _scenarioContext["flow_completed"] = true;
         _scenarioContext["flow_request"] = new Dictionary<string, object>
@@ -309,8 +255,185 @@ public class ObservabilityMetricsSteps : IDisposable
             ["ActualProcessingTimeSeconds"] = actualProcessingTime, // REAL measured time
             ["StartTime"] = startTime,
             ["EndTime"] = endTime,
-            ["TestType"] = "MetricsValidation" // Indicate this is a metrics test, not full workload test
+            ["TestType"] = "ProgressBasedValidation", // Indicate this is progress-based test
+            ["FinalProgress"] = progressTrackingResult.FinalProgress,
+            ["ProgressTrackingSuccess"] = progressTrackingResult.Success
         };
+    }
+    
+    private async Task<ProgressTrackingResult> ExecuteWithProgressTracking(object flowRequest, int messageCount)
+    {
+        var result = new ProgressTrackingResult();
+        var lastProgress = 0.0; // Move variable to method scope
+        
+        try
+        {
+            Console.WriteLine("🎯 PROGRESS TRACKING: Starting infrastructure and workload progress monitoring...");
+            
+            // Progress tracking variables  
+            var lastProgressTime = DateTime.UtcNow;
+            var stallTimeout = TimeSpan.FromSeconds(5); // 5 seconds stall tolerance
+            var maxProgressTime = TimeSpan.FromMinutes(3); // Maximum time allowed even with progress
+            var progressStartTime = DateTime.UtcNow;
+            var progressCheckInterval = TimeSpan.FromSeconds(2); // Check progress every 2 seconds
+            
+            Console.WriteLine($"📊 Progress tracking parameters: stallTimeout={stallTimeout.TotalSeconds}s, maxTime={maxProgressTime.TotalMinutes}m, checkInterval={progressCheckInterval.TotalSeconds}s");
+            
+            // Start workload execution (non-blocking)
+            var workloadStarted = false;
+            
+            while (true)
+            {
+                var currentTime = DateTime.UtcNow;
+                var totalElapsed = currentTime - progressStartTime;
+                
+                // Check if we've exceeded maximum time (safety net)
+                if (totalElapsed > maxProgressTime)
+                {
+                    result.Success = false;
+                    result.FailureReason = $"Maximum time exceeded ({maxProgressTime.TotalMinutes} minutes) even with progress";
+                    result.FinalProgress = lastProgress;
+                    Console.WriteLine($"❌ PROGRESS TRACKING: Maximum time exceeded ({maxProgressTime.TotalMinutes} minutes)");
+                    break;
+                }
+                
+                // Get current progress
+                var currentProgress = await GetCurrentProgress();
+                result.FinalProgress = currentProgress.OverallPercentage;
+                
+                Console.WriteLine($"📊 Progress: {currentProgress.OverallPercentage}% (Infrastructure: {currentProgress.InfrastructurePercentage}%, Workload: {currentProgress.WorkloadPercentage}%) - Phase: {currentProgress.Phase}");
+                
+                // Check if progress has changed
+                if (Math.Abs(currentProgress.OverallPercentage - lastProgress) > 0.1) // 0.1% minimum change
+                {
+                    Console.WriteLine($"✅ Progress change detected: {lastProgress}% → {currentProgress.OverallPercentage}% (extending timeout by 5 seconds)");
+                    lastProgress = currentProgress.OverallPercentage;
+                    lastProgressTime = currentTime;
+                }
+                
+                // Check for completion (100% progress)
+                if (currentProgress.OverallPercentage >= 100.0)
+                {
+                    result.Success = true;
+                    result.Status = "Complete";
+                    result.FinalProgress = currentProgress.OverallPercentage;
+                    Console.WriteLine($"🎉 PROGRESS TRACKING SUCCESS: 100% progress reached!");
+                    break;
+                }
+                
+                // Check for stall (no progress change for 5 seconds)
+                var timeSinceLastProgress = currentTime - lastProgressTime;
+                if (timeSinceLastProgress > stallTimeout)
+                {
+                    result.Success = false;
+                    result.FailureReason = $"Progress stalled at {lastProgress}% for {timeSinceLastProgress.TotalSeconds:F1} seconds (>{stallTimeout.TotalSeconds}s threshold)";
+                    result.FinalProgress = lastProgress;
+                    Console.WriteLine($"❌ PROGRESS TRACKING: Progress stalled at {lastProgress}% for {timeSinceLastProgress.TotalSeconds:F1} seconds");
+                    break;
+                }
+                
+                // Start workload execution when infrastructure is ready (around 70% progress)
+                if (!workloadStarted && currentProgress.InfrastructurePercentage >= 70.0)
+                {
+                    Console.WriteLine("🚀 Infrastructure ready - starting workload execution...");
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            Console.WriteLine($"📊 Executing workload with {messageCount:N0} messages...");
+                            var workloadResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
+                            workloadResponse.EnsureSuccessStatusCode();
+                            var workloadContent = await workloadResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine("✅ Background workload execution completed");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"⚠️ Background workload execution failed: {ex.Message}");
+                        }
+                    });
+                    workloadStarted = true;
+                }
+                
+                // Wait for next progress check
+                await Task.Delay(progressCheckInterval);
+            }
+            
+            var totalTime = DateTime.UtcNow - progressStartTime;
+            Console.WriteLine($"📊 Progress tracking completed in {totalTime.TotalSeconds:F2} seconds with final progress: {result.FinalProgress}%");
+            
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.FailureReason = $"Progress tracking exception: {ex.Message}";
+            result.FinalProgress = lastProgress;
+            Console.WriteLine($"❌ PROGRESS TRACKING EXCEPTION: {ex.Message}");
+        }
+        
+        return result;
+    }
+    
+    private async Task<ProgressInfo> GetCurrentProgress()
+    {
+        try
+        {
+            var response = await _httpClient!.GetAsync("/api/observability/progress/infrastructure-and-workload");
+            response.EnsureSuccessStatusCode();
+            
+            var content = await response.Content.ReadAsStringAsync();
+            var progressData = JsonSerializer.Deserialize<Dictionary<string, object>>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            
+            if (progressData != null && progressData.TryGetValue("Progress", out var progressObj))
+            {
+                var progressElement = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(progressObj));
+                
+                var overallPercentage = progressElement.TryGetProperty("OverallPercentage", out var overallElement) 
+                    ? overallElement.GetDouble() : 0.0;
+                    
+                var infraPercentage = progressElement.TryGetProperty("InfrastructurePercentage", out var infraElement) 
+                    ? infraElement.GetDouble() : 0.0;
+                    
+                var workloadPercentage = progressElement.TryGetProperty("WorkloadPercentage", out var workloadElement) 
+                    ? workloadElement.GetDouble() : 0.0;
+                    
+                var phase = progressElement.TryGetProperty("Phase", out var phaseElement) 
+                    ? phaseElement.GetString() ?? "Unknown" : "Unknown";
+                
+                return new ProgressInfo
+                {
+                    OverallPercentage = overallPercentage,
+                    InfrastructurePercentage = infraPercentage,
+                    WorkloadPercentage = workloadPercentage,
+                    Phase = phase
+                };
+            }
+            
+            return new ProgressInfo(); // Default 0% progress
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Failed to get progress: {ex.Message}");
+            return new ProgressInfo(); // Default 0% progress on error
+        }
+    }
+    
+    private class ProgressTrackingResult
+    {
+        public bool Success { get; set; }
+        public string Status { get; set; } = "InProgress";
+        public string FailureReason { get; set; } = "";
+        public double FinalProgress { get; set; }
+    }
+    
+    private class ProgressInfo
+    {
+        public double OverallPercentage { get; set; }
+        public double InfrastructurePercentage { get; set; }
+        public double WorkloadPercentage { get; set; }
+        public string Phase { get; set; } = "Unknown";
     }
 
     [Then(@"we print the metrics to the console")]

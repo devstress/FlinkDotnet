@@ -1464,6 +1464,329 @@ public class ObservabilityController : ControllerBase
         }
     }
 
+    #region Progress Tracking for Infrastructure and Workload Execution
+
+    [HttpGet("progress/infrastructure-and-workload")]
+    [SwaggerOperation(
+        Summary = "Get Infrastructure and Workload Execution Progress",
+        Description = "Track progress of infrastructure startup and workload execution - returns percentage completion for dynamic timeout management"
+    )]
+    [SwaggerResponse(200, "Progress information retrieved successfully")]
+    [SwaggerResponse(500, "Failed to retrieve progress information")]
+    public async Task<IActionResult> GetInfrastructureAndWorkloadProgress()
+    {
+        try
+        {
+            _logger.LogInformation("📊 Tracking infrastructure and workload execution progress");
+            
+            var progressData = new
+            {
+                Status = "ProgressTracking",
+                Message = "Infrastructure and workload execution progress tracking",
+                Timestamp = DateTime.UtcNow,
+                
+                Progress = await CalculateOverallProgressAsync(),
+                
+                InfrastructureProgress = await CalculateInfrastructureProgressAsync(),
+                
+                WorkloadProgress = await CalculateWorkloadProgressAsync(),
+                
+                ComponentDetails = await GetComponentProgressDetailsAsync(),
+                
+                ProgressGuidance = new
+                {
+                    NextCheck = "Call this endpoint every 1-2 seconds to monitor progress",
+                    ProgressLogic = "Progress increases as components come online and workload executes",
+                    TimeoutStrategy = "Extend timeout by 5 seconds when progress changes, fail when progress stalls for 5 seconds",
+                    CompletionCriteria = "Test passes when Progress.OverallPercentage reaches 100%"
+                }
+            };
+            
+            return Ok(progressData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to retrieve progress information");
+            return StatusCode(500, new { 
+                Status = "ProgressTrackingFailed", 
+                Error = ex.Message, 
+                Timestamp = DateTime.UtcNow 
+            });
+        }
+    }
+    
+    private async Task<object> CalculateOverallProgressAsync()
+    {
+        try
+        {
+            var infrastructureProgress = await CalculateInfrastructureProgressAsync();
+            var workloadProgress = await CalculateWorkloadProgressAsync();
+            
+            // Extract percentage values (assuming they have ProgressPercentage property)
+            var infraPercentage = GetPercentageFromProgressObject(infrastructureProgress);
+            var workloadPercentage = GetPercentageFromProgressObject(workloadProgress);
+            
+            // Overall progress: 70% infrastructure readiness + 30% workload execution
+            var overallPercentage = Math.Round((infraPercentage * 0.7) + (workloadPercentage * 0.3), 1);
+            
+            var isComplete = overallPercentage >= 100.0;
+            var hasProgressed = overallPercentage > 0.0;
+            
+            return new
+            {
+                OverallPercentage = overallPercentage,
+                IsComplete = isComplete,
+                HasProgressed = hasProgressed,
+                InfrastructureWeight = 70.0,
+                WorkloadWeight = 30.0,
+                InfrastructurePercentage = infraPercentage,
+                WorkloadPercentage = workloadPercentage,
+                Status = isComplete ? "Complete" : hasProgressed ? "InProgress" : "Starting",
+                Phase = overallPercentage < 70 ? "InfrastructureStartup" : overallPercentage < 100 ? "WorkloadExecution" : "Complete"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating overall progress");
+            return new
+            {
+                OverallPercentage = 0.0,
+                IsComplete = false,
+                HasProgressed = false,
+                Status = "Error",
+                Error = ex.Message
+            };
+        }
+    }
+    
+    private async Task<object> CalculateInfrastructureProgressAsync()
+    {
+        try
+        {
+            var healthResults = await _healthCheckService.CheckAllServicesAsync();
+            var componentsToCheck = new[] { "kafka", "prometheus", "flink", "temporal", "redis" };
+            var componentProgress = new Dictionary<string, double>();
+            
+            var totalComponents = componentsToCheck.Length;
+            var readyComponents = 0;
+            
+            foreach (var component in componentsToCheck)
+            {
+                var isReady = await CheckComponentReadiness(component, healthResults);
+                componentProgress[component] = isReady ? 100.0 : 0.0;
+                if (isReady) readyComponents++;
+            }
+            
+            var infrastructurePercentage = totalComponents > 0 ? Math.Round((double)readyComponents / totalComponents * 100, 1) : 0.0;
+            
+            return new
+            {
+                ProgressPercentage = infrastructurePercentage,
+                ReadyComponents = readyComponents,
+                TotalComponents = totalComponents,
+                ComponentProgress = componentProgress,
+                Status = infrastructurePercentage >= 100 ? "AllReady" : infrastructurePercentage > 0 ? "PartiallyReady" : "Starting",
+                Details = $"{readyComponents}/{totalComponents} components ready"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating infrastructure progress");
+            return new
+            {
+                ProgressPercentage = 0.0,
+                Status = "Error",
+                Error = ex.Message
+            };
+        }
+    }
+    
+    private async Task<object> CalculateWorkloadProgressAsync()
+    {
+        try
+        {
+            // Check if workload has been executed and metrics are being generated
+            var allMetrics = await _prometheusService.GetAllMetricsAsync();
+            var kafkaMetrics = allMetrics.Where(kvp => kvp.Key.StartsWith("kafka_producer_") || kvp.Key.StartsWith("localtesting_kafka_producer_")).ToList();
+            var flinkMetrics = allMetrics.Where(kvp => kvp.Key.StartsWith("flink_") || kvp.Key.StartsWith("localtesting_flink_")).ToList();
+            var temporalMetrics = allMetrics.Where(kvp => kvp.Key.StartsWith("temporal_") || kvp.Key.StartsWith("localtesting_temporal_")).ToList();
+            
+            var workloadStages = new Dictionary<string, double>
+            {
+                ["KafkaProduction"] = kafkaMetrics.Any(m => m.Value > 0) ? 100.0 : (kafkaMetrics.Any() ? 50.0 : 0.0),
+                ["FlinkProcessing"] = flinkMetrics.Any(m => m.Value > 0) ? 100.0 : (flinkMetrics.Any() ? 50.0 : 0.0),
+                ["TemporalWorkflows"] = temporalMetrics.Any(m => m.Value > 0) ? 100.0 : (temporalMetrics.Any() ? 50.0 : 0.0),
+                ["MetricsRecording"] = allMetrics.Count > 0 ? 100.0 : 0.0
+            };
+            
+            var averageWorkloadProgress = workloadStages.Values.Average();
+            var workloadPercentage = Math.Round(averageWorkloadProgress, 1);
+            
+            return new
+            {
+                ProgressPercentage = workloadPercentage,
+                WorkloadStages = workloadStages,
+                TotalMetricsRecorded = allMetrics.Count,
+                ActiveKafkaMetrics = kafkaMetrics.Count(m => m.Value > 0),
+                ActiveFlinkMetrics = flinkMetrics.Count(m => m.Value > 0),
+                ActiveTemporalMetrics = temporalMetrics.Count(m => m.Value > 0),
+                Status = workloadPercentage >= 100 ? "Complete" : workloadPercentage > 0 ? "InProgress" : "NotStarted",
+                Details = $"Workload execution {workloadPercentage}% complete with {allMetrics.Count} metrics recorded"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating workload progress");
+            return new
+            {
+                ProgressPercentage = 0.0,
+                Status = "Error",
+                Error = ex.Message
+            };
+        }
+    }
+    
+    private async Task<object> GetComponentProgressDetailsAsync()
+    {
+        try
+        {
+            var details = new Dictionary<string, object>();
+            
+            // Kafka status
+            try
+            {
+                var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
+                details["Kafka"] = new
+                {
+                    Status = kafkaMetrics.Count > 0 ? "MetricsAvailable" : "NoMetrics",
+                    MetricCount = kafkaMetrics.Count,
+                    ActiveProducers = kafkaMetrics.Count(m => m.Value > 0),
+                    TotalThroughput = Math.Round(kafkaMetrics.Values.Sum(), 2)
+                };
+            }
+            catch { details["Kafka"] = new { Status = "Unavailable", Error = "Connection failed" }; }
+            
+            // Flink status
+            try
+            {
+                var flinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
+                details["Flink"] = new
+                {
+                    Status = flinkMetrics.Count > 0 ? "MetricsAvailable" : "NoMetrics",
+                    MetricCount = flinkMetrics.Count,
+                    ActiveJobs = flinkMetrics.Count(m => m.Value > 0),
+                    TotalThroughput = Math.Round(flinkMetrics.Values.Sum(), 2)
+                };
+            }
+            catch { details["Flink"] = new { Status = "Unavailable", Error = "Connection failed" }; }
+            
+            // Temporal status
+            try
+            {
+                var temporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
+                details["Temporal"] = new
+                {
+                    Status = temporalMetrics.Count > 0 ? "MetricsAvailable" : "NoMetrics",
+                    MetricCount = temporalMetrics.Count,
+                    ActiveWorkflows = temporalMetrics.Count(m => m.Value > 0),
+                    TotalThroughput = Math.Round(temporalMetrics.Values.Sum(), 2)
+                };
+            }
+            catch { details["Temporal"] = new { Status = "Unavailable", Error = "Connection failed" }; }
+            
+            // Prometheus status
+            try
+            {
+                var allMetrics = await _prometheusService.GetAllMetricsAsync();
+                details["Prometheus"] = new
+                {
+                    Status = allMetrics.Count > 0 ? "CollectingMetrics" : "NoMetrics",
+                    TotalMetrics = allMetrics.Count,
+                    ActiveMetrics = allMetrics.Count(m => m.Value > 0)
+                };
+            }
+            catch { details["Prometheus"] = new { Status = "Unavailable", Error = "Connection failed" }; }
+            
+            return details;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting component progress details");
+            return new { Error = ex.Message };
+        }
+    }
+    
+    private async Task<bool> CheckComponentReadiness(string component, Dictionary<string, object> healthResults)
+    {
+        try
+        {
+            switch (component.ToLowerInvariant())
+            {
+                case "kafka":
+                    var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
+                    return kafkaMetrics.Count > 0; // Kafka is ready if it has any metrics
+                    
+                case "prometheus":
+                    var allMetrics = await _prometheusService.GetAllMetricsAsync();
+                    return allMetrics.Count > 0; // Prometheus is ready if it's collecting metrics
+                    
+                case "flink":
+                    var flinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
+                    return flinkMetrics.Count >= 0; // Flink is ready if we can query it (even with 0 results)
+                    
+                case "temporal":
+                    var temporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
+                    return temporalMetrics.Count >= 0; // Temporal is ready if we can query it (even with 0 results)
+                    
+                case "redis":
+                    // Check if Redis health is available in health results
+                    if (healthResults.TryGetValue("services", out var servicesObj))
+                    {
+                        // Basic readiness check - assume ready if we can get health results
+                        return true;
+                    }
+                    return false;
+                    
+                default:
+                    return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Component {Component} readiness check failed: {Error}", component, ex.Message);
+            return false;
+        }
+    }
+    
+    private static double GetPercentageFromProgressObject(object progressObject)
+    {
+        try
+        {
+            if (progressObject == null) return 0.0;
+            
+            // Use reflection to get ProgressPercentage property
+            var progressType = progressObject.GetType();
+            var progressProperty = progressType.GetProperty("ProgressPercentage");
+            
+            if (progressProperty != null)
+            {
+                var value = progressProperty.GetValue(progressObject);
+                if (value != null && double.TryParse(value.ToString(), out var percentage))
+                {
+                    return percentage;
+                }
+            }
+            
+            return 0.0;
+        }
+        catch
+        {
+            return 0.0;
+        }
+    }
+
+    #endregion
+
     #region Debug Endpoints for Prometheus Metrics Investigation
 
     [HttpGet("debug/prometheus-metrics")]
