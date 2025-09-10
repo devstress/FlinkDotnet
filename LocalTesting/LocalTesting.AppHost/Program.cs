@@ -53,6 +53,14 @@ var redisMemoryStr = $"{resourceAllocation.RedisMemoryMB}mb";
 var kafkaHeapOptsStr = $"-Xmx{resourceAllocation.KafkaHeapMemoryMB}M -Xms{resourceAllocation.KafkaMinMemoryMB}M";
 var kafkaPartitionsStr = resourceAllocation.KafkaPartitions.ToString();
 
+// Port string conversions to avoid Aspire compilation errors
+var kafkaInternalStr = PortConstants.KafkaInternal.ToString();
+var kafkaControllerInternalStr = PortConstants.KafkaControllerInternal.ToString();
+var lokiInternalStr = PortConstants.LokiInternal.ToString();
+var lokiGrpcInternalStr = PortConstants.LokiGrpcInternal.ToString();
+var prometheusInternalStr = PortConstants.PrometheusInternal.ToString();
+var grafanaInternalStr = PortConstants.GrafanaInternal.ToString();
+
 // Configure extended timeouts for Aspire DCP to handle complex infrastructure
 // UPDATED: 90-second timeouts for infrastructure startup per user requirement
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
@@ -105,11 +113,11 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEndpoint(PortConstants.KafkaExternal, PortConstants.KafkaInternal, "kafka")
     .WithEnvironment("KAFKA_NODE_ID", "1")
     .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
-    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{PortConstants.KafkaInternal.ToString()},CONTROLLER://0.0.0.0:{PortConstants.KafkaControllerInternal.ToString()}")
-    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{PortConstants.KafkaInternal.ToString()}")
+    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{kafkaInternalStr},CONTROLLER://0.0.0.0:{kafkaControllerInternalStr}")
+    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{kafkaInternalStr}")
     .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
     .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT")
-    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{PortConstants.KafkaControllerInternal.ToString()}")
+    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{kafkaControllerInternalStr}")
     .WithEnvironment("CLUSTER_ID", "LOCAL_TESTING_KRAFT_CLUSTER_2024")
     .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1") // Single broker
     .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1") // Single broker
@@ -215,10 +223,10 @@ if (!isTestMode)
 {
     loki = builder.AddContainer("loki", "grafana/loki:3.0.0")
         .WithHttpEndpoint(PortConstants.LokiExternal, PortConstants.LokiInternal, "loki")
-        .WithEnvironment("LOKI_ADDR", $"0.0.0.0:{PortConstants.LokiInternal.ToString()}")
+        .WithEnvironment("LOKI_ADDR", $"0.0.0.0:{lokiInternalStr}")
         .WithEnvironment("LOKI_LOG_LEVEL", "warn") // Reduce log noise
-        .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", PortConstants.LokiInternal.ToString())
-        .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", PortConstants.LokiGrpcInternal.ToString())
+        .WithEnvironment("LOKI_SERVER_HTTP_LISTEN_PORT", lokiInternalStr)
+        .WithEnvironment("LOKI_SERVER_GRPC_LISTEN_PORT", lokiGrpcInternalStr)
         .WithArgs("-config.file=/etc/loki/local-config.yaml", "-log.level=warn");
         
     Console.WriteLine("📝 Loki logging enabled for development mode");
@@ -245,7 +253,7 @@ var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus:late
     .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, "prometheus")
     .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_TIME", resourceAllocation.PrometheusRetention) // DYNAMIC: Adaptive retention
-    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", $"0.0.0.0:{PortConstants.PrometheusInternal.ToString()}")
+    .WithEnvironment("PROMETHEUS_WEB_LISTEN_ADDRESS", $"0.0.0.0:{prometheusInternalStr}")
     .WithEnvironment("PROMETHEUS_STORAGE_TSDB_RETENTION_SIZE", resourceAllocation.PrometheusStorageSize) // DYNAMIC: Adaptive storage
     .WithArgs(prometheusArgs);
 
@@ -263,7 +271,7 @@ if (!isTestMode)
         .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
         .WithEnvironment("GF_USERS_ALLOW_SIGN_UP", "false")
         .WithEnvironment("GF_SERVER_HTTP_ADDR", "0.0.0.0") // Force IPv4
-        .WithEnvironment("GF_SERVER_HTTP_PORT", PortConstants.GrafanaInternal.ToString())
+        .WithEnvironment("GF_SERVER_HTTP_PORT", grafanaInternalStr)
         .WithEnvironment("GF_LOG_LEVEL", "warn") // Reduce log noise
         .WithEnvironment("GF_INSTALL_PLUGINS", "") // Disable plugin installation for faster startup
         .WithEnvironment("GF_ANALYTICS_REPORTING_ENABLED", "false")

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using LocalTesting.Shared.Constants;
 
 namespace LocalTesting.WebApi.Configuration;
 
@@ -13,7 +14,7 @@ public class TemporalConfiguration
     /// Temporal server URL for client connections
     /// </summary>
     [Required]
-    public string ServerUrl { get; set; } = "localhost:7233";
+    public string ServerUrl { get; set; } = PortConstants.TemporalServerUrl();
 
     /// <summary>
     /// Temporal namespace for workflow execution
