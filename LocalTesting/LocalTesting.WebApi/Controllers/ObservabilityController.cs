@@ -89,8 +89,8 @@ public class ObservabilityController : ControllerBase
                     {
                         _logger.LogWarning("⚠️ ZERO METRICS ISSUE: No Kafka metrics have non-zero values yet");
                         // Log the first few Kafka metrics to see what's available
-                        var kafkaMetrics = allRealMetrics.Where(m => m.Key.StartsWith("kafka_") || m.Key.StartsWith("localtesting_kafka_")).Take(5).ToList();
-                        foreach (var metric in kafkaMetrics)
+                        var kafkaMetricsForDebugging = allRealMetrics.Where(m => m.Key.StartsWith("kafka_") || m.Key.StartsWith("localtesting_kafka_")).Take(5).ToList();
+                        foreach (var metric in kafkaMetricsForDebugging)
                         {
                             _logger.LogWarning("   📊 {MetricName}: {Value} (zero value)", metric.Key, metric.Value);
                         }
