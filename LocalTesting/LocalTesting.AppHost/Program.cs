@@ -53,26 +53,26 @@ var kafkaHeapOptsStr = $"-Xmx{resourceAllocation.KafkaHeapMemoryMB}M -Xms{resour
 var kafkaPartitionsStr = resourceAllocation.KafkaPartitions.ToString();
 
 // Configure extended timeouts for Aspire DCP to handle complex infrastructure
-// ULTRA-OPTIMIZED: Faster timeouts for aggressive startup optimization
+// OPTIMIZED: Ultra-aggressive timeouts for 60-second infrastructure startup requirement
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options =>
 {
-    options.StartupTimeout = TimeSpan.FromMinutes(2); // ULTRA-OPTIMIZED: Reduced timeout (5min -> 2min)
-    options.ShutdownTimeout = TimeSpan.FromMinutes(1); // ULTRA-OPTIMIZED: Reduced timeout (2min -> 1min)
+    options.StartupTimeout = TimeSpan.FromSeconds(60); // OPTIMIZED: Must start within 60s per user requirement
+    options.ShutdownTimeout = TimeSpan.FromSeconds(30); // OPTIMIZED: Fast shutdown (1min -> 30s)
 });
 
 // Configure Aspire DCP with optimized resource creation timeouts
-// ULTRA-OPTIMIZED: More aggressive timeouts for faster startup
-Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "120"); // ULTRA-OPTIMIZED: 2 minutes (300 -> 120)
-Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "60"); // ULTRA-OPTIMIZED: 1 minute per resource (120 -> 60)
-Environment.SetEnvironmentVariable("ASPIRE_DCP_MAX_RETRIES", "3"); // ULTRA-OPTIMIZED: Fewer retries (5 -> 3)
-Environment.SetEnvironmentVariable("ASPIRE_DCP_RETRY_BACKOFF", "5"); // ULTRA-OPTIMIZED: Faster retries (10s -> 5s)
+// OPTIMIZED: Ultra-aggressive timeouts for 60-second infrastructure startup requirement
+Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "60"); // OPTIMIZED: Must start within 60s per user requirement
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "30"); // OPTIMIZED: 30s per resource maximum (120 -> 30)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_MAX_RETRIES", "2"); // OPTIMIZED: Minimal retries (3 -> 2)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_RETRY_BACKOFF", "2"); // OPTIMIZED: Fastest retries (5s -> 2s)
 
 // Configure container runtime stability settings
-// ULTRA-OPTIMIZED: Faster health checks and reduced retry delays
-Environment.SetEnvironmentVariable("ASPIRE_DCP_CONTAINER_RESTART_POLICY", "always");
-Environment.SetEnvironmentVariable("ASPIRE_DCP_HEALTH_CHECK_TIMEOUT", "30"); // ULTRA-OPTIMIZED: Faster health checks (60s -> 30s)
-Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_COUNT", "5"); // ULTRA-OPTIMIZED: Fewer retries (10 -> 5)
-Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_DELAY", "2"); // ULTRA-OPTIMIZED: Faster retry (5s -> 2s)
+// OPTIMIZED: Ultra-aggressive health checks for 60-second infrastructure startup requirement
+Environment.SetEnvironmentVariable("ASPIRE_DCP_CONTAINER_RESTART_POLICY", "never"); // OPTIMIZED: No restarts for fast testing (always -> never)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_HEALTH_CHECK_TIMEOUT", "15"); // OPTIMIZED: Ultra-fast health checks (30s -> 15s)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_COUNT", "3"); // OPTIMIZED: Minimal retries (5 -> 3)
+Environment.SetEnvironmentVariable("ASPIRE_DCP_NETWORK_RETRY_DELAY", "1"); // OPTIMIZED: Ultra-fast retry (2s -> 1s)
 
 // Docker runtime optimizations for container stability
 Environment.SetEnvironmentVariable("DOCKER_CLI_EXPERIMENTAL", "enabled");

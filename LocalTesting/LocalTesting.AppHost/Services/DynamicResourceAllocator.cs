@@ -10,8 +10,8 @@ namespace LocalTesting.AppHost.Services;
 /// </summary>
 public static class DynamicResourceAllocator
 {
-    private const double SAFETY_FACTOR = 0.4; // Use 40% of available resources for safety in test environments (reduced from 70%)
-    private const long MIN_AVAILABLE_MEMORY_MB = 8192; // Minimum 8GB required for operation (increased to force minimal allocation)
+    private const double SAFETY_FACTOR = 0.6; // Use 60% of available resources for reliable container startup (increased from 40%)
+    private const long MIN_AVAILABLE_MEMORY_MB = 2048; // Minimum 2GB required for operation (reduced from 8GB to avoid unnecessary minimal allocation)
     private const int MIN_CPU_CORES = 1;
 
     /// <summary>
@@ -44,6 +44,17 @@ public static class DynamicResourceAllocator
     /// </summary>
     public static ResourceAllocation CalculateOptimalAllocation()
     {
+        // TESTING MODE: Force minimal allocation for predictable 60-second startup in test environments
+        var isTestMode = Environment.GetEnvironmentVariable("TESTING_MODE") == "true" ||
+                        Environment.GetEnvironmentVariable("CI") == "true" ||
+                        Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+        
+        if (isTestMode)
+        {
+            Console.WriteLine("🧪 TEST MODE DETECTED: Using optimized minimal allocation for 60-second startup requirement");
+            return CreateMinimalAllocation();
+        }
+        
         var totalMemoryMB = GetTotalSystemMemoryMB();
         var cpuCores = Environment.ProcessorCount;
         
@@ -63,7 +74,7 @@ public static class DynamicResourceAllocator
         // Distribute memory among components based on their typical resource requirements
         var allocation = CalculateMemoryDistribution(availableMemoryMB, cpuCores);
         
-        Console.WriteLine($"📊 Dynamic Resource Allocation (40% of system resources for test environment stability):");
+        Console.WriteLine($"📊 Dynamic Resource Allocation (60% of system resources for reliable container startup):");
         Console.WriteLine($"   🔴 Redis: {allocation.RedisMemoryMB} MB");
         Console.WriteLine($"   📨 Kafka Heap: {allocation.KafkaHeapMemoryMB} MB (Min: {allocation.KafkaMinMemoryMB} MB)");
         Console.WriteLine($"   ⚙️  Flink JobManager: {allocation.FlinkJobManagerTotalMemoryMB} MB");
@@ -85,29 +96,30 @@ public static class DynamicResourceAllocator
     
     /// <summary>
     /// Creates minimal resource allocation for low-memory systems and test environments
+    /// Optimized for 60-second startup requirements with proven working memory allocations
     /// </summary>
     private static ResourceAllocation CreateMinimalAllocation()
     {
         return new ResourceAllocation
         {
-            RedisMemoryMB = 16,        // Reduced from 32MB
-            KafkaHeapMemoryMB = 128,   // Reduced from 200MB 
-            KafkaMinMemoryMB = 64,     // Reduced from 100MB
-            FlinkJobManagerTotalMemoryMB = 256,     // Reduced from 480MB
-            FlinkJobManagerMetaspaceMemoryMB = 64,  // Reduced from 128MB
-            FlinkJobManagerOverheadMemoryMB = 64,   // Reduced from 128MB
-            FlinkTaskManagerTotalMemoryMB = 320,    // Reduced from 640MB
-            FlinkTaskManagerMetaspaceMemoryMB = 32, // Reduced from 64MB
-            FlinkTaskManagerOverheadMemoryMB = 32,  // Reduced from 64MB
-            FlinkTaskManagerFrameworkHeapMemoryMB = 32,    // Reduced from 64MB
-            FlinkTaskManagerFrameworkOffHeapMemoryMB = 32, // Reduced from 64MB
-            FlinkTaskManagerManagedMemoryMB = 32,   // Reduced from 64MB
-            FlinkTaskManagerNetworkMemoryMB = 32,   // Reduced from 64MB
+            RedisMemoryMB = 32,        // Increased from 16MB - Redis needs this minimum to start reliably
+            KafkaHeapMemoryMB = 256,   // Increased from 128MB - Kafka needs more heap for reliable startup
+            KafkaMinMemoryMB = 128,    // Increased from 64MB - Minimum heap for Kafka startup
+            FlinkJobManagerTotalMemoryMB = 512,     // Increased from 256MB - JobManager needs more memory for startup
+            FlinkJobManagerMetaspaceMemoryMB = 128,  // Increased from 64MB - More metaspace prevents startup failures
+            FlinkJobManagerOverheadMemoryMB = 128,   // Increased from 64MB - More overhead for startup reliability
+            FlinkTaskManagerTotalMemoryMB = 768,    // Increased from 320MB - TaskManager needs more memory for components
+            FlinkTaskManagerMetaspaceMemoryMB = 64, // Increased from 32MB
+            FlinkTaskManagerOverheadMemoryMB = 64,  // Increased from 32MB - More overhead for startup reliability
+            FlinkTaskManagerFrameworkHeapMemoryMB = 64,    // Increased from 32MB - Framework needs more heap
+            FlinkTaskManagerFrameworkOffHeapMemoryMB = 64, // Increased from 32MB - Framework off-heap memory
+            FlinkTaskManagerManagedMemoryMB = 64,   // Increased from 32MB - Managed memory for processing
+            FlinkTaskManagerNetworkMemoryMB = 64,   // Increased from 32MB - Network buffer memory
             KafkaPartitions = 1,
             FlinkParallelism = 1,
             TaskSlots = 1,
-            PrometheusRetention = "1m",  // Reduced from 2m
-            PrometheusStorageSize = "10MB"  // Reduced from 20MB
+            PrometheusRetention = "2m",  // Increased from 1m - More retention for debugging
+            PrometheusStorageSize = "20MB"  // Increased from 10MB - More storage for metrics
         };
     }
     

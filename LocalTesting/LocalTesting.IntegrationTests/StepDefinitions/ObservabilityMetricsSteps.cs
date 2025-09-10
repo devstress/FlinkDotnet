@@ -29,9 +29,9 @@ public class ObservabilityMetricsSteps : IDisposable
     private static readonly object _lockObject = new object();
     private static bool _initialized = false;
     
-    // USER REQUIREMENT: 90-second maximum timeout with immediate start when infrastructure is ready
-    // ULTRA-OPTIMIZED: Reduced timeout for faster failure detection
-    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(60); // ULTRA-OPTIMIZED: 90s -> 60s
+    // USER REQUIREMENT: 60-second infrastructure startup with immediate start when infrastructure is ready
+    // OPTIMIZED: Aggressive 60-second timeout for ultra-fast failure detection and startup validation
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(60); // OPTIMIZED: Must start within 60s per user requirement
 
     public ObservabilityMetricsSteps(ScenarioContext scenarioContext)
     {
@@ -53,7 +53,7 @@ public class ObservabilityMetricsSteps : IDisposable
         await VerifyContainerEnvironment();
         
         Console.WriteLine("🚀 Starting Aspire integration test with framework-managed service readiness...");
-        Console.WriteLine($"🕒 Health check timeout: {HealthCheckTimeout.TotalSeconds} seconds (ULTRA-OPTIMIZED: 60-second maximum with immediate start when ready)");
+        Console.WriteLine($"🕒 Health check timeout: {HealthCheckTimeout.TotalSeconds} seconds (OPTIMIZED: 60-second infrastructure startup requirement)");
         
         // Enable test mode for performance optimization  
         Environment.SetEnvironmentVariable("TESTING_MODE", "true");
@@ -101,10 +101,10 @@ public class ObservabilityMetricsSteps : IDisposable
                 Timeout = TimeSpan.FromSeconds(120) // FIXED: Increased from 30s to 120s to handle slow infrastructure startup in CI environments
             };
             
-            // Direct health check with retries - ULTRA-OPTIMIZED for fastest possible detection
+            // Direct health check with retries - OPTIMIZED for 60-second startup requirement
             var healthCheckSucceeded = false;
             var healthCheckAttempts = 0;
-            var maxHealthCheckAttempts = 60; // 60 attempts * 1s = 60s max (ultra-optimized)
+            var maxHealthCheckAttempts = 120; // 120 attempts * 0.5s = 60s max (ultra-aggressive)
             
             while (!healthCheckSucceeded && healthCheckAttempts < maxHealthCheckAttempts && !cancellationToken.IsCancellationRequested)
             {
@@ -128,20 +128,20 @@ public class ObservabilityMetricsSteps : IDisposable
                     }
                 }
                 
-                await Task.Delay(1000, cancellationToken); // ULTRA-OPTIMIZED: 1s between attempts
+                await Task.Delay(500, cancellationToken); // OPTIMIZED: 0.5s between attempts for ultra-aggressive polling
             }
             
             if (!healthCheckSucceeded)
             {
-                throw new InvalidOperationException($"WebAPI health check failed after {healthCheckAttempts} attempts ({healthCheckAttempts * 1}s)");
+                throw new InvalidOperationException($"WebAPI health check failed after {healthCheckAttempts} attempts ({healthCheckAttempts * 0.5}s)");
             }
             
             Console.WriteLine("✅ All services healthy and ready (validated by direct health check)");
             
-            // FIXED: Add additional startup time for infrastructure components to fully initialize
-            // Even though health check passes, Kafka, Prometheus, etc. may need a few seconds more
-            Console.WriteLine("⏳ Allowing additional 10 seconds for infrastructure components to fully start...");
-            await Task.Delay(10000, cancellationToken);
+            // OPTIMIZED: Minimal startup time for infrastructure components to meet 60-second requirement
+            // Health check passes quickly, but containers may need a moment to fully initialize
+            Console.WriteLine("⏳ Allowing 5 seconds for infrastructure components to fully start...");
+            await Task.Delay(5000, cancellationToken);
             Console.WriteLine("✅ Infrastructure startup grace period completed");
             
             // Create HTTP client with direct endpoint instead of service discovery to avoid disposal issues
@@ -160,10 +160,10 @@ public class ObservabilityMetricsSteps : IDisposable
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested)
         {
-            // EXPLICIT TEST FAILURE for 90-second infrastructure timeout (user requirement)
+            // EXPLICIT TEST FAILURE for 60-second infrastructure timeout (user requirement)
             Console.WriteLine($"❌ CRITICAL INFRASTRUCTURE TIMEOUT FAILURE");
             Console.WriteLine($"❌ Infrastructure failed to become healthy within {HealthCheckTimeout.TotalSeconds} seconds (user requirement)");
-            Console.WriteLine($"❌ User specified: Health check should work within 90 seconds");
+            Console.WriteLine($"❌ User specified: Infrastructure must start within 60 seconds");
             Console.WriteLine($"❌ This indicates container startup is too slow or has configuration issues");
             Console.WriteLine($"❌ Test MUST fail to ensure GitHub workflow failure detection");
             
@@ -186,8 +186,8 @@ public class ObservabilityMetricsSteps : IDisposable
     private async Task VerifyContainerEnvironment()
     {
         Console.WriteLine("🔍 PRE-CHECK: Verifying container environment before Aspire startup...");
-        Console.WriteLine($"⏱️ USER REQUIREMENT: 60-second health check timeout with immediate start when ready");
-        Console.WriteLine($"⚠️ NOTE: If infrastructure takes longer than 60 seconds, test will fail as ultra-optimized requirement");
+        Console.WriteLine($"⏱️ USER REQUIREMENT: 60-second infrastructure startup with immediate start when ready");
+        Console.WriteLine($"⚠️ NOTE: If infrastructure takes longer than 60 seconds, test will fail as per user requirement");
         
         // Allow async context but no actual async operations needed here
         await Task.CompletedTask;
