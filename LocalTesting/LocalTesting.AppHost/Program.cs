@@ -99,6 +99,7 @@ var redis = builder.AddRedis("redis")
     .WithEnvironment("REDIS_LOGLEVEL", "warning"); // Minimal logging
 
 // DYNAMIC: Single Kafka instance with adaptive memory allocation based on system resources
+// ENHANCED: Add proper health checks and connection validation for test reliability
 var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEndpoint(9092, 9092, "kafka")
     .WithEnvironment("KAFKA_NODE_ID", "1")
@@ -127,7 +128,15 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_LOG_RETENTION_HOURS", "1") // Ultra-short retention
     .WithEnvironment("KAFKA_LOG_SEGMENT_BYTES", "104857600") // 100MB segments for faster cleanup
     .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MESSAGES", "10000") // Faster flushing
-    .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MS", "1000"); // 1-second flush interval
+    .WithEnvironment("KAFKA_LOG_FLUSH_INTERVAL_MS", "1000") // 1-second flush interval
+    // ENHANCED: Add health check and startup validation for test reliability
+    .WithEnvironment("KAFKA_LOG4J_ROOT_LOGLEVEL", "WARN") // Reduce log noise for faster startup
+    .WithEnvironment("KAFKA_TOOLS_LOG4J_LOGLEVEL", "WARN") // Reduce tools log noise
+    // ENHANCED: Aggressive startup optimization for test environments
+    .WithEnvironment("KAFKA_BACKGROUND_THREADS", "2") // Minimal background threads (default 10)
+    .WithEnvironment("KAFKA_COMPRESSION_TYPE", "none") // No compression for faster startup
+    .WithEnvironment("KAFKA_LOG_CLEANUP_POLICY", "delete") // Simple cleanup policy
+    .WithEnvironment("KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS", "30000"); // 30s cleanup check
 
 // DISABLED: Kafka JMX Exporter for faster startup - enable after basic functionality works
 // var kafkaJmxExporter = builder.AddContainer("kafka-jmx-exporter", "bitnami/jmx-exporter:latest")

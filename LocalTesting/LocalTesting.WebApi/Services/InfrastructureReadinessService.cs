@@ -290,29 +290,65 @@ public class InfrastructureReadinessService : IInfrastructureReadinessService
     {
         try
         {
-            _logger.LogDebug("🔍 Validating Kafka connectivity...");
+            _logger.LogDebug("🔍 Validating Kafka connectivity with enhanced health checks...");
             
-            // FIXED: Use lightweight connectivity check instead of message production
-            // Simply check if we can query Kafka metrics from Prometheus (non-blocking)
-            try 
+            // ENHANCED: Multi-stage Kafka connectivity validation for test reliability
+            var maxRetries = 10;
+            var retryDelay = TimeSpan.FromSeconds(3);
+            
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
-                _logger.LogDebug("✅ Kafka connectivity validated via Prometheus metrics");
-                return true; // If we can query Kafka metrics, Kafka is accessible
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+                    
+                try
+                {
+                    // Stage 1: Test Kafka HTTP endpoint connectivity (if available)
+                    _logger.LogDebug("🔍 Kafka health check attempt {Attempt}/{MaxRetries}...", attempt, maxRetries);
+                    
+                    // Stage 2: Try to connect to Kafka producer service
+                    var connectionTest = await _kafkaService.TestConnectionAsync();
+                    if (connectionTest)
+                    {
+                        _logger.LogInformation("✅ Kafka connectivity validated - producer connection successful");
+                        return true;
+                    }
+                    
+                    // Stage 3: Check if Kafka metrics are available in Prometheus (indicates Kafka is running)
+                    try 
+                    {
+                        var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
+                        if (kafkaMetrics.Any())
+                        {
+                            _logger.LogDebug("✅ Kafka connectivity validated via Prometheus metrics");
+                            return true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug("⚠️ Kafka metrics not yet available: {Error}", ex.Message);
+                    }
+                    
+                    // Stage 4: Wait before retry
+                    if (attempt < maxRetries)
+                    {
+                        _logger.LogDebug("⏳ Waiting {Delay}s before next Kafka connectivity attempt...", retryDelay.TotalSeconds);
+                        await Task.Delay(retryDelay, cancellationToken);
+                    }
+                }
+                catch (Exception ex) when (attempt < maxRetries)
+                {
+                    _logger.LogDebug("⚠️ Kafka connectivity attempt {Attempt} failed: {Error}", attempt, ex.Message);
+                    await Task.Delay(retryDelay, cancellationToken);
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogDebug("⚠️ Kafka metrics not yet available: {Error}", ex.Message);
-                
-                // Fallback: Basic connectivity check - assume ready if containers are running
-                // This is much faster and doesn't require Kafka to be fully operational
-                _logger.LogDebug("✅ Kafka connectivity assumed ready (container-level check)");
-                return true; // For progress tracking, assume ready if container is starting
-            }
+            
+            _logger.LogWarning("❌ Kafka connectivity validation failed after {MaxRetries} attempts", maxRetries);
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "❌ Kafka connectivity validation failed");
+            _logger.LogWarning(ex, "❌ Kafka connectivity validation failed with exception");
             return false;
         }
     }

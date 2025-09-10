@@ -451,7 +451,43 @@ public class ObservabilityController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("🚀 INSTANT Real Infrastructure Workload Execution");
+            _logger.LogInformation("🚀 ENHANCED Real Infrastructure Workload Execution with Pre-validation");
+            
+            // ENHANCED: Pre-validate infrastructure readiness before workload execution
+            _logger.LogInformation("🔍 Step 1: Validating infrastructure readiness...");
+            var infrastructureStatus = await _infrastructureService.ValidateInfrastructureAsync(TimeSpan.FromSeconds(60));
+            
+            if (!infrastructureStatus.IsReady)
+            {
+                _logger.LogError("❌ Infrastructure not ready for workload execution: {Message}", infrastructureStatus.Message);
+                return BadRequest(new 
+                {
+                    Success = false,
+                    Message = "Infrastructure not ready for workload execution",
+                    Details = infrastructureStatus.Message,
+                    ComponentStatus = infrastructureStatus.ComponentStatus,
+                    Recommendation = "Wait for all infrastructure components to be ready before executing workload"
+                });
+            }
+            
+            _logger.LogInformation("✅ Infrastructure readiness validation passed - all components ready");
+            
+            // ENHANCED: Test Kafka connectivity before production
+            _logger.LogInformation("🔍 Step 2: Testing Kafka producer connectivity...");
+            var kafkaReady = await _kafkaProducerService.TestConnectionAsync();
+            if (!kafkaReady)
+            {
+                _logger.LogError("❌ Kafka producer connectivity test failed");
+                return BadRequest(new 
+                {
+                    Success = false,
+                    Message = "Kafka producer connectivity test failed",
+                    Details = "Unable to connect to Kafka broker - check if Kafka container is running and accessible",
+                    Recommendation = "Verify Kafka container startup and network connectivity"
+                });
+            }
+            
+            _logger.LogInformation("✅ Kafka producer connectivity test passed");
             
             // Calculate adaptive parameters quickly
             var performanceTarget = new PerformanceTarget
@@ -474,10 +510,11 @@ public class ObservabilityController : ControllerBase
                 CapacitySource = adaptiveParams.CapacitySource
             };
             
-            _logger.LogInformation("✅ Adaptive parameters: {KafkaMessages} messages, {FlinkJobs} Flink jobs, {TemporalWorkflows} workflows",
+            _logger.LogInformation("✅ Step 3: Adaptive parameters calculated: {KafkaMessages} messages, {FlinkJobs} Flink jobs, {TemporalWorkflows} workflows",
                 workloadRequest.KafkaMessages, workloadRequest.FlinkJobs, workloadRequest.TemporalWorkflows);
 
-            // Generate real messages
+            // ENHANCED: Generate test data with proper seeding
+            _logger.LogInformation("🚀 Step 4: Generating test data for workload execution...");
             var realMessages = new List<ComplexLogicMessage>();
             var ingressTopic = "ingress-topic";
             var partitions = 20; // Match Kafka configuration for million msg/sec throughput
@@ -488,7 +525,7 @@ public class ObservabilityController : ControllerBase
                 {
                     MessageId = i + 1,
                     CorrelationId = Guid.NewGuid().ToString(),
-                    Payload = $"Real workload message {i + 1}",
+                    Payload = $"Enhanced test workload message {i + 1} - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}",
                     Timestamp = DateTime.UtcNow,
                     BatchNumber = i / 5000,  // Smaller batches for 100k messages (20 batches)
                     PartitionNumber = i % partitions,
@@ -496,16 +533,20 @@ public class ObservabilityController : ControllerBase
                 });
             }
             
-            // SYNCHRONOUS EXECUTION - Wait for workload completion before returning
+            _logger.LogInformation("✅ Test data generation complete - {MessageCount} messages prepared", realMessages.Count);
+            
+            // ENHANCED: SYNCHRONOUS EXECUTION with comprehensive logging
             try
             {
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                _logger.LogInformation("🚀 Starting synchronous Kafka message production for {MessageCount} messages", workloadRequest.KafkaMessages);
+                _logger.LogInformation("🚀 Step 5: Starting synchronous Kafka message production for {MessageCount} messages to topic '{Topic}'", 
+                    workloadRequest.KafkaMessages, ingressTopic);
                 
                 await _kafkaProducerService.ProduceMessagesAsync(ingressTopic, realMessages);
                 stopwatch.Stop();
                 
-                _logger.LogInformation("✅ Kafka production completed in {ElapsedMs}ms", stopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("✅ Step 5 Complete: Kafka production completed in {ElapsedMs}ms ({MessagesPerSecond:F1} msg/sec)", 
+                    stopwatch.ElapsedMilliseconds, workloadRequest.KafkaMessages / Math.Max(stopwatch.Elapsed.TotalSeconds, 0.1));
                 
                 // Record comprehensive metrics for all layers immediately after production
                 var processingTimeSeconds = stopwatch.Elapsed.TotalSeconds;
@@ -615,6 +656,38 @@ public class ObservabilityController : ControllerBase
                     Error = ex.Message,
                     Timestamp = DateTime.UtcNow
                 });
+            }
+
+            // ENHANCED: Step 6 - Comprehensive metrics validation for MetricsRecording component
+            _logger.LogInformation("🔍 Step 6: Comprehensive metrics validation for MetricsRecording component...");
+            
+            try
+            {
+                // Give Prometheus time to scrape the newly recorded metrics
+                _logger.LogInformation("⏳ Waiting 10 seconds for Prometheus to scrape metrics (scrape_interval: 5s)...");
+                await Task.Delay(10000);
+                
+                var finalMetricsValidation = await _prometheusService.GetAllMetricsAsync();
+                var activeKafkaMetrics = finalMetricsValidation.Where(kvp => kvp.Key.StartsWith("kafka_producer_") && kvp.Value > 0).Count();
+                var activeFlinkMetrics = finalMetricsValidation.Where(kvp => kvp.Key.StartsWith("flink_") && kvp.Value > 0).Count();
+                var activeTemporalMetrics = finalMetricsValidation.Where(kvp => kvp.Key.StartsWith("temporal_") && kvp.Value > 0).Count();
+                
+                _logger.LogInformation("✅ Step 6 Complete: Final metrics validation - {TotalMetrics} total metrics ({KafkaActive} Kafka active, {FlinkActive} Flink active, {TemporalActive} Temporal active)", 
+                    finalMetricsValidation.Count, activeKafkaMetrics, activeFlinkMetrics, activeTemporalMetrics);
+                
+                // Validate that MetricsRecording can progress beyond 10%
+                if (finalMetricsValidation.Count > 0 && (activeKafkaMetrics > 0 || activeFlinkMetrics > 0 || activeTemporalMetrics > 0))
+                {
+                    _logger.LogInformation("✅ MetricsRecording component validation successful - metrics are available and active");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ MetricsRecording component may stall - no active metrics detected yet (may need more time for Prometheus)");
+                }
+            }
+            catch (Exception metricsValidationEx)
+            {
+                _logger.LogWarning(metricsValidationEx, "⚠️ Step 6 metrics validation failed - MetricsRecording component may stall");
             }
 
             // RETURN IMMEDIATELY - Real-world observability pattern
