@@ -133,7 +133,10 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        jobmanager.memory.process.size: 100m
+        jobmanager.memory.process.size: 480m
+        jobmanager.memory.jvm-metaspace.size: 128m
+        jobmanager.memory.jvm-overhead.min: 128m
+        jobmanager.memory.jvm-overhead.max: 128m
         jobmanager.memory.off-heap.size: 4m
         taskmanager.numberOfTaskSlots: 1
         parallelism.default: 1
@@ -151,7 +154,15 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("FLINK_PROPERTIES", """
         jobmanager.rpc.address: flink-jobmanager
         jobmanager.rpc.port: 6123
-        taskmanager.memory.process.size: 100m
+        taskmanager.memory.process.size: 640m
+        taskmanager.memory.jvm-metaspace.size: 64m
+        taskmanager.memory.jvm-overhead.min: 64m
+        taskmanager.memory.jvm-overhead.max: 64m
+        taskmanager.memory.framework.heap.size: 64m
+        taskmanager.memory.framework.off-heap.size: 64m
+        taskmanager.memory.managed.size: 64m
+        taskmanager.memory.network.min: 64m
+        taskmanager.memory.network.max: 64m
         taskmanager.numberOfTaskSlots: 1
         taskmanager.host: flink-taskmanager
         heartbeat.interval: 10000
