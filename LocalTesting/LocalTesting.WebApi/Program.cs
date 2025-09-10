@@ -49,6 +49,9 @@ builder.Services.AddSwaggerGen(c =>
 // Add Redis connection service - individual services will connect when needed
 builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>();
 
+// Add Aspire Kafka producer client integration
+builder.AddKafkaProducer<string, string>("kafka");
+
 // OPTIMIZED: Add Redis connection as a singleton that doesn't connect during startup
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 {

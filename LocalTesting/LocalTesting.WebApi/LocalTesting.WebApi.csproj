@@ -12,6 +12,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="9.1.0" />
+    <!-- Aspire Kafka client integration -->
+    <PackageReference Include="Aspire.Confluent.Kafka" Version="9.1.0" />
     <!-- Native Prometheus metrics - replaced OpenTelemetry -->
     <PackageReference Include="prometheus-net" Version="8.2.1" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />

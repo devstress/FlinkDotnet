@@ -8,6 +8,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS", "true");
 
+// Configure Aspire Dashboard required environment variables
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:13324");
+
 // Optimize DCP for faster startup in test environments
 Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "30");
 Environment.SetEnvironmentVariable("ASPIRE_DCP_STARTUP_TIMEOUT", "120");
@@ -25,25 +30,11 @@ Console.WriteLine("🚀 Starting LocalTesting infrastructure with clean, simple 
 var redis = builder.AddRedis("redis")
     .WithEndpoint(PortConstants.RedisExternal, PortConstants.RedisInternal, name: "redis");
 
-// Convert ports to strings for Aspire compatibility
-var kafkaInternalStr = PortConstants.KafkaInternal.ToString();
-var kafkaControllerInternalStr = PortConstants.KafkaControllerInternal.ToString();
+// Convert remaining ports to strings for Aspire compatibility
 var prometheusInternalStr = PortConstants.PrometheusInternal.ToString();
 
-// Kafka - clean, standard configuration  
-var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
-    .WithEndpoint(PortConstants.KafkaExternal, PortConstants.KafkaInternal, name: "kafka")
-    .WithEnvironment("KAFKA_NODE_ID", "1")
-    .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
-    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{kafkaInternalStr},CONTROLLER://0.0.0.0:{kafkaControllerInternalStr}")
-    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{kafkaInternalStr}")
-    .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
-    .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT")
-    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{kafkaControllerInternalStr}")
-    .WithEnvironment("CLUSTER_ID", "LOCAL_TESTING_KRAFT_CLUSTER")
-    .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
-    .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
-    .WithEnvironment("KAFKA_COMPRESSION_TYPE", "lz4");
+// Kafka - Using Aspire.Hosting.Kafka for simplicity and reliability
+var kafka = builder.AddKafka("kafka");
 
 // Flink JobManager - simplified configuration
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
@@ -67,7 +58,7 @@ var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
 // LocalTesting Web API - core service
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
-    .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", PortConstants.KafkaBootstrapServers())
+    .WithReference(kafka) // Aspire automatically provides connection configuration
     .WithEnvironment("FLINK_JOBMANAGER_URL", PortConstants.FlinkJobManagerUrl())
     .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
     .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi")
