@@ -134,7 +134,7 @@ var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
     .WithEnvironment("KAFKA_TOOLS_LOG4J_LOGLEVEL", "WARN") // Reduce tools log noise
     // ENHANCED: Aggressive startup optimization for test environments
     .WithEnvironment("KAFKA_BACKGROUND_THREADS", "2") // Minimal background threads (default 10)
-    .WithEnvironment("KAFKA_COMPRESSION_TYPE", "none") // No compression for faster startup
+    .WithEnvironment("KAFKA_COMPRESSION_TYPE", "uncompressed") // No compression for faster startup
     .WithEnvironment("KAFKA_LOG_CLEANUP_POLICY", "delete") // Simple cleanup policy
     .WithEnvironment("KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS", "30000"); // 30s cleanup check
 
