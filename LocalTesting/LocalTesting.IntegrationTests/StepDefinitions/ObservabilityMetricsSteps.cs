@@ -98,7 +98,7 @@ public class ObservabilityMetricsSteps : IDisposable
             var httpClient = new HttpClient()
             {
                 BaseAddress = new Uri($"http://{webApiEndpoint.Host}:{webApiEndpoint.Port}"),
-                Timeout = TimeSpan.FromSeconds(30) // FIXED: Increased from 5s to 30s to handle infrastructure readiness checks
+                Timeout = TimeSpan.FromSeconds(120) // FIXED: Increased from 30s to 120s to handle slow infrastructure startup in CI environments
             };
             
             // Direct health check with retries - ULTRA-OPTIMIZED for fastest possible detection

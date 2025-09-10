@@ -510,7 +510,6 @@ public class KafkaProducerService : IDisposable
                 MessageTimeoutMs = 5000,   // Short timeout for health check
                 RequestTimeoutMs = 3000,   // Short request timeout  
                 SocketTimeoutMs = 2000,    // Short socket timeout
-                MetadataRequestTimeoutMs = 3000, // Short metadata timeout
                 // Minimal settings for quick connection test
                 Acks = Acks.None,          // No acknowledgment needed for health check
                 EnableIdempotence = false, // Disable for speed
@@ -520,17 +519,24 @@ public class KafkaProducerService : IDisposable
 
             using var testProducer = new ProducerBuilder<string, string>(config).Build();
             
-            // Test connectivity by getting cluster metadata (quick operation)
-            var metadata = testProducer.GetMetadata(TimeSpan.FromSeconds(3));
+            // Test connectivity by attempting a simple produce operation with test message
+            var testMessage = new Message<string, string> 
+            { 
+                Key = $"health-check-{Guid.NewGuid():N}",
+                Value = $"health-check-{DateTime.UtcNow:O}" 
+            };
             
-            if (metadata.Brokers.Count > 0)
+            // Use a test topic (will be created automatically or fail gracefully)
+            var deliveryReport = await testProducer.ProduceAsync("health-check-topic", testMessage);
+            
+            if (deliveryReport.Status == PersistenceStatus.Persisted || deliveryReport.Status == PersistenceStatus.PossiblyPersisted)
             {
-                _logger.LogDebug("✅ Kafka connectivity test successful - {BrokerCount} brokers found", metadata.Brokers.Count);
+                _logger.LogDebug("✅ Kafka connectivity test successful - message produced to partition {Partition}", deliveryReport.Partition.Value);
                 return true;
             }
             else
             {
-                _logger.LogDebug("⚠️ Kafka connectivity test failed - no brokers found");
+                _logger.LogDebug("⚠️ Kafka connectivity test failed - message not persisted: {Status}", deliveryReport.Status);
                 return false;
             }
         }

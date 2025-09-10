@@ -10,8 +10,8 @@ namespace LocalTesting.AppHost.Services;
 /// </summary>
 public static class DynamicResourceAllocator
 {
-    private const double SAFETY_FACTOR = 0.7; // Use 70% of available resources for safety
-    private const long MIN_AVAILABLE_MEMORY_MB = 2048; // Minimum 2GB required for operation
+    private const double SAFETY_FACTOR = 0.4; // Use 40% of available resources for safety in test environments (reduced from 70%)
+    private const long MIN_AVAILABLE_MEMORY_MB = 8192; // Minimum 8GB required for operation (increased to force minimal allocation)
     private const int MIN_CPU_CORES = 1;
 
     /// <summary>
@@ -63,7 +63,7 @@ public static class DynamicResourceAllocator
         // Distribute memory among components based on their typical resource requirements
         var allocation = CalculateMemoryDistribution(availableMemoryMB, cpuCores);
         
-        Console.WriteLine($"📊 Dynamic Resource Allocation (70% of system resources):");
+        Console.WriteLine($"📊 Dynamic Resource Allocation (40% of system resources for test environment stability):");
         Console.WriteLine($"   🔴 Redis: {allocation.RedisMemoryMB} MB");
         Console.WriteLine($"   📨 Kafka Heap: {allocation.KafkaHeapMemoryMB} MB (Min: {allocation.KafkaMinMemoryMB} MB)");
         Console.WriteLine($"   ⚙️  Flink JobManager: {allocation.FlinkJobManagerTotalMemoryMB} MB");
@@ -84,30 +84,30 @@ public static class DynamicResourceAllocator
     }
     
     /// <summary>
-    /// Creates minimal resource allocation for low-memory systems
+    /// Creates minimal resource allocation for low-memory systems and test environments
     /// </summary>
     private static ResourceAllocation CreateMinimalAllocation()
     {
         return new ResourceAllocation
         {
-            RedisMemoryMB = 32,
-            KafkaHeapMemoryMB = 200,
-            KafkaMinMemoryMB = 100,
-            FlinkJobManagerTotalMemoryMB = 480,
-            FlinkJobManagerMetaspaceMemoryMB = 128,
-            FlinkJobManagerOverheadMemoryMB = 128,
-            FlinkTaskManagerTotalMemoryMB = 640,
-            FlinkTaskManagerMetaspaceMemoryMB = 64,
-            FlinkTaskManagerOverheadMemoryMB = 64,
-            FlinkTaskManagerFrameworkHeapMemoryMB = 64,
-            FlinkTaskManagerFrameworkOffHeapMemoryMB = 64,
-            FlinkTaskManagerManagedMemoryMB = 64,
-            FlinkTaskManagerNetworkMemoryMB = 64,
+            RedisMemoryMB = 16,        // Reduced from 32MB
+            KafkaHeapMemoryMB = 128,   // Reduced from 200MB 
+            KafkaMinMemoryMB = 64,     // Reduced from 100MB
+            FlinkJobManagerTotalMemoryMB = 256,     // Reduced from 480MB
+            FlinkJobManagerMetaspaceMemoryMB = 64,  // Reduced from 128MB
+            FlinkJobManagerOverheadMemoryMB = 64,   // Reduced from 128MB
+            FlinkTaskManagerTotalMemoryMB = 320,    // Reduced from 640MB
+            FlinkTaskManagerMetaspaceMemoryMB = 32, // Reduced from 64MB
+            FlinkTaskManagerOverheadMemoryMB = 32,  // Reduced from 64MB
+            FlinkTaskManagerFrameworkHeapMemoryMB = 32,    // Reduced from 64MB
+            FlinkTaskManagerFrameworkOffHeapMemoryMB = 32, // Reduced from 64MB
+            FlinkTaskManagerManagedMemoryMB = 32,   // Reduced from 64MB
+            FlinkTaskManagerNetworkMemoryMB = 32,   // Reduced from 64MB
             KafkaPartitions = 1,
             FlinkParallelism = 1,
             TaskSlots = 1,
-            PrometheusRetention = "2m",
-            PrometheusStorageSize = "20MB"
+            PrometheusRetention = "1m",  // Reduced from 2m
+            PrometheusStorageSize = "10MB"  // Reduced from 20MB
         };
     }
     
