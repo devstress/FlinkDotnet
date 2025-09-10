@@ -92,10 +92,13 @@ public class ObservabilityMetricsSteps : IDisposable
             // OPTIMIZED: Use direct endpoint check instead of resource health notifications for faster detection
             // The infrastructure actually starts quickly (~30s), but Aspire's WaitForResourceHealthyAsync is slow
             var webApiEndpoint = app.GetEndpoint("localtesting-webapi", "webapi");
+            
+            // Create HTTP client with direct endpoint instead of service discovery to avoid disposal issues
+            // FIXED: Increase timeout to handle infrastructure startup delays and add extra startup time
             var httpClient = new HttpClient()
             {
                 BaseAddress = new Uri($"http://{webApiEndpoint.Host}:{webApiEndpoint.Port}"),
-                Timeout = TimeSpan.FromSeconds(5) // ULTRA-ULTRA-OPTIMIZED: Ultra-fast timeout (10s -> 5s)
+                Timeout = TimeSpan.FromSeconds(30) // FIXED: Increased from 5s to 30s to handle infrastructure readiness checks
             };
             
             // Direct health check with retries - ULTRA-OPTIMIZED for fastest possible detection
@@ -134,6 +137,12 @@ public class ObservabilityMetricsSteps : IDisposable
             }
             
             Console.WriteLine("✅ All services healthy and ready (validated by direct health check)");
+            
+            // FIXED: Add additional startup time for infrastructure components to fully initialize
+            // Even though health check passes, Kafka, Prometheus, etc. may need a few seconds more
+            Console.WriteLine("⏳ Allowing additional 10 seconds for infrastructure components to fully start...");
+            await Task.Delay(10000, cancellationToken);
+            Console.WriteLine("✅ Infrastructure startup grace period completed");
             
             // Create HTTP client with direct endpoint instead of service discovery to avoid disposal issues
             // Use the existing httpClient from health check for consistency

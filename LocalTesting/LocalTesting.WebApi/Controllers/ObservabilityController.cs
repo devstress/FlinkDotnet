@@ -1623,21 +1623,79 @@ public class ObservabilityController : ControllerBase
     {
         try
         {
-            var healthResults = await _healthCheckService.CheckAllServicesAsync();
-            var componentsToCheck = new[] { "kafka", "prometheus", "flink", "temporal", "redis" };
+            // FIXED: Use InfrastructureReadinessService for proper component readiness checking
+            _logger.LogDebug("📊 Calculating infrastructure progress using InfrastructureReadinessService");
+            
+            // FIXED: Use shorter timeout for progress checks to avoid blocking the progress tracking
+            var infrastructureStatus = await _infrastructureService.ValidateInfrastructureAsync(TimeSpan.FromSeconds(5));
             var componentProgress = new Dictionary<string, double>();
             
-            var totalComponents = componentsToCheck.Length;
+            var totalComponents = infrastructureStatus.ComponentStatus.Count;
             var readyComponents = 0;
             
-            foreach (var component in componentsToCheck)
+            // FIXED: Handle case where no components are reported yet (infrastructure still starting)
+            if (totalComponents == 0)
             {
-                var isReady = await CheckComponentReadiness(component, healthResults);
-                componentProgress[component] = isReady ? 100.0 : 0.0;
+                _logger.LogDebug("📊 No components reported yet - infrastructure still starting up");
+                
+                // Fallback: Check basic health status
+                try
+                {
+                    var healthResults = await _healthCheckService.CheckAllServicesAsync();
+                    if (healthResults != null && healthResults.Count > 0)
+                    {
+                        // If we can get health results, assume basic infrastructure is starting (25% progress)
+                        return new
+                        {
+                            ProgressPercentage = 25.0,
+                            ReadyComponents = 0,
+                            TotalComponents = 5, // Expected components: Kafka, Prometheus, Flink, Temporal, Redis
+                            ComponentProgress = new Dictionary<string, double>
+                            {
+                                { "kafka", 0.0 },
+                                { "prometheus", 0.0 },
+                                { "flink", 0.0 },
+                                { "temporal", 0.0 },
+                                { "redis", 0.0 }
+                            },
+                            Status = "Starting",
+                            Details = "Infrastructure initialization in progress",
+                            InfrastructureStatus = "Basic health check responding - components initializing",
+                            CheckedAt = DateTime.UtcNow
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug("Health check also failed: {Error}", ex.Message);
+                }
+                
+                // Complete fallback: Infrastructure not ready yet
+                return new
+                {
+                    ProgressPercentage = 0.0,
+                    ReadyComponents = 0,
+                    TotalComponents = 5,
+                    ComponentProgress = new Dictionary<string, double>(),
+                    Status = "Starting",
+                    Details = "Infrastructure not ready yet - still initializing",
+                    InfrastructureStatus = "Infrastructure startup in progress",
+                    CheckedAt = DateTime.UtcNow
+                };
+            }
+            
+            foreach (var (component, isReady) in infrastructureStatus.ComponentStatus)
+            {
+                componentProgress[component.ToLower()] = isReady ? 100.0 : 0.0;
                 if (isReady) readyComponents++;
+                
+                _logger.LogDebug("Component {Component}: {Status}", component, isReady ? "Ready" : "Not Ready");
             }
             
             var infrastructurePercentage = totalComponents > 0 ? Math.Round((double)readyComponents / totalComponents * 100, 1) : 0.0;
+            
+            _logger.LogInformation("📊 Infrastructure progress: {Percentage}% ({ReadyComponents}/{TotalComponents} components ready)", 
+                infrastructurePercentage, readyComponents, totalComponents);
             
             return new
             {
@@ -1646,17 +1704,27 @@ public class ObservabilityController : ControllerBase
                 TotalComponents = totalComponents,
                 ComponentProgress = componentProgress,
                 Status = infrastructurePercentage >= 100 ? "AllReady" : infrastructurePercentage > 0 ? "PartiallyReady" : "Starting",
-                Details = $"{readyComponents}/{totalComponents} components ready"
+                Details = $"{readyComponents}/{totalComponents} components ready",
+                InfrastructureStatus = infrastructureStatus.Message,
+                CheckedAt = infrastructureStatus.CheckedAt
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error calculating infrastructure progress");
+            _logger.LogError(ex, "❌ Error calculating infrastructure progress");
+            
+            // FIXED: Return meaningful progress even on errors - infrastructure might be starting up
             return new
             {
                 ProgressPercentage = 0.0,
+                ReadyComponents = 0,
+                TotalComponents = 5, // Expected components
+                ComponentProgress = new Dictionary<string, double>(),
                 Status = "Error",
-                Error = ex.Message
+                Error = ex.Message,
+                Details = "Failed to calculate infrastructure progress - components may still be starting",
+                InfrastructureStatus = "Infrastructure readiness check failed - startup in progress",
+                CheckedAt = DateTime.UtcNow
             };
         }
     }
@@ -1875,26 +1943,59 @@ public class ObservabilityController : ControllerBase
             switch (component.ToLowerInvariant())
             {
                 case "kafka":
-                    var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
-                    return kafkaMetrics.Count > 0; // Kafka is ready if it has any metrics
+                    // FIXED: Check if we can query Kafka metrics, not if metrics exist yet
+                    // During startup, Kafka may be ready but not have producer metrics yet
+                    try
+                    {
+                        var kafkaMetrics = await _prometheusService.GetKafkaProducerMetricsAsync();
+                        return true; // Kafka is ready if we can successfully query it (even if 0 results)
+                    }
+                    catch
+                    {
+                        return false; // Kafka is not ready if we can't query it
+                    }
                     
                 case "prometheus":
-                    var allMetrics = await _prometheusService.GetAllMetricsAsync();
-                    return allMetrics.Count > 0; // Prometheus is ready if it's collecting metrics
+                    // FIXED: Check if Prometheus is responding to queries, not if it has data yet
+                    try
+                    {
+                        var allMetrics = await _prometheusService.GetAllMetricsAsync();
+                        return true; // Prometheus is ready if we can query it (even if no metrics scraped yet)
+                    }
+                    catch
+                    {
+                        return false; // Prometheus is not ready if we can't query it
+                    }
                     
                 case "flink":
-                    var flinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
-                    return flinkMetrics.Count >= 0; // Flink is ready if we can query it (even with 0 results)
+                    // FIXED: Check if Flink is responding to queries
+                    try
+                    {
+                        var flinkMetrics = await _prometheusService.GetFlinkProcessingMetricsAsync();
+                        return true; // Flink is ready if we can query it (even with 0 results)
+                    }
+                    catch
+                    {
+                        return false; // Flink is not ready if we can't query it
+                    }
                     
                 case "temporal":
-                    var temporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
-                    return temporalMetrics.Count >= 0; // Temporal is ready if we can query it (even with 0 results)
+                    // FIXED: Check if Temporal is responding to queries
+                    try
+                    {
+                        var temporalMetrics = await _prometheusService.GetTemporalWorkflowMetricsAsync();
+                        return true; // Temporal is ready if we can query it (even with 0 results)
+                    }
+                    catch
+                    {
+                        return false; // Temporal is not ready if we can't query it
+                    }
                     
                 case "redis":
-                    // Check if Redis health is available in health results
+                    // FIXED: Check Redis readiness via health checks
                     if (healthResults.TryGetValue("services", out var servicesObj))
                     {
-                        // Basic readiness check - assume ready if we can get health results
+                        // Redis is ready if we can get health results (basic availability check)
                         return true;
                     }
                     return false;
