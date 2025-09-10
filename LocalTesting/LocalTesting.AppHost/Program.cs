@@ -2,16 +2,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using LocalTesting.Shared.Constants;
 
-var builder = DistributedApplication.CreateBuilder(args);
-
-// Simple Aspire configuration - clean and maintainable
+// Configure Aspire environment variables BEFORE creating builder
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS", "true");
 
-// Configure Aspire Dashboard required environment variables
+// Configure Aspire Dashboard required environment variables before builder creation
 Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:13324");
+
+var builder = DistributedApplication.CreateBuilder(args);
 
 // Optimize DCP for faster startup in test environments
 Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "30");
