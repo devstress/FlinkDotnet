@@ -6,6 +6,13 @@ using LocalTesting.Shared.Constants;
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS", "true");
 
+// Force IPv4 preference for CI environments to avoid IPv6 connection issues
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+{
+    Environment.SetEnvironmentVariable("ASPNETCORE_PREFERIPV4", "true");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_PREFERIPV4", "true");
+}
+
 // Configure Aspire Dashboard required environment variables before builder creation
 Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
@@ -29,7 +36,7 @@ Console.WriteLine("🚀 Starting LocalTesting infrastructure with clean, simple 
 // Redis - simplified Aspire configuration with automatic port allocation
 var redis = builder.AddRedis("redis");
 
-// Kafka - Using Aspire.Hosting.Kafka for simplicity and reliability
+// Kafka - Native Aspire hosting with automatic service discovery (IPv4 configured via environment)
 var kafka = builder.AddKafka("kafka");
 
 // Prometheus - essential observability (custom container - no official Aspire hosting available)

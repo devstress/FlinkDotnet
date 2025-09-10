@@ -9,6 +9,13 @@ using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Force IPv4 preference in CI environments to avoid connection issues
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+{
+    Environment.SetEnvironmentVariable("ASPNETCORE_PREFERIPV4", "true");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_PREFERIPV4", "true");
+}
+
 // Configure IPv4-only binding compatible with Aspire orchestration
 // Use port 8080 internally (standard ASP.NET Core default), exposed externally on 13001
 builder.WebHost.ConfigureKestrel(options =>
