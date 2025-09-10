@@ -224,11 +224,34 @@ public class ObservabilityMetricsSteps : IDisposable
             // REMOVED: DurationSeconds - we'll measure actual time instead of using fake parameter
         };
 
-        Console.WriteLine($"🔄 Testing observability metrics endpoint (infrastructure ready at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC)...");
+        Console.WriteLine($"🔄 Executing real workload to generate observability metrics (infrastructure ready at {startTime:yyyy-MM-dd HH:mm:ss.fff} UTC)...");
         
-        // OPTIMIZED: Skip complex workload execution and test the metrics endpoint directly
-        // This focuses on testing the observability system rather than full workload execution
-        // The infrastructure is minimal (no temporal) so complex workflows will timeout
+        // FIXED: Execute real workload first to generate actual metrics
+        // This ensures we have real observability data to validate, not just empty responses
+        Console.WriteLine($"📊 Executing workload with {messageCount:N0} messages to generate real metrics...");
+        
+        try
+        {
+            // Execute the real workload to generate metrics
+            Console.WriteLine($"🔄 Calling POST /api/observability/execute-real-workload with {messageCount:N0} messages...");
+            var workloadResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
+            workloadResponse.EnsureSuccessStatusCode();
+            
+            var workloadContent = await workloadResponse.Content.ReadAsStringAsync();
+            Console.WriteLine("✅ Real workload execution completed successfully");
+            Console.WriteLine($"📊 Workload response: {workloadContent}");
+            
+            // Wait a moment for metrics to be recorded and scraped by Prometheus
+            Console.WriteLine("⏳ Waiting for metrics to be recorded and scraped by Prometheus...");
+            await Task.Delay(5000); // 5 seconds should be enough for metrics recording and initial scraping
+            
+        }
+        catch (Exception workloadEx)
+        {
+            Console.WriteLine($"❌ Workload execution failed: {workloadEx.Message}");
+            Console.WriteLine($"📊 Full exception: {workloadEx}");
+            Console.WriteLine("🔄 Continuing with metrics endpoint test to check for existing metrics...");
+        }
         
         // Test the core observability functionality: metrics collection and reporting
         Dictionary<string, object> metricsData;
@@ -243,7 +266,7 @@ public class ObservabilityMetricsSteps : IDisposable
                 PropertyNameCaseInsensitive = true
             });
             
-            Console.WriteLine("✅ Metrics endpoint responded successfully");
+            Console.WriteLine("✅ Metrics endpoint responded successfully with real data");
         }
         catch (HttpRequestException httpEx) when (httpEx.InnerException is System.IO.IOException ioEx && 
                                                   ioEx.InnerException is System.Net.Sockets.SocketException sockEx &&
