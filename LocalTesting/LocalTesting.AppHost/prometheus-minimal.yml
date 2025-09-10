@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 30s  # Increased interval for less CPU usage during startup
+  evaluation_interval: 30s
+
+scrape_configs:
+  # Only essential metrics for basic functionality
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # LocalTesting WebAPI - Essential for observability test
+  - job_name: 'localtesting-webapi'
+    static_configs:
+      - targets: ['localtesting-webapi:13001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s  # More frequent for main API

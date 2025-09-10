@@ -48,14 +48,15 @@ builder.Services.AddSwaggerGen(c =>
 // Add Redis connection service - individual services will connect when needed
 builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>();
 
-// Add Redis connection as a singleton that doesn't connect during startup
+// OPTIMIZED: Add Redis connection as a singleton that doesn't connect during startup
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 {
     // Don't establish connection during startup - let individual services handle this
     var connectionString = builder.Configuration.GetConnectionString("redis") ?? "localhost:6379";
     var configOptions = ConfigurationOptions.Parse(connectionString);
-    configOptions.ConnectTimeout = 5000;
+    configOptions.ConnectTimeout = 2000; // Reduced from 5000 for faster startup
     configOptions.AbortOnConnectFail = false; // Critical: don't fail startup if Redis unavailable
+    configOptions.ConnectRetry = 1; // Reduced retries
     
     // This will only connect when first accessed, not during registration
     return ConnectionMultiplexer.Connect(configOptions);
@@ -67,17 +68,17 @@ builder.Services.AddSingleton<AsyncBufferedObservabilityService>();
 // Keep existing service for backward compatibility during transition
 builder.Services.AddSingleton<ObservabilityMetricsService>();
 
-// Configure HTTP client for Prometheus with enhanced timeouts for infrastructure delays
+// OPTIMIZED: Configure HTTP client for Prometheus with shorter timeouts for faster startup
 builder.Services.AddHttpClient<PrometheusMetricsService>(client =>
 {
     var prometheusUrl = Environment.GetEnvironmentVariable("PROMETHEUS_URL") ?? "http://prometheus:9090";
     client.BaseAddress = new Uri(prometheusUrl);
-    client.Timeout = TimeSpan.FromSeconds(30); // Increased timeout for infrastructure delays
+    client.Timeout = TimeSpan.FromSeconds(10); // Reduced from 30 for faster startup
 })
 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
 {
-    // Configure for container networking reliability
-    MaxConnectionsPerServer = 10,
+    // Configure for container networking reliability with faster timeouts
+    MaxConnectionsPerServer = 5, // Reduced from 10
     UseCookies = false
 });
 builder.Services.AddSingleton<IMessageStateService, MessageStateService>();
