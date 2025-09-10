@@ -68,15 +68,83 @@ The user (@devstress) requested restructuring LocalTesting to use default Aspire
 
 ## Phase 2: Design  
 ### Requirements
-[To be completed]
+Based on investigation findings, design the restructuring approach:
+
+**Components to Restructure:**
+1. ✅ **Kafka**: Replace with `builder.AddKafka()` - COMPLETED
+2. ❌ **Prometheus**: No official Aspire hosting package available - keep custom container but simplify
+3. ❌ **Flink**: No official Aspire hosting package - keep custom containers but review configuration
+4. ❓ **Temporal**: Has `InfinityFlow.Aspire.Temporal` package available but not currently used in setup
+5. ✅ **Redis**: Already using proper Aspire pattern
+
+**Configuration Simplification:**
+- Remove unnecessary port constant complexity where Aspire handles allocation
+- Maintain only essential environment variables for services that need them
+- Keep performance optimizations in Kafka producer service
+- Preserve observability test compatibility
+
+### Architecture Decisions
+1. **Kafka Migration Strategy**: Use `AddKafka()` + `AddKafkaProducer()` with dependency injection
+2. **Prometheus Strategy**: Keep custom container but simplify configuration if possible
+3. **Flink Strategy**: Keep custom containers as they're specialized infrastructure
+4. **Port Management**: Let Aspire handle automatic port allocation where possible
+5. **Performance Preservation**: Maintain all existing high-performance configurations
+
+### Why This Approach
+- **Incremental Migration**: Changes one component at a time to avoid breaking functionality
+- **Preserve Performance**: Maintains all existing ultra-high-performance Kafka settings
+- **Practical Limitations**: Uses Aspire where official packages exist, keeps custom containers where needed
+- **Test Compatibility**: Ensures observability tests continue to work throughout process
+
+### Alternatives Considered
+- **Full Migration**: Would require custom Aspire extensions for Prometheus/Flink - too complex
+- **No Changes**: Doesn't address user request for simplification
+- **Mixed Approach**: ✅ CHOSEN - Use Aspire where available, simplify custom containers elsewhere
 
 ## Phase 3: TDD/BDD
 ### Requirements
-[To be completed]
+Validate that observability tests continue to work with simplified Aspire setup
+
+### Test Specifications
+1. **Kafka Integration Test**: Verify producer service works with Aspire-managed Kafka
+2. **Redis Connection Test**: Ensure automatic port allocation doesn't break Redis connections  
+3. **Observability Test Suite**: All existing observability category tests must pass
+4. **Infrastructure Startup Test**: LocalTesting.AppHost starts successfully with new configuration
+
+### Behavior Definitions
+- **Given**: LocalTesting infrastructure with simplified Aspire configuration
+- **When**: Infrastructure starts up and tests execute
+- **Then**: All functionality works identically to previous complex configuration
+- **And**: Configuration is significantly simpler with fewer manual port specifications
 
 ## Phase 4: Implementation
 ### Requirements
-[To be completed]
+**COMPLETED**: All major simplifications implemented
+
+### Code Changes ✅
+1. **Kafka Simplification**: 
+   - Replaced 15+ environment variable custom container with `builder.AddKafka("kafka")`
+   - Added `Aspire.Confluent.Kafka` client integration
+   - Updated `KafkaProducerService` to use dependency-injected producer
+   
+2. **Redis Simplification**:
+   - Removed explicit port configuration, now uses automatic Aspire allocation
+   - Maintained service discovery compatibility
+   
+3. **Configuration Cleanup**:
+   - Removed unnecessary port constant conversions
+   - Added clear comments distinguishing Aspire vs custom containers
+   - Maintained all custom containers for components without official Aspire support (Flink, Prometheus)
+
+### Challenges Encountered
+1. **Aspire Dashboard Configuration**: Required additional environment variables for OTLP endpoints
+2. **Producer Dependency Injection**: Needed to restructure KafkaProducerService constructor pattern
+3. **Port Management**: Balanced automatic allocation with services requiring specific configuration
+
+### Solutions Applied
+1. **Environment Variables**: Added required `ASPNETCORE_URLS`, `DOTNET_DASHBOARD_OTLP_ENDPOINT_URL`, `DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL`  
+2. **Dependency Injection**: Updated service to accept `IProducer<string, string>` directly from Aspire
+3. **Hybrid Approach**: Used Aspire where available, simplified custom containers elsewhere
 
 ## Phase 5: Testing & Validation
 ### Requirements

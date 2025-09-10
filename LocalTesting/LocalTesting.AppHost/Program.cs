@@ -26,34 +26,30 @@ builder.Services.Configure<HostOptions>(options =>
 
 Console.WriteLine("🚀 Starting LocalTesting infrastructure with clean, simple configuration...");
 
-// Redis - simple configuration
-var redis = builder.AddRedis("redis")
-    .WithEndpoint(PortConstants.RedisExternal, PortConstants.RedisInternal, name: "redis");
-
-// Convert remaining ports to strings for Aspire compatibility
-var prometheusInternalStr = PortConstants.PrometheusInternal.ToString();
+// Redis - simplified Aspire configuration with automatic port allocation
+var redis = builder.AddRedis("redis");
 
 // Kafka - Using Aspire.Hosting.Kafka for simplicity and reliability
 var kafka = builder.AddKafka("kafka");
 
-// Flink JobManager - simplified configuration
+// Prometheus - essential observability (custom container - no official Aspire hosting available)
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
+    .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, name: "prometheus")
+    .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
+    .WithArgs("--config.file=/etc/prometheus/prometheus.yml", 
+             $"--web.listen-address=0.0.0.0:{PortConstants.PrometheusInternal}");
+
+// Flink JobManager - custom container (no official Aspire hosting available)
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithHttpEndpoint(PortConstants.FlinkJobManagerWebExternal, PortConstants.FlinkJobManagerWebInternal, name: "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("jobmanager");
 
-// Flink TaskManager - simplified configuration
+// Flink TaskManager - custom container (no official Aspire hosting available)
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
-
-// Prometheus - essential observability
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
-    .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, name: "prometheus")
-    .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
-    .WithArgs("--config.file=/etc/prometheus/prometheus.yml", 
-             $"--web.listen-address=0.0.0.0:{prometheusInternalStr}");
 
 // LocalTesting Web API - core service
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
