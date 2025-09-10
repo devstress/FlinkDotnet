@@ -344,7 +344,37 @@ public class ObservabilityMetricsSteps : IDisposable
                             var workloadResponse = await _httpClient!.PostAsJsonAsync("/api/observability/execute-real-workload", flowRequest);
                             workloadResponse.EnsureSuccessStatusCode();
                             var workloadContent = await workloadResponse.Content.ReadAsStringAsync();
+                            
                             Console.WriteLine("✅ Background workload execution completed");
+                            
+                            // FIXED: Wait additional time for metrics to be recorded and scraped by Prometheus
+                            Console.WriteLine("⏳ Waiting additional 5 seconds for metrics to be available in Prometheus...");
+                            await Task.Delay(5000);
+                            
+                            // FIXED: Verify metrics are available after workload execution
+                            try
+                            {
+                                var metricsVerification = await _httpClient.GetAsync("/api/observability/metrics/messages-per-second");
+                                if (metricsVerification.IsSuccessStatusCode)
+                                {
+                                    var verificationContent = await metricsVerification.Content.ReadAsStringAsync();
+                                    Console.WriteLine("✅ Metrics endpoint accessible after workload execution");
+                                    
+                                    // Check if we now have non-zero metrics
+                                    if (verificationContent.Contains("TotalMetricsTracked") && verificationContent.Contains("\"TotalMetricsTracked\":0"))
+                                    {
+                                        Console.WriteLine("⚠️ Metrics endpoint still shows zero metrics - may need more time");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("✅ Metrics endpoint shows non-zero metrics after workload");
+                                    }
+                                }
+                            }
+                            catch (Exception verifyEx)
+                            {
+                                Console.WriteLine($"⚠️ Could not verify metrics after workload: {verifyEx.Message}");
+                            }
                         }
                         catch (Exception ex)
                         {
