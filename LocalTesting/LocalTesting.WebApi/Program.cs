@@ -5,10 +5,16 @@ using LocalTesting.Shared.Constants;
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Services;
 using FlinkDotNet.Orchestration.Models;
-using StackExchange.Redis;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Force IPv4 preference in CI environments to avoid connection issues
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+{
+    Environment.SetEnvironmentVariable("ASPNETCORE_PREFERIPV4", "true");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_PREFERIPV4", "true");
+}
 
 // Configure IPv4-only binding compatible with Aspire orchestration
 // Use port 8080 internally (standard ASP.NET Core default), exposed externally on 13001
@@ -38,10 +44,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { 
-        Title = "LocalTesting API - Complex Logic Stress Test Interactive Interface", 
+        Title = "LocalTesting API - Observability Testing Interface", 
         Version = "v1",
-        Description = "Interactive API for debugging and executing Complex Logic Stress Test scenarios step by step. " +
-                     "This API transforms BDD test scenarios into executable endpoints for local testing and debugging."
+        Description = "Focused API for observability testing and infrastructure monitoring. " +
+                     "Provides endpoints for metrics collection, infrastructure health checks, and workload execution validation."
     });
     c.EnableAnnotations();
 });
@@ -49,21 +55,13 @@ builder.Services.AddSwaggerGen(c =>
 // Add Redis connection service - individual services will connect when needed
 builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>();
 
-// OPTIMIZED: Add Redis connection as a singleton that doesn't connect during startup
-builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
-{
-    // Don't establish connection during startup - let individual services handle this
-    var connectionString = builder.Configuration.GetConnectionString("redis") ?? PortConstants.RedisConnectionString();
-    var configOptions = ConfigurationOptions.Parse(connectionString);
-    configOptions.ConnectTimeout = 2000; // Reduced from 5000 for faster startup
-    configOptions.AbortOnConnectFail = false; // Critical: don't fail startup if Redis unavailable
-    configOptions.ConnectRetry = 1; // Reduced retries
-    
-    // This will only connect when first accessed, not during registration
-    return ConnectionMultiplexer.Connect(configOptions);
-});
+// Add Aspire Kafka producer client integration
+builder.AddKafkaProducer<string, string>("kafka");
 
-// Add custom services
+// Add Aspire Redis client integration - replaces manual StackExchange.Redis setup
+builder.AddRedisClient("redis");
+
+// Add custom services - REFINED: Only observability-focused services
 // Replace synchronous observability with high-performance async buffered service
 builder.Services.AddSingleton<AsyncBufferedObservabilityService>();
 // Keep existing service for backward compatibility during transition
@@ -84,12 +82,12 @@ builder.Services.AddHttpClient<PrometheusMetricsService>(client =>
 });
 builder.Services.AddSingleton<IMessageStateService, MessageStateService>();
 builder.Services.AddSingleton<AspireHealthCheckService>();
-builder.Services.AddSingleton<ComplexLogicStressTestService>();
-builder.Services.AddSingleton<SecurityTokenManagerService>();
-builder.Services.AddSingleton<TemporalSecurityTokenService>();
+// REMOVED: ComplexLogicStressTestService - not needed for observability-only focus
+// REMOVED: SecurityTokenManagerService - not needed for observability-only focus  
+// REMOVED: TemporalSecurityTokenService - not needed for observability-only focus
 builder.Services.AddSingleton<KafkaProducerService>();
-builder.Services.AddSingleton<FlinkJobManagementService>();
-builder.Services.AddSingleton<BackpressureMonitoringService>();
+// REMOVED: FlinkJobManagementService - not needed for observability-only focus
+// REMOVED: BackpressureMonitoringService - not needed for observability-only focus
 
 // Add Infrastructure Readiness and Prometheus Warmup services (Phase 1 & Phase 2 implementation)
 builder.Services.AddSingleton<IInfrastructureReadinessService, InfrastructureReadinessService>();
@@ -106,11 +104,8 @@ builder.Services.AddSingleton<ITemporalAgentOptimizer, TemporalAgentOptimizer>()
 builder.Services.AddHttpClient<SystemCapacityDetector>(); // HTTP client for infrastructure API calls
 builder.Services.AddHttpClient<TemporalAgentOptimizer>(); // HTTP client for Temporal API calls
 
-// Add orchestration services for latest architecture
-builder.Services.AddSingleton<IFlinkOrchestra, FlinkOrchestra>();
-
-// Add Orchestra background service for non-blocking initialization
-builder.Services.AddHostedService<OrchestraInitializationService>();
+// REMOVED: Orchestra services - not needed for observability-only focus
+// REMOVED: OrchestraInitializationService - not needed for observability-only focus
 
 // Add HTTP client for external calls with extended timeout for complex operations
 builder.Services.AddHttpClient().ConfigureHttpClientDefaults(clientBuilder =>
@@ -125,8 +120,7 @@ try
 {
     var app = builder.Build();
 
-    // Orchestra initialization is now handled by OrchestraInitializationService background service
-    // This allows the application to start immediately without waiting for Orchestra setup
+    // REMOVED: Orchestra initialization - not needed for observability-only focus
 
     // Configure the HTTP request pipeline
     
@@ -140,7 +134,7 @@ try
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "LocalTesting API v1");
         c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
-        c.DocumentTitle = "LocalTesting - Complex Logic Stress Test Interface";
+        c.DocumentTitle = "LocalTesting - Observability Testing Interface";
         c.DefaultModelsExpandDepth(-1);
         c.DefaultModelExpandDepth(2);
     });
@@ -157,7 +151,7 @@ try
 
     app.MapControllers();
 
-    Console.WriteLine("Starting LocalTesting WebAPI application...");
+    Console.WriteLine("Starting LocalTesting WebAPI application (Observability Focus)...");
     app.Run();
 }
 catch (Exception ex)
@@ -166,5 +160,4 @@ catch (Exception ex)
     Environment.Exit(1);
 }
 
-// Orchestra initialization is now handled by OrchestraInitializationService background service
-// All Orchestra-related initialization logic has been moved to that service to avoid blocking startup
+// REMOVED: Orchestra-related initialization comments - focusing on observability endpoints only

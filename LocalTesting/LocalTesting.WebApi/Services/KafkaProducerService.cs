@@ -7,67 +7,25 @@ namespace LocalTesting.WebApi.Services;
 
 public class KafkaProducerService : IDisposable
 {
-    private IProducer<string, string>? _producer;
+    private readonly IProducer<string, string> _producer;
     private readonly ILogger<KafkaProducerService> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly IConfiguration _configuration; // Still needed for configuration settings
     private readonly AsyncBufferedObservabilityService _asyncMetricsService;
     private readonly IMessageStateService _messageStateService;
-    private readonly object _lock = new object();
 
-    public KafkaProducerService(ILogger<KafkaProducerService> logger, IConfiguration configuration, AsyncBufferedObservabilityService asyncMetricsService, IMessageStateService messageStateService)
+    public KafkaProducerService(
+        IProducer<string, string> producer, // Injected Aspire-managed producer
+        ILogger<KafkaProducerService> logger, 
+        IConfiguration configuration, // Still needed for application settings
+        AsyncBufferedObservabilityService asyncMetricsService, 
+        IMessageStateService messageStateService)
     {
+        _producer = producer;
         _logger = logger;
         _configuration = configuration;
         _asyncMetricsService = asyncMetricsService;
         _messageStateService = messageStateService;
-        _logger.LogInformation("KafkaProducerService created with AsyncBufferedObservabilityService for high-performance metrics (producer will be initialized on first use)");
-    }
-
-    private IProducer<string, string> GetOrCreateProducer()
-    {
-        if (_producer == null)
-        {
-            lock (_lock)
-            {
-                if (_producer == null)
-                {
-                    var config = new ProducerConfig
-                    {
-                        BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
-                        ClientId = "LocalTesting.WebApi.Producer.UltraHighPerformance",
-                        Acks = Acks.Leader,  // Use leader ack for maximum speed (instead of All)
-                        MessageTimeoutMs = 30000,   // Reduced timeout for faster failure detection
-                        RequestTimeoutMs = 15000,   // Reduced request timeout for speed
-                        EnableIdempotence = false,  // Disable for maximum speed
-                        CompressionType = CompressionType.Lz4,  // Faster compression than Snappy
-                        BatchSize = 2097152,  // 2MB batch size for ultra-high throughput (doubled from 1MB)
-                        LingerMs = 10,       // Optimized linger time for batch efficiency vs latency
-                        QueueBufferingMaxMessages = 50000000,  // 50M message buffer for ultra-high throughput
-                        QueueBufferingMaxKbytes = 16384 * 1024,  // 16GB buffer for ultra-high-speed production
-                        MessageSendMaxRetries = 0,  // No retries for maximum speed
-                        RetryBackoffMs = 5,         // Minimal retry backoff
-                        // Ultra-high performance settings optimized for thousands msg/sec
-                        MaxInFlight = 100,          // Maximum in-flight requests for ultimate parallelism
-                        DeliveryReportFields = "none", // No delivery reports for maximum speed
-                        ApiVersionRequest = true,   // Enable for better performance
-                        BrokerVersionFallback = "2.8.0",
-                        // Additional ultra-high-throughput optimizations
-                        SocketKeepaliveEnable = true,
-                        SocketNagleDisable = true,  // Disable Nagle algorithm for low latency
-                        // Performance optimizations for synchronous Produce calls
-                        StatisticsIntervalMs = 0    // Disable statistics for performance
-                    };
-
-                    _producer = new ProducerBuilder<string, string>(config)
-                        .SetErrorHandler((_, e) => _logger.LogError("Kafka producer error: {Error}", e.Reason))
-                        .SetLogHandler((_, log) => _logger.LogDebug("Kafka producer log: {Message}", log.Message))
-                        .Build();
-
-                    _logger.LogInformation("Kafka producer initialized with bootstrap servers: {BootstrapServers}", config.BootstrapServers);
-                }
-            }
-        }
-        return _producer;
+        _logger.LogInformation("KafkaProducerService created with Aspire-managed Kafka producer and AsyncBufferedObservabilityService for high-performance metrics");
     }
 
     public async Task ProduceMessagesAsync(string topic, List<ComplexLogicMessage> messages)
@@ -80,17 +38,17 @@ public class KafkaProducerService : IDisposable
         _logger.LogInformation("Producing {MessageCount} messages to topic '{Topic}' with {Mode} mode", 
             messages.Count, topic, highPerformanceMode ? "HIGH PERFORMANCE" : "FULL OBSERVABILITY");
 
-        var producer = GetOrCreateProducer(); // Lazy initialization
+        // Use the Aspire-managed producer directly
 
         if (highPerformanceMode)
         {
             // OPTIMIZED HIGH-PERFORMANCE MODE: Minimal overhead for thousands msg/sec
-            await ProduceMessagesHighPerformanceAsync(topic, messages, producer, startTime);
+            await ProduceMessagesHighPerformanceAsync(topic, messages, _producer, startTime);
         }
         else
         {
             // FULL OBSERVABILITY MODE: Complete tracking and state management
-            await ProduceMessagesFullObservabilityAsync(topic, messages, producer, startTime);
+            await ProduceMessagesFullObservabilityAsync(topic, messages, _producer, startTime);
         }
     }
 

@@ -11,11 +11,14 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="9.1.0" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="9.4.2" />
+    <!-- Aspire Kafka client integration -->
+    <PackageReference Include="Aspire.Confluent.Kafka" Version="9.4.2" />
+    <!-- Aspire Redis client integration - replaces direct StackExchange.Redis -->
+    <PackageReference Include="Aspire.StackExchange.Redis" Version="9.4.2" />
     <!-- Native Prometheus metrics - replaced OpenTelemetry -->
     <PackageReference Include="prometheus-net" Version="8.2.1" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
-    <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.7" />
     <PackageReference Include="Temporalio" Version="1.1.1" />

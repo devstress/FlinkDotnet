@@ -26,14 +26,15 @@
     <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" Version="2.4.1" />
     
     <!-- Microsoft Aspire Integration Testing -->
-    <PackageReference Include="Aspire.Hosting.Testing" Version="9.1.0" />
+    <PackageReference Include="Aspire.Hosting.Testing" Version="9.4.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
     
-    <!-- Application dependencies -->
-    <PackageReference Include="StackExchange.Redis" Version="2.8.22" />
+    <!-- Application dependencies - Aspire client packages for integration testing -->
+    <PackageReference Include="Aspire.StackExchange.Redis" Version="9.4.2" />
+    <PackageReference Include="Aspire.Confluent.Kafka" Version="9.4.2" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     
     <!-- HTTP testing dependencies -->

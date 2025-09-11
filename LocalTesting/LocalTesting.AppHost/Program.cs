@@ -2,11 +2,23 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using LocalTesting.Shared.Constants;
 
-var builder = DistributedApplication.CreateBuilder(args);
-
-// Simple Aspire configuration - clean and maintainable
+// Configure Aspire environment variables BEFORE creating builder
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS", "true");
+
+// Force IPv4 preference for CI environments to avoid IPv6 connection issues
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS")))
+{
+    Environment.SetEnvironmentVariable("ASPNETCORE_PREFERIPV4", "true");
+    Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_PREFERIPV4", "true");
+}
+
+// Configure Aspire Dashboard required environment variables before builder creation
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:13323");
+Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:13324");
+
+var builder = DistributedApplication.CreateBuilder(args);
 
 // Optimize DCP for faster startup in test environments
 Environment.SetEnvironmentVariable("ASPIRE_DCP_RESOURCE_TIMEOUT", "30");
@@ -21,53 +33,35 @@ builder.Services.Configure<HostOptions>(options =>
 
 Console.WriteLine("🚀 Starting LocalTesting infrastructure with clean, simple configuration...");
 
-// Redis - simple configuration
-var redis = builder.AddRedis("redis")
-    .WithEndpoint(PortConstants.RedisExternal, PortConstants.RedisInternal, name: "redis");
+// Redis - simplified Aspire configuration with automatic port allocation
+var redis = builder.AddRedis("redis");
 
-// Convert ports to strings for Aspire compatibility
-var kafkaInternalStr = PortConstants.KafkaInternal.ToString();
-var kafkaControllerInternalStr = PortConstants.KafkaControllerInternal.ToString();
-var prometheusInternalStr = PortConstants.PrometheusInternal.ToString();
+// Kafka - Native Aspire hosting with automatic service discovery (IPv4 configured via environment)
+var kafka = builder.AddKafka("kafka");
 
-// Kafka - clean, standard configuration  
-var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
-    .WithEndpoint(PortConstants.KafkaExternal, PortConstants.KafkaInternal, name: "kafka")
-    .WithEnvironment("KAFKA_NODE_ID", "1")
-    .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
-    .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:{kafkaInternalStr},CONTROLLER://0.0.0.0:{kafkaControllerInternalStr}")
-    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://kafka:{kafkaInternalStr}")
-    .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
-    .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT")
-    .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", $"1@kafka:{kafkaControllerInternalStr}")
-    .WithEnvironment("CLUSTER_ID", "LOCAL_TESTING_KRAFT_CLUSTER")
-    .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
-    .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
-    .WithEnvironment("KAFKA_COMPRESSION_TYPE", "lz4");
+// Prometheus - essential observability (custom container - no official Aspire hosting available)
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
+    .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, name: "prometheus")
+    .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
+    .WithArgs("--config.file=/etc/prometheus/prometheus.yml", 
+             $"--web.listen-address=0.0.0.0:{PortConstants.PrometheusInternal}");
 
-// Flink JobManager - simplified configuration
+// Flink JobManager - custom container (no official Aspire hosting available)
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithHttpEndpoint(PortConstants.FlinkJobManagerWebExternal, PortConstants.FlinkJobManagerWebInternal, name: "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("jobmanager");
 
-// Flink TaskManager - simplified configuration
+// Flink TaskManager - custom container (no official Aspire hosting available)
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
-// Prometheus - essential observability
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
-    .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, name: "prometheus")
-    .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
-    .WithArgs("--config.file=/etc/prometheus/prometheus.yml", 
-             $"--web.listen-address=0.0.0.0:{prometheusInternalStr}");
-
 // LocalTesting Web API - core service
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
-    .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", PortConstants.KafkaBootstrapServers())
+    .WithReference(kafka) // Aspire automatically provides connection configuration
     .WithEnvironment("FLINK_JOBMANAGER_URL", PortConstants.FlinkJobManagerUrl())
     .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
     .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi")
