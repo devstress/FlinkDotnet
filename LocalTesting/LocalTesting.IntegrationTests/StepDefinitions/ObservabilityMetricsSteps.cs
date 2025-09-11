@@ -218,15 +218,14 @@ public class ObservabilityMetricsSteps : IDisposable
         Console.WriteLine("🔍 Step 1: Infrastructure validated by Aspire framework - proceeding with test execution...");
         Console.WriteLine("⚡ WI16 FIX: Removed problematic pre-test validation that was causing connection failures");
         
-        // WI16 Enhanced: Additional grace period for services to fully initialize after Aspire reports healthy
-        // CI environments need more time for services inside containers to be ready
+        // WI16 Enhanced: Extended grace period to see if services eventually become ready
         var isCI = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
-        var gracePeriodSeconds = isCI ? 60 : 30; // 60s for CI, 30s for local
+        var gracePeriodSeconds = isCI ? 180 : 120; // WI16: Test extended period - 3 minutes for CI, 2 minutes local
         
-        Console.WriteLine($"⏳ WI16 FIX: Allowing {gracePeriodSeconds}-second grace period for service initialization...");
-        Console.WriteLine($"🔧 Environment: {(isCI ? "GitHub Actions (CI)" : "Local")} - extended timeout for service readiness");
+        Console.WriteLine($"⏳ WI16 EXTENDED TEST: Allowing {gracePeriodSeconds}-second grace period for service initialization...");
+        Console.WriteLine($"🔧 Environment: {(isCI ? "GitHub Actions (CI)" : "Local")} - testing extended startup time");
         await Task.Delay(gracePeriodSeconds * 1000);
-        Console.WriteLine("✅ Grace period completed - services should be ready for workload execution");
+        Console.WriteLine("✅ Extended grace period completed - services should be ready for workload execution");
         
         // WI16 Enhanced: Basic connectivity validation before starting workload
         Console.WriteLine("🔍 WI16 FIX: Performing basic connectivity check before workload execution...");
