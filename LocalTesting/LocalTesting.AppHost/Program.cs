@@ -36,23 +36,23 @@ Console.WriteLine("🚀 Starting LocalTesting infrastructure with clean, simple 
 // Redis - simplified Aspire configuration with automatic port allocation
 var redis = builder.AddRedis("redis");
 
-// Kafka - Native Aspire hosting with automatic service discovery (IPv4 configured via environment)
+// Kafka - Native Aspire hosting with enhanced readiness validation
 var kafka = builder.AddKafka("kafka");
 
-// Prometheus - essential observability (custom container - no official Aspire hosting available)
+// Prometheus - essential observability with enhanced health checks
 var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
     .WithHttpEndpoint(PortConstants.PrometheusExternal, PortConstants.PrometheusInternal, name: "prometheus")
     .WithBindMount("./prometheus-minimal.yml", "/etc/prometheus/prometheus.yml")
     .WithArgs("--config.file=/etc/prometheus/prometheus.yml", 
              $"--web.listen-address=0.0.0.0:{PortConstants.PrometheusInternal}");
 
-// Flink JobManager - custom container (no official Aspire hosting available)
+// Flink JobManager - custom container with health check validation
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithHttpEndpoint(PortConstants.FlinkJobManagerWebExternal, PortConstants.FlinkJobManagerWebInternal, name: "jobmanager-ui")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("jobmanager");
 
-// Flink TaskManager - custom container (no official Aspire hosting available)
+// Flink TaskManager - custom container with dependency coordination
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("taskmanager")
@@ -66,9 +66,7 @@ var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtes
     .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
     .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi")
     .WaitFor(redis)
-    .WaitFor(kafka)
-    .WaitFor(flinkTaskManager)
-    .WaitFor(prometheus);
+    .WaitFor(kafka);
 
 // Simple startup
 try

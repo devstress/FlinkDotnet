@@ -506,6 +506,62 @@ public class KafkaProducerService : IDisposable
         }
     }
 
+    /// <summary>
+    /// WI26: Comprehensive Kafka broker connectivity validation with detailed health information
+    /// Tests broker readiness and returns structured health check results
+    /// </summary>
+    public async Task<KafkaHealthCheckResult> ValidateKafkaConnectivityAsync()
+    {
+        try
+        {
+            _logger.LogDebug("🔍 WI26: Performing comprehensive Kafka connectivity validation...");
+            
+            // Create an admin client for broker health validation
+            var adminConfig = new AdminClientConfig
+            {
+                BootstrapServers = _configuration["KAFKA_BOOTSTRAP_SERVERS"] ?? PortConstants.KafkaBootstrapServers("localhost"),
+                SocketTimeoutMs = 10000    // 10s socket timeout
+            };
+
+            using var adminClient = new AdminClientBuilder(adminConfig).Build();
+            
+            // Get broker metadata as a comprehensive health check
+            var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(15));
+            
+            if (metadata.Brokers == null || metadata.Brokers.Count == 0)
+            {
+                return new KafkaHealthCheckResult
+                {
+                    IsHealthy = false,
+                    ErrorMessage = "No Kafka brokers available - broker not ready",
+                    BrokerInfo = "No brokers found"
+                };
+            }
+            
+            var brokerInfo = $"{metadata.Brokers.Count} broker(s) available: " + 
+                           string.Join(", ", metadata.Brokers.Select(b => $"{b.Host}:{b.Port}"));
+            
+            _logger.LogDebug("✅ WI26: Kafka broker health validated - {BrokerInfo}", brokerInfo);
+            
+            return new KafkaHealthCheckResult
+            {
+                IsHealthy = true,
+                BrokerInfo = brokerInfo,
+                ErrorMessage = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("❌ WI26: Kafka connectivity validation failed: {Error}", ex.Message);
+            return new KafkaHealthCheckResult
+            {
+                IsHealthy = false,
+                ErrorMessage = ex.Message,
+                BrokerInfo = "Connection failed"
+            };
+        }
+    }
+
     public void Dispose()
     {
         _producer?.Dispose();

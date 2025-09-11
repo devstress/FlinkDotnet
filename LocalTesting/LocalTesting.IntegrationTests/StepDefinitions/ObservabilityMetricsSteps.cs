@@ -8,6 +8,7 @@ using Aspire.Hosting.Testing;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Confluent.Kafka;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
@@ -227,9 +228,9 @@ public class ObservabilityMetricsSteps : IDisposable
         await Task.Delay(gracePeriodSeconds * 1000);
         Console.WriteLine("✅ Extended grace period completed - services should be ready for workload execution");
         
-        // WI16 Enhanced: Basic connectivity validation before starting workload
-        Console.WriteLine("🔍 WI16 FIX: Performing basic connectivity check before workload execution...");
-        await VerifyBasicServiceConnectivity();
+        // WI26 Enhanced: Comprehensive service readiness validation including Kafka broker health
+        Console.WriteLine("🔍 WI26 FIX: Performing comprehensive service readiness validation before workload execution...");
+        await ValidateInfrastructureServiceReadiness();
         
         // MEASURE ACTUAL PROCESSING TIME - No more hardcoded values
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -1422,46 +1423,96 @@ public class ObservabilityMetricsSteps : IDisposable
     }
 
     /// <summary>
-    /// WI16 FIX: Basic service connectivity verification before workload execution
-    /// Ensures services inside containers are ready to handle requests
+    /// WI26 ENHANCED: Comprehensive service readiness validation with Kafka broker health check
+    /// Validates that services inside containers are ready to accept connections beyond container startup
     /// </summary>
-    private async Task VerifyBasicServiceConnectivity()
+    private async Task ValidateInfrastructureServiceReadiness()
     {
-        var maxAttempts = 5;
-        var retryDelay = 10000; // 10 seconds between retries
+        Console.WriteLine("🔍 WI26: Starting comprehensive infrastructure service readiness validation...");
+        
+        var maxAttempts = 20; // 20 attempts * 5 seconds = 100 second maximum wait
+        var retryDelay = 5000; // 5 seconds between attempts
+        
+        // Get service endpoints for validation (removed - will use WebAPI health check approach)
         
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
             {
-                Console.WriteLine($"🔍 Connectivity check attempt {attempt}/{maxAttempts}...");
+                Console.WriteLine($"🔍 Service readiness validation attempt {attempt}/{maxAttempts}...");
                 
-                // Simple health check - if this succeeds, basic connectivity is working
+                // 1. Validate WebAPI basic connectivity (should be ready from Aspire health check)
                 var healthResponse = await _httpClient!.GetAsync("/health");
-                if (healthResponse.IsSuccessStatusCode)
+                if (!healthResponse.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("✅ Basic connectivity verified - WebAPI is responding");
-                    return;
+                    Console.WriteLine($"⚠️ WebAPI health check failed: {healthResponse.StatusCode}");
+                    throw new InvalidOperationException($"WebAPI health check failed: {healthResponse.StatusCode}");
                 }
+                Console.WriteLine($"✅ WebAPI health check passed");
                 
-                Console.WriteLine($"⚠️ Health check returned {healthResponse.StatusCode}, retrying...");
+                // 2. Validate Kafka broker readiness using WebAPI health check
+                await ValidateKafkaBrokerReadiness();
+                Console.WriteLine($"✅ Kafka broker readiness validated");
+                
+                // 3. Validate other services readiness (Prometheus, Flink) if needed
+                // For now focusing on Kafka as it's the primary failure point
+                
+                Console.WriteLine($"✅ All infrastructure services ready for workload execution (attempt {attempt})");
+                return; // Success - all services ready
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⚠️ Connectivity check failed (attempt {attempt}): {ex.Message}");
+                Console.WriteLine($"⚠️ Service readiness check failed (attempt {attempt}): {ex.Message}");
                 
                 if (attempt == maxAttempts)
                 {
-                    Console.WriteLine("⚠️ Basic connectivity check failed - proceeding anyway with extended timeout tolerance");
-                    return; // Don't fail the test, just proceed with workload execution
+                    var errorMessage = $"Infrastructure services failed readiness validation after {maxAttempts} attempts ({maxAttempts * retryDelay / 1000} seconds)";
+                    Console.WriteLine($"❌ {errorMessage}");
+                    Console.WriteLine($"❌ This indicates container services are not ready and must fail the test");
+                    throw new InvalidOperationException(errorMessage);
                 }
             }
             
             if (attempt < maxAttempts)
             {
-                Console.WriteLine($"⏳ Waiting {retryDelay/1000} seconds before next connectivity check...");
+                Console.WriteLine($"⏳ Waiting {retryDelay/1000} seconds before next service readiness check...");
                 await Task.Delay(retryDelay);
             }
+        }
+    }
+    
+    /// <summary>
+    /// WI26: Validate Kafka broker is ready to accept producer connections
+    /// Uses admin client approach to verify broker availability beyond container health
+    /// </summary>
+    private async Task ValidateKafkaBrokerReadiness()
+    {
+        // Get Kafka connection string from the HTTP client base address pattern
+        // Since we're using Aspire's service discovery, we need to check the actual Kafka endpoint
+        Console.WriteLine($"🔍 Validating Kafka broker readiness...");
+        
+        // For now, we'll validate connectivity by attempting a simple admin operation
+        // The exact connection string will be available through Aspire service discovery in the WebAPI
+        
+        try
+        {
+            // Validate that the WebAPI can reach Kafka by checking its internal health
+            var kafkaHealthResponse = await _httpClient!.GetAsync("/api/observability/kafka-health");
+            if (kafkaHealthResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"✅ Kafka broker health check passed via WebAPI");
+                return;
+            }
+            else
+            {
+                var errorContent = await kafkaHealthResponse.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Kafka health check failed via WebAPI: {kafkaHealthResponse.StatusCode} - {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Kafka broker readiness validation failed: {ex.Message}");
+            throw new InvalidOperationException($"Kafka broker not ready: {ex.Message}");
         }
     }
 

@@ -2909,6 +2909,57 @@ public class ObservabilityController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// WI26: Kafka broker health check endpoint for infrastructure readiness validation
+    /// Tests Kafka connectivity to ensure broker is ready to accept connections
+    /// </summary>
+    [HttpGet("kafka-health")]
+    [SwaggerOperation(
+        Summary = "Check Kafka broker health and connectivity", 
+        Description = "Validates that Kafka broker is ready to accept producer/consumer connections")]
+    public async Task<IActionResult> GetKafkaHealth()
+    {
+        try
+        {
+            _logger.LogInformation("🔍 WI26: Checking Kafka broker health and connectivity...");
+            
+            // Use the existing KafkaProducerService to validate connectivity
+            var healthCheck = await _kafkaProducerService.ValidateKafkaConnectivityAsync();
+            
+            if (healthCheck.IsHealthy)
+            {
+                _logger.LogInformation("✅ WI26: Kafka broker health check passed");
+                return Ok(new 
+                { 
+                    Status = "Healthy",
+                    Message = "Kafka broker is ready to accept connections",
+                    Timestamp = DateTime.UtcNow,
+                    BrokerInfo = healthCheck.BrokerInfo
+                });
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ WI26: Kafka broker health check failed: {Error}", healthCheck.ErrorMessage);
+                return StatusCode(503, new 
+                { 
+                    Status = "Unhealthy",
+                    Message = healthCheck.ErrorMessage,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ WI26: Kafka health check failed with exception");
+            return StatusCode(503, new 
+            { 
+                Status = "Error",
+                Message = $"Kafka health check failed: {ex.Message}",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
     #endregion
 }
 

@@ -289,3 +289,13 @@ public class BatchProcessingRequest
     public string TestId { get; set; } = string.Empty;
     public int BatchSize { get; set; } = 100;
 }
+
+/// <summary>
+/// WI26: Kafka broker health check result for infrastructure readiness validation
+/// </summary>
+public class KafkaHealthCheckResult
+{
+    public bool IsHealthy { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string BrokerInfo { get; set; } = string.Empty;
+}
