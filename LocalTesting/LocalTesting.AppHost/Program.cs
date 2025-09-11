@@ -36,8 +36,20 @@ Console.WriteLine("🚀 Starting LocalTesting infrastructure with clean, simple 
 // Redis - simplified Aspire configuration with automatic port allocation
 var redis = builder.AddRedis("redis");
 
-// Kafka - Native Aspire hosting with enhanced readiness validation
-var kafka = builder.AddKafka("kafka");
+// Kafka - Complete custom container replacement for external access
+// WI27 FIX: Replace AddKafka() with properly configured custom Kafka container
+var kafka = builder.AddContainer("kafka", "apache/kafka:3.8.0")
+    .WithEndpoint(9092, targetPort: 9092, name: "kafka") // WI27: Add targetPort to fix endpoint configuration
+    .WithEnvironment("KAFKA_NODE_ID", "1")
+    .WithEnvironment("KAFKA_PROCESS_ROLES", "broker")
+    .WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:9092") 
+    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://localhost:9092")
+    .WithEnvironment("CLUSTER_ID", "LocalTestingCluster2024")
+    .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
+    .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
+    .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+    .WithEnvironment("KAFKA_NUM_PARTITIONS", "3")
+    .WithEnvironment("KAFKA_DEFAULT_REPLICATION_FACTOR", "1");
 
 // Prometheus - essential observability with enhanced health checks
 var prometheus = builder.AddContainer("prometheus", "prom/prometheus:latest")
@@ -58,10 +70,10 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
-// LocalTesting Web API - core service
+// LocalTesting Web API - core service with explicit Kafka endpoint reference  
 var localTestingApi = builder.AddProject<Projects.LocalTesting_WebApi>("localtesting-webapi")
     .WithReference(redis)
-    .WithReference(kafka) // Aspire automatically provides connection configuration
+    .WithReference(kafka.GetEndpoint("kafka")) // WI27: Reference the specific kafka endpoint for service discovery
     .WithEnvironment("FLINK_JOBMANAGER_URL", PortConstants.FlinkJobManagerUrl())
     .WithEnvironment("PROMETHEUS_URL", PortConstants.PrometheusUrl())
     .WithHttpEndpoint(PortConstants.WebApiExternal, PortConstants.WebApiInternal, name: "webapi")

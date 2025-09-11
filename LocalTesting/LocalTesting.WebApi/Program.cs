@@ -6,6 +6,7 @@ using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Services;
 using FlinkDotNet.Orchestration.Models;
 using Prometheus;
+using Confluent.Kafka; // WI27: Added for manual Kafka producer configuration
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,8 +56,24 @@ builder.Services.AddSwaggerGen(c =>
 // Add Redis connection service - individual services will connect when needed
 builder.Services.AddSingleton<IRedisConnectionService, RedisConnectionService>();
 
-// Add Aspire Kafka producer client integration
-builder.AddKafkaProducer<string, string>("kafka");
+// Add Kafka producer configuration manually for custom container
+// WI27 FIX: Replace Aspire AddKafkaProducer with manual configuration since using custom container
+builder.Services.AddSingleton<IProducer<string, string>>(serviceProvider =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    // WI27: Use kafka endpoint connection string from Aspire service discovery
+    var bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
+    var producerConfig = new ProducerConfig
+    {
+        BootstrapServers = bootstrapServers,
+        ClientId = "LocalTesting.WebApi.Producer",
+        Acks = Acks.Leader,
+        RetryBackoffMs = 1000,
+        MessageTimeoutMs = 30000,
+        EnableIdempotence = false // Simplified for LocalTesting
+    };
+    return new ProducerBuilder<string, string>(producerConfig).Build();
+});
 
 // Add Aspire Redis client integration - replaces manual StackExchange.Redis setup
 builder.AddRedisClient("redis");
