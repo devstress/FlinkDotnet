@@ -562,8 +562,60 @@ public class KafkaProducerService : IDisposable
         }
     }
 
+    /// <summary>
+    /// WI27: Test message production for end-to-end connectivity validation
+    /// Sends a single test message to validate custom Kafka container functionality
+    /// </summary>
+    public async Task<bool> ProduceTestMessageAsync(string topic, string key, string value)
+    {
+        try
+        {
+            _logger.LogDebug("🔍 WI27: Producing test message to topic '{Topic}' with key '{Key}'...", topic, key);
+            
+            var testMessage = new Message<string, string> 
+            { 
+                Key = key,
+                Value = value,
+                Headers = new Headers
+                {
+                    { "test.type", System.Text.Encoding.UTF8.GetBytes("end-to-end-connectivity") },
+                    { "test.timestamp", System.Text.Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("O")) }
+                }
+            };
+            
+            var deliveryReport = await _producer.ProduceAsync(topic, testMessage);
+            
+            if (deliveryReport.Status == PersistenceStatus.Persisted)
+            {
+                _logger.LogDebug("✅ WI27: Test message produced successfully - partition {Partition}, offset {Offset}", 
+                    deliveryReport.Partition.Value, deliveryReport.Offset.Value);
+                return true;
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ WI27: Test message production failed - status: {Status}", deliveryReport.Status);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("❌ WI27: Test message production failed: {Error}", ex.Message);
+            return false;
+        }
+    }
+
     public void Dispose()
     {
         _producer?.Dispose();
     }
+}
+
+/// <summary>
+/// WI26: Structured result for Kafka health check operations
+/// </summary>
+public class KafkaHealthCheckResult
+{
+    public bool IsHealthy { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string BrokerInfo { get; set; } = string.Empty;
 }

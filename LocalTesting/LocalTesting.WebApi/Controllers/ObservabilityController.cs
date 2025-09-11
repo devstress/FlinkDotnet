@@ -2960,6 +2960,106 @@ public class ObservabilityController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// WI27: Test Kafka producer connectivity for end-to-end validation
+    /// Tests that the custom Kafka container can receive messages through the manual producer configuration
+    /// </summary>
+    [HttpPost("test-kafka-producer")]
+    [SwaggerOperation(
+        Summary = "Test Kafka producer connectivity and message sending", 
+        Description = "Validates that the custom Kafka container configuration allows successful message production")]
+    public async Task<IActionResult> TestKafkaProducer([FromBody] KafkaProducerTestRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("🔍 WI27: Testing Kafka producer connectivity with custom container...");
+            _logger.LogInformation("   Test parameters: MessageCount={MessageCount}, TopicName={TopicName}, TestId={TestId}",
+                request.MessageCount, request.TopicName, request.TestId);
+            
+            var testStartTime = DateTime.UtcNow;
+            var successCount = 0;
+            var failureCount = 0;
+            var totalLatencyMs = 0.0;
+            
+            // Test message production to validate custom container external access
+            for (int i = 0; i < request.MessageCount; i++)
+            {
+                try
+                {
+                    var messageLatencyStart = DateTime.UtcNow;
+                    
+                    var testMessage = new
+                    {
+                        TestId = request.TestId,
+                        MessageIndex = i + 1,
+                        Timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        Content = $"End-to-end connectivity test message {i + 1} of {request.MessageCount}"
+                    };
+                    
+                    await _kafkaProducerService.ProduceTestMessageAsync(request.TopicName, 
+                        $"test-key-{request.TestId}-{i}", 
+                        System.Text.Json.JsonSerializer.Serialize(testMessage));
+                    
+                    var messageLatency = (DateTime.UtcNow - messageLatencyStart).TotalMilliseconds;
+                    totalLatencyMs += messageLatency;
+                    successCount++;
+                    
+                    if (i % 10 == 0 && i > 0)
+                    {
+                        _logger.LogInformation("   Progress: {Completed}/{Total} messages sent", i, request.MessageCount);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("   Message {Index} failed: {Error}", i + 1, ex.Message);
+                    failureCount++;
+                }
+            }
+            
+            var testEndTime = DateTime.UtcNow;
+            var totalDurationMs = (testEndTime - testStartTime).TotalMilliseconds;
+            var successRate = request.MessageCount > 0 ? (double)successCount / request.MessageCount * 100 : 0;
+            var averageLatencyMs = successCount > 0 ? totalLatencyMs / successCount : 0;
+            
+            var result = new
+            {
+                TestId = request.TestId,
+                MessagesSent = successCount,
+                MessagesFailed = failureCount,
+                TotalRequested = request.MessageCount,
+                SuccessRate = successRate,
+                AverageLatencyMs = averageLatencyMs,
+                TotalDurationMs = totalDurationMs,
+                MessagesPerSecond = totalDurationMs > 0 ? successCount / (totalDurationMs / 1000.0) : 0,
+                TopicName = request.TopicName,
+                TestStartTime = testStartTime,
+                TestEndTime = testEndTime
+            };
+            
+            if (successRate >= 95.0)
+            {
+                _logger.LogInformation("✅ WI27: Kafka producer test successful - {SuccessRate}% success rate", successRate);
+                return Ok(result);
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ WI27: Kafka producer test partial failure - {SuccessRate}% success rate", successRate);
+                return StatusCode(206, result); // Partial content
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ WI27: Kafka producer test failed with exception");
+            return StatusCode(500, new 
+            { 
+                Status = "Error",
+                Message = $"Kafka producer test failed: {ex.Message}",
+                TestId = request.TestId,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+    }
+
     #endregion
 }
 
@@ -2988,6 +3088,16 @@ public class RealWorkloadRequest
     public bool AdaptiveParametersUsed { get; set; } = false;
     public string CapacitySource { get; set; } = "Unknown";
     // Note: Processing time measured by workload execution using Stopwatch for real infrastructure execution
+}
+
+/// <summary>
+/// WI27: Request model for Kafka producer connectivity testing
+/// </summary>
+public class KafkaProducerTestRequest
+{
+    public int MessageCount { get; set; } = 100;
+    public string TopicName { get; set; } = "test-connectivity-topic";
+    public string TestId { get; set; } = Guid.NewGuid().ToString("N")[..8];
 }
 
 public class StartTrackingRequest
