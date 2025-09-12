@@ -31,7 +31,7 @@ public struct DummyMessage
 	public long KeyId;
 }
 
-public class RingBuffer<T>
+public class RingBuffer<T> where T : struct
 {
 	public delegate void InvalidateItem(ref T item);
 	int head;
@@ -422,7 +422,7 @@ public class BatchMessageProcessor
 					}
 					catch (ProduceException<string, string> ex) when (ex.Error.Code == ErrorCode.Local_QueueFull)
 					{
-						//This is the expected behavior of the back pressure test
+						
 					}
 					catch (Exception ex)
 					{

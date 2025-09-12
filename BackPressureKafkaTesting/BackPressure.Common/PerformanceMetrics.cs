@@ -7,6 +7,7 @@ public class PerformanceMetrics
 {
     private readonly ConcurrentQueue<double> _messageTimes = new();
     private readonly ConcurrentQueue<long> _timestamps = new();
+    private readonly ConcurrentQueue<long> _outTimestamps = new();
     private long _messagesIn = 0;
     private long _messagesOut = 0;
     private long _throttleEvents = 0;
@@ -64,13 +65,19 @@ public class PerformanceMetrics
     public void IncrementOut(double latencyMs)
     {
         Interlocked.Increment(ref _messagesOut);
-        
+
         while (_messageTimes.Count > 10000)
         {
             _messageTimes.TryDequeue(out _);
         }
-        
+
         _messageTimes.Enqueue(latencyMs);
+        var now = Stopwatch.GetTimestamp();
+        _outTimestamps.Enqueue(now);
+        while (_outTimestamps.Count > 10000)
+        {
+            _outTimestamps.TryDequeue(out _);
+        }
         
         lock (_lockObject)
         {
@@ -122,11 +129,22 @@ public class PerformanceMetrics
     {
         var currentTime = Stopwatch.GetTimestamp();
         var windowStart = currentTime - (windowSeconds * Stopwatch.Frequency);
-        
+
         var recentTimestamps = _timestamps.ToArray()
             .Where(ts => ts >= windowStart)
             .Count();
-        
+
+        return recentTimestamps / (double)windowSeconds;
+    }
+    public double GetCurrentOutThroughputPerSecond(int windowSeconds = 10)
+    {
+        var currentTime = Stopwatch.GetTimestamp();
+        var windowStart = currentTime - (windowSeconds * Stopwatch.Frequency);
+
+        var recentTimestamps = _outTimestamps.ToArray()
+            .Where(ts => ts >= windowStart)
+            .Count();
+
         return recentTimestamps / (double)windowSeconds;
     }
     
@@ -164,11 +182,12 @@ public class PerformanceMetrics
 			_minMessageLatency = double.MaxValue;
 		}
 		
-		while (_messageTimes.TryDequeue(out _)) { }
-		while (_timestamps.TryDequeue(out _)) { }
-		
-		_totalStopwatch.Reset();
-	}
+        while (_messageTimes.TryDequeue(out _)) { }
+        while (_timestamps.TryDequeue(out _)) { }
+        while (_outTimestamps.TryDequeue(out _)) { }
+        
+        _totalStopwatch.Reset();
+    }
 
 
 }

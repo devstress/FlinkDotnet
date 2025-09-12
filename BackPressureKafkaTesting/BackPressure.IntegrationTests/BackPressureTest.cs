@@ -1,4 +1,4 @@
-﻿using BackPressure.Common;
+using BackPressure.Common;
 using Confluent.Kafka;
 using NUnit.Framework;
 using System.Collections.Concurrent;
@@ -11,8 +11,8 @@ public static class TestConfiguration
 {
 	public const bool USE_BINARY_SERIALIZATION = true;
 	public const bool USE_BATCH_PROCESSING = true;
-    public const bool USE_KAFKA_MODE = true;
-	public const bool ELIMINATE_SYNC_WAITS = true;
+    public static readonly bool USE_KAFKA_MODE = true;
+	public static readonly bool ELIMINATE_SYNC_WAITS = true;
 	public const int TEST_TIMEOUT_SECONDS = 120;
 	public const int TARGET_MESSAGES = 3_000_000;
 
@@ -459,7 +459,8 @@ public class TaskFactory
 			else
 			{
 				var producerConfig = KafkaConfigHelper.CreatePerformanceProducerConfig(kafkaConnectionString);
-				producerToUse = new ProducerBuilder<string, string>(producerConfig).Build();
+				producerToUse = new ProducerBuilder<string, string>(producerConfig)
+					.Build();
 			}
 
 			var batchProcessor = new BatchMessageProcessor(
@@ -1503,7 +1504,7 @@ public class BackPressureTest : KafkaTestBase
         TestContext.WriteLine($"✅ {testMode} Back Pressure test completed: {messagesOut:N0} messages processed at {throughput:F2} msgs/sec");
         TestContext.WriteLine($"ℹ️ Back pressure activated {backPressureEvents:N0} times ({backPressureRate:F1}% of operations)");
 
-        // Windowed TPS and latency percentiles
+        
         if (result.FinalMetrics != null)
         {
             var tps1s = result.FinalMetrics.GetCurrentThroughputPerSecond(1);
@@ -1540,3 +1541,6 @@ public class BackPressureTest : KafkaTestBase
 	}
 
 }
+
+
+

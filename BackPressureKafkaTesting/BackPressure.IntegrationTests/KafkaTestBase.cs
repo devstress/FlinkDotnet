@@ -1,5 +1,6 @@
-﻿using Aspire.Hosting;
+using Aspire.Hosting;
 using Aspire.Hosting.Testing;
+using System.Diagnostics;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,8 +35,11 @@ public abstract class KafkaTestBase : IAsyncDisposable
 			.WaitAsync(defaultTimeout, cancellationToken);
 
 		KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
-		//KafkaConnectionString = "kafka-broker-4:9092,kafka-broker-5:9092,kafka-broker-6:9092,kafka-broker-7:9092";
+		
 		TestContext.WriteLine($"✅ Kafka connection string: {KafkaConnectionString}");
+
+		
+		await WaitForKafkaReadyAsync(KafkaConnectionString!, TimeSpan.FromSeconds(30), cancellationToken);
 
 		await SetupKafkaClientsAsync();
 
@@ -51,7 +55,7 @@ public abstract class KafkaTestBase : IAsyncDisposable
         }
         catch (Exception)
         {
-            // Don't rethrow, we want to ensure cleanup completes as much as possible
+            
         }
     }
 
@@ -137,13 +141,14 @@ public abstract class KafkaTestBase : IAsyncDisposable
 				BatchSize = 16384,
 				LingerMs = 10,
 				RequestTimeoutMs = 30000,
-				//MessageTimeoutMs = 60000,
-				//SecurityProtocol = SecurityProtocol.SaslPlaintext,
-				//SaslMechanism = SaslMechanism.Plain,
-				//SaslUsername = "admin",
-				//SaslPassword = "admin123",
+				
+				
+				
+				
+				
 			};
-			return new ProducerBuilder<string, string>(config).Build();
+			return new ProducerBuilder<string, string>(config)
+				.Build();
 		});
 
 		hostBuilder.Services.AddSingleton<IConsumer<string, string>>(provider =>
@@ -157,12 +162,13 @@ public abstract class KafkaTestBase : IAsyncDisposable
 				SessionTimeoutMs = 30000,
 				MaxPollIntervalMs = 300000,
 				FetchMinBytes = 1,
-				//SecurityProtocol = SecurityProtocol.SaslPlaintext,
-				//SaslMechanism = SaslMechanism.Plain,
-				//SaslUsername = "admin",
-				//SaslPassword = "admin123",
+				
+				
+				
+				
 			};
-			return new ConsumerBuilder<string, string>(config).Build();
+			return new ConsumerBuilder<string, string>(config)
+				.Build();
 		});
 
 		hostBuilder.Services.AddSingleton<IAdminClient>(provider =>
@@ -171,11 +177,11 @@ public abstract class KafkaTestBase : IAsyncDisposable
 			{
 				BootstrapServers = KafkaConnectionString,
 				SocketTimeoutMs = 60000,
-				//ApiVersionRequestTimeoutMs = 10000,
-				//SecurityProtocol = SecurityProtocol.SaslPlaintext,
-				//SaslMechanism = SaslMechanism.Plain,
-				//SaslUsername = "admin",
-				//SaslPassword = "admin123",
+				
+				
+				
+				
+				
 			};
 			return new AdminClientBuilder(config).Build();
 		});
@@ -187,4 +193,36 @@ public abstract class KafkaTestBase : IAsyncDisposable
 		Consumer = TestHost.Services.GetRequiredService<IConsumer<string, string>>();
 		AdminClient = TestHost.Services.GetRequiredService<IAdminClient>();
 	}
+
+	private static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
+	{
+		var sw = Stopwatch.StartNew();
+		while (sw.Elapsed < timeout)
+		{
+			try
+			{
+				var admin = new AdminClientBuilder(new AdminClientConfig
+				{
+					BootstrapServers = bootstrapServers,
+					SocketTimeoutMs = 5000,
+				})
+				.SetErrorHandler((_, __) => { })
+				.Build();
+
+				using (admin)
+				{
+					var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
+					if (md?.Brokers?.Count > 0)
+						return;
+				}
+			}
+			catch
+			{
+				
+			}
+			await Task.Delay(500, ct);
+		}
+		throw new TimeoutException("Kafka did not become ready in time.");
+	}
 }
+
