@@ -119,16 +119,12 @@ Example `appsettings.json`:
 
 ## Testing
 
-Run the comprehensive test suite:
+Run LocalTesting observability tests:
 
 ```bash
-cd Sample/FlinkDotNet.Aspire.IntegrationTests
-dotnet test
+cd LocalTesting
+dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --filter "Category=observability"
 ```
-
-Test categories:
-- **Integration Tests**: `dotnet test --filter "Category=integration_test"`
-- **Stress Tests**: `dotnet test --filter "Category=stress_test"`
 
 ## Next Steps
 

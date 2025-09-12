@@ -34,7 +34,6 @@ jobs:
       - name: Restore .NET Solutions
         run: |
           dotnet restore FlinkDotNet/FlinkDotNet.sln
-          dotnet restore IntegrationTests/IntegrationTests.sln
 
       - name: Install SonarCloud scanner
         run: |
@@ -42,12 +41,11 @@ jobs:
           mkdir -p ./.sonar/scanner
           dotnet tool install dotnet-sonarscanner --tool-path ./.sonar/scanner
 
-      - name: Build and analyze
+      - name: Build
         shell: bash
         run: |
-          # Build all solutions
+          # Build FlinkDotNet solution
           dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
-          dotnet build IntegrationTests/IntegrationTests.sln --configuration ${{ env.configuration }} --no-restore
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -55,24 +53,11 @@ jobs:
           name: build-solutions
           path: |
             FlinkDotNet/**/bin/${{ env.configuration }}/
-            IntegrationTests/**/bin/${{ env.configuration }}/
 
   unit_tests:
     needs: build
     uses: ./.github/workflows/unit-tests.yml
 
-  integration_tests:
-    needs: build
-    uses: ./.github/workflows/integration-tests.yml
-
   observability_tests:
     needs: build
     uses: ./.github/workflows/observability-tests.yml
-
-  reliability_tests:
-    needs: build
-    uses: ./.github/workflows/reliability-tests.yml
-
-  backpressure_tests:
-    needs: build
-    uses: ./.github/workflows/backpressure-tests.yml

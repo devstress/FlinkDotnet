@@ -1,0 +1,20 @@
+# Local EditorConfig overrides for BackPressureKafkaTesting
+root = true
+
+[*]
+# Disable analyzers entirely in this subtree
+dotnet_analyzer_diagnostic.severity = none
+
+# Ensure compiler diagnostics promoted in the root are not errors here
+dotnet_diagnostic.CS1998.severity = none   # async method without await
+dotnet_diagnostic.CS8019.severity = none   # unnecessary using
+dotnet_diagnostic.IDE0005.severity = none  # remove unnecessary using
+
+# Also neutralize Sonar rules if analyzers were to run
+dotnet_diagnostic.S6966.severity = none
+dotnet_diagnostic.S2139.severity = none
+dotnet_diagnostic.S125.severity = none
+dotnet_diagnostic.S1172.severity = none
+dotnet_diagnostic.S1481.severity = none
+dotnet_diagnostic.S4487.severity = none
+

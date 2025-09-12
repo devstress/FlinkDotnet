@@ -1266,10 +1266,10 @@ The message processing validates current optimized architecture:
 
 Run locally:
 ```bash
-# Run with current architecture (100 customer queues, 20 partitions)
-dotnet test IntegrationTests/IntegrationTests.sln \
-  --filter "Category=observability" \
-  --configuration Release
+  # Run observability tests (LocalTesting)
+  dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
+    --filter "Category=observability" \
+    --configuration Release
 ```
 
 ## Frequently Asked Questions

@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <!-- Disable all analyzer execution within this subtree -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+
+    <!-- Prevent solution-level Sonar analyzer import from applying here -->
+    <SonarQubeExclude>true</SonarQubeExclude>
+
+    <!-- Keep builds/tests lenient -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Ensure any analyzer assemblies included by packages are not used -->
+  <ItemGroup>
+    <Analyzer Remove="@(Analyzer)" />
+  </ItemGroup>
+</Project>

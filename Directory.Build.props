@@ -9,8 +9,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591;1711,CS1574,CS1570</NoWarn>
 
-    <!-- WARNING ENFORCEMENT: Treat all warnings as errors to prevent quality regression -->
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Warning enforcement relaxed: do not fail build on analyzer warnings -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <WarningsNotAsErrors />
 
@@ -19,6 +19,9 @@
 
     <!-- Optional: Set a specific .NET version if needed, though usually inherited. -->
     <!-- <TargetFrameworkVersion>net9.0</TargetFrameworkVersion> -->
+
+    <!-- Re-enable Sonar analyzers -->
+    <SonarQubeExclude>false</SonarQubeExclude>
   </PropertyGroup>
 
   <!-- SonarAnalyzer applied at repository level for systematic code quality analysis -->

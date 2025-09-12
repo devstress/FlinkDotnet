@@ -135,11 +135,6 @@ $script:Solutions = @(
         Description = "Core Flink.NET libraries and job gateway"
     },
     @{
-        Name = "Integration Tests"
-        Path = "IntegrationTests/IntegrationTests.sln"
-        Description = "Integration tests and Aspire orchestration"
-    },
-    @{
         Name = "Local Testing"
         Path = "LocalTesting/LocalTesting.sln"
         Description = "Local testing infrastructure and services"
@@ -473,7 +468,7 @@ function Show-BuildSummary {
     Write-Info ""
     Write-Info "Next steps:"
     Write-Info "  • Run tests: dotnet test"
-    Write-Info "  • Start Aspire AppHost: cd IntegrationTests/FlinkDotNet.Aspire.AppHost && dotnet run"
+    Write-Info "  • Start Aspire AppHost: cd LocalTesting/LocalTesting.AppHost && dotnet run"
     Write-Info "  • View documentation: ./docs/wiki/Getting-Started.md"
 }
 
@@ -534,7 +529,7 @@ function Main {
         }
         
         # Verify we're in the correct directory
-        if (-not (Test-Path "FlinkDotNet") -or -not (Test-Path "IntegrationTests") -or -not (Test-Path "LocalTesting")) {
+        if (-not (Test-Path "FlinkDotNet") -or -not (Test-Path "LocalTesting")) {
             throw "Please run this script from the root of the Flink.NET repository. Current location: $(Get-Location)"
         }
         
