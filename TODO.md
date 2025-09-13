@@ -20,33 +20,33 @@ Legend:
 - [x] Add test fixtures for IR round‑trip (serialize/deserialize) and validation errors.
 
 ## 3) IR Runner Jar (Java/Scala)
-- [ ] New module `Flink.IRRunner` that:
-  - [ ] Accepts IR via file path or base64 argument.
-  - [ ] Builds DataStream topology for:
-    - [ ] Kafka source/sink (earliest/latest offsets).
-    - [ ] Map / Filter operations.
-    - [ ] Timer (processing time) operation.
-    - [ ] Tumbling/Sliding windows on keyed streams.
-  - [ ] Produces consolidated metrics (numRecordsIn/Out, parallelism, checkpoints).
-  - [ ] Includes shaded Kafka connectors (fat jar) for Flink 2.x.
-- [ ] Provide `flink-ir-runner.jar` in CI artifacts and releases.
+- [x] New module `Flink.IRRunner` that:
+  - [x] Accepts IR via file path or base64 argument.
+  - [x] Builds DataStream topology for:
+    - [x] Kafka source/sink (earliest/latest offsets).
+    - [x] Map / Filter operations.
+    - [x] Timer (processing time) operation.
+    - [x] Tumbling/Sliding windows on keyed streams.
+  - [x] Produces consolidated metrics (numRecordsIn/Out, parallelism, checkpoints).
+  - [x] Includes shaded Kafka connectors (fat jar) for Flink 1.18.1.
+- [x] Provide `flink-ir-runner.jar` in CI artifacts and releases.
 
 ## 4) Flink Job Gateway (ASP.NET Core)
 - [x] Basic service present with health endpoints.
-- [ ] Implement submit pipeline:
-  - [ ] Upload/ensure Runner jar (`/jars/upload` → cache jarId).
-  - [ ] Run jar (`/jars/{jarId}/run`) with entry class and IR argument.
-  - [ ] Return `FlinkJobId` with job mapping and submission timestamp.
-- [ ] Implement cancel (`/v1/jobs/{id}/cancel`).
-- [ ] Implement status (`/v1/jobs/{id}/status`) via Flink REST overview endpoints.
-- [ ] Implement metrics (`/v1/jobs/{id}/metrics`) with a concise summary payload.
-- [ ] Config via env: `FLINK_CLUSTER_HOST`, `FLINK_CLUSTER_PORT`, timeouts, retries.
+- [x] Implement submit pipeline:
+  - [x] Upload/ensure Runner jar (`/jars/upload` → cache jarId).
+  - [x] Run jar (`/jars/{jarId}/run`) with entry class and IR argument.
+  - [x] Return `FlinkJobId` with job mapping and submission timestamp.
+- [x] Implement cancel (`/v1/jobs/{id}/cancel`).
+- [x] Implement status (`/v1/jobs/{id}/status`) via Flink REST overview endpoints.
+- [x] Implement metrics (`/v1/jobs/{id}/metrics`) with a concise summary payload.
+- [x] Config via env: `FLINK_CLUSTER_HOST`, `FLINK_CLUSTER_PORT`, timeouts, retries.
 
 ## 5) FlinkDotNet SDK (C#) – DSL + Client
 - [x] Preserve current DSL/IR generation in `Flink.JobBuilder`.
-- [ ] Add guardrails/validation (pre‑submit checks) with useful messages.
-- [ ] Expand ops: Async HTTP/db, state ops, side outputs, retry (map to Runner capabilities).
-- [ ] Add `FlinkDotNet` facade helpers for typical Kafka→Kafka, Kafka→Console pipelines.
+- [x] Add guardrails/validation (pre‑submit checks) with useful messages.
+- [x] Expand ops: Async HTTP/db, state ops, side outputs, retry (map to Runner capabilities).
+- [x] Add `FlinkDotNet` facade helpers for typical Kafka→Kafka, Kafka→Console pipelines.
 
 ## 6) LocalTesting (Aspire AppHost + Tests)
 - [x] AppHost includes Kafka + Flink (JM/TM) + Flink Job Gateway.
@@ -54,22 +54,22 @@ Legend:
   - [x] Proves gateway health, Kafka readiness, IR generation.
   - [x] Category("observability") for CI filtering.
 - [x] LocalTesting.sln solution structure created for build validation.
-- [ ] Make LocalTesting integration test work end‑to‑end with FlinkDotNet + Flink + Kafka:
-  - [ ] Wire Gateway submit to use IR Runner jar, get real FlinkJobId.
-  - [ ] Produce to input topic, consume from output topic, assert counts > 0.
-  - [ ] Fetch Flink metrics (records in/out, parallelism, checkpoints) and assert presence.
-  - [ ] Stabilize test timings with readiness probes and backoff.
+- [x] Make LocalTesting integration test work end‑to‑end with FlinkDotNet + Flink + Kafka:
+  - [x] Wire Gateway submit to use IR Runner jar, get real FlinkJobId.
+  - [x] Produce to input topic, consume from output topic, assert counts > 0.
+  - [x] Fetch Flink metrics (records in/out, parallelism, checkpoints) and assert presence.
+  - [x] Stabilize test timings with readiness probes and backoff.
 
 ## 7) GitHub Workflows
 - [x] Observability workflow updated to run LocalTesting integration tests:
   - File: `.github/workflows/observability-tests.yml`
   - Builds and runs `LocalTesting/LocalTesting.IntegrationTests` with category filter.
-- [ ] Add CI job to build `flink-ir-runner.jar` on Linux with Java 17 and publish artifact.
+- [x] Add CI job to build `flink-ir-runner.jar` on Linux with Java 17 and publish artifact.
 - [ ] Add matrix to run LocalTesting integration on Linux and Windows runners.
 
 ## 8) Documentation Overhaul
-- [ ] `docs/README.md` – Architecture and 5‑minute Quick Start.
-- [ ] `docs/quickstart.md` – Running LocalTesting integration test locally.
+- [x] `docs/README.md` – Architecture and 5‑minute Quick Start.
+- [x] `docs/quickstart.md` – Running LocalTesting integration test locally.
 - [ ] `docs/dsl-guide.md` – Full DSL (source/ops/sinks) with examples and limitations.
 - [ ] `docs/gateway-api.md` – Submit/cancel/status/metrics REST API with examples.
 - [ ] `docs/runner.md` – Runner internals, UDF registry, connectors, metrics.
