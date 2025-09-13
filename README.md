@@ -1238,15 +1238,25 @@ dotnet --version  # Must show 9.0.x
 
 FlinkDotNet includes comprehensive observability testing that validates message-per-second metrics across all system layers with **configurable message processing** using the full LGTM observability stack.
 
-### **Observability Tests Workflow**
+### **LocalTesting Integration Tests Workflow**
 
-🔗 **[View Observability Test Runs](../../actions/workflows/observability-tests.yml)** - Monitor real-time observability metrics test execution
+🔗 **[View LocalTesting Test Runs](../../actions/workflows/localtesting-integration-tests.yml)** - Monitor real-time FlinkDotNet integration test execution
 
-The observability tests process **configurable message volumes** (100,000 for CI, 1 million for full testing) to validate:
-- **Kafka Producer Metrics**: Messages-per-second rates across 20 partitions with enhanced producer configuration
-- **Flink Processing Metrics**: Real-time stream processing throughput with Apache Flink 2.1.0 features  
-- **Temporal Workflow Metrics**: Workflow execution rates for 10% of messages (first 10 customers out of 100)
-- **End-to-End Flow Metrics**: Complete pipeline throughput through 100 logical customer queues
+The LocalTesting integration tests validate FlinkDotNet functionality with Kafka and Flink:
+- **Kafka Integration**: Producer and consumer functionality with Kafka broker
+- **Flink Job Submission**: FlinkDotNet job definitions submitted through Job Gateway  
+- **FlinkDotNet Pipeline**: End-to-end stream processing using FlinkDotNet API
+- **Infrastructure Health**: Aspire orchestration, Flink JobManager, and Job Gateway connectivity
+
+### **BackPressure Integration Tests Workflow**
+
+🔗 **[View BackPressure Test Runs](../../actions/workflows/backpressure-integration-tests.yml)** - Monitor real-time backpressure and performance test execution
+
+The BackPressure integration tests validate high-throughput message processing capabilities:
+- **Kafka Performance**: High-volume message production and consumption testing
+- **System Configuration**: Optimal Kafka performance settings for containerized environments
+- **Backpressure Handling**: Stress testing with configurable message volumes
+- **Performance Metrics**: Throughput measurement and bottleneck identification
 
 ### **Full PGL + OpenTelemetry Stack Integration**
 

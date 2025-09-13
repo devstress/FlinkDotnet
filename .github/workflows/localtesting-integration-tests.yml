@@ -4,6 +4,7 @@ on:
   push:
     paths: 
       - 'LocalTesting/**'
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
