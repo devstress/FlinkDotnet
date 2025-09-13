@@ -53,6 +53,7 @@ Legend:
 - [x] New integration tests: `LocalTesting/LocalTesting.IntegrationTests`
   - [x] Proves gateway health, Kafka readiness, IR generation.
   - [x] Category("observability") for CI filtering.
+- [x] LocalTesting.sln solution structure created for build validation.
 - [ ] Make LocalTesting integration test work end‑to‑end with FlinkDotNet + Flink + Kafka:
   - [ ] Wire Gateway submit to use IR Runner jar, get real FlinkJobId.
   - [ ] Produce to input topic, consume from output topic, assert counts > 0.

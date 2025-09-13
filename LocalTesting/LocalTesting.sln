@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackPressure.AppHost", "BackPressure.AppHost\BackPressure.AppHost.csproj", "{E5394E22-498F-4AFF-AAFF-AEE7D2620325}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTesting.IntegrationTests", "LocalTesting.IntegrationTests\LocalTesting.IntegrationTests.csproj", "{E07660CB-D527-4758-B8F7-03FEED4A4DA3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E5394E22-498F-4AFF-AAFF-AEE7D2620325}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5394E22-498F-4AFF-AAFF-AEE7D2620325}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5394E22-498F-4AFF-AAFF-AEE7D2620325}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5394E22-498F-4AFF-AAFF-AEE7D2620325}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E07660CB-D527-4758-B8F7-03FEED4A4DA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E07660CB-D527-4758-B8F7-03FEED4A4DA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E07660CB-D527-4758-B8F7-03FEED4A4DA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E07660CB-D527-4758-B8F7-03FEED4A4DA3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
