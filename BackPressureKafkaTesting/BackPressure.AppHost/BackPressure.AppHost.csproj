@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Sdk Name="Aspire.AppHost.Sdk" Version="9.3.1" />
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsAspireHost>true</IsAspireHost>
+		<UserSecretsId>3cadc530-3e21-4063-8ce8-65fdbff98645</UserSecretsId>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+		<PackageReference Include="Aspire.Hosting.Kafka" Version="9.3.1" />
+		<PackageReference Include="Aspire.Confluent.Kafka" Version="9.3.1" />
+	</ItemGroup>
+
+
+
+</Project>

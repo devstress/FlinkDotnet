@@ -2,6 +2,36 @@
 
 **FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.1.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1.0 features including dynamic scaling, adaptive scheduling, reactive mode, and enterprise-scale multi-cluster orchestration.
 
+## Runtime Architecture (IR Runner + Gateway + Temporal)
+
+FlinkDotNet embraces a pragmatic, production‑ready model that separates authoring from execution while keeping .NET first:
+
+- .NET DSL → IR (JobDefinition)
+  - Your C# pipeline is compiled to a portable JSON IR that describes sources, operations, sinks and metadata.
+
+- IR Runner Jar (Java/Scala, single prebuilt artifact)
+  - A reusable Flink DataStream job jar that reads the IR and builds the topology at runtime (Kafka source/sink, map/filter/window/timer, etc.).
+  - Ships with the right connectors/classpath so users don’t need a JVM toolchain.
+
+- Flink Job Gateway (ASP.NET Core)
+  - Submits IR to a Flink cluster by ensuring the Runner jar is uploaded and calling Flink REST to run the job, then exposes health/status/metrics endpoints to .NET clients.
+  - Centralizes auth, retries, and metrics normalization, so all apps don’t re‑implement the same logic.
+
+- Optional: Temporal Orchestration
+  - Durable, auditable workflows to submit/monitor/cancel with retries, idempotency and compensations.
+  - This mirrors large‑scale production patterns (e.g., organizations coordinating large numbers of Flink jobs via a workflow engine).
+
+Why this design
+- You need a JVM artifact to run inside Flink TaskManagers; the IR Runner jar avoids per‑job compilation and operational drift.
+- The Gateway provides a clean boundary and a stable protocol for .NET clients.
+- Temporal guarantees that submits eventually succeed or fail cleanly with a durable record.
+
+Alternatives
+- Client‑only mode (embed Runner jar in SDK and call Flink REST directly): keeps the same runner, but each app handles auth/policy and jar versioning.
+- Flink SQL Gateway: no jar for a subset of pipelines; use when DSL can map cleanly to SQL.
+
+See TODO.md for the step‑by‑step implementation plan.
+
 ## 📚 Learning Course
 
 **New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 14 days of hands-on exercises covering:
@@ -1266,10 +1296,10 @@ The message processing validates current optimized architecture:
 
 Run locally:
 ```bash
-# Run with current architecture (100 customer queues, 20 partitions)
-dotnet test IntegrationTests/IntegrationTests.sln \
-  --filter "Category=observability" \
-  --configuration Release
+  # Run observability tests (LocalTesting)
+  dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
+    --filter "Category=observability" \
+    --configuration Release
 ```
 
 ## Frequently Asked Questions

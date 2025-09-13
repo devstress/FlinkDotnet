@@ -28,7 +28,7 @@ param(
     [switch]$SkipTests
 )
 
-# Colors for output
+# Colors for output (ANSI)
 $Green = "`e[32m"
 $Red = "`e[31m"
 $Yellow = "`e[33m"
@@ -37,22 +37,22 @@ $Reset = "`e[0m"
 
 function Write-Success {
     param([string]$Message)
-    Write-Host "${Green}✅ $Message${Reset}"
+    Write-Host "${Green}[SUCCESS] $Message${Reset}"
 }
 
 function Write-Error {
     param([string]$Message)
-    Write-Host "${Red}❌ $Message${Reset}"
+    Write-Host "${Red}[ERROR] $Message${Reset}"
 }
 
 function Write-Warning {
     param([string]$Message)
-    Write-Host "${Yellow}⚠️ $Message${Reset}"
+    Write-Host "${Yellow}[WARN]  $Message${Reset}"
 }
 
 function Write-Info {
     param([string]$Message)
-    Write-Host "${Blue}ℹ️ $Message${Reset}"
+    Write-Host "${Blue}[INFO]  $Message${Reset}"
 }
 
 # Ensure we're in the repository root directory
@@ -70,10 +70,10 @@ Write-Info "Step 1: Verifying .NET 9.0 Environment..."
 try {
     $dotnetVersion = dotnet --version
     if ($dotnetVersion -match "^9\.0") {
-        Write-Success ".NET Version: $dotnetVersion (✓ .NET 9.0 compliant)"
+        Write-Success ".NET Version: $dotnetVersion - .NET 9.0 compliant"
     } else {
-        Write-Error ".NET Version: $dotnetVersion (✗ Requires .NET 9.0.x)"
-        Write-Error "Please install .NET 9.0 SDK from https://dotnet.microsoft.com/download/dotnet/9.0"
+        Write-Error ".NET Version: $dotnetVersion - Requires .NET 9.0.x"
+        Write-Error "Install .NET 9.0 SDK: https://dotnet.microsoft.com/download/dotnet/9.0"
         exit 1
     }
 } catch {
@@ -87,7 +87,6 @@ Write-Info "Step 2: Finding solution files..."
 
 $SolutionFiles = @(
     "FlinkDotNet/FlinkDotNet.sln",
-    "IntegrationTests/IntegrationTests.sln", 
     "LocalTesting/LocalTesting.sln"
 )
 
@@ -114,11 +113,9 @@ $BuildFailed = $false
 
 foreach ($sln in $SolutionFiles) {
     Write-Info "Building $sln..."
-    
     try {
         $buildOutput = & dotnet build $sln --configuration $Configuration --verbosity quiet 2>&1
         $buildExitCode = $LASTEXITCODE
-        
         if ($buildExitCode -eq 0) {
             Write-Success "Build succeeded: $sln"
             $BuildResults[$sln] = "SUCCESS"
@@ -136,28 +133,22 @@ foreach ($sln in $SolutionFiles) {
 }
 
 # Step 4: Run tests if builds succeeded and tests not skipped
+$TestResults = @{}
+$TestFailed = $false
+
 if (-not $BuildFailed -and -not $SkipTests) {
     Write-Info "Step 4: Running tests..."
-    
-    $TestResults = @{}
-    $TestFailed = $false
-    
-    # Test solutions that have test projects
-    # Note: Excluding IntegrationTests/IntegrationTests.sln from CI validation
-    # These tests require infrastructure to be pre-started and take 10+ minutes
-    # Use LocalTesting integration tests for proper infrastructure testing
+
+    # Solutions to test
     $TestSolutions = @(
         "FlinkDotNet/FlinkDotNet.sln"
-        # "IntegrationTests/IntegrationTests.sln"  # Excluded - requires pre-started infrastructure
     )
-    
+
     foreach ($sln in $TestSolutions) {
         Write-Info "Testing $sln..."
-        
         try {
             $testOutput = & dotnet test $sln --configuration $Configuration --no-build --verbosity quiet 2>&1
             $testExitCode = $LASTEXITCODE
-            
             if ($testExitCode -eq 0) {
                 Write-Success "Tests passed: $sln"
                 $TestResults[$sln] = "SUCCESS"
@@ -181,14 +172,13 @@ if (-not $BuildFailed -and -not $SkipTests) {
 
 # Step 5: Summary Report
 Write-Info "=== VALIDATION SUMMARY ==="
-
 Write-Info "Build Results:"
 foreach ($sln in $SolutionFiles) {
     $result = $BuildResults[$sln]
     switch ($result) {
         "SUCCESS" { Write-Success "  $sln - Build Succeeded" }
-        "FAILED"  { Write-Error "  $sln - Build Failed" }
-        "ERROR"   { Write-Error "  $sln - Build Error" }
+        "FAILED"  { Write-Error   "  $sln - Build Failed" }
+        "ERROR"   { Write-Error   "  $sln - Build Error" }
     }
 }
 
@@ -199,7 +189,7 @@ if (-not $SkipTests -and -not $BuildFailed) {
         switch ($result) {
             "SUCCESS" { Write-Success "  $sln - Tests Passed" }
             "FAILED"  { Write-Warning "  $sln - Tests Failed" }
-            "ERROR"   { Write-Error "  $sln - Test Error" }
+            "ERROR"   { Write-Error   "  $sln - Test Error" }
         }
     }
 }
@@ -207,22 +197,20 @@ if (-not $SkipTests -and -not $BuildFailed) {
 # Step 6: Final validation and exit code
 if ($BuildFailed) {
     Write-Error "=== VALIDATION FAILED ==="
-    Write-Error "One or more builds failed. Please fix build errors before proceeding."
-    Write-Error "All functionality changes must pass builds before commit."
+    Write-Error "One or more builds failed. Fix build errors before proceeding."
     exit 1
 }
 
 if (-not $SkipTests -and $TestFailed) {
     Write-Warning "=== VALIDATION COMPLETED WITH TEST FAILURES ==="
     Write-Warning "Builds succeeded but some tests failed."
-    Write-Warning "Consider fixing test failures, but builds are ready for commit."
     exit 2
 }
 
 Write-Success "=== VALIDATION SUCCESSFUL ==="
-Write-Success "All builds passed successfully!"
+Write-Success "All builds passed successfully."
 if (-not $SkipTests) {
-    Write-Success "All tests completed (check individual results above)!"
+    Write-Success "All tests executed (review above for details)."
 }
 Write-Success "Ready for commit and deployment."
 exit 0

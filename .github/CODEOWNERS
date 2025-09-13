@@ -7,5 +7,4 @@
 
 # Specific ownership for different solution areas
 /FlinkDotNet/ @devstress
-/IntegrationTests/ @devstress
 /.github/ @devstress
