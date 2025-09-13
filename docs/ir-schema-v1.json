@@ -1,0 +1,772 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/devstress/FlinkDotnet/schemas/ir-schema-v1.json",
+  "title": "FlinkDotNet IR (Intermediate Representation) Schema v1.0",
+  "description": "JSON schema for FlinkDotNet job definitions - frozen as v1.0",
+  "type": "object",
+  "version": "1.0.0",
+  "required": ["Source", "Operations", "Sink", "Metadata"],
+  "properties": {
+    "Source": {
+      "$ref": "#/definitions/ISourceDefinition"
+    },
+    "Operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/IOperationDefinition"
+      }
+    },
+    "Sink": {
+      "$ref": "#/definitions/ISinkDefinition"
+    },
+    "Metadata": {
+      "$ref": "#/definitions/JobMetadata"
+    }
+  },
+  "definitions": {
+    "JobMetadata": {
+      "type": "object",
+      "required": ["JobId", "CreatedAt", "Version"],
+      "properties": {
+        "JobId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique identifier for the job"
+        },
+        "JobName": {
+          "type": ["string", "null"],
+          "description": "Human-readable job name"
+        },
+        "CreatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Job creation timestamp"
+        },
+        "Version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "IR schema version (SemVer)"
+        },
+        "Parallelism": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Job parallelism level"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional job properties"
+        }
+      }
+    },
+    "ISourceDefinition": {
+      "oneOf": [
+        { "$ref": "#/definitions/KafkaSourceDefinition" },
+        { "$ref": "#/definitions/FileSourceDefinition" },
+        { "$ref": "#/definitions/HttpSourceDefinition" },
+        { "$ref": "#/definitions/DatabaseSourceDefinition" }
+      ]
+    },
+    "KafkaSourceDefinition": {
+      "type": "object",
+      "required": ["type", "Topic"],
+      "properties": {
+        "type": {
+          "const": "kafka"
+        },
+        "Topic": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$",
+          "description": "Kafka topic name"
+        },
+        "BootstrapServers": {
+          "type": ["string", "null"],
+          "description": "Kafka bootstrap servers"
+        },
+        "GroupId": {
+          "type": ["string", "null"],
+          "description": "Consumer group ID"
+        },
+        "StartingOffsets": {
+          "type": ["string", "null"],
+          "enum": ["latest", "earliest"],
+          "default": "latest",
+          "description": "Starting offset strategy"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "FileSourceDefinition": {
+      "type": "object",
+      "required": ["type", "Path"],
+      "properties": {
+        "type": {
+          "const": "file"
+        },
+        "Path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "File path"
+        },
+        "Format": {
+          "type": "string",
+          "enum": ["text", "json", "csv", "parquet"],
+          "default": "text",
+          "description": "File format"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "HttpSourceDefinition": {
+      "type": "object",
+      "required": ["type", "Url"],
+      "properties": {
+        "type": {
+          "const": "http"
+        },
+        "Url": {
+          "type": "string",
+          "format": "uri",
+          "description": "HTTP endpoint URL"
+        },
+        "Method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE"],
+          "default": "GET"
+        },
+        "Headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "Body": {
+          "type": ["string", "null"]
+        },
+        "IntervalSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "default": 60,
+          "description": "Polling interval in seconds"
+        },
+        "AuthTokenStateKey": {
+          "type": ["string", "null"]
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DatabaseSourceDefinition": {
+      "type": "object",
+      "required": ["type", "ConnectionString", "Query"],
+      "properties": {
+        "type": {
+          "const": "database"
+        },
+        "ConnectionString": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "DatabaseType": {
+          "type": ["string", "null"],
+          "enum": ["postgresql", "mysql", "sqlserver", "oracle"],
+          "default": "postgresql"
+        },
+        "PollingIntervalSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600,
+          "default": 30
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "IOperationDefinition": {
+      "oneOf": [
+        { "$ref": "#/definitions/FilterOperationDefinition" },
+        { "$ref": "#/definitions/MapOperationDefinition" },
+        { "$ref": "#/definitions/GroupByOperationDefinition" },
+        { "$ref": "#/definitions/AggregateOperationDefinition" },
+        { "$ref": "#/definitions/WindowOperationDefinition" },
+        { "$ref": "#/definitions/JoinOperationDefinition" },
+        { "$ref": "#/definitions/AsyncFunctionOperationDefinition" },
+        { "$ref": "#/definitions/ProcessFunctionOperationDefinition" },
+        { "$ref": "#/definitions/StateOperationDefinition" },
+        { "$ref": "#/definitions/TimerOperationDefinition" },
+        { "$ref": "#/definitions/RetryOperationDefinition" },
+        { "$ref": "#/definitions/SideOutputOperationDefinition" }
+      ]
+    },
+    "FilterOperationDefinition": {
+      "type": "object",
+      "required": ["type", "Expression"],
+      "properties": {
+        "type": {
+          "const": "filter"
+        },
+        "Expression": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Filter expression"
+        }
+      }
+    },
+    "MapOperationDefinition": {
+      "type": "object",
+      "required": ["type", "Expression"],
+      "properties": {
+        "type": {
+          "const": "map"
+        },
+        "Expression": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Transformation expression"
+        },
+        "OutputType": {
+          "type": ["string", "null"],
+          "description": "Expected output type"
+        }
+      }
+    },
+    "GroupByOperationDefinition": {
+      "type": "object",
+      "required": ["type", "Key"],
+      "properties": {
+        "type": {
+          "const": "groupBy"
+        },
+        "Key": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Primary grouping key"
+        },
+        "Keys": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Additional grouping keys"
+        }
+      }
+    },
+    "AggregateOperationDefinition": {
+      "type": "object",
+      "required": ["type", "AggregationType", "Field"],
+      "properties": {
+        "type": {
+          "const": "aggregate"
+        },
+        "AggregationType": {
+          "type": "string",
+          "enum": ["SUM", "COUNT", "AVG", "MIN", "MAX"]
+        },
+        "Field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Alias": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "WindowOperationDefinition": {
+      "type": "object",
+      "required": ["type", "WindowType", "Size", "TimeUnit"],
+      "properties": {
+        "type": {
+          "const": "window"
+        },
+        "WindowType": {
+          "type": "string",
+          "enum": ["TUMBLING", "SLIDING", "SESSION"]
+        },
+        "Size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400,
+          "description": "Window size"
+        },
+        "TimeUnit": {
+          "type": "string",
+          "enum": ["SECONDS", "MINUTES", "HOURS"],
+          "default": "MINUTES"
+        },
+        "Slide": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "Slide interval for sliding windows"
+        },
+        "TimeField": {
+          "type": ["string", "null"],
+          "description": "Field for event time"
+        }
+      }
+    },
+    "JoinOperationDefinition": {
+      "type": "object",
+      "required": ["type", "RightSource", "LeftKey", "RightKey"],
+      "properties": {
+        "type": {
+          "const": "join"
+        },
+        "JoinType": {
+          "type": "string",
+          "enum": ["INNER", "LEFT", "RIGHT", "FULL"],
+          "default": "INNER"
+        },
+        "RightSource": {
+          "$ref": "#/definitions/ISourceDefinition"
+        },
+        "LeftKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "RightKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Window": {
+          "anyOf": [
+            { "$ref": "#/definitions/WindowOperationDefinition" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "AsyncFunctionOperationDefinition": {
+      "type": "object",
+      "required": ["type", "FunctionType"],
+      "properties": {
+        "type": {
+          "const": "asyncFunction"
+        },
+        "FunctionType": {
+          "type": "string",
+          "enum": ["http", "database"]
+        },
+        "Url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for HTTP calls"
+        },
+        "Method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE"],
+          "default": "GET"
+        },
+        "Headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "BodyTemplate": {
+          "type": ["string", "null"]
+        },
+        "ConnectionString": {
+          "type": ["string", "null"]
+        },
+        "Query": {
+          "type": ["string", "null"]
+        },
+        "TimeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000,
+          "default": 5000
+        },
+        "MaxRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "StateKey": {
+          "type": ["string", "null"]
+        },
+        "CacheTtlMs": {
+          "type": ["integer", "null"],
+          "minimum": 1000
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ProcessFunctionOperationDefinition": {
+      "type": "object",
+      "required": ["type", "ProcessType"],
+      "properties": {
+        "type": {
+          "const": "processFunction"
+        },
+        "ProcessType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Parameters": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "StateKeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "TimerNames": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "StateOperationDefinition": {
+      "type": "object",
+      "required": ["type", "StateKey"],
+      "properties": {
+        "type": {
+          "const": "state"
+        },
+        "StateType": {
+          "type": "string",
+          "enum": ["value", "list", "map", "reducing"],
+          "default": "value"
+        },
+        "StateKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ValueType": {
+          "type": ["string", "null"],
+          "default": "string"
+        },
+        "TtlMs": {
+          "type": ["integer", "null"],
+          "minimum": 1000,
+          "description": "State TTL in milliseconds"
+        },
+        "DefaultValue": {
+          "type": ["string", "null"]
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "TimerOperationDefinition": {
+      "type": "object",
+      "required": ["type", "DelayMs"],
+      "properties": {
+        "type": {
+          "const": "timer"
+        },
+        "TimerType": {
+          "type": "string",
+          "enum": ["processing", "event"],
+          "default": "processing"
+        },
+        "DelayMs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400000,
+          "description": "Timer delay in milliseconds"
+        },
+        "TimerName": {
+          "type": ["string", "null"]
+        },
+        "Action": {
+          "type": ["string", "null"],
+          "description": "Action to perform when timer fires"
+        },
+        "Parameters": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "RetryOperationDefinition": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "const": "retry"
+        },
+        "MaxRetries": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 5
+        },
+        "DelayMs": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1000
+          },
+          "minItems": 1,
+          "maxItems": 20,
+          "default": [300000, 600000, 1800000, 3600000, 86400000]
+        },
+        "RetryCondition": {
+          "type": ["string", "null"]
+        },
+        "DeadLetterTopic": {
+          "type": ["string", "null"]
+        },
+        "StateKey": {
+          "type": "string",
+          "default": "retry_state"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SideOutputOperationDefinition": {
+      "type": "object",
+      "required": ["type", "OutputTag", "Condition", "SideOutputSink"],
+      "properties": {
+        "type": {
+          "const": "sideOutput"
+        },
+        "OutputTag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Condition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "SideOutputSink": {
+          "$ref": "#/definitions/ISinkDefinition"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ISinkDefinition": {
+      "oneOf": [
+        { "$ref": "#/definitions/KafkaSinkDefinition" },
+        { "$ref": "#/definitions/ConsoleSinkDefinition" },
+        { "$ref": "#/definitions/FileSinkDefinition" },
+        { "$ref": "#/definitions/DatabaseSinkDefinition" },
+        { "$ref": "#/definitions/HttpSinkDefinition" },
+        { "$ref": "#/definitions/RedisSinkDefinition" }
+      ]
+    },
+    "KafkaSinkDefinition": {
+      "type": "object",
+      "required": ["type", "Topic"],
+      "properties": {
+        "type": {
+          "const": "kafka"
+        },
+        "Topic": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "BootstrapServers": {
+          "type": ["string", "null"]
+        },
+        "Serializer": {
+          "type": ["string", "null"],
+          "enum": ["json", "avro", "string"],
+          "default": "json"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ConsoleSinkDefinition": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "const": "console"
+        },
+        "Format": {
+          "type": ["string", "null"],
+          "enum": ["json", "text", "csv"],
+          "default": "json"
+        }
+      }
+    },
+    "FileSinkDefinition": {
+      "type": "object",
+      "required": ["type", "Path"],
+      "properties": {
+        "type": {
+          "const": "file"
+        },
+        "Path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Format": {
+          "type": "string",
+          "enum": ["json", "csv", "parquet", "text"],
+          "default": "json"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DatabaseSinkDefinition": {
+      "type": "object",
+      "required": ["type", "ConnectionString", "Table"],
+      "properties": {
+        "type": {
+          "const": "database"
+        },
+        "ConnectionString": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Table": {
+          "type": "string",
+          "minLength": 1
+        },
+        "DatabaseType": {
+          "type": ["string", "null"],
+          "enum": ["postgresql", "mysql", "sqlserver", "oracle"],
+          "default": "postgresql"
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "HttpSinkDefinition": {
+      "type": "object",
+      "required": ["type", "Url"],
+      "properties": {
+        "type": {
+          "const": "http"
+        },
+        "Url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "Method": {
+          "type": "string",
+          "enum": ["POST", "PUT", "PATCH"],
+          "default": "POST"
+        },
+        "Headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "BodyTemplate": {
+          "type": ["string", "null"]
+        },
+        "AuthTokenStateKey": {
+          "type": ["string", "null"]
+        },
+        "TimeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000,
+          "default": 5000
+        },
+        "Properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "RedisSinkDefinition": {
+      "type": "object",
+      "required": ["type", "ConnectionString"],
+      "properties": {
+        "type": {
+          "const": "redis"
+        },
+        "ConnectionString": {
+          "type": "string",
+          "minLength": 1
+        },
+        "Key": {
+          "type": ["string", "null"]
+        },
+        "OperationType": {
+          "type": "string",
+          "enum": ["increment", "set", "sadd", "lpush", "rpush", "hset"],
+          "default": "increment"
+        },
+        "Configuration": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

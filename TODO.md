@@ -15,9 +15,9 @@ Legend:
 
 ## 2) IR Schema (JobDefinition + Operations)
 - [x] Confirm base IR model in `Flink.JobBuilder` (sources/ops/sinks/metadata).
-- [ ] Freeze v1.0 IR schema with explicit JSON schema file (`docs/ir-schema-v1.json`).
-- [ ] Add IR validators (topic required, window sizing, timer bounds, async timeout ranges, etc.).
-- [ ] Add test fixtures for IR round‑trip (serialize/deserialize) and validation errors.
+- [x] Freeze v1.0 IR schema with explicit JSON schema file (`docs/ir-schema-v1.json`).
+- [x] Add IR validators (topic required, window sizing, timer bounds, async timeout ranges, etc.).
+- [x] Add test fixtures for IR round‑trip (serialize/deserialize) and validation errors.
 
 ## 3) IR Runner Jar (Java/Scala)
 - [ ] New module `Flink.IRRunner` that:
