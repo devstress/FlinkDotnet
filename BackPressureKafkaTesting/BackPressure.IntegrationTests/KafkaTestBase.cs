@@ -132,26 +132,27 @@ public abstract class KafkaTestBase : IAsyncDisposable
 	{
 		var hostBuilder = Host.CreateApplicationBuilder();
 
-		hostBuilder.Services.AddSingleton<IProducer<string, string>>(provider =>
+		hostBuilder.Services.AddSingleton<Lazy<IProducer<string, string>>>(provider =>
 		{
-			TestContext.WriteLine($"🟡 [Setup] Before creating global Producer (BootstrapServers={KafkaConnectionString})");
-			var config = new ProducerConfig
+			return new Lazy<IProducer<string, string>>(() =>
 			{
-				BootstrapServers = KafkaConnectionString,
-				EnableIdempotence = true,
-				MaxInFlight = 5,
-				Acks = Acks.All,
-				CompressionType = CompressionType.Snappy,
-				BatchSize = 16384,
-				LingerMs = 10,
-				RequestTimeoutMs = 30000,
-			};
-			var prod = new ProducerBuilder<string, string>(config)
-				.SetErrorHandler((_, __) => { })
-				.SetLogHandler((_, __) => { })
-				.Build();
-			TestContext.WriteLine("✅ [Setup] Global Producer created");
-			return prod;
+				TestContext.WriteLine($"🟡 [Setup] Before creating lazy Producer (BootstrapServers={KafkaConnectionString})");
+				var config = new ProducerConfig
+				{
+					BootstrapServers = KafkaConnectionString,
+					EnableIdempotence = true,
+					MaxInFlight = 5,
+					Acks = Acks.All,
+					CompressionType = CompressionType.Snappy,
+					BatchSize = 16384,
+					LingerMs = 10,
+					RequestTimeoutMs = 30000,
+				};
+				var prod = new ProducerBuilder<string, string>(config)
+					.Build();
+				TestContext.WriteLine("✅ [Setup] Lazy Producer created");
+				return prod;
+			});
 		});
 
 		hostBuilder.Services.AddSingleton<IConsumer<string, string>>(provider =>
@@ -168,8 +169,6 @@ public abstract class KafkaTestBase : IAsyncDisposable
 				FetchMinBytes = 1,
 			};
 			var cons = new ConsumerBuilder<string, string>(config)
-				.SetErrorHandler((_, __) => { })
-				.SetLogHandler((_, __) => { })
 				.Build();
 			TestContext.WriteLine("✅ [Setup] Global Consumer created");
 			return cons;
@@ -184,8 +183,6 @@ public abstract class KafkaTestBase : IAsyncDisposable
 				SocketTimeoutMs = 60000,
 			};
 			var adm = new AdminClientBuilder(config)
-				.SetErrorHandler((_, __) => { })
-				.SetLogHandler((_, __) => { })
 				.Build();
 			TestContext.WriteLine("✅ [Setup] Global AdminClient created");
 			return adm;
@@ -194,7 +191,8 @@ public abstract class KafkaTestBase : IAsyncDisposable
 		TestHost = hostBuilder.Build();
 		await TestHost.StartAsync();
 
-		Producer = TestHost.Services.GetRequiredService<IProducer<string, string>>();
+		// Producer is now lazy-loaded
+		Producer = TestHost.Services.GetRequiredService<Lazy<IProducer<string, string>>>().Value;
 		Consumer = TestHost.Services.GetRequiredService<IConsumer<string, string>>();
 		AdminClient = TestHost.Services.GetRequiredService<IAdminClient>();
 	}
@@ -215,8 +213,6 @@ public abstract class KafkaTestBase : IAsyncDisposable
                     SocketTimeoutMs = 5000,
                 })
                 // Suppress noisy librdkafka bootstrap logs during readiness probing.
-                .SetLogHandler((_, __) => { })
-                .SetErrorHandler((_, __) => { })
                 .Build();
 
                 var md = admin.GetMetadata(TimeSpan.FromSeconds(3));

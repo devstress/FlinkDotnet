@@ -123,8 +123,6 @@ public class BasicPerfTest : KafkaTestBase
 			consumerTasks.Add(Task.Run(() =>
 			{
                 using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
-                .SetLogHandler((_, __) => { })
-                .SetErrorHandler((_, __) => { })
                 .Build();
 				consumer.Subscribe(TestTopicName);
 				var localConsumed = 0L;
@@ -235,8 +233,6 @@ public class BasicPerfTest : KafkaTestBase
 		};
 
         using var producer = new ProducerBuilder<string, string>(producerConfig)
-            .SetLogHandler((_, __) => { })
-            .SetErrorHandler((_, __) => { })
             .Build();
 
 		var messagesSent = 0L;
@@ -331,8 +327,6 @@ public class BasicPerfTest : KafkaTestBase
 		};
 
         using var producer = new ProducerBuilder<string, string>(producerConfig)
-            .SetLogHandler((_, __) => { })
-            .SetErrorHandler((_, __) => { })
             .Build();
 		const string messageTemplate = "pre-produced-test-message-payload-optimized";
 
