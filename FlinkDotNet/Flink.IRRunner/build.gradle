@@ -86,5 +86,10 @@ tasks.withType(JavaCompile) {
     options.warnings = false
 }
 
-// Ensure fat jar is built by default
+// Ensure fat jar is built by default but fix dependencies
 build.dependsOn fatJar
+
+// Fix distribution task dependencies
+distTar.dependsOn fatJar
+distZip.dependsOn fatJar
+startScripts.dependsOn fatJar

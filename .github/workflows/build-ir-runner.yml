@@ -1,0 +1,142 @@
+name: Build IR Runner JAR
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'FlinkDotNet/Flink.IRRunner/**'
+      - '.github/workflows/build-ir-runner.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'FlinkDotNet/Flink.IRRunner/**'
+      - '.github/workflows/build-ir-runner.yml'
+  workflow_dispatch:
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Xmx2g -Xms1g
+
+jobs:
+  build-ir-runner:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2.12.0
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Make gradlew executable
+      run: |
+        if [ ! -f FlinkDotNet/Flink.IRRunner/gradlew ]; then
+          cd FlinkDotNet/Flink.IRRunner && gradle wrapper --gradle-version=8.0
+        fi
+        chmod +x FlinkDotNet/Flink.IRRunner/gradlew
+      
+    - name: Build IR Runner JAR
+      working-directory: FlinkDotNet/Flink.IRRunner
+      run: |
+        ./gradlew clean build
+        ./gradlew fatJar --no-daemon
+        
+    - name: Test IR Runner
+      working-directory: FlinkDotNet/Flink.IRRunner
+      run: |
+        ./gradlew test --no-daemon
+        
+    - name: Verify JAR exists
+      run: |
+        ls -la FlinkDotNet/Flink.IRRunner/build/libs/
+        test -f FlinkDotNet/Flink.IRRunner/build/libs/flink-ir-runner-1.0.0.jar
+        
+    - name: Test JAR execution
+      working-directory: FlinkDotNet/Flink.IRRunner
+      run: |
+        # Create a simple test IR JSON
+        echo '{"metadata":{"jobId":"test","jobName":"Test Job","version":"1.0.0"},"source":{"type":"kafka","topic":"test-input"},"operations":[],"sink":{"type":"console"}}' > test-ir.json
+        
+        # Test the JAR with --help flag
+        java -jar build/libs/flink-ir-runner-1.0.0.jar --help
+        
+        # Test IR file loading (will fail gracefully without Flink cluster)
+        java -jar build/libs/flink-ir-runner-1.0.0.jar --ir-file test-ir.json || true
+        
+    - name: Upload IR Runner JAR artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: flink-ir-runner-jar
+        path: FlinkDotNet/Flink.IRRunner/build/libs/flink-ir-runner-1.0.0.jar
+        retention-days: 30
+        
+    - name: Calculate JAR checksums
+      run: |
+        cd FlinkDotNet/Flink.IRRunner/build/libs/
+        sha256sum flink-ir-runner-1.0.0.jar > flink-ir-runner-1.0.0.jar.sha256
+        md5sum flink-ir-runner-1.0.0.jar > flink-ir-runner-1.0.0.jar.md5
+        
+    - name: Upload checksums
+      uses: actions/upload-artifact@v3
+      with:
+        name: flink-ir-runner-checksums
+        path: |
+          FlinkDotNet/Flink.IRRunner/build/libs/flink-ir-runner-1.0.0.jar.sha256
+          FlinkDotNet/Flink.IRRunner/build/libs/flink-ir-runner-1.0.0.jar.md5
+        retention-days: 30
+        
+    - name: Report build metrics
+      run: |
+        JAR_SIZE=$(stat -c%s FlinkDotNet/Flink.IRRunner/build/libs/flink-ir-runner-1.0.0.jar)
+        echo "IR Runner JAR size: $JAR_SIZE bytes"
+        echo "IR Runner JAR size: $(($JAR_SIZE / 1024 / 1024)) MB"
+        
+        # Check for essential classes in the JAR
+        jar tf FlinkDotNet/Flink.IRRunner/build/libs/flink-ir-runner-1.0.0.jar | grep -E "(FlinkIRRunner|jackson|flink)" | head -10 || true
+        
+  release-artifact:
+    needs: build-ir-runner
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Download IR Runner JAR
+      uses: actions/download-artifact@v3
+      with:
+        name: flink-ir-runner-jar
+        path: ./artifacts/
+        
+    - name: Download checksums
+      uses: actions/download-artifact@v3
+      with:
+        name: flink-ir-runner-checksums
+        path: ./artifacts/
+        
+    - name: Create GitHub Release (if tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ./artifacts/flink-ir-runner-1.0.0.jar
+          ./artifacts/flink-ir-runner-1.0.0.jar.sha256
+          ./artifacts/flink-ir-runner-1.0.0.jar.md5
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

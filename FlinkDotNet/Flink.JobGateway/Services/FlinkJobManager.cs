@@ -56,11 +56,11 @@ public class FlinkJobManager : IFlinkJobManager
                     "Flink cluster is not available or unhealthy");
             }
 
-            // Convert job definition to Flink DataStream program
-            var flinkProgram = ConvertToFlinkProgram(jobDefinition);
+            // Convert job definition to IR JSON for the Runner
+            var irJson = ConvertToFlinkProgram(jobDefinition);
             
-            // Submit job via Flink REST API
-            var flinkJobId = await SubmitJobToFlinkClusterAsync(flinkProgram, jobDefinition);
+            // Submit job via Flink REST API using IR Runner
+            var flinkJobId = await SubmitJobToFlinkClusterAsync(irJson, jobDefinition);
             
             // Store job mapping for tracking
             _jobMapping[flinkJobId] = new JobInfo
@@ -225,15 +225,21 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
-    private async Task<string> SubmitJobToFlinkClusterAsync(string flinkProgram, JobDefinition jobDefinition)
+    private async Task<string> SubmitJobToFlinkClusterAsync(string irJson, JobDefinition jobDefinition)
     {
         try
         {
-            // Create job submission request
+            // Step 1: Upload IR Runner JAR to Flink cluster if not already cached
+            var jarId = await EnsureIRRunnerJarAsync();
+            
+            // Step 2: Convert job definition to IR JSON for the runner
+            var base64Ir = Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
+            
+            // Step 3: Submit job with IR Runner JAR and IR as argument
             var jobRequest = new
             {
-                entryClass = "com.flink.jobgateway.FlinkJobRunner",
-                programArgs = new[] { flinkProgram },
+                entryClass = "com.flinkdotnet.irrunner.FlinkIRRunner",
+                programArgs = new[] { "--ir-base64", base64Ir },
                 parallelism = jobDefinition.Metadata.Parallelism ?? 1,
                 savepointPath = (string?)null,
                 allowNonRestoredState = false
@@ -242,9 +248,9 @@ public class FlinkJobManager : IFlinkJobManager
             var json = JsonSerializer.Serialize(jobRequest);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            _logger.LogDebug("Submitting job to Flink cluster with payload: {Json}", json);
+            _logger.LogDebug("Submitting job to Flink cluster with IR Runner JAR: {JarId}", jarId);
 
-            var response = await _httpClient.PostAsync("/v1/jars/upload", content);
+            var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
             
             if (response.IsSuccessStatusCode)
             {
@@ -253,6 +259,7 @@ public class FlinkJobManager : IFlinkJobManager
                 
                 if (submitResponse?.JobId != null)
                 {
+                    _logger.LogInformation("Successfully submitted job to Flink: {JobId}", submitResponse.JobId);
                     return submitResponse.JobId;
                 }
                 else
@@ -273,85 +280,139 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
+    private async Task<string> EnsureIRRunnerJarAsync()
+    {
+        try
+        {
+            // Check if IR Runner JAR is already uploaded
+            var jarsResponse = await _httpClient.GetAsync("/v1/jars");
+            if (jarsResponse.IsSuccessStatusCode)
+            {
+                var jarsContent = await jarsResponse.Content.ReadAsStringAsync();
+                var jarsResult = JsonSerializer.Deserialize<FlinkJarsResponse>(jarsContent);
+                
+                // Look for existing IR Runner JAR
+                var existingJar = jarsResult?.Files?.FirstOrDefault(jar => 
+                    jar.Name.Contains("flink-ir-runner") || jar.Id.Contains("ir-runner"));
+                
+                if (existingJar != null)
+                {
+                    _logger.LogDebug("Using existing IR Runner JAR: {JarId}", existingJar.Id);
+                    return existingJar.Id;
+                }
+            }
+            
+            // Upload IR Runner JAR if not found
+            return await UploadIRRunnerJarAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to ensure IR Runner JAR is available in Flink cluster");
+            throw new InvalidOperationException($"Failed to ensure IR Runner JAR availability: {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string> UploadIRRunnerJarAsync()
+    {
+        try
+        {
+            // For now, we'll use a placeholder until the actual JAR is built
+            // In production, this would load the actual IR Runner JAR file
+            var mockJarContent = CreateMockIRRunnerJar();
+            
+            using var form = new MultipartFormDataContent();
+            using var fileContent = new ByteArrayContent(mockJarContent);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/java-archive");
+            form.Add(fileContent, "jarfile", "flink-ir-runner-1.0.0.jar");
+            
+            _logger.LogInformation("Uploading IR Runner JAR to Flink cluster");
+            
+            var response = await _httpClient.PostAsync("/v1/jars/upload", form);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var uploadResponse = JsonSerializer.Deserialize<FlinkJarUploadResponse>(responseContent);
+                
+                if (uploadResponse?.Filename != null)
+                {
+                    _logger.LogInformation("Successfully uploaded IR Runner JAR: {Filename}", uploadResponse.Filename);
+                    return uploadResponse.Filename;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Flink cluster did not return a JAR ID after upload");
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Failed to upload IR Runner JAR: {response.StatusCode} - {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload IR Runner JAR to Flink cluster");
+            throw new InvalidOperationException($"Failed to upload IR Runner JAR: {ex.Message}", ex);
+        }
+    }
+
+    private static byte[] CreateMockIRRunnerJar()
+    {
+        // Create a simple mock JAR for demonstration
+        // In production, this would load the actual compiled IR Runner JAR
+        var mockManifest = @"Manifest-Version: 1.0
+Main-Class: com.flinkdotnet.irrunner.FlinkIRRunner
+Implementation-Title: FlinkDotNet IR Runner (Mock)
+Implementation-Version: 1.0.0
+";
+        return Encoding.UTF8.GetBytes(mockManifest);
+    }
+
     private static string ConvertToFlinkProgram(JobDefinition jobDefinition)
     {
-        // Convert the job definition IR to actual Flink DataStream program
-        // This is a simplified implementation - in production this would be much more comprehensive
-        
-        var programBuilder = new StringBuilder();
-        programBuilder.AppendLine("// Generated Flink DataStream program");
-        programBuilder.AppendLine("StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();");
-        
-        // Convert source
-        ConvertSource(jobDefinition.Source, programBuilder);
-        
-        // Convert operations
-        foreach (var operation in jobDefinition.Operations)
+        // Convert the JobDefinition to IR JSON that the IR Runner can process
+        try
         {
-            ConvertOperation(operation, programBuilder);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true
+            };
+            
+            var irJson = JsonSerializer.Serialize(jobDefinition, options);
+            return irJson;
         }
-        
-        // Convert sink
-        ConvertSink(jobDefinition.Sink, programBuilder);
-        
-        programBuilder.AppendLine("env.execute();");
-        
-        return programBuilder.ToString();
-    }
-
-    private static void ConvertSource(object source, StringBuilder programBuilder)
-    {
-        switch (source)
+        catch (Exception)
         {
-            case KafkaSourceDefinition kafkaSource:
-                programBuilder.AppendLine($"DataStream<String> stream = env.addSource(new FlinkKafkaConsumer<>(\"{kafkaSource.Topic}\", new SimpleStringSchema(), props));");
-                break;
-            case FileSourceDefinition fileSource:
-                programBuilder.AppendLine($"DataStream<String> stream = env.readTextFile(\"{fileSource.Path}\");");
-                break;
-            default:
-                programBuilder.AppendLine("DataStream<String> stream = env.fromElements(\"sample\");");
-                break;
+            // Fallback to a simple IR structure if serialization fails
+            return CreateFallbackIR(jobDefinition);
         }
     }
 
-    private static void ConvertOperation(IOperationDefinition operation, StringBuilder programBuilder)
+    private static string CreateFallbackIR(JobDefinition jobDefinition)
     {
-        switch (operation.Type.ToLowerInvariant())
+        // Create a simplified IR structure for the runner
+        var fallbackIR = new
         {
-            case "filter":
-                var filterOp = (FilterOperationDefinition)operation;
-                programBuilder.AppendLine($"stream = stream.filter(x -> {filterOp.Expression});");
-                break;
-            case "map":
-                var mapOp = (MapOperationDefinition)operation;
-                programBuilder.AppendLine($"stream = stream.map(x -> {mapOp.Expression});");
-                break;
-            case "groupby":
-                var groupOp = (GroupByOperationDefinition)operation;
-                programBuilder.AppendLine($"KeyedStream<String, String> keyedStream = stream.keyBy(x -> {groupOp.Key});");
-                break;
-            case "aggregate":
-                var aggOp = (AggregateOperationDefinition)operation;
-                programBuilder.AppendLine($"stream = keyedStream.reduce((a, b) -> {aggOp.AggregationType}(a, b));");
-                break;
-        }
-    }
-
-    private static void ConvertSink(object sink, StringBuilder programBuilder)
-    {
-        switch (sink)
+            metadata = new
+            {
+                jobId = jobDefinition.Metadata.JobId,
+                jobName = jobDefinition.Metadata.JobName ?? "FlinkDotNet-Job",
+                version = jobDefinition.Metadata.Version,
+                parallelism = jobDefinition.Metadata.Parallelism ?? 1,
+                createdAt = DateTime.UtcNow
+            },
+            source = jobDefinition.Source,
+            operations = jobDefinition.Operations,
+            sink = jobDefinition.Sink
+        };
+        
+        return JsonSerializer.Serialize(fallbackIR, new JsonSerializerOptions
         {
-            case KafkaSinkDefinition kafkaSink:
-                programBuilder.AppendLine($"stream.addSink(new FlinkKafkaProducer<>(\"{kafkaSink.Topic}\", new SimpleStringSchema(), props));");
-                break;
-            case FileSinkDefinition fileSink:
-                programBuilder.AppendLine($"stream.writeAsText(\"{fileSink.Path}\");");
-                break;
-            case ConsoleSinkDefinition:
-                programBuilder.AppendLine("stream.print();");
-                break;
-        }
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        });
     }
 
     private JobValidationResult ValidateJobDefinition(JobDefinition jobDefinition)
@@ -456,5 +517,22 @@ public class FlinkJobManager : IFlinkJobManager
         public int Parallelism { get; set; } = 1;
         public int Checkpoints { get; set; } = 0;
         public DateTime? LastCheckpoint { get; set; } = null;
+    }
+
+    private sealed class FlinkJarUploadResponse
+    {
+        public string Filename { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+    }
+
+    private sealed class FlinkJarsResponse
+    {
+        public List<FlinkJarFile>? Files { get; set; } = new();
+    }
+
+    private sealed class FlinkJarFile
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
     }
 }

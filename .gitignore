@@ -103,3 +103,25 @@ apphost_test.log
 kafka_2.13-4.0.0/
 NativeKafkaBridge/libnativekafkabridge.so
 .roo/mcp.json
+
+# Gradle build files
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+
+# Java build artifacts
+*.class
+*.jar
+*.war
+*.ear
+*.tar
+*.zip
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
