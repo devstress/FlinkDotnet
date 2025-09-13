@@ -122,8 +122,10 @@ public class BasicPerfTest : KafkaTestBase
 			var localConsumerId = consumerId;
 			consumerTasks.Add(Task.Run(() =>
 			{
-				using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
-				.Build();
+                using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
+                .SetLogHandler((_, __) => { })
+                .SetErrorHandler((_, __) => { })
+                .Build();
 				consumer.Subscribe(TestTopicName);
 				var localConsumed = 0L;
 				var batchCount = 0;
@@ -232,8 +234,10 @@ public class BasicPerfTest : KafkaTestBase
 			EnableDeliveryReports = false
 		};
 
-		using var producer = new ProducerBuilder<string, string>(producerConfig)
-			.Build();
+        using var producer = new ProducerBuilder<string, string>(producerConfig)
+            .SetLogHandler((_, __) => { })
+            .SetErrorHandler((_, __) => { })
+            .Build();
 
 		var messagesSent = 0L;
 		const string messageTemplate = "async-test-message-payload-optimized-for-extreme-performance";
@@ -326,8 +330,10 @@ public class BasicPerfTest : KafkaTestBase
 			RequestTimeoutMs = 30000
 		};
 
-		using var producer = new ProducerBuilder<string, string>(producerConfig)
-			.Build();
+        using var producer = new ProducerBuilder<string, string>(producerConfig)
+            .SetLogHandler((_, __) => { })
+            .SetErrorHandler((_, __) => { })
+            .Build();
 		const string messageTemplate = "pre-produced-test-message-payload-optimized";
 
 		var processed = 0;

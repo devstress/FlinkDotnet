@@ -453,43 +453,47 @@ public class BatchMessageProcessor
 
 public static class KafkaConfigHelper
 {
-	public static ProducerConfig CreatePerformanceProducerConfig(string bootstrapServers)
-	{
-		return new ProducerConfig
-		{
-			BootstrapServers = bootstrapServers,
-			Acks = Acks.All,
-			LingerMs = 50,
-			BatchSize = 65536,
-			CompressionType = CompressionType.Zstd,
-			QueueBufferingMaxMessages = 1000000,
-			QueueBufferingMaxKbytes = 2097152,
-			DeliveryReportFields = "none",
-			MessageSendMaxRetries = 3,
-			RequestTimeoutMs = 5000,
-			MessageTimeoutMs = 10000,
-			SecurityProtocol = SecurityProtocol.Plaintext,
-			EnableIdempotence = true,
-			EnableDeliveryReports = false
-		};
-	}
+    public static ProducerConfig CreatePerformanceProducerConfig(string bootstrapServers)
+    {
+        var cfg = new ProducerConfig
+        {
+            BootstrapServers = bootstrapServers,
+            Acks = Acks.All,
+            LingerMs = 50,
+            BatchSize = 65536,
+            CompressionType = CompressionType.Zstd,
+            QueueBufferingMaxMessages = 1000000,
+            QueueBufferingMaxKbytes = 2097152,
+            DeliveryReportFields = "none",
+            MessageSendMaxRetries = 3,
+            RequestTimeoutMs = 5000,
+            MessageTimeoutMs = 10000,
+            SecurityProtocol = SecurityProtocol.Plaintext,
+            EnableIdempotence = true,
+            EnableDeliveryReports = false
+        };
+        TestContext.WriteLine($"🟡 [Config] Created ProducerConfig BootstrapServers={cfg.BootstrapServers}, SecurityProtocol={cfg.SecurityProtocol}, Idempotence={cfg.EnableIdempotence}");
+        return cfg;
+    }
 
 	public static ConsumerConfig CreatePerformanceConsumerConfig(string bootstrapServers, string groupId, bool enableAutoCommit = true)
 	{
-		return new ConsumerConfig
-		{
-			BootstrapServers = bootstrapServers,
-			GroupId = groupId,
-			AutoOffsetReset = AutoOffsetReset.Earliest,
-			EnableAutoCommit = enableAutoCommit,
-			FetchMinBytes = enableAutoCommit ? 1 : 1024 * 16,
-			FetchMaxBytes = 1024 * 1024,
-			MaxPartitionFetchBytes = 1024 * 1024,
-			FetchWaitMaxMs = 10,
-			SecurityProtocol = SecurityProtocol.Plaintext,
-			SessionTimeoutMs = 30000,
-			HeartbeatIntervalMs = 3000,
-			MaxPollIntervalMs = 300000
-		};
-	}
+        var cfg = new ConsumerConfig
+        {
+            BootstrapServers = bootstrapServers,
+            GroupId = groupId,
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+            EnableAutoCommit = enableAutoCommit,
+            FetchMinBytes = enableAutoCommit ? 1 : 1024 * 16,
+            FetchMaxBytes = 1024 * 1024,
+            MaxPartitionFetchBytes = 1024 * 1024,
+            FetchWaitMaxMs = 10,
+            SecurityProtocol = SecurityProtocol.Plaintext,
+            SessionTimeoutMs = 30000,
+            HeartbeatIntervalMs = 3000,
+            MaxPollIntervalMs = 300000
+        };
+        TestContext.WriteLine($"🟡 [Config] Created ConsumerConfig BootstrapServers={cfg.BootstrapServers}, GroupId={cfg.GroupId}, SecurityProtocol={cfg.SecurityProtocol}");
+        return cfg;
+    }
 }

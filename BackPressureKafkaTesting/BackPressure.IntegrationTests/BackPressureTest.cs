@@ -450,6 +450,8 @@ public class TaskFactory
 			var sb = new StringBuilder();
 
 			TestContext.WriteLine($"ℹ️ Kafka Gateway {gatewayId} handling customers {senderStart} to {senderEnd}");
+			var estimatedMessages = (senderEnd - senderStart) * TestConfiguration.CUSTOMERS;
+			TestContext.WriteLine($"🟡 [Gateway {gatewayId}] Before producing ~{estimatedMessages:N0} messages");
 
 			IProducer<string, string> producerToUse;
 			if (producer != null)
@@ -547,7 +549,7 @@ public class TaskFactory
 				}
 			}
 
-			TestContext.WriteLine($"ℹ️ Kafka Gateway {gatewayId} produced {messageCount} messages (back pressure: {backPressureCount})");
+			TestContext.WriteLine($"✅ [Gateway {gatewayId}] Finished producing {messageCount:N0} messages (back pressure: {backPressureCount:N0})");
 		}, testData.CancellationTokenSource.Token);
 	}
 

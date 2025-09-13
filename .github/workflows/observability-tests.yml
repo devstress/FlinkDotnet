@@ -30,11 +30,11 @@ jobs:
           dotnet workload install aspire
           echo "✅ Aspire workload installed successfully"
 
-      - name: Build LocalTesting Solution
+      - name: Build LocalTesting integration tests
         run: |
-          echo "🔨 Building LocalTesting solution for observability testing..."
-          dotnet restore LocalTesting/LocalTesting.sln
-          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+          echo "🔨 Building LocalTesting integration tests..."
+          dotnet restore LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj
+          dotnet build LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --configuration Release --no-restore
 
       - name: Run Observability Tests
         timeout-minutes: 45
@@ -47,15 +47,13 @@ jobs:
           echo "📋 Testing complete Kafka → Flink → Temporal pipeline with observability metrics"
           
           # Run LocalTesting integration tests with observability category
-          cd LocalTesting
-          
           # Run tests and capture both output and exit code
           set +e  # Don't exit on error immediately
-          dotnet test LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
+          dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
             --configuration Release \
             --logger "console;verbosity=detailed" \
             --no-build \
-            --filter "Category=observability" 2>&1 | tee test-output.log
+            --filter "Category=observability" 2>&1 | tee LocalTesting/test-output.log
           
           # CRITICAL FIX: Use PIPESTATUS to get the exit code from dotnet test, not from tee
           TEST_EXIT_CODE=${PIPESTATUS[0]}

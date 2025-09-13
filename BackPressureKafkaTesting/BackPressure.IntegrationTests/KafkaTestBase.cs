@@ -43,6 +43,9 @@ public abstract class KafkaTestBase : IAsyncDisposable
 
 		await SetupKafkaClientsAsync();
 
+		TestContext.WriteLine(
+			$"🟢 Infrastructure initialized: Kafka={KafkaConnectionString}, " +
+			$"Clients=[Producer:{(Producer!=null)}, Consumer:{(Consumer!=null)}, Admin:{(AdminClient!=null)}]");
 		TestContext.WriteLine("✅ Aspire infrastructure setup completed");
 	}
 
@@ -131,6 +134,7 @@ public abstract class KafkaTestBase : IAsyncDisposable
 
 		hostBuilder.Services.AddSingleton<IProducer<string, string>>(provider =>
 		{
+			TestContext.WriteLine($"🟡 [Setup] Before creating global Producer (BootstrapServers={KafkaConnectionString})");
 			var config = new ProducerConfig
 			{
 				BootstrapServers = KafkaConnectionString,
@@ -141,18 +145,18 @@ public abstract class KafkaTestBase : IAsyncDisposable
 				BatchSize = 16384,
 				LingerMs = 10,
 				RequestTimeoutMs = 30000,
-				
-				
-				
-				
-				
 			};
-			return new ProducerBuilder<string, string>(config)
+			var prod = new ProducerBuilder<string, string>(config)
+				.SetErrorHandler((_, __) => { })
+				.SetLogHandler((_, __) => { })
 				.Build();
+			TestContext.WriteLine("✅ [Setup] Global Producer created");
+			return prod;
 		});
 
 		hostBuilder.Services.AddSingleton<IConsumer<string, string>>(provider =>
 		{
+			TestContext.WriteLine($"🟡 [Setup] Before creating global Consumer (BootstrapServers={KafkaConnectionString})");
 			var config = new ConsumerConfig
 			{
 				BootstrapServers = KafkaConnectionString,
@@ -162,28 +166,29 @@ public abstract class KafkaTestBase : IAsyncDisposable
 				SessionTimeoutMs = 30000,
 				MaxPollIntervalMs = 300000,
 				FetchMinBytes = 1,
-				
-				
-				
-				
 			};
-			return new ConsumerBuilder<string, string>(config)
+			var cons = new ConsumerBuilder<string, string>(config)
+				.SetErrorHandler((_, __) => { })
+				.SetLogHandler((_, __) => { })
 				.Build();
+			TestContext.WriteLine("✅ [Setup] Global Consumer created");
+			return cons;
 		});
 
 		hostBuilder.Services.AddSingleton<IAdminClient>(provider =>
 		{
+			TestContext.WriteLine($"🟡 [Setup] Before creating global AdminClient (BootstrapServers={KafkaConnectionString})");
 			var config = new AdminClientConfig
 			{
 				BootstrapServers = KafkaConnectionString,
 				SocketTimeoutMs = 60000,
-				
-				
-				
-				
-				
 			};
-			return new AdminClientBuilder(config).Build();
+			var adm = new AdminClientBuilder(config)
+				.SetErrorHandler((_, __) => { })
+				.SetLogHandler((_, __) => { })
+				.Build();
+			TestContext.WriteLine("✅ [Setup] Global AdminClient created");
+			return adm;
 		});
 
 		TestHost = hostBuilder.Build();
@@ -194,35 +199,41 @@ public abstract class KafkaTestBase : IAsyncDisposable
 		AdminClient = TestHost.Services.GetRequiredService<IAdminClient>();
 	}
 
-	private static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
-	{
-		var sw = Stopwatch.StartNew();
-		while (sw.Elapsed < timeout)
-		{
-			try
-			{
-				var admin = new AdminClientBuilder(new AdminClientConfig
-				{
-					BootstrapServers = bootstrapServers,
-					SocketTimeoutMs = 5000,
-				})
-				.SetErrorHandler((_, __) => { })
-				.Build();
+    private static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
+    {
+        var sw = Stopwatch.StartNew();
+        var attempt = 0;
+        TestContext.WriteLine($"🔎 [KafkaReady] Probing broker metadata at {bootstrapServers}");
+        while (sw.Elapsed < timeout)
+        {
+            attempt++;
+            try
+            {
+                using var admin = new AdminClientBuilder(new AdminClientConfig
+                {
+                    BootstrapServers = bootstrapServers,
+                    SocketTimeoutMs = 5000,
+                })
+                // Suppress noisy librdkafka bootstrap logs during readiness probing.
+                .SetLogHandler((_, __) => { })
+                .SetErrorHandler((_, __) => { })
+                .Build();
 
-				using (admin)
-				{
-					var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
-					if (md?.Brokers?.Count > 0)
-						return;
-				}
-			}
-			catch
-			{
-				
-			}
-			await Task.Delay(500, ct);
-		}
-		throw new TimeoutException("Kafka did not become ready in time.");
-	}
+                var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
+                if (md?.Brokers?.Count > 0)
+                {
+                    TestContext.WriteLine($"✅ [KafkaReady] Metadata OK (brokers={md.Brokers.Count}) after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Print a concise context line rather than raw librdkafka output.
+                TestContext.WriteLine($"⏳ [KafkaReady] Attempt {attempt} failed: {ex.Message}");
+            }
+            await Task.Delay(500, ct);
+        }
+        throw new TimeoutException("Kafka did not become ready in time.");
+    }
 }
 
