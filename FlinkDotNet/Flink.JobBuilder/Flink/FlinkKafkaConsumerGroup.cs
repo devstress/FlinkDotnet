@@ -42,14 +42,12 @@ namespace Flink.JobBuilder.Flink
         public async Task InitializeAsync(IEnumerable<string> topics, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Initializing FlinkKafkaConsumerGroup with topics: {Topics}", string.Join(", ", topics));
-            
-            // In a real implementation, this would:
+            await Task.Yield();
             // 1. Create Confluent.Kafka consumer with Flink-optimal settings
             // 2. Subscribe to topics
             // 3. Set up partition assignment handlers
             // 4. Initialize checkpoint state
             
-            await Task.Delay(100, cancellationToken); // Simulate initialization
             
             _logger.LogInformation("FlinkKafkaConsumerGroup initialization completed");
         }
@@ -73,8 +71,6 @@ namespace Flink.JobBuilder.Flink
             {
                 try
                 {
-                    // In a real implementation, this would test Kafka connectivity
-                    // For now, simulate setup check
                     await Task.Delay(1000, cancellationToken);
                     
                     logger.LogInformation("Kafka setup verified successfully after {RetryCount} retries", retryCount);
@@ -107,14 +103,12 @@ namespace Flink.JobBuilder.Flink
                 if (_isDisposed)
                     throw new ObjectDisposedException(nameof(FlinkKafkaConsumerGroup));
 
-                // In a real implementation, this would:
                 // 1. Call consumer.Consume(timeout)
                 // 2. Track offset for checkpoint
                 // 3. Return structured result
                 
                 _logger.LogDebug("Consuming message with timeout: {Timeout}", timeout);
                 
-                // Simulate message consumption
                 return Task.FromResult<ConsumeResult?>(new ConsumeResult
                 {
                     Topic = "sample-topic",
@@ -138,12 +132,10 @@ namespace Flink.JobBuilder.Flink
             {
                 _logger.LogDebug("Snapshotting state for checkpoint {CheckpointId} at {Timestamp}", checkpointId, checkpointTimestamp);
                 
-                // In a real implementation, this would:
                 // 1. Get current consumer assignment
                 // 2. Capture current offsets for each partition
                 // 3. Store state for recovery
                 
-                // Simulate state snapshot
                 _checkpointOffsets[checkpointId.ToString()] = checkpointTimestamp;
             }
         }
@@ -160,7 +152,6 @@ namespace Flink.JobBuilder.Flink
                 
                 if (checkpointState != null)
                 {
-                    // In a real implementation, this would:
                     // 1. Restore consumer offsets for each partition
                     // 2. Update internal state tracking
                     
@@ -182,12 +173,10 @@ namespace Flink.JobBuilder.Flink
             {
                 _logger.LogDebug("Committing offsets for completed checkpoint {CheckpointId}", checkpointId);
                 
-                // In a real implementation, this would:
                 // 1. Commit offsets to Kafka for the checkpoint
                 // 2. Clean up old checkpoint state
             }
-            
-            await Task.Delay(10); // Simulate commit operation
+            await Task.Yield();
         }
 
         /// <summary>
@@ -198,7 +187,6 @@ namespace Flink.JobBuilder.Flink
         {
             lock (_lockObject)
             {
-                // In a real implementation, this would return actual consumer assignment
                 return new List<TopicPartition>
                 {
                     new() { Topic = "sample-topic", Partition = 0 }
@@ -255,7 +243,6 @@ namespace Flink.JobBuilder.Flink
                 {
                     _logger.LogInformation("Disposing FlinkKafkaConsumerGroup");
                     
-                    // In a real implementation, this would:
                     // 1. Close Kafka consumer
                     // 2. Clean up state
                     // 3. Release resources

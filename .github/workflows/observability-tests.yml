@@ -1,4 +1,4 @@
-name: Observability Tests
+name: LocalTesting Integration Tests
 
 on:
   workflow_call:
@@ -9,9 +9,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run-observability-tests:
-    name: Run Observability Tests
-    runs-on: ubuntu-latest
+  run-localtesting-tests:
+    name: Run LocalTesting Integration Tests
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -36,15 +43,15 @@ jobs:
           dotnet restore LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj
           dotnet build LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj --configuration Release --no-restore
 
-      - name: Run Observability Tests
+      - name: Run LocalTesting tests (all)
         timeout-minutes: 45
         env:
-          INTEGRATION_TEST_MODE: "OBSERVABILITY"
           GITHUB_ACTIONS: "true"
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+        continue-on-error: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          echo "🎭 Running observability tests..."
-          echo "📋 Testing complete Kafka → Flink → Temporal pipeline with observability metrics"
+          echo "🎭 Running LocalTesting integration tests (all categories)..."
+          echo "📋 Kafka → Flink pipeline validation + SQL (if connectors present)"
           
           # Run LocalTesting integration tests with observability category
           # Run tests and capture both output and exit code
@@ -52,8 +59,7 @@ jobs:
           dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
             --configuration Release \
             --logger "console;verbosity=detailed" \
-            --no-build \
-            --filter "Category=observability" 2>&1 | tee LocalTesting/test-output.log
+            --no-build 2>&1 | tee LocalTesting/test-output.log
           
           # CRITICAL FIX: Use PIPESTATUS to get the exit code from dotnet test, not from tee
           TEST_EXIT_CODE=${PIPESTATUS[0]}
@@ -73,13 +79,13 @@ jobs:
             echo "DEBUG: Setting TEST_FAILED=false, TEST_EXIT_CODE=0"
           fi
 
-      - name: Display Observability Report
+      - name: Display Test Report
         if: always()
         timeout-minutes: 10
         env:
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
         run: |
-          echo "📋 OBSERVABILITY TEST REPORT"
+          echo "📋 LOCALTESTING TEST REPORT"
           echo "========================================"
           
           # Check for test failures first and display errors prominently
@@ -115,8 +121,7 @@ jobs:
             echo "• Check if .NET 9.0 SDK is properly installed"
             echo "• Verify Aspire workload installation"
             echo "• Ensure Docker is running for containerized services"
-            echo "• Check infrastructure startup timeout (currently 45 minutes)"
-            echo "• Verify Prometheus and Kafka services are accessible"
+            echo "• Verify Flink JobManager (8081) and Gateway (8080) are accessible"
             echo ""
           fi
           

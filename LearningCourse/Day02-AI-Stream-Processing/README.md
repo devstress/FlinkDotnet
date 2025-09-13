@@ -1243,8 +1243,6 @@ cd LearningCourse/Day02-AI-Stream-Processing/Exercise-Solutions/
 dotnet new console -n AIModelDDLMastery
 cd AIModelDDLMastery
 
-# TODO: NuGet packages are not yet published. Use local project references.
-# Future: A single FlinkDotNet NuGet package will include all AI features.
 # Add reference to FlinkDotNet SQL components from the repository
 dotnet add reference ../../../../FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj
 dotnet add package System.Text.Json --version 7.0.0

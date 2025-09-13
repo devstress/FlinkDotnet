@@ -93,12 +93,9 @@ public interface IRateLimitingStrategy
 }
 ```
 
-### Updated Sample Code
+### Updated Example
 
-The sample code in this repository has been updated to demonstrate the correct patterns:
-
-- `Sample/FlinkJobBuilder.Sample/FlinkJobManagerCompatibilityExamples.cs` - Complete examples
-- `Sample/FlinkDotNet.Aspire.IntegrationTests/Unit/ImprovedRateLimiterAsyncTests.cs` - Updated test patterns
+See `FlinkDotNet/Flink.JobBuilder/Demo/RateLimitingDemo.cs` for sync vs async usage examples.
 
 ## When to Use Which Pattern
 

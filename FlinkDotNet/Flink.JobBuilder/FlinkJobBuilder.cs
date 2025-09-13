@@ -82,6 +82,19 @@ namespace Flink.JobBuilder
         }
 
         /// <summary>
+        /// Build a Flink SQL job from a list of SQL statements (DDL/DML)
+        /// </summary>
+        public static FlinkJobBuilder FromSql(IEnumerable<string> statements)
+        {
+            var builder = new FlinkJobBuilder();
+            builder._source = new SqlSourceDefinition
+            {
+                Statements = new List<string>(statements ?? Array.Empty<string>())
+            };
+            return builder;
+        }
+
+        /// <summary>
         /// Add a filter operation to the job
         /// </summary>
         /// <param name="expression">Filter expression (e.g., "Amount > 100")</param>
@@ -439,14 +452,15 @@ namespace Flink.JobBuilder
             if (_source == null)
                 throw new InvalidOperationException("Job must have a source. Use FromKafka() or similar method.");
 
-            if (_sink == null)
-                throw new InvalidOperationException("Job must have a sink. Use ToKafka(), ToConsole(), or similar method.");
+            // Allow sink-less jobs when executing pure SQL (sink defined in INSERT INTO, etc.)
+            if (_sink == null && _source is not SqlSourceDefinition)
+                throw new InvalidOperationException("Job must have a sink. Use ToKafka(), ToConsole(), or provide SQL with inserts.");
 
             return new JobDefinition
             {
                 Source = _source,
                 Operations = _operations,
-                Sink = _sink,
+                Sink = _sink!,
                 Metadata = new JobMetadata
                 {
                     JobId = Guid.NewGuid().ToString(),

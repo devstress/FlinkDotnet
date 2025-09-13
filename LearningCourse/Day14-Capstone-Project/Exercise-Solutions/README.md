@@ -205,7 +205,7 @@ cd Exercise144 && dotnet run && cd ..
 # Check all services are running
 curl http://localhost:8081/overview     # Flink
 curl http://localhost:18001/api/clusters # Kafka
-curl http://localhost:8084/api/v1/namespaces # Temporal
+# (Optional reference) Temporal namespace call removed; focus on Flink Gateway
 curl http://localhost:18010/api/health  # Grafana
 curl http://localhost:18006/api/v1/targets # Prometheus
 ```

@@ -2,15 +2,10 @@
 
 This document provides practical examples demonstrating why Kafka partitions are superior to Redis for rate limiter state storage in Flink.NET.
 
-## Quick Comparison
+## Quick Comparison (Qualitative)
 
-| Aspect | Kafka Partitions | Redis |
-|--------|------------------|-------|
-| **Scale** | 10M+ ops/sec (distributed) | 1M ops/sec (per node) |
-| **Persistence** | Built-in durable log | AOF configuration required |
-| **Setup** | Single service + ZooKeeper | Multiple services (masters + sentinels) |
-| **Failover** | Automatic (5-10 seconds) | Manual (15-30 seconds) |
-| **Data Loss** | None (with proper config) | Possible during failover |
+- Kafka partitions: distributed, append-only log storage; durable and horizontally scalable.
+- Redis: in‑memory key/value store; persistence and failover depend on configuration (AOF, Sentinel/Cluster).
 
 ## Code Examples
 
@@ -117,19 +112,7 @@ multiTierLimiter.TryAcquire(context); // Flink JobManager compatible
 
 ### 4. **Performance Characteristics**
 
-```csharp
-// Kafka Performance
-- Throughput: 10M+ operations/sec (cluster)
-- Storage: Unlimited (disk-based with compression)
-- Latency: 5ms typical (with proper batching)
-- Scaling: Linear with partition count
-
-// Redis Performance  
-- Throughput: 1M operations/sec (per node)
-- Storage: Limited by available RAM
-- Latency: 1-100ms (depends on AOF sync policy)
-- Scaling: Manual, requires resharding
-```
+Validate throughput/latency with your own workloads and infrastructure. Characteristics differ by configuration and scale.
 
 ## Integration with Flink AsyncSink
 

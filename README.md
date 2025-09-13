@@ -30,7 +30,7 @@ Alternatives
 - Client‑only mode (embed Runner jar in SDK and call Flink REST directly): keeps the same runner, but each app handles auth/policy and jar versioning.
 - Flink SQL Gateway: no jar for a subset of pipelines; use when DSL can map cleanly to SQL.
 
-See TODO.md for the step‑by‑step implementation plan.
+Refer to the docs/ directory for the implementation roadmap and guides.
 
 ## 📚 Learning Course
 
@@ -1135,8 +1135,6 @@ dotnet --version  # Must show 9.0.x
 
 1. **Clone and Build FlinkDotNet Repository**
    ```bash
-   # TODO: NuGet packages are not yet published. Use repository for now.
-   # Future: A single FlinkDotNet NuGet package will be available that includes everything.
    git clone https://github.com/devstress/FlinkDotnet.git
    cd FlinkDotnet
    dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
@@ -1178,9 +1176,7 @@ dotnet --version  # Must show 9.0.x
 
 1. **Use FlinkDotNet Repository (All Components Included)**
    ```bash
-   # TODO: NuGet packages are not yet published. Use repository for now.
-   # Future: A single FlinkDotNet NuGet package will include all orchestration components.
-   # The repository already contains all enterprise components:
+   # The repository contains all enterprise components:
    # - FlinkDotNet.Orchestration, ClusterManager, Temporal, Resilience
    cd FlinkDotnet
    dotnet build --configuration Release
@@ -1227,19 +1223,15 @@ dotnet --version  # Must show 9.0.x
 - [Getting Started Guide](./docs/wiki/Getting-Started.md)
 - [Contributing Guidelines](./CONTRIBUTING.md)
 
-### Apache Flink 2.1.0 Feature Documentation
-- [Dynamic Scaling and Rebalancing Guide](./docs/flink-2.0-scaling-guide.md)
-- [Adaptive Scheduler Configuration](./docs/adaptive-scheduler-setup.md)
-- [Reactive Mode Implementation](./docs/reactive-mode-guide.md)
-- [Savepoint-based Scaling Workflows](./docs/savepoint-scaling-guide.md)
-- [Fine-grained Resource Management](./docs/resource-management-guide.md)
+### Apache Flink 2.1.0 Documentation
+- See the official Flink docs for feature configuration and operations.
 
 ### Temporal Durable Workflow Architecture Documentation
 - [Flink vs Temporal Decision Guide](./docs/flink-vs-temporal-decision-guide.md)
 - [Local Testing Setup](./docs/local-testing-setup.md)
 
 ### Testing and Quality Assurance
-- [Observability and Monitoring](./docs/observability/README.md)
+- [Observability Mapping](./docs/observability.md)
 - [Monitoring Best Practices](./docs/observability/monitoring-best-practices.md)
 
 ## 📊 Observability Metrics Testing

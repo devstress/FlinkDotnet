@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace Flink.JobBuilder.Flink
 {
@@ -15,52 +16,37 @@ namespace Flink.JobBuilder.Flink
         private readonly ILogger<FlinkRedisSink> _logger;
         private readonly object _lockObject = new();
         private bool _isDisposed;
+        private readonly string _connectionString;
+        private readonly Dictionary<string, object>? _redisConfig;
+        private ConnectionMultiplexer? _muxer;
+        private IDatabase? _db;
 
-        /// <summary>
-        /// Constructor for FlinkRedisSink
-        /// </summary>
-        /// <param name="connectionString">Redis connection string</param>
-        /// <param name="redisConfig">Redis configuration options</param>
-        /// <param name="logger">Logger instance</param>
         public FlinkRedisSink(string connectionString, Dictionary<string, object>? redisConfig, ILogger<FlinkRedisSink> logger)
         {
             if (string.IsNullOrEmpty(connectionString))
                 throw new ArgumentNullException(nameof(connectionString));
-            
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            // Log configuration for validation (redisConfig can be used for future Redis client configuration)
-            _logger.LogInformation("FlinkRedisSink initialized with connection: {ConnectionString}, config options: {ConfigCount}", 
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _connectionString = connectionString;
+            _redisConfig = redisConfig;
+
+            _logger.LogInformation("FlinkRedisSink initialized with connection: {ConnectionString}, config options: {ConfigCount}",
                 MaskConnectionString(connectionString), redisConfig?.Count ?? 0);
         }
 
-        /// <summary>
-        /// Initialize Redis connection with Flink-optimal settings
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Initializing FlinkRedisSink with Flink-optimal settings");
-            
-            // In a real implementation, this would:
-            // 1. Create StackExchange.Redis connection
-            // 2. Configure retry policies
-            // 3. Set up connection monitoring
-            // 4. Validate Redis features (transactions, lua scripts, etc.)
-            
-            await Task.Delay(100, cancellationToken); // Simulate initialization
-            
+            var options = ConfigurationOptions.Parse(_connectionString);
+            options.AbortOnConnectFail = false;
+            options.ConnectTimeout = 5000;
+            options.SyncTimeout = 5000;
+            options.ReconnectRetryPolicy = new ExponentialRetry(5000);
+            _muxer = await ConnectionMultiplexer.ConnectAsync(options).ConfigureAwait(false);
+            _db = _muxer.GetDatabase();
             _logger.LogInformation("FlinkRedisSink initialization completed");
         }
 
-        /// <summary>
-        /// Atomic increment operation for stress testing
-        /// Used in 1M message stress tests with Redis counters
-        /// </summary>
-        /// <param name="key">Counter key</param>
-        /// <param name="increment">Increment value (default: 1)</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>New counter value after increment</returns>
         public async Task<long> AtomicIncrementAsync(string key, long increment = 1, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(key))
@@ -76,18 +62,10 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                // In a real implementation, this would:
-                // 1. Use Redis INCRBY command for atomic increment
-                // 2. Handle Redis connection failures with retry
-                // 3. Return actual incremented value
-                
-                await Task.Delay(1, cancellationToken); // Simulate Redis operation
-                
-                // Simulate increment result
-                var newValue = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 1000000 + increment;
-                
+                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                var newValue = await _db.StringIncrementAsync(key, increment).ConfigureAwait(false);
                 _logger.LogDebug("Atomic increment completed: key={Key}, newValue={NewValue}", key, newValue);
-                return newValue;
+                return (long)newValue;
             }
             catch (Exception ex)
             {
@@ -96,14 +74,6 @@ namespace Flink.JobBuilder.Flink
             }
         }
 
-        /// <summary>
-        /// Atomic set operation for exactly-once semantics
-        /// Ensures message IDs are processed exactly once
-        /// </summary>
-        /// <param name="setKey">Set key for deduplication</param>
-        /// <param name="member">Member to add to set</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if member was added (first time), false if already existed</returns>
         public async Task<bool> AtomicSetAddAsync(string setKey, string member, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(setKey))
@@ -121,18 +91,10 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                // In a real implementation, this would:
-                // 1. Use Redis SADD command for atomic set addition
-                // 2. Return 1 if new member, 0 if already existed
-                // 3. Handle Redis connection failures with retry
-                
-                await Task.Delay(1, cancellationToken); // Simulate Redis operation
-                
-                // Simulate set add result (mostly new members for testing)
-                var isNewMember = member.GetHashCode() % 10 != 0; // 90% new, 10% duplicate
-                
-                _logger.LogDebug("Atomic set add completed: setKey={SetKey}, member={Member}, isNew={IsNew}", setKey, member, isNewMember);
-                return isNewMember;
+                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                var added = await _db.SetAddAsync(setKey, member).ConfigureAwait(false);
+                _logger.LogDebug("Atomic set add completed: setKey={SetKey}, member={Member}, added={Added}", setKey, member, added);
+                return added;
             }
             catch (Exception ex)
             {
@@ -141,13 +103,6 @@ namespace Flink.JobBuilder.Flink
             }
         }
 
-        /// <summary>
-        /// Check if member exists in set (for exactly-once validation)
-        /// </summary>
-        /// <param name="setKey">Set key</param>
-        /// <param name="member">Member to check</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if member exists in set</returns>
         public async Task<bool> SetContainsAsync(string setKey, string member, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(setKey))
@@ -163,28 +118,18 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                // In a real implementation, this would use Redis SISMEMBER command
-                await Task.Delay(1, cancellationToken); // Simulate Redis operation
-                
-                // Simulate membership check
-                var exists = member.GetHashCode() % 10 == 0; // 10% exist, 90% don't
-                
-                _logger.LogDebug("Set contains check: setKey={SetKey}, member={Member}, exists={Exists}", setKey, member, exists);
+                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                var exists = await _db.SetContainsAsync(setKey, member).ConfigureAwait(false);
+                _logger.LogDebug("Set contains: setKey={SetKey}, member={Member}, exists={Exists}", setKey, member, exists);
                 return exists;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to check set membership for setKey: {SetKey}, member: {Member}", setKey, member);
-                throw new InvalidOperationException($"Redis set contains check failed for setKey '{setKey}' and member '{member}'", ex);
+                throw new InvalidOperationException($"Redis set membership check failed for setKey '{setKey}' and member '{member}'", ex);
             }
         }
 
-        /// <summary>
-        /// Get current counter value
-        /// </summary>
-        /// <param name="key">Counter key</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Current counter value or 0 if key doesn't exist</returns>
         public async Task<long> GetCounterValueAsync(string key, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(key))
@@ -198,14 +143,13 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                // In a real implementation, this would use Redis GET command
-                await Task.Delay(1, cancellationToken); // Simulate Redis operation
-                
-                // Simulate counter value
-                var value = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 1000000;
-                
-                _logger.LogDebug("Get counter value: key={Key}, value={Value}", key, value);
-                return value;
+                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                var value = await _db.StringGetAsync(key).ConfigureAwait(false);
+                long result = 0;
+                if (value.HasValue && long.TryParse(value.ToString(), out var parsed))
+                    result = parsed;
+                _logger.LogDebug("Get counter value: key={Key}, value={Value}", key, result);
+                return result;
             }
             catch (Exception ex)
             {
@@ -214,12 +158,6 @@ namespace Flink.JobBuilder.Flink
             }
         }
 
-        /// <summary>
-        /// Get set size for validation
-        /// </summary>
-        /// <param name="setKey">Set key</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Number of members in set</returns>
         public async Task<long> GetSetSizeAsync(string setKey, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(setKey))
@@ -233,14 +171,10 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                // In a real implementation, this would use Redis SCARD command
-                await Task.Delay(1, cancellationToken); // Simulate Redis operation
-                
-                // Simulate set size
-                var size = Math.Abs(setKey.GetHashCode()) % 1000;
-                
+                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                var size = await _db.SetLengthAsync(setKey).ConfigureAwait(false);
                 _logger.LogDebug("Get set size: setKey={SetKey}, size={Size}", setKey, size);
-                return size;
+                return (long)size;
             }
             catch (Exception ex)
             {
@@ -249,12 +183,6 @@ namespace Flink.JobBuilder.Flink
             }
         }
 
-        /// <summary>
-        /// Execute Redis transaction for exactly-once semantics
-        /// </summary>
-        /// <param name="operations">Operations to execute atomically</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Transaction results</returns>
         public async Task<RedisTransactionResult> ExecuteTransactionAsync(IEnumerable<RedisOperation> operations, CancellationToken cancellationToken = default)
         {
             if (operations == null)
@@ -271,31 +199,70 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                // In a real implementation, this would:
-                // 1. Create Redis transaction (MULTI/EXEC)
-                // 2. Queue all operations
-                // 3. Execute atomically
-                // 4. Return results
-                
-                await Task.Delay(operationList.Count, cancellationToken); // Simulate transaction
-                
+                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                var tran = _db.CreateTransaction();
+                var pending = new List<Task>();
                 var results = new List<object>();
-                foreach (var operation in operationList)
+
+                foreach (var op in operationList)
                 {
-                    // Simulate operation results
-                    results.Add(operation.Type switch
+                    switch (op.Type)
                     {
-                        RedisOperationType.Increment => (long)(operation.Key?.GetHashCode() ?? 0) % 1000,
-                        RedisOperationType.SetAdd => operation.Member?.GetHashCode() % 10 != 0,
-                        RedisOperationType.Get => "simulated-value",
-                        RedisOperationType.Set => true,
-                        RedisOperationType.Delete => true,
-                        _ => throw new InvalidOperationException($"Unsupported operation type: {operation.Type}")
-                    });
+                        case RedisOperationType.Increment:
+                            var incTask = tran.StringIncrementAsync(op.Key!, op.Increment);
+                            pending.Add(incTask);
+                            results.Add(incTask);
+                            break;
+                        case RedisOperationType.SetAdd:
+                            var saddTask = tran.SetAddAsync(op.Key!, op.Member!);
+                            pending.Add(saddTask);
+                            results.Add(saddTask);
+                            break;
+                        case RedisOperationType.Get:
+                            var getTask = tran.StringGetAsync(op.Key!);
+                            pending.Add(getTask);
+                            results.Add(getTask);
+                            break;
+                        case RedisOperationType.Set:
+                            var setTask = tran.StringSetAsync(op.Key!, op.Value?.ToString());
+                            pending.Add(setTask);
+                            results.Add(setTask);
+                            break;
+                        case RedisOperationType.Delete:
+                            var delTask = tran.KeyDeleteAsync(op.Key!);
+                            pending.Add(delTask);
+                            results.Add(delTask);
+                            break;
+                        default:
+                            throw new InvalidOperationException($"Unsupported operation type: {op.Type}");
+                    }
                 }
-                
-                _logger.LogDebug("Redis transaction completed successfully with {Count} results", results.Count);
-                return new RedisTransactionResult { Success = true, Results = results };
+
+                var committed = await tran.ExecuteAsync().ConfigureAwait(false);
+                if (!committed)
+                {
+                    return new RedisTransactionResult { Success = false, ErrorMessage = "Transaction aborted" };
+                }
+
+                await Task.WhenAll(pending).ConfigureAwait(false);
+
+                var materialized = new List<object>(results.Count);
+                foreach (var r in results)
+                {
+                    switch (r)
+                    {
+                        case Task<long> tL: materialized.Add(await tL.ConfigureAwait(false)); break;
+                        case Task<bool> tB: materialized.Add(await tB.ConfigureAwait(false)); break;
+                        case Task<RedisValue> tV:
+                            var v = await tV.ConfigureAwait(false);
+                            materialized.Add(v.HasValue ? v.ToString()! : string.Empty);
+                            break;
+                        default: materialized.Add(true); break;
+                    }
+                }
+
+                _logger.LogDebug("Redis transaction completed successfully with {Count} results", materialized.Count);
+                return new RedisTransactionResult { Success = true, Results = materialized };
             }
             catch (Exception ex)
             {
@@ -304,14 +271,8 @@ namespace Flink.JobBuilder.Flink
             }
         }
 
-        /// <summary>
-        /// Mask connection string for logging (remove sensitive information)
-        /// </summary>
-        /// <param name="connectionString">Original connection string</param>
-        /// <returns>Masked connection string</returns>
         private static string MaskConnectionString(string connectionString)
         {
-            // Simple masking - in real implementation would handle Redis connection string format
             if (connectionString.Contains("password=", StringComparison.OrdinalIgnoreCase))
             {
                 return connectionString.Substring(0, connectionString.IndexOf("password=", StringComparison.OrdinalIgnoreCase)) + "password=***";
@@ -319,19 +280,12 @@ namespace Flink.JobBuilder.Flink
             return connectionString;
         }
 
-        /// <summary>
-        /// Dispose resources
-        /// </summary>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// Protected dispose pattern
-        /// </summary>
-        /// <param name="disposing">Whether disposing from Dispose() call</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_isDisposed && disposing)
@@ -339,21 +293,15 @@ namespace Flink.JobBuilder.Flink
                 lock (_lockObject)
                 {
                     _logger.LogInformation("Disposing FlinkRedisSink");
-                    
-                    // In a real implementation, this would:
-                    // 1. Close Redis connection
-                    // 2. Clean up resources
-                    // 3. Flush pending operations
-                    
+                    try { _muxer?.Close(); } catch { }
+                    try { _muxer?.Dispose(); } catch { }
+                    _db = null;
                     _isDisposed = true;
                 }
             }
         }
     }
 
-    /// <summary>
-    /// Redis operation types for transactions
-    /// </summary>
     public enum RedisOperationType
     {
         Increment,
@@ -363,9 +311,6 @@ namespace Flink.JobBuilder.Flink
         Delete
     }
 
-    /// <summary>
-    /// Redis operation for transactions
-    /// </summary>
     public class RedisOperation
     {
         public RedisOperationType Type { get; set; }
@@ -375,9 +320,6 @@ namespace Flink.JobBuilder.Flink
         public long Increment { get; set; } = 1;
     }
 
-    /// <summary>
-    /// Result of Redis transaction execution
-    /// </summary>
     public class RedisTransactionResult
     {
         public bool Success { get; set; }

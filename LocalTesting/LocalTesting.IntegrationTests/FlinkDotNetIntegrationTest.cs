@@ -37,6 +37,9 @@ public class FlinkDotNetIntegrationTest
             // Ensure Flink Job Gateway up
             await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
 
+            // Try Flink JobManager UI readiness (non-fatal)
+            try { await WaitForHttpOkAsync("http://localhost:8081", TimeSpan.FromSeconds(60), ct); } catch { }
+
             // Submit pipeline using FlinkDotNet facade
             var job = FlinkDotNet.Flink.JobBuilder
                 .FromKafka(InputTopic, kafka)

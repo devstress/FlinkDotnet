@@ -10,30 +10,20 @@
 ### Prerequisites Setup
 1. **Verify .NET 9.0 SDK**: `dotnet --version` (should return 9.0.x+)
 2. **Check Docker**: `docker version` (Docker Desktop or Podman running)
-3. **Validate Ports**: Ensure ports 8081, 8082, 8084, 3000, 5000, 9090, 18888 are available
+3. **Validate Ports**: Ensure ports 8081 (Flink UI) and 8080 (Gateway) are available
 
-### Start Complete Production Stack
+### Validate LocalTesting Stack
 ```bash
-# Navigate to LocalTesting directory
-cd FlinkDotNet/LocalTesting
+# Run the integration tests to validate Kafka + Flink + Gateway
+dotnet test ../../LocalTesting/LocalTesting.IntegrationTests -c Release --filter TestCategory=observability
 
-# Start the complete production stack
-dotnet run --project LocalTesting.AppHost
-
-# Verify all services running
-curl http://localhost:18002  # Flink Dashboard  
-curl http://localhost:18010  # Grafana Dashboard
-curl http://localhost:18004  # Temporal UI
+# Optional: run the AppHost manually
+dotnet run --project ../../LocalTesting/BackPressure.AppHost/BackPressure.AppHost.csproj
 ```
 
-### Generate Training Data
-```bash
-# Run comprehensive infrastructure validation
-curl http://localhost:5000/health/comprehensive
-
-# Generate observability data for exercises
-curl -X POST http://localhost:5000/stress/complex-logic -d '{"MessageCount": 1000}'
-```
+### Access UIs
+- Flink UI: http://localhost:8081
+- Gateway health: http://localhost:8080/api/v1/health
 
 ## 📋 Today's Exercises (Completion Order)
 

@@ -171,16 +171,10 @@ This guide explains when to use Apache Flink versus Temporal for different types
 ## Performance Considerations
 
 ### Flink Performance Characteristics
-- **Latency**: 1-10 milliseconds per message
-- **Throughput**: Millions of messages per second
-- **Memory**: Stateful operations require memory proportional to state size
-- **Checkpointing**: Periodic snapshots for fault tolerance (configurable interval)
+- Performance depends on topology, connectors, and configuration (parallelism, checkpointing, etc.).
 
 ### Temporal Performance Characteristics
-- **Latency**: 10-100 milliseconds per workflow step
-- **Throughput**: Thousands of workflows per second
-- **Durability**: All state persisted to database
-- **Scalability**: Horizontal scaling via workers
+- Performance depends on workflow design, task queues, and persistence configuration.
 
 ## Monitoring and Observability
 
@@ -215,30 +209,9 @@ This guide explains when to use Apache Flink versus Temporal for different types
 
 ## Code Examples
 
-### Flink Job Configuration
-```csharp
-var flinkConfig = new FlinkJobConfiguration
-{
-    ConsumerGroup = "stress-test-group",
-    InputTopic = "complex-input",
-    OutputTopic = "complex-output",
-    EnableCorrelationTracking = true,
-    BatchSize = 100,
-    Parallelism = 100,
-    CheckpointingInterval = 10000
-};
-```
-
-### Temporal Workflow Configuration
-```csharp
-var temporalConfig = new TemporalWorkflowConfiguration
-{
-    TaskQueue = "complex-processing",
-    WorkflowExecutionTimeout = TimeSpan.FromHours(1),
-    ActivityExecutionTimeout = TimeSpan.FromMinutes(5),
-    RetryPolicy = RetryPolicy.Create(maxAttempts: 3, backoffCoefficient: 2.0)
-};
-```
+### Configuration Notes
+- Tune Flink per job (e.g., parallelism, time characteristics, checkpointing intervals).
+- Tune Temporal per workflow (e.g., task queues, timeouts, retry policies).
 
 ## Decision Matrix
 

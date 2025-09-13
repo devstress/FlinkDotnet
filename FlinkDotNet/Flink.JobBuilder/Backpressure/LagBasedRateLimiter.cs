@@ -419,7 +419,6 @@ public interface IKafkaConsumerLagMonitor : IDisposable
 
 /// <summary>
 /// Default implementation of Kafka consumer lag monitoring.
-/// In production, this would use actual Kafka Admin API or monitoring tools.
 /// </summary>
 public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
 {
@@ -431,16 +430,17 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
     public DefaultKafkaConsumerLagMonitor(ILogger? logger = null)
     {
         _logger = logger;
-        
         // Refresh lag data every 5 seconds
-        _refreshTimer = new Timer(RefreshLagData, null, 
+        _refreshTimer = new Timer(RefreshLagData, null,
             TimeSpan.Zero, TimeSpan.FromSeconds(5));
     }
 
     /// <inheritdoc />
     public TimeSpan GetCurrentLag(string consumerGroup)
     {
-        return _lagCache.TryGetValue(consumerGroup, out var lag) ? lag : TimeSpan.Zero;
+        if (_lagCache.TryGetValue(consumerGroup, out var lag)) return lag;
+        try { var computed = ComputeLagForGroup(consumerGroup, TimeSpan.FromSeconds(5)); _lagCache[consumerGroup] = computed; return computed; }
+        catch { return TimeSpan.Zero; }
     }
 
     /// <inheritdoc />
@@ -455,28 +455,111 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
 
         try
         {
-            // In production, this would:
-            // 1. Use Kafka Admin Client to get consumer group metadata
-            // 2. Calculate lag based on latest offsets vs committed offsets
-            // 3. Convert offset lag to time lag using message timestamps
-            
-            // For now, simulate varying lag
-            var random = new Random();
-            var simulatedLagMs = random.Next(0, 10000); // 0-10 seconds
-            var lag = TimeSpan.FromMilliseconds(simulatedLagMs);
-            
-            // Update cache for all groups (in reality, would iterate actual groups)
-            foreach (var group in new[] { "default-group", "test-group", "my-consumer-group" })
+            // Best-effort: update all known groups in cache
+            foreach (var group in _lagCache.Keys)
             {
-                _lagCache.AddOrUpdate(group, lag, (_, _) => lag);
+                try
+                {
+                    var lag = ComputeLagForGroup(group, TimeSpan.FromSeconds(3));
+                    _lagCache.AddOrUpdate(group, lag, (_, _) => lag);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogDebug(ex, "Lag refresh failed for group {Group}", group);
+                }
             }
-            
-            _logger?.LogDebug("Refreshed consumer lag data: {LagMs}ms", simulatedLagMs);
         }
         catch (Exception ex)
         {
             _logger?.LogError(ex, "Error refreshing consumer lag data");
         }
+    }
+
+    private static string GetBootstrapServers()
+    {
+        // Try multiple common env var names
+        var bs = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
+                 ?? Environment.GetEnvironmentVariable("KAFKA_BROKERS")
+                 ?? string.Empty;
+        return bs;
+    }
+
+    private TimeSpan ComputeLagForGroup(string consumerGroup, TimeSpan timeout)
+    {
+        var bootstrap = GetBootstrapServers();
+        if (string.IsNullOrWhiteSpace(bootstrap))
+        {
+            _logger?.LogDebug("Kafka bootstrap servers not set; returning zero lag for {Group}", consumerGroup);
+            return TimeSpan.Zero;
+        }
+
+        // Optionally limit to topics for monitoring
+        var topicsEnv = Environment.GetEnvironmentVariable("KAFKA_LAG_MONITOR_TOPICS");
+        var topics = string.IsNullOrWhiteSpace(topicsEnv)
+            ? Array.Empty<string>()
+            : topicsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        using var admin = new Confluent.Kafka.AdminClientBuilder(new Confluent.Kafka.AdminClientConfig
+        {
+            BootstrapServers = bootstrap,
+            SocketTimeoutMs = (int)Math.Max(3000, timeout.TotalMilliseconds)
+        }).Build();
+
+        // Discover topic partitions
+        var md = admin.GetMetadata(timeout);
+        var topicMetas = md.Topics
+            .Where(t => t.Error.Code == Confluent.Kafka.ErrorCode.NoError)
+            .Where(t => topics.Length == 0 || topics.Contains(t.Topic))
+            .ToList();
+        if (topicMetas.Count == 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var tps = new List<Confluent.Kafka.TopicPartition>(128);
+        foreach (var t in topicMetas)
+        {
+            foreach (var p in t.Partitions)
+            {
+                tps.Add(new Confluent.Kafka.TopicPartition(t.Topic, new Confluent.Kafka.Partition(p.PartitionId)));
+            }
+        }
+
+        // Use a consumer for the group to read committed offsets and end offsets
+        var cconf = new Confluent.Kafka.ConsumerConfig
+        {
+            BootstrapServers = bootstrap,
+            GroupId = consumerGroup,
+            EnableAutoCommit = false,
+            EnablePartitionEof = false,
+            SocketTimeoutMs = (int)Math.Max(3000, timeout.TotalMilliseconds),
+            SessionTimeoutMs = 6000,
+            ApiVersionRequest = true,
+            AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Latest
+        };
+
+        using var consumer = new Confluent.Kafka.ConsumerBuilder<byte[], byte[]>(cconf).Build();
+        // Query committed offsets
+        var committed = consumer.Committed(tps, timeout);
+
+        long maxLag = 0;
+        foreach (var tp in tps)
+        {
+            try
+            {
+                var watermarks = consumer.QueryWatermarkOffsets(tp, timeout);
+                var endOffset = watermarks.High;
+                var committedOffset = committed.FirstOrDefault(c => c.TopicPartition.Equals(tp)).Offset;
+                if (committedOffset == Confluent.Kafka.Offset.Unset) continue;
+                var lag = Math.Max(0, endOffset.Value - committedOffset.Value);
+                if (lag > maxLag) maxLag = lag;
+            }
+            catch { /* ignore partition errors */ }
+        }
+
+        // Approximate lag as seconds (best-effort without throughput context)
+        var approx = TimeSpan.FromSeconds(Math.Min(maxLag, 3600));
+        return approx;
     }
 
     public void Dispose()

@@ -20,25 +20,11 @@ This project requires **.NET 9.0.303** as specified in `global.json`.
 ### Why This Difference Exists
 Microsoft bundles Aspire tooling in their official Windows/macOS .NET SDK installers, but Linux distributions via package managers (apt, yum, dnf) typically provide base SDK packages without optional workloads to keep package sizes minimal and allow users to install only needed components. 
 
-## Current Environment Status
+## Verify .NET SDK
 
-**❌ Local Environment Issue**: .NET 9.0 SDK is not currently installed in this environment. 
-
+Check your local .NET version matches `global.json` (9.0.x).
 ```bash
-$ dotnet --version
-The command could not be loaded, possibly because:
-  * You intended to execute a .NET application:
-      The application '--version' does not exist.
-  * You intended to execute a .NET SDK command:
-      A compatible .NET SDK was not found.
-
-Requested SDK version: 9.0.303
-global.json file: /home/runner/work/FlinkDotnet/FlinkDotnet/global.json
-
-Installed SDKs:
-8.0.118 [/usr/lib/dotnet/sdk]
-
-Install the [9.0.303] .NET SDK or update [/home/runner/work/FlinkDotnet/FlinkDotnet/global.json] to match an installed SDK.
+dotnet --version
 ```
 
 ## Installation Instructions
@@ -96,14 +82,7 @@ Once .NET 9.0 is installed, run these workflows locally to ensure they pass:
 4. **LocalTesting**: Aspire orchestration with Docker
 5. **Stress Tests**: Performance validation
 
-## Architecture Documentation Status
+## Notes
 
-✅ **Completed**: 
-- Removed all committed `bin/` and `obj/` build artifacts
-- Added comprehensive PyFlink vs FlinkDotNet architecture comparison
-- Documented dependency differences and communication patterns
-
-**Key Findings**:
-- **PyFlink**: Direct JVM integration via Py4J, CloudPickle, python-dateutil
-- **FlinkDotNet**: HTTP REST API integration via AspNetCore, System.Text.Json, HttpClient
-- **Different approaches**: PyFlink = embedded runtime, FlinkDotNet = service-oriented architecture
+- Linux may require installing the Aspire workload separately: `dotnet workload install aspire`.
+- Ensure Docker Desktop or a compatible container runtime is available for Aspire resources.

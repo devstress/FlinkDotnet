@@ -4,8 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <PackageId>Flink.JobBuilder</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
+    <IsPackable>false</IsPackable>
     <Authors>FlinkDotnet Team</Authors>
     <Description>.NET SDK for Apache Flink Job Submission - Fluent C# DSL for building streaming jobs that execute on Apache Flink cluster</Description>
     <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Kafka</PackageTags>
@@ -19,6 +18,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
   </ItemGroup>
 
 </Project>

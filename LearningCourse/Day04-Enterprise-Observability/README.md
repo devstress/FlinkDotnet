@@ -20,7 +20,7 @@ This course uses the **PGL observability stack** (Prometheus + Grafana + Loki) w
 **What We Cover:**
 - ✅ **Metrics**: Prometheus + OpenTelemetry (business & infrastructure metrics)
 - ✅ **Logs**: Loki centralized log aggregation with Grafana integration
-- ✅ **Traces**: OpenTelemetry traces via Aspire Dashboard integration
+- ✅ **Traces**: Focus on Flink Job Gateway logs/metrics; Aspire traces optional
 - ✅ **Service Health**: Prometheus service discovery with Grafana dashboards
 
 ### Quick Setup for Day 4 Exercises
@@ -42,7 +42,7 @@ This course uses the **PGL observability stack** (Prometheus + Grafana + Loki) w
    - **Loki Logs**: http://localhost:18005/
    - **Grafana Dashboards**: http://localhost:18010/ (admin/admin)
    - **OpenTelemetry Collector**: http://localhost:18009
-   - **Aspire Dashboard (Traces)**: http://localhost:18888
+   - **Flink UI**: http://localhost:8081
 
 4. **Generate Training Data**:
    ```bash
@@ -291,7 +291,7 @@ Your LocalTesting environment provides a **complete enterprise observability pla
 | **Grafana Dashboard** | http://localhost:18010 | Netflix monitoring dashboards | Real-time operational visibility |
 | **Prometheus Metrics** | http://localhost:18006 | Google Borgmon successor | Time-series metrics storage |
 | **OpenTelemetry HTTP** | http://localhost:18008 | CNCF standard telemetry | Vendor-neutral observability |
-| **Aspire Dashboard** | http://localhost:18888 | .NET application insights | Application performance monitoring |
+| **Flink UI** | http://localhost:8081 | Flink job overview | JobManager web UI |
 | **Flink Dashboard** | http://localhost:18002 | Stream processing monitoring | Job execution visibility |
 | **Temporal UI** | http://localhost:18004 | Workflow execution monitoring | Durable execution visibility |
 

@@ -1,7 +1,7 @@
 # Day 6: Advanced Windowing and Complex Joins
 
 ## 🗺️ Course Navigation
-**[← Day 5: Temporal Workflows](../Day05-Temporal-Workflows/)** | **[Course Overview](../README.md)** | **[Next: Day 7 - Stress Testing →](../Day07-Stress-Testing/)**
+**[← Day 5: Day 5 (Optional)](../Day05-Temporal-Workflows/)** | **[Course Overview](../README.md)** | **[Next: Day 7 - Stress Testing →](../Day07-Stress-Testing/)**
 
 ---
 
@@ -56,7 +56,7 @@ var userSessions = userEvents
     .Apply(new SessionWindow());
 ```
 
-### Temporal Joins and Enrichment
+### Time-Based Joins and Enrichment
 ```csharp
 // Interval Join for LinkedIn-style profile enrichment
 var enrichedEvents = clickEvents
@@ -68,7 +68,7 @@ var enrichedEvents = clickEvents
 // Temporal Table for Real-time Configuration
 var configTable = configStream
     .KeyBy(config => config.Key)
-    .AsTemporalTable();
+    ./* reference table join via Table API or preloaded state */
 
 var enrichedStream = dataStream
     .Join(configTable)
@@ -256,6 +256,6 @@ Day 7 focuses on stateful function patterns and custom operators for advanced st
 ---
 
 ## 🗺️ Course Navigation
-**[← Day 5: Temporal Workflows](../Day05-Temporal-Workflows/)** | **[Course Overview](../README.md)** | **[Next: Day 7 - Stress Testing →](../Day07-Stress-Testing/)**
+**[← Day 5: Day 5 (Optional)](../Day05-Temporal-Workflows/)** | **[Course Overview](../README.md)** | **[Next: Day 7 - Stress Testing →](../Day07-Stress-Testing/)**
 
 **Course Progress**: Day 6 of 14 Complete ✅

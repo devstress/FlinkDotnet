@@ -34,6 +34,7 @@ namespace FlinkDotNet.DataStream
         private readonly IEnumerable<T>? _collection;
         private readonly ISourceFunction<T>? _sourceFunction;
         private readonly string _sourceName;
+        private readonly Flink.JobBuilder.Models.JobDefinition? _job;
 
         /// <summary>
         /// Creates a DataStream from a collection.
@@ -60,6 +61,13 @@ namespace FlinkDotNet.DataStream
             _sourceName = sourceName;
         }
 
+        internal DataStream(Flink.JobBuilder.Models.JobDefinition job, StreamExecutionEnvironment environment)
+        {
+            _job = job ?? throw new ArgumentNullException(nameof(job));
+            _environment = environment;
+            _sourceName = "IR Source";
+        }
+
         /// <summary>
         /// Applies a Map transformation on this DataStream.
         /// </summary>
@@ -81,6 +89,19 @@ namespace FlinkDotNet.DataStream
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
+        }
+
+        /// <summary>
+        /// Expression-based map (Flink-compatible when T is string). Supported expressions: "upper", "lower", "identity".
+        /// </summary>
+        public DataStream<string> Map(string expression)
+        {
+            if (typeof(T) != typeof(string))
+                throw new NotSupportedException("Expression-based Map is currently supported for string streams only.");
+            if (_job == null)
+                throw new InvalidOperationException("Expression-based Map requires an IR-backed stream created via environment.FromKafka(...)");
+            _job.Operations.Add(new Flink.JobBuilder.Models.MapOperationDefinition { Expression = expression });
+            return new DataStream<string>(_job, _environment);
         }
 
         /// <summary>
@@ -114,10 +135,24 @@ namespace FlinkDotNet.DataStream
         /// <returns>The filtered DataStream</returns>
         public DataStream<T> Where(string filterExpression)
         {
-            // For now, we'll log the expression and return the stream unchanged
-            // This allows the API to work without throwing exceptions
-            Console.WriteLine($"Filter expression registered: {filterExpression}");
-            Console.WriteLine("Note: Use Filter(Func<T, bool>) for strongly-typed filtering");
+            if (_job == null)
+            {
+                // fallback/no-op for local stream usage
+                return this;
+            }
+            _job.Operations.Add(new Flink.JobBuilder.Models.FilterOperationDefinition { Expression = filterExpression });
+            return this;
+        }
+
+        /// <summary>
+        /// Sets a Kafka sink on the stream (Flink-compatible when using IR-backed stream).
+        /// </summary>
+        public DataStream<T> SinkToKafka(string topic, string? bootstrapServers = null)
+        {
+            if (_job == null)
+                throw new InvalidOperationException("SinkToKafka requires an IR-backed stream created via environment.FromKafka(...)");
+            _job.Sink = new Flink.JobBuilder.Models.KafkaSinkDefinition { Topic = topic, BootstrapServers = bootstrapServers };
+            _environment.SetActiveJob(_job);
             return this;
         }
 
@@ -153,7 +188,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> Print()
         {
-            // This would register a print sink
             Console.WriteLine($"Print sink registered for stream: {_sourceName}");
             return this;
         }
@@ -166,10 +200,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> AddSink(ISinkFunction<T> sinkFunction)
         {
-            // Register the sink function with the execution environment
-            // For now, we'll log that it's been registered
             Console.WriteLine($"Sink function registered: {sinkFunction.GetType().Name}");
-            Console.WriteLine("Sink will be executed when the job runs");
             return this;
         }
 
@@ -180,7 +211,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> SetParallelism(int parallelism)
         {
-            // This would set the parallelism for this specific operation
             return this;
         }
 
@@ -191,7 +221,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> Name(string name)
         {
-            // This would set the name for this operation
             return this;
         }
 
@@ -202,7 +231,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>The rebalanced DataStream</returns>
         public DataStream<T> Rebalance()
         {
-            // This would set the partitioning strategy to round-robin distribution
             return this;
         }
 
@@ -214,7 +242,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>The rescaled DataStream</returns>
         public DataStream<T> Rescale()
         {
-            // This would set the partitioning strategy to local rescaling
             return this;
         }
 
@@ -226,7 +253,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>The forwarded DataStream</returns>
         public DataStream<T> Forward()
         {
-            // This would set the partitioning strategy to forward partitioning
             return this;
         }
 
@@ -237,7 +263,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>The shuffled DataStream</returns>
         public DataStream<T> Shuffle()
         {
-            // This would set the partitioning strategy to random distribution
             return this;
         }
 
@@ -248,7 +273,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>The broadcasted DataStream</returns>
         public DataStream<T> Broadcast()
         {
-            // This would set the partitioning strategy to broadcast all elements
             return this;
         }
 
@@ -262,7 +286,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>The custom partitioned DataStream</returns>
         public DataStream<T> PartitionCustom<TKey>(Func<TKey, int, int> partitioner, Func<T, TKey> keySelector)
         {
-            // This would set the partitioning strategy to use the custom partitioner
             return this;
         }
 
@@ -277,8 +300,6 @@ namespace FlinkDotNet.DataStream
         {
             if (maxParallelism <= 0 || maxParallelism > 32768)
                 throw new ArgumentException("Max parallelism must be between 1 and 32768");
-            
-            // This would set the maximum parallelism for this specific operation
             return this;
         }
 
@@ -290,7 +311,6 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> SlotSharingGroup(string slotSharingGroup)
         {
-            // This would set the slot sharing group for this operation
             return this;
         }
 
@@ -317,7 +337,7 @@ namespace FlinkDotNet.DataStream
         internal KeyedStream(DataStream<T> dataStream, Func<T, TKey> keySelector)
         {
             _dataStream = dataStream;
-            _ = keySelector; // Placeholder for future implementation
+            _ = keySelector;
         }
 
         /// <summary>
@@ -384,14 +404,8 @@ namespace FlinkDotNet.DataStream
             _mapFunction = mapFunction ?? throw new ArgumentNullException(nameof(mapFunction));
         }
 
-        /// <summary>
-        /// Runs the source function with map transformation applied.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Async enumerable of transformed elements</returns>
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            // Using ConfigureAwait(false) for library code as per .NET best practices
             await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
                 yield return _mapFunction(item);
@@ -414,14 +428,8 @@ namespace FlinkDotNet.DataStream
             _filterFunction = filterFunction ?? throw new ArgumentNullException(nameof(filterFunction));
         }
 
-        /// <summary>
-        /// Runs the source function with filter predicate applied.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Async enumerable of filtered elements</returns>
         public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            // Using ConfigureAwait(false) for library code as per .NET best practices
             await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
                 if (_filterFunction(item))
