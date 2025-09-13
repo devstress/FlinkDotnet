@@ -278,7 +278,7 @@ remove_beginning_slash() {
 combine_paths() {
     eval $invocation
 
-    # TODO: Consider making it work with any number of paths. For now:
+    # combine_paths currently supports two parameters: root and child path.
     if [ ! -z "${3:-}" ]; then
         say_err "combine_paths: Function takes two parameters."
         return 1

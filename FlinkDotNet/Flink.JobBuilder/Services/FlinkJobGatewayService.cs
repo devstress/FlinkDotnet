@@ -54,6 +54,15 @@ namespace Flink.JobBuilder.Services
         {
             _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway", jobDefinition.Metadata.JobId);
 
+            // Pre-submit IR validation
+            var validation = JobDefinitionValidator.Validate(jobDefinition);
+            if (!validation.IsValid)
+            {
+                var msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
+                _logger?.LogWarning(msg);
+                return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, msg);
+            }
+
             var json = JsonSerializer.Serialize(jobDefinition, _jsonOptions);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 

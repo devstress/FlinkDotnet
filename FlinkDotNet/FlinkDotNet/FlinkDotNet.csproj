@@ -11,7 +11,22 @@
     <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Python-Compatible</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>false</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
+    <IncludeReferencedProjects>false</IncludeReferencedProjects>
   </PropertyGroup>
+
+  <!-- Include referenced project outputs in the single NuGet package -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget','ProjectReference'))" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" />

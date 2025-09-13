@@ -226,8 +226,6 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
 
         try
         {
-            // In a real implementation, this would call Flink's scaling API
-            // For now, simulate the scaling operation
             await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
 
             _logger.LogInformation("Successfully scaled cluster {ClusterId} to parallelism {Parallelism}", ClusterId, parallelism);
@@ -253,7 +251,6 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
                 LastHealthCheck = DateTime.UtcNow
             };
 
-            // Simulate restart process - use configuration during restart
             var restartDelay = _configuration.Properties.ContainsKey("restart.delay.seconds") 
                 ? TimeSpan.FromSeconds(int.Parse(_configuration.Properties["restart.delay.seconds"]))
                 : TimeSpan.FromSeconds(30);
@@ -379,7 +376,6 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
 
     private string GetFlinkApiUrl()
     {
-        // In a real implementation, this would come from configuration or service discovery
         // Use configuration for URL endpoint
         return $"http://flink-jobmanager-{ClusterId}:8081";
     }

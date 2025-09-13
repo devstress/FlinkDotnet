@@ -137,12 +137,10 @@ Our implementation addresses the critical issue that async patterns working in l
 
 ### Demonstration Code
 
-All sample code uses Flink JobManager-compatible patterns:
+Examples in this repo use Flink JobManager-compatible patterns:
 
-**Files Updated:**
-- `FlinkDotNet/Flink.JobBuilder/Demo/RateLimitingDemo.cs` - Now uses sync patterns
-- `Sample/FlinkJobBuilder.Sample/FlinkJobManagerCompatibilityExamples.cs` - Best practices guide
-- `Sample/FlinkDotNet.Aspire.IntegrationTests/Unit/ImprovedRateLimiterAsyncTests.cs` - Test compatibility
+**Example:**
+- `FlinkDotNet/Flink.JobBuilder/Demo/RateLimitingDemo.cs` - Sync vs async usage
 
 ## Coverage Summary
 

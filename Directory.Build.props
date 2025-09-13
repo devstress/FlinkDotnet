@@ -32,11 +32,6 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- TODO ENFORCEMENT: Ensure all TODO items are tracked in TODO.md instead of scattered throughout code -->
-  <Target Name="EnforceTodoComments" BeforeTargets="Build">
-    <Message Text="✅ TODO Enforcement: Checking for TODO comments in source code..." Importance="normal" />
-    <Message Text="All TODO items must be tracked in TODO.md instead of scattered throughout code." Importance="normal" />
-    <Message Text="See TODO.md for current items and enforcement guidelines." Importance="normal" />
-  </Target>
+  <!-- Removed legacy enforcement banner to reduce noise in builds -->
 
 </Project>

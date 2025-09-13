@@ -4,8 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <PackageId>FlinkDotNet.Table</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
+    <IsPackable>false</IsPackable>
     <Authors>FlinkDotnet Team</Authors>
     <Description>.NET Table API for Apache Flink - SQL and Table operations matching PyFlink table module</Description>
     <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;Table;SQL</PackageTags>

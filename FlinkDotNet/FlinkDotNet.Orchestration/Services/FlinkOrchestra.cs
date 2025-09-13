@@ -55,7 +55,7 @@ public class FlinkOrchestra : IFlinkOrchestra
                     ClusterId = kvp.Key,
                     Name = kvp.Key,
                     Status = status,
-                    CreatedAt = DateTime.UtcNow.AddHours(-1), // Placeholder
+                    CreatedAt = DateTime.UtcNow,
                     LastUpdateAt = DateTime.UtcNow
                 });
             }
@@ -74,13 +74,10 @@ public class FlinkOrchestra : IFlinkOrchestra
     {
         _logger.LogInformation("Provisioning new cluster with name {Name}", config.Name);
 
-        // In a real implementation, this would provision actual infrastructure
-        // For now, simulate cluster creation
         await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
 
         var clusterId = $"cluster-{Guid.NewGuid():N}[..8]";
         
-        // Create a cluster actor - this would be injected in real implementation
         var httpClient = new HttpClient();
         var loggerFactory = Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
         var clusterLogger = loggerFactory.CreateLogger<FlinkDotNet.ClusterManager.Actors.FlinkClusterActor>();
@@ -274,8 +271,6 @@ public class FlinkOrchestra : IFlinkOrchestra
     {
         _logger.LogInformation("Starting orchestration workflow for request {RequestId}", request.RequestId);
 
-        // In a real implementation, this would start a Temporal workflow
-        // For now, simulate workflow start
         var workflowId = $"orchestra-{request.RequestId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
         
         await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);

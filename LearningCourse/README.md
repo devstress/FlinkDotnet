@@ -57,23 +57,12 @@ dotnet run --project LocalTesting.AppHost
 # Wait 90 seconds for all services to start
 ```
 
-### ✅ Verify Infrastructure is Working
-Open these URLs - all should work:
-- **Aspire Dashboard**: http://localhost:18888 (Main orchestration dashboard)
-- **LocalTesting WebApi**: http://localhost:18000/ (API documentation and testing)
-- **Kafka UI**: http://localhost:18001 (Message broker management - 3-broker KRaft cluster)
-- **Flink Dashboard**: http://localhost:18002 (Job management - JobManager + 3 TaskManagers)
-- **Temporal Server**: http://localhost:18003 (Workflow server API)
-- **Temporal UI**: http://localhost:18004 (Workflow orchestration dashboard)
-- **Loki**: http://localhost:18005 (Log aggregation service)
-- **Prometheus**: http://localhost:18006 (Metrics collection with localtesting_ namespace)
-- **Grafana**: http://localhost:18010 (Unified PGL observability dashboard)
+### ✅ Verify Environment is Working
+Open these endpoints:
+- **Flink JobManager UI**: http://localhost:8081
+- **Flink Job Gateway**: http://localhost:8080/api/v1/health
 
-**Current Architecture Highlights:**
-- **100 Logical Customer Queues** (1 per customer)
-- **20 Kafka Partitions** (enhanced distribution)
-- **10% Temporal Processing** (first 10 customers out of 100)
-- **PGL + OpenTelemetry Stack** (Prometheus + Grafana + Loki + OpenTelemetry + Aspire)
+**LocalTesting stack:** Kafka + Flink (JM/TM) + Flink Job Gateway. For SQL exercises, place connector JARs under `LocalTesting/connectors/flink/lib`.
 
 **Note: Please press Control + C to stop Aspire. It will stop and delete all the related containers in Docker.**  
 **✅ All working? You're ready to start Day 1!**  
@@ -128,7 +117,7 @@ Mark off each exercise as you complete it
 - **[Day 2: AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/README.md)**
 - **[Day 3: Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/README.md)**
 - **[Day 4: Enterprise Observability](Day04-Enterprise-Observability/Exercise-Solutions/README.md)**
-- **[Day 5: Temporal Workflows](Day05-Temporal-Workflows/Exercise-Solutions/README.md)**
+~~**[Day 5: Temporal Workflows](Day05-Temporal-Workflows/Exercise-Solutions/README.md)**~~ (Optional/reference only)
 - **[Day 6: Advanced Windows/Joins](Day06-Advanced-Windows-Joins/Exercise-Solutions/README.md)**
 - **[Day 7: Stress Testing](Day07-Stress-Testing/Exercise-Solutions/README.md)**
 
@@ -248,8 +237,8 @@ Build comprehensive observability solutions with Prometheus, Grafana, and enterp
 
 **Key Topics**: Metrics collection, dashboards, alerting, SLA monitoring, performance analysis, **LocalTesting observability integration**, automated observability testing
 
-#### [Day 5: Temporal Workflow Orchestration & Durable Execution](Day05-Temporal-Workflows/)
-**Time**: 7-8 hours | **Focus**: Workflow Orchestration & Complex Integration
+#### Day 5 (Optional): Workflow Orchestration (Reference)
+Time: self-paced | Focus: Optional orchestration patterns (not required for FlinkDotNet runtime)
 
 Master Temporal's durable execution platform for orchestrating complex, long-running business processes with fault tolerance and state management. Focus on integration patterns for enterprise systems.
 

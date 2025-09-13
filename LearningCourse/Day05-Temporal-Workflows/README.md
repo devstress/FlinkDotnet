@@ -1,4 +1,6 @@
-# Day 5: Temporal Workflow Orchestration & Durable Execution
+# Day 5 (Optional): Workflow Orchestration (Reference Only)
+
+This module is optional and not required to run FlinkDotNet. The current runtime is FlinkDotNet DSL → IR → IR Runner jar (Flink) via the Flink Job Gateway. If you are focusing on FlinkDotNet pipelines, you may skip this day.
 
 ## 🗺️ Course Navigation
 **[← Day 4: Enterprise Observability](../Day04-Enterprise-Observability/)** | **[Course Overview](../README.md)** | **[Next: Day 6 - Advanced Windows & Joins →](../Day06-Advanced-Windows-Joins/)**

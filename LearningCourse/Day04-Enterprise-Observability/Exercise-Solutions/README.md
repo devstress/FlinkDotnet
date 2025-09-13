@@ -537,7 +537,7 @@ dotnet run --project LocalTesting.AppHost
 curl http://localhost:18010/api/health   # Grafana (unified dashboard)
 curl http://localhost:18006/-/healthy    # Prometheus (metrics collection)
 curl http://localhost:18005/ready        # Loki (log aggregation)
-curl http://localhost:18888/health      # Aspire Dashboard (orchestration)
+curl http://localhost:8080/api/v1/health      # Flink Job Gateway health
 curl http://localhost:18009/metrics     # OTEL Collector (telemetry processing)
 curl http://localhost:5000/             # WebApi Swagger (API testing)
 

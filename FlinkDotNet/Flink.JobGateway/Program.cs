@@ -30,8 +30,7 @@ builder.Services.AddVersionedApiExplorer(options =>
 });
 
 // Register services
-builder.Services.AddSingleton<IFlinkJobManager, FlinkJobManager>();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IFlinkJobManager, FlinkJobManager>();
 
 // Configure logging
 builder.Services.AddLogging(loggingBuilder =>

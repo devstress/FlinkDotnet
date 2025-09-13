@@ -36,6 +36,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(FileSourceDefinition), "file")]
     [JsonDerivedType(typeof(HttpSourceDefinition), "http")]
     [JsonDerivedType(typeof(DatabaseSourceDefinition), "database")]
+    [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
     public interface ISourceDefinition
     {
         string Type { get; }
@@ -46,6 +47,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class KafkaSourceDefinition : ISourceDefinition
     {
+        [JsonIgnore]
         public string Type => "kafka";
         public string Topic { get; set; } = string.Empty;
         public string? BootstrapServers { get; set; }
@@ -59,6 +61,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FileSourceDefinition : ISourceDefinition
     {
+        [JsonIgnore]
         public string Type => "file";
         public string Path { get; set; } = string.Empty;
         public string Format { get; set; } = "text"; // text, json, csv, etc.
@@ -70,6 +73,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class HttpSourceDefinition : ISourceDefinition
     {
+        [JsonIgnore]
         public string Type => "http";
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = "GET";
@@ -85,11 +89,24 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class DatabaseSourceDefinition : ISourceDefinition
     {
+        [JsonIgnore]
         public string Type => "database";
         public string ConnectionString { get; set; } = string.Empty;
         public string Query { get; set; } = string.Empty;
         public string? DatabaseType { get; set; } = "postgresql";
         public int PollingIntervalSeconds { get; set; } = 30;
+        public Dictionary<string, string> Properties { get; set; } = new();
+    }
+
+    /// <summary>
+    /// SQL job: a list of Flink SQL statements (DDL/DML) executed by Table API
+    /// </summary>
+    public class SqlSourceDefinition : ISourceDefinition
+    {
+        [JsonIgnore]
+        public string Type => "sql";
+        public List<string> Statements { get; set; } = new();
+        public string Mode { get; set; } = "streaming"; // streaming or batch (future)
         public Dictionary<string, string> Properties { get; set; } = new();
     }
 
@@ -119,6 +136,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FilterOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "filter";
         public string Expression { get; set; } = string.Empty;
     }
@@ -128,6 +146,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class MapOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "map";
         public string Expression { get; set; } = string.Empty;
         public string? OutputType { get; set; }
@@ -138,6 +157,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class GroupByOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "groupBy";
         public string Key { get; set; } = string.Empty;
         public List<string>? Keys { get; set; } // For multi-key grouping
@@ -148,6 +168,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class AggregateOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "aggregate";
         public string AggregationType { get; set; } = string.Empty; // SUM, COUNT, AVG, MIN, MAX
         public string Field { get; set; } = string.Empty;
@@ -159,6 +180,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class WindowOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "window";
         public string WindowType { get; set; } = string.Empty; // TUMBLING, SLIDING, SESSION
         public int Size { get; set; }
@@ -172,6 +194,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JoinOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "join";
         public string JoinType { get; set; } = "INNER"; // INNER, LEFT, RIGHT, FULL
         public ISourceDefinition RightSource { get; set; } = null!;
@@ -185,6 +208,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class AsyncFunctionOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "asyncFunction";
         public string FunctionType { get; set; } = string.Empty; // http, database, etc.
         public string Url { get; set; } = string.Empty; // For HTTP calls
@@ -205,6 +229,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class ProcessFunctionOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "processFunction";
         public string ProcessType { get; set; } = string.Empty; // authTokenManager, retryHandler, etc.
         public Dictionary<string, object> Parameters { get; set; } = new();
@@ -218,6 +243,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class StateOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "state";
         public string StateType { get; set; } = "value"; // value, list, map, reducing
         public string StateKey { get; set; } = string.Empty;
@@ -232,6 +258,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class TimerOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "timer";
         public string TimerType { get; set; } = "processing"; // processing, event
         public long DelayMs { get; set; }
@@ -245,6 +272,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class RetryOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "retry";
         public int MaxRetries { get; set; } = 5;
         public List<long> DelayMs { get; set; } = new() { 300000, 600000, 1800000, 3600000, 86400000 }; // 5min, 10min, 30min, 1hr, 1day
@@ -259,6 +287,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class SideOutputOperationDefinition : IOperationDefinition
     {
+        [JsonIgnore]
         public string Type => "sideOutput";
         public string OutputTag { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty; // When to route to side output
@@ -286,6 +315,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class KafkaSinkDefinition : ISinkDefinition
     {
+        [JsonIgnore]
         public string Type => "kafka";
         public string Topic { get; set; } = string.Empty;
         public string? BootstrapServers { get; set; }
@@ -298,6 +328,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class ConsoleSinkDefinition : ISinkDefinition
     {
+        [JsonIgnore]
         public string Type => "console";
         public string? Format { get; set; } = "json";
     }
@@ -307,6 +338,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FileSinkDefinition : ISinkDefinition
     {
+        [JsonIgnore]
         public string Type => "file";
         public string Path { get; set; } = string.Empty;
         public string Format { get; set; } = "json"; // json, csv, parquet, etc.
@@ -318,6 +350,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class DatabaseSinkDefinition : ISinkDefinition
     {
+        [JsonIgnore]
         public string Type => "database";
         public string ConnectionString { get; set; } = string.Empty;
         public string Table { get; set; } = string.Empty;
@@ -330,6 +363,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class HttpSinkDefinition : ISinkDefinition
     {
+        [JsonIgnore]
         public string Type => "http";
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = "POST";
@@ -345,6 +379,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class RedisSinkDefinition : ISinkDefinition
     {
+        [JsonIgnore]
         public string Type => "redis";
         public string ConnectionString { get; set; } = string.Empty;
         public string? Key { get; set; } // Redis key for operations

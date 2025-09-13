@@ -1,0 +1,71 @@
+name: LocalTesting Integration Tests (Kafka)
+
+on:
+  push:
+    paths: 
+      - 'BackPressureExample/**'
+  workflow_dispatch:
+
+jobs:
+  direct-backpressure-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+        
+    - name: Ensure Docker is running
+      run: docker info
+
+    - name: manage container
+      run: |
+        docker rm -f backpressure-kafka || true
+      working-directory: ./BackPressureExample
+    
+    - name: Configure system for Kafka performance
+      run: |
+        echo "=== Configuring system for optimal Kafka performance ==="
+        sudo sysctl -w vm.max_map_count=262144
+        sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+        sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+        echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+        echo "Current ulimit -n: $(ulimit -n)"
+        echo "Available memory: $(free -h)"
+        echo "CPU info: $(nproc) cores"
+        cat /proc/cpuinfo | grep "model name" | head -1
+
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./BackPressureExample
+      
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+      working-directory: ./BackPressureExample
+      
+    - name: Run BackPressure Test
+      run: |
+        echo "=== Starting BackPressure Test ==="
+        dotnet test BackPressure.IntegrationTests --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+      working-directory: ./BackPressureExample
+      env:
+        DOTNET_ENVIRONMENT: Testing
+        KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestResults
+        path: BackPressureExample/TestResults/
+      if: always()
+ 
+    - name: Cleanup
+      if: always()
+      run: |
+        docker system prune -f || true
+        docker volume prune -f || true
+

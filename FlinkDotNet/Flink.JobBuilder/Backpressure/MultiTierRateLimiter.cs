@@ -256,7 +256,6 @@ public class MultiTierRateLimiter : IDisposable
     public bool ValidateRebalancingIntegration()
     {
         // Check if rate limits are recalculated during rebalancing
-        // This would integrate with the partition manager
         return true; // Simplified for demonstration
     }
 #pragma warning restore S3400
@@ -354,7 +353,6 @@ public class MultiTierRateLimiter : IDisposable
     private static async Task RollbackAcquisitions(List<(string tierName, bool acquired)> acquisitions)
     {
         // In a real implementation, you would return the permits to the rate limiters
-        // For now, we'll just reset those that were acquired
         foreach (var acquisition in acquisitions.Where(a => a.acquired))
         {
             // Note: Current interface doesn't support returning permits

@@ -1,0 +1,26 @@
+name: Publish NuGet Packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'nuget-v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Pack FlinkDotNet (single package)
+        run: |
+          dotnet pack FlinkDotNet/FlinkDotNet/FlinkDotNet.csproj -c Release -o artifacts
+      - name: Publish to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push artifacts/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -18,7 +18,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Http;
 using FlinkDotNet.Common;
+using Flink.JobBuilder.Models;
+using Flink.JobBuilder.Services;
 using Microsoft.Extensions.Logging;
 
 namespace FlinkDotNet.DataStream
@@ -38,6 +41,7 @@ namespace FlinkDotNet.DataStream
         private bool _adaptiveSchedulerEnabled = false;
         private bool _reactiveModeEnabled = false;
         private string? _savepointPath;
+        private JobDefinition? _activeJob;
 
         /// <summary>
         /// Creates a new StreamExecutionEnvironment.
@@ -50,6 +54,11 @@ namespace FlinkDotNet.DataStream
             _logger = logger;
         }
 
+        internal void SetActiveJob(JobDefinition job)
+        {
+            _activeJob = job;
+        }
+
         /// <summary>
         /// Gets the config object.
         /// </summary>
@@ -57,6 +66,33 @@ namespace FlinkDotNet.DataStream
         public ExecutionConfig GetConfig()
         {
             return _executionConfig;
+        }
+
+        /// <summary>
+        /// Creates a Kafka string source compatible with Apache Flink via the IR Runner.
+        /// Use with expression-based Map/Filter and SinkToKafka methods on DataStream.
+        /// </summary>
+        public DataStream<string> FromKafka(string topic, string? bootstrapServers = null, string? groupId = null, string startingOffsets = "latest")
+        {
+            var jd = new JobDefinition
+            {
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = topic,
+                    BootstrapServers = bootstrapServers,
+                    GroupId = groupId,
+                    StartingOffsets = startingOffsets
+                },
+                Metadata = new JobMetadata
+                {
+                    JobId = Guid.NewGuid().ToString("n"),
+                    Parallelism = _executionConfig.Parallelism > 0 ? _executionConfig.Parallelism : null,
+                    CreatedAt = DateTime.UtcNow,
+                    Version = "1.0"
+                }
+            };
+            SetActiveJob(jd);
+            return new DataStream<string>(jd, this);
         }
 
         /// <summary>
@@ -263,47 +299,38 @@ namespace FlinkDotNet.DataStream
             return new StreamExecutionEnvironment(configuration);
         }
 
-        /// <summary>
-        /// Triggers the program execution. The environment will execute all parts of the program
-        /// that have resulted in a "sink" operation.
-        /// </summary>
-        /// <param name="jobName">Desired name of the job</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>The result of the job execution</returns>
         public async Task<JobExecutionResult> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
-            _logger?.LogInformation("Starting execution of job: {JobName}", jobName ?? "Flink Streaming Job");
+            var name = jobName ?? _activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
+            _logger?.LogInformation("Starting execution of job: {JobName}", name);
 
-            // This would integrate with the job gateway and Flink cluster
-            // For now, we'll simulate execution
-            await Task.Delay(100, cancellationToken);
+            if (_activeJob == null)
+            {
+                throw new InvalidOperationException("No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before Execute().");
+            }
+
+            _activeJob.Metadata.JobName = name;
+
+            var gateway = new FlinkJobGatewayService();
+            var submit = await gateway.SubmitJobAsync(_activeJob, cancellationToken).ConfigureAwait(false);
 
             return new JobExecutionResult
             {
-                JobId = Guid.NewGuid().ToString(),
-                JobName = jobName ?? "Flink Streaming Job",
-                Success = true,
+                JobId = submit.FlinkJobId ?? _activeJob.Metadata.JobId,
+                JobName = name,
+                Success = submit.Success,
                 StartTime = DateTime.UtcNow,
-                EndTime = DateTime.UtcNow
+                EndTime = DateTime.UtcNow,
+                Error = submit.Success ? null : submit.ErrorMessage
             };
         }
 
-        /// <summary>
-        /// Triggers the program asynchronously.
-        /// </summary>
-        /// <param name="jobName">Desired name of the job</param>
-        /// <returns>A JobClient that can be used to communicate with the submitted job</returns>
         public Task<JobClient> ExecuteAsyncJob(string jobName = "Flink Streaming Job")
         {
-            _logger?.LogInformation("Starting async execution of job: {JobName}", jobName);
-            
-            var jobClient = new JobClient
-            {
-                JobId = Guid.NewGuid().ToString(),
-                JobName = jobName
-            };
-
-            return Task.FromResult(jobClient);
+            if (_activeJob == null)
+                throw new InvalidOperationException("No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before ExecuteAsyncJob().");
+            _activeJob.Metadata.JobName = jobName;
+            return Task.FromResult(new JobClient(jobName));
         }
 
         /// <summary>
@@ -318,9 +345,6 @@ namespace FlinkDotNet.DataStream
         }
     }
 
-    /// <summary>
-    /// Represents the result of a job execution.
-    /// </summary>
     public class JobExecutionResult
     {
         public string JobId { get; set; } = string.Empty;
@@ -331,96 +355,69 @@ namespace FlinkDotNet.DataStream
         public string? Error { get; set; }
     }
 
-    /// <summary>
-    /// A client that can be used to communicate with a submitted job.
-    /// Enhanced for Apache Flink 2.1.0 dynamic scaling capabilities.
-    /// </summary>
     public class JobClient
     {
+        private readonly FlinkJobGatewayService _gateway = new();
+        private readonly HttpClient _flinkHttp;
         public string JobId { get; set; } = string.Empty;
         public string JobName { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Triggers a savepoint for the job.
-        /// This is essential for savepoint-based scaling in Apache Flink 2.1.0.
-        /// </summary>
-        /// <param name="savepointPath">Optional path where the savepoint should be stored</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>The savepoint result containing the savepoint path</returns>
+        public JobClient(string jobName)
+        {
+            JobName = jobName;
+            var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
+            var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
+            _flinkHttp = new HttpClient { BaseAddress = new Uri($"http://{host}:{port}"), Timeout = TimeSpan.FromMinutes(5) };
+        }
+
         public async Task<SavepointResult> TriggerSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
         {
-            // This would trigger a savepoint via the Flink JobManager REST API
-            await Task.Delay(100, cancellationToken);
-            
-            return new SavepointResult
-            {
-                SavepointPath = savepointPath ?? $"/savepoints/{JobId}/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}",
-                Success = true,
-                TriggerId = Guid.NewGuid().ToString()
-            };
+            var payload = new { targetDirectory = savepointPath, cancelJob = false };
+            var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
+                new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
+            var ok = resp.IsSuccessStatusCode;
+            var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            string triggerId = string.Empty;
+            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } catch { }
+            return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
         }
 
-        /// <summary>
-        /// Cancels the job with a savepoint.
-        /// This allows for graceful job termination while preserving state for later scaling.
-        /// </summary>
-        /// <param name="savepointPath">Optional path where the savepoint should be stored</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>The savepoint result</returns>
         public async Task<SavepointResult> CancelWithSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
         {
-            // This would cancel the job with savepoint via the Flink JobManager REST API
-            await Task.Delay(150, cancellationToken); // Different delay to distinguish from TriggerSavepointAsync
-            
-            return new SavepointResult
-            {
-                SavepointPath = savepointPath ?? $"/savepoints/{JobId}/cancel/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}",
-                Success = true,
-                TriggerId = Guid.NewGuid().ToString()
-            };
+            var payload = new { targetDirectory = savepointPath, cancelJob = true };
+            var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
+                new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
+            var ok = resp.IsSuccessStatusCode;
+            var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            string triggerId = string.Empty;
+            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } catch { }
+            return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
         }
 
-        /// <summary>
-        /// Gets the current job status including parallelism information.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>The job status</returns>
         public async Task<JobStatus> GetJobStatusAsync(CancellationToken cancellationToken = default)
         {
-            // This would query the job status via the Flink JobManager REST API
-            await Task.Delay(50, cancellationToken);
-            
+            var status = await _gateway.GetJobStatusAsync(JobId, cancellationToken).ConfigureAwait(false);
             return new JobStatus
             {
                 JobId = JobId,
                 JobName = JobName,
-                State = "RUNNING",
-                Parallelism = 4,
-                MaxParallelism = 128,
-                StartTime = DateTime.UtcNow.AddMinutes(-10)
+                State = status.State ?? "UNKNOWN",
+                Parallelism = status.Metrics?.Parallelism ?? 0,
+                MaxParallelism = 0,
+                StartTime = status.StartTime ?? DateTime.MinValue,
+                EndTime = status.EndTime,
+                Error = status.ErrorMessage
             };
         }
 
-        /// <summary>
-        /// Stops the job gracefully by taking a savepoint and then terminating the job.
-        /// This is the recommended way to stop jobs for scaling in Apache Flink 2.1.0.
-        /// </summary>
-        /// <param name="savepointPath">Optional path where the savepoint should be stored</param>
-        /// <param name="drain">Whether to process all records before stopping</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>The stop result containing savepoint information</returns>
         public async Task<StopWithSavepointResult> StopWithSavepointAsync(string? savepointPath = null, bool drain = true, CancellationToken cancellationToken = default)
         {
-            // This would stop the job with savepoint via the Flink JobManager REST API
-            await Task.Delay(100, cancellationToken);
-            
-            return new StopWithSavepointResult
-            {
-                SavepointPath = savepointPath ?? $"/savepoints/{JobId}/{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}",
-                Success = true,
-                TriggerId = Guid.NewGuid().ToString(),
-                Drained = drain
-            };
+            var payload = new { targetDirectory = savepointPath, drain = drain };
+            var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/stop",
+                new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
+            var ok = resp.IsSuccessStatusCode;
+            var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return new StopWithSavepointResult { SavepointPath = savepointPath ?? string.Empty, Success = ok, TriggerId = string.Empty, Drained = drain, Error = ok ? null : text };
         }
     }
 
