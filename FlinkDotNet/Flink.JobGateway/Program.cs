@@ -3,6 +3,9 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuration constants
+const string DefaultListenAddress = "http://0.0.0.0:8080";
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -38,6 +41,10 @@ builder.Services.AddLogging(loggingBuilder =>
     loggingBuilder.AddConsole();
     loggingBuilder.AddDebug();
 });
+
+// Explicitly bind to port 8080 for reliable startup in containerized environments
+var urls = builder.Configuration["ASPNETCORE_URLS"] ?? DefaultListenAddress;
+builder.WebHost.UseUrls(urls);
 
 var app = builder.Build();
 
