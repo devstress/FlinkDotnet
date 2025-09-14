@@ -766,7 +766,7 @@ public class FeatureEngineeringService
     {
         if (!_userHistory.ContainsKey(userId)) return 0;
 
-        var hourStart = new DateTime(transactionTime.Year, transactionTime.Month, transactionTime.Day, transactionTime.Hour, 0, 0);
+        var hourStart = new DateTime(transactionTime.Year, transactionTime.Month, transactionTime.Day, transactionTime.Hour, 0, 0, DateTimeKind.Utc);
         var hourEnd = hourStart.AddHours(1);
         
         return _userHistory[userId]
@@ -816,7 +816,7 @@ public class FeatureEngineeringService
 
         if (recentTransactions.Count < 2) return 0;
 
-        var timeSpan = recentTransactions.First().TransactionTime - recentTransactions.Last().TransactionTime;
+        var timeSpan = recentTransactions[0].TransactionTime - recentTransactions[^1].TransactionTime;
         return timeSpan.TotalHours > 0 ? recentTransactions.Count / timeSpan.TotalHours : 0;
     }
 
