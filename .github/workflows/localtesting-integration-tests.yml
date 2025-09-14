@@ -1,9 +1,6 @@
 name: LocalTesting Integration Tests
 
 on:
-  push:
-    paths: 
-      - 'LocalTesting/**'
   workflow_call:
   workflow_dispatch:
 
