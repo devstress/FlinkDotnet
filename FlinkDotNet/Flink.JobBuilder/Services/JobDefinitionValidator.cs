@@ -70,34 +70,59 @@ namespace Flink.JobBuilder.Services
             switch (source)
             {
                 case SqlSourceDefinition s:
-                    if (s.Statements == null || s.Statements.Count == 0)
-                        errors.Add("source.sql.statements must contain at least one statement");
+                    ValidateSqlSource(s, errors);
                     break;
                 case KafkaSourceDefinition k:
-                    if (string.IsNullOrWhiteSpace(k.Topic))
-                        errors.Add("source.kafka.topic is required");
+                    ValidateKafkaSource(k, errors);
                     break;
                 case FileSourceDefinition f:
-                    if (string.IsNullOrWhiteSpace(f.Path))
-                        errors.Add("source.file.path is required");
-                    if (string.IsNullOrWhiteSpace(f.Format))
-                        errors.Add("source.file.format is required");
+                    ValidateFileSource(f, errors);
                     break;
                 case HttpSourceDefinition h:
-                    if (string.IsNullOrWhiteSpace(h.Url))
-                        errors.Add("source.http.url is required");
-                    if (h.IntervalSeconds <= 0)
-                        errors.Add("source.http.intervalSeconds must be > 0");
+                    ValidateHttpSource(h, errors);
                     break;
                 case DatabaseSourceDefinition d:
-                    if (string.IsNullOrWhiteSpace(d.ConnectionString))
-                        errors.Add("source.database.connectionString is required");
-                    if (string.IsNullOrWhiteSpace(d.Query))
-                        errors.Add("source.database.query is required");
-                    if (d.PollingIntervalSeconds <= 0)
-                        errors.Add("source.database.pollingIntervalSeconds must be > 0");
+                    ValidateDatabaseSource(d, errors);
                     break;
             }
+        }
+
+        private static void ValidateSqlSource(SqlSourceDefinition source, List<string> errors)
+        {
+            if (source.Statements == null || source.Statements.Count == 0)
+                errors.Add("source.sql.statements must contain at least one statement");
+        }
+
+        private static void ValidateKafkaSource(KafkaSourceDefinition source, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(source.Topic))
+                errors.Add("source.kafka.topic is required");
+        }
+
+        private static void ValidateFileSource(FileSourceDefinition source, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(source.Path))
+                errors.Add("source.file.path is required");
+            if (string.IsNullOrWhiteSpace(source.Format))
+                errors.Add("source.file.format is required");
+        }
+
+        private static void ValidateHttpSource(HttpSourceDefinition source, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(source.Url))
+                errors.Add("source.http.url is required");
+            if (source.IntervalSeconds <= 0)
+                errors.Add("source.http.intervalSeconds must be > 0");
+        }
+
+        private static void ValidateDatabaseSource(DatabaseSourceDefinition source, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(source.ConnectionString))
+                errors.Add("source.database.connectionString is required");
+            if (string.IsNullOrWhiteSpace(source.Query))
+                errors.Add("source.database.query is required");
+            if (source.PollingIntervalSeconds <= 0)
+                errors.Add("source.database.pollingIntervalSeconds must be > 0");
         }
 
         private static void ValidateOperation(IOperationDefinition operation, int index, List<string> errors)
@@ -258,36 +283,61 @@ namespace Flink.JobBuilder.Services
             switch (sink)
             {
                 case KafkaSinkDefinition k:
-                    if (string.IsNullOrWhiteSpace(k.Topic))
-                        errors.Add("sink.kafka.topic is required");
-                    if (k.Serializer != null && k.Serializer != "json" && k.Serializer != "string")
-                        errors.Add("sink.kafka.serializer must be 'json' or 'string' when provided");
+                    ValidateKafkaSink(k, errors);
                     break;
                 case FileSinkDefinition f:
-                    if (string.IsNullOrWhiteSpace(f.Path))
-                        errors.Add("sink.file.path is required");
-                    if (string.IsNullOrWhiteSpace(f.Format))
-                        errors.Add("sink.file.format is required");
+                    ValidateFileSink(f, errors);
                     break;
                 case HttpSinkDefinition h:
-                    if (string.IsNullOrWhiteSpace(h.Url))
-                        errors.Add("sink.http.url is required");
-                    if (h.TimeoutMs <= 0 || h.TimeoutMs > 1_200_000)
-                        errors.Add("sink.http.timeoutMs must be between 1 and 1200000");
+                    ValidateHttpSink(h, errors);
                     break;
                 case DatabaseSinkDefinition d:
-                    if (string.IsNullOrWhiteSpace(d.ConnectionString))
-                        errors.Add("sink.database.connectionString is required");
-                    if (string.IsNullOrWhiteSpace(d.Table))
-                        errors.Add("sink.database.table is required");
+                    ValidateDatabaseSink(d, errors);
                     break;
                 case RedisSinkDefinition r:
-                    if (string.IsNullOrWhiteSpace(r.ConnectionString))
-                        errors.Add("sink.redis.connectionString is required");
-                    if (string.IsNullOrWhiteSpace(r.OperationType))
-                        errors.Add("sink.redis.operationType is required");
+                    ValidateRedisSink(r, errors);
                     break;
             }
+        }
+
+        private static void ValidateKafkaSink(KafkaSinkDefinition sink, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(sink.Topic))
+                errors.Add("sink.kafka.topic is required");
+            if (sink.Serializer != null && sink.Serializer != "json" && sink.Serializer != "string")
+                errors.Add("sink.kafka.serializer must be 'json' or 'string' when provided");
+        }
+
+        private static void ValidateFileSink(FileSinkDefinition sink, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(sink.Path))
+                errors.Add("sink.file.path is required");
+            if (string.IsNullOrWhiteSpace(sink.Format))
+                errors.Add("sink.file.format is required");
+        }
+
+        private static void ValidateHttpSink(HttpSinkDefinition sink, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(sink.Url))
+                errors.Add("sink.http.url is required");
+            if (sink.TimeoutMs <= 0 || sink.TimeoutMs > 1_200_000)
+                errors.Add("sink.http.timeoutMs must be between 1 and 1200000");
+        }
+
+        private static void ValidateDatabaseSink(DatabaseSinkDefinition sink, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(sink.ConnectionString))
+                errors.Add("sink.database.connectionString is required");
+            if (string.IsNullOrWhiteSpace(sink.Table))
+                errors.Add("sink.database.table is required");
+        }
+
+        private static void ValidateRedisSink(RedisSinkDefinition sink, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(sink.ConnectionString))
+                errors.Add("sink.redis.connectionString is required");
+            if (string.IsNullOrWhiteSpace(sink.OperationType))
+                errors.Add("sink.redis.operationType is required");
         }
     }
 }

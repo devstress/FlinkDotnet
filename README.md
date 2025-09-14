@@ -34,7 +34,7 @@ Refer to the docs/ directory for the implementation roadmap and guides.
 
 ## 📚 Learning Course
 
-**New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 14 days of hands-on exercises covering:
+**New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 15 days of hands-on exercises covering:
 
 - **Day 1-2**: Flink 2.1 fundamentals and AI stream processing
 - **Day 3-4**: Production backpressure and enterprise observability  

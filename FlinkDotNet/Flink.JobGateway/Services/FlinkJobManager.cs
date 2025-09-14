@@ -298,6 +298,20 @@ public class FlinkJobManager : IFlinkJobManager
         public void SetLastCheckpoint(DateTime value) => _lastCheckpoint = value;
         public void UpdateWorstBackpressure(string level) => _backpressureLevel = WorstBackpressure(_backpressureLevel, level);
 
+        /// <summary>Determines the worst backpressure level between current and candidate</summary>
+        private static string WorstBackpressure(string current, string candidate)
+        {
+            static int Rank(string s) => s?.ToLowerInvariant() switch
+            {
+                "high" => 3,
+                "ok" => 1,
+                "low" => 2,
+                "none" => 0,
+                _ => 0
+            };
+            return Rank(candidate) >= Rank(current) ? candidate : current;
+        }
+
         public JobMetrics Build()
         {
             return new JobMetrics
@@ -591,25 +605,13 @@ public class FlinkJobManager : IFlinkJobManager
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public long Uploaded { get; init; }
+        /// <summary>Upload timestamp from Flink API - populated by JSON deserialization</summary>
+        public long Uploaded { get; init; } = 0;
     }
 
     private sealed class FlinkMetricEntry
     {
         public string Id { get; set; } = string.Empty;
         public string Value { get; set; } = "0";
-    }
-
-    private static string WorstBackpressure(string current, string candidate)
-    {
-        static int Rank(string s) => s?.ToLowerInvariant() switch
-        {
-            "high" => 3,
-            "ok" => 1,
-            "low" => 2,
-            "none" => 0,
-            _ => 0
-        };
-        return Rank(candidate) >= Rank(current) ? candidate : current;
     }
 }
