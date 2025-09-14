@@ -38,37 +38,49 @@ namespace Flink.JobBuilder.Flink
         {
             _logger.LogInformation("Initializing FlinkRedisSink with Flink-optimal settings");
             var options = ConfigurationOptions.Parse(_connectionString);
-            options.AbortOnConnectFail = false;
-            options.ConnectTimeout = 5000;
-            options.SyncTimeout = 5000;
-            options.ReconnectRetryPolicy = new ExponentialRetry(5000);
-            
-            // Apply custom configuration if provided
-            if (_redisConfig != null)
-            {
-                foreach (var config in _redisConfig)
-                {
-                    switch (config.Key.ToLowerInvariant())
-                    {
-                        case "connecttimeout":
-                            if (config.Value is int timeout)
-                                options.ConnectTimeout = timeout;
-                            break;
-                        case "synctimeout":
-                            if (config.Value is int syncTimeout)
-                                options.SyncTimeout = syncTimeout;
-                            break;
-                        case "abortonconnectfail":
-                            if (config.Value is bool abortOnFail)
-                                options.AbortOnConnectFail = abortOnFail;
-                            break;
-                    }
-                }
-            }
+            SetDefaultOptions(options);
+            ApplyCustomConfiguration(options);
             
             _muxer = await ConnectionMultiplexer.ConnectAsync(options).ConfigureAwait(false);
             _db = _muxer.GetDatabase();
             _logger.LogInformation("FlinkRedisSink initialization completed");
+        }
+
+        private static void SetDefaultOptions(ConfigurationOptions options)
+        {
+            options.AbortOnConnectFail = false;
+            options.ConnectTimeout = 5000;
+            options.SyncTimeout = 5000;
+            options.ReconnectRetryPolicy = new ExponentialRetry(5000);
+        }
+
+        private void ApplyCustomConfiguration(ConfigurationOptions options)
+        {
+            if (_redisConfig == null) return;
+
+            foreach (var config in _redisConfig)
+            {
+                ApplyConfigurationOption(options, config.Key, config.Value);
+            }
+        }
+
+        private static void ApplyConfigurationOption(ConfigurationOptions options, string key, object value)
+        {
+            switch (key.ToLowerInvariant())
+            {
+                case "connecttimeout":
+                    if (value is int timeout)
+                        options.ConnectTimeout = timeout;
+                    break;
+                case "synctimeout":
+                    if (value is int syncTimeout)
+                        options.SyncTimeout = syncTimeout;
+                    break;
+                case "abortonconnectfail":
+                    if (value is bool abortOnFail)
+                        options.AbortOnConnectFail = abortOnFail;
+                    break;
+            }
         }
 
         public async Task<long> AtomicIncrementAsync(string key, long increment = 1, CancellationToken cancellationToken = default)

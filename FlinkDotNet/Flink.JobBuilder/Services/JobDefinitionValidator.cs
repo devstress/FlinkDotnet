@@ -17,26 +17,8 @@ namespace Flink.JobBuilder.Services
         {
             var errors = new List<string>();
 
-            if (job.Metadata == null)
-            {
-                errors.Add("metadata is required");
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(job.Metadata.JobId))
-                    errors.Add("metadata.jobId is required");
-                if (string.IsNullOrWhiteSpace(job.Metadata.Version))
-                    errors.Add("metadata.version is required");
-                if (job.Metadata.Parallelism.HasValue && job.Metadata.Parallelism <= 0)
-                    errors.Add("metadata.parallelism must be >= 1 when provided");
-            }
-
-            if (job.Source == null)
-                errors.Add("source is required");
-
-            var isSqlJob = job.Source is SqlSourceDefinition;
-            if (!isSqlJob && job.Sink == null)
-                errors.Add("sink is required");
+            ValidateMetadata(job.Metadata, errors);
+            ValidateJobStructure(job, errors);
 
             if (job.Source != null)
                 ValidateSource(job.Source, errors);
@@ -55,6 +37,32 @@ namespace Flink.JobBuilder.Services
             var result = new IrValidationResult();
             result.Errors.AddRange(errors);
             return result;
+        }
+
+        private static void ValidateMetadata(JobMetadata metadata, List<string> errors)
+        {
+            if (metadata == null)
+            {
+                errors.Add("metadata is required");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(metadata.JobId))
+                errors.Add("metadata.jobId is required");
+            if (string.IsNullOrWhiteSpace(metadata.Version))
+                errors.Add("metadata.version is required");
+            if (metadata.Parallelism.HasValue && metadata.Parallelism <= 0)
+                errors.Add("metadata.parallelism must be >= 1 when provided");
+        }
+
+        private static void ValidateJobStructure(JobDefinition job, List<string> errors)
+        {
+            if (job.Source == null)
+                errors.Add("source is required");
+
+            var isSqlJob = job.Source is SqlSourceDefinition;
+            if (!isSqlJob && job.Sink == null)
+                errors.Add("sink is required");
         }
 
         private static void ValidateSource(ISourceDefinition source, List<string> errors)
@@ -97,91 +105,152 @@ namespace Flink.JobBuilder.Services
             switch (operation)
             {
                 case FilterOperationDefinition f:
-                    if (string.IsNullOrWhiteSpace(f.Expression))
-                        errors.Add($"operations[{index}].filter.expression is required");
+                    ValidateFilterOperation(f, index, errors);
                     break;
                 case MapOperationDefinition m:
-                    if (string.IsNullOrWhiteSpace(m.Expression))
-                        errors.Add($"operations[{index}].map.expression is required");
+                    ValidateMapOperation(m, index, errors);
                     break;
                 case GroupByOperationDefinition g:
-                    if (string.IsNullOrWhiteSpace(g.Key) && (g.Keys == null || g.Keys.Count == 0))
-                        errors.Add($"operations[{index}].groupBy.key or keys is required");
+                    ValidateGroupByOperation(g, index, errors);
                     break;
                 case AggregateOperationDefinition a:
-                    var allowedAgg = new[] { "SUM", "COUNT", "AVG", "MIN", "MAX" };
-                    if (string.IsNullOrWhiteSpace(a.AggregationType) || !allowedAgg.Contains(a.AggregationType))
-                        errors.Add($"operations[{index}].aggregate.aggregationType must be one of {string.Join(", ", allowedAgg)}");
-                    if (string.IsNullOrWhiteSpace(a.Field))
-                        errors.Add($"operations[{index}].aggregate.field is required");
+                    ValidateAggregateOperation(a, index, errors);
                     break;
                 case WindowOperationDefinition w:
-                    var allowedUnits = new[] { "SECONDS", "MINUTES", "HOURS" };
-                    var allowedWindow = new[] { "TUMBLING", "SLIDING", "SESSION" };
-                    if (string.IsNullOrWhiteSpace(w.WindowType) || !allowedWindow.Contains(w.WindowType))
-                        errors.Add($"operations[{index}].window.windowType must be one of {string.Join(", ", allowedWindow)}");
-                    if (w.Size <= 0)
-                        errors.Add($"operations[{index}].window.size must be > 0");
-                    if (string.IsNullOrWhiteSpace(w.TimeUnit) || !allowedUnits.Contains(w.TimeUnit))
-                        errors.Add($"operations[{index}].window.timeUnit must be one of {string.Join(", ", allowedUnits)}");
-                    if (string.Equals(w.WindowType, "SLIDING", StringComparison.OrdinalIgnoreCase) && (!w.Slide.HasValue || w.Slide.Value <= 0))
-                        errors.Add($"operations[{index}].window.slide is required and must be > 0 for SLIDING windows");
+                    ValidateWindowOperation(w, index, errors);
                     break;
                 case JoinOperationDefinition j:
-                    if (j.RightSource == null)
-                        errors.Add($"operations[{index}].join.rightSource is required");
-                    if (string.IsNullOrWhiteSpace(j.LeftKey))
-                        errors.Add($"operations[{index}].join.leftKey is required");
-                    if (string.IsNullOrWhiteSpace(j.RightKey))
-                        errors.Add($"operations[{index}].join.rightKey is required");
+                    ValidateJoinOperation(j, index, errors);
                     break;
                 case AsyncFunctionOperationDefinition af:
-                    if (string.IsNullOrWhiteSpace(af.FunctionType))
-                        errors.Add($"operations[{index}].asyncFunction.functionType is required");
-                    if (af.TimeoutMs <= 0 || af.TimeoutMs > 1_200_000)
-                        errors.Add($"operations[{index}].asyncFunction.timeoutMs must be between 1 and 1200000");
-                    if (af.MaxRetries < 0 || af.MaxRetries > 100)
-                        errors.Add($"operations[{index}].asyncFunction.maxRetries must be between 0 and 100");
+                    ValidateAsyncFunctionOperation(af, index, errors);
                     break;
                 case ProcessFunctionOperationDefinition pf:
-                    if (string.IsNullOrWhiteSpace(pf.ProcessType))
-                        errors.Add($"operations[{index}].processFunction.processType is required");
+                    ValidateProcessFunctionOperation(pf, index, errors);
                     break;
                 case StateOperationDefinition st:
-                    var allowedState = new[] { "value", "list", "map", "reducing" };
-                    if (string.IsNullOrWhiteSpace(st.StateType) || !allowedState.Contains(st.StateType))
-                        errors.Add($"operations[{index}].state.stateType must be one of {string.Join(", ", allowedState)}");
-                    if (string.IsNullOrWhiteSpace(st.StateKey))
-                        errors.Add($"operations[{index}].state.stateKey is required");
-                    if (st.TtlMs.HasValue && st.TtlMs <= 0)
-                        errors.Add($"operations[{index}].state.ttlMs must be > 0 when provided");
+                    ValidateStateOperation(st, index, errors);
                     break;
                 case TimerOperationDefinition t:
-                    var allowedTimers = new[] { "processing", "event" };
-                    if (string.IsNullOrWhiteSpace(t.TimerType) || !allowedTimers.Contains(t.TimerType))
-                        errors.Add($"operations[{index}].timer.timerType must be one of {string.Join(", ", allowedTimers)}");
-                    if (t.DelayMs <= 0 || t.DelayMs > 86_400_000)
-                        errors.Add($"operations[{index}].timer.delayMs must be between 1 and 86400000");
+                    ValidateTimerOperation(t, index, errors);
                     break;
                 case RetryOperationDefinition r:
-                    if (r.MaxRetries < 0 || r.MaxRetries > 100)
-                        errors.Add($"operations[{index}].retry.maxRetries must be between 0 and 100");
-                    if (r.DelayMs == null || r.DelayMs.Count == 0)
-                        errors.Add($"operations[{index}].retry.delayMs must contain at least 1 value");
-                    else if (r.DelayMs.Any(d => d <= 0))
-                        errors.Add($"operations[{index}].retry.delayMs values must be > 0");
-                    if (string.IsNullOrWhiteSpace(r.StateKey))
-                        errors.Add($"operations[{index}].retry.stateKey is required");
+                    ValidateRetryOperation(r, index, errors);
                     break;
                 case SideOutputOperationDefinition so:
-                    if (string.IsNullOrWhiteSpace(so.OutputTag))
-                        errors.Add($"operations[{index}].sideOutput.outputTag is required");
-                    if (string.IsNullOrWhiteSpace(so.Condition))
-                        errors.Add($"operations[{index}].sideOutput.condition is required");
-                    if (so.SideOutputSink == null)
-                        errors.Add($"operations[{index}].sideOutput.sideOutputSink is required");
+                    ValidateSideOutputOperation(so, index, errors);
                     break;
             }
+        }
+
+        private static void ValidateFilterOperation(FilterOperationDefinition filter, int index, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(filter.Expression))
+                errors.Add($"operations[{index}].filter.expression is required");
+        }
+
+        private static void ValidateMapOperation(MapOperationDefinition map, int index, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(map.Expression))
+                errors.Add($"operations[{index}].map.expression is required");
+        }
+
+        private static void ValidateGroupByOperation(GroupByOperationDefinition groupBy, int index, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(groupBy.Key) && (groupBy.Keys == null || groupBy.Keys.Count == 0))
+                errors.Add($"operations[{index}].groupBy.key or keys is required");
+        }
+
+        private static void ValidateAggregateOperation(AggregateOperationDefinition aggregate, int index, List<string> errors)
+        {
+            var allowedAgg = new[] { "SUM", "COUNT", "AVG", "MIN", "MAX" };
+            if (string.IsNullOrWhiteSpace(aggregate.AggregationType) || !allowedAgg.Contains(aggregate.AggregationType))
+                errors.Add($"operations[{index}].aggregate.aggregationType must be one of {string.Join(", ", allowedAgg)}");
+            if (string.IsNullOrWhiteSpace(aggregate.Field))
+                errors.Add($"operations[{index}].aggregate.field is required");
+        }
+
+        private static void ValidateWindowOperation(WindowOperationDefinition window, int index, List<string> errors)
+        {
+            var allowedUnits = new[] { "SECONDS", "MINUTES", "HOURS" };
+            var allowedWindow = new[] { "TUMBLING", "SLIDING", "SESSION" };
+            
+            if (string.IsNullOrWhiteSpace(window.WindowType) || !allowedWindow.Contains(window.WindowType))
+                errors.Add($"operations[{index}].window.windowType must be one of {string.Join(", ", allowedWindow)}");
+            if (window.Size <= 0)
+                errors.Add($"operations[{index}].window.size must be > 0");
+            if (string.IsNullOrWhiteSpace(window.TimeUnit) || !allowedUnits.Contains(window.TimeUnit))
+                errors.Add($"operations[{index}].window.timeUnit must be one of {string.Join(", ", allowedUnits)}");
+            if (string.Equals(window.WindowType, "SLIDING", StringComparison.OrdinalIgnoreCase) && (!window.Slide.HasValue || window.Slide.Value <= 0))
+                errors.Add($"operations[{index}].window.slide is required and must be > 0 for SLIDING windows");
+        }
+
+        private static void ValidateJoinOperation(JoinOperationDefinition join, int index, List<string> errors)
+        {
+            if (join.RightSource == null)
+                errors.Add($"operations[{index}].join.rightSource is required");
+            if (string.IsNullOrWhiteSpace(join.LeftKey))
+                errors.Add($"operations[{index}].join.leftKey is required");
+            if (string.IsNullOrWhiteSpace(join.RightKey))
+                errors.Add($"operations[{index}].join.rightKey is required");
+        }
+
+        private static void ValidateAsyncFunctionOperation(AsyncFunctionOperationDefinition asyncFunction, int index, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(asyncFunction.FunctionType))
+                errors.Add($"operations[{index}].asyncFunction.functionType is required");
+            if (asyncFunction.TimeoutMs <= 0 || asyncFunction.TimeoutMs > 1_200_000)
+                errors.Add($"operations[{index}].asyncFunction.timeoutMs must be between 1 and 1200000");
+            if (asyncFunction.MaxRetries < 0 || asyncFunction.MaxRetries > 100)
+                errors.Add($"operations[{index}].asyncFunction.maxRetries must be between 0 and 100");
+        }
+
+        private static void ValidateProcessFunctionOperation(ProcessFunctionOperationDefinition processFunction, int index, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(processFunction.ProcessType))
+                errors.Add($"operations[{index}].processFunction.processType is required");
+        }
+
+        private static void ValidateStateOperation(StateOperationDefinition state, int index, List<string> errors)
+        {
+            var allowedState = new[] { "value", "list", "map", "reducing" };
+            if (string.IsNullOrWhiteSpace(state.StateType) || !allowedState.Contains(state.StateType))
+                errors.Add($"operations[{index}].state.stateType must be one of {string.Join(", ", allowedState)}");
+            if (string.IsNullOrWhiteSpace(state.StateKey))
+                errors.Add($"operations[{index}].state.stateKey is required");
+            if (state.TtlMs.HasValue && state.TtlMs <= 0)
+                errors.Add($"operations[{index}].state.ttlMs must be > 0 when provided");
+        }
+
+        private static void ValidateTimerOperation(TimerOperationDefinition timer, int index, List<string> errors)
+        {
+            var allowedTimers = new[] { "processing", "event" };
+            if (string.IsNullOrWhiteSpace(timer.TimerType) || !allowedTimers.Contains(timer.TimerType))
+                errors.Add($"operations[{index}].timer.timerType must be one of {string.Join(", ", allowedTimers)}");
+            if (timer.DelayMs <= 0 || timer.DelayMs > 86_400_000)
+                errors.Add($"operations[{index}].timer.delayMs must be between 1 and 86400000");
+        }
+
+        private static void ValidateRetryOperation(RetryOperationDefinition retry, int index, List<string> errors)
+        {
+            if (retry.MaxRetries < 0 || retry.MaxRetries > 100)
+                errors.Add($"operations[{index}].retry.maxRetries must be between 0 and 100");
+            if (retry.DelayMs == null || retry.DelayMs.Count == 0)
+                errors.Add($"operations[{index}].retry.delayMs must contain at least 1 value");
+            else if (retry.DelayMs.Any(d => d <= 0))
+                errors.Add($"operations[{index}].retry.delayMs values must be > 0");
+            if (string.IsNullOrWhiteSpace(retry.StateKey))
+                errors.Add($"operations[{index}].retry.stateKey is required");
+        }
+
+        private static void ValidateSideOutputOperation(SideOutputOperationDefinition sideOutput, int index, List<string> errors)
+        {
+            if (string.IsNullOrWhiteSpace(sideOutput.OutputTag))
+                errors.Add($"operations[{index}].sideOutput.outputTag is required");
+            if (string.IsNullOrWhiteSpace(sideOutput.Condition))
+                errors.Add($"operations[{index}].sideOutput.condition is required");
+            if (sideOutput.SideOutputSink == null)
+                errors.Add($"operations[{index}].sideOutput.sideOutputSink is required");
         }
 
         private static void ValidateSink(ISinkDefinition sink, List<string> errors)
