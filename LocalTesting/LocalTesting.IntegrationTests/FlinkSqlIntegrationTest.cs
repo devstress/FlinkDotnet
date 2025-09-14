@@ -80,7 +80,11 @@ public class FlinkSqlIntegrationTest
         }
         finally
         {
-            try { await app.DisposeAsync(); } catch { }
+            try { await app.DisposeAsync(); } 
+            catch 
+            { 
+                // DisposeAsync may fail if resources are already disposed - this is acceptable
+            }
         }
     }
 
@@ -152,7 +156,10 @@ public class FlinkSqlIntegrationTest
                 var resp = await http.GetAsync(url, ct);
                 if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500) return;
             }
-            catch { }
+            catch 
+            { 
+                // HTTP probe failures are expected during service startup
+            }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"HTTP probe timed out for {url}");
@@ -180,7 +187,10 @@ public class FlinkSqlIntegrationTest
                 var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
                 if (md?.Brokers?.Count > 0) return;
             }
-            catch { }
+            catch 
+            { 
+                // Kafka connection failures are expected during service startup
+            }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s at {bootstrapServers}");

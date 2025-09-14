@@ -28,7 +28,7 @@ public class FlinkDotNetIntegrationTest
                 .WaitAsync(TimeSpan.FromSeconds(60), ct);
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka, TimeSpan.FromSeconds(60), ct);
+            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(60), ct);
 
             // Create topics
             await CreateTopicAsync(kafka!, InputTopic, 4);
@@ -38,7 +38,11 @@ public class FlinkDotNetIntegrationTest
             await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
 
             // Try Flink JobManager UI readiness (non-fatal)
-            try { await WaitForHttpOkAsync("http://localhost:8081", TimeSpan.FromSeconds(60), ct); } catch { }
+            try { await WaitForHttpOkAsync("http://localhost:8081", TimeSpan.FromSeconds(60), ct); } 
+            catch 
+            { 
+                // JobManager UI may not be available - this is non-fatal for tests
+            }
 
             // Submit pipeline using FlinkDotNet facade
             var job = FlinkDotNet.Flink.JobBuilder
@@ -89,7 +93,11 @@ public class FlinkDotNetIntegrationTest
         }
         finally
         {
-            try { await app.DisposeAsync(); } catch { }
+            try { await app.DisposeAsync(); } 
+            catch 
+            { 
+                // DisposeAsync may fail if resources are already disposed - this is acceptable
+            }
         }
     }
 
@@ -160,7 +168,10 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
                 var resp = await http.GetAsync(url, ct);
                 if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500) return;
             }
-            catch { }
+            catch 
+            { 
+                // HTTP probe failures are expected during service startup
+            }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"HTTP probe timed out for {url}");
@@ -188,7 +199,10 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
                 var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
                 if (md?.Brokers?.Count > 0) return;
             }
-            catch { }
+            catch 
+            { 
+                // Kafka connection failures are expected during service startup
+            }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s at {bootstrapServers}");

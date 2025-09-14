@@ -360,7 +360,7 @@ namespace FlinkDotNet.DataStream
         private readonly FlinkJobGatewayService _gateway = new();
         private readonly HttpClient _flinkHttp;
         public string JobId { get; set; } = string.Empty;
-        public string JobName { get; set; } = string.Empty;
+        public string JobName { get; set; }
 
         public JobClient(string jobName)
         {
@@ -378,7 +378,11 @@ namespace FlinkDotNet.DataStream
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             string triggerId = string.Empty;
-            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } catch { }
+            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } 
+            catch 
+            { 
+                // JSON parsing may fail if response is not valid JSON - use empty triggerId
+            }
             return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
         }
 
@@ -390,7 +394,11 @@ namespace FlinkDotNet.DataStream
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             string triggerId = string.Empty;
-            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } catch { }
+            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } 
+            catch 
+            { 
+                // JSON parsing may fail if response is not valid JSON - use empty triggerId
+            }
             return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
         }
 

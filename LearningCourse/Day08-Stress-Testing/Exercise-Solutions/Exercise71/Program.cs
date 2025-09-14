@@ -59,7 +59,7 @@ namespace StressTesting
                     await ExecuteStressTestScenario(scenario, loadGenerator, streamProcessor, performanceMonitor);
                     
                     // Cool-down period between scenarios
-                    if (scenario != scenarios.Last())
+                    if (scenario != scenarios[^1])
                     {
                         Console.WriteLine("⏸️ Cool-down period: 3 seconds...");
                         await Task.Delay(3000);
@@ -134,7 +134,6 @@ namespace StressTesting
     public class LoadGeneratorService
     {
         private readonly ConcurrentQueue<StreamEvent> _eventStream = new();
-        private readonly Random _random = new();
         
         public IProducerConsumerCollection<StreamEvent> EventStream => _eventStream;
         
@@ -244,7 +243,6 @@ namespace StressTesting
 
     public class StreamProcessor
     {
-        private readonly Random _random = new();
         private int _processedCount = 0;
         private int _errorCount = 0;
         

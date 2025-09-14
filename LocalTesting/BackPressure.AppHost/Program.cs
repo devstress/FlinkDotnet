@@ -32,7 +32,10 @@ try
             .WaitFor(flinkJobManager);
     }
 }
-catch { }
+catch
+{
+    // Swallow exceptions during Flink connector setup as it's optional
+}
 
 // Flink Job Gateway (from FlinkDotNet)
 builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")

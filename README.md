@@ -34,7 +34,7 @@ Refer to the docs/ directory for the implementation roadmap and guides.
 
 ## 📚 Learning Course
 
-**New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 14 days of hands-on exercises covering:
+**New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 15 days of hands-on exercises covering:
 
 - **Day 1-2**: Flink 2.1 fundamentals and AI stream processing
 - **Day 3-4**: Production backpressure and enterprise observability  
@@ -611,15 +611,21 @@ var env = Flink.GetExecutionEnvironment(config);
 
 ## Architecture Overview
 
-FlinkDotNet provides a complete enterprise-scale integration solution with multi-layered architecture:
+FlinkDotNet provides a complete enterprise-scale integration solution with multi-layered architecture and enhanced code quality:
 
 ### Core Components
 
 #### Job Development Layer
 - **.NET SDK (FlinkDotNet.DataStream)**: Complete Apache Flink 2.1.0 streaming API
-- **JobBuilder SDK (Flink.JobBuilder)**: Fluent C# DSL for rapid development
-- **Intermediate Representation (IR)**: JSON-based job definitions
-- **Job Gateway**: HTTP service that bridges .NET applications with Apache Flink clusters
+- **JobBuilder SDK (Flink.JobBuilder)**: Fluent C# DSL with comprehensive validation
+  - *Enhanced JobDefinitionValidator*: Modular validation with improved error messages
+  - *Cognitive complexity optimized*: All validation methods under 15 complexity threshold
+  - *Maintainable structure*: Large methods split into focused, testable components
+- **Intermediate Representation (IR)**: JSON-based job definitions with robust validation
+- **Job Gateway**: HTTP service with improved error handling and metrics collection
+  - *Restructured FlinkJobManager*: Builder pattern for metrics collection
+  - *Enhanced fault tolerance*: Comprehensive error handling and logging
+  - *Improved maintainability*: Complex methods split into focused responsibilities
 
 #### FlinkDotNet.Orchestration Layer  
 - **FlinkDotNet.Orchestration**: Multi-cluster job orchestration with intelligent placement strategies
@@ -742,10 +748,18 @@ FlinkDotNet/
 │   ├── CircuitBreakers          # Prevent cascade failures
 │   ├── RetryPolicies           # Exponential backoff strategies
 │   └── HealthCheckers          # Cluster health validation
-├── Flink.JobBuilder/             # Fluent DSL for rapid development
+├── Flink.JobBuilder/             # Enhanced fluent DSL
 │   ├── FlinkJobBuilder          # Main fluent DSL
-│   ├── Models                   # JobDefinition, IR models
+│   ├── Services/                # Enhanced validation and job management
+│   │   └── JobDefinitionValidator # Modular validation with cognitive complexity <15
+│   ├── Models                   # JobDefinition, IR models with robust validation
+│   ├── Backpressure/            # Enhanced rate limiting with null-safety
+│   │   └── LagBasedRateLimiter  # Improved null-safe rate limiting implementation
 │   └── Extensions              # Extension methods
+├── Flink.JobGateway/            # Enhanced gateway service
+│   ├── Services/                # Improved job management
+│   │   └── FlinkJobManager      # Restructured with builder pattern and error handling
+│   └── Models                   # Enhanced result types and metrics
 ├── FlinkDotNet.Table/           # Table API (future)
 ├── FlinkDotNet.Testing/         # Testing utilities
 ├── FlinkDotNet.Util/            # Utility classes

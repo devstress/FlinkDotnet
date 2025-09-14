@@ -627,7 +627,7 @@ Upon completion, graduates will be prepared for:
 
 ## Conclusion
 
-This capstone project represents the culmination of 14 days of intensive learning, bringing together all concepts into a production-ready streaming platform. The complexity and scale of this project mirrors real-world enterprise systems, preparing graduates to tackle the most challenging stream processing scenarios in their careers.
+This capstone project represents the culmination of 15 days of intensive learning, bringing together all concepts into a production-ready streaming platform. The complexity and scale of this project mirrors real-world enterprise systems, preparing graduates to tackle the most challenging stream processing scenarios in their careers.
 
 The platform you build will serve as a portfolio piece demonstrating mastery of:
 - Advanced stream processing patterns

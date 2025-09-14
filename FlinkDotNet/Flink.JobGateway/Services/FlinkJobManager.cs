@@ -137,116 +137,196 @@ public class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            // Aggregate vertex metrics
-            long recordsIn = 0, recordsOut = 0;
-            int parallelism = 0, checkpoints = 0;
-            DateTime? lastCheckpoint = null;
-            string backpressureLevel = "UNKNOWN";
-
-            var verticesResp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices");
-            if (!verticesResp.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Vertices lookup failed: {Status}", verticesResp.StatusCode);
-                return new JobMetrics { FlinkJobId = flinkJobId };
-            }
-            var verticesJson = await verticesResp.Content.ReadAsStringAsync();
-            using var vdoc = JsonDocument.Parse(verticesJson);
-            if (!vdoc.RootElement.TryGetProperty("vertices", out var vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
-                return new JobMetrics { FlinkJobId = flinkJobId };
-
-            foreach (var v in vertsEl.EnumerateArray())
-            {
-                if (!v.TryGetProperty("id", out var idEl)) continue;
-                var vid = idEl.GetString();
-                if (string.IsNullOrEmpty(vid)) continue;
-                var mresp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices/{vid}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
-                if (!mresp.IsSuccessStatusCode) continue;
-                var marr = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync());
-                foreach (var m in marr ?? new())
-                {
-                    if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vi)) recordsIn += vi;
-                    if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vo)) recordsOut += vo;
-                    if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out var p)) parallelism = Math.Max(parallelism, p);
-                }
-
-                // Backpressure level (best-effort)
-                try
-                {
-                    var bp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices/{vid}/backpressure");
-                    if (bp.IsSuccessStatusCode)
-                    {
-                        var bpStr = await bp.Content.ReadAsStringAsync();
-                        using var bdoc = JsonDocument.Parse(bpStr);
-                        var root = bdoc.RootElement;
-                        string? lvl = null;
-                        if (root.TryGetProperty("backpressureLevel", out var lvlEl)) lvl = lvlEl.GetString();
-                        else if (root.TryGetProperty("backpressure-level", out var lvlEl2)) lvl = lvlEl2.GetString();
-                        if (!string.IsNullOrEmpty(lvl))
-                        {
-                            // choose worst level across vertices
-                            backpressureLevel = WorstBackpressure(backpressureLevel, lvl!);
-                        }
-                    }
-                }
-                catch { /* ignore */ }
-            }
-
-            // Checkpoints (best-effort)
-            try
-            {
-                var cps = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/checkpoints");
-                if (cps.IsSuccessStatusCode)
-                {
-                    var cpsJson = await cps.Content.ReadAsStringAsync();
-                    using var cdoc = JsonDocument.Parse(cpsJson);
-                    var root = cdoc.RootElement;
-                    if (root.TryGetProperty("counts", out var counts))
-                    {
-                        if (counts.TryGetProperty("completed", out var completedEl) && completedEl.TryGetInt32(out var c))
-                            checkpoints = c;
-                    }
-                    if (root.TryGetProperty("latest", out var latest))
-                    {
-                        // Try a few known timestamp fields
-                        if (latest.TryGetProperty("completed", out var comp))
-                        {
-                            if (comp.TryGetProperty("end_time", out var endTime) && endTime.ValueKind == JsonValueKind.Number)
-                            {
-                                var ms = endTime.GetInt64();
-                                lastCheckpoint = DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
-                            }
-                            else if (comp.TryGetProperty("trigger_timestamp", out var ts) && ts.ValueKind == JsonValueKind.Number)
-                            {
-                                var ms = ts.GetInt64();
-                                lastCheckpoint = DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Failed to parse checkpoints for job {FlinkJobId}", flinkJobId);
-            }
-
-            return new JobMetrics
-            {
-                FlinkJobId = flinkJobId,
-                RecordsIn = recordsIn,
-                RecordsOut = recordsOut,
-                Parallelism = parallelism,
-                Checkpoints = checkpoints,
-                LastCheckpoint = lastCheckpoint,
-                CustomMetrics = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["backpressureLevel"] = backpressureLevel
-                }
-            };
+            var metrics = new JobMetricsBuilder(flinkJobId);
+            
+            await CollectVertexMetricsAsync(flinkJobId, metrics);
+            await CollectCheckpointMetricsAsync(flinkJobId, metrics);
+            
+            return metrics.Build();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to query Flink 2.1.0 cluster for job metrics: {FlinkJobId}", flinkJobId);
             return null;
+        }
+    }
+
+    private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
+    {
+        var verticesResp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices");
+        if (!verticesResp.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Vertices lookup failed: {Status}", verticesResp.StatusCode);
+            return;
+        }
+
+        var verticesJson = await verticesResp.Content.ReadAsStringAsync();
+        using var vdoc = JsonDocument.Parse(verticesJson);
+        if (!vdoc.RootElement.TryGetProperty("vertices", out var vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
+            return;
+
+        foreach (var vertex in vertsEl.EnumerateArray())
+        {
+            await ProcessVertexAsync(flinkJobId, vertex, metrics);
+        }
+    }
+
+    private async Task ProcessVertexAsync(string flinkJobId, JsonElement vertex, JobMetricsBuilder metrics)
+    {
+        if (!vertex.TryGetProperty("id", out var idEl)) return;
+        var vertexId = idEl.GetString();
+        if (string.IsNullOrEmpty(vertexId)) return;
+
+        await CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
+        await CollectVertexBackpressureAsync(flinkJobId, vertexId, metrics);
+    }
+
+    private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
+    {
+        var mresp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
+        if (!mresp.IsSuccessStatusCode) return;
+
+        var marr = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync());
+        foreach (var m in marr ?? new())
+        {
+            if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vi))
+                metrics.AddRecordsIn(vi);
+            if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vo))
+                metrics.AddRecordsOut(vo);
+            if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out var p))
+                metrics.UpdateMaxParallelism(p);
+        }
+    }
+
+    private async Task CollectVertexBackpressureAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
+    {
+        try
+        {
+            var bp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure");
+            if (!bp.IsSuccessStatusCode) return;
+
+            var bpStr = await bp.Content.ReadAsStringAsync();
+            using var bdoc = JsonDocument.Parse(bpStr);
+            var root = bdoc.RootElement;
+            
+            string? level = ExtractBackpressureLevel(root);
+            if (!string.IsNullOrEmpty(level))
+                metrics.UpdateWorstBackpressure(level);
+        }
+        catch 
+        { 
+            // Backpressure collection is best-effort - failures are non-fatal
+        }
+    }
+
+    private static string? ExtractBackpressureLevel(JsonElement root)
+    {
+        if (root.TryGetProperty("backpressureLevel", out var lvlEl)) 
+            return lvlEl.GetString();
+        if (root.TryGetProperty("backpressure-level", out var lvlEl2)) 
+            return lvlEl2.GetString();
+        return null;
+    }
+
+    private async Task CollectCheckpointMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
+    {
+        try
+        {
+            var cps = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/checkpoints");
+            if (!cps.IsSuccessStatusCode) return;
+
+            var cpsJson = await cps.Content.ReadAsStringAsync();
+            using var cdoc = JsonDocument.Parse(cpsJson);
+            var root = cdoc.RootElement;
+            
+            ProcessCheckpointCounts(root, metrics);
+            ProcessCheckpointTimestamps(root, metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to parse checkpoints for job {FlinkJobId}", flinkJobId);
+        }
+    }
+
+    private static void ProcessCheckpointCounts(JsonElement root, JobMetricsBuilder metrics)
+    {
+        if (root.TryGetProperty("counts", out var counts) && counts.TryGetProperty("completed", out var completedEl) && completedEl.TryGetInt32(out var c))
+            metrics.SetCheckpoints(c);
+    }
+
+    private static void ProcessCheckpointTimestamps(JsonElement root, JobMetricsBuilder metrics)
+    {
+        if (!root.TryGetProperty("latest", out var latest)) return;
+
+        if (latest.TryGetProperty("completed", out var comp))
+        {
+            var timestamp = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
+            if (timestamp.HasValue)
+                metrics.SetLastCheckpoint(timestamp.Value);
+        }
+    }
+
+    private static DateTime? ExtractTimestamp(JsonElement element, string propertyName)
+    {
+        if (element.TryGetProperty(propertyName, out var timeEl) && timeEl.ValueKind == JsonValueKind.Number)
+        {
+            var ms = timeEl.GetInt64();
+            return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
+        }
+        return null;
+    }
+
+    private sealed class JobMetricsBuilder
+    {
+        private readonly string _flinkJobId;
+        private long _recordsIn;
+        private long _recordsOut;
+        private int _parallelism;
+        private int _checkpoints;
+        private DateTime? _lastCheckpoint;
+        private string _backpressureLevel = "UNKNOWN";
+
+        public JobMetricsBuilder(string flinkJobId)
+        {
+            _flinkJobId = flinkJobId;
+        }
+
+        public void AddRecordsIn(long value) => _recordsIn += value;
+        public void AddRecordsOut(long value) => _recordsOut += value;
+        public void UpdateMaxParallelism(int value) => _parallelism = Math.Max(_parallelism, value);
+        public void SetCheckpoints(int value) => _checkpoints = value;
+        public void SetLastCheckpoint(DateTime value) => _lastCheckpoint = value;
+        public void UpdateWorstBackpressure(string level) => _backpressureLevel = WorstBackpressure(_backpressureLevel, level);
+
+        /// <summary>Determines the worst backpressure level between current and candidate</summary>
+        private static string WorstBackpressure(string current, string candidate)
+        {
+            static int Rank(string s) => s?.ToLowerInvariant() switch
+            {
+                "high" => 3,
+                "ok" => 1,
+                "low" => 2,
+                "none" => 0,
+                _ => 0
+            };
+            return Rank(candidate) >= Rank(current) ? candidate : current;
+        }
+
+        public JobMetrics Build()
+        {
+            return new JobMetrics
+            {
+                FlinkJobId = _flinkJobId,
+                RecordsIn = _recordsIn,
+                RecordsOut = _recordsOut,
+                Parallelism = _parallelism,
+                Checkpoints = _checkpoints,
+                LastCheckpoint = _lastCheckpoint,
+                CustomMetrics = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["backpressureLevel"] = _backpressureLevel
+                }
+            };
         }
     }
 
@@ -525,25 +605,13 @@ public class FlinkJobManager : IFlinkJobManager
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public long Uploaded { get; set; }
+        /// <summary>Upload timestamp from Flink API - populated by JSON deserialization</summary>
+        public long Uploaded { get; init; } = 0;
     }
 
     private sealed class FlinkMetricEntry
     {
         public string Id { get; set; } = string.Empty;
         public string Value { get; set; } = "0";
-    }
-
-    private static string WorstBackpressure(string current, string candidate)
-    {
-        static int Rank(string s) => s?.ToLowerInvariant() switch
-        {
-            "high" => 3,
-            "ok" => 1,
-            "low" => 2,
-            "none" => 0,
-            _ => 0
-        };
-        return Rank(candidate) >= Rank(current) ? candidate : current;
     }
 }
