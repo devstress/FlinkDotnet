@@ -1,71 +1,78 @@
-name: LocalTesting Integration Tests (Kafka)
+name: LocalTesting Integration Tests
 
 on:
   push:
     paths: 
-      - 'BackPressureExample/**'
+      - 'LocalTesting/**'
+  workflow_call:
   workflow_dispatch:
 
+concurrency:
+  group: localtesting-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  direct-backpressure-test:
+  localtesting-integration-test:
+    name: Run LocalTesting Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
-        
-    - name: Ensure Docker is running
-      run: docker info
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: manage container
-      run: |
-        docker rm -f backpressure-kafka || true
-      working-directory: ./BackPressureExample
-    
-    - name: Configure system for Kafka performance
-      run: |
-        echo "=== Configuring system for optimal Kafka performance ==="
-        sudo sysctl -w vm.max_map_count=262144
-        sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
-        sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
-        echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
-        echo "Current ulimit -n: $(ulimit -n)"
-        echo "Available memory: $(free -h)"
-        echo "CPU info: $(nproc) cores"
-        cat /proc/cpuinfo | grep "model name" | head -1
+      - name: Set up .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ./BackPressureExample
-      
-    - name: Build solution
-      run: dotnet build --no-restore --configuration Release
-      working-directory: ./BackPressureExample
-      
-    - name: Run BackPressure Test
-      run: |
-        echo "=== Starting BackPressure Test ==="
-        dotnet test BackPressure.IntegrationTests --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
-      working-directory: ./BackPressureExample
-      env:
-        DOTNET_ENVIRONMENT: Testing
-        KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: TestResults
-        path: BackPressureExample/TestResults/
-      if: always()
+      - name: Configure system for Kafka performance
+        run: |
+          echo "=== Configuring system for optimal Kafka performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Current ulimit -n: $(ulimit -n)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+          cat /proc/cpuinfo | grep "model name" | head -1
+
+      - name: Build LocalTesting solution
+        run: |
+          echo "🔨 Building LocalTesting solution..."
+          dotnet restore LocalTesting/LocalTesting.sln
+          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+
+      - name: Run LocalTesting Integration Tests  
+        timeout-minutes: 30
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+        run: |
+          echo "=== Starting LocalTesting Integration Tests ==="
+          echo "📋 Kafka → Flink → FlinkDotNet pipeline validation"
+          dotnet test LocalTesting/LocalTesting.IntegrationTests --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+        working-directory: ./
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalTestingResults
+          path: TestResults/
+        if: always()
  
-    - name: Cleanup
-      if: always()
-      run: |
-        docker system prune -f || true
-        docker volume prune -f || true
-
+      - name: Cleanup
+        if: always()
+        run: |
+          docker system prune -f || true
+          docker volume prune -f || true

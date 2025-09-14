@@ -87,7 +87,7 @@ Write-Info "Step 2: Finding solution files..."
 
 $SolutionFiles = @(
     "FlinkDotNet/FlinkDotNet.sln",
-    "LocalTesting/LocalTesting.sln"
+    "BackPressureExample/BackPressureExample.sln"
 )
 
 $AllSolutionsExist = $true

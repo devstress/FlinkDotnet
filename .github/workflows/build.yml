@@ -58,6 +58,6 @@ jobs:
     needs: build
     uses: ./.github/workflows/unit-tests.yml
 
-  observability_tests:
+  localtesting_tests:
     needs: build
-    uses: ./.github/workflows/observability-tests.yml
+    uses: ./.github/workflows/localtesting-integration-tests.yml

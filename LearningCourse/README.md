@@ -95,40 +95,42 @@ Mark off each exercise as you complete it
 
 | Day | Topic | Company Patterns | What You'll Build |
 |-----|-------|------------------|-------------------|
-| **Day 1** | [Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Infrastructure + AI Recommendations |
-| **Day 2** | [AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn, Amazon | ML Model Management + Fraud Detection |
-| **Day 3** | [Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Global Rate Limiting + Chaos Engineering |
-| **Day 4** | Enterprise Observability | Google, Datadog, Netflix | SRE Monitoring + Alert Management |
-| **Day 5** | Temporal Workflows | Uber, Airbnb, Stripe | Workflow Orchestration + Event Sourcing |
-| **Day 6** | Advanced Windows/Joins | LinkedIn, Twitter, Facebook | Social Graph + Real-time Analytics |
-| **Day 7** | Stress Testing | Netflix, Uber, Amazon | Load Testing + Performance Validation |
-| **Day 8** | Exactly-Once Semantics | Uber, Stripe, PayPal | Financial Accuracy + Transaction Processing |
-| **Day 9** | Performance Optimization | Netflix, LinkedIn, Google | Auto-scaling + Resource Management |
-| **Day 10** | Security & Compliance | Banking, Healthcare, Finance | GDPR + PCI DSS + SOX Compliance |
-| **Day 11** | Disaster Recovery | Netflix, AWS, Azure | Multi-region + Backup/Restore |
-| **Day 12** | Advanced Patterns | Uber, LinkedIn, Airbnb | Complex Event Processing + State Machines |
-| **Day 13** | Testing & Chaos | Netflix, Amazon, Google | Chaos Engineering + Integration Testing |
-| **Day 14** | Capstone Project | All Companies | Complete Production System |
+| **Day 1** | [Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/README.md) | Baeldung Tutorial Implementation | Complete Kafka ↔ Flink Pipeline |
+| **Day 2** | [Flink Fundamentals](Day02-Flink21-Fundamentals/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Infrastructure + AI Recommendations |
+| **Day 3** | [AI Stream Processing](Day03-AI-Stream-Processing/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn, Amazon | ML Model Management + Fraud Detection |
+| **Day 4** | [Production Backpressure](Day04-Production-Backpressure/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Global Rate Limiting + Chaos Engineering |
+| **Day 5** | Enterprise Observability | Google, Datadog, Netflix | SRE Monitoring + Alert Management |
+| **Day 6** | Temporal Workflows | Uber, Airbnb, Stripe | Workflow Orchestration + Event Sourcing |
+| **Day 7** | Advanced Windows/Joins | LinkedIn, Twitter, Facebook | Social Graph + Real-time Analytics |
+| **Day 8** | Stress Testing | Netflix, Uber, Amazon | Load Testing + Performance Validation |
+| **Day 9** | Exactly-Once Semantics | Uber, Stripe, PayPal | Financial Accuracy + Transaction Processing |
+| **Day 10** | Performance Optimization | Netflix, LinkedIn, Google | Auto-scaling + Resource Management |
+| **Day 11** | Security & Compliance | Banking, Healthcare, Finance | GDPR + PCI DSS + SOX Compliance |
+| **Day 12** | Disaster Recovery | Netflix, AWS, Azure | Multi-region + Backup/Restore |
+| **Day 13** | Advanced Patterns | Uber, LinkedIn, Airbnb | Complex Event Processing + State Machines |
+| **Day 14** | Testing & Chaos | Netflix, Amazon, Google | Chaos Engineering + Integration Testing |
+| **Day 15** | Capstone Project | All Companies | Complete Production System |
 
 ## 📚 Day-by-Day Quick Links
 
 ### Week 1: Foundations
-- **[Day 1: Flink Fundamentals](Day01-Flink21-Fundamentals/Exercise-Solutions/README.md)** ← START HERE
-- **[Day 2: AI Stream Processing](Day02-AI-Stream-Processing/Exercise-Solutions/README.md)**
-- **[Day 3: Production Backpressure](Day03-Production-Backpressure/Exercise-Solutions/README.md)**
-- **[Day 4: Enterprise Observability](Day04-Enterprise-Observability/Exercise-Solutions/README.md)**
-~~**[Day 5: Temporal Workflows](Day05-Temporal-Workflows/Exercise-Solutions/README.md)**~~ (Optional/reference only)
-- **[Day 6: Advanced Windows/Joins](Day06-Advanced-Windows-Joins/Exercise-Solutions/README.md)**
-- **[Day 7: Stress Testing](Day07-Stress-Testing/Exercise-Solutions/README.md)**
+- **[Day 1: Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/README.md)** ← START HERE
+- **[Day 2: Flink Fundamentals](Day02-Flink21-Fundamentals/Exercise-Solutions/README.md)**
+- **[Day 3: AI Stream Processing](Day03-AI-Stream-Processing/Exercise-Solutions/README.md)**
+- **[Day 4: Production Backpressure](Day04-Production-Backpressure/Exercise-Solutions/README.md)**
+- **[Day 5: Enterprise Observability](Day05-Enterprise-Observability/Exercise-Solutions/README.md)**
+~~**[Day 6: Temporal Workflows](Day06-Temporal-Workflows/Exercise-Solutions/README.md)**~~ (Optional/reference only)
+- **[Day 7: Advanced Windows/Joins](Day07-Advanced-Windows-Joins/Exercise-Solutions/README.md)**
+- **[Day 8: Stress Testing](Day08-Stress-Testing/Exercise-Solutions/README.md)**
 
 ### Week 2: Advanced Patterns  
-- **[Day 8: Exactly-Once Semantics](Day08-Exactly-Once-Semantics/Exercise-Solutions/README.md)**
-- **[Day 9: Performance Optimization](Day09-Performance-Optimization-Scaling/Exercise-Solutions/README.md)**
-- **[Day 10: Security & Compliance](Day10-Security-Privacy-Compliance/Exercise-Solutions/README.md)**
-- **[Day 11: Disaster Recovery](Day11-Disaster-Recovery-Multi-Region/Exercise-Solutions/README.md)**
-- **[Day 12: Advanced Patterns](Day12-Advanced-Streaming-Patterns/Exercise-Solutions/README.md)**
-- **[Day 13: Testing & Chaos](Day13-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/README.md)**
-- **[Day 14: Capstone Project](Day14-Capstone-Project/Exercise-Solutions/README.md)**
+- **[Day 9: Exactly-Once Semantics](Day09-Exactly-Once-Semantics/Exercise-Solutions/README.md)**
+- **[Day 10: Performance Optimization](Day10-Performance-Optimization-Scaling/Exercise-Solutions/README.md)**
+- **[Day 11: Security & Compliance](Day11-Security-Privacy-Compliance/Exercise-Solutions/README.md)**
+- **[Day 12: Disaster Recovery](Day12-Disaster-Recovery-Multi-Region/Exercise-Solutions/README.md)**
+- **[Day 13: Advanced Patterns](Day13-Advanced-Streaming-Patterns/Exercise-Solutions/README.md)**
+- **[Day 14: Testing & Chaos](Day14-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/README.md)**
+- **[Day 15: Capstone Project](Day15-Capstone-Project/Exercise-Solutions/README.md)**
 
 ## 🌟 Course Overview
 
@@ -194,23 +196,30 @@ By completing this course, you will:
 
 ### ⏱️ Time Commitment
 
-- **Total Duration**: 14 days (85-95 hours)
-- **Daily Time**: 5-8 hours per day (comprehensive hands-on stream processing coverage)
+- **Total Duration**: 15 days (88-98 hours)
+- **Daily Time**: 3-8 hours per day (comprehensive hands-on stream processing coverage)
 - **Learning Format**: Progressive skill building with hands-on exercises
 - **Prerequisites**: C#/.NET experience, basic distributed systems knowledge
 
 ## 🗺️ Complete Learning Path
 
-### 📚 Fundamentals & Integration (Days 1-2)
+### 📚 Getting Started & Fundamentals (Days 1-3)
 
-#### [Day 1: Apache Flink 2.1.0 Fundamentals & Production Environment](Day01-Flink21-Fundamentals/)
+#### [Day 1: Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/)
+**Time**: 2-3 hours | **Focus**: Basic Pipeline Concepts & Hands-on Implementation
+
+Learn the fundamentals of stream processing with a hands-on implementation of the Baeldung Kafka-Flink tutorial. Build a complete data pipeline using FlinkDotNet that reads from Kafka, processes data, and writes back to Kafka.
+
+**Key Topics**: Kafka producers/consumers, Flink job submission, basic stream processing, FlinkDotNet basics, LocalTesting infrastructure
+
+#### [Day 2: Apache Flink 2.1.0 Fundamentals & Production Environment](Day02-Flink21-Fundamentals/)
 **Time**: 6-7 hours | **Focus**: Core Concepts & Production Platform Setup
 
 Master Apache Flink 2.1.0 fundamentals while setting up a complete production-grade streaming stack. Learn platform improvements including advanced data processing, integration patterns, and enhanced streaming capabilities.
 
 **Key Topics**: Flink 2.1.0 architecture, unified platform capabilities, DataStream API, integration foundations, production deployment patterns
 
-#### [Day 2: Advanced Stream Processing & AI Integration](Day02-AI-Stream-Processing/)
+#### [Day 3: Advanced Stream Processing & AI Integration](Day03-AI-Stream-Processing/)
 **Time**: 7-8 hours | **Focus**: Deep Dive into Flink 2.1.0 Advanced Capabilities
 
 Comprehensive coverage of all Flink 2.1.0 enhancements with detailed exercises:
@@ -221,92 +230,92 @@ Comprehensive coverage of all Flink 2.1.0 enhancements with detailed exercises:
 
 **Key Topics**: Advanced stream processing, AI integration patterns, VARIANT types, PARSE_JSON, real-time workflows, performance optimization
 
-### 🏗️ Production Patterns & Messaging (Days 3-5)
+### 🏗️ Production Patterns & Messaging (Days 4-6)
 
-#### [Day 3: Production-Grade Backpressure & Distributed Rate Limiting](Day03-Production-Backpressure/)
+#### [Day 4: Production-Grade Backpressure & Distributed Rate Limiting](Day04-Production-Backpressure/)
 **Time**: 6-7 hours | **Focus**: Flow Control & Rate Limiting
 
 Implement the "Local bucket + Regional Redis budget bank + Global controller" pattern used by Netflix and Uber for fault-tolerant distributed rate limiting and enterprise messaging integration.
 
 **Key Topics**: Backpressure handling, distributed rate limiting, gRPC ingress patterns, fault tolerance, messaging system integration
 
-#### [Day 4: Enterprise Observability & Monitoring](Day04-Enterprise-Observability/)
+#### [Day 5: Enterprise Observability & Monitoring](Day05-Enterprise-Observability/)
 **Time**: 5-6 hours | **Focus**: Monitoring & Metrics with LocalTesting Integration
 
 Build comprehensive observability solutions with Prometheus, Grafana, and enterprise monitoring patterns using the **LocalTesting observability stack**. Implement SLA monitoring and alerting systems with real business flows and automated testing procedures.
 
 **Key Topics**: Metrics collection, dashboards, alerting, SLA monitoring, performance analysis, **LocalTesting observability integration**, automated observability testing
 
-#### Day 5 (Optional): Workflow Orchestration (Reference)
+#### Day 6 (Optional): Workflow Orchestration (Reference)
 Time: self-paced | Focus: Optional orchestration patterns (not required for FlinkDotNet runtime)
 
 Master Temporal's durable execution platform for orchestrating complex, long-running business processes with fault tolerance and state management. Focus on integration patterns for enterprise systems.
 
 **Key Topics**: Temporal workflows, durable execution, saga patterns, workflow orchestration, compensation, enterprise integration patterns
 
-### 🔧 Advanced Processing & Integration (Days 6-8)
+### 🔧 Advanced Processing & Integration (Days 7-9)
 
-#### [Day 6: Advanced Windowing, Complex Joins & Enhanced Analytics](Day06-Advanced-Windows-Joins/)
+#### [Day 7: Advanced Windowing, Complex Joins & Enhanced Analytics](Day07-Advanced-Windows-Joins/)
 **Time**: 7-8 hours | **Focus**: Complex Stream Operations & Advanced Analytics
 
 Implement advanced windowing strategies, Flink 2.1.0's revolutionary DeltaJoin and MultiJoin patterns, and enhanced complex event processing for real-time analytics and intelligent event correlation.
 
 **Key Topics**: Advanced windowing, DeltaJoin/MultiJoin strategies, enhanced CEP, temporal analytics, intelligent stream correlation
 
-#### [Day 7: Complex Logic Stress Testing](Day07-Stress-Testing/)
+#### [Day 8: Complex Logic Stress Testing](Day08-Stress-Testing/)
 **Time**: 4-5 hours | **Focus**: Performance Validation
 
 Master stress testing methodologies for Flink applications using the LocalTesting framework. Build comprehensive performance benchmarking systems for enterprise workloads.
 
 **Key Topics**: Stress testing, performance benchmarking, reliability testing, load simulation
 
-#### [Day 8: Exactly-Once Semantics and End-to-End Guarantees](Day08-Exactly-Once-Semantics/)
+#### [Day 9: Exactly-Once Semantics and End-to-End Guarantees](Day09-Exactly-Once-Semantics/)
 **Time**: 6-7 hours | **Focus**: Data Consistency
 
 Implement exactly-once processing guarantees with comprehensive transactional patterns for financial-grade data consistency across complex integration scenarios.
 
 **Key Topics**: Exactly-once semantics, transactional patterns, checkpoint/savepoint management, data consistency
 
-### ⚡ Optimization & Scale (Days 9-11)
+### ⚡ Optimization & Scale (Days 10-12)
 
-#### [Day 9: Performance Optimization and Scaling Patterns](Day09-Performance-Optimization-Scaling/)
+#### [Day 10: Performance Optimization and Scaling Patterns](Day10-Performance-Optimization-Scaling/)
 **Time**: 6-7 hours | **Focus**: Performance Tuning
 
 Advanced performance optimization techniques including parallelism tuning, memory management, and auto-scaling patterns.
 
 **Key Topics**: Performance tuning, parallelism optimization, memory management, auto-scaling, resource optimization
 
-#### [Day 10: Security, Privacy, and Compliance in Stream Processing](Day10-Security-Privacy-Compliance/)
+#### [Day 11: Security, Privacy, and Compliance in Stream Processing](Day11-Security-Privacy-Compliance/)
 **Time**: 5-6 hours | **Focus**: Security & Compliance
 
 Implement enterprise-grade security, data privacy, and regulatory compliance patterns for sensitive data processing (GDPR, CCPA, financial regulations).
 
 **Key Topics**: End-to-end encryption, data anonymization, access control, audit logging, compliance patterns
 
-#### [Day 11: Disaster Recovery and Multi-Region Deployment](Day11-Disaster-Recovery-Multi-Region/)
+#### [Day 12: Disaster Recovery and Multi-Region Deployment](Day12-Disaster-Recovery-Multi-Region/)
 **Time**: 6-7 hours | **Focus**: Resilience & DR
 
 Design and implement disaster recovery strategies with multi-region deployment patterns for mission-critical streaming applications.
 
 **Key Topics**: Disaster recovery, multi-region deployment, backup strategies, failover patterns, business continuity
 
-### 🎯 Advanced Patterns & Integration (Days 12-14)
+### 🎯 Advanced Patterns & Integration (Days 13-15)
 
-#### [Day 12: Advanced Streaming Patterns - Event Sourcing, CQRS, and Sagas](Day12-Advanced-Streaming-Patterns/)
+#### [Day 13: Advanced Streaming Patterns - Event Sourcing, CQRS, and Sagas](Day13-Advanced-Streaming-Patterns/)
 **Time**: 7-8 hours | **Focus**: Architecture Patterns
 
 Implement advanced architectural patterns including event sourcing, CQRS, and distributed saga patterns for complex business workflows.
 
 **Key Topics**: Event sourcing, CQRS, saga patterns, event-driven architecture, domain-driven design
 
-#### [Day 13: Advanced Testing Strategies and Chaos Engineering](Day13-Advanced-Testing-Chaos-Engineering/)
+#### [Day 14: Advanced Testing Strategies and Chaos Engineering](Day14-Advanced-Testing-Chaos-Engineering/)
 **Time**: 5-6 hours | **Focus**: Testing & Reliability
 
 Master advanced testing strategies including chaos engineering, fault injection, and comprehensive testing frameworks for distributed systems.
 
 **Key Topics**: Chaos engineering, fault injection, distributed testing, reliability engineering, test automation
 
-#### [Day 14: Capstone Project - Real-World Streaming Platform](Day14-Capstone-Project/)
+#### [Day 15: Capstone Project - Real-World Streaming Platform](Day15-Capstone-Project/)
 **Time**: 8-10 hours | **Focus**: Integration & Application
 
 Build a comprehensive, production-ready streaming platform integrating all course concepts into a multi-domain, multi-tenant system serving e-commerce, financial services, IoT, and social media use cases.
@@ -616,20 +625,21 @@ By completing this 14-day course, you'll have:
 
 | Day | Topic | Duration | Prerequisites | Focus |
 |-----|-------|----------|---------------|-------|
-| [Day 1](Day01-Flink21-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | None | Core + AI Platform Setup |
-| [Day 2](Day02-AI-Stream-Processing/) | **Advanced Stream Processing & AI Integration** | **7-8 hours** | Day 1 | **Stream Processing, Integration Patterns, AI Capabilities** |
-| [Day 3](Day03-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-2 | Production Patterns |
-| [Day 4](Day04-Enterprise-Observability/) | Observability & LocalTesting | 5-6 hours | Days 1-3 | LocalTesting Observability Integration |
-| [Day 5](Day05-Temporal-Workflows/) | Temporal Workflows | 7-8 hours | Days 1-4 | Workflow Orchestration & Integration |
-| [Day 6](Day06-Advanced-Windows-Joins/) | **Advanced Joins & Enhanced Analytics** | **7-8 hours** | Days 1-5 | **DeltaJoin, MultiJoin, Enhanced CEP** |
-| [Day 7](Day07-Stress-Testing/) | Stress Testing | 4-5 hours | Days 1-6 | Performance Testing |
-| [Day 8](Day08-Exactly-Once-Semantics/) | Exactly-Once Semantics | 6-7 hours | Days 1-7 | Data Consistency |
-| [Day 9](Day09-Performance-Optimization-Scaling/) | Performance & Scaling | 6-7 hours | Days 1-8 | Performance Optimization |
-| [Day 10](Day10-Security-Privacy-Compliance/) | Security & Compliance | 5-6 hours | Days 1-9 | Security & Privacy |
-| [Day 11](Day11-Disaster-Recovery-Multi-Region/) | Disaster Recovery | 6-7 hours | Days 1-10 | Resilience |
-| [Day 12](Day12-Advanced-Streaming-Patterns/) | Advanced Patterns | 7-8 hours | Days 1-11 | Event Sourcing |
-| [Day 13](Day13-Advanced-Testing-Chaos-Engineering/) | Testing & Chaos Engineering | 5-6 hours | Days 1-12 | Reliability Testing |
-| [Day 14](Day14-Capstone-Project/) | **Enterprise Capstone Project** | **8-10 hours** | Days 1-13 | **Complete Stream Processing Platform** |
+| [Day 1](Day01-Kafka-Flink-Data-Pipeline/) | **Kafka-Flink Data Pipeline** | **2-3 hours** | None | **Basic Pipeline Implementation** |
+| [Day 2](Day02-Flink21-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | Day 1 | Core + AI Platform Setup |
+| [Day 3](Day03-AI-Stream-Processing/) | **Advanced Stream Processing & AI Integration** | **7-8 hours** | Days 1-2 | **Stream Processing, Integration Patterns, AI Capabilities** |
+| [Day 4](Day04-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-3 | Production Patterns |
+| [Day 5](Day05-Enterprise-Observability/) | Observability & LocalTesting | 5-6 hours | Days 1-4 | LocalTesting Observability Integration |
+| [Day 6](Day06-Temporal-Workflows/) | Temporal Workflows | 7-8 hours | Days 1-5 | Workflow Orchestration & Integration |
+| [Day 7](Day07-Advanced-Windows-Joins/) | **Advanced Joins & Enhanced Analytics** | **7-8 hours** | Days 1-6 | **DeltaJoin, MultiJoin, Enhanced CEP** |
+| [Day 8](Day08-Stress-Testing/) | Stress Testing | 4-5 hours | Days 1-7 | Performance Testing |
+| [Day 9](Day09-Exactly-Once-Semantics/) | Exactly-Once Semantics | 6-7 hours | Days 1-8 | Data Consistency |
+| [Day 10](Day10-Performance-Optimization-Scaling/) | Performance & Scaling | 6-7 hours | Days 1-9 | Performance Optimization |
+| [Day 11](Day11-Security-Privacy-Compliance/) | Security & Compliance | 5-6 hours | Days 1-10 | Security & Privacy |
+| [Day 12](Day12-Disaster-Recovery-Multi-Region/) | Disaster Recovery | 6-7 hours | Days 1-11 | Resilience |
+| [Day 13](Day13-Advanced-Streaming-Patterns/) | Advanced Patterns | 7-8 hours | Days 1-12 | Event Sourcing |
+| [Day 14](Day14-Advanced-Testing-Chaos-Engineering/) | Testing & Chaos Engineering | 5-6 hours | Days 1-13 | Reliability Testing |
+| [Day 15](Day15-Capstone-Project/) | **Enterprise Capstone Project** | **8-10 hours** | Days 1-14 | **Complete Stream Processing Platform** |
 
 ## 🔗 Related Resources
 
@@ -664,13 +674,13 @@ By completing this 14-day course, you'll have:
 
 ---
 
-**🎯 [START YOUR JOURNEY: Day 1 Instructions →](Day01-Flink21-Fundamentals/Exercise-Solutions/README.md)**
+**🎯 [START YOUR JOURNEY: Day 1 Instructions →](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/README.md)**
 
-**Ready to become a stream processing expert?** Start with [Day 1: Apache Flink 2.1.0 Fundamentals](Day01-Flink21-Fundamentals/) and begin your journey to mastering enterprise-scale stream processing with FlinkDotNet!
+**Ready to become a stream processing expert?** Start with [Day 1: Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/) and begin your journey to mastering enterprise-scale stream processing with FlinkDotNet!
 
 ## ✅ Beginner-Friendly Validation Complete
 
-**All 14 days have been validated for beginner accessibility:**
+**All 15 days have been validated for beginner accessibility:**
 
 🎯 **100% Success Rate**: Every day includes consistent beginner-friendly structure  
 📋 **Prerequisites Check**: All days verify LocalTesting infrastructure first  

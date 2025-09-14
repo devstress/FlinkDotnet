@@ -42,6 +42,30 @@ namespace Flink.JobBuilder.Flink
             options.ConnectTimeout = 5000;
             options.SyncTimeout = 5000;
             options.ReconnectRetryPolicy = new ExponentialRetry(5000);
+            
+            // Apply custom configuration if provided
+            if (_redisConfig != null)
+            {
+                foreach (var config in _redisConfig)
+                {
+                    switch (config.Key.ToLowerInvariant())
+                    {
+                        case "connecttimeout":
+                            if (config.Value is int timeout)
+                                options.ConnectTimeout = timeout;
+                            break;
+                        case "synctimeout":
+                            if (config.Value is int syncTimeout)
+                                options.SyncTimeout = syncTimeout;
+                            break;
+                        case "abortonconnectfail":
+                            if (config.Value is bool abortOnFail)
+                                options.AbortOnConnectFail = abortOnFail;
+                            break;
+                    }
+                }
+            }
+            
             _muxer = await ConnectionMultiplexer.ConnectAsync(options).ConfigureAwait(false);
             _db = _muxer.GetDatabase();
             _logger.LogInformation("FlinkRedisSink initialization completed");
