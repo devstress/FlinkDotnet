@@ -1,7 +1,7 @@
 # TODO
 
 ## LocalTesting integration tests
-- Replace `Projects.BackPressure_AppHost` with a new host that provisions Kafka, Flink JobManager/TaskManager, Temporal server, and the `Flink.JobGateway` project.  The gateway must be started without `FLINK_RUNNER_JAR_PATH`.
+- Replace `LocalTesting/Projects.BackPressure_AppHost` with a new host that provisions Kafka, Flink JobManager/TaskManager, Temporal server, and the `Flink.JobGateway` project.  The gateway must be started without `FLINK_RUNNER_JAR_PATH`.
 - Update `FlinkDotNetIntegrationTest`:
   - Drop the branch that expects submission failure.
   - After `Submit`, poll `GetJobStatusAsync` until the job is `RUNNING` or `FINISHED` before sending data.
