@@ -41,7 +41,7 @@ catch
 builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
     .WithEnvironment("FLINK_CLUSTER_HOST", "localhost")
-    .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
-    .WithEnvironment("FLINK_RUNNER_JAR_PATH", Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../FlinkIRRunner/target/flink-ir-runner.jar")));
+    .WithEnvironment("FLINK_CLUSTER_PORT", "8081");
+    // Note: FLINK_RUNNER_JAR_PATH removed - gateway determines paths internally
 
 await builder.Build().RunAsync();
