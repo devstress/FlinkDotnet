@@ -606,7 +606,7 @@ public class FlinkJobManager : IFlinkJobManager
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         /// <summary>Upload timestamp from Flink API - populated by JSON deserialization</summary>
-        public long Uploaded { get; init; } = 0;
+        public long Uploaded { get; init; }
     }
 
     private sealed class FlinkMetricEntry

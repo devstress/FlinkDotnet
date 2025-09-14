@@ -197,15 +197,34 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateWindowOperation(WindowOperationDefinition window, int index, List<string> errors)
         {
-            var allowedUnits = new[] { "SECONDS", "MINUTES", "HOURS" };
+            ValidateWindowType(window, index, errors);
+            ValidateWindowSize(window, index, errors);
+            ValidateWindowTimeUnit(window, index, errors);
+            ValidateWindowSliding(window, index, errors);
+        }
+
+        private static void ValidateWindowType(WindowOperationDefinition window, int index, List<string> errors)
+        {
             var allowedWindow = new[] { "TUMBLING", "SLIDING", "SESSION" };
-            
             if (string.IsNullOrWhiteSpace(window.WindowType) || !allowedWindow.Contains(window.WindowType))
                 errors.Add($"operations[{index}].window.windowType must be one of {string.Join(", ", allowedWindow)}");
+        }
+
+        private static void ValidateWindowSize(WindowOperationDefinition window, int index, List<string> errors)
+        {
             if (window.Size <= 0)
                 errors.Add($"operations[{index}].window.size must be > 0");
+        }
+
+        private static void ValidateWindowTimeUnit(WindowOperationDefinition window, int index, List<string> errors)
+        {
+            var allowedUnits = new[] { "SECONDS", "MINUTES", "HOURS" };
             if (string.IsNullOrWhiteSpace(window.TimeUnit) || !allowedUnits.Contains(window.TimeUnit))
                 errors.Add($"operations[{index}].window.timeUnit must be one of {string.Join(", ", allowedUnits)}");
+        }
+
+        private static void ValidateWindowSliding(WindowOperationDefinition window, int index, List<string> errors)
+        {
             if (string.Equals(window.WindowType, "SLIDING", StringComparison.OrdinalIgnoreCase) && (!window.Slide.HasValue || window.Slide.Value <= 0))
                 errors.Add($"operations[{index}].window.slide is required and must be > 0 for SLIDING windows");
         }
@@ -222,10 +241,25 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateAsyncFunctionOperation(AsyncFunctionOperationDefinition asyncFunction, int index, List<string> errors)
         {
+            ValidateAsyncFunctionType(asyncFunction, index, errors);
+            ValidateAsyncFunctionTimeout(asyncFunction, index, errors);
+            ValidateAsyncFunctionRetries(asyncFunction, index, errors);
+        }
+
+        private static void ValidateAsyncFunctionType(AsyncFunctionOperationDefinition asyncFunction, int index, List<string> errors)
+        {
             if (string.IsNullOrWhiteSpace(asyncFunction.FunctionType))
                 errors.Add($"operations[{index}].asyncFunction.functionType is required");
+        }
+
+        private static void ValidateAsyncFunctionTimeout(AsyncFunctionOperationDefinition asyncFunction, int index, List<string> errors)
+        {
             if (asyncFunction.TimeoutMs <= 0 || asyncFunction.TimeoutMs > 1_200_000)
                 errors.Add($"operations[{index}].asyncFunction.timeoutMs must be between 1 and 1200000");
+        }
+
+        private static void ValidateAsyncFunctionRetries(AsyncFunctionOperationDefinition asyncFunction, int index, List<string> errors)
+        {
             if (asyncFunction.MaxRetries < 0 || asyncFunction.MaxRetries > 100)
                 errors.Add($"operations[{index}].asyncFunction.maxRetries must be between 0 and 100");
         }
