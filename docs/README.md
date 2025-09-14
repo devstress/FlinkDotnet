@@ -12,8 +12,8 @@ Key pieces:
 
 Prereqs: .NET 9 SDK, Docker Desktop (for LocalTesting), Java 17 (for Flink locally if needed).
 
-1) Generate IR in C#
-```
+1) Generate and validate IR in C#
+```csharp
 // Install-Package FlinkDotNet
 var job = new JobDefinition {
   Metadata = new JobMetadata { JobId = Guid.NewGuid().ToString("n"), Version = "1.0", Parallelism = 1 },
@@ -21,13 +21,36 @@ var job = new JobDefinition {
   Operations = [ new MapOperationDefinition { Expression = "x => x" } ],
   Sink = new KafkaSinkDefinition { Topic = "output" }
 };
+
+// Validate job definition with enhanced validator
+var validationResult = JobDefinitionValidator.Validate(job);
+if (!validationResult.IsValid)
+{
+    Console.WriteLine($"Validation errors: {string.Join(", ", validationResult.Errors)}");
+    return;
+}
 ```
 
-2) Submit to the Gateway
-```
+2) Submit to the Gateway with improved error handling
+```csharp
 var gateway = new FlinkJobGatewayService();
 var result = await gateway.SubmitJobAsync(job);
-if (!result.Success) Console.WriteLine($"Failed: {result.ErrorMessage}");
+if (!result.Success) 
+{
+    Console.WriteLine($"Submission failed: {result.ErrorMessage}");
+    // Enhanced error messages provide specific guidance
+}
+```
+
+3) Monitor job with enhanced metrics collection
+```csharp
+// JobMetricsBuilder pattern provides structured metrics
+var metrics = await gateway.GetJobMetricsAsync(result.JobId);
+if (metrics != null)
+{
+    Console.WriteLine($"Records In: {metrics.RecordsIn}, Records Out: {metrics.RecordsOut}");
+    Console.WriteLine($"Parallelism: {metrics.Parallelism}/{metrics.MaxParallelism}");
+}
 ```
 
 3) Run the LocalTesting integration to verify environment
@@ -38,10 +61,16 @@ if (!result.Success) Console.WriteLine($"Failed: {result.ErrorMessage}");
 
 ## Architecture Overview
 
-- IR: Lightweight JSON contract describing sources, operations and sinks with a `type` discriminator per union.
-- Runner: A shaded Flink jar consumes the IR, wires connectors and ops, emits consolidated metrics.
-- Gateway: Uploads/ensures Runner jar, runs with IR argument, exposes REST endpoints for submit/status/metrics/cancel.
-- SDK: Fluent DSL + pre-submit validation producing helpful messages, plus simple helpers for common pipelines.
+- **Enhanced IR**: Lightweight JSON contract with comprehensive validation
+  - *JobDefinitionValidator*: Modular validation with focused, maintainable methods
+  - *Improved error messages*: Specific validation guidance for developers
+  - *Code quality optimized*: All validation logic under complexity thresholds
+- **Optimized Runner**: A shaded Flink jar with improved error handling and metrics
+- **Enhanced Gateway**: Robust job management with structured error handling
+  - *FlinkJobManager*: Restructured with builder patterns for metrics collection
+  - *Fault tolerance*: Comprehensive error handling and recovery patterns
+  - *Maintainable architecture*: Complex operations split into focused methods
+- **Refined SDK**: Fluent DSL with enhanced validation and helpful error messages
 
 ## Next Steps
 
