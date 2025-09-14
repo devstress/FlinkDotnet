@@ -124,11 +124,8 @@ namespace Flink.JobBuilder.Services
                         errors.Add($"operations[{index}].window.size must be > 0");
                     if (string.IsNullOrWhiteSpace(w.TimeUnit) || !allowedUnits.Contains(w.TimeUnit))
                         errors.Add($"operations[{index}].window.timeUnit must be one of {string.Join(", ", allowedUnits)}");
-                    if (string.Equals(w.WindowType, "SLIDING", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!w.Slide.HasValue || w.Slide.Value <= 0)
-                            errors.Add($"operations[{index}].window.slide is required and must be > 0 for SLIDING windows");
-                    }
+                    if (string.Equals(w.WindowType, "SLIDING", StringComparison.OrdinalIgnoreCase) && (!w.Slide.HasValue || w.Slide.Value <= 0))
+                        errors.Add($"operations[{index}].window.slide is required and must be > 0 for SLIDING windows");
                     break;
                 case JoinOperationDefinition j:
                     if (j.RightSource == null)

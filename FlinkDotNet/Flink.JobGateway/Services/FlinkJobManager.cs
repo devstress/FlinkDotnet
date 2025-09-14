@@ -200,21 +200,16 @@ public class FlinkJobManager : IFlinkJobManager
                     var cpsJson = await cps.Content.ReadAsStringAsync();
                     using var cdoc = JsonDocument.Parse(cpsJson);
                     var root = cdoc.RootElement;
-                    if (root.TryGetProperty("counts", out var counts))
-                    {
-                        if (counts.TryGetProperty("completed", out var completedEl) && completedEl.TryGetInt32(out var c))
-                            checkpoints = c;
-                    }
+                    if (root.TryGetProperty("counts", out var counts) && counts.TryGetProperty("completed", out var completedEl) && completedEl.TryGetInt32(out var c))
+                        checkpoints = c;
                     if (root.TryGetProperty("latest", out var latest))
                     {
                         // Try a few known timestamp fields
-                        if (latest.TryGetProperty("completed", out var comp))
+                        if (latest.TryGetProperty("completed", out var comp) && comp.TryGetProperty("end_time", out var endTime) && endTime.ValueKind == JsonValueKind.Number)
                         {
-                            if (comp.TryGetProperty("end_time", out var endTime) && endTime.ValueKind == JsonValueKind.Number)
-                            {
-                                var ms = endTime.GetInt64();
-                                lastCheckpoint = DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
-                            }
+                            var ms = endTime.GetInt64();
+                            lastCheckpoint = DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
+                        }
                             else if (comp.TryGetProperty("trigger_timestamp", out var ts) && ts.ValueKind == JsonValueKind.Number)
                             {
                                 var ms = ts.GetInt64();
@@ -525,7 +520,7 @@ public class FlinkJobManager : IFlinkJobManager
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public long Uploaded { get; set; }
+        public long Uploaded { get; init; }
     }
 
     private sealed class FlinkMetricEntry

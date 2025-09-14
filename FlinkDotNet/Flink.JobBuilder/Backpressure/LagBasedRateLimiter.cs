@@ -551,8 +551,8 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
             {
                 var watermarks = consumer.QueryWatermarkOffsets(tp, timeout);
                 var endOffset = watermarks.High;
-                var committedOffset = committed.FirstOrDefault(c => c.TopicPartition.Equals(tp)).Offset;
-                if (committedOffset == Confluent.Kafka.Offset.Unset) continue;
+                var committedOffset = committed.FirstOrDefault(c => c.TopicPartition.Equals(tp))?.Offset;
+                if (committedOffset == null || committedOffset == Confluent.Kafka.Offset.Unset) continue;
                 var lag = Math.Max(0, endOffset.Value - committedOffset.Value);
                 if (lag > maxLag) maxLag = lag;
             }

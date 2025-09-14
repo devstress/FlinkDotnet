@@ -89,7 +89,7 @@ namespace Flink.JobBuilder.Flink
                 if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var newValue = await _db.StringIncrementAsync(key, increment).ConfigureAwait(false);
                 _logger.LogDebug("Atomic increment completed: key={Key}, newValue={NewValue}", key, newValue);
-                return (long)newValue;
+                return newValue;
             }
             catch (Exception ex)
             {
@@ -198,7 +198,7 @@ namespace Flink.JobBuilder.Flink
                 if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var size = await _db.SetLengthAsync(setKey).ConfigureAwait(false);
                 _logger.LogDebug("Get set size: setKey={SetKey}, size={Size}", setKey, size);
-                return (long)size;
+                return size;
             }
             catch (Exception ex)
             {
@@ -317,8 +317,16 @@ namespace Flink.JobBuilder.Flink
                 lock (_lockObject)
                 {
                     _logger.LogInformation("Disposing FlinkRedisSink");
-                    try { _muxer?.Close(); } catch { }
-                    try { _muxer?.Dispose(); } catch { }
+                    try { _muxer?.Close(); } 
+                    catch 
+                    { 
+                        // Close operation may fail if connection is already lost - this is non-fatal during disposal
+                    }
+                    try { _muxer?.Dispose(); } 
+                    catch 
+                    { 
+                        // Dispose operation may fail if resources are already released - this is non-fatal during disposal
+                    }
                     _db = null;
                     _isDisposed = true;
                 }
