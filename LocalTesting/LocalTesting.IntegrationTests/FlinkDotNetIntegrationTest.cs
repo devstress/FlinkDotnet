@@ -46,16 +46,50 @@ public class FlinkDotNetComprehensiveTest
             await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
 
             // Try Flink JobManager UI readiness (non-fatal)
-            try { await WaitForHttpOkAsync("http://localhost:8081", TimeSpan.FromSeconds(60), ct); } 
-            catch 
+            try 
             { 
-                TestContext.WriteLine("Flink JobManager UI not available - continuing with tests");
+                await WaitForHttpOkAsync("http://localhost:8081", TimeSpan.FromSeconds(60), ct); 
+                TestContext.WriteLine("Flink JobManager UI is accessible");
+            } 
+            catch (Exception ex)
+            { 
+                TestContext.WriteLine($"Flink JobManager UI not available: {ex.Message} - continuing with tests");
+                
+                // Additional diagnostic: try to check if the container is running
+                try 
+                {
+                    using var diagnosticClient = new HttpClient();
+                    diagnosticClient.Timeout = TimeSpan.FromSeconds(10);
+                    var healthResponse = await diagnosticClient.GetAsync("http://flink-jobmanager:8081/v1/overview", ct);
+                    TestContext.WriteLine($"Direct flink-jobmanager health check: {healthResponse.StatusCode}");
+                }
+                catch (Exception diagEx)
+                {
+                    TestContext.WriteLine($"Direct flink-jobmanager connection failed: {diagEx.Message}");
+                }
             }
 
             var gateway = new Flink.JobBuilder.Services.FlinkJobGatewayService();
             
-            // Verify gateway connectivity
+            // Verify gateway connectivity with detailed error logging
             var healthy = await gateway.HealthCheckAsync(ct);
+            TestContext.WriteLine($"Gateway health check result: {healthy}");
+            
+            if (!healthy)
+            {
+                // Try to get more details about the connection issue
+                try 
+                {
+                    using var httpClient = new HttpClient();
+                    var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health", ct);
+                    TestContext.WriteLine($"Direct health check - Status: {response.StatusCode}, Content: {await response.Content.ReadAsStringAsync(ct)}");
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine($"Direct health check failed: {ex.Message}");
+                }
+            }
+            
             Assert.That(healthy, Is.True, "Flink Job Gateway must be healthy");
 
             // Test 1: Basic DataStream Job - Identity Transform with Timer
@@ -104,7 +138,7 @@ public class FlinkDotNetComprehensiveTest
             .ToKafka(OutputTopic, kafka);
 
         var submitResult = await job.Submit("lt-basic-passthrough", ct);
-        TestContext.WriteLine($"Basic job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}");
+        TestContext.WriteLine($"Basic job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}, Error={submitResult.ErrorMessage}");
 
         if (submitResult.Success)
         {
@@ -150,7 +184,7 @@ public class FlinkDotNetComprehensiveTest
         await CreateTopicAsync(kafka, OutputTopic + ".complex", 4);
 
         var submitResult = await job.Submit("lt-complex-pipeline", ct);
-        TestContext.WriteLine($"Complex job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}");
+        TestContext.WriteLine($"Complex job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}, Error={submitResult.ErrorMessage}");
 
         if (submitResult.Success)
         {
@@ -201,7 +235,7 @@ public class FlinkDotNetComprehensiveTest
 
         var job = FlinkDotNet.Pipelines.FlinkDotNet.Sql(statements);
         var submitResult = await job.Submit("lt-sql-comprehensive", ct);
-        TestContext.WriteLine($"SQL job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}");
+        TestContext.WriteLine($"SQL job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}, Error={submitResult.ErrorMessage}");
 
         if (submitResult.Success)
         {
@@ -234,7 +268,7 @@ public class FlinkDotNetComprehensiveTest
         await CreateTopicAsync(kafka, OutputTopic + ".lifecycle", 2);
 
         var submitResult = await job.Submit("lt-lifecycle-test", ct);
-        TestContext.WriteLine($"Lifecycle job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}");
+        TestContext.WriteLine($"Lifecycle job submission: Success={submitResult.Success}, JobId={submitResult.FlinkJobId}, Error={submitResult.ErrorMessage}");
 
         if (submitResult.Success)
         {

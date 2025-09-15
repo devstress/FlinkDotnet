@@ -6,10 +6,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Kafka (Aspire-provided resource, exposes connection string)
 builder.AddKafka("kafka");
 
-// Flink (JobManager + TaskManager)
+// Flink (JobManager + TaskManager) with proper networking
 var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithHttpEndpoint(8081, targetPort: 8081, name: "jobmanager-ui")
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("jobmanager");
 
 // Optional: mount connector jars if present at LocalTesting/connectors/flink/lib
@@ -20,7 +19,7 @@ if (Directory.Exists(connectorsDir))
     flinkJobManager.WithBindMount(connectorsDir, "/opt/flink/lib");
 }
 
-// TaskManager with proper configuration
+// TaskManager with proper service discovery - wait for JobManager and use service name resolution
 var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("taskmanager")
@@ -31,10 +30,10 @@ if (Directory.Exists(connectorsDir))
     flinkTaskManager.WithBindMount(connectorsDir, "/opt/flink/lib");
 }
 
-// Flink Job Gateway (from FlinkDotNet) - use proper Aspire service discovery
+// Flink Job Gateway (from FlinkDotNet) - connect to JobManager service
 builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
-    .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
+    .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager") 
     .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
     .WaitFor(flinkJobManager);
 
