@@ -45,6 +45,9 @@ public class FlinkDotNetIntegrationTest
             var healthy = await gateway.HealthCheckAsync(ct);
             Assert.That(healthy, Is.True, "Flink Job Gateway must be healthy");
 
+            // Wait for Flink cluster to be ready via the gateway (this does the actual cluster health check)
+            await WaitForFlinkClusterReady(TimeSpan.FromSeconds(180), ct);
+
             // Test Scenario 1: Basic Map Operation
             await TestScenario_BasicMapOperation(kafka!, gateway, ct);
 
@@ -368,5 +371,47 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s at {bootstrapServers}");
+    }
+
+    private static async Task WaitForFlinkClusterReady(TimeSpan timeout, CancellationToken ct)
+    {
+        TestContext.WriteLine("🔄 Waiting for Flink cluster to be ready...");
+        var sw = Stopwatch.StartNew();
+        Exception lastException = null!;
+        
+        while (sw.Elapsed < timeout)
+        {
+            try
+            {
+                // Try to submit a minimal job definition to test cluster connectivity
+                // We expect this to fail due to invalid configuration, but NOT due to cluster unavailability
+                var dummyJob = FlinkDotNet.Flink.JobBuilder
+                    .FromKafka("dummy-topic", "dummy-bootstrap")
+                    .Map("dummy-transform")
+                    .ToKafka("dummy-output", "dummy-bootstrap");
+
+                var result = await dummyJob.Submit("cluster-readiness-test", ct);
+                
+                // If we get a response (even if it's a failure), the cluster is responding
+                // We just want to avoid "cluster is not available or unhealthy" errors
+                if (result.ErrorMessage == null || 
+                    (!result.ErrorMessage.Contains("not available") && 
+                     !result.ErrorMessage.Contains("unhealthy") &&
+                     !result.ErrorMessage.Contains("Resource temporarily unavailable")))
+                {
+                    TestContext.WriteLine($"✅ Flink cluster is ready! (Response: {result.ErrorMessage ?? "Success"})");
+                    return;
+                }
+                lastException = new Exception(result.ErrorMessage);
+                TestContext.WriteLine($"🔄 Flink cluster not ready: {result.ErrorMessage}");
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                TestContext.WriteLine($"🔄 Flink cluster not ready: {ex.Message}");
+            }
+            await Task.Delay(3000, ct);
+        }
+        throw new TimeoutException($"Flink cluster did not become ready within {timeout.TotalSeconds:F0}s. Last error: {lastException?.Message}");
     }
 }

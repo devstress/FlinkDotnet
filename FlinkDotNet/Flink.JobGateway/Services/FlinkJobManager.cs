@@ -26,12 +26,7 @@ public class FlinkJobManager : IFlinkJobManager
         _flinkClusterHost = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
         _flinkClusterPort = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
         
-        // Configure HTTP client for Flink REST API
-        var flinkBaseUrl = $"http://{_flinkClusterHost}:{_flinkClusterPort}";
-        _httpClient.BaseAddress = new Uri(flinkBaseUrl);
-        _httpClient.Timeout = TimeSpan.FromMinutes(5);
-        
-        _logger.LogInformation("Flink Job Gateway configured for real Flink 2.1.0 cluster at: {FlinkBaseUrl}", flinkBaseUrl);
+        _logger.LogInformation("Flink Job Gateway configured for real Flink 2.1.0 cluster at: {BaseAddress}", _httpClient.BaseAddress);
     }
 
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)

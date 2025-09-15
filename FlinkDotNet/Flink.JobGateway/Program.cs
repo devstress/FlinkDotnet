@@ -30,7 +30,20 @@ builder.Services.AddVersionedApiExplorer(options =>
 });
 
 // Register services
-builder.Services.AddHttpClient<IFlinkJobManager, FlinkJobManager>();
+builder.Services.AddHttpClient<IFlinkJobManager, FlinkJobManager>((serviceProvider, httpClient) =>
+{
+    // Get Flink cluster configuration from environment or use defaults
+    var flinkClusterHost = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
+    var flinkClusterPort = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
+    
+    // Configure HTTP client for Flink REST API
+    var flinkBaseUrl = $"http://{flinkClusterHost}:{flinkClusterPort}";
+    httpClient.BaseAddress = new Uri(flinkBaseUrl);
+    httpClient.Timeout = TimeSpan.FromMinutes(5);
+    
+    var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Configuring HttpClient for Flink cluster at: {FlinkBaseUrl}", flinkBaseUrl);
+});
 
 // Configure logging
 builder.Services.AddLogging(loggingBuilder =>
