@@ -440,28 +440,25 @@ public class FlinkJobManager : IFlinkJobManager
 
         if (!File.Exists(jarPath))
         {
-            _logger.LogWarning("Runner jar not found at {Path}. Attempting to build via scripts/build_runner.ps1", jarPath);
+            _logger.LogWarning("Runner jar not found at {Path}. Attempting to build FlinkIRRunner project", jarPath);
+            var repoRoot = FindRepoRoot(Environment.CurrentDirectory) ?? Environment.CurrentDirectory;
             try
             {
-                var repoRoot = FindRepoRoot(Environment.CurrentDirectory) ?? Environment.CurrentDirectory;
-                var buildScript = Path.Combine(repoRoot, "scripts", "build_runner.ps1");
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "pwsh",
-                    Arguments = $"-NoLogo -File \"{buildScript}\"",
-                    WorkingDirectory = repoRoot,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-                using var proc = System.Diagnostics.Process.Start(psi)!;
-                var stdOut = await proc.StandardOutput.ReadToEndAsync();
-                var stdErr = await proc.StandardError.ReadToEndAsync();
-                await proc.WaitForExitAsync();
-                _logger.LogInformation("Runner build stdout: {Out}\nstderr: {Err}", stdOut, stdErr);
+                await EnsureJavaAndMavenAsync(repoRoot);
+                await BuildFlinkIRRunnerAsync(repoRoot);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to build runner jar automatically");
+                // Fall back to PowerShell script if direct Maven build fails
+                try
+                {
+                    await BuildViaScriptAsync(repoRoot);
+                }
+                catch (Exception scriptEx)
+                {
+                    _logger.LogError(scriptEx, "PowerShell script fallback also failed");
+                }
             }
         }
 
@@ -505,6 +502,174 @@ public class FlinkJobManager : IFlinkJobManager
             dir = dir.Parent;
         }
         return null;
+    }
+
+    private async Task EnsureJavaAndMavenAsync(string repoRoot)
+    {
+        // Check Java installation
+        if (!await IsCommandAvailableAsync("java"))
+        {
+            throw new InvalidOperationException("Java is not installed or not in PATH. Java 17+ is required for Flink components.");
+        }
+        
+        var javaVersion = await GetCommandOutputAsync("java", "-version");
+        _logger.LogInformation("Java version check: {Version}", javaVersion);
+        
+        // Check/Install Maven
+        if (!await IsCommandAvailableAsync("mvn"))
+        {
+            _logger.LogInformation("Maven not found in PATH. Using repository tools directory.");
+            var toolsDir = Path.Combine(repoRoot, "tools");
+            var mvnPath = await EnsureMavenInToolsAsync(toolsDir);
+            Environment.SetEnvironmentVariable("PATH", $"{Path.GetDirectoryName(mvnPath)}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}");
+        }
+        
+        var mvnVersion = await GetCommandOutputAsync("mvn", "-version");
+        _logger.LogInformation("Maven version check: {Version}", mvnVersion);
+    }
+
+    private async Task<string> EnsureMavenInToolsAsync(string toolsDir)
+    {
+        const string mavenVersion = "3.9.8";
+        var mvnHome = Path.Combine(toolsDir, $"apache-maven-{mavenVersion}");
+        var mvnBin = Path.Combine(mvnHome, "bin", "mvn");
+        
+        // Check if mvn.cmd exists on Windows
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            mvnBin += ".cmd";
+        }
+        
+        if (File.Exists(mvnBin))
+        {
+            return mvnBin;
+        }
+        
+        // Download and extract Maven
+        _logger.LogInformation("Downloading Maven {Version} to {ToolsDir}", mavenVersion, toolsDir);
+        Directory.CreateDirectory(toolsDir);
+        
+        var zipUrl = $"https://archive.apache.org/dist/maven/maven-3/{mavenVersion}/binaries/apache-maven-{mavenVersion}-bin.zip";
+        var zipPath = Path.Combine(toolsDir, $"apache-maven-{mavenVersion}-bin.zip");
+        
+        using (var client = new HttpClient())
+        {
+            var response = await client.GetAsync(zipUrl);
+            response.EnsureSuccessStatusCode();
+            await using var fileStream = File.Create(zipPath);
+            await response.Content.CopyToAsync(fileStream);
+        }
+        
+        System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, toolsDir);
+        File.Delete(zipPath);
+        
+        return mvnBin;
+    }
+
+    private async Task BuildFlinkIRRunnerAsync(string repoRoot)
+    {
+        var flinkRunnerDir = Path.Combine(repoRoot, "FlinkIRRunner");
+        if (!Directory.Exists(flinkRunnerDir))
+        {
+            throw new DirectoryNotFoundException($"FlinkIRRunner directory not found at {flinkRunnerDir}");
+        }
+        
+        _logger.LogInformation("Building FlinkIRRunner using Maven in {Directory}", flinkRunnerDir);
+        
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "mvn",
+            Arguments = "-q -DskipTests package",
+            WorkingDirectory = flinkRunnerDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+        
+        using var proc = System.Diagnostics.Process.Start(psi)!;
+        var stdOut = await proc.StandardOutput.ReadToEndAsync();
+        var stdErr = await proc.StandardError.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+        
+        if (proc.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Maven build failed with exit code {proc.ExitCode}. stdout: {stdOut}, stderr: {stdErr}");
+        }
+        
+        _logger.LogInformation("FlinkIRRunner built successfully. stdout: {Out}", stdOut);
+    }
+
+    private async Task BuildViaScriptAsync(string repoRoot)
+    {
+        var buildScript = Path.Combine(repoRoot, "scripts", "build_runner.ps1");
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "pwsh",
+            Arguments = $"-NoLogo -File \"{buildScript}\"",
+            WorkingDirectory = repoRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        using var proc = System.Diagnostics.Process.Start(psi)!;
+        var stdOut = await proc.StandardOutput.ReadToEndAsync();
+        var stdErr = await proc.StandardError.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+        
+        if (proc.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"PowerShell build script failed with exit code {proc.ExitCode}. stdout: {stdOut}, stderr: {stdErr}");
+        }
+        
+        _logger.LogInformation("PowerShell build script completed. stdout: {Out}", stdOut);
+    }
+
+    private async Task<bool> IsCommandAvailableAsync(string command)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = Environment.OSVersion.Platform == PlatformID.Win32NT ? "where" : "which",
+                Arguments = command,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            
+            using var proc = System.Diagnostics.Process.Start(psi);
+            await proc!.WaitForExitAsync();
+            return proc.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<string> GetCommandOutputAsync(string command, string arguments)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            
+            using var proc = System.Diagnostics.Process.Start(psi);
+            var output = await proc!.StandardOutput.ReadToEndAsync();
+            var error = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+            
+            return string.IsNullOrEmpty(output) ? error : output;
+        }
+        catch (Exception ex)
+        {
+            return $"Error: {ex.Message}";
+        }
     }
 
     // Note: legacy placeholder converters removed; IR is executed by the Runner jar.
