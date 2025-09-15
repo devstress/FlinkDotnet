@@ -18,6 +18,14 @@ var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
+// Flink Job Gateway (from FlinkDotNet) - wait longer for Flink to be fully ready
+builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
+    .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
+    .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
+    .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
+    .WaitFor(flinkJobManager)
+    .WaitFor(flinkTaskManager);
+
 try
 {
     var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
@@ -32,12 +40,5 @@ catch
 {
     // Swallow exceptions during Flink connector setup as it's optional
 }
-
-// Flink Job Gateway (from FlinkDotNet)
-builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
-    .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
-    .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
-    .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
-    .WaitFor(flinkJobManager);
 
 await builder.Build().RunAsync();

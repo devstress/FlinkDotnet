@@ -28,6 +28,15 @@ public class FlinkDotNetIntegrationTest
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
                 .WaitAsync(TimeSpan.FromSeconds(120), ct);
+            
+            TestContext.WriteLine("✅ Kafka is ready");
+
+            // Wait for Flink Job Gateway to be ready first (it depends on Flink containers)
+            await app.ResourceNotifications
+                .WaitForResourceHealthyAsync("flink-job-gateway", ct)
+                .WaitAsync(TimeSpan.FromSeconds(180), ct);
+            
+            TestContext.WriteLine("✅ Flink Job Gateway is ready");
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
             await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(120), ct);
@@ -37,16 +46,14 @@ public class FlinkDotNetIntegrationTest
             await CreateTopicAsync(kafka!, OutputTopic, 4);
             await CreateTopicAsync(kafka!, SideOutputTopic, 4);
 
-            // Ensure Flink Job Gateway is ready (increased timeout for Flink cluster startup)
+            // Ensure Flink Job Gateway is ready (additional HTTP check)
             await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(120), ct);
 
             // Initialize Gateway service for testing
             var gateway = new Flink.JobBuilder.Services.FlinkJobGatewayService();
-            var healthy = await gateway.HealthCheckAsync(ct);
-            Assert.That(healthy, Is.True, "Flink Job Gateway must be healthy");
-
+            
             // Wait for Flink cluster to be ready via the gateway (this does the actual cluster health check)
-            await WaitForFlinkClusterReady(TimeSpan.FromSeconds(180), ct);
+            await WaitForFlinkClusterReady(TimeSpan.FromSeconds(120), ct);
 
             // Test Scenario 1: Basic Map Operation
             await TestScenario_BasicMapOperation(kafka!, gateway, ct);
@@ -379,39 +386,48 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
         var sw = Stopwatch.StartNew();
         Exception lastException = null!;
         
+        // Use Gateway health check instead of direct Flink access
+        // The Gateway knows how to reach the Flink cluster via container networking
         while (sw.Elapsed < timeout)
         {
             try
             {
-                // Try to submit a minimal job definition to test cluster connectivity
-                // We expect this to fail due to invalid configuration, but NOT due to cluster unavailability
-                var dummyJob = FlinkDotNet.Flink.JobBuilder
-                    .FromKafka("dummy-topic", "dummy-bootstrap")
-                    .Map("dummy-transform")
-                    .ToKafka("dummy-output", "dummy-bootstrap");
-
-                var result = await dummyJob.Submit("cluster-readiness-test", ct);
+                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
                 
-                // If we get a response (even if it's a failure), the cluster is responding
-                // We just want to avoid "cluster is not available or unhealthy" errors
-                if (result.ErrorMessage == null || 
-                    (!result.ErrorMessage.Contains("not available") && 
-                     !result.ErrorMessage.Contains("unhealthy") &&
-                     !result.ErrorMessage.Contains("Resource temporarily unavailable")))
+                // Check if Gateway is healthy and can reach Flink cluster
+                var gatewayResponse = await httpClient.GetAsync("http://localhost:8080/api/v1/health", ct);
+                if (gatewayResponse.IsSuccessStatusCode)
                 {
-                    TestContext.WriteLine($"✅ Flink cluster is ready! (Response: {result.ErrorMessage ?? "Success"})");
-                    return;
+                    TestContext.WriteLine("✅ Gateway is healthy!");
+                    
+                    // Test if Gateway can reach Flink cluster via health check
+                    var gateway = new Flink.JobBuilder.Services.FlinkJobGatewayService();
+                    var isHealthy = await gateway.HealthCheckAsync(ct);
+                    
+                    if (isHealthy)
+                    {
+                        TestContext.WriteLine("✅ Flink cluster is ready and reachable through Gateway!");
+                        return;
+                    }
+                    else
+                    {
+                        TestContext.WriteLine("🔄 Gateway healthy but Flink cluster not ready yet");
+                    }
                 }
-                lastException = new Exception(result.ErrorMessage);
-                TestContext.WriteLine($"🔄 Flink cluster not ready: {result.ErrorMessage}");
+                else
+                {
+                    TestContext.WriteLine($"🔄 Gateway not ready: {gatewayResponse.StatusCode}");
+                }
             }
             catch (Exception ex)
             {
                 lastException = ex;
-                TestContext.WriteLine($"🔄 Flink cluster not ready: {ex.Message}");
+                TestContext.WriteLine($"🔄 Cluster check failed: {ex.Message}");
             }
-            await Task.Delay(3000, ct);
+            
+            await Task.Delay(5000, ct); // Check every 5 seconds
         }
+        
         throw new TimeoutException($"Flink cluster did not become ready within {timeout.TotalSeconds:F0}s. Last error: {lastException?.Message}");
     }
 }
