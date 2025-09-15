@@ -12,12 +12,12 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("jobmanager");
 
-builder.AddContainer("flink-taskmanager", "flink:2.1.0")
+// Optional: mount connector jars if present at LocalTesting/connectors/flink/lib
+var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
-// Optional: mount connector jars if present at LocalTesting/connectors/flink/lib
 try
 {
     var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
@@ -25,11 +25,7 @@ try
     if (Directory.Exists(connectorsDir))
     {
         flinkJobManager.WithBindMount(connectorsDir, "/opt/flink/lib");
-        builder.AddContainer("flink-taskmanager", "flink:2.1.0")
-            .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-            .WithArgs("taskmanager")
-            .WithBindMount(connectorsDir, "/opt/flink/lib")
-            .WaitFor(flinkJobManager);
+        flinkTaskManager.WithBindMount(connectorsDir, "/opt/flink/lib");
     }
 }
 catch
@@ -40,8 +36,8 @@ catch
 // Flink Job Gateway (from FlinkDotNet)
 builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
-    .WithEnvironment("FLINK_CLUSTER_HOST", "localhost")
-    .WithEnvironment("FLINK_CLUSTER_PORT", "8081");
-    // Removed FLINK_RUNNER_JAR_PATH - Gateway will build JAR automatically
+    .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
+    .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
+    .WaitFor(flinkJobManager);
 
 await builder.Build().RunAsync();

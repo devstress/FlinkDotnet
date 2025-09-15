@@ -24,21 +24,21 @@ public class FlinkDotNetIntegrationTest
 
         try
         {
-            // Wait for infrastructure to be ready
+            // Wait for infrastructure to be ready (increased timeout for Flink cluster startup)
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(60), ct);
+                .WaitAsync(TimeSpan.FromSeconds(120), ct);
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(60), ct);
+            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(120), ct);
 
             // Create topics for all test scenarios
             await CreateTopicAsync(kafka!, InputTopic, 4);
             await CreateTopicAsync(kafka!, OutputTopic, 4);
             await CreateTopicAsync(kafka!, SideOutputTopic, 4);
 
-            // Ensure Flink Job Gateway is ready
-            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
+            // Ensure Flink Job Gateway is ready (increased timeout for Flink cluster startup)
+            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(120), ct);
 
             // Initialize Gateway service for testing
             var gateway = new Flink.JobBuilder.Services.FlinkJobGatewayService();
@@ -90,7 +90,7 @@ public class FlinkDotNetIntegrationTest
         TestContext.WriteLine($"Basic map job submitted with FlinkJobId: {flinkJobId}");
 
         // Wait for job to be running
-        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(30), ct);
+        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(60), ct);
 
         // Test data flow
         var messagesToSend = 100;
@@ -125,7 +125,7 @@ public class FlinkDotNetIntegrationTest
         TestContext.WriteLine($"Filter job submitted with FlinkJobId: {flinkJobId}");
 
         // Wait for job to be running
-        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(30), ct);
+        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(60), ct);
 
         // Validate IR generation contains where
         var ir = FlinkDotNet.Flink.JobBuilder
@@ -156,7 +156,7 @@ public class FlinkDotNetIntegrationTest
         TestContext.WriteLine($"Timer job submitted with FlinkJobId: {flinkJobId}");
 
         // Wait for job to be running
-        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(30), ct);
+        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(60), ct);
 
         // Validate IR generation contains timer
         var ir = FlinkDotNet.Flink.JobBuilder
@@ -194,7 +194,7 @@ public class FlinkDotNetIntegrationTest
         TestContext.WriteLine($"Side output job submitted with FlinkJobId: {flinkJobId}");
 
         // Wait for job to be running
-        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(30), ct);
+        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(60), ct);
 
         // Validate IR generation contains side output
         var ir = FlinkDotNet.Flink.JobBuilder
@@ -225,7 +225,7 @@ public class FlinkDotNetIntegrationTest
         TestContext.WriteLine($"Aggregation job submitted with FlinkJobId: {flinkJobId}");
 
         // Wait for job to be running
-        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(30), ct);
+        await WaitForJobState(gateway, flinkJobId, "RUNNING", TimeSpan.FromSeconds(60), ct);
 
         // Validate IR generation contains aggregation
         var ir = FlinkDotNet.Flink.JobBuilder
