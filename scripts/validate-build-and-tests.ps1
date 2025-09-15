@@ -87,7 +87,7 @@ Write-Info "Step 2: Finding solution files..."
 
 $SolutionFiles = @(
     "FlinkDotNet/FlinkDotNet.sln",
-    "BackPressureExample/BackPressureExample.sln"
+    "LocalTesting/LocalTesting.sln"
 )
 
 $AllSolutionsExist = $true
@@ -141,7 +141,8 @@ if (-not $BuildFailed -and -not $SkipTests) {
 
     # Solutions to test
     $TestSolutions = @(
-        "FlinkDotNet/FlinkDotNet.sln"
+        "FlinkDotNet/FlinkDotNet.sln",
+        "LocalTesting/LocalTesting.sln"
     )
 
     foreach ($sln in $TestSolutions) {

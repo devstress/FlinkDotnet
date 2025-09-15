@@ -440,34 +440,13 @@ public class FlinkJobManager : IFlinkJobManager
 
         if (!File.Exists(jarPath))
         {
-            _logger.LogWarning("Runner jar not found at {Path}. Attempting to build via scripts/build_runner.ps1", jarPath);
-            try
-            {
-                var repoRoot = FindRepoRoot(Environment.CurrentDirectory) ?? Environment.CurrentDirectory;
-                var buildScript = Path.Combine(repoRoot, "scripts", "build_runner.ps1");
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "pwsh",
-                    Arguments = $"-NoLogo -File \"{buildScript}\"",
-                    WorkingDirectory = repoRoot,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-                using var proc = System.Diagnostics.Process.Start(psi)!;
-                var stdOut = await proc.StandardOutput.ReadToEndAsync();
-                var stdErr = await proc.StandardError.ReadToEndAsync();
-                await proc.WaitForExitAsync();
-                _logger.LogInformation("Runner build stdout: {Out}\nstderr: {Err}", stdOut, stdErr);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to build runner jar automatically");
-            }
+            _logger.LogWarning("Runner jar not found at {Path}. Attempting to build using Maven directly", jarPath);
+            await BuildJavaProjectAsync();
         }
 
         if (!File.Exists(jarPath))
         {
-            throw new FileNotFoundException($"Runner jar not found at {jarPath}. Set FLINK_RUNNER_JAR_PATH env var.");
+            throw new FileNotFoundException($"Runner jar not found at {jarPath} after build attempt. Ensure Java 17+ and Maven 3.6+ are installed.");
         }
 
         // Upload jar
@@ -491,6 +470,148 @@ public class FlinkJobManager : IFlinkJobManager
         if (jar == null || string.IsNullOrEmpty(jar.Id))
             throw new InvalidOperationException("Uploaded jar not found in Flink jar list");
         return jar.Id;
+    }
+
+    private async Task BuildJavaProjectAsync()
+    {
+        var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
+        if (repoRoot == null)
+        {
+            throw new InvalidOperationException("Cannot find repository root directory");
+        }
+
+        var flinkRunnerDir = Path.Combine(repoRoot, "FlinkIRRunner");
+        var pomFile = Path.Combine(flinkRunnerDir, "pom.xml");
+
+        if (!File.Exists(pomFile))
+        {
+            throw new FileNotFoundException($"Maven pom.xml not found at {pomFile}");
+        }
+
+        // Check Java availability
+        await CheckJavaAvailabilityAsync();
+
+        // Check Maven availability  
+        await CheckMavenAvailabilityAsync();
+
+        _logger.LogInformation("Building Java project at {FlinkRunnerDir}", flinkRunnerDir);
+
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "mvn",
+                Arguments = "clean package -DskipTests",
+                WorkingDirectory = flinkRunnerDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var proc = System.Diagnostics.Process.Start(psi);
+            if (proc == null)
+            {
+                throw new InvalidOperationException("Failed to start Maven process");
+            }
+
+            var stdOut = await proc.StandardOutput.ReadToEndAsync();
+            var stdErr = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+
+            _logger.LogInformation("Maven build completed with exit code {ExitCode}", proc.ExitCode);
+            _logger.LogDebug("Maven stdout: {StdOut}", stdOut);
+            
+            if (proc.ExitCode != 0)
+            {
+                _logger.LogError("Maven build failed. stderr: {StdErr}", stdErr);
+                throw new InvalidOperationException($"Maven build failed with exit code {proc.ExitCode}. Check logs for details.");
+            }
+
+            _logger.LogInformation("Java project built successfully");
+        }
+        catch (Exception ex) when (!(ex is InvalidOperationException))
+        {
+            _logger.LogError(ex, "Failed to build Java project using Maven");
+            throw new InvalidOperationException("Maven build failed. Ensure Maven is available in PATH.", ex);
+        }
+    }
+
+    private async Task CheckJavaAvailabilityAsync()
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "java",
+                Arguments = "-version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var proc = System.Diagnostics.Process.Start(psi);
+            if (proc == null)
+            {
+                throw new InvalidOperationException("Java not found");
+            }
+
+            var stderr = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+
+            if (proc.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"Java version check failed with exit code {proc.ExitCode}");
+            }
+
+            _logger.LogInformation("Java version check: {JavaVersion}", stderr.Split('\n').FirstOrDefault()?.Trim());
+
+            // Check for Java 17+
+            if (!stderr.Contains("17.") && !stderr.Contains("21.") && !stderr.Contains("22.") && !stderr.Contains("23."))
+            {
+                _logger.LogWarning("Java 17+ is recommended. Current version: {JavaVersion}", stderr);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Java availability check failed");
+            throw new InvalidOperationException("Java 17+ is required but not found. Please install Java 17+ and ensure it's available in PATH.", ex);
+        }
+    }
+
+    private async Task CheckMavenAvailabilityAsync()
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "mvn",
+                Arguments = "--version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var proc = System.Diagnostics.Process.Start(psi);
+            if (proc == null)
+            {
+                throw new InvalidOperationException("Maven not found");
+            }
+
+            var stdout = await proc.StandardOutput.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+
+            if (proc.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"Maven version check failed with exit code {proc.ExitCode}");
+            }
+
+            _logger.LogInformation("Maven version check: {MavenVersion}", stdout.Split('\n').FirstOrDefault()?.Trim());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Maven availability check failed");
+            throw new InvalidOperationException("Maven 3.6+ is required but not found. Please install Maven and ensure it's available in PATH.", ex);
+        }
     }
 
     private static string? FindRepoRoot(string start)
