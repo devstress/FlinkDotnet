@@ -12,35 +12,30 @@ var flinkJobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("jobmanager");
 
-builder.AddContainer("flink-taskmanager", "flink:2.1.0")
+// Optional: mount connector jars if present at LocalTesting/connectors/flink/lib
+var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
+var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
+if (Directory.Exists(connectorsDir))
+{
+    flinkJobManager.WithBindMount(connectorsDir, "/opt/flink/lib");
+}
+
+// TaskManager with proper configuration
+var flinkTaskManager = builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithArgs("taskmanager")
     .WaitFor(flinkJobManager);
 
-// Optional: mount connector jars if present at LocalTesting/connectors/flink/lib
-try
+if (Directory.Exists(connectorsDir))
 {
-    var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
-    var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
-    if (Directory.Exists(connectorsDir))
-    {
-        flinkJobManager.WithBindMount(connectorsDir, "/opt/flink/lib");
-        builder.AddContainer("flink-taskmanager", "flink:2.1.0")
-            .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-            .WithArgs("taskmanager")
-            .WithBindMount(connectorsDir, "/opt/flink/lib")
-            .WaitFor(flinkJobManager);
-    }
-}
-catch
-{
-    // Swallow exceptions during Flink connector setup as it's optional
+    flinkTaskManager.WithBindMount(connectorsDir, "/opt/flink/lib");
 }
 
-// Flink Job Gateway (from FlinkDotNet)
+// Flink Job Gateway (from FlinkDotNet) - use proper Aspire service discovery
 builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
-    .WithEnvironment("FLINK_CLUSTER_HOST", "localhost")
-    .WithEnvironment("FLINK_CLUSTER_PORT", "8081");
+    .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
+    .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
+    .WaitFor(flinkJobManager);
 
 await builder.Build().RunAsync();
