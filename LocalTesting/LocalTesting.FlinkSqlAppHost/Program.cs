@@ -42,12 +42,12 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0")
     .WaitFor(jobManager);
 
 // Set up FlinkDotnet Gateway
-var runnerJarPath = "/app/flink-ir-runner.jar";
+// TODO: Remove FLINK_RUNNER_JAR_PATH dependency as per TODO.md - gateway should determine paths internally
 builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
     .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
     .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
-    .WithEnvironment("FLINK_RUNNER_JAR_PATH", runnerJarPath)
+    // .WithEnvironment("FLINK_RUNNER_JAR_PATH", runnerJarPath) // Temporarily disabled
     .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     .WaitFor(jobManager);
 

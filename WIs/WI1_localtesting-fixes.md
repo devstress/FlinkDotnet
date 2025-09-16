@@ -81,20 +81,53 @@ Fix the unused variable issue and run LocalTesting integration tests to identify
 
 ## Phase 4: Implementation
 ### Code Changes
-[To be filled during implementation]
+1. **Fixed unused variable in LocalTesting.FlinkSqlAppHost/Program.cs**:
+   - Removed `var gateway =` assignment since the resource registration doesn't need to be stored
+   - This fixed SonarQube rule S1481 violation
+
+2. **Fixed API compatibility issues in LocalTesting.IntegrationTests/FlinkDotNetJobs.cs**:
+   - Changed return type from `FlinkDotNet.Pipelines.SubmitResult` to `JobSubmissionResult` 
+   - Added proper using statement: `using Flink.JobBuilder.Models;`
+   - Removed unnecessary using statements that were causing IDE0005 violations
+   - Verified all method signatures now match the actual FlinkDotNet API
 
 ### Challenges Encountered
-[To be filled during implementation]
+- **API Discovery**: Initial tests were using non-existent namespace `FlinkDotNet.Pipelines.SubmitResult`
+- **Using Statement Issues**: .NET 9.0 has different implicit global using handling
+- **SonarQube Rules**: Build process enforces strict code quality rules
 
 ### Solutions Applied
-[To be filled during implementation]
+- **Namespace Investigation**: Found correct types in `Flink.JobBuilder.Models` namespace
+- **Incremental Using Removal**: Systematically removed unnecessary using statements to fix IDE0005
+- **Minimal Changes**: Only fixed what was broken, preserved all functional logic
 
 ## Phase 5: Testing & Validation
 ### Test Results
-[To be filled during testing]
+**Build Validation**: ✅ SUCCESSFUL
+- All LocalTesting builds now pass without errors
+- Fixed unused variable and API compatibility issues
+- SonarQube rule violations resolved
+
+**Runtime Testing**: ⚠️ IN PROGRESS  
+- **Issue Identified**: Integration tests timeout due to infrastructure complexity
+- **Root Cause Analysis**:
+  1. **FLINK_RUNNER_JAR_PATH Configuration**: The hardcoded jar path `/app/flink-ir-runner.jar` likely doesn't exist in Aspire containers
+  2. **Infrastructure Orchestration**: Aspire needs significant time to start Kafka + Flink + Gateway components
+  3. **Network Connectivity**: Container networking between Kafka, Flink JobManager/TaskManager, and Gateway requires proper configuration
+
+**Infrastructure Startup Evidence**:
+- Logs show Kafka, Flink JobManager, and TaskManager starting successfully
+- TaskManager registers with ResourceManager correctly
+- Tests timeout after 60-90 seconds during infrastructure waiting phases
+
+**Mitigation Attempted**:
+- Temporarily disabled `FLINK_RUNNER_JAR_PATH` environment variable as recommended in TODO.md
+- This should allow the gateway to determine jar paths internally
 
 ### Performance Metrics
-[To be filled during testing]
+- **Build Time**: ~2-5 seconds for LocalTesting solution
+- **Test Infrastructure Startup**: 60+ seconds for full Aspire orchestration
+- **Test Timeout**: Tests abort after 60-90 second timeout periods
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
@@ -108,16 +141,30 @@ Fix the unused variable issue and run LocalTesting integration tests to identify
 
 ## Lessons Learned & Future Reference (MANDATORY)
 ### What Worked Well
-[To be filled when complete]
+- **Systematic Debug Approach**: Pre-change validation script effectively identified build issues
+- **Incremental Fixes**: Fixing one issue at a time (unused variable → API compatibility → using statements)
+- **API Investigation**: Successfully found correct return types and namespaces by exploring FlinkDotNet structure
+- **Minimal Changes**: Only modified what was broken, preserved all functional logic
 
 ### What Could Be Improved  
-[To be filled when complete]
+- **Integration Test Strategy**: Need faster feedback loops for infrastructure testing
+- **Environment Documentation**: Better documentation of Aspire orchestration requirements
+- **Jar Path Management**: Should implement TODO.md recommendation to remove FLINK_RUNNER_JAR_PATH dependency
 
 ### Key Insights for Similar Tasks
-[To be filled when complete]
+- **Build Before Test**: Always ensure builds pass completely before attempting integration tests
+- **SonarQube Rules**: .NET 9.0 build process enforces strict code quality - handle using statements carefully  
+- **API Evolution**: FlinkDotNet API has evolved - return types changed from `FlinkDotNet.Pipelines.SubmitResult` to `Flink.JobBuilder.Models.JobSubmissionResult`
+- **Aspire Infrastructure**: Complex multi-container orchestration requires significant startup time and proper configuration
 
 ### Specific Problems to Avoid in Future
-[To be filled when complete]
+- **Hardcoded Container Paths**: Avoid absolute paths like `/app/flink-ir-runner.jar` in Aspire configurations
+- **Assuming API Stability**: Always verify current API structure rather than assuming namespace existence
+- **Ignoring Infrastructure Complexity**: Integration tests with Kafka + Flink require substantial infrastructure startup time
+- **Immediate Full Testing**: Start with build validation before attempting complex integration scenarios
 
 ### Reference for Future WIs
-[To be filled when complete]
+- **LocalTesting Configuration**: Focus on jar path issues and Aspire container networking
+- **Build Issues**: Use validation scripts to catch SonarQube violations early  
+- **API Changes**: Check `Flink.JobBuilder.Models` namespace for job submission types
+- **Infrastructure Debugging**: Allow 90+ seconds for full Aspire orchestration startup
