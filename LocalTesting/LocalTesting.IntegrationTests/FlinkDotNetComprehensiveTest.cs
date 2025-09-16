@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Aspire.Hosting.Testing;
 using Confluent.Kafka;
 using NUnit.Framework;
@@ -82,6 +83,10 @@ public class FlinkDotNetComprehensiveTest
             Assert.That(basicResult.Success, Is.True, "Basic job must submit successfully");
             TestContext.WriteLine($"Basic job submitted with ID: {basicResult.FlinkJobId}");
             
+            // Wait for job to be running before sending data
+            var basicState = await WaitForJobRunningAsync(basicResult.FlinkJobId!, TimeSpan.FromSeconds(60), ct);
+            TestContext.WriteLine($"Basic job reached state: {basicState}");
+            
             await ProduceSimpleMessagesAsync(kafka!, BasicInputTopic, 10, ct);
             var basicConsumed = await ConsumeAsync(kafka!, BasicOutputTopic, 10, TimeSpan.FromSeconds(30), ct);
             Assert.That(basicConsumed, Is.GreaterThanOrEqualTo(10), "Basic job should process all messages");
@@ -93,6 +98,10 @@ public class FlinkDotNetComprehensiveTest
             
             Assert.That(filterResult.Success, Is.True, "Filter job must submit successfully");
             TestContext.WriteLine($"Filter job submitted with ID: {filterResult.FlinkJobId}");
+            
+            // Wait for job to be running before sending data
+            var filterState = await WaitForJobRunningAsync(filterResult.FlinkJobId!, TimeSpan.FromSeconds(60), ct);
+            TestContext.WriteLine($"Filter job reached state: {filterState}");
             
             // Send some empty and non-empty messages
             await ProduceMessagesAsync(kafka!, FilterInputTopic, new[] { "", "value1", "", "value2", "value3" }, ct);
@@ -106,6 +115,10 @@ public class FlinkDotNetComprehensiveTest
             
             Assert.That(sqlResult.Success, Is.True, "SQL job must submit successfully");
             TestContext.WriteLine($"SQL job submitted with ID: {sqlResult.FlinkJobId}");
+            
+            // Wait for job to be running before sending data
+            var sqlState = await WaitForJobRunningAsync(sqlResult.FlinkJobId!, TimeSpan.FromSeconds(60), ct);
+            TestContext.WriteLine($"SQL job reached state: {sqlState}");
             
             await ProduceJsonMessagesAsync(kafka!, SqlInputTopic, 5, ct);
             var sqlConsumed = await ConsumeAsync(kafka!, SqlOutputTopic, 5, TimeSpan.FromSeconds(30), ct);
@@ -122,6 +135,49 @@ public class FlinkDotNetComprehensiveTest
     {
         // Flink Job Gateway health endpoint (ASP.NET)
         await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
+    }
+
+    private static async Task<string> WaitForJobRunningAsync(string jobId, TimeSpan timeout, CancellationToken ct)
+    {
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        var sw = Stopwatch.StartNew();
+        
+        while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
+        {
+            try
+            {
+                var response = await http.GetAsync($"http://localhost:8080/api/v1/jobs/{jobId}/status", ct);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync(ct);
+                    var statusObj = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(content);
+                    
+                    if (statusObj.TryGetProperty("state", out var stateElement))
+                    {
+                        var state = stateElement.GetString();
+                        TestContext.WriteLine($"Job {jobId} state: {state}");
+                        
+                        if (state == "RUNNING" || state == "FINISHED")
+                        {
+                            return state;
+                        }
+                        
+                        if (state == "FAILED" || state == "CANCELED")
+                        {
+                            throw new InvalidOperationException($"Job {jobId} failed with state: {state}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) when (!(ex is InvalidOperationException))
+            {
+                TestContext.WriteLine($"Error checking job status: {ex.Message}");
+            }
+            
+            await Task.Delay(1000, ct);
+        }
+        
+        throw new TimeoutException($"Job {jobId} did not reach RUNNING or FINISHED state within {timeout.TotalSeconds:F0}s");
     }
 
     private static async Task CreateTopicAsync(string bootstrapServers, string topic, int partitions)
