@@ -5,7 +5,7 @@ Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 var diagnosticsVerbose = Environment.GetEnvironmentVariable("DIAGNOSTICS_VERBOSE") == "1";
 if (diagnosticsVerbose)
 {
-    Console.WriteLine("[diag] DIAGNOSTICS_VERBOSE=1 enabled for BackPressure.AppHost startup diagnostics");
+    Console.WriteLine("[diag] DIAGNOSTICS_VERBOSE=1 enabled for LocalTesting.FlinkSqlAppHost startup diagnostics");
 }
 
 var builder = DistributedApplication.CreateBuilder(args);

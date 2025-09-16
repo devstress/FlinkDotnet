@@ -538,7 +538,10 @@ public class FlinkJobManager : IFlinkJobManager
         if (jobDefinition.Source == null)
             errors.Add("Job source is required");
 
-        if (jobDefinition.Sink == null)
+        // Allow sink-less SQL jobs (SQL statements may define sinks).
+        // This aligns gateway validation with client-side JobDefinitionValidator.
+        var isSqlJob = jobDefinition.Source is SqlSourceDefinition;
+        if (jobDefinition.Sink == null && !isSqlJob)
             errors.Add("Job sink is required");
     }
 

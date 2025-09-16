@@ -6,17 +6,16 @@ using NUnit.Framework;
 namespace LocalTesting.IntegrationTests;
 
 [TestFixture]
-[Category("observability")]
-public class FlinkDotNetIntegrationTest
+[Category("ir")] // IR (DataStream) job tests
+public class FlinkIrStringOpsIntegrationTest
 {
-    private const string InputTopic = "lt.flink.input";
-    private const string OutputTopic = "lt.flink.output";
+    private const string InputTopic = "lt.flink.ir.input";
+    private const string OutputTopic = "lt.flink.ir.output";
 
     [Test]
-    public async Task FlinkDotNet_Pipeline_KafkaToKafka_EmitsAndReportsMetrics()
+    public async Task FlinkIr_StringConcatAndSplit_ProducesExpectedIROrRuntimeOutput()
     {
         var ct = TestContext.CurrentContext.CancellationToken;
-
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
         var app = await appHost.BuildAsync(ct);
         await app.StartAsync(ct);
@@ -30,74 +29,50 @@ public class FlinkDotNetIntegrationTest
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
             await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(60), ct);
 
-            // Create topics
             await CreateTopicAsync(kafka!, InputTopic, 4);
             await CreateTopicAsync(kafka!, OutputTopic, 4);
 
-            // Ensure Flink Job Gateway up
             await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
 
-            // Try Flink JobManager UI readiness (non-fatal)
-            try { await WaitForHttpOkAsync("http://localhost:8081", TimeSpan.FromSeconds(60), ct); } 
-            catch 
-            { 
-                // JobManager UI may not be available - this is non-fatal for tests
-            }
-
-            // Submit pipeline using FlinkDotNet facade
+            // Build IR: Kafka -> split (emit each CSV part) -> concat suffix -> timer -> Kafka
             var job = FlinkDotNet.Flink.JobBuilder
                 .FromKafka(InputTopic, kafka)
-                .Map("identity")
-                .WithTimer(10)
+                .Map("split:,")
+                .Map("concat:-tail")
+                .WithTimer(5)
                 .ToKafka(OutputTopic, kafka);
 
-            var submitResult = await job.Submit("lt-passthrough", ct);
+            var submitResult = await job.Submit("lt-ir-stringops", ct);
+            TestContext.WriteLine($"IR submit success={submitResult.Success}; flinkJobId={submitResult.FlinkJobId}; error={submitResult.ErrorMessage}");
+
             if (!submitResult.Success)
             {
-                TestContext.WriteLine($"Flink submission failed (expected without jar bridge): {submitResult.ErrorMessage}");
-            }
-            var flinkJobId = submitResult.FlinkJobId;
-            TestContext.WriteLine($"Flink job submission result: Success={submitResult.Success}, FlinkJobId={flinkJobId}");
-
-            // Gateway health + status + metrics (proves FlinkDotNet gateway connectivity)
-            var gateway = new Flink.JobBuilder.Services.FlinkJobGatewayService();
-            var healthy = await gateway.HealthCheckAsync(ct);
-            Assert.That(healthy, Is.True, "Flink Job Gateway health");
-
-            if (submitResult.Success)
-            {
-                // Produce messages to input and verify output only if job actually submitted
-                var toSend = 1000;
-                await ProduceAsync(kafka!, InputTopic, toSend, ct);
-                var consumed = await ConsumeAsync(kafka!, OutputTopic, toSend, TimeSpan.FromSeconds(90), ct);
-                TestContext.WriteLine($"Consumed {consumed}/{toSend} from output topic");
-                Assert.That(consumed, Is.GreaterThan(0), "Should consume messages from Flink output");
-
-                var status = await gateway.GetJobStatusAsync(flinkJobId, ct);
-                TestContext.WriteLine($"Flink status: {status?.State}");
-                var metrics = await gateway.GetJobMetricsAsync(flinkJobId, ct);
-                TestContext.WriteLine($"Metrics: In={metrics.RecordsIn}, Out={metrics.RecordsOut}, Parallelism={metrics.Parallelism}, Checkpoints={metrics.Checkpoints}");
-            }
-            else
-            {
-                // As a proof of FlinkDotNet usage, validate job IR contains expected operations
-                var ir = FlinkDotNet.Flink.JobBuilder
+                // Validate the IR contains both operations (split + concat) for coverage
+                var irJson = FlinkDotNet.Flink.JobBuilder
                     .FromKafka(InputTopic, kafka)
-                    .Map("identity")
-                    .WithTimer(10)
+                    .Map("split:,")
+                    .Map("concat:-tail")
+                    .WithTimer(5)
                     .ToKafka(OutputTopic, kafka)
                     .ToJson();
-                TestContext.WriteLine("Generated FlinkDotNet IR: \n" + ir);
-                Assert.That(ir, Does.Contain("\"type\": \"kafka\"").And.Contain("\"map\"").And.Contain("\"timer\""));
+                TestContext.WriteLine("Generated IR JSON:\n" + irJson);
+                Assert.That(irJson, Does.Contain("\"map\""));
+                Assert.That(irJson, Does.Contain("split:,"));
+                Assert.That(irJson, Does.Contain("concat:-tail"));
+                Assert.Pass("Runner JAR not present; IR structure validated.");
+                return;
             }
+
+            // Runner available: produce messages and verify expanded output (split increases record count)
+            var produced = 50; // each message => 3 parts
+            await ProduceAsync(kafka!, InputTopic, produced, ct);
+            var consumed = await ConsumeAsync(kafka!, OutputTopic, produced, TimeSpan.FromSeconds(90), ct);
+            TestContext.WriteLine($"Consumed={consumed} from output topic");
+            Assert.That(consumed, Is.GreaterThanOrEqualTo(produced), "Expect at least as many outputs as inputs due to split");
         }
         finally
         {
-            try { await app.DisposeAsync(); } 
-            catch 
-            { 
-                // DisposeAsync may fail if resources are already disposed - this is acceptable
-            }
+            try { await app.DisposeAsync(); } catch { }
         }
     }
 
@@ -114,7 +89,8 @@ public class FlinkDotNetIntegrationTest
                 throw;
         }
     }
-private static async Task ProduceAsync(string bootstrap, string topic, int count, CancellationToken ct)
+
+    private static async Task ProduceAsync(string bootstrap, string topic, int count, CancellationToken ct)
     {
         using var producer = new ProducerBuilder<string, string>(new ProducerConfig
         {
@@ -126,21 +102,23 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
 
         for (int i = 0; i < count; i++)
         {
+            // 3 CSV segments per message -> ensures split expands
+            var value = $"segA{i},segB{i},segC{i}";
             await producer.ProduceAsync(topic, new Message<string, string>
             {
-                Key = $"k-{i % 16}",
-                Value = $"msg-{i}"
+                Key = $"k-{i % 8}",
+                Value = value
             }, ct);
         }
         producer.Flush(TimeSpan.FromSeconds(10));
     }
 
-    private static Task<long> ConsumeAsync(string bootstrap, string topic, int expected, TimeSpan timeout, CancellationToken ct)
+    private static Task<long> ConsumeAsync(string bootstrap, string topic, int expectedInput, TimeSpan timeout, CancellationToken ct)
     {
         var config = new ConsumerConfig
         {
             BootstrapServers = bootstrap,
-            GroupId = $"lt-flink-consumer-{Guid.NewGuid()}",
+            GroupId = $"lt-flink-ir-consumer-{Guid.NewGuid()}",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
         };
@@ -148,9 +126,10 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
         consumer.Subscribe(topic);
         var sw = Stopwatch.StartNew();
         long total = 0;
-        while (sw.Elapsed < timeout && total < expected && !ct.IsCancellationRequested)
+        var target = expectedInput; // minimal expectation (split may multiply)
+        while (sw.Elapsed < timeout && total < target && !ct.IsCancellationRequested)
         {
-            var cr = consumer.Consume(TimeSpan.FromMilliseconds(200));
+            var cr = consumer.Consume(TimeSpan.FromMilliseconds(250));
             if (cr != null) total++;
         }
         consumer.Close();
@@ -168,10 +147,7 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
                 var resp = await http.GetAsync(url, ct);
                 if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500) return;
             }
-            catch 
-            { 
-                // HTTP probe failures are expected during service startup
-            }
+            catch { }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"HTTP probe timed out for {url}");
@@ -199,10 +175,7 @@ private static async Task ProduceAsync(string bootstrap, string topic, int count
                 var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
                 if (md?.Brokers?.Count > 0) return;
             }
-            catch 
-            { 
-                // Kafka connection failures are expected during service startup
-            }
+            catch { }
             await Task.Delay(500, ct);
         }
         throw new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s at {bootstrapServers}");

@@ -16,7 +16,7 @@ public class FlinkSqlIntegrationTest
     public async Task FlinkSql_KafkaToKafka_WorksWhenConnectorsPresent()
     {
         var ct = TestContext.CurrentContext.CancellationToken;
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.BackPressure_AppHost>(ct);
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
         var app = await appHost.BuildAsync(ct);
         await app.StartAsync(ct);
 
@@ -64,12 +64,9 @@ public class FlinkSqlIntegrationTest
             var job = FlinkDotNet.Pipelines.FlinkDotNet.Sql(statements);
             var submitResult = await job.Submit("lt-sql-pipeline", ct);
 
-            // If connectors are missing in the cluster, provide a helpful message and treat as inconclusive.
             if (!submitResult.Success)
             {
-                Assert.That(submitResult.ErrorMessage ?? string.Empty, Does.Contain("connector"), "Submission failed unexpectedly");
-                Assert.Inconclusive("Flink SQL connectors missing. Place connector JARs under LocalTesting/connectors/flink/lib and re-run.");
-                return;
+                Assert.Fail("SQL submission failed: " + submitResult.ErrorMessage);
             }
 
             // Produce data to input
