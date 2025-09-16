@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using Flink.JobBuilder.Models;
 
 namespace LocalTesting.IntegrationTests;
 
@@ -12,7 +10,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a simple DataStream job that converts input strings to uppercase
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateUppercaseJob(
+    public static async Task<JobSubmissionResult> CreateUppercaseJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 
@@ -30,7 +28,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a DataStream job with filtering
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateFilterJob(
+    public static async Task<JobSubmissionResult> CreateFilterJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 
@@ -48,7 +46,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a DataStream job with string splitting and concatenation
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateSplitConcatJob(
+    public static async Task<JobSubmissionResult> CreateSplitConcatJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 
@@ -67,7 +65,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a DataStream job with timer functionality
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateTimerJob(
+    public static async Task<JobSubmissionResult> CreateTimerJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 
@@ -85,7 +83,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a SQL job that passes through data from input to output
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateSqlPassthroughJob(
+    public static async Task<JobSubmissionResult> CreateSqlPassthroughJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 
@@ -118,7 +116,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a SQL job that transforms data
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateSqlTransformJob(
+    public static async Task<JobSubmissionResult> CreateSqlTransformJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 
@@ -151,7 +149,7 @@ public static class FlinkDotNetJobs
     /// <summary>
     /// Creates a composite job that combines multiple operations
     /// </summary>
-    public static async Task<FlinkDotNet.Pipelines.SubmitResult> CreateCompositeJob(
+    public static async Task<JobSubmissionResult> CreateCompositeJob(
         string inputTopic, 
         string outputTopic, 
         string kafka, 

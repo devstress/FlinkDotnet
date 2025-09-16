@@ -43,7 +43,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0")
 
 // Set up FlinkDotnet Gateway
 var runnerJarPath = "/app/flink-ir-runner.jar";
-var gateway = builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
+builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
     .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080")
     .WithEnvironment("FLINK_CLUSTER_HOST", "flink-jobmanager")
     .WithEnvironment("FLINK_CLUSTER_PORT", "8081")
