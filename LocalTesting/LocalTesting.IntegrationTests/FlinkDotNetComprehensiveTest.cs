@@ -6,14 +6,33 @@ using NUnit.Framework;
 namespace LocalTesting.IntegrationTests;
 
 [TestFixture]
-[Category("flinkdotnet-basic")]
-public class FlinkDotNetBasicIntegrationTest
+[Category("flinkdotnet-comprehensive")]
+public class FlinkDotNetComprehensiveTest
 {
-    private const string InputTopic = "lt.flink.basic.input";
-    private const string OutputTopic = "lt.flink.basic.output";
+    // Topic naming convention: lt.flink.<job-type>.<in/out>
+    private const string BasicInputTopic = "lt.flink.basic.input";
+    private const string BasicOutputTopic = "lt.flink.basic.output";
+    
+    private const string FilterInputTopic = "lt.flink.filter.input";
+    private const string FilterOutputTopic = "lt.flink.filter.output";
+    
+    private const string SplitInputTopic = "lt.flink.split.input";
+    private const string SplitOutputTopic = "lt.flink.split.output";
+    
+    private const string TimerInputTopic = "lt.flink.timer.input";
+    private const string TimerOutputTopic = "lt.flink.timer.output";
+    
+    private const string SqlInputTopic = "lt.flink.sql.input";
+    private const string SqlOutputTopic = "lt.flink.sql.output";
+    
+    private const string SqlTransformInputTopic = "lt.flink.sqltransform.input";
+    private const string SqlTransformOutputTopic = "lt.flink.sqltransform.output";
+    
+    private const string CompositeInputTopic = "lt.flink.composite.input";
+    private const string CompositeOutputTopic = "lt.flink.composite.output";
 
     [Test]
-    public async Task FlinkDotNet_Basic_KafkaToKafka_Test()
+    public async Task FlinkDotNet_Comprehensive_AllJobTypes()
     {
         // Remove forced local simulation; require real Flink cluster
         Environment.SetEnvironmentVariable("FLINK_FORCE_LOCAL", null);
@@ -39,28 +58,58 @@ public class FlinkDotNetBasicIntegrationTest
             // Wait for Gateway to be ready
             await EnsureGatewayAsync(ct);
 
-            // Create topics
-            await CreateTopicAsync(kafka!, InputTopic, 1);
-            await CreateTopicAsync(kafka!, OutputTopic, 1);
+            // Create all topics
+            await CreateTopicAsync(kafka!, BasicInputTopic, 1);
+            await CreateTopicAsync(kafka!, BasicOutputTopic, 1);
+            await CreateTopicAsync(kafka!, FilterInputTopic, 1);
+            await CreateTopicAsync(kafka!, FilterOutputTopic, 1);
+            await CreateTopicAsync(kafka!, SplitInputTopic, 1);
+            await CreateTopicAsync(kafka!, SplitOutputTopic, 1);
+            await CreateTopicAsync(kafka!, TimerInputTopic, 1);
+            await CreateTopicAsync(kafka!, TimerOutputTopic, 1);
+            await CreateTopicAsync(kafka!, SqlInputTopic, 1);
+            await CreateTopicAsync(kafka!, SqlOutputTopic, 1);
+            await CreateTopicAsync(kafka!, SqlTransformInputTopic, 1);
+            await CreateTopicAsync(kafka!, SqlTransformOutputTopic, 1);
+            await CreateTopicAsync(kafka!, CompositeInputTopic, 1);
+            await CreateTopicAsync(kafka!, CompositeOutputTopic, 1);
 
-            // Submit a simple DataStream job
-            var job = FlinkDotNet.Flink.JobBuilder
-                .FromKafka(InputTopic, kafka)
-                .Map("upper")
-                .ToKafka(OutputTopic, kafka);
+            // Test 1: Basic Uppercase Job
+            TestContext.WriteLine("Testing Basic Uppercase Job");
+            var basicResult = await FlinkDotNetJobs.CreateUppercaseJob(
+                BasicInputTopic, BasicOutputTopic, kafka!, "lt-basic", ct);
             
-            var submitResult = await job.Submit("lt-basic-test", ct);
-            TestContext.WriteLine($"Job submit success={submitResult.Success}; jobId={submitResult.FlinkJobId}; error={submitResult.ErrorMessage}");
-            Assert.That(submitResult.Success, Is.True, "Job must submit successfully");
+            Assert.That(basicResult.Success, Is.True, "Basic job must submit successfully");
+            TestContext.WriteLine($"Basic job submitted with ID: {basicResult.FlinkJobId}");
+            
+            await ProduceSimpleMessagesAsync(kafka!, BasicInputTopic, 10, ct);
+            var basicConsumed = await ConsumeAsync(kafka!, BasicOutputTopic, 10, TimeSpan.FromSeconds(30), ct);
+            Assert.That(basicConsumed, Is.GreaterThanOrEqualTo(10), "Basic job should process all messages");
 
-            // Produce test messages
-            var messageCount = 10;
-            await ProduceSimpleMessagesAsync(kafka!, InputTopic, messageCount, ct);
+            // Test 2: Filter Job
+            TestContext.WriteLine("Testing Filter Job");
+            var filterResult = await FlinkDotNetJobs.CreateFilterJob(
+                FilterInputTopic, FilterOutputTopic, kafka!, "lt-filter", ct);
+            
+            Assert.That(filterResult.Success, Is.True, "Filter job must submit successfully");
+            TestContext.WriteLine($"Filter job submitted with ID: {filterResult.FlinkJobId}");
+            
+            // Send some empty and non-empty messages
+            await ProduceMessagesAsync(kafka!, FilterInputTopic, new[] { "", "value1", "", "value2", "value3" }, ct);
+            var filterConsumed = await ConsumeAsync(kafka!, FilterOutputTopic, 3, TimeSpan.FromSeconds(30), ct);
+            Assert.That(filterConsumed, Is.EqualTo(3), "Filter job should only process non-empty messages");
 
-            // Consume and verify output
-            var consumedCount = await ConsumeAsync(kafka!, OutputTopic, messageCount, TimeSpan.FromSeconds(30), ct);
-            TestContext.WriteLine($"Consumed {consumedCount} messages");
-            Assert.That(consumedCount, Is.GreaterThanOrEqualTo(messageCount), "All messages should be processed");
+            // Test 3: SQL Job
+            TestContext.WriteLine("Testing SQL Job");
+            var sqlResult = await FlinkDotNetJobs.CreateSqlPassthroughJob(
+                SqlInputTopic, SqlOutputTopic, kafka!, "lt-sql", ct);
+            
+            Assert.That(sqlResult.Success, Is.True, "SQL job must submit successfully");
+            TestContext.WriteLine($"SQL job submitted with ID: {sqlResult.FlinkJobId}");
+            
+            await ProduceJsonMessagesAsync(kafka!, SqlInputTopic, 5, ct);
+            var sqlConsumed = await ConsumeAsync(kafka!, SqlOutputTopic, 5, TimeSpan.FromSeconds(30), ct);
+            Assert.That(sqlConsumed, Is.GreaterThanOrEqualTo(5), "SQL job should process all messages");
         }
         finally 
         { 
@@ -106,13 +155,50 @@ public class FlinkDotNetBasicIntegrationTest
         
         producer.Flush(TimeSpan.FromSeconds(10));
     }
+    
+    private static async Task ProduceMessagesAsync(string bootstrap, string topic, string[] values, CancellationToken ct)
+    {
+        using var producer = new ProducerBuilder<string, string>(new ProducerConfig
+        {
+            BootstrapServers = bootstrap,
+            EnableIdempotence = true,
+            Acks = Acks.All,
+            LingerMs = 5
+        }).Build();
+        
+        for (int i = 0; i < values.Length; i++)
+        {
+            await producer.ProduceAsync(topic, new Message<string, string> { Key = $"key-{i}", Value = values[i] }, ct);
+        }
+        
+        producer.Flush(TimeSpan.FromSeconds(10));
+    }
+    
+    private static async Task ProduceJsonMessagesAsync(string bootstrap, string topic, int count, CancellationToken ct)
+    {
+        using var producer = new ProducerBuilder<string, string>(new ProducerConfig
+        {
+            BootstrapServers = bootstrap,
+            EnableIdempotence = true,
+            Acks = Acks.All,
+            LingerMs = 5
+        }).Build();
+        
+        for (int i = 0; i < count; i++)
+        {
+            var jsonValue = $"{{&quot;key&quot;:&quot;key-{i}&quot;,&quot;value&quot;:&quot;value-{i}&quot;}}";
+            await producer.ProduceAsync(topic, new Message<string, string> { Key = $"key-{i}", Value = jsonValue }, ct);
+        }
+        
+        producer.Flush(TimeSpan.FromSeconds(10));
+    }
 
     private static Task<long> ConsumeAsync(string bootstrap, string topic, int expectedMin, TimeSpan timeout, CancellationToken ct)
     {
         var config = new ConsumerConfig
         {
             BootstrapServers = bootstrap,
-            GroupId = $"lt-flink-basic-consumer-{Guid.NewGuid()}",
+            GroupId = $"lt-flink-consumer-{Guid.NewGuid()}",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
         };
