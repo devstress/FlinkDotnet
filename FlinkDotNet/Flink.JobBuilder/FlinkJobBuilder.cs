@@ -82,7 +82,7 @@ namespace Flink.JobBuilder
         }
 
         /// <summary>
-        /// Build a Flink SQL job from a list of SQL statements (DDL/DML)
+        /// Create a Flink SQL job from a list of SQL statements (DDL/DML)
         /// </summary>
         public static FlinkJobBuilder FromSql(IEnumerable<string> statements)
         {
@@ -458,9 +458,9 @@ namespace Flink.JobBuilder
 
             return new JobDefinition
             {
-                Source = _source,
+                Source = _source!,
                 Operations = _operations,
-                Sink = _sink!,
+                Sink = _sink, // may be null for SQL
                 Metadata = new JobMetadata
                 {
                     JobId = Guid.NewGuid().ToString(),

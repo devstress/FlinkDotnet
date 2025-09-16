@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Allow disabling the Java runner build with /p:BuildFlinkRunner=false -->
+    <BuildFlinkRunner>true</BuildFlinkRunner>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,5 +21,42 @@
   <ItemGroup>
     <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" />
   </ItemGroup>
+
+  <!--
+    Integrate the IR Java runner build directly into the Gateway build.
+    This replaces the previous build-all.ps1 invocation so that any
+    standalone build of the Gateway (dotnet build / restore / publish)
+    guarantees a fresh shaded JAR is available (or a placeholder if toolchain missing).
+    
+    The script invoked:
+      scripts/ensure-flink-runner.ps1  (located two levels above this csproj)
+    
+    Override:
+      dotnet build -p:BuildFlinkRunner=false   --> skip Java step
+  -->
+  <Target Name="BuildFlinkRunner"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(BuildFlinkRunner)' != 'false'">
+    <PropertyGroup>
+      <_RunnerScript>$(MSBuildProjectDirectory)\..\..\scripts\ensure-flink-runner.ps1</_RunnerScript>
+    </PropertyGroup>
+
+    <Message Text="(Flink.JobGateway) Ensuring Flink IR Runner shaded JAR via $(_RunnerScript)" Importance="High" />
+
+    <!-- Prefer pwsh (cross-platform). If unavailable on Windows fallback to powershell.exe -->
+    <Exec Condition="Exists('$(_RunnerScript)')"
+          Command="pwsh -NoLogo -File "$(_RunnerScript)" -Force"
+          ContinueOnError="false">
+      <Output TaskParameter="ExitCode" PropertyName="RunnerExitCode" />
+    </Exec>
+
+    <Exec Condition="Exists('$(_RunnerScript)') AND '$(OS)'=='Windows_NT' AND '$(RunnerExitCode)'!='0'"
+          Command="powershell -NoLogo -ExecutionPolicy Bypass -File "$(_RunnerScript)" -Force"
+          ContinueOnError="false" />
+
+    <Message Condition="!Exists('$(_RunnerScript)')"
+             Text="(Flink.JobGateway) Runner build script not found at $(_RunnerScript); skipping Java runner build."
+             Importance="High" />
+  </Target>
 
 </Project>

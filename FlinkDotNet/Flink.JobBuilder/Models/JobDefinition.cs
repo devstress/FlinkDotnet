@@ -11,7 +11,7 @@ namespace Flink.JobBuilder.Models
     {
         public ISourceDefinition Source { get; set; } = null!;
         public List<IOperationDefinition> Operations { get; set; } = new();
-        public ISinkDefinition Sink { get; set; } = null!;
+        public ISinkDefinition? Sink { get; set; } // nullable to allow pure SQL jobs
         public JobMetadata Metadata { get; set; } = new();
     }
 
