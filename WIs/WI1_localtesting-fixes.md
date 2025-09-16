@@ -10,6 +10,8 @@
 **Created**: Current
 **Status**: Investigation
 
+**Status**: Investigation → Design → Implementation → Testing → **DEBUGGING**
+
 ## Lessons Applied from Previous WIs
 ### Previous WI References
 - None (first WI)
@@ -27,30 +29,50 @@ Fix LocalTesting tests and fix the root causes until it passes locally per probl
 ### Debug Information (MANDATORY - Update this section for every investigation)
 - **Error Messages**: 
   ```
-  /home/runner/work/FlinkDotnet/FlinkDotnet/LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs(46,5): error S1481: Remove the unused local variable 'gateway'. (https://rules.sonarsource.com/csharp/RSPEC-1481)
+  Build Errors (RESOLVED):
+  /home/runner/work/FlinkDotnet/FlinkDotnet/LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs(46,5): error S1481: Remove the unused local variable 'gateway'
+  FlinkDotNetJobs.cs errors: 'SubmitResult' does not exist in namespace 'FlinkDotNet.Pipelines'
+  
+  Runtime Errors (CURRENT):
+  Test summary: total: 1, failed: 1, succeeded: 0, skipped: 0, duration: 86.4s
+  Infrastructure logs show successful Kafka + Flink startup, but test times out
   ```
-- **Log Locations**: Build output from `dotnet build LocalTesting/LocalTesting.sln --configuration Release`
+- **Log Locations**: 
+  - Build output from `dotnet build LocalTesting/LocalTesting.sln --configuration Release`
+  - Test output from `dotnet test LocalTesting/LocalTesting.IntegrationTests` 
+  - Aspire infrastructure logs showing container startup sequences
 - **System State**: 
-  - .NET 9.0.100 installed and verified
-  - Java 17 available for Flink IR Runner
-  - Flink IR Runner JAR built successfully  
-  - FlinkDotNet and BackPressureExample solutions build successfully
-  - LocalTesting solution fails with SonarQube rule violation
+  - .NET 9.0.100 installed and verified ✅
+  - Java 17 available for Flink IR Runner ✅
+  - Flink IR Runner JAR built successfully ✅ 
+  - FlinkDotNet and BackPressureExample solutions build successfully ✅
+  - LocalTesting solution now builds successfully ✅
+  - **Infrastructure Analysis**:
+    - Kafka container starts and becomes healthy ✅
+    - Flink JobManager starts and listens on port 8081 ✅
+    - Flink TaskManager successfully registers with ResourceManager ✅
+    - All containers connect to Aspire network properly ✅
+    - **Gateway Service Status**: Unknown - likely missing FLINK_RUNNER_JAR_PATH causing issues
 - **Reproduction Steps**: 
-  1. Run `./scripts/validate-build-and-tests.ps1 -SkipTests`
-  2. Observe LocalTesting build failure on unused variable
-- **Evidence**: Build output shows specific line 46 in Program.cs has unused variable 'gateway'
+  1. Run `dotnet test LocalTesting/LocalTesting.IntegrationTests --filter "TestCategory=flinkdotnet-basic"`
+  2. Observe infrastructure startup (takes ~30 seconds)
+  3. Test fails after ~86 seconds, infrastructure shuts down
+- **Evidence**: 
+  - Infrastructure startup logs confirm all services are healthy
+  - Test duration (~86s) suggests timeout in test waiting logic
+  - No obvious connectivity errors in Aspire orchestration logs
 
 ### Findings
-1. **Build Issue**: LocalTesting.FlinkSqlAppHost has unused local variable 'gateway' on line 46
-2. **Code Analysis**: Program.cs defines `var gateway = builder.AddProject(...)` but never uses the variable
-3. **Solution Strategy**: Remove unused variable or use it appropriately
-4. **Test Status**: Cannot run tests until build issues are resolved
+1. **✅ Build Issues RESOLVED**: All LocalTesting builds now pass successfully
+2. **⚠️ Runtime Issues IDENTIFIED**: Infrastructure starts correctly but tests timeout
+3. **🔍 Root Cause Hypothesis**: Test waiting logic or Gateway service configuration issues
+4. **📋 Next Investigation Needed**: Gateway service startup and jar path resolution
 
 ### Lessons Learned
 - Pre-change validation script effectively identified build issues
-- SonarQube rules are enforced during build process
-- Must fix build failures before proceeding to test execution
+- Infrastructure complexity requires substantial startup time (~30+ seconds)
+- Aspire orchestration is working correctly for container networking
+- Test timeout issues likely in application layer, not infrastructure layer
 
 ## Phase 2: Design  
 ### Requirements
