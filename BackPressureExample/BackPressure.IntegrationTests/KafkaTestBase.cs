@@ -26,82 +26,22 @@ public abstract class KafkaTestBase : IAsyncDisposable
 	public virtual async Task OneTimeSetUp()
 	{
 		var cancellationToken = TestContext.CurrentContext.CancellationToken;
+		var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.BackPressure_AppHost>(cancellationToken);
+		var app = await appHost.BuildAsync(cancellationToken).WaitAsync(defaultTimeout, cancellationToken);
+		await app.StartAsync(cancellationToken).WaitAsync(defaultTimeout, cancellationToken);
 
-		// Extended startup timeout (prior 60s) to reduce flakiness under cold Docker starts.
-		var extendedTimeout = TimeSpan.FromSeconds(120);
+		await app.ResourceNotifications
+			.WaitForResourceHealthyAsync("kafka", cancellationToken)
+			.WaitAsync(defaultTimeout, cancellationToken);
 
-		int attempt = 0;
-		const int maxAttempts = 3;
-		DistributedApplication? app = null;
+		KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
+		
+		TestContext.WriteLine($"✅ Kafka connection string: {KafkaConnectionString}");
 
-		while (attempt < maxAttempts)
-		{
-			attempt++;
-			try
-			{
-				TestContext.WriteLine($"🟡 [AppHost] Attempt {attempt}/{maxAttempts} creating test host (Timeout={extendedTimeout.TotalSeconds}s)");
-				var swCreate = Stopwatch.StartNew();
+		
+		await WaitForKafkaReadyAsync(KafkaConnectionString!, TimeSpan.FromSeconds(30), cancellationToken);
 
-				// TEMP: Revert to existing AppHost until Runner project is added to BackPressureExample.sln
-				// var appHostBuilder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.BackPressure_Runner>(cancellationToken);
-				var appHostBuilder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.BackPressure_AppHost>(cancellationToken);
-
-				TestContext.WriteLine("🟡 [AppHost] Building distributed application...");
-				var buildSw = Stopwatch.StartNew();
-				app = await appHostBuilder.BuildAsync(cancellationToken).WaitAsync(extendedTimeout, cancellationToken);
-				buildSw.Stop();
-				TestContext.WriteLine($"✅ [AppHost] Build complete in {buildSw.Elapsed.TotalSeconds:F1}s");
-
-				TestContext.WriteLine("🟡 [AppHost] Starting distributed application...");
-				var startSw = Stopwatch.StartNew();
-				await app.StartAsync(cancellationToken).WaitAsync(extendedTimeout, cancellationToken);
-				startSw.Stop();
-				TestContext.WriteLine($"✅ [AppHost] Start complete in {startSw.Elapsed.TotalSeconds:F1}s");
-
-				swCreate.Stop();
-				TestContext.WriteLine($"✅ [AppHost] Infrastructure up in {swCreate.Elapsed.TotalSeconds:F1}s (attempt {attempt})");
-
-				TestContext.WriteLine("🟡 [Health] Awaiting kafka resource healthy notification...");
-				var healthSw = Stopwatch.StartNew();
-				await app.ResourceNotifications
-					.WaitForResourceHealthyAsync("kafka", cancellationToken)
-					.WaitAsync(extendedTimeout, cancellationToken);
-				healthSw.Stop();
-				TestContext.WriteLine($"✅ [Health] Kafka reported healthy in {healthSw.Elapsed.TotalSeconds:F1}s");
-
-				KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
-				TestContext.WriteLine($"✅ Kafka connection string: {KafkaConnectionString}");
-
-				var readinessTimeout = TimeSpan.FromSeconds(45);
-				TestContext.WriteLine($"🟡 [KafkaReady] Probing cluster readiness (timeout {readinessTimeout.TotalSeconds}s)...");
-				await WaitForKafkaReadyAsync(KafkaConnectionString!, readinessTimeout, cancellationToken);
-
-				await SetupKafkaClientsAsync();
-
-				TestContext.WriteLine("✅ [Setup] Infrastructure & clients initialized successfully");
-				AppHost = app;
-				break; // success
-			}
-			catch (Exception ex) when (attempt < maxAttempts)
-			{
-				TestContext.WriteLine($"⚠️ [Retry] Attempt {attempt} failed to initialize infrastructure: {ex.GetType().Name} - {ex.Message}");
-				if (ex is TimeoutException)
-				{
-					TestContext.WriteLine("ℹ️ [Retry] Detected timeout; increasing grace period before next attempt...");
-				}
-				var backoffMs = attempt * 3000;
-				await Task.Delay(backoffMs, cancellationToken);
-			}
-			catch
-			{
-				throw;
-			}
-		}
-
-		if (app == null)
-		{
-			throw new TimeoutException("Failed to initialize distributed application after retries.");
-		}
+		await SetupKafkaClientsAsync();
 
 		TestContext.WriteLine(
 			$"🟢 Infrastructure initialized: Kafka={KafkaConnectionString}, " +
@@ -296,4 +236,3 @@ public abstract class KafkaTestBase : IAsyncDisposable
         throw new TimeoutException("Kafka did not become ready in time.");
     }
 }
-
