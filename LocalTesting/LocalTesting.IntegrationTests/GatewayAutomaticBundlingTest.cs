@@ -22,19 +22,19 @@ public class GatewayAutomaticBundlingTest
 
         try
         {
-            // Wait for infrastructure to be ready
+            // Wait for infrastructure to be ready with extended timeouts
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(90), ct);
+                .WaitAsync(TimeSpan.FromSeconds(120), ct);
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(90), ct);
+            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(120), ct);
 
-            // Wait for Flink to be ready
-            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(90), ct);
+            // Wait for Flink to be ready with extended timeout for container startup
+            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(180), ct);
 
             // Wait for Gateway to be ready (this tests the automatic JAR bundling)
-            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(90), ct);
+            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(120), ct);
 
             // Create test topics
             await CreateTopicAsync(kafka!, TestInputTopic, 1);
@@ -159,8 +159,10 @@ public class GatewayAutomaticBundlingTest
 
     private static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var sw = Stopwatch.StartNew();
+        
+        TestContext.WriteLine($"🔍 Waiting for Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
         
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
@@ -176,8 +178,21 @@ public class GatewayAutomaticBundlingTest
                         return;
                     }
                 }
+                else
+                {
+                    TestContext.WriteLine($"🟡 Flink JobManager not ready yet ({resp.StatusCode}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"🟡 Flink JobManager connection attempt failed ({ex.GetType().Name}: {ex.Message}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+            }
+            
+            await Task.Delay(2000, ct); // Check every 2 seconds
+        }
+        
+        throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
+    }
             
             await Task.Delay(1000, ct);
         }
