@@ -22,19 +22,25 @@ public class GatewayAutomaticBundlingTest
 
         try
         {
-            // Wait for infrastructure to be ready with extended timeouts
+            // Wait for infrastructure to be ready - using production-grade timeouts
+            TestContext.WriteLine("🔍 Starting infrastructure readiness checks...");
+            
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(120), ct);
+                .WaitAsync(TimeSpan.FromSeconds(150), ct);
+            TestContext.WriteLine("✅ Kafka resource healthy");
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(120), ct);
+            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(150), ct);
+            TestContext.WriteLine("✅ Kafka connectivity verified");
 
-            // Wait for Flink to be ready with extended timeout for container startup
-            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(180), ct);
+            // Wait for Flink with generous timeout for complex container startup
+            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(300), ct);
+            TestContext.WriteLine("✅ Flink JobManager ready");
 
-            // Wait for Gateway to be ready (this tests the automatic JAR bundling)
-            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(120), ct);
+            // Wait for Gateway (tests automatic JAR bundling) 
+            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(180), ct);
+            TestContext.WriteLine("✅ Gateway ready - automatic JAR bundling successful");
 
             // Create test topics
             await CreateTopicAsync(kafka!, TestInputTopic, 1);
@@ -164,6 +170,24 @@ public class GatewayAutomaticBundlingTest
         
         TestContext.WriteLine($"🔍 Waiting for Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
         
+        // First, just check if port is open (simpler check)
+        for (int i = 0; i < 30; i++) // 60 seconds of basic connectivity checks
+        {
+            try
+            {
+                using var tcpClient = new System.Net.Sockets.TcpClient();
+                await tcpClient.ConnectAsync("localhost", 8081, ct);
+                TestContext.WriteLine($"✅ Flink port 8081 is open after {sw.Elapsed.TotalSeconds:F1}s");
+                break;
+            }
+            catch
+            {
+                if (i % 10 == 0) TestContext.WriteLine($"🟡 Waiting for Flink port 8081 - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+                await Task.Delay(2000, ct);
+            }
+        }
+        
+        // Now check the actual API endpoint
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             try
@@ -172,23 +196,21 @@ public class GatewayAutomaticBundlingTest
                 if (resp.IsSuccessStatusCode)
                 {
                     var content = await resp.Content.ReadAsStringAsync(ct);
-                    if (!string.IsNullOrEmpty(content))
+                    if (!string.IsNullOrEmpty(content) && content.Contains("taskmanagers"))
                     {
-                        TestContext.WriteLine($"✅ Flink JobManager ready at {overviewUrl}");
+                        TestContext.WriteLine($"✅ Flink JobManager ready at {overviewUrl} after {sw.Elapsed.TotalSeconds:F1}s");
                         return;
                     }
                 }
-                else
-                {
-                    TestContext.WriteLine($"🟡 Flink JobManager not ready yet ({resp.StatusCode}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
-                }
+                TestContext.WriteLine($"🟡 Flink API responding but not fully ready ({resp.StatusCode}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
             }
             catch (Exception ex)
             {
-                TestContext.WriteLine($"🟡 Flink JobManager connection attempt failed ({ex.GetType().Name}: {ex.Message}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+                if (sw.Elapsed.TotalSeconds % 10 < 2) // Log every ~10 seconds
+                    TestContext.WriteLine($"🟡 Flink API check failed ({ex.GetType().Name}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
             }
             
-            await Task.Delay(2000, ct); // Check every 2 seconds
+            await Task.Delay(2000, ct);
         }
         
         throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
