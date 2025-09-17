@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LocalTesting.FlinkSqlAppHost\LocalTesting.FlinkSqlAppHost.csproj" />
-    <ProjectReference Include="..\BackPressure.AppHost\BackPressure.AppHost.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
   </ItemGroup>
