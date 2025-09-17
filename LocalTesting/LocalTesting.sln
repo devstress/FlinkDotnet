@@ -1,10 +1,12 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTesting.FlinkSqlAppHost", "LocalTesting.FlinkSqlAppHost\LocalTesting.FlinkSqlAppHost.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTesting.IntegrationTests", "LocalTesting.IntegrationTests\LocalTesting.IntegrationTests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BackPressure.AppHost", "BackPressure.AppHost\BackPressure.AppHost.csproj", "{5263B881-E8DC-42F2-8E75-CF294AFFEAFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,5 +22,9 @@ Global
 		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5263B881-E8DC-42F2-8E75-CF294AFFEAFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5263B881-E8DC-42F2-8E75-CF294AFFEAFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5263B881-E8DC-42F2-8E75-CF294AFFEAFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5263B881-E8DC-42F2-8E75-CF294AFFEAFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
