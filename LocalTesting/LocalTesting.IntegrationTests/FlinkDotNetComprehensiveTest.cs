@@ -181,7 +181,10 @@ public class FlinkDotNetComprehensiveTest
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"🟡 Flink API check failed ({ex.GetType().Name}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+            }
             
             await Task.Delay(1000, ct);
         }
@@ -205,7 +208,10 @@ public class FlinkDotNetComprehensiveTest
                     return;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"🟡 Gateway not ready yet ({ex.GetType().Name}: {ex.Message}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+            }
             
             await Task.Delay(500, ct);
         }

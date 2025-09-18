@@ -232,7 +232,10 @@ public class GatewayAutomaticBundlingTest
                     return;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"🟡 Gateway not ready yet ({ex.GetType().Name}: {ex.Message}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+            }
             
             await Task.Delay(500, ct);
         }
