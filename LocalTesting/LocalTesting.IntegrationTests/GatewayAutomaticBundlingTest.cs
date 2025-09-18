@@ -215,12 +215,6 @@ public class GatewayAutomaticBundlingTest
         
         throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
     }
-            
-            await Task.Delay(1000, ct);
-        }
-        
-        throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
-    }
 
     private static async Task WaitForHttpOkAsync(string url, TimeSpan timeout, CancellationToken ct)
     {
