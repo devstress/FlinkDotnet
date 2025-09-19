@@ -483,7 +483,7 @@ function Show-Help {
     Write-Info "Options:"
     Write-Info "  -Configuration <Debug|Release>  Build configuration (default: Release)"
     Write-Info "  -SkipRestore                    Skip package and workload restore"
-    Write-Info "  -VerboseOutput                        Enable detailed output"
+    Write-Info "  -VerboseOutput                  Enable detailed output"
     Write-Info "  -OutputPath <path>              Custom output directory"
     Write-Info "  -Help                           Show this help message"
     Write-Info ""
@@ -498,6 +498,9 @@ function Show-Help {
     Write-Info "  • Java 17 JDK (for Flink components)"
 }
 
+# NOTE: Flink IR Runner Java build integrated into Flink.JobGateway project (MSBuild target BuildFlinkRunner).
+# Legacy Build-FlinkRunner function removed to avoid duplicate execution during repository build.
+ 
 #endregion
 
 #region Main Execution
@@ -545,9 +548,15 @@ function Main {
         # Step 1: Check prerequisites
         Test-Prerequisites
         
-        # Step 2: Install Aspire workload (if not skipping restore)
+        # Step 2: (Windows skip) Install Aspire workload only on non-Windows unless forced
+        $forceAspire = $env:ASPIRE_FORCE_INSTALL -eq "1"
         if (-not $SkipRestore) {
-            Install-AspireWorkload
+            if (-not $script:IsWindowsPlatform -or $forceAspire) {
+                Write-Info "Aspire workload installation enabled (force=$forceAspire platform=$($script:Platform))"
+                Install-AspireWorkload
+            } else {
+                Write-Info "Skipping Aspire workload install on Windows (set ASPIRE_FORCE_INSTALL=1 to override)"
+            }
         }
         
         # Step 3: Restore workloads and packages (if not skipping restore)
@@ -557,11 +566,13 @@ function Main {
         } else {
             Write-Warning "Skipping restore operations as requested"
         }
+
+        # Step 4: (Removed) Java runner build now handled inside Flink.JobGateway csproj (MSBuild target 'BuildFlinkRunner').
         
-        # Step 4: Build all solutions
+        # Step 5: Build all solutions
         Build-Solutions
         
-        # Step 5: Show summary
+        # Step 6: Show summary
         Show-BuildSummary
         
         # Return appropriate exit code

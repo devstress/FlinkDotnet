@@ -47,21 +47,32 @@ public class FlinkJobRunner {
         DataStream<String> stream;
 
         if (ir.source instanceof SqlSourceDefinition) {
-            // Execute SQL statements via Table API
             SqlSourceDefinition s = (SqlSourceDefinition) ir.source;
             if (s.statements == null || s.statements.isEmpty()) {
                 throw new IllegalArgumentException("SQL job requires at least one statement");
             }
             TableEnvironment tEnv = TableEnvironment.create(
                     EnvironmentSettings.newInstance().inStreamingMode().build());
+            boolean hasInsert = false;
+            TableResult lastResult = null;
             for (String stmt : s.statements) {
                 if (stmt != null && !stmt.isBlank()) {
-                    TableResult tr = tEnv.executeSql(stmt);
-                    // No-op: TableResult may carry job client for async operations
+                    lastResult = tEnv.executeSql(stmt);
+                    if (stmt.trim().toUpperCase(Locale.ROOT).startsWith("INSERT")) {
+                        hasInsert = true;
+                    }
                 }
             }
-            // For SQL mode, do not proceed with DataStream mapping
-            return;
+            if (hasInsert && lastResult != null) {
+                // Block so the streaming insert keeps running; do not exit main.
+                if (lastResult.getJobClient().isPresent()) {
+                    lastResult.getJobClient().get().getJobExecutionResult().get();
+                } else {
+                    // Fallback: park thread indefinitely if job client not present
+                    Thread.sleep(Long.MAX_VALUE);
+                }
+            }
+            return; // No further DataStream processing for pure SQL jobs
         } else if (ir.source instanceof KafkaSourceDefinition) {
             KafkaSourceDefinition k = (KafkaSourceDefinition) ir.source;
             String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");

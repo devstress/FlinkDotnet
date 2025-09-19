@@ -236,4 +236,3 @@ public abstract class KafkaTestBase : IAsyncDisposable
         throw new TimeoutException("Kafka did not become ready in time.");
     }
 }
-

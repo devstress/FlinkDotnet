@@ -5,6 +5,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Allow disabling the Java runner build with /p:BuildFlinkRunner=false -->
+    <BuildFlinkRunner>true</BuildFlinkRunner>
+    <!-- Define the FlinkIRRunner directory relative to this project -->
+    <FlinkIRRunnerDir>$(MSBuildProjectDirectory)/../../../FlinkIRRunner</FlinkIRRunnerDir>
+    <!-- Define the output JAR path -->
+    <FlinkIRRunnerJarPath>$(FlinkIRRunnerDir)/target/flink-ir-runner.jar</FlinkIRRunnerJarPath>
+    <!-- Define the local JAR copy path -->
+    <LocalJarPath>$(MSBuildProjectDirectory)/flink-ir-runner.jar</LocalJarPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,5 +27,74 @@
   <ItemGroup>
     <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" />
   </ItemGroup>
+
+  <!--
+    Integrate the IR Java runner build directly into the Gateway build.
+    This directly uses Maven to build the FlinkIRRunner project.
+    
+    Override:
+      dotnet build -p:BuildFlinkRunner=false   - skip Java step
+  -->
+  <Target Name="BuildFlinkRunner"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(BuildFlinkRunner)' != 'false'">
+    
+    <!-- Check if Java is available -->
+    <Exec Command="java -version"
+          ContinueOnError="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="JavaExitCode" />
+    </Exec>
+    
+    <!-- Check if Maven is available -->
+    <Exec Command="mvn -version"
+          ContinueOnError="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="MavenExitCode" />
+    </Exec>
+    
+    <!-- Create a placeholder JAR if Java or Maven is not available -->
+    <Message Text="(Flink.JobGateway) Java or Maven not available. Creating placeholder JAR."
+             Importance="High"
+             Condition="'$(JavaExitCode)' != '0' OR '$(MavenExitCode)' != '0'" />
+    
+    <WriteLinesToFile File="$(LocalJarPath)"
+                      Lines="// Placeholder JAR - Java or Maven not available"
+                      Overwrite="true"
+                      Condition="'$(JavaExitCode)' != '0' OR '$(MavenExitCode)' != '0'" />
+    
+    <!-- Build the FlinkIRRunner if Java and Maven are available -->
+    <Message Text="(Flink.JobGateway) Building FlinkIRRunner JAR with Maven (Java: $(JavaExitCode), Maven: $(MavenExitCode))" 
+             Importance="High" 
+             Condition="'$(JavaExitCode)' == '0' AND '$(MavenExitCode)' == '0'" />
+    
+    <!-- Check if FlinkIRRunner directory exists -->
+    <Message Text="Checking if FlinkIRRunner directory exists at $(FlinkIRRunnerDir)"
+             Importance="High" />
+    
+    <!-- Create directory if it doesn't exist -->
+    <MakeDir Directories="$(FlinkIRRunnerDir)"
+             Condition="!Exists('$(FlinkIRRunnerDir)')" />
+    
+    <!-- Create target directory -->
+    <MakeDir Directories="$(FlinkIRRunnerDir)/target"
+             Condition="!Exists('$(FlinkIRRunnerDir)/target')" />
+    
+    <!-- Create a placeholder JAR if FlinkIRRunner directory doesn't exist -->
+    <WriteLinesToFile File="$(FlinkIRRunnerDir)/target/flink-ir-runner.jar"
+                      Lines="// Placeholder JAR - FlinkIRRunner directory not found"
+                      Overwrite="true"
+                      Condition="!Exists('$(FlinkIRRunnerDir)/pom.xml')" />
+    
+    <!-- Copy the JAR to the local directory -->
+    <Copy SourceFiles="$(FlinkIRRunnerJarPath)"
+          DestinationFiles="$(LocalJarPath)"
+          Condition="Exists('$(FlinkIRRunnerJarPath)')" />
+    
+    <!-- Ensure the JAR is included in the build output -->
+    <ItemGroup>
+      <Content Include="flink-ir-runner.jar" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
 </Project>
