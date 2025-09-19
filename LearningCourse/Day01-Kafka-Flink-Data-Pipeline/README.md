@@ -1,6 +1,6 @@
 # Day 1 — Kafka ↔ Flink Data Pipeline (FlinkDotNet)
 
-This day mirrors Baeldung's tutorial “Kafka and Apache Flink Data Pipeline” but implemented with FlinkDotNet and the LocalTesting setup.
+This day mirrors Baeldung's tutorial “Kafka and Apache Flink Data Pipeline” but implemented with FlinkDotNet and the LocalTesting setup. https://www.baeldung.com/kafka-flink-data-pipeline
 
 What you build:
 - Kafka producer sending events to an input topic
