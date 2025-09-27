@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-FlinkDotNet provides a .NET-first developer experience for Apache Flink by generating an intermediate representation (IR) of jobs in C# and executing them with a prebuilt IR Runner jar on a Flink cluster. It also includes a Flink Job Gateway (ASP.NET Core) and LocalTesting environment for quick iteration.
+FlinkDotNet provides a .NET-first developer experience for Apache Flink by generating an intermediate representation (IR) of jobs in C# and executing them with an IR Runner jar on a Flink cluster. The Flink Job Gateway (ASP.NET Core) prebuilds and bundles this jar during project build, and a LocalTesting environment accelerates iteration.
 
 Key pieces:
 - .NET SDK/DSL (imported via single NuGet `FlinkDotNet`) produces a JSON IR and validates it pre-submit.
@@ -10,7 +10,7 @@ Key pieces:
 
 ## 5‑Minute Quick Start
 
-Prereqs: .NET 9 SDK, Docker Desktop (for LocalTesting), Java 17 (for Flink locally if needed).
+Prereqs: .NET 9 SDK, Docker Desktop (for LocalTesting), Java 25 and Maven.
 
 1) Generate and validate IR in C#
 ```csharp

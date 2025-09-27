@@ -107,51 +107,7 @@ if (-not $AllSolutionsExist) {
 }
 
 # Step 2b: Build / ensure Flink IR Runner JAR (Java) so gateway submissions succeed
-Write-Info "Step 2b: Ensuring Flink IR Runner (Java) is built..."
-$runnerPom = "FlinkIRRunner/pom.xml"
-$runnerEnsure = "scripts/ensure-flink-runner.ps1"
-$runnerJar = "FlinkIRRunner/target/flink-ir-runner.jar"
-
-if (Test-Path $runnerPom) {
-    # Enforce Java 17
-    $javaOk = $false
-    try {
-        $javaVersionLine = (& java -version 2>&1 | Select-Object -First 1)
-        if ($javaVersionLine -match '"17\.') {
-            Write-Success "Java version OK for runner: $javaVersionLine"
-            $javaOk = $true
-        } else {
-            Write-Error "Java 17 required for Flink runner. Detected: $javaVersionLine"
-        }
-    } catch {
-        Write-Error "Java invocation failed (java not found or inaccessible)."
-    }
-    if (-not $javaOk) {
-        Write-Error "Cannot build Flink IR Runner without Java 17. Fix environment and re-run."
-        exit 1
-    }
-
-    if (Test-Path $runnerEnsure) {
-        Write-Info "Invoking ensure-flink-runner.ps1 -Force"
-        & pwsh -NoLogo -File $runnerEnsure -Force
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Flink IR Runner build script failed with exit code $LASTEXITCODE"
-            exit 1
-        }
-    } else {
-        Write-Error "Runner ensure script missing at $runnerEnsure"
-        exit 1
-    }
-
-    if (Test-Path $runnerJar) {
-        Write-Success "Flink IR Runner jar present: $runnerJar"
-    } else {
-        Write-Error "Runner jar not produced at expected path $runnerJar"
-        exit 1
-    }
-} else {
-    Write-Warning "FlinkIRRunner/pom.xml not found; skipping runner build (gateway cluster submissions may fail)."
-}
+Write-Info "Step 2b: Flink IR Runner will be built by Flink.JobGateway prebuild target."
 
 # Step 3: Build all solutions
 Write-Info "Step 3: Building all solutions..."

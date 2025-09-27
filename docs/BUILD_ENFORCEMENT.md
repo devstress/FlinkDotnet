@@ -14,6 +14,11 @@ This document outlines the mandatory build and test enforcement rules for FlinkD
 - **Environment validation** required before any development work
 - **Automated version checking** in all workflows
 
+### 2b. Java + Maven Requirements for Gateway Build
+- **Java 25** and Maven are required to build `Flink.JobGateway` (it prebuilds the IR Runner jar)
+- Ensure CI runners and developer machines have `java` and `mvn` on PATH
+- You can opt out per-build with `/p:BuildFlinkRunner=false` if supplying a prebuilt jar
+
 ### 3. Multi-Solution Validation
 All three solutions must build successfully:
 - `FlinkDotNet/FlinkDotNet.sln` - Core library

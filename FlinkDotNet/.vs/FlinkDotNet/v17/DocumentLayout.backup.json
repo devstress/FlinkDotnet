@@ -1,14 +1,16 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\",
+  "WorkspaceRootPath": "C:\\GitHub\\FlinkDotnet\\FlinkDotNet\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E572F0ED-A7C4-4EC4-BFF5-1852626215F4}|FlinkDotNet.Core.Api\\FlinkDotNet.Core.Api.csproj|c:\\github\\flink.net\\flinkdotnet\\flinkdotnet.core.api\\windowing\\trigger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E572F0ED-A7C4-4EC4-BFF5-1852626215F4}|FlinkDotNet.Core.Api\\FlinkDotNet.Core.Api.csproj|solutionrelative:flinkdotnet.core.api\\windowing\\trigger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{232A02B1-5F2E-40B4-8A9D-D9F22F91262A}|Flink.JobGateway\\Flink.JobGateway.csproj|c:\\github\\flinkdotnet\\flinkdotnet\\flink.jobgateway\\flink.jobgateway.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{232A02B1-5F2E-40B4-8A9D-D9F22F91262A}|Flink.JobGateway\\Flink.JobGateway.csproj|solutionrelative:flink.jobgateway\\flink.jobgateway.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E572F0ED-A7C4-4EC4-BFF5-1852626215F4}|FlinkDotNet.Core.Api\\FlinkDotNet.Core.Api.csproj|c:\\github\\flink.net\\flinkdotnet\\flinkdotnet.core.api\\windowing\\slidingeventtimewindows.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E572F0ED-A7C4-4EC4-BFF5-1852626215F4}|FlinkDotNet.Core.Api\\FlinkDotNet.Core.Api.csproj|solutionrelative:flinkdotnet.core.api\\windowing\\slidingeventtimewindows.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -23,24 +25,38 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Trigger.cs",
-              "DocumentMoniker": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
-              "RelativeDocumentMoniker": "FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
-              "ToolTip": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
-              "RelativeToolTip": "FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-06-10T16:26:35.866Z",
+              "Title": "Flink.JobGateway",
+              "DocumentMoniker": "C:\\GitHub\\FlinkDotnet\\FlinkDotNet\\Flink.JobGateway\\Flink.JobGateway.csproj",
+              "RelativeDocumentMoniker": "Flink.JobGateway\\Flink.JobGateway.csproj",
+              "ToolTip": "C:\\GitHub\\FlinkDotnet\\FlinkDotNet\\Flink.JobGateway\\Flink.JobGateway.csproj",
+              "RelativeToolTip": "Flink.JobGateway\\Flink.JobGateway.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-09-27T19:18:40.883Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "Trigger.cs",
+              "DocumentMoniker": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
+              "RelativeDocumentMoniker": "..\\..\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
+              "ToolTip": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
+              "RelativeToolTip": "..\\..\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\Trigger.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-10T16:26:35.866Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "SlidingEventTimeWindows.cs",
               "DocumentMoniker": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs",
-              "RelativeDocumentMoniker": "FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs",
+              "RelativeDocumentMoniker": "..\\..\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs",
               "ToolTip": "C:\\GitHub\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs",
-              "RelativeToolTip": "FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs",
+              "RelativeToolTip": "..\\..\\FLINK.NET\\FlinkDotNet\\FlinkDotNet.Core.Api\\Windowing\\SlidingEventTimeWindows.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-06-10T16:26:23.876Z"

@@ -14,51 +14,6 @@ if (diagnosticsVerbose)
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Pre-build FlinkIRRunner JAR to avoid startup delays
-try
-{
-    var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../.."));
-    var runnerDir = Path.Combine(repoRoot, "FlinkIRRunner");
-    var jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner.jar");
-    
-    if (!File.Exists(jarPath))
-    {
-        if (diagnosticsVerbose) Console.WriteLine($"[diag] Pre-building FlinkIRRunner JAR at {jarPath}");
-        
-        var psi = new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = "mvn",
-            Arguments = "clean package -DskipTests",
-            WorkingDirectory = runnerDir,
-            RedirectStandardOutput = !diagnosticsVerbose,
-            RedirectStandardError = !diagnosticsVerbose,
-            UseShellExecute = false
-        };
-        
-        using var process = System.Diagnostics.Process.Start(psi);
-        if (process != null)
-        {
-            process.WaitForExit(TimeSpan.FromMinutes(2)); // 2 minute timeout
-            if (process.ExitCode == 0)
-            {
-                if (diagnosticsVerbose) Console.WriteLine($"[diag] Successfully built FlinkIRRunner JAR");
-            }
-            else
-            {
-                if (diagnosticsVerbose) Console.WriteLine($"[diag][warn] FlinkIRRunner JAR build failed with exit code {process.ExitCode}");
-            }
-        }
-    }
-    else
-    {
-        if (diagnosticsVerbose) Console.WriteLine($"[diag] FlinkIRRunner JAR already exists at {jarPath}");
-    }
-}
-catch (Exception ex) 
-{ 
-    if (diagnosticsVerbose) Console.WriteLine($"[diag][warn] JAR pre-build failed: {ex.Message}"); 
-}
-
 // Ensure connector directory exists (used when real Flink runs)
 try
 {

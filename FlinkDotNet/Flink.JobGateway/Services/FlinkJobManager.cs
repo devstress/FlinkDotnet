@@ -368,23 +368,26 @@ public class FlinkJobManager : IFlinkJobManager
             return envPath;
         }
 
-        // Look for jar in standard locations
-        var searchPaths = new[]
+        // Look for jars in standard locations (prefer Java 25 jar, then Java 17)
+        var names = new[] { "flink-ir-runner.jar", "flink-ir-runner-java25.jar", "flink-ir-runner-java17.jar" };
+        var baseDirs = new[]
         {
-            // Current working directory
-            Path.Combine(Environment.CurrentDirectory, "flink-ir-runner.jar"),
-            // Repository structure
-            Path.Combine(Environment.CurrentDirectory, "FlinkIRRunner", "target", "flink-ir-runner.jar"),
+            Environment.CurrentDirectory,
+            Path.Combine(Environment.CurrentDirectory, "FlinkIRRunner", "target")
         };
+        var searchPaths = baseDirs.SelectMany(d => names.Select(n => Path.Combine(d, n))).ToArray();
 
         var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot != null)
         {
-            searchPaths = searchPaths.Concat(new[]
+            var repoCandidates = new[]
             {
-                Path.Combine(repoRoot, "FlinkIRRunner", "target", "flink-ir-runner.jar"),
-                Path.Combine(repoRoot, "flink-ir-runner.jar")
-            }).ToArray();
+                Path.Combine(repoRoot, "FlinkIRRunner", "target"),
+                repoRoot,
+            };
+            searchPaths = searchPaths
+                .Concat(repoCandidates.SelectMany(d => names.Select(n => Path.Combine(d, n))))
+                .ToArray();
         }
 
         return searchPaths.FirstOrDefault(File.Exists);

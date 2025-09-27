@@ -60,6 +60,10 @@ After installing .NET 9.0, verify the environment:
 # Verify .NET version
 dotnet --version  # Should return 9.0.x
 
+# Verify Java and Maven (required for Gateway build that prebuilds the IR Runner jar)
+java -version     # Java 25 required
+mvn -version      # Maven available on PATH
+
 # Install Aspire workload if needed (required on Linux):
 dotnet workload install aspire
 
@@ -86,3 +90,4 @@ Once .NET 9.0 is installed, run these workflows locally to ensure they pass:
 
 - Linux may require installing the Aspire workload separately: `dotnet workload install aspire`.
 - Ensure Docker Desktop or a compatible container runtime is available for Aspire resources.
+- Ensure Java 25 and Maven are installed; the Gateway build prebuilds `flink-ir-runner.jar`.
