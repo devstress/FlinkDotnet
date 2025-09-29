@@ -14,7 +14,7 @@ namespace PipelineDemo
     {
         private const string InputTopic = "lc1.flink.input";
         private const string OutputTopic = "lc1.flink.output";
-        private const string KafkaBootstrapServers = "localhost:9092";
+        private static readonly string KafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9092";
 
         static async Task Main(string[] args)
         {
@@ -428,3 +428,4 @@ namespace PipelineDemo
         }
     }
 }
+

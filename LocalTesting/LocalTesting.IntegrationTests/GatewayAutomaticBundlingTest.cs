@@ -17,33 +17,47 @@ public class GatewayAutomaticBundlingTest
     {
         using var enableGateway = new EnvironmentVariableScope("INCLUDE_FLINK_GATEWAY", "1");
 
-        var ct = TestContext.CurrentContext.CancellationToken;
+        TestPrerequisites.EnsureDockerAvailable();
+
+        var baseToken = TestContext.CurrentContext.CancellationToken;
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5));
+        using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        var ct = linkedCts.Token;
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
         var app = await appHost.BuildAsync(ct);
-        await app.StartAsync(ct);
+        using var startCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(ct);
+        startCts.CancelAfter(TimeSpan.FromMinutes(5));
+        await app.StartAsync(startCts.Token);
 
         try
         {
-            // Wait for infrastructure to be ready - using production-grade timeouts
+            // Wait for infrastructure to be ready
             TestContext.WriteLine("🔍 Starting infrastructure readiness checks...");
-            
+
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(150), ct);
+                .WaitAsync(TimeSpan.FromSeconds(60), ct);
             TestContext.WriteLine("✅ Kafka resource healthy");
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(150), ct);
+
+            var kafkaReadyTask = WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(60), ct);
+            var jmBaseTask = GetContainerHttpBaseAsync("flink-jobmanager", 8081, ct);
+            var gatewayBaseTask = GetContainerHttpBaseAsync("flink-job-gateway", 8080, ct);
+
+            await Task.WhenAll(kafkaReadyTask, jmBaseTask, gatewayBaseTask);
             TestContext.WriteLine("✅ Kafka connectivity verified");
 
-            // Wait for Flink with generous timeout for complex container startup
-            var jmBase = GetContainerHttpBase("flink-jobmanager", 8081);
-            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(300), ct);
+            var jmBase = jmBaseTask.Result;
+            var gatewayBase = gatewayBaseTask.Result;
+
+            var flinkReadyTask = WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(60), ct);
+            var gatewayReadyTask = WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(60), ct);
+
+            await flinkReadyTask;
             TestContext.WriteLine("✅ Flink JobManager ready");
 
-            // Wait for Gateway (tests automatic JAR bundling) 
-            var gatewayBase = GetContainerHttpBase("flink-job-gateway", 8080);
-            await WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(180), ct);
+            await gatewayReadyTask;
             TestContext.WriteLine("✅ Gateway ready - automatic JAR bundling successful");
 
             // Create test topics
@@ -286,18 +300,20 @@ public class GatewayAutomaticBundlingTest
         throw new TimeoutException($"Job {jobId} did not reach RUNNING state within {timeout.TotalSeconds:F0}s");
     }
 
-    private static string GetContainerHttpBase(string nameFilter, int containerPort)
+    
+    private static async Task<string> GetContainerHttpBaseAsync(string nameFilter, int containerPort, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(90);
+        var deadline = DateTime.UtcNow.AddSeconds(60);
         while (DateTime.UtcNow < deadline)
         {
+            ct.ThrowIfCancellationRequested();
             try
             {
-                var id = RunProcess("docker", $"ps -q --filter name={nameFilter}");
+                var id = await Task.Run(() => RunProcess("docker", $"ps -q --filter name={nameFilter}"), ct);
                 var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
                 if (!string.IsNullOrEmpty(containerId))
                 {
-                    var portOutput = RunProcess("docker", $"port {containerId} {containerPort}/tcp");
+                    var portOutput = await Task.Run(() => RunProcess("docker", $"port {containerId} {containerPort}/tcp"), ct);
                     var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
                     if (!string.IsNullOrEmpty(hostPort))
                     {
@@ -309,8 +325,16 @@ public class GatewayAutomaticBundlingTest
                     }
                 }
             }
-            catch { /* ignore and retry */ }
-            Thread.Sleep(1000);
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // ignore and retry
+            }
+
+            await Task.Delay(500, ct);
         }
         return $"http://localhost:{containerPort}/";
     }
@@ -333,6 +357,11 @@ public class GatewayAutomaticBundlingTest
     }
     #endregion
 }
+
+
+
+
+
 
 
 

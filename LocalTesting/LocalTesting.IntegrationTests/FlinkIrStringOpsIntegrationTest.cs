@@ -20,28 +20,39 @@ public class FlinkDotNetBasicIntegrationTest
         // Remove forced local simulation; require real Flink cluster
         Environment.SetEnvironmentVariable("FLINK_FORCE_LOCAL", null);
 
-        var ct = TestContext.CurrentContext.CancellationToken;
+        TestPrerequisites.EnsureDockerAvailable();
+
+        var baseToken = TestContext.CurrentContext.CancellationToken;
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5));
+        using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        var ct = linkedCts.Token;
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
         var app = await appHost.BuildAsync(ct);
-        await app.StartAsync(ct);
+        using var startCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(ct);
+        startCts.CancelAfter(TimeSpan.FromMinutes(5));
+        await app.StartAsync(startCts.Token);
 
         try
         {
             // Wait for Kafka to be ready
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(90), ct);
+                .WaitAsync(TimeSpan.FromSeconds(45), ct);
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(90), ct);
 
-            // Wait for Flink to be ready (discover actual mapped port)
-            var jmBase = GetContainerHttpBase("flink-jobmanager", 8081);
-            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(60), ct);
+            var kafkaReadyTask = WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(45), ct);
+            var jmBaseTask = GetContainerHttpBaseAsync("flink-jobmanager", 8081, ct);
+            var gatewayBaseTask = GetContainerHttpBaseAsync("flink-job-gateway", 8080, ct);
 
-            // Wait for Gateway to be ready (discover mapped port)
-            var gatewayBase = GetContainerHttpBase("flink-job-gateway", 8080);
-            await WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(60), ct);
+            await Task.WhenAll(kafkaReadyTask, jmBaseTask, gatewayBaseTask);
+
+            var jmBase = jmBaseTask.Result;
+            var gatewayBase = gatewayBaseTask.Result;
+
+            await Task.WhenAll(
+                WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(45), ct),
+                WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(45), ct));
 
             // Create topics
             await CreateTopicAsync(kafka!, InputTopic, 1);
@@ -152,18 +163,20 @@ public class FlinkDotNetBasicIntegrationTest
         throw new TimeoutException($"HTTP probe timed out for {url}");
     }
 
-    private static string GetContainerHttpBase(string nameFilter, int containerPort)
+    
+    private static async Task<string> GetContainerHttpBaseAsync(string nameFilter, int containerPort, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(90);
+        var deadline = DateTime.UtcNow.AddSeconds(60);
         while (DateTime.UtcNow < deadline)
         {
+            ct.ThrowIfCancellationRequested();
             try
             {
-                var id = RunProcess("docker", $"ps -q --filter name={nameFilter}");
+                var id = await Task.Run(() => RunProcess("docker", $"ps -q --filter name={nameFilter}"), ct);
                 var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
                 if (!string.IsNullOrEmpty(containerId))
                 {
-                    var portOutput = RunProcess("docker", $"port {containerId} {containerPort}/tcp");
+                    var portOutput = await Task.Run(() => RunProcess("docker", $"port {containerId} {containerPort}/tcp"), ct);
                     var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
                     if (!string.IsNullOrEmpty(hostPort))
                     {
@@ -175,8 +188,16 @@ public class FlinkDotNetBasicIntegrationTest
                     }
                 }
             }
-            catch { /* ignore and retry */ }
-            Thread.Sleep(1000);
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // ignore and retry
+            }
+
+            await Task.Delay(500, ct);
         }
         // Fallback to default
         return $"http://localhost:{containerPort}/";
@@ -244,5 +265,15 @@ public class FlinkDotNetBasicIntegrationTest
     }
     #endregion
 }
+
+
+
+
+
+
+
+
+
+
 
 

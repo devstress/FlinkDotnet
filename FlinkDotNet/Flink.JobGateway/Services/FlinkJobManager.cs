@@ -3246,87 +3246,112 @@ public class FlinkJobManager : IFlinkJobManager
 
 
 
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private async Task<string> SubmitJobToFlinkClusterAsync(string irBase64, JobDefinition jobDefinition)
-
-
-
-
-
-
-
-    {
-
-
-
-
-
-
-
-        try
-
-
-
-
-
-
-
-        {
-
-
-
-
-
-
-
-            var jarId = await EnsureRunnerJarAsync();
-
-
-
-
-
-
-
-            var runRequest = new
-
-
-
-
-
-
-
-            {
-
-
-
-
-
-
-
-                entryClass = "com.flink.jobgateway.FlinkJobRunner",
-
-
-
-
-
-
-
-                programArgsList = new[] { "--irBase64", irBase64 },
+    }
+        private async Task<string> SubmitJobToFlinkClusterAsync(string irBase64, JobDefinition jobDefinition)
+    {
+        try
+        {
+            var jarId = await EnsureRunnerJarAsync();
+            var runRequest = new
+            {
+                entryClass = "com.flink.jobgateway.FlinkJobRunner",
+                programArgsList = new[] { "--irBase64", irBase64 },
+                parallelism = jobDefinition.Metadata.Parallelism ?? 1,
+                jobName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId
+            };
+
+            var requestJson = JsonSerializer.Serialize(runRequest);
+            using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+            using var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
+
+            if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
+            }
+
+            var runContent = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Flink run response: {RunContent}", runContent);
+
+            string? jobId = null;
+            try
+            {
+                var run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                jobId = run?.JobId;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogDebug(ex, "Failed to deserialize Flink run response when extracting job id");
+            }
+
+            jobId ??= TryGetJobIdFromHeaders(response);
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                var targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+                jobId = await TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
+            }
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
+            }
+
+            return jobId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to submit jar to Flink REST API");
+            throw;
+        }
+    };
+
+            var requestJson = JsonSerializer.Serialize(runRequest);
+            using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+            using var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
+
+            if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
+            }
+
+            var runContent = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Flink run response: {RunContent}", runContent);
+
+            string? jobId = null;
+            try
+            {
+                var run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                jobId = run?.JobId;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogDebug(ex, "Failed to deserialize Flink run response when extracting job id");
+            }
+
+            jobId ??= TryGetJobIdFromHeaders(response);
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                var targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+                jobId = await TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
+            }
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
+            }
+
+            return jobId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to submit jar to Flink REST API");
+            throw;
+        }
+    }
+,
 
 
 
@@ -4995,6 +5020,197 @@ public class FlinkJobManager : IFlinkJobManager
 
 
 
+    private async Task<string?> TryRecoverFlinkJobIdAsync(string? jobName, TimeSpan timeout)
+    {
+        if (string.IsNullOrWhiteSpace(jobName))
+        {
+            return null;
+        }
+
+        var sw = Stopwatch.StartNew();
+        var overviewEndpoints = new[] { "/v1/jobs/overview", "/jobs/overview" };
+
+        while (sw.Elapsed < timeout)
+        {
+            foreach (var endpoint in overviewEndpoints)
+            {
+                try
+                {
+                    using var response = await _httpClient.GetAsync(endpoint);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogDebug("Jobs overview endpoint {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+                        continue;
+                    }
+
+                    var payload = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation("Jobs overview response from {Endpoint} while recovering job id: {Payload}", endpoint, payload);
+
+                    var recovered = ExtractJobIdFromOverviewPayload(payload, jobName);
+                    if (!string.IsNullOrEmpty(recovered))
+                    {
+                        _logger.LogInformation("Recovered job id {FlinkJobId} for job {JobName} via {Endpoint}", recovered, jobName, endpoint);
+                        return recovered;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to recover job id for {JobName} via {Endpoint}; will retry", jobName, endpoint);
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+
+        return null;
+    }
+
+    private static string? ExtractJobIdFromOverviewPayload(string payload, string jobName)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            return ExtractJobIdFromOverviewElement(document.RootElement, jobName);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? ExtractJobIdFromOverviewElement(JsonElement element, string jobName)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var child in element.EnumerateArray())
+            {
+                var nested = ExtractJobIdFromOverviewElement(child, jobName);
+                if (!string.IsNullOrEmpty(nested))
+                {
+                    return nested;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Object)
+        {
+            var match = MatchJobEntry(element, jobName);
+            if (!string.IsNullOrEmpty(match))
+            {
+                return match;
+            }
+
+            foreach (var property in element.EnumerateObject())
+            {
+                var nested = ExtractJobIdFromOverviewElement(property.Value, jobName);
+                if (!string.IsNullOrEmpty(nested))
+                {
+                    return nested;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static string? MatchJobEntry(JsonElement element, string jobName)
+    {
+        if (TryGetStringProperty(element, "name", out var name) || TryGetStringProperty(element, "jobName", out name))
+        {
+            if (string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (TryGetStringProperty(element, "jid", out var jobId) ||
+                    TryGetStringProperty(element, "jobId", out jobId) ||
+                    TryGetStringProperty(element, "jobid", out jobId) ||
+                    TryGetStringProperty(element, "id", out jobId))
+                {
+                    return jobId;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase) && property.Value.ValueKind == JsonValueKind.String)
+            {
+                value = property.Value.GetString();
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static string? TryGetJobIdFromHeaders(HttpResponseMessage response)
+    {
+        if (response.Headers.Location is Uri location)
+        {
+            var jobId = ExtractJobIdFromPath(location.ToString());
+            if (!string.IsNullOrEmpty(jobId))
+            {
+                return jobId;
+            }
+        }
+
+        if (response.Headers.TryGetValues("Location", out var locations))
+        {
+            foreach (var value in locations)
+            {
+                var jobId = ExtractJobIdFromPath(value);
+                if (!string.IsNullOrEmpty(jobId))
+                {
+                    return jobId;
+                }
+            }
+        }
+
+        foreach (var headerName in new[] { "X-Flink-JobID", "X-Flink-Job-Id", "Flink-Job-Id", "Flink-JobId" })
+        {
+            if (response.Headers.TryGetValues(headerName, out var headerValues))
+            {
+                var value = headerValues.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+                if (!string.IsNullOrEmpty(value))
+                {
+                    return value.Trim();
+                }
+            }
+        }
+
+        return null;
+
+        static string? ExtractJobIdFromPath(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var trimmed = value.Split('?', 2)[0].Trim().Trim('/');
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                return null;
+            }
+
+            var segments = trimmed.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var last = segments.LastOrDefault();
+            if (string.IsNullOrEmpty(last) || last.Equals("jobs", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return last;
+        }
+    }
     private JobValidationResult ValidateJobDefinition(JobDefinition jobDefinition)
 
 
@@ -6977,3 +7193,5 @@ public class FlinkJobManager : IFlinkJobManager
 
 
 
+
+

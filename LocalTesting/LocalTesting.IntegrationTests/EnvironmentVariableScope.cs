@@ -20,3 +20,7 @@ internal sealed class EnvironmentVariableScope : IDisposable
         Environment.SetEnvironmentVariable(_name, _previousValue, _target);
     }
 }
+
+
+
+
