@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture]
+[TestFixture, NonParallelizable]
 [Category("flinkdotnet-basic")]
 public class FlinkDotNetBasicIntegrationTest
 {
@@ -15,6 +15,8 @@ public class FlinkDotNetBasicIntegrationTest
     [Test]
     public async Task FlinkDotNet_Basic_KafkaToKafka_Test()
     {
+        using var enableGateway = new EnvironmentVariableScope("INCLUDE_FLINK_GATEWAY", "1");
+
         // Remove forced local simulation; require real Flink cluster
         Environment.SetEnvironmentVariable("FLINK_FORCE_LOCAL", null);
 
@@ -33,11 +35,13 @@ public class FlinkDotNetBasicIntegrationTest
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
             await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(90), ct);
 
-            // Wait for Flink to be ready
-            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(60), ct);
+            // Wait for Flink to be ready (discover actual mapped port)
+            var jmBase = GetContainerHttpBase("flink-jobmanager", 8081);
+            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(60), ct);
 
-            // Wait for Gateway to be ready
-            await EnsureGatewayAsync(ct);
+            // Wait for Gateway to be ready (discover mapped port)
+            var gatewayBase = GetContainerHttpBase("flink-job-gateway", 8080);
+            await WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(60), ct);
 
             // Create topics
             await CreateTopicAsync(kafka!, InputTopic, 1);
@@ -69,11 +73,7 @@ public class FlinkDotNetBasicIntegrationTest
     }
 
     #region Helpers
-    private static async Task EnsureGatewayAsync(CancellationToken ct)
-    {
-        // Flink Job Gateway health endpoint (ASP.NET)
-        await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
-    }
+    
 
     private static async Task CreateTopicAsync(string bootstrapServers, string topic, int partitions)
     {
@@ -152,6 +152,53 @@ public class FlinkDotNetBasicIntegrationTest
         throw new TimeoutException($"HTTP probe timed out for {url}");
     }
 
+    private static string GetContainerHttpBase(string nameFilter, int containerPort)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                var id = RunProcess("docker", $"ps -q --filter name={nameFilter}");
+                var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if (!string.IsNullOrEmpty(containerId))
+                {
+                    var portOutput = RunProcess("docker", $"port {containerId} {containerPort}/tcp");
+                    var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                    if (!string.IsNullOrEmpty(hostPort))
+                    {
+                        var candidate = hostPort.Split(':').Last().Trim();
+                        if (!string.IsNullOrEmpty(candidate))
+                        {
+                            return $"http://localhost:{candidate}/";
+                        }
+                    }
+                }
+            }
+            catch { /* ignore and retry */ }
+            Thread.Sleep(1000);
+        }
+        // Fallback to default
+        return $"http://localhost:{containerPort}/";
+    }
+
+    private static string RunProcess(string fileName, string arguments)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var output = p.StandardOutput.ReadToEnd();
+        p.WaitForExit(10000);
+        return output;
+    }
+
     private static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct)
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
@@ -197,3 +244,5 @@ public class FlinkDotNetBasicIntegrationTest
     }
     #endregion
 }
+
+

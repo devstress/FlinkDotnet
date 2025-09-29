@@ -165,7 +165,7 @@ namespace PipelineDemo
                 {
                     Console.WriteLine($"⚠️  Could not connect to Flink Job Gateway: {ex.Message}");
                     Console.WriteLine("   Make sure LocalTesting AppHost is running:");
-                    Console.WriteLine("   cd LocalTesting && dotnet run --project BackPressure.AppHost/BackPressure.AppHost.csproj");
+                    Console.WriteLine("   cd LocalTesting && dotnet run --project LocalTesting.FlinkSqlAppHost/LocalTesting.FlinkSqlAppHost.csproj");
                     Console.WriteLine();
                     Console.WriteLine("   The job definition was still generated successfully for educational purposes.");
                 }

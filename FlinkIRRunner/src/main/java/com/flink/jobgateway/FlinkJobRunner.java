@@ -2,6 +2,8 @@ package com.flink.jobgateway;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -255,9 +257,29 @@ public class FlinkJobRunner {
         public Integer parallelism;
     }
 
-    public interface Source {}
-    public interface Sink {}
-    public interface Operation {}
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = KafkaSourceDefinition.class, name = "kafka"),
+        @JsonSubTypes.Type(value = SqlSourceDefinition.class, name = "sql")
+})
+public interface Source {}
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = KafkaSinkDefinition.class, name = "kafka")
+})
+public interface Sink {}
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = MapOperationDefinition.class, name = "map"),
+        @JsonSubTypes.Type(value = FilterOperationDefinition.class, name = "filter"),
+        @JsonSubTypes.Type(value = WindowOperationDefinition.class, name = "window"),
+        @JsonSubTypes.Type(value = TimerOperationDefinition.class, name = "timer"),
+        @JsonSubTypes.Type(value = RetryOperationDefinition.class, name = "retry"),
+        @JsonSubTypes.Type(value = AsyncFunctionOperationDefinition.class, name = "async"),
+        @JsonSubTypes.Type(value = StateOperationDefinition.class, name = "state"),
+        @JsonSubTypes.Type(value = SideOutputOperationDefinition.class, name = "side-output")
+})
+public interface Operation {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class KafkaSourceDefinition implements Source {

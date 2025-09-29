@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture]
+[TestFixture, NonParallelizable]
 [Category("gateway-bundling")]
 public class GatewayAutomaticBundlingTest
 {
@@ -15,6 +15,8 @@ public class GatewayAutomaticBundlingTest
     [Test]
     public async Task Gateway_AutomaticBundling_WithoutPrebuiltJar_SuccessfullyRunsJob()
     {
+        using var enableGateway = new EnvironmentVariableScope("INCLUDE_FLINK_GATEWAY", "1");
+
         var ct = TestContext.CurrentContext.CancellationToken;
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
         var app = await appHost.BuildAsync(ct);
@@ -35,11 +37,13 @@ public class GatewayAutomaticBundlingTest
             TestContext.WriteLine("✅ Kafka connectivity verified");
 
             // Wait for Flink with generous timeout for complex container startup
-            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(300), ct);
+            var jmBase = GetContainerHttpBase("flink-jobmanager", 8081);
+            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(300), ct);
             TestContext.WriteLine("✅ Flink JobManager ready");
 
             // Wait for Gateway (tests automatic JAR bundling) 
-            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(180), ct);
+            var gatewayBase = GetContainerHttpBase("flink-job-gateway", 8080);
+            await WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(180), ct);
             TestContext.WriteLine("✅ Gateway ready - automatic JAR bundling successful");
 
             // Create test topics
@@ -60,13 +64,16 @@ public class GatewayAutomaticBundlingTest
             if (submitResult.Success)
             {
                 // Wait for job to be running
-                await WaitForJobRunningAsync(submitResult.FlinkJobId!, TimeSpan.FromSeconds(30), ct);
+                await WaitForJobRunningAsync(gatewayBase, submitResult.FlinkJobId!, TimeSpan.FromSeconds(30), ct);
                 
                 // Test message processing
                 await ProduceTestMessagesAsync(kafka!, TestInputTopic, 5, ct);
                 var consumed = await ConsumeAsync(kafka!, TestOutputTopic, 5, TimeSpan.FromSeconds(30), ct);
-                
-                Assert.That(consumed, Is.EqualTo(5), "Gateway should process messages through Flink job");
+                var expectedMessages = Enumerable.Range(0, 5).Select(i => $"TEST-MSG-{i}").ToList();
+
+                TestContext.WriteLine($"Gateway output messages: {string.Join(", ", consumed)}");
+                Assert.That(consumed.Count, Is.EqualTo(5), "Gateway should process messages through Flink job");
+                Assert.That(consumed, Is.EqualTo(expectedMessages).AsCollection, "Gateway should transform messages to upper-case");
                 TestContext.WriteLine("✅ Gateway automatic bundling test passed - JAR built and job executed successfully");
             }
             else
@@ -118,7 +125,7 @@ public class GatewayAutomaticBundlingTest
         producer.Flush(TimeSpan.FromSeconds(10));
     }
 
-    private static Task<long> ConsumeAsync(string bootstrap, string topic, int expected, TimeSpan timeout, CancellationToken ct)
+    private static Task<List<string>> ConsumeAsync(string bootstrap, string topic, int expected, TimeSpan timeout, CancellationToken ct)
     {
         var config = new ConsumerConfig
         {
@@ -130,14 +137,17 @@ public class GatewayAutomaticBundlingTest
         using var consumer = new ConsumerBuilder<string, string>(config).Build();
         consumer.Subscribe(topic);
         var sw = Stopwatch.StartNew();
-        long total = 0;
-        while (sw.Elapsed < timeout && total < expected && !ct.IsCancellationRequested)
+        var messages = new List<string>();
+        while (sw.Elapsed < timeout && messages.Count < expected && !ct.IsCancellationRequested)
         {
             var cr = consumer.Consume(TimeSpan.FromMilliseconds(200));
-            if (cr != null) total++;
+            if (cr?.Message?.Value is { } value)
+            {
+                messages.Add(value);
+            }
         }
         consumer.Close();
-        return Task.FromResult(total);
+        return Task.FromResult(messages);
     }
 
     private static async Task WaitForKafkaReady(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
@@ -243,7 +253,7 @@ public class GatewayAutomaticBundlingTest
         throw new TimeoutException($"HTTP endpoint not ready within {timeout.TotalSeconds:F0}s at {url}");
     }
 
-    private static async Task<string> WaitForJobRunningAsync(string jobId, TimeSpan timeout, CancellationToken ct)
+    private static async Task<string> WaitForJobRunningAsync(string gatewayBaseUrl, string jobId, TimeSpan timeout, CancellationToken ct)
     {
         using var http = new HttpClient();
         var sw = Stopwatch.StartNew();
@@ -252,7 +262,7 @@ public class GatewayAutomaticBundlingTest
         {
             try
             {
-                var resp = await http.GetAsync($"http://localhost:8080/api/v1/jobs/{jobId}/status", ct);
+                var resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
                 if (resp.IsSuccessStatusCode)
                 {
                     var content = await resp.Content.ReadAsStringAsync(ct);
@@ -275,5 +285,57 @@ public class GatewayAutomaticBundlingTest
         
         throw new TimeoutException($"Job {jobId} did not reach RUNNING state within {timeout.TotalSeconds:F0}s");
     }
+
+    private static string GetContainerHttpBase(string nameFilter, int containerPort)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                var id = RunProcess("docker", $"ps -q --filter name={nameFilter}");
+                var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if (!string.IsNullOrEmpty(containerId))
+                {
+                    var portOutput = RunProcess("docker", $"port {containerId} {containerPort}/tcp");
+                    var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                    if (!string.IsNullOrEmpty(hostPort))
+                    {
+                        var candidate = hostPort.Split(':').Last().Trim();
+                        if (!string.IsNullOrEmpty(candidate))
+                        {
+                            return $"http://localhost:{candidate}/";
+                        }
+                    }
+                }
+            }
+            catch { /* ignore and retry */ }
+            Thread.Sleep(1000);
+        }
+        return $"http://localhost:{containerPort}/";
+    }
+
+    private static string RunProcess(string fileName, string arguments)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var output = p.StandardOutput.ReadToEnd();
+        p.WaitForExit(10000);
+        return output;
+    }
     #endregion
 }
+
+
+
+
+
+

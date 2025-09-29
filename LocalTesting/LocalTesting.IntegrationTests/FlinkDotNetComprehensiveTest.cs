@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture]
+[TestFixture, NonParallelizable]
 [Category("flinkdotnet-comprehensive")]
 public class FlinkDotNetComprehensiveTest
 {
@@ -16,6 +16,8 @@ public class FlinkDotNetComprehensiveTest
     [Test]
     public async Task FlinkDotNet_Comprehensive_AllJobTypes()
     {
+        using var enableGateway = new EnvironmentVariableScope("INCLUDE_FLINK_GATEWAY", "1");
+
         // Remove forced local simulation; require real Flink cluster
         Environment.SetEnvironmentVariable("FLINK_FORCE_LOCAL", null);
 
@@ -34,11 +36,13 @@ public class FlinkDotNetComprehensiveTest
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
             await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(90), ct);
 
-            // Wait for Flink to be ready
-            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(90), ct);
+            // Wait for Flink to be ready (discover actual mapped port)
+            var jmBase = GetContainerHttpBase("flink-jobmanager", 8081);
+            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(90), ct);
 
-            // Wait for Gateway to be ready
-            await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(90), ct);
+            // Wait for Gateway to be ready (discover actual mapped port)
+            var gatewayBase = GetContainerHttpBase("flink-job-gateway", 8080);
+            await WaitForHttpOkAsync($"{gatewayBase}api/v1/health", TimeSpan.FromSeconds(90), ct);
 
             // Create test topics for comprehensive testing
             await CreateTopicAsync(kafka!, BasicInputTopic, 1);
@@ -58,7 +62,7 @@ public class FlinkDotNetComprehensiveTest
             if (submitResult.Success)
             {
                 // Wait for job to be running
-                await WaitForJobRunningAsync(submitResult.FlinkJobId!, TimeSpan.FromSeconds(30), ct);
+                await WaitForJobRunningAsync(gatewayBase, submitResult.FlinkJobId!, TimeSpan.FromSeconds(30), ct);
                 
                 // Test message processing
                 await ProduceTestMessagesAsync(kafka!, BasicInputTopic, 10, ct);
@@ -219,7 +223,7 @@ public class FlinkDotNetComprehensiveTest
         throw new TimeoutException($"HTTP endpoint not ready within {timeout.TotalSeconds:F0}s at {url}");
     }
 
-    private static async Task<string> WaitForJobRunningAsync(string jobId, TimeSpan timeout, CancellationToken ct)
+    private static async Task<string> WaitForJobRunningAsync(string gatewayBaseUrl, string jobId, TimeSpan timeout, CancellationToken ct)
     {
         using var http = new HttpClient();
         var sw = Stopwatch.StartNew();
@@ -228,7 +232,7 @@ public class FlinkDotNetComprehensiveTest
         {
             try
             {
-                var resp = await http.GetAsync($"http://localhost:8080/api/v1/jobs/{jobId}/status", ct);
+                var resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
                 if (resp.IsSuccessStatusCode)
                 {
                     var content = await resp.Content.ReadAsStringAsync(ct);
@@ -251,5 +255,53 @@ public class FlinkDotNetComprehensiveTest
         
         throw new TimeoutException($"Job {jobId} did not reach RUNNING state within {timeout.TotalSeconds:F0}s");
     }
+
+    private static string GetContainerHttpBase(string nameFilter, int containerPort)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                var id = RunProcess("docker", $"ps -q --filter name={nameFilter}");
+                var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if (!string.IsNullOrEmpty(containerId))
+                {
+                    var portOutput = RunProcess("docker", $"port {containerId} {containerPort}/tcp");
+                    var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                    if (!string.IsNullOrEmpty(hostPort))
+                    {
+                        var candidate = hostPort.Split(':').Last().Trim();
+                        if (!string.IsNullOrEmpty(candidate))
+                        {
+                            return $"http://localhost:{candidate}/";
+                        }
+                    }
+                }
+            }
+            catch { /* ignore and retry */ }
+            Thread.Sleep(1000);
+        }
+        return $"http://localhost:{containerPort}/";
+    }
+
+    private static string RunProcess(string fileName, string arguments)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var output = p.StandardOutput.ReadToEnd();
+        p.WaitForExit(10000);
+        return output;
+    }
     #endregion
 }
+
+
