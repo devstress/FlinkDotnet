@@ -99,10 +99,54 @@
     <Message Text="(Flink.JobGateway) Java 17 jar ready at $(MSBuildProjectDirectory)\flink-ir-runner-java17.jar" Importance="High" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
   </Target>
 
-    <!-- Ensure the JAR(s) are included in the build output (only if present) -->
-    <ItemGroup>
-      <Content Include="flink-ir-runner.jar" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
-      <Content Include="flink-ir-runner-java17.jar" CopyToOutputDirectory="PreserveNewest" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
-    </ItemGroup>
+  <!-- Ensure the JAR(s) are copied to the build output folder deterministically after build -->
+  <Target Name="CopyRunnerJarsToOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <_OutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_OutDir>
+    </PropertyGroup>
+
+    <!-- Prefer canonical name flink-ir-runner.jar in output. If only java17 exists, copy it as canonical name too. -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner.jar"
+          DestinationFiles="$(_OutDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_OutDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+
+    <!-- Also copy the java17 variant explicitly if present -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_OutDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+  </Target>
+
+  <!-- Copy runner jars into the publish directory so CI artifacts from publish include the jar -->
+  <Target Name="CopyRunnerJarsToPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_PublishDir>$([MSBuild]::EnsureTrailingSlash('$(PublishDir)'))</_PublishDir>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner.jar"
+          DestinationFiles="$(_PublishDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_PublishDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_PublishDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+  </Target>
+
+  <!-- Keep items for IDE visibility; do not rely on evaluation-time Exists for copying to output -->
+  <ItemGroup>
+    <None Include="flink-ir-runner.jar" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+    <None Include="flink-ir-runner-java17.jar" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+  </ItemGroup>
 
 </Project>
