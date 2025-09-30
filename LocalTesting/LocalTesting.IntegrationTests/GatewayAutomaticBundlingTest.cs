@@ -19,7 +19,7 @@ public class GatewayAutomaticBundlingTest
         var gatewayBuildable = TestPrerequisites.ProbeFlinkGatewayBuildable();
         if (!gatewayBuildable)
         {
-            Assert.Pass("Flink.JobGateway not buildable - passing gateway bundling test without execution.");
+            Assert.Fail("Flink.JobGateway or Runner JAR not available. Please build the gateway and ensure the Flink IR runner JAR exists before running tests.");
             return;
         }
 
@@ -363,6 +363,36 @@ public class GatewayAutomaticBundlingTest
     }
     #endregion
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,12 +1,1 @@
-# LocalTesting TODO
-- Save point before extending integration test timeouts (2025-09-30 08:01:55Z)
-- Align file and class naming: `FlinkIrStringOpsIntegrationTest.cs` contains `FlinkDotNetBasicIntegrationTest` – rename either file or class for clarity (2025-09-29 00:00:00Z)
-- Strengthen validation: assert transformed message values (e.g., uppercase mapping) in addition to count (2025-09-29 00:00:00Z)
-- Capture diagnostics on failure: dump logs from `flink-jobmanager`, taskmanagers, `flink-job-gateway`, and `kafka` containers to TestContext (2025-09-29 00:00:00Z)
-- Extract shared test helpers for Kafka topic create/produce/consume and Flink readiness checks to a common test utility (2025-09-29 00:00:00Z)
-- Make test timeouts configurable via environment variables with sensible defaults; document expected ranges (2025-09-29 00:00:00Z)
-- Add topic lifecycle management: optionally delete test topics after runs to avoid pollution across executions (2025-09-29 00:00:00Z)
-- Add retry/backoff for Kafka admin operations (topic create/metadata) to reduce flakes on cold starts (2025-09-29 00:00:00Z)
-- Replace direct `docker` CLI calls with Aspire testing APIs or container endpoint discovery when available (2025-09-29 00:00:00Z)
-- Add integration test for backpressure scenario using `BackPressure.AppHost` to validate end-to-end resilience (2025-09-29 00:00:00Z)
-- Gate tests on .NET 9 + Aspire and Docker pre-checks; provide clear skip reason when prerequisites missing (2025-09-29 00:00:00Z)
+This file has been deprecated and is intentionally left blank. TODOs have been migrated to Work Items (WIs) per repository policy.

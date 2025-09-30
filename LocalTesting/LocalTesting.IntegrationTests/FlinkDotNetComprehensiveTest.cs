@@ -23,7 +23,7 @@ public class FlinkDotNetComprehensiveTest
         var gatewayBuildable = TestPrerequisites.ProbeFlinkGatewayBuildable();
         if (!gatewayBuildable)
         {
-            Assert.Pass("Flink.JobGateway not buildable - passing comprehensive test without gateway-dependent execution.");
+            Assert.Fail("Flink.JobGateway or Runner JAR not available. Please build the gateway and ensure the Flink IR runner JAR exists before running tests.");
             return;
         }
 
@@ -330,6 +330,28 @@ public class FlinkDotNetComprehensiveTest
     }
     #endregion
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
