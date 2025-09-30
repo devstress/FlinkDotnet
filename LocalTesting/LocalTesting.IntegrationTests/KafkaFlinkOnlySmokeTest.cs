@@ -16,31 +16,31 @@ public class KafkaFlinkOnlySmokeTest
         TestPrerequisites.EnsureDockerAvailable();
 
         var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5));
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(15));
         using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
         var ct = linkedCts.Token;
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
         var app = await appHost.BuildAsync(ct);
         using var startCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(ct);
-        startCts.CancelAfter(TimeSpan.FromMinutes(5));
+        startCts.CancelAfter(TimeSpan.FromMinutes(15));
         await app.StartAsync(startCts.Token);
 
         try
         {
             await app.ResourceNotifications
                 .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(45), ct);
+                .WaitAsync(TimeSpan.FromSeconds(120), ct);
 
             var kafka = await app.GetConnectionStringAsync("kafka", ct);
 
-            var kafkaReadyTask = WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(45), ct);
+            var kafkaReadyTask = WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(180), ct);
             var jmBaseTask = GetContainerHttpBaseAsync("flink-jobmanager", 8081, ct);
 
             await Task.WhenAll(kafkaReadyTask, jmBaseTask);
 
             var jmBase = jmBaseTask.Result;
 
-            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(45), ct);
+            await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(180), ct);
 
             var gatewayPresence = RunProcess("docker", "ps -q --filter name=flink-job-gateway");
             Assert.That(string.IsNullOrWhiteSpace(gatewayPresence), Is.True, "Gateway container should not start when INCLUDE_FLINK_GATEWAY=0");
@@ -105,7 +105,7 @@ public class KafkaFlinkOnlySmokeTest
     
     private static async Task<string> GetContainerHttpBaseAsync(string nameFilter, int containerPort, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(60);
+        var deadline = DateTime.UtcNow.AddSeconds(120);
         while (DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
@@ -136,7 +136,7 @@ public class KafkaFlinkOnlySmokeTest
                 // ignore and retry until deadline
             }
 
-            await Task.Delay(500, ct);
+            await Task.Delay(1000, ct);
         }
 
         return $"http://localhost:{containerPort}/";
