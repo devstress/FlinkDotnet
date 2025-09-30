@@ -39,7 +39,7 @@ catch (Exception ex)
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Minimal Kafka setup on 9092 using resource name 'messaging'
-var kafka = builder.AddKafka("messaging", Ports.KafkaPort);
+var kafka = builder.AddKafka("kafka", Ports.KafkaPort);
 
 if (diagnosticsVerbose)
 {
