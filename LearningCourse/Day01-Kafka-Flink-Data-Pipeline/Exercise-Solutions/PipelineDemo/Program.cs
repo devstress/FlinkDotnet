@@ -14,7 +14,7 @@ namespace PipelineDemo
     {
         private const string InputTopic = "lc1.flink.input";
         private const string OutputTopic = "lc1.flink.output";
-        private static readonly string KafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9092";
+        private static readonly string KafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:29092";
 
         static async Task Main(string[] args)
         {
@@ -189,7 +189,9 @@ namespace PipelineDemo
                 BootstrapServers = KafkaBootstrapServers,
                 EnableIdempotence = true,
                 Acks = Acks.All,
-                LingerMs = 5
+                LingerMs = 5,
+                BrokerAddressFamily = BrokerAddressFamily.V4,
+                SecurityProtocol = SecurityProtocol.Plaintext
             };
 
             using var producer = new ProducerBuilder<string, string>(config).Build();
@@ -238,7 +240,9 @@ namespace PipelineDemo
                 BootstrapServers = KafkaBootstrapServers,
                 GroupId = $"lc1-consumer-{Guid.NewGuid()}",
                 AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false
+                EnableAutoCommit = false,
+                BrokerAddressFamily = BrokerAddressFamily.V4,
+                SecurityProtocol = SecurityProtocol.Plaintext
             };
 
             using var consumer = new ConsumerBuilder<string, string>(config).Build();
@@ -330,7 +334,7 @@ namespace PipelineDemo
 
         static async Task CreateTopicsAsync()
         {
-            var adminConfig = new AdminClientConfig { BootstrapServers = KafkaBootstrapServers };
+            var adminConfig = new AdminClientConfig { BootstrapServers = KafkaBootstrapServers, BrokerAddressFamily = BrokerAddressFamily.V4, SecurityProtocol = SecurityProtocol.Plaintext };
             using var admin = new AdminClientBuilder(adminConfig).Build();
 
             var topicsToCreate = new[]
@@ -373,7 +377,9 @@ namespace PipelineDemo
                     var adminConfig = new AdminClientConfig
                     {
                         BootstrapServers = KafkaBootstrapServers,
-                        SocketTimeoutMs = 3000
+                        SocketTimeoutMs = 3000,
+                        BrokerAddressFamily = BrokerAddressFamily.V4,
+                        SecurityProtocol = SecurityProtocol.Plaintext
                     };
 
                     using var admin = new AdminClientBuilder(adminConfig).Build();

@@ -31,15 +31,11 @@ public class KafkaFlinkOnlySmokeTest
                 .WaitForResourceHealthyAsync("kafka", ct)
                 .WaitAsync(TimeSpan.FromSeconds(120), ct);
 
-            var kafka = await app.GetConnectionStringAsync("kafka", ct);
+            var kafka = $"localhost:{Ports.KafkaPort}";
 
-            var kafkaReadyTask = WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(180), ct);
-            var jmBaseTask = GetContainerHttpBaseAsync("flink-jobmanager", 8081, ct);
+            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(180), ct);
 
-            await Task.WhenAll(kafkaReadyTask, jmBaseTask);
-
-            var jmBase = jmBaseTask.Result;
-
+            var jmBase = $"http://localhost:{Ports.JobManagerHostPort}/";
             await WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(180), ct);
 
             var gatewayPresence = RunProcess("docker", "ps -q --filter name=flink-job-gateway");
@@ -47,7 +43,7 @@ public class KafkaFlinkOnlySmokeTest
         }
         finally
         {
-            try { await app.DisposeAsync(); } catch { }
+            try { await app.DisposeAsync(); } catch (Exception ex) { TestContext.WriteLine($"[diag] Dispose failed: {ex.Message}"); }
         }
     }
 
@@ -58,7 +54,7 @@ public class KafkaFlinkOnlySmokeTest
         {
             try
             {
-                using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build();
+                using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, BrokerAddressFamily = BrokerAddressFamily.V4, SecurityProtocol = SecurityProtocol.Plaintext }).Build();
                 var metadata = admin.GetMetadata(TimeSpan.FromSeconds(5));
                 if (metadata?.Brokers.Count > 0)
                 {
@@ -66,8 +62,9 @@ public class KafkaFlinkOnlySmokeTest
                     return;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                TestContext.WriteLine($"🟡 Kafka readiness check failed: {ex.Message}");
                 await Task.Delay(1000, ct);
             }
         }
@@ -100,46 +97,6 @@ public class KafkaFlinkOnlySmokeTest
         }
 
         throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
-    }
-
-    
-    private static async Task<string> GetContainerHttpBaseAsync(string nameFilter, int containerPort, CancellationToken ct)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(120);
-        while (DateTime.UtcNow < deadline)
-        {
-            ct.ThrowIfCancellationRequested();
-            try
-            {
-                var id = await Task.Run(() => RunProcess("docker", $"ps -q --filter name={nameFilter}"), ct);
-                var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                if (!string.IsNullOrEmpty(containerId))
-                {
-                    var portOutput = await Task.Run(() => RunProcess("docker", $"port {containerId} {containerPort}/tcp"), ct);
-                    var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
-                    if (!string.IsNullOrEmpty(hostPort))
-                    {
-                        var candidate = hostPort.Split(':').Last().Trim();
-                        if (!string.IsNullOrEmpty(candidate))
-                        {
-                            return $"http://localhost:{candidate}/";
-                        }
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch
-            {
-                // ignore and retry until deadline
-            }
-
-            await Task.Delay(1000, ct);
-        }
-
-        return $"http://localhost:{containerPort}/";
     }
 
     private static string RunProcess(string fileName, string arguments)

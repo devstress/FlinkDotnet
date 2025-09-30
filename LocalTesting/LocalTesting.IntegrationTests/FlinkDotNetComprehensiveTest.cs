@@ -9,14 +9,12 @@ namespace LocalTesting.IntegrationTests;
 [Category("flinkdotnet-comprehensive")]
 public class FlinkDotNetComprehensiveTest
 {
-    // Topic naming convention: lt.flink.<job-type>.<in/out>
     private const string BasicInputTopic = "lt.flink.basic.input";
     private const string BasicOutputTopic = "lt.flink.basic.output";
 
     [Test]
     public async Task FlinkDotNet_Comprehensive_AllJobTypes()
     {
-        // Remove forced local simulation; require real Flink cluster
         Environment.SetEnvironmentVariable("FLINK_FORCE_LOCAL", null);
 
         TestPrerequisites.EnsureDockerAvailable();
@@ -46,16 +44,13 @@ public class FlinkDotNetComprehensiveTest
                 .WaitForResourceHealthyAsync("kafka", ct)
                 .WaitAsync(TimeSpan.FromSeconds(120), ct);
 
-            var kafka = await app.GetConnectionStringAsync("kafka", ct);
+            var kafka = $"localhost:{Ports.KafkaPort}";
 
             var kafkaReadyTask = WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(120), ct);
-            var jmBaseTask = GetContainerHttpBaseAsync("flink-jobmanager", 8081, ct);
-            var gatewayBaseTask = GetContainerHttpBaseAsync("flink-job-gateway", 8080, ct);
+            var jmBase = $"http://localhost:{Ports.JobManagerHostPort}/";
+            var gatewayBase = $"http://localhost:{Ports.GatewayHostPort}/";
 
-            await Task.WhenAll(kafkaReadyTask, jmBaseTask, gatewayBaseTask);
-
-            var jmBase = jmBaseTask.Result;
-            var gatewayBase = gatewayBaseTask.Result;
+            await kafkaReadyTask;
 
             await Task.WhenAll(
                 WaitForFlinkReadyAsync($"{jmBase}v1/overview", TimeSpan.FromSeconds(120), ct),
@@ -97,14 +92,14 @@ public class FlinkDotNetComprehensiveTest
         }
         finally 
         { 
-            try { await app.DisposeAsync(); } catch { /* Ignore disposal errors */ } 
+            try { await app.DisposeAsync(); } catch (Exception ex) { TestContext.WriteLine($"[diag] Dispose failed: {ex.Message}"); } 
         }
     }
 
     #region Helpers
     private static async Task CreateTopicAsync(string bootstrapServers, string topic, int partitions)
     {
-        using var admin = new Confluent.Kafka.AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build();
+        using var admin = new Confluent.Kafka.AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, BrokerAddressFamily = BrokerAddressFamily.V4, SecurityProtocol = SecurityProtocol.Plaintext }).Build();
         try
         {
             await admin.CreateTopicsAsync(new[] { new Confluent.Kafka.Admin.TopicSpecification { Name = topic, NumPartitions = partitions, ReplicationFactor = 1 } });
@@ -123,7 +118,9 @@ public class FlinkDotNetComprehensiveTest
             BootstrapServers = bootstrap,
             EnableIdempotence = true,
             Acks = Acks.All,
-            LingerMs = 5
+            LingerMs = 5,
+            BrokerAddressFamily = BrokerAddressFamily.V4,
+            SecurityProtocol = SecurityProtocol.Plaintext
         }).Build();
 
         for (int i = 0; i < count; i++)
@@ -144,7 +141,9 @@ public class FlinkDotNetComprehensiveTest
             BootstrapServers = bootstrap,
             GroupId = $"lt-flink-comprehensive-consumer-{Guid.NewGuid()}",
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false
+            EnableAutoCommit = false,
+            BrokerAddressFamily = BrokerAddressFamily.V4,
+            SecurityProtocol = SecurityProtocol.Plaintext
         };
         using var consumer = new ConsumerBuilder<string, string>(config).Build();
         consumer.Subscribe(topic);
@@ -166,7 +165,7 @@ public class FlinkDotNetComprehensiveTest
         {
             try
             {
-                using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build();
+                using var admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, BrokerAddressFamily = BrokerAddressFamily.V4, SecurityProtocol = SecurityProtocol.Plaintext }).Build();
                 var metadata = admin.GetMetadata(TimeSpan.FromSeconds(5));
                 if (metadata?.Brokers.Count > 0)
                 {
@@ -174,10 +173,11 @@ public class FlinkDotNetComprehensiveTest
                     return;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                await Task.Delay(1000, ct);
+                TestContext.WriteLine($"[diag] Kafka readiness exception: {ex.Message}");
             }
+            await Task.Delay(1000, ct);
         }
         throw new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s at {bootstrapServers}");
     }
@@ -186,7 +186,6 @@ public class FlinkDotNetComprehensiveTest
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         var sw = Stopwatch.StartNew();
-        
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             try
@@ -204,7 +203,7 @@ public class FlinkDotNetComprehensiveTest
             }
             catch (Exception ex)
             {
-                TestContext.WriteLine($"🟡 Flink API check failed ({ex.GetType().Name}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+                TestContext.WriteLine($"🟡 Flink API check failed ({ex.GetType().Name}): {ex.Message}");
             }
             
             await Task.Delay(1000, ct);
@@ -217,7 +216,6 @@ public class FlinkDotNetComprehensiveTest
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         var sw = Stopwatch.StartNew();
-        
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             try
@@ -231,7 +229,7 @@ public class FlinkDotNetComprehensiveTest
             }
             catch (Exception ex)
             {
-                TestContext.WriteLine($"🟡 Gateway not ready yet ({ex.GetType().Name}: {ex.Message}) - elapsed: {sw.Elapsed.TotalSeconds:F1}s");
+                TestContext.WriteLine($"🟡 Gateway not ready yet ({ex.GetType().Name}: {ex.Message})");
             }
             
             await Task.Delay(500, ct);
@@ -244,7 +242,6 @@ public class FlinkDotNetComprehensiveTest
     {
         using var http = new HttpClient();
         var sw = Stopwatch.StartNew();
-        
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             try
@@ -265,71 +262,59 @@ public class FlinkDotNetComprehensiveTest
                 }
             }
             catch (InvalidOperationException) { throw; }
-            catch { /* ignore HTTP errors */ }
+            catch (Exception ex) { TestContext.WriteLine($"[diag] WaitForJobRunning exception: {ex.Message}"); }
             
             await Task.Delay(1000, ct);
         }
         
         throw new TimeoutException($"Job {jobId} did not reach RUNNING state within {timeout.TotalSeconds:F0}s");
     }
-
-    private static async Task<string> GetContainerHttpBaseAsync(string nameFilter, int containerPort, CancellationToken ct)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(120);
-        while (DateTime.UtcNow < deadline)
-        {
-            ct.ThrowIfCancellationRequested();
-            try
-            {
-                var id = await Task.Run(() => RunProcess("docker", $"ps -q --filter name={nameFilter}"), ct);
-                var containerId = id.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                if (!string.IsNullOrEmpty(containerId))
-                {
-                    var portOutput = await Task.Run(() => RunProcess("docker", $"port {containerId} {containerPort}/tcp"), ct);
-                    var hostPort = portOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
-                    if (!string.IsNullOrEmpty(hostPort))
-                    {
-                        var candidate = hostPort.Split(':').Last().Trim();
-                        if (!string.IsNullOrEmpty(candidate))
-                        {
-                            return $"http://localhost:{candidate}/";
-                        }
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch
-            {
-                // ignore HTTP errors
-            }
-            
-            await Task.Delay(500, ct);
-        }
-
-        return $"http://localhost:{containerPort}/";
-    }
-
-    private static string RunProcess(string fileName, string arguments)
-    {
-        var psi = new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        using var p = System.Diagnostics.Process.Start(psi)!;
-        var output = p.StandardOutput.ReadToEnd();
-        p.WaitForExit(10000);
-        return output;
-    }
     #endregion
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
