@@ -8,7 +8,7 @@
 **Type**: Feature - Test Coverage
 **Assignee**: AI Agent
 **Created**: 2025-10-02
-**Status**: Completed
+**Status**: Reverted - Tests Removed Due to Infrastructure Issues
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -239,34 +239,54 @@ These tests provide comprehensive coverage and clear separation between infrastr
 
 ### Lessons Learned & Future Reference
 
-**What Worked Well:**
-1. **Reusing existing infrastructure**: The NativeKafkaJob JAR could be reused for all 7 native tests
-2. **Separation of concerns**: Native tests validate infrastructure, Gateway tests validate end-to-end flow
-3. **Clear test structure**: Following NativeFlinkJobTests.cs pattern made implementation straightforward
-4. **Unique topic names**: Using test IDs prevents conflicts between tests
+**What Went Wrong:**
+1. **Infrastructure testing limitations**: Created 14 new integration tests (7 native + 7 Gateway) but couldn't validate them without full Docker/Aspire infrastructure
+2. **Test failures**: All 22 tests (8 original + 14 new) failed when run, indicating either:
+   - Infrastructure setup issues affecting all tests
+   - Bugs in the new test implementations
+   - Environment/configuration problems
+3. **Unable to debug**: Without ability to run full Aspire infrastructure locally, couldn't determine root cause
+4. **Decision to revert**: Removed the 14 new test files to restore repository to working state
 
-**Key Insights for Similar Tasks:**
-1. **Infrastructure validation is separate from Gateway validation**: Native Flink tests prove Aspire works
-2. **Don't over-engineer**: Reusing existing JAR is better than creating 7 new Java programs
-3. **Match patterns, not exact logic**: Tests validate infrastructure capabilities, not exact transformations
-4. **Test categorization is important**: Using categories allows selective test execution
+**Root Cause Analysis:**
+From test output analysis before revert:
+- Jobs were submitting successfully ✅
+- Jobs were reaching RUNNING state ✅
+- Messages were being produced to input topics ✅
+- Messages were NOT being consumed from output topics ❌ (0 messages consumed)
 
-**Specific Problems to Avoid in Future:**
-1. **Don't create new Java JARs unnecessarily**: Existing NativeKafkaJob is sufficient for infrastructure validation
-2. **Don't mix infrastructure and Gateway concerns**: Keep native tests focused on infrastructure
-3. **Don't forget syntax checking**: Always build after creating new files
-4. **Remember Gateway dependency**: Gateway tests need `TestPrerequisites.ProbeFlinkGatewayBuildable()`
+This pattern suggests one of:
+- Jobs not actually processing messages despite RUNNING status
+- Output topics not receiving processed messages
+- Timing issues where consumption happens too early
+- Configuration issues with job definitions
 
-**Reference for Future WIs:**
-This Work Item demonstrates how to create comprehensive test coverage for multiple job patterns without requiring extensive Java development. Future similar work should:
-- Reuse existing infrastructure where possible
-- Separate infrastructure validation from application-level testing
-- Use clear test naming and categorization
-- Document test dependencies (Gateway vs infrastructure-only)
+**Key Insights for Future Attempts:**
+1. **Can't add integration tests without infrastructure**: Full Aspire/Docker setup required to validate integration tests
+2. **Test complexity**: The tests created were comprehensive but couldn't be validated in development environment
+3. **Need test validation strategy**: Should have a way to run/validate tests before committing
+4. **Original problem misunderstood**: The request was to create native Flink tests, but the real issue may have been with existing test infrastructure
 
-**Implementation Summary:**
-- **Created**: 2 new test files with 14 test methods total
-- **Time saved**: Avoided creating 6 new Java programs by reusing existing JAR
-- **Coverage**: All 7 FlinkDotNet job patterns now have both native and Gateway test coverage
-- **Build status**: All tests compile successfully
-- **Ready for**: Runtime validation when Docker/Aspire infrastructure is available
+**What Should Have Been Done Differently:**
+1. **Start smaller**: Create one test first, validate it works, then expand
+2. **Match existing patterns exactly**: Follow working test patterns more closely
+3. **Add delays/timing adjustments**: Jobs might need more time between submission and consumption
+4. **Better error handling**: Tests should have more detailed diagnostics
+5. **Environment validation**: Ensure test environment is properly set up before creating tests
+
+**Recommendation for Future:**
+To successfully add comprehensive tests for all 7 FlinkDotNet job patterns:
+1. Fix any existing infrastructure issues first
+2. Validate one working end-to-end test
+3. Add tests incrementally, validating each one
+4. Consider marking tests as [Ignore] with clear documentation if they require special setup
+5. Add better diagnostics/logging to help debug failures
+
+**Files Removed:**
+- `LocalTesting/LocalTesting.IntegrationTests/NativeFlinkComprehensiveTests.cs` (7 tests)
+- `LocalTesting/LocalTesting.IntegrationTests/FlinkDotNetAllJobTypesTests.cs` (7 tests)
+
+**Repository State:**
+- Reverted to 8 original tests
+- No modifications to existing test files
+- Work Item preserved for future reference
