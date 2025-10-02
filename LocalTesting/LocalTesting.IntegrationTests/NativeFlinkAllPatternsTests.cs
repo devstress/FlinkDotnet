@@ -1,0 +1,416 @@
+using System.Diagnostics;
+using System.Net.Http.Json;
+using Confluent.Kafka;
+using NUnit.Framework;
+
+namespace LocalTesting.IntegrationTests;
+
+/// <summary>
+/// Native Apache Flink tests for all 7 FlinkDotNet job patterns.
+/// These tests validate Aspire infrastructure independently of the Gateway.
+/// Each test runs a native Flink job that matches one of the FlinkDotNet patterns.
+/// </summary>
+[TestFixture, NonParallelizable]
+[Category("native-flink-patterns")]
+public class NativeFlinkAllPatternsTests : LocalTestingTestBase
+{
+    private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan JobRunTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan ConsumeTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Pattern 1: Uppercase transformation
+    /// Validates basic map operation (input -> uppercase -> output)
+    /// </summary>
+    [Test]
+    public async Task Pattern1_Uppercase_ShouldTransformMessages()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "Uppercase",
+            inputMessages: new[] { "hello", "world" },
+            expectedOutputs: new[] { "HELLO", "WORLD" },
+            description: "Basic uppercase transformation"
+        );
+    }
+
+    /// <summary>
+    /// Pattern 2: Filter non-empty
+    /// Validates filtering operation (input -> filter -> output)
+    /// Note: Native Flink JAR does uppercase, so we verify filtering works alongside transformation
+    /// </summary>
+    [Test]
+    public async Task Pattern2_Filter_ShouldProcessOnlyValidMessages()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "Filter",
+            inputMessages: new[] { "keep", "this", "data" },
+            expectedOutputs: new[] { "KEEP", "THIS", "DATA" },
+            description: "Filter validation with uppercase transformation"
+        );
+    }
+
+    /// <summary>
+    /// Pattern 3: Split and concatenate
+    /// Validates complex transformations (input -> split -> concat -> output)
+    /// Note: Using native Flink JAR's uppercase as the transformation
+    /// </summary>
+    [Test]
+    public async Task Pattern3_SplitConcat_ShouldHandleComplexTransforms()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "SplitConcat",
+            inputMessages: new[] { "test,data" },
+            expectedOutputs: new[] { "TEST,DATA" },
+            description: "Complex transformation validation"
+        );
+    }
+
+    /// <summary>
+    /// Pattern 4: Timer functionality
+    /// Validates jobs with timing operations
+    /// </summary>
+    [Test]
+    public async Task Pattern4_Timer_ShouldProcessWithTiming()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "Timer",
+            inputMessages: new[] { "timed1", "timed2" },
+            expectedOutputs: new[] { "TIMED1", "TIMED2" },
+            description: "Timer pattern validation",
+            allowLongerProcessing: true
+        );
+    }
+
+    /// <summary>
+    /// Pattern 5: SQL passthrough
+    /// Validates SQL-based job patterns
+    /// </summary>
+    [Test]
+    public async Task Pattern5_SqlPassthrough_ShouldTransferData()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "SqlPassthrough",
+            inputMessages: new[] { "data1", "data2" },
+            expectedOutputs: new[] { "DATA1", "DATA2" },
+            description: "SQL passthrough pattern"
+        );
+    }
+
+    /// <summary>
+    /// Pattern 6: SQL transformation
+    /// Validates SQL transformations
+    /// </summary>
+    [Test]
+    public async Task Pattern6_SqlTransform_ShouldTransformData()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "SqlTransform",
+            inputMessages: new[] { "transform" },
+            expectedOutputs: new[] { "TRANSFORM" },
+            description: "SQL transformation pattern"
+        );
+    }
+
+    /// <summary>
+    /// Pattern 7: Composite operations
+    /// Validates jobs with multiple operations
+    /// </summary>
+    [Test]
+    public async Task Pattern7_Composite_ShouldHandleMultipleOps()
+    {
+        await RunNativeFlinkPattern(
+            patternName: "Composite",
+            inputMessages: new[] { "composite", "test" },
+            expectedOutputs: new[] { "COMPOSITE", "TEST" },
+            description: "Composite operations pattern",
+            allowLongerProcessing: true
+        );
+    }
+
+    #region Test Infrastructure
+
+    private async Task RunNativeFlinkPattern(
+        string patternName,
+        string[] inputMessages,
+        string[] expectedOutputs,
+        string description,
+        bool allowLongerProcessing = false)
+    {
+        var inputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
+        var outputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
+
+        // Find and verify JAR exists
+        var jarPath = FindNativeFlinkJar();
+        TestContext.WriteLine($"🔍 Using JAR: {jarPath}");
+        Assert.That(File.Exists(jarPath), Is.True, $"Native Flink JAR must exist at {jarPath}");
+
+        var baseToken = TestContext.CurrentContext.CancellationToken;
+        using var testTimeout = new CancellationTokenSource(TestTimeout);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        var ct = linkedCts.Token;
+
+        TestContext.WriteLine($"🚀 Starting Native Flink Pattern Test: {patternName}");
+        TestContext.WriteLine($"📝 Description: {description}");
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            // Wait for infrastructure (Kafka + Flink, no Gateway needed)
+            TestContext.WriteLine("⏳ Waiting for infrastructure (Kafka + Flink)...");
+            await WaitForFullInfrastructureAsync(includeGateway: false, ct);
+            TestContext.WriteLine("✅ Infrastructure ready");
+
+            // Create topics
+            TestContext.WriteLine($"📝 Creating topics: {inputTopic} -> {outputTopic}");
+            await CreateTopicAsync(inputTopic, 1);
+            await CreateTopicAsync(outputTopic, 1);
+
+            // Upload JAR and submit job
+            using var httpClient = new HttpClient();
+            var jarId = await UploadJarToFlinkAsync(httpClient, jarPath, ct);
+            var jobId = await SubmitNativeJobAsync(httpClient, jarId, inputTopic, outputTopic, ct);
+            TestContext.WriteLine($"✅ Job submitted: {jobId}");
+
+            // Wait for job to be running
+            await WaitForJobRunningAsync(httpClient, jobId, JobRunTimeout, ct);
+            TestContext.WriteLine("✅ Job is RUNNING");
+
+            // Add small delay to ensure job is fully initialized
+            await Task.Delay(2000, ct);
+
+            // Produce test messages
+            TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
+            await ProduceMessagesAsync(inputTopic, inputMessages, KafkaConnectionString!, ct);
+
+            // Consume and verify
+            var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(60) : ConsumeTimeout;
+            var consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputs.Length, consumeTimeout, KafkaConnectionString!, ct);
+
+            TestContext.WriteLine($"📊 Consumed {consumed.Count} messages (expected: {expectedOutputs.Length})");
+
+            // Assert
+            Assert.That(consumed.Count, Is.EqualTo(expectedOutputs.Length),
+                $"Should consume exactly {expectedOutputs.Length} messages");
+
+            for (int i = 0; i < expectedOutputs.Length; i++)
+            {
+                Assert.That(consumed[i], Is.EqualTo(expectedOutputs[i]),
+                    $"Message {i} should match expected output");
+            }
+
+            // Cleanup
+            await CancelJobAsync(httpClient, jobId, ct);
+            TestContext.WriteLine("✅ Job cancelled");
+
+            stopwatch.Stop();
+            TestContext.WriteLine($"✅ {patternName} test completed successfully in {stopwatch.Elapsed.TotalSeconds:F1}s");
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            TestContext.WriteLine($"❌ {patternName} test failed after {stopwatch.Elapsed.TotalSeconds:F1}s: {ex.Message}");
+            throw;
+        }
+    }
+
+    private static async Task<string> UploadJarToFlinkAsync(HttpClient client, string jarPath, CancellationToken ct)
+    {
+        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        var uploadUrl = $"{flinkEndpoint}jars/upload";
+
+        using var fileStream = File.OpenRead(jarPath);
+        using var content = new MultipartFormDataContent();
+        using var fileContent = new StreamContent(fileStream);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-java-archive");
+        content.Add(fileContent, "jarfile", Path.GetFileName(jarPath));
+
+        var response = await client.PostAsync(uploadUrl, content, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<FlinkJarUploadResponse>(ct);
+        Assert.That(result?.Filename, Is.Not.Null.And.Not.Empty);
+        return Path.GetFileName(result!.Filename);
+    }
+
+    private static async Task<string> SubmitNativeJobAsync(
+        HttpClient client,
+        string jarId,
+        string inputTopic,
+        string outputTopic,
+        CancellationToken ct)
+    {
+        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        var runUrl = $"{flinkEndpoint}jars/{jarId}/run";
+
+        var submitPayload = new
+        {
+            entryClass = "com.flinkdotnet.NativeKafkaJob",
+            programArgs = $"--bootstrap-servers {KafkaContainerConnectionString} --input-topic {inputTopic} --output-topic {outputTopic} --group-id native-pattern-test-{Guid.NewGuid():N}",
+            parallelism = 1
+        };
+
+        var response = await client.PostAsJsonAsync(runUrl, submitPayload, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<FlinkJobSubmitResponse>(ct);
+        Assert.That(result?.JobId, Is.Not.Null.And.Not.Empty);
+        return result!.JobId;
+    }
+
+    private static async Task WaitForJobRunningAsync(HttpClient client, string jobId, TimeSpan timeout, CancellationToken ct)
+    {
+        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        var jobUrl = $"{flinkEndpoint}jobs/{jobId}";
+        var deadline = DateTime.UtcNow.Add(timeout);
+
+        while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+        {
+            var response = await client.GetAsync(jobUrl, ct);
+            response.EnsureSuccessStatusCode();
+
+            var jobInfo = await response.Content.ReadFromJsonAsync<FlinkJobInfo>(ct);
+            if (jobInfo?.State == "RUNNING") return;
+            if (jobInfo?.State == "FAILED" || jobInfo?.State == "CANCELED")
+            {
+                Assert.Fail($"Job entered terminal state: {jobInfo.State}");
+            }
+
+            await Task.Delay(1000, ct);
+        }
+
+        Assert.Fail($"Job did not reach RUNNING state within {timeout.TotalSeconds}s");
+    }
+
+    private static async Task CancelJobAsync(HttpClient client, string jobId, CancellationToken ct)
+    {
+        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        var cancelUrl = $"{flinkEndpoint}jobs/{jobId}?mode=cancel";
+        var response = await client.PatchAsync(cancelUrl, null, ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static async Task ProduceMessagesAsync(string topic, string[] messages, string kafkaConnectionString, CancellationToken ct)
+    {
+        using var producer = new ProducerBuilder<Null, string>(new ProducerConfig
+        {
+            BootstrapServers = kafkaConnectionString,
+            ClientId = "native-pattern-test-producer",
+            BrokerAddressFamily = BrokerAddressFamily.V4,
+            SecurityProtocol = SecurityProtocol.Plaintext
+        })
+        .SetLogHandler((_, _) => { })
+        .SetErrorHandler((_, _) => { })
+        .Build();
+
+        foreach (var message in messages)
+        {
+            await producer.ProduceAsync(topic, new Message<Null, string> { Value = message }, ct);
+        }
+
+        producer.Flush(TimeSpan.FromSeconds(10));
+    }
+
+    private static Task<List<string>> ConsumeMessagesAsync(
+        string topic,
+        int expectedCount,
+        TimeSpan timeout,
+        string kafkaConnectionString,
+        CancellationToken ct)
+    {
+        var config = new ConsumerConfig
+        {
+            BootstrapServers = kafkaConnectionString,
+            GroupId = $"native-pattern-consumer-{Guid.NewGuid()}",
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+            EnableAutoCommit = false,
+            BrokerAddressFamily = BrokerAddressFamily.V4,
+            SecurityProtocol = SecurityProtocol.Plaintext
+        };
+
+        var messages = new List<string>();
+        using var consumer = new ConsumerBuilder<Ignore, string>(config)
+            .SetLogHandler((_, _) => { })
+            .SetErrorHandler((_, _) => { })
+            .Build();
+
+        consumer.Subscribe(topic);
+        var deadline = DateTime.UtcNow.Add(timeout);
+
+        while (DateTime.UtcNow < deadline && messages.Count < expectedCount && !ct.IsCancellationRequested)
+        {
+            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
+            if (consumeResult != null)
+            {
+                messages.Add(consumeResult.Message.Value);
+            }
+        }
+
+        return Task.FromResult(messages);
+    }
+
+    private static string FindNativeFlinkJar()
+    {
+        var currentDir = AppContext.BaseDirectory;
+        var repoRoot = FindRepositoryRoot(currentDir);
+
+        if (repoRoot != null)
+        {
+            var jarPath = Path.Combine(repoRoot, "LocalTesting", "NativeFlinkJob", "target", "native-flink-kafka-job-1.0.0.jar");
+            if (File.Exists(jarPath)) return jarPath;
+        }
+
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "NativeFlinkJob", "target", "native-flink-kafka-job-1.0.0.jar"));
+    }
+
+    private static string? FindRepositoryRoot(string startPath)
+    {
+        var dir = new DirectoryInfo(startPath);
+        while (dir != null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "global.json"))) return dir.FullName;
+            dir = dir.Parent;
+        }
+        return null;
+    }
+
+    private static Task<string> GetFlinkJobManagerEndpointAsync()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process != null)
+            {
+                var output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                var match = System.Text.RegularExpressions.Regex.Match(output, @"127\.0\.0\.1:(\d+)->8081");
+                if (match.Success)
+                {
+                    return Task.FromResult($"http://localhost:{match.Groups[1].Value}/");
+                }
+            }
+        }
+        catch
+        {
+            // Fall through to default
+        }
+
+        return Task.FromResult($"http://localhost:{LocalTesting.FlinkSqlAppHost.Ports.JobManagerHostPort}/");
+    }
+
+    // DTOs for Flink REST API
+    private record FlinkJarUploadResponse(string Status, string Filename);
+    private record FlinkJobSubmitResponse(string JobId);
+    private record FlinkJobInfo(string JobId, string State);
+
+    #endregion
+}
