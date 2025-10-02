@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("kafka-flink-only")]
 public class KafkaFlinkOnlySmokeTest : LocalTestingTestBase
 {
@@ -12,7 +12,7 @@ public class KafkaFlinkOnlySmokeTest : LocalTestingTestBase
         TestPrerequisites.EnsureDockerAvailable();
 
         var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(3)); // Reduced from 15 minutes
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(1)); // Optimized: Reduced from 3 minutes
         using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
         var ct = linkedCts.Token;
 

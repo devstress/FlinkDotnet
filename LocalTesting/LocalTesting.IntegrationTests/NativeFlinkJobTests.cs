@@ -13,8 +13,9 @@ namespace LocalTesting.IntegrationTests;
 [Category("native-flink")]
 public class NativeFlinkJobTests : LocalTestingTestBase
 {
-    private const string InputTopic = "lt.native.input";
-    private const string OutputTopic = "lt.native.output";
+    // Use unique topic names per test run to prevent conflicts when tests run together
+    private static string InputTopic => $"lt.native.input.{TestContext.CurrentContext.Test.ID}";
+    private static string OutputTopic => $"lt.native.output.{TestContext.CurrentContext.Test.ID}";
 
     [Test]
     public async Task NativeFlinkJob_Should_ProcessMessagesSuccessfully()

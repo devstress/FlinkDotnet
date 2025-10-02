@@ -14,10 +14,10 @@ namespace LocalTesting.IntegrationTests;
 [Category("Diagnostic")]
 public class GatewayVsPureFlinkDiagnosticTest : LocalTestingTestBase
 {
-    private const string PureFlinkInputTopic = "lt.diagnostic.pureflink.input";
-    private const string PureFlinkOutputTopic = "lt.diagnostic.pureflink.output";
-    private const string GatewayInputTopic = "lt.diagnostic.gateway.input";
-    private const string GatewayOutputTopic = "lt.diagnostic.gateway.output";
+    private static string PureFlinkInputTopic => $"lt.diagnostic.pureflink.input.{TestContext.CurrentContext.Test.ID}";
+    private static string PureFlinkOutputTopic => $"lt.diagnostic.pureflink.output.{TestContext.CurrentContext.Test.ID}";
+    private static string GatewayInputTopic => $"lt.diagnostic.gateway.input.{TestContext.CurrentContext.Test.ID}";
+    private static string GatewayOutputTopic => $"lt.diagnostic.gateway.output.{TestContext.CurrentContext.Test.ID}";
 
     [Test]
     public async Task Diagnostic_CompareGatewayVsPureFlink_IdentifyRootCause()

@@ -16,8 +16,9 @@ namespace LocalTesting.IntegrationTests;
 [Category("flink-runner-direct")]
 public class FlinkRunnerDirectTest : LocalTestingTestBase
 {
-    private const string InputTopic = "lt.runner.direct.input";
-    private const string OutputTopic = "lt.runner.direct.output";
+    // Use unique topic names per test run to prevent conflicts when tests run together
+    private static string InputTopic => $"lt.runner.direct.input.{TestContext.CurrentContext.Test.ID}";
+    private static string OutputTopic => $"lt.runner.direct.output.{TestContext.CurrentContext.Test.ID}";
 
     [Test]
     public async Task FlinkRunner_DirectExecution_WithCorrectKafkaConfig_ShouldWork()

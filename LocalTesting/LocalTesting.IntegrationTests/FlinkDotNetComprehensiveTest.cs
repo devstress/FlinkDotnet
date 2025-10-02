@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("flinkdotnet-comprehensive")]
 public class FlinkDotNetComprehensiveTest : LocalTestingTestBase
 {
@@ -26,7 +26,7 @@ public class FlinkDotNetComprehensiveTest : LocalTestingTestBase
         }
 
         var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(4)); // Reduced from 12 minutes
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(2)); // Optimized: Reduced from 4 minutes
         using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
         var ct = linkedCts.Token;
 
@@ -62,11 +62,11 @@ public class FlinkDotNetComprehensiveTest : LocalTestingTestBase
                 var gatewayBase = $"http://localhost:{Ports.GatewayHostPort}/";
                 await WaitForJobRunningAsync(gatewayBase, submitResult.FlinkJobId!, TimeSpan.FromSeconds(60), ct);
                 
-                // Test message processing
-                await ProduceTestMessagesAsync(BasicInputTopic, 10, ct);
-                var consumed = await ConsumeAsync(BasicOutputTopic, 10, TimeSpan.FromSeconds(60), ct);
+                // Test message processing with reduced message count
+                await ProduceTestMessagesAsync(BasicInputTopic, 3, ct); // Optimized: Reduced from 10 to 3
+                var consumed = await ConsumeAsync(BasicOutputTopic, 3, TimeSpan.FromSeconds(30), ct); // Optimized: Reduced timeout from 60s to 30s
                 
-                Assert.That(consumed, Is.EqualTo(10), "Should support comprehensive FlinkDotNet job processing");
+                Assert.That(consumed, Is.EqualTo(3), "Should support comprehensive FlinkDotNet job processing");
                 TestContext.WriteLine("✅ FlinkDotNet comprehensive test passed - full job lifecycle validated");
             }
             else

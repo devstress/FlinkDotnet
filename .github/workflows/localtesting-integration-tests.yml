@@ -12,7 +12,7 @@ jobs:
   localtesting-integration-test:
     name: Run LocalTesting Integration Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15  # Optimized: Reduced from 30 minutes with parallel execution and shared infrastructure
 
     steps:
       - name: Checkout code
@@ -60,8 +60,8 @@ jobs:
           dotnet restore LocalTesting/LocalTesting.sln
           dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
 
-      - name: Run LocalTesting Integration Tests  
-        timeout-minutes: 30
+      - name: Run LocalTesting Integration Tests
+        timeout-minutes: 15  # Optimized: Tests now run with shared infrastructure and parallel execution
         env:
           DOTNET_ENVIRONMENT: Testing
           KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"

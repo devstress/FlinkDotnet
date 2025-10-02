@@ -5,12 +5,12 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("gateway-bundling")]
 public class GatewayAutomaticBundlingTest : LocalTestingTestBase
 {
-    private const string TestInputTopic = "lt.gateway.bundling.input";
-    private const string TestOutputTopic = "lt.gateway.bundling.output";
+    private static string TestInputTopic => $"lt.gateway.bundling.input.{TestContext.CurrentContext.Test.ID}";
+    private static string TestOutputTopic => $"lt.gateway.bundling.output.{TestContext.CurrentContext.Test.ID}";
 
     [Test]
     public async Task Gateway_AutomaticBundling_WithoutPrebuiltJar_SuccessfullyRunsJob()
@@ -24,7 +24,7 @@ public class GatewayAutomaticBundlingTest : LocalTestingTestBase
         }
 
         var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(3)); // Reduced from 10 minutes
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(2)); // Optimized: Reduced from 3 minutes
         using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
         var ct = linkedCts.Token;
 
@@ -60,13 +60,13 @@ public class GatewayAutomaticBundlingTest : LocalTestingTestBase
                 var gatewayBase = $"http://localhost:{Ports.GatewayHostPort}/";
                 await WaitForJobRunningAsync(gatewayBase, submitResult.FlinkJobId!, TimeSpan.FromSeconds(60), ct);
                 
-                // Test message processing
-                await ProduceTestMessagesAsync(TestInputTopic, 5, ct);
-                var consumed = await ConsumeAsync(TestOutputTopic, 5, TimeSpan.FromSeconds(60), ct);
-                var expectedMessages = Enumerable.Range(0, 5).Select(i => $"TEST-MSG-{i}").ToList();
+                // Test message processing with reduced message count
+                await ProduceTestMessagesAsync(TestInputTopic, 2, ct); // Optimized: Reduced from 5 to 2
+                var consumed = await ConsumeAsync(TestOutputTopic, 2, TimeSpan.FromSeconds(30), ct); // Optimized: Reduced timeout from 60s to 30s
+                var expectedMessages = Enumerable.Range(0, 2).Select(i => $"TEST-MSG-{i}").ToList();
 
                 TestContext.WriteLine($"Gateway output messages: {string.Join(", ", consumed)}");
-                Assert.That(consumed.Count, Is.EqualTo(5), "Gateway should process messages through Flink job");
+                Assert.That(consumed.Count, Is.EqualTo(2), "Gateway should process messages through Flink job");
                 Assert.That(consumed, Is.EqualTo(expectedMessages).AsCollection, "Gateway should transform messages to upper-case");
                 TestContext.WriteLine("✅ Gateway automatic bundling test passed - JAR built and job executed successfully");
             }

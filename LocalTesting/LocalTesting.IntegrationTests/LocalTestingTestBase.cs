@@ -15,16 +15,22 @@ namespace LocalTesting.IntegrationTests;
 /// Based on successful patterns from BackPressureExample.IntegrationTests.KafkaTestBase
 /// with improvements for Flink infrastructure readiness validation and Docker connectivity.
 /// </summary>
-public abstract class LocalTestingTestBase : IAsyncDisposable
+public abstract class LocalTestingTestBase
 {
-    // Reduced timeout based on BackPressureExample success patterns
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan KafkaReadyTimeout = TimeSpan.FromSeconds(45); // Increased slightly for Docker startup
-    private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(90); // Increased for Flink JobManager initialization (typically needs 30-45s)
-    private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(60); // Increased timeout for Gateway .NET project startup
+    // Optimized timeouts for faster test execution (used in WaitForFullInfrastructureAsync)
+    private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(45);
 
-    protected DistributedApplication? AppHost { get; private set; }
-    protected string? KafkaConnectionString { get; private set; }
+    /// <summary>
+    /// Access to shared AppHost instance from GlobalTestInfrastructure.
+    /// Infrastructure is initialized once for all tests, dramatically reducing startup overhead.
+    /// </summary>
+    protected static DistributedApplication? AppHost => GlobalTestInfrastructure.AppHost;
+    
+    /// <summary>
+    /// Access to shared Kafka connection string from GlobalTestInfrastructure.
+    /// </summary>
+    protected static string? KafkaConnectionString => GlobalTestInfrastructure.KafkaConnectionString;
     
     /// <summary>
     /// Kafka connection string for use by Flink jobs running inside containers.
@@ -34,216 +40,35 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     /// Flink containers must use "kafka:9093" to reach Kafka's PLAINTEXT_INTERNAL listener.
     /// See: https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting.Kafka/KafkaBuilderExtensions.cs
     /// </summary>
-    protected static string KafkaContainerConnectionString => Ports.KafkaContainerBootstrap;
+    protected static string KafkaContainerConnectionString => GlobalTestInfrastructure.KafkaContainerConnectionString;
 
+    /// <summary>
+    /// No infrastructure setup needed - using shared global infrastructure.
+    /// Tests can start immediately without waiting for infrastructure startup.
+    /// </summary>
     [OneTimeSetUp]
-    public virtual async Task OneTimeSetUp()
+    public virtual Task OneTimeSetUp()
     {
-        var cancellationToken = TestContext.CurrentContext.CancellationToken;
-        
-        TestContext.WriteLine("🔧 Starting LocalTesting infrastructure setup...");
-        
-        // Configure JAR path for Gateway to use Release build output
-        ConfigureGatewayJarPath();
-        
-        // Validate Docker environment first
-        await ValidateDockerEnvironmentAsync();
-        
-        // Build and start Aspire application with proper timeout handling
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(cancellationToken);
-        var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        await app.StartAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
+        // Verify shared infrastructure is available
+        if (AppHost == null || string.IsNullOrEmpty(KafkaConnectionString))
+        {
+            throw new InvalidOperationException(
+                "Global test infrastructure is not initialized. " +
+                "Ensure GlobalTestInfrastructure.GlobalSetUp completed successfully.");
+        }
 
-        AppHost = app;
-
-        // Wait for Kafka first (foundation component)
-        TestContext.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
-        await app.ResourceNotifications
-            .WaitForResourceHealthyAsync("kafka", cancellationToken)
-            .WaitAsync(DefaultTimeout, cancellationToken);
-        TestContext.WriteLine("✅ Kafka resource reported healthy");
-
-        // Get connection string from Aspire (AddKafka properly exposes this)
-        KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
-        TestContext.WriteLine($"🔗 Kafka connection string: {KafkaConnectionString}");
-
-        // Additional Docker container validation
-        await ValidateKafkaContainerAsync();
-
-        // Enhanced Kafka readiness check (copied from BackPressureExample)
-        await WaitForKafkaReadyAsync(KafkaConnectionString!, KafkaReadyTimeout, cancellationToken);
-        TestContext.WriteLine("✅ Kafka is fully operational and ready for testing");
+        TestContext.WriteLine($"✅ Test class using shared infrastructure (Kafka: {KafkaConnectionString})");
+        return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// No teardown needed - shared infrastructure persists across all tests.
+    /// </summary>
     [OneTimeTearDown]
-    public virtual async Task OneTimeTearDown()
+    public virtual Task OneTimeTearDown()
     {
-        try
-        {
-            await DisposeAsync();
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Cleanup warning: {ex.Message}");
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (AppHost != null)
-        {
-            try 
-            { 
-                await AppHost.StopAsync(); 
-                TestContext.WriteLine("✅ AppHost stopped successfully");
-            } 
-            catch (Exception ex) 
-            { 
-                TestContext.WriteLine($"⚠️ AppHost stop warning: {ex.Message}");
-            }
-            
-            try 
-            { 
-                await AppHost.DisposeAsync(); 
-                TestContext.WriteLine("✅ AppHost disposed successfully");
-            } 
-            catch (Exception ex) 
-            { 
-                TestContext.WriteLine($"⚠️ AppHost dispose warning: {ex.Message}");
-            }
-            
-            AppHost = null;
-        }
-
-        TestContext.WriteLine("✅ LocalTesting infrastructure cleanup completed");
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Configure the FLINK_RUNNER_JAR_PATH environment variable to point to the JAR
-    /// built during Gateway compilation. This ensures the Gateway can find the JAR
-    /// without needing to rebuild it at runtime.
-    /// </summary>
-    private static void ConfigureGatewayJarPath()
-    {
-        // Find repository root by looking for global.json
-        var currentDir = Environment.CurrentDirectory;
-        var repoRoot = FindRepositoryRoot(currentDir);
-        
-        if (repoRoot == null)
-        {
-            TestContext.WriteLine("⚠️ Could not find repository root - Gateway may need to build JAR at runtime");
-            return;
-        }
-        
-        // Check for JAR in Release build output (preferred for tests)
-        var releaseJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
-        
-        if (File.Exists(releaseJarPath))
-        {
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", releaseJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path: {releaseJarPath}");
-            return;
-        }
-        
-        // Fallback to Debug build output
-        var debugJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
-        
-        if (File.Exists(debugJarPath))
-        {
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", debugJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path (Debug): {debugJarPath}");
-            return;
-        }
-        
-        // If neither exists, Gateway will try to build on demand
-        TestContext.WriteLine($"⚠️ Gateway JAR not found at {releaseJarPath} or {debugJarPath}");
-        TestContext.WriteLine("⚠️ Gateway will attempt to build JAR on demand (requires Maven and Java)");
-    }
-    
-    /// <summary>
-    /// Find repository root by looking for global.json file.
-    /// </summary>
-    private static string? FindRepositoryRoot(string startPath)
-    {
-        var dir = new DirectoryInfo(startPath);
-        while (dir != null)
-        {
-            var globalJsonPath = Path.Combine(dir.FullName, "global.json");
-            if (File.Exists(globalJsonPath))
-            {
-                return dir.FullName;
-            }
-            dir = dir.Parent;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// Validate Docker environment is ready for container operations.
-    /// </summary>
-    private static async Task ValidateDockerEnvironmentAsync()
-    {
-        TestContext.WriteLine("🐳 Validating Docker environment...");
-        
-        try
-        {
-            var dockerInfo = await RunDockerCommandAsync("info --format \"{{.ServerVersion}}\"");
-            if (string.IsNullOrWhiteSpace(dockerInfo))
-            {
-                throw new InvalidOperationException("Docker is not accessible. Please ensure Docker Desktop is running.");
-            }
-            
-            TestContext.WriteLine($"✅ Docker is running (version: {dockerInfo.Trim()})");
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"❌ Docker validation failed: {ex.Message}");
-            throw new InvalidOperationException("Docker environment is not ready for testing. Please start Docker Desktop and ensure it's running properly.", ex);
-        }
-    }
-
-    /// <summary>
-    /// Validate that Kafka container is running and accessible.
-    /// </summary>
-    private static async Task ValidateKafkaContainerAsync()
-    {
-        TestContext.WriteLine("🔍 Validating Kafka container status...");
-        
-        try
-        {
-            // Wait a moment for containers to fully start
-            await Task.Delay(5000);
-            
-            // Get detailed container information
-            var containerInfo = await GetKafkaContainerDetailsAsync();
-            if (!string.IsNullOrEmpty(containerInfo))
-            {
-                TestContext.WriteLine($"✅ Kafka container details: {containerInfo}");
-            }
-            
-            // Check for running Kafka containers
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}} {{.Status}}\"");
-            
-            if (string.IsNullOrWhiteSpace(kafkaContainers))
-            {
-                TestContext.WriteLine("⚠️ No Kafka containers found running. Listing all containers:");
-                var allContainers = await RunDockerCommandAsync("ps --format \"{{.Names}} {{.Status}}\"");
-                TestContext.WriteLine($"All containers: {allContainers}");
-            }
-            else
-            {
-                TestContext.WriteLine($"✅ Kafka container status: {kafkaContainers.Trim()}");
-            }
-
-            // Check container networking
-            await ValidateContainerNetworkingAsync();
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Container validation warning: {ex.Message}");
-            // Don't fail here - continue with connectivity tests
-        }
+        TestContext.WriteLine("✅ Test class completed (shared infrastructure remains active)");
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -274,34 +99,6 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
         catch (Exception ex)
         {
             return $"Could not get container details: {ex.Message}";
-        }
-    }
-
-    /// <summary>
-    /// Validate Docker container networking for Kafka connectivity.
-    /// </summary>
-    private static async Task ValidateContainerNetworkingAsync()
-    {
-        try
-        {
-            // List Docker networks
-            var networks = await RunDockerCommandAsync("network ls --format \"{{.Name}}\"");
-            TestContext.WriteLine($"🌐 Available Docker networks: {networks.Replace('\n', ' ').Trim()}");
-            
-            // Test port connectivity
-            var portTest = await TestPortConnectivityAsync("127.0.0.1", Ports.KafkaPort);
-            if (portTest)
-            {
-                TestContext.WriteLine($"✅ Port {Ports.KafkaPort} is accessible on localhost");
-            }
-            else
-            {
-                TestContext.WriteLine($"⚠️ Port {Ports.KafkaPort} is not yet accessible - containers may still be starting");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Network validation warning: {ex.Message}");
         }
     }
 
@@ -360,7 +157,7 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     /// Enhanced Kafka readiness check copied from BackPressureExample.IntegrationTests.KafkaTestBase
     /// with improved error handling, fallback strategies, and dynamic container discovery.
     /// </summary>
-    protected static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
+    public static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var attempt = 0;
@@ -377,13 +174,11 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
             
             var (connected, exception) = await TryConnectToKafkaAsync(bootstrapVariations, attempt, sw.Elapsed);
             if (connected)
-            {
                 return;
-            }
             
             lastException = exception;
             await LogKafkaAttemptDiagnosticsAsync(attempt, bootstrapVariations, lastException);
-            await Task.Delay(1000, ct);
+            await Task.Delay(500, ct); // Optimized: Reduced from 1000ms to 500ms
         }
         
         throw await CreateKafkaTimeoutExceptionAsync(timeout, bootstrapVariations, lastException);
@@ -511,12 +306,15 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
         );
         
         if (string.IsNullOrWhiteSpace(portMappings))
-        {
             return;
-        }
 
         TestContext.WriteLine($"🔍 Container port mappings: {portMappings.Trim()}");
         
+        ProcessPortMappingLines(portMappings, endpoints);
+    }
+
+    private static void ProcessPortMappingLines(string portMappings, List<string> endpoints)
+    {
         var lines = portMappings.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
@@ -530,12 +328,11 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     private static void ParsePortMapping(string line, List<string> endpoints)
     {
         var parts = line.Split("->")[0].Trim();
-        if (parts.Contains(":"))
-        {
-            var endpoint = parts.Replace("0.0.0.0:", "localhost:");
-            endpoints.Add(endpoint);
-            endpoints.Add(parts.Replace("0.0.0.0:", "127.0.0.1:"));
-        }
+        if (!parts.Contains(":"))
+            return;
+
+        endpoints.Add(parts.Replace("0.0.0.0:", "localhost:"));
+        endpoints.Add(parts.Replace("0.0.0.0:", "127.0.0.1:"));
     }
 
     private static async Task DiscoverContainerIPEndpointsAsync(List<string> endpoints)
@@ -545,10 +342,13 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
         );
         
         if (string.IsNullOrWhiteSpace(containerNames))
-        {
             return;
-        }
 
+        await ProcessContainerNamesAsync(containerNames, endpoints);
+    }
+
+    private static async Task ProcessContainerNamesAsync(string containerNames, List<string> endpoints)
+    {
         var names = containerNames.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         foreach (var name in names)
         {
@@ -618,38 +418,39 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     /// Enhanced Flink readiness check with proper API validation and TaskManager status checking.
     /// Improved from original LocalTesting tests with better error handling.
     /// </summary>
-    protected static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct)
+    public static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct)
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var sw = Stopwatch.StartNew();
         var attempt = 0;
         
-        TestContext.WriteLine($"🔎 [FlinkReady] Probing Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
-        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 10 seconds for Flink container to initialize...");
-        
-        // Give Flink time to start - JobManager typically needs 20-30 seconds
-        await Task.Delay(10000, ct);
-        
-        // First check container port accessibility
-        var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
-        TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
+        await InitializeFlinkReadinessCheckAsync(overviewUrl, timeout);
         
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
-            var success = await CheckFlinkJobManagerAsync(http, overviewUrl, attempt, ct);
-            if (success)
+            if (await CheckFlinkJobManagerAsync(http, overviewUrl, attempt, ct))
             {
                 TestContext.WriteLine($"✅ [FlinkReady] JobManager with TaskManagers ready at {overviewUrl} after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
                 return;
             }
             
-            await Task.Delay(2000, ct); // 2-second interval for Flink checks
+            await Task.Delay(1000, ct); // Optimized: Reduced from 2000ms to 1000ms
         }
         
-        // Final diagnostics before throwing
         await LogFlinkContainerDiagnosticsAsync();
         throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
+    }
+
+    private static async Task InitializeFlinkReadinessCheckAsync(string overviewUrl, TimeSpan timeout)
+    {
+        TestContext.WriteLine($"🔎 [FlinkReady] Probing Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
+        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 10 seconds for Flink container to initialize...");
+        
+        await Task.Delay(10000);
+        
+        var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
+        TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
     }
     
     /// <summary>
@@ -752,54 +553,90 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     /// Gateway is a .NET project that starts after Flink, so it may need additional time.
     /// Based on patterns from BackPressureExample with LocalTesting-specific endpoints.
     /// </summary>
-    protected static async Task WaitForGatewayReadyAsync(string healthUrl, TimeSpan timeout, CancellationToken ct)
+    public static async Task WaitForGatewayReadyAsync(string healthUrl, TimeSpan timeout, CancellationToken ct)
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         var sw = Stopwatch.StartNew();
         var attempt = 0;
         
-        TestContext.WriteLine($"🔎 [GatewayReady] Probing Gateway at {healthUrl} (timeout: {timeout.TotalSeconds:F0}s)");
-        TestContext.WriteLine($"💡 [GatewayReady] Gateway is a .NET project that starts after Flink, may need 30-60s");
+        LogGatewayReadinessStart(healthUrl, timeout);
         
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
-            try
-            {
-                var resp = await http.GetAsync(healthUrl, ct);
-                if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500)
-                {
-                    TestContext.WriteLine($"✅ [GatewayReady] Gateway ready at {healthUrl} after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
-                    return;
-                }
-                else
-                {
-                    if (attempt % 10 == 0)
-                    {
-                        TestContext.WriteLine($"⏳ [GatewayReady] Attempt {attempt}: HTTP {resp.StatusCode} (elapsed: {sw.Elapsed.TotalSeconds:F1}s)");
-                    }
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                // Connection refused is normal during Gateway startup
-                if (attempt % 10 == 0)
-                {
-                    TestContext.WriteLine($"⏳ [GatewayReady] Attempt {attempt}: {ex.GetType().Name} (elapsed: {sw.Elapsed.TotalSeconds:F1}s)");
-                }
-            }
-            catch (Exception ex)
-            {
-                if (attempt % 10 == 0)
-                {
-                    TestContext.WriteLine($"⏳ [GatewayReady] Attempt {attempt}: {ex.GetType().Name} - {ex.Message}");
-                }
-            }
+            if (await CheckGatewayHealthAsync(http, healthUrl, attempt, sw.Elapsed, ct))
+                return;
             
-            await Task.Delay(1000, ct); // 1-second interval for Gateway checks (increased from 500ms)
+            await Task.Delay(1000, ct);
         }
         
-        TestContext.WriteLine($"❌ [GatewayReady] Gateway failed to start after {attempt} attempts over {sw.Elapsed.TotalSeconds:F1}s");
+        ThrowGatewayTimeoutException(healthUrl, timeout, attempt, sw.Elapsed);
+    }
+
+    private static void LogGatewayReadinessStart(string healthUrl, TimeSpan timeout)
+    {
+        TestContext.WriteLine($"🔎 [GatewayReady] Probing Gateway at {healthUrl} (timeout: {timeout.TotalSeconds:F0}s)");
+        TestContext.WriteLine($"💡 [GatewayReady] Gateway is a .NET project that starts after Flink, may need 30-60s");
+    }
+
+    private static async Task<bool> CheckGatewayHealthAsync(
+        HttpClient http,
+        string healthUrl,
+        int attempt,
+        TimeSpan elapsed,
+        CancellationToken ct)
+    {
+        try
+        {
+            var resp = await http.GetAsync(healthUrl, ct);
+            return HandleGatewayResponse(resp, healthUrl, attempt, elapsed);
+        }
+        catch (HttpRequestException ex)
+        {
+            LogGatewayException(ex, attempt, elapsed, isHttpException: true);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LogGatewayException(ex, attempt, elapsed, isHttpException: false);
+            return false;
+        }
+    }
+
+    private static bool HandleGatewayResponse(HttpResponseMessage resp, string healthUrl, int attempt, TimeSpan elapsed)
+    {
+        if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500)
+        {
+            TestContext.WriteLine($"✅ [GatewayReady] Gateway ready at {healthUrl} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
+            return true;
+        }
+
+        if (attempt % 10 == 0)
+        {
+            TestContext.WriteLine($"⏳ [GatewayReady] Attempt {attempt}: HTTP {resp.StatusCode} (elapsed: {elapsed.TotalSeconds:F1}s)");
+        }
+
+        return false;
+    }
+
+    private static void LogGatewayException(Exception ex, int attempt, TimeSpan elapsed, bool isHttpException)
+    {
+        if (attempt % 10 != 0)
+            return;
+
+        if (isHttpException)
+        {
+            TestContext.WriteLine($"⏳ [GatewayReady] Attempt {attempt}: {ex.GetType().Name} (elapsed: {elapsed.TotalSeconds:F1}s)");
+        }
+        else
+        {
+            TestContext.WriteLine($"⏳ [GatewayReady] Attempt {attempt}: {ex.GetType().Name} - {ex.Message}");
+        }
+    }
+
+    private static void ThrowGatewayTimeoutException(string healthUrl, TimeSpan timeout, int attempt, TimeSpan elapsed)
+    {
+        TestContext.WriteLine($"❌ [GatewayReady] Gateway failed to start after {attempt} attempts over {elapsed.TotalSeconds:F1}s");
         throw new TimeoutException($"Gateway not ready within {timeout.TotalSeconds:F0}s at {healthUrl}. Gateway may not have started properly - check Aspire logs.");
     }
 
@@ -860,7 +697,7 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     /// Wait for complete infrastructure readiness including optional Gateway.
     /// Provides centralized infrastructure validation for complex test scenarios.
     /// </summary>
-    protected async Task WaitForFullInfrastructureAsync(bool includeGateway = true, CancellationToken cancellationToken = default)
+    protected static async Task WaitForFullInfrastructureAsync(bool includeGateway = true, CancellationToken cancellationToken = default)
     {
         TestContext.WriteLine("🔧 Validating complete infrastructure readiness...");
 
@@ -913,32 +750,37 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     {
         try
         {
-            // Discover port from Docker - Aspire DCP assigns random ports
             var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"");
             TestContext.WriteLine($"🔍 Flink JobManager port mappings: {flinkContainers.Trim()}");
             
-            // Parse port mapping: 127.0.0.1:XXXXX->8081/tcp
-            var lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                if (line.Contains("->8081/tcp"))
-                {
-                    // Extract the host port
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
-                    if (match.Success)
-                    {
-                        var hostPort = match.Groups[1].Value;
-                        return $"http://localhost:{hostPort}/";
-                    }
-                }
-            }
-
-            throw new InvalidOperationException($"Could not determine Flink JobManager endpoint from Docker ports: {flinkContainers}");
+            return ExtractFlinkEndpointFromPorts(flinkContainers);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to get Flink JobManager endpoint: {ex.Message}", ex);
         }
+    }
+
+    private static string ExtractFlinkEndpointFromPorts(string flinkContainers)
+    {
+        var lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            var endpoint = TryExtractPortFromLine(line);
+            if (endpoint != null)
+                return endpoint;
+        }
+
+        throw new InvalidOperationException($"Could not determine Flink JobManager endpoint from Docker ports: {flinkContainers}");
+    }
+
+    private static string? TryExtractPortFromLine(string line)
+    {
+        if (!line.Contains("->8081/tcp"))
+            return null;
+
+        var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
+        return match.Success ? $"http://localhost:{match.Groups[1].Value}/" : null;
     }
 
     /// <summary>
@@ -950,40 +792,47 @@ public abstract class LocalTestingTestBase : IAsyncDisposable
     {
         try
         {
-            // Try to discover port from Docker - check for Gateway container (rare case)
             var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
             
             if (!string.IsNullOrWhiteSpace(gatewayContainers))
             {
-                TestContext.WriteLine($"🔍 Gateway container port mappings: {gatewayContainers.Trim()}");
-                
-                // Parse port mapping: 127.0.0.1:XXXXX->8080/tcp or similar patterns
-                var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines)
-                {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
-                    if (match.Success)
-                    {
-                        var hostPort = match.Groups[1].Value;
-                        var containerPort = match.Groups[2].Value;
-                        TestContext.WriteLine($"🔍 Found Gateway container port mapping: host {hostPort} -> container {containerPort}");
-                        return $"http://localhost:{hostPort}/";
-                    }
-                }
+                var endpoint = TryExtractGatewayContainerEndpoint(gatewayContainers);
+                if (endpoint != null)
+                    return endpoint;
             }
             
-            // Gateway is added as .AddProject(), so it runs as a .NET process, not a Docker container
-            // In Aspire testing mode, the project may use a dynamically assigned port or the configured port
-            // For now, we use the configured port since Aspire's WithHttpEndpoint should respect it
-            TestContext.WriteLine($"ℹ️ Gateway running as .NET project (not containerized), using configured port {Ports.GatewayHostPort}");
-            TestContext.WriteLine($"💡 Gateway may take 15-30 seconds to start after Flink is ready");
-            return $"http://localhost:{Ports.GatewayHostPort}/";
+            return GetDefaultGatewayEndpoint();
         }
         catch (Exception ex)
         {
-            // Fallback to configured port if discovery fails
             TestContext.WriteLine($"⚠️ Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.GatewayHostPort}");
             return $"http://localhost:{Ports.GatewayHostPort}/";
         }
+    }
+
+    private static string? TryExtractGatewayContainerEndpoint(string gatewayContainers)
+    {
+        TestContext.WriteLine($"🔍 Gateway container port mappings: {gatewayContainers.Trim()}");
+        
+        var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
+            if (match.Success)
+            {
+                var hostPort = match.Groups[1].Value;
+                var containerPort = match.Groups[2].Value;
+                TestContext.WriteLine($"🔍 Found Gateway container port mapping: host {hostPort} -> container {containerPort}");
+                return $"http://localhost:{hostPort}/";
+            }
+        }
+        return null;
+    }
+
+    private static string GetDefaultGatewayEndpoint()
+    {
+        TestContext.WriteLine($"ℹ️ Gateway running as .NET project (not containerized), using configured port {Ports.GatewayHostPort}");
+        TestContext.WriteLine($"💡 Gateway may take 15-30 seconds to start after Flink is ready");
+        return $"http://localhost:{Ports.GatewayHostPort}/";
     }
 }

@@ -113,35 +113,48 @@ public class FlinkJobManager : IFlinkJobManager
         var serializerOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true, // Make it readable for diagnostics
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never // Include null values
+            WriteIndented = true,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
         };
         var irJson = JsonSerializer.Serialize(jobDefinition, serializerOptions);
         
-        // DIAGNOSTIC: Log the complete JSON being sent
+        LogJobDefinitionDiagnostics(irJson, jobDefinition);
+        
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
+    }
+
+    private static void LogJobDefinitionDiagnostics(string irJson, JobDefinition jobDefinition)
+    {
         Console.WriteLine("[DIAGNOSTIC] ════════════════════════════════════════════════════════════");
         Console.WriteLine("[DIAGNOSTIC] Complete Job Definition JSON:");
         Console.WriteLine(irJson);
         Console.WriteLine("[DIAGNOSTIC] ════════════════════════════════════════════════════════════");
         
-        // Extract and log key fields for debugging
+        LogKafkaConfiguration(jobDefinition);
+        LogOperations(jobDefinition);
+    }
+
+    private static void LogKafkaConfiguration(JobDefinition jobDefinition)
+    {
         var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
         var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
         Console.WriteLine($"[DIAGNOSTIC] Source BootstrapServers: {kafkaSource?.BootstrapServers ?? "null"}");
         Console.WriteLine($"[DIAGNOSTIC] Sink BootstrapServers: {kafkaSink?.BootstrapServers ?? "null"}");
         Console.WriteLine($"[DIAGNOSTIC] Operations Count: {jobDefinition.Operations?.Count ?? 0}");
-        if (jobDefinition.Operations != null && jobDefinition.Operations.Count > 0)
+    }
+
+    private static void LogOperations(JobDefinition jobDefinition)
+    {
+        if (jobDefinition.Operations == null || jobDefinition.Operations.Count == 0)
+            return;
+
+        foreach (var op in jobDefinition.Operations)
         {
-            foreach (var op in jobDefinition.Operations)
+            if (op is MapOperationDefinition mapOp)
             {
-                if (op is MapOperationDefinition mapOp)
-                {
-                    Console.WriteLine($"[DIAGNOSTIC] Map Operation - Expression: '{mapOp.Expression}'");
-                }
+                Console.WriteLine($"[DIAGNOSTIC] Map Operation - Expression: '{mapOp.Expression}'");
             }
         }
-        
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
     }
 
     private async Task<bool> ProbeClusterHealthSafelyAsync()
@@ -268,23 +281,41 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task<string> RunLocalAsync(string irBase64, JobDefinition jobDefinition)
     {
         var jarPath = await EnsureRunnerJarPathAsync();
-        
-        // JAR must exist - no simulation fallback
-        if (!File.Exists(jarPath))
-        {
-            throw new InvalidOperationException($"Runner JAR not found at {jarPath}. The JAR should be built automatically during Gateway build. Please ensure Java and Maven are installed and the build completed successfully.");
-        }
+        ValidateJarExists(jarPath);
 
         var id = $"local-{Guid.NewGuid():N}";
+        var bootstrap = GetBootstrapServers(jobDefinition);
+        var proc = StartLocalRunnerProcess(jarPath, irBase64, bootstrap);
 
-        string? bootstrap = null;
+        MonitorLocalRunnerAsync(proc, id);
+
+        LogLocalRunnerStart(proc, bootstrap, jarPath, jobDefinition.Metadata.JobId, irBase64);
+        return id;
+    }
+
+    private static void ValidateJarExists(string jarPath)
+    {
+        if (!File.Exists(jarPath))
+        {
+            throw new InvalidOperationException(
+                $"Runner JAR not found at {jarPath}. The JAR should be built automatically during Gateway build. " +
+                "Please ensure Java and Maven are installed and the build completed successfully.");
+        }
+    }
+
+    private static string GetBootstrapServers(JobDefinition jobDefinition)
+    {
         if (jobDefinition.Source is KafkaSourceDefinition ks && !string.IsNullOrWhiteSpace(ks.BootstrapServers))
-            bootstrap = ks.BootstrapServers;
-        else if (jobDefinition.Sink is KafkaSinkDefinition ksd && !string.IsNullOrWhiteSpace(ksd.BootstrapServers))
-            bootstrap = ksd.BootstrapServers;
+            return ks.BootstrapServers;
+        
+        if (jobDefinition.Sink is KafkaSinkDefinition ksd && !string.IsNullOrWhiteSpace(ksd.BootstrapServers))
+            return ksd.BootstrapServers;
 
-        bootstrap ??= Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "localhost:9092";
+        return Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "localhost:9092";
+    }
 
+    private static Process StartLocalRunnerProcess(string jarPath, string irBase64, string bootstrap)
+    {
         var psi = new ProcessStartInfo
         {
             FileName = "java",
@@ -296,14 +327,15 @@ public class FlinkJobManager : IFlinkJobManager
         };
         psi.Environment["KAFKA_BOOTSTRAP"] = bootstrap;
 
-        Process? proc = null;
+        Process? proc;
         try
         {
             proc = Process.Start(psi);
         }
         catch (Exception startEx)
         {
-            throw new InvalidOperationException($"Failed to start Java process for local execution. Ensure Java is installed and in PATH.", startEx);
+            throw new InvalidOperationException(
+                "Failed to start Java process for local execution. Ensure Java is installed and in PATH.", startEx);
         }
 
         if (proc == null)
@@ -311,51 +343,75 @@ public class FlinkJobManager : IFlinkJobManager
             throw new InvalidOperationException("Java process returned null - failed to start local runner.");
         }
 
+        return proc;
+    }
+
+    private void MonitorLocalRunnerAsync(Process proc, string id)
+    {
         _ = Task.Run(async () =>
         {
             try
             {
-                var stdout = await proc.StandardOutput.ReadToEndAsync();
-                var stderr = await proc.StandardError.ReadToEndAsync();
-                await proc.WaitForExitAsync();
-                
-                if (!string.IsNullOrWhiteSpace(stdout))
-                    _logger.LogInformation("[local-runner:{JobId}] STDOUT:\n{Out}", id, stdout);
-                if (!string.IsNullOrWhiteSpace(stderr))
-                    _logger.LogWarning("[local-runner:{JobId}] STDERR:\n{Err}", id, stderr);
-                
-                if (proc.ExitCode != 0)
-                {
-                    _logger.LogError("[local-runner:{JobId}] Process exited with code {ExitCode}", id, proc.ExitCode);
-                    if (_jobMapping.TryGetValue(id, out var jobInfo))
-                    {
-                        jobInfo.Status = $"LOCAL-FAILED (exit code {proc.ExitCode})";
-                    }
-                }
-                else
-                {
-                    _logger.LogInformation("[local-runner:{JobId}] Process completed successfully", id);
-                    if (_jobMapping.TryGetValue(id, out var jobInfo))
-                    {
-                        jobInfo.Status = "LOCAL-COMPLETED";
-                    }
-                }
+                await CaptureProcessOutputAsync(proc, id);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Local runner output capture failed for {JobId}", id);
-                if (_jobMapping.TryGetValue(id, out var jobInfo))
-                {
-                    jobInfo.Status = "LOCAL-ERROR";
-                }
+                UpdateJobStatus(id, "LOCAL-ERROR");
             }
         });
+    }
 
-        _logger.LogInformation("Started local runner (PID={Pid}, bootstrap={Bootstrap}, jarPath={JarPath}) for job {JobId}",
-            proc.Id, bootstrap, jarPath, jobDefinition.Metadata.JobId);
+    private async Task CaptureProcessOutputAsync(Process proc, string id)
+    {
+        var stdout = await proc.StandardOutput.ReadToEndAsync();
+        var stderr = await proc.StandardError.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+        
+        LogProcessOutput(stdout, stderr, id);
+        UpdateJobStatusBasedOnExitCode(proc.ExitCode, id);
+    }
+
+    private void LogProcessOutput(string stdout, string stderr, string id)
+    {
+        if (!string.IsNullOrWhiteSpace(stdout))
+            _logger.LogInformation("[local-runner:{JobId}] STDOUT:\n{Out}", id, stdout);
+        
+        if (!string.IsNullOrWhiteSpace(stderr))
+            _logger.LogWarning("[local-runner:{JobId}] STDERR:\n{Err}", id, stderr);
+    }
+
+    private void UpdateJobStatusBasedOnExitCode(int exitCode, string id)
+    {
+        if (exitCode != 0)
+        {
+            _logger.LogError("[local-runner:{JobId}] Process exited with code {ExitCode}", id, exitCode);
+            UpdateJobStatus(id, $"LOCAL-FAILED (exit code {exitCode})");
+        }
+        else
+        {
+            _logger.LogInformation("[local-runner:{JobId}] Process completed successfully", id);
+            UpdateJobStatus(id, "LOCAL-COMPLETED");
+        }
+    }
+
+    private void UpdateJobStatus(string id, string status)
+    {
+        if (_jobMapping.TryGetValue(id, out var jobInfo))
+        {
+            jobInfo.Status = status;
+        }
+    }
+
+    private void LogLocalRunnerStart(Process proc, string bootstrap, string jarPath, string jobId, string irBase64)
+    {
+        _logger.LogInformation(
+            "Started local runner (PID={Pid}, bootstrap={Bootstrap}, jarPath={JarPath}) for job {JobId}",
+            proc.Id, bootstrap, jarPath, jobId);
+        
+        var prefix = irBase64.Length > 50 ? irBase64.Substring(0, 50) : irBase64;
         _logger.LogInformation("Local runner command: java -jar \"{JarPath}\" --irBase64 {IrBase64Prefix}...",
-            jarPath, irBase64.Length > 50 ? irBase64.Substring(0, 50) : irBase64);
-        return id;
+            jarPath, prefix);
     }
 
     private async Task<string> EnsureRunnerJarPathAsync()
@@ -606,37 +662,62 @@ public class FlinkJobManager : IFlinkJobManager
 
         while (DateTime.UtcNow < deadline)
         {
-            try
-            {
-                var listResp = await _httpClient.GetAsync("/v1/jars");
-                if (listResp.IsSuccessStatusCode)
-                {
-                    var listJson = await listResp.Content.ReadAsStringAsync();
-                    var jars = JsonSerializer.Deserialize<FlinkJarsList>(listJson);
-                    lastKnownJars = jars?.Files?.Select(f => string.IsNullOrEmpty(f.Id) ? f.Name : $"{f.Name} ({f.Id})").ToList() ?? new List<string>();
-
-                    var jar = jars?.Files?
-                        .OrderByDescending(f => f.Uploaded)
-                        .FirstOrDefault(f => string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
-
-                    if (!string.IsNullOrEmpty(jar?.Id))
-                    {
-                        return jar.Id;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Best-effort polling; safe to ignore and retry
-                _logger.LogDebug(ex, "Polling for uploaded jar {JarFile} failed; will retry", fileName);
-            }
+            var jarId = await TryFindRegisteredJarAsync(fileName, lastKnownJars);
+            if (jarId != null)
+                return jarId;
 
             await Task.Delay(delay);
         }
 
+        return ThrowJarNotFoundError(fileName, waitFor, lastKnownJars);
+    }
+
+    private async Task<string?> TryFindRegisteredJarAsync(string fileName, List<string> lastKnownJars)
+    {
+        try
+        {
+            var listResp = await _httpClient.GetAsync("/v1/jars");
+            if (!listResp.IsSuccessStatusCode)
+                return null;
+
+            var listJson = await listResp.Content.ReadAsStringAsync();
+            var jars = JsonSerializer.Deserialize<FlinkJarsList>(listJson);
+            
+            UpdateLastKnownJars(jars, lastKnownJars);
+            return FindMatchingJar(jars, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Polling for uploaded jar {JarFile} failed; will retry", fileName);
+            return null;
+        }
+    }
+
+    private static void UpdateLastKnownJars(FlinkJarsList? jars, List<string> lastKnownJars)
+    {
+        lastKnownJars.Clear();
+        if (jars?.Files != null)
+        {
+            lastKnownJars.AddRange(jars.Files.Select(f =>
+                string.IsNullOrEmpty(f.Id) ? f.Name : $"{f.Name} ({f.Id})"));
+        }
+    }
+
+    private static string? FindMatchingJar(FlinkJarsList? jars, string fileName)
+    {
+        var jar = jars?.Files?
+            .OrderByDescending(f => f.Uploaded)
+            .FirstOrDefault(f => string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
+
+        return string.IsNullOrEmpty(jar?.Id) ? null : jar.Id;
+    }
+
+    private string ThrowJarNotFoundError(string fileName, TimeSpan waitFor, List<string> lastKnownJars)
+    {
         var jarList = string.Join(", ", lastKnownJars);
         _logger.LogError("Uploaded jar {JarFile} not found; last known jars: {JarList}", fileName, jarList);
-        throw new InvalidOperationException($"Uploaded jar '{fileName}' not found in Flink jar list within {waitFor.TotalSeconds:F0}s. Last seen: {jarList}");
+        throw new InvalidOperationException(
+            $"Uploaded jar '{fileName}' not found in Flink jar list within {waitFor.TotalSeconds:F0}s. Last seen: {jarList}");
     }
 
     private List<string> CollectConnectorJars()
@@ -727,43 +808,60 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string?> TryRecoverFlinkJobIdAsync(string? jobName, TimeSpan timeout)
     {
-        if (string.IsNullOrWhiteSpace(jobName)) return null;
+        if (string.IsNullOrWhiteSpace(jobName))
+            return null;
 
         var sw = Stopwatch.StartNew();
         var overviewEndpoints = new[] { "/v1/jobs/overview", "/jobs/overview" };
 
         while (sw.Elapsed < timeout)
         {
-            foreach (var endpoint in overviewEndpoints)
-            {
-                try
-                {
-                    using var response = await _httpClient.GetAsync(endpoint);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        _logger.LogDebug("Jobs overview endpoint {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
-                        continue;
-                    }
-
-                    var payload = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation("Jobs overview response from {Endpoint} while recovering job id: {Payload}", endpoint, payload);
-
-                    var recovered = ExtractJobIdFromOverviewPayload(payload, jobName);
-                    if (!string.IsNullOrEmpty(recovered))
-                    {
-                        _logger.LogInformation("Recovered job id {FlinkJobId} for job {JobName} via {Endpoint}", recovered, jobName, endpoint);
-                        return recovered;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex, "Failed to recover job id for {JobName} via {Endpoint}; will retry", jobName, endpoint);
-                }
-            }
+            var jobId = await TryRecoverFromEndpointsAsync(jobName, overviewEndpoints);
+            if (jobId != null)
+                return jobId;
 
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
 
+        return null;
+    }
+
+    private async Task<string?> TryRecoverFromEndpointsAsync(string jobName, string[] endpoints)
+    {
+        foreach (var endpoint in endpoints)
+        {
+            var jobId = await TryRecoverFromSingleEndpointAsync(jobName, endpoint);
+            if (jobId != null)
+                return jobId;
+        }
+        return null;
+    }
+
+    private async Task<string?> TryRecoverFromSingleEndpointAsync(string jobName, string endpoint)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync(endpoint);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Jobs overview endpoint {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+                return null;
+            }
+
+            var payload = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Jobs overview response from {Endpoint} while recovering job id: {Payload}", endpoint, payload);
+
+            var recovered = ExtractJobIdFromOverviewPayload(payload, jobName);
+            if (!string.IsNullOrEmpty(recovered))
+            {
+                _logger.LogInformation("Recovered job id {FlinkJobId} for job {JobName} via {Endpoint}", recovered, jobName, endpoint);
+                return recovered;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to recover job id for {JobName} via {Endpoint}; will retry", jobName, endpoint);
+        }
         return null;
     }
 
