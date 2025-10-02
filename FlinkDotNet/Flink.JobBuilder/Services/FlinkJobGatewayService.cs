@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Flink.JobBuilder.Models;
 
@@ -98,16 +97,9 @@ namespace Flink.JobBuilder.Services
             var rawResponse = await response.Content.ReadAsStringAsync(cancellationToken);
             if (response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(rawResponse))
             {
-                var simulatedId = $"local-sim-{Guid.NewGuid():N}";
-                _logger?.LogWarning("Gateway returned empty body; assuming simulated local success (Flink cluster unavailable). Using FlinkJobId={FlinkJobId}", simulatedId);
-                return new JobSubmissionResult
-                {
-                    JobId = jobDefinition.Metadata.JobId,
-                    FlinkJobId = simulatedId,
-                    Success = true,
-                    SubmittedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, string> { ["mode"] = "simulated-local" }
-                };
+                var errorMsg = "Gateway returned empty response body - this indicates a serialization problem in the Gateway";
+                _logger?.LogError(errorMsg);
+                return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, errorMsg);
             }
 
             var responseSnippet = rawResponse.Length > 600 ? rawResponse[..600] + "...(truncated)" : rawResponse;

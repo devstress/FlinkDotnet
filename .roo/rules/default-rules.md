@@ -827,6 +827,18 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
 ## Test-Driven Development (TDD) and Behavior-Driven Development (BDD) Enforcement (MANDATORY)
 
 ### Rule 10: Test-First Development and Continuous Test Fixing (CRITICAL)
+- **NEVER use [Ignore], [Skip], or equivalent attributes to bypass failing tests**
+- **ALL test failures must be debugged and root causes fixed**
+- **Zero tolerance for test suppression**:
+  - Using `[Ignore]`, `[Skip]`, `[Fact(Skip="reason")]`, or similar attributes is a MAJOR violation
+  - Commenting out failing tests is a MAJOR violation
+  - Conditionally disabling tests based on environment is only acceptable for documented infrastructure limitations
+  - Test suppression requires explicit approval with documented technical justification
+- **Root cause fixing mandate**:
+  - Every failing test represents a real problem that must be solved
+  - Debug first, understand the failure, then fix the underlying issue
+  - Document the debugging process and solution in Work Items
+  - Never work around test failures - fix them
 - **ALWAYS follow TDD and BDD principles** in all development work
 - **Test-first approach required**:
   - Write failing tests before implementing features

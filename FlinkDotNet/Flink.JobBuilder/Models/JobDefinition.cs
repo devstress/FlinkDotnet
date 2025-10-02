@@ -52,7 +52,7 @@ namespace Flink.JobBuilder.Models
         public string Topic { get; set; } = string.Empty;
         public string? BootstrapServers { get; set; }
         public string? GroupId { get; set; }
-        public string? StartingOffsets { get; set; } = "latest"; // latest, earliest, or specific offsets
+        public string? StartingOffsets { get; set; } = "earliest"; // earliest, latest, or specific offsets
         public Dictionary<string, string> Properties { get; set; } = new();
     }
 

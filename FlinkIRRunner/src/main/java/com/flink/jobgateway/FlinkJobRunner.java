@@ -77,15 +77,31 @@ public class FlinkJobRunner {
             return; // No further DataStream processing for pure SQL jobs
         } else if (ir.source instanceof KafkaSourceDefinition) {
             KafkaSourceDefinition k = (KafkaSourceDefinition) ir.source;
-            String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+            String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
+
+            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("[KAFKA SOURCE] Configuration:");
+            System.out.println("  - bootstrapServers field from JSON: " + k.bootstrapServers);
+            System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
+            System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
+            System.out.println("  - Topic: " + k.topic);
+            System.out.println("  - GroupId: " + groupId);
+            System.out.println("  - Starting offsets: " + orElse(k.startingOffsets, "latest"));
+            System.out.println("════════════════════════════════════════════════════════════");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
             props.put("group.id", groupId);
             props.put("auto.offset.reset", orElse(k.startingOffsets, "latest"));
+            
+            System.out.println("[KAFKA SOURCE] Creating Kafka consumer with properties:");
+            System.out.println("  - bootstrap.servers: " + props.getProperty("bootstrap.servers"));
+            System.out.println("  - group.id: " + props.getProperty("group.id"));
+            System.out.println("  - auto.offset.reset: " + props.getProperty("auto.offset.reset"));
 
             stream = env.addSource(new KafkaStringSource(k.topic, props)).name("KafkaSource");
+            System.out.println("[KAFKA SOURCE] Source created successfully");
         } else {
             // Fallback source
             stream = env.fromElements("sample");
@@ -97,15 +113,28 @@ public class FlinkJobRunner {
             for (Operation op : ir.operations) {
                 if (op instanceof MapOperationDefinition) {
                     MapOperationDefinition m = (MapOperationDefinition) op;
-                    String expr = orElse(m.expression, "identity");
+                    String expr = orElse(m.expression, m.function, "identity");
+                    System.out.println("════════════════════════════════════════════════════════════");
+                    System.out.println("[MAP OPERATION] Processing:");
+                    System.out.println("  - expression field from JSON: " + m.expression);
+                    System.out.println("  - function field from JSON: " + m.function);
+                    System.out.println("  - Resolved expression: " + expr);
+                    System.out.println("  - Normalized (lowercase): " + expr.toLowerCase(Locale.ROOT));
+                    System.out.println("════════════════════════════════════════════════════════════");
+                    
                     switch (expr.toLowerCase(Locale.ROOT)) {
                         case "upper":
+                        case "toupper":
+                            System.out.println("[MAP OPERATION] ✓ Applying toUpperCase transformation");
                             stream = stream.map(String::toUpperCase);
                             break;
                         case "lower":
+                        case "tolower":
+                            System.out.println("[MAP OPERATION] ✓ Applying toLowerCase transformation");
                             stream = stream.map(String::toLowerCase);
                             break;
                         default:
+                            System.out.println("[MAP OPERATION] ⚠ Using identity transformation (pass-through) for: " + expr);
                             // identity or unrecognized: pass through
                             break;
                     }
@@ -182,7 +211,7 @@ public class FlinkJobRunner {
                     // attach sink to side output (Kafka-only supported here)
                     DataStream<String> side = main.getSideOutput(tag);
                     if (so.sideOutputSink != null && so.sideOutputSink.type != null && so.sideOutputSink.type.equals("kafka")) {
-                        String bootstrap = orElse(so.sideOutputSink.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+                        String bootstrap = orElse(so.sideOutputSink.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
                         Properties props = new Properties();
                         props.put("bootstrap.servers", bootstrap);
                         side.addSink(new KafkaStringSink(so.sideOutputSink.topic, props)).name("SideKafkaSink:"+so.outputTag);
@@ -196,11 +225,26 @@ public class FlinkJobRunner {
             KafkaSinkDefinition s = (KafkaSinkDefinition) ir.sink;
             String bootstrap = orElse(s.bootstrapServers,
                     (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null,
-                    System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+                    System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+
+            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("[KAFKA SINK] Configuration:");
+            System.out.println("  - bootstrapServers field from JSON: " + s.bootstrapServers);
+            System.out.println("  - Source bootstrapServers: " + ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
+            System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
+            System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
+            System.out.println("  - Topic: " + s.topic);
+            System.out.println("════════════════════════════════════════════════════════════");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
+            
+            System.out.println("[KAFKA SINK] Creating Kafka producer with properties:");
+            System.out.println("  - bootstrap.servers: " + props.getProperty("bootstrap.servers"));
+            System.out.println("  - Target topic: " + s.topic);
+            
             stream.addSink(new KafkaStringSink(s.topic, props)).name("KafkaSink");
+            System.out.println("[KAFKA SINK] Sink created successfully");
         } else {
             stream.print();
         }
@@ -310,6 +354,7 @@ public interface Operation {}
     public static class MapOperationDefinition implements Operation {
         public String type;
         public String expression;
+        public String function;  // Support both 'expression' and 'function' fields
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -384,16 +429,47 @@ public interface Operation {}
 
         @Override
         public void run(org.apache.flink.streaming.api.functions.source.legacy.SourceFunction.SourceContext<String> ctx) throws Exception {
+            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("[KAFKA SOURCE] Starting consumer...");
+            System.out.println("  - Topic: " + topic);
+            System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
+            System.out.println("  - Group ID: " + props.getProperty("group.id"));
+            System.out.println("  - Auto offset reset: " + props.getProperty("auto.offset.reset"));
+            System.out.println("════════════════════════════════════════════════════════════");
+            
             try (org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(props, new org.apache.kafka.common.serialization.StringDeserializer(), new org.apache.kafka.common.serialization.StringDeserializer())) {
+                System.out.println("[KAFKA SOURCE] ✓ Consumer created, subscribing to topic: " + topic);
                 consumer.subscribe(Collections.singletonList(topic));
+                System.out.println("[KAFKA SOURCE] ✓ Subscribed successfully, starting poll loop...");
+                
+                int pollCount = 0;
+                int totalRecords = 0;
+                
                 while (running) {
                     var records = consumer.poll(java.time.Duration.ofMillis(500));
+                    pollCount++;
+                    
+                    if (records.count() > 0) {
+                        System.out.println("[KAFKA SOURCE] Poll #" + pollCount + ": Received " + records.count() + " records");
+                        totalRecords += records.count();
+                    } else if (pollCount % 20 == 0) {
+                        // Log every 10 seconds (20 polls * 500ms) to show we're still polling
+                        System.out.println("[KAFKA SOURCE] Poll #" + pollCount + ": Still polling, total records so far: " + totalRecords);
+                    }
+                    
                     for (var rec : records) {
                         synchronized (ctx.getCheckpointLock()) {
+                            System.out.println("[KAFKA SOURCE] Collecting record: " + rec.value());
                             ctx.collect(rec.value());
                         }
                     }
                 }
+                
+                System.out.println("[KAFKA SOURCE] Stopped. Total records processed: " + totalRecords);
+            } catch (Exception e) {
+                System.err.println("[KAFKA SOURCE] ✗ ERROR: " + e.getClass().getName() + ": " + e.getMessage());
+                e.printStackTrace();
+                throw e;
             }
         }
 
@@ -417,9 +493,31 @@ public interface Operation {}
         @Override
         public void invoke(String value, org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction.Context context) {
             if (producer == null) {
-                producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props, new org.apache.kafka.common.serialization.StringSerializer(), new org.apache.kafka.common.serialization.StringSerializer());
+                System.out.println("════════════════════════════════════════════════════════════");
+                System.out.println("[KAFKA SINK] Initializing producer...");
+                System.out.println("  - Topic: " + topic);
+                System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
+                System.out.println("════════════════════════════════════════════════════════════");
+                
+                try {
+                    producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props, new org.apache.kafka.common.serialization.StringSerializer(), new org.apache.kafka.common.serialization.StringSerializer());
+                    System.out.println("[KAFKA SINK] ✓ Producer created successfully");
+                } catch (Exception e) {
+                    System.err.println("[KAFKA SINK] ✗ ERROR creating producer: " + e.getClass().getName() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    throw e;
+                }
             }
-            producer.send(new org.apache.kafka.clients.producer.ProducerRecord<>(topic, value));
+            
+            try {
+                System.out.println("[KAFKA SINK] Sending message to topic '" + topic + "': " + value);
+                producer.send(new org.apache.kafka.clients.producer.ProducerRecord<>(topic, value));
+                System.out.println("[KAFKA SINK] ✓ Message sent successfully");
+            } catch (Exception e) {
+                System.err.println("[KAFKA SINK] ✗ ERROR sending message: " + e.getClass().getName() + ": " + e.getMessage());
+                e.printStackTrace();
+                throw e;
+            }
         }
 
         @Override

@@ -1,3 +1,5 @@
+using LocalTesting.FlinkSqlAppHost;
+
 // Basic environment setup
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
 
@@ -20,6 +22,19 @@ const string JavaOpenOptions = "--add-opens=java.base/java.lang=ALL-UNNAMED --ad
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
 
+// Configure Gateway JAR path to use Release build
+var gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
+if (!File.Exists(gatewayJarPath))
+{
+    // Fallback to Debug if Release not found
+    gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
+}
+
+if (diagnosticsVerbose && File.Exists(gatewayJarPath))
+{
+    Console.WriteLine($"[diag] Gateway JAR configured: {gatewayJarPath}");
+}
+
 try
 {
     Directory.CreateDirectory(connectorsDir);
@@ -38,30 +53,21 @@ catch (Exception ex)
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Minimal Kafka setup on 9092 using resource name 'messaging'
-var kafka = builder.AddKafka("kafka", Ports.KafkaPort);
+// Use Aspire's default Kafka configuration - works for BackPressureExample
+// Aspire automatically handles port allocation and container networking
+// Note: Kafka resource is created but not referenced by Gateway to prevent
+// Aspire from injecting connection strings that would override job definitions
+var kafka = builder.AddKafka("kafka");  // AddKafka already creates 'internal' endpoint automatically
 
 if (diagnosticsVerbose)
 {
-    Console.WriteLine("[diag] Kafka configured for external access on localhost:" + Ports.KafkaPort);
+    Console.WriteLine("[diag] Kafka configured - Aspire will inject connection strings automatically");
 }
 
-var includeGatewaySetting = Environment.GetEnvironmentVariable("INCLUDE_FLINK_GATEWAY");
-var includeGateway = includeGatewaySetting switch
-{
-    null => true,
-    "" => true,
-    var s when string.Equals(s, "0", StringComparison.OrdinalIgnoreCase) => false,
-    var s when string.Equals(s, "false", StringComparison.OrdinalIgnoreCase) => false,
-    var s when string.Equals(s, "no", StringComparison.OrdinalIgnoreCase) => false,
-    _ => true
-};
-
-// Flink JobManager
+// Flink JobManager with named HTTP endpoint for service references
 var jobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
-    .WithHttpEndpoint(name: "jobmanager-ui", targetPort: Ports.JobManagerHostPort)
+    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "http")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
@@ -73,12 +79,12 @@ var jobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
         "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(connectorsDir, "/opt/flink/usrlib", isReadOnly: true)
-    .WithArgs("jobmanager");
+    .WithArgs("jobmanager")
+    .WaitFor(kafka);  // Wait for Kafka to ensure network connectivity
 
 // Flink TaskManager
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "2")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
@@ -91,26 +97,37 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(connectorsDir, "/opt/flink/usrlib", isReadOnly: true)
     .WithArgs("taskmanager")
-    .WaitFor(jobManager);
+    .WaitFor(kafka)  // Wait for Kafka first to ensure network connectivity
+    .WaitFor(jobManager);  // Then wait for JobManager
 
-if (includeGateway)
-{
-    builder.AddProject("flink-job-gateway", "../../FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj")
-        .WithHttpEndpoint(name: "flink-job-gateway", targetPort: Ports.GatewayHostPort)
-        .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:" + Ports.GatewayHostPort)
-        .WithEnvironment("FLINK_CLUSTER_HOST", "localhost")
-        .WithEnvironment("FLINK_CLUSTER_PORT", Ports.JobManagerHostPort.ToString())
-        .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
-        .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
-        .WaitFor(jobManager)
-        .WaitFor(kafka);
-}
-else if (diagnosticsVerbose)
-{
-    Console.WriteLine("[diag] INCLUDE_FLINK_GATEWAY toggled off; skipping Flink.JobGateway start");
-}
+// Flink.JobGateway - Add Flink Job Gateway
+// IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
+// Flink jobs run inside Docker containers and must use "kafka:9092" (container network name)
+// NOT "localhost:port" (which only works from the host machine)
 
-await builder.Build().RunAsync();
+// CRITICAL: Use .WithReference() for Aspire service discovery
+// Aspire automatically injects endpoint URLs as environment variables:
+// services__flink-jobmanager__http__0 = "http://localhost:{dynamicPort}"
+// The Gateway's DiscoverFlinkEndpoint() method (FlinkJobManager.cs line 45)
+// checks for this variable first, enabling automatic Flink cluster discovery
+//
+// NOTE: Gateway does NOT have KAFKA_BOOTSTRAP environment variable set because:
+// 1. Job definitions explicitly provide bootstrapServers (e.g., "kafka:9092")
+// 2. Flink containers (JobManager/TaskManager) have KAFKA_BOOTSTRAP=kafka:9092 set
+// 3. Java FlinkJobRunner jobs inherit environment from Flink containers, not Gateway
+// 4. This prevents any confusion about which Kafka address to use
+builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
+    .WithHttpEndpoint(port: Ports.GatewayHostPort, name: "flink-job-gateway")
+    .WithEnvironment("ASPNETCORE_URLS", $"http://localhost:{Ports.GatewayHostPort.ToString()}")  // Override launchSettings.json
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
+    .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
+    .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
+    .WithReference(jobManager.GetEndpoint("http"))  // Reference the HTTP endpoint for service discovery
+    .WaitFor(jobManager);  // Gateway only depends on Flink, not Kafka directly
+
+#pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
+builder.Build().Run();
+#pragma warning restore S6966
 
 
 

@@ -9,12 +9,21 @@
     <IsAspireHost>true</IsAspireHost>
     <AssemblyName>LocalTesting.FlinkSqlAppHost</AssemblyName>
     <RootNamespace>LocalTesting.FlinkSqlAppHost</RootNamespace>
+    <!-- Disable code analysis for AppHost - it conflicts with Aspire testing requirements -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
     <PackageReference Include="Aspire.Hosting.Kafka" Version="9.3.1" />
     <PackageReference Include="Aspire.Confluent.Kafka" Version="9.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FlinkDotNet\Flink.JobGateway\Flink.JobGateway.csproj">
+      <SetConfiguration>Configuration=Release</SetConfiguration>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
