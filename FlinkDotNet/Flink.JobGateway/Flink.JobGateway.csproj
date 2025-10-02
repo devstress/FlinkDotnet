@@ -8,11 +8,15 @@
     <!-- Allow disabling the Java runner build with /p:BuildFlinkRunner=false -->
     <BuildFlinkRunner>true</BuildFlinkRunner>
     <!-- Define the FlinkIRRunner directory relative to this project -->
-    <FlinkIRRunnerDir>$(MSBuildProjectDirectory)/../../../FlinkIRRunner</FlinkIRRunnerDir>
-    <!-- Define the output JAR path -->
-    <FlinkIRRunnerJarPath>$(FlinkIRRunnerDir)/target/flink-ir-runner.jar</FlinkIRRunnerJarPath>
+    <FlinkIRRunnerDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\FlinkIRRunner'))</FlinkIRRunnerDir>
+    <!-- Define the output JAR paths -->
+    <FlinkIRRunnerJarPath25>$(FlinkIRRunnerDir)\target\flink-ir-runner.jar</FlinkIRRunnerJarPath25>
+    <FlinkIRRunnerJarPath17>$(FlinkIRRunnerDir)\target\flink-ir-runner-java17.jar</FlinkIRRunnerJarPath17>
     <!-- Define the local JAR copy path -->
-    <LocalJarPath>$(MSBuildProjectDirectory)/flink-ir-runner.jar</LocalJarPath>
+    <LocalJarPath>$(MSBuildProjectDirectory)\flink-ir-runner.jar</LocalJarPath>
+    <!-- Heuristic JDK 25 detection from JAVA_HOME path -->
+    <JavaHome>$(JAVA_HOME)</JavaHome>
+    <IsJdk25>$([System.String]::Copy('$(JavaHome)').Contains('25'))</IsJdk25>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,63 +42,111 @@
   <Target Name="BuildFlinkRunner"
           BeforeTargets="BeforeBuild"
           Condition="'$(BuildFlinkRunner)' != 'false'">
-    
-    <!-- Check if Java is available -->
-    <Exec Command="java -version"
+
+    <!-- Ensure FlinkIRRunner project exists -->
+    <Error Condition="!Exists('$(FlinkIRRunnerDir)\pom.xml')"
+           Text="FlinkIRRunner project missing. Expected pom.xml at $(FlinkIRRunnerDir)." />
+
+    <!-- Require Java; fail if missing -->
+    <Exec Command="java -version" />
+
+    <!-- Require Maven; fail if missing -->
+    <Exec Command="mvn -version" />
+
+    <!-- Build Java 25 jar first; if it fails (e.g., JDK<25), continue and rely on Java 17 jar -->
+    <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 25)..." Importance="High" Condition="'$(IsJdk25)' == 'True'" />
+    <Message Text="(Flink.JobGateway) Skipping Java 25 build (JDK 25 not detected)." Importance="High" Condition="'$(IsJdk25)' != 'True'" />
+    <Exec Command="mvn -B clean package -DskipTests -Pjava25"
+          WorkingDirectory="$(FlinkIRRunnerDir)"
           ContinueOnError="true"
-          IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="JavaExitCode" />
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High"
+          Condition="'$(IsJdk25)' == 'True'">
+      <Output TaskParameter="ExitCode" PropertyName="Java25BuildExitCode" />
     </Exec>
-    
-    <!-- Check if Maven is available -->
-    <Exec Command="mvn -version"
-          ContinueOnError="true"
-          IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="MavenExitCode" />
-    </Exec>
-    
-    <!-- Create a placeholder JAR if Java or Maven is not available -->
-    <Message Text="(Flink.JobGateway) Java or Maven not available. Creating placeholder JAR."
-             Importance="High"
-             Condition="'$(JavaExitCode)' != '0' OR '$(MavenExitCode)' != '0'" />
-    
-    <WriteLinesToFile File="$(LocalJarPath)"
-                      Lines="// Placeholder JAR - Java or Maven not available"
-                      Overwrite="true"
-                      Condition="'$(JavaExitCode)' != '0' OR '$(MavenExitCode)' != '0'" />
-    
-    <!-- Build the FlinkIRRunner if Java and Maven are available -->
-    <Message Text="(Flink.JobGateway) Building FlinkIRRunner JAR with Maven (Java: $(JavaExitCode), Maven: $(MavenExitCode))" 
-             Importance="High" 
-             Condition="'$(JavaExitCode)' == '0' AND '$(MavenExitCode)' == '0'" />
-    
-    <!-- Check if FlinkIRRunner directory exists -->
-    <Message Text="Checking if FlinkIRRunner directory exists at $(FlinkIRRunnerDir)"
-             Importance="High" />
-    
-    <!-- Create directory if it doesn't exist -->
-    <MakeDir Directories="$(FlinkIRRunnerDir)"
-             Condition="!Exists('$(FlinkIRRunnerDir)')" />
-    
-    <!-- Create target directory -->
-    <MakeDir Directories="$(FlinkIRRunnerDir)/target"
-             Condition="!Exists('$(FlinkIRRunnerDir)/target')" />
-    
-    <!-- Create a placeholder JAR if FlinkIRRunner directory doesn't exist -->
-    <WriteLinesToFile File="$(FlinkIRRunnerDir)/target/flink-ir-runner.jar"
-                      Lines="// Placeholder JAR - FlinkIRRunner directory not found"
-                      Overwrite="true"
-                      Condition="!Exists('$(FlinkIRRunnerDir)/pom.xml')" />
-    
-    <!-- Copy the JAR to the local directory -->
-    <Copy SourceFiles="$(FlinkIRRunnerJarPath)"
+
+    <!-- Always build Java 17 jar; this should succeed on JDK >=17 -->
+    <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" />
+    <Exec Command="mvn -B package -DskipTests -Pjava17"
+          WorkingDirectory="$(FlinkIRRunnerDir)"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High" />
+
+    <!-- Validate jars output -->
+    <!-- At least one jar must exist: prefer Java 25, but accept Java 17 -->
+    <Error Condition="!Exists('$(FlinkIRRunnerJarPath25)') AND !Exists('$(FlinkIRRunnerJarPath17)')"
+           Text="FlinkIRRunner jars missing after Maven build (neither Java 25 nor Java 17 produced)." />
+
+    <!-- Copy jars next to the Gateway project for inclusion -->
+    <Copy SourceFiles="$(FlinkIRRunnerJarPath25)"
           DestinationFiles="$(LocalJarPath)"
-          Condition="Exists('$(FlinkIRRunnerJarPath)')" />
-    
-    <!-- Ensure the JAR is included in the build output -->
-    <ItemGroup>
-      <Content Include="flink-ir-runner.jar" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(FlinkIRRunnerJarPath25)')" />
+    <Copy SourceFiles="$(FlinkIRRunnerJarPath17)"
+          DestinationFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(FlinkIRRunnerJarPath17)')" />
+    <!-- If Java 25 jar is missing, copy Java 17 jar as default name for convenience -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(LocalJarPath)"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(FlinkIRRunnerJarPath25)') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+
+    <!-- Log jar outcomes -->
+    <Message Text="(Flink.JobGateway) Java 25 jar ready at $(LocalJarPath)" Importance="High" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+    <Message Text="(Flink.JobGateway) Java 17 jar ready at $(MSBuildProjectDirectory)\flink-ir-runner-java17.jar" Importance="High" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
   </Target>
+
+  <!-- Ensure the JAR(s) are copied to the build output folder deterministically after build -->
+  <Target Name="CopyRunnerJarsToOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <_OutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_OutDir>
+    </PropertyGroup>
+
+    <!-- Prefer canonical name flink-ir-runner.jar in output. If only java17 exists, copy it as canonical name too. -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner.jar"
+          DestinationFiles="$(_OutDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_OutDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+
+    <!-- Also copy the java17 variant explicitly if present -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_OutDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+  </Target>
+
+  <!-- Copy runner jars into the publish directory so CI artifacts from publish include the jar -->
+  <Target Name="CopyRunnerJarsToPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_PublishDir>$([MSBuild]::EnsureTrailingSlash('$(PublishDir)'))</_PublishDir>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner.jar"
+          DestinationFiles="$(_PublishDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_PublishDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_PublishDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+  </Target>
+
+  <!-- Keep items for IDE visibility; do not rely on evaluation-time Exists for copying to output -->
+  <ItemGroup>
+    <None Include="flink-ir-runner.jar" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
+    <None Include="flink-ir-runner-java17.jar" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+  </ItemGroup>
 
 </Project>

@@ -1,199 +1,172 @@
 using System.Diagnostics;
-using Aspire.Hosting.Testing;
 using Confluent.Kafka;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture]
-[Category("flinkdotnet-basic")]
-public class FlinkDotNetBasicIntegrationTest
+[TestFixture, NonParallelizable]
+[Category("flink-string-ops")]
+public class FlinkIrStringOpsIntegrationTest : LocalTestingTestBase
 {
-    private const string InputTopic = "lt.flink.basic.input";
-    private const string OutputTopic = "lt.flink.basic.output";
+    private const string InputTopic = "lt.flink.stringops.input";
+    private const string OutputTopic = "lt.flink.stringops.output";
 
     [Test]
-    public async Task FlinkDotNet_Basic_KafkaToKafka_Test()
+    public async Task FlinkIrStringOps_KafkaToKafka_WithStringTransformation_Test()
     {
-        // Remove forced local simulation; require real Flink cluster
         Environment.SetEnvironmentVariable("FLINK_FORCE_LOCAL", null);
 
-        var ct = TestContext.CurrentContext.CancellationToken;
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>(ct);
-        var app = await appHost.BuildAsync(ct);
-        await app.StartAsync(ct);
+        TestPrerequisites.EnsureDockerAvailable();
+        var gatewayBuildable = TestPrerequisites.ProbeFlinkGatewayBuildable();
+        if (!gatewayBuildable)
+        {
+            Assert.Fail("Flink.JobGateway or Runner JAR not available. Please build the gateway and run scripts/ensure-flink-runner.ps1 to produce the runner JAR before running tests.");
+            return;
+        }
 
+        var baseToken = TestContext.CurrentContext.CancellationToken;
+        using var testTimeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(5)); // Reduced timeout
+        using var linkedCts = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        var ct = linkedCts.Token;
+        
+        TestContext.WriteLine("🚀 Starting Flink IR String Operations Integration Test");
+        var stopwatch = Stopwatch.StartNew();
+        
         try
         {
-            // Wait for Kafka to be ready
-            await app.ResourceNotifications
-                .WaitForResourceHealthyAsync("kafka", ct)
-                .WaitAsync(TimeSpan.FromSeconds(90), ct);
+            // Use base class infrastructure setup (AppHost, Kafka already initialized)
+            TestContext.WriteLine("⏳ Waiting for complete infrastructure (Kafka + Flink + Gateway)...");
+            await WaitForFullInfrastructureAsync(includeGateway: true, ct);
+            TestContext.WriteLine("✅ All infrastructure components are ready");
 
-            var kafka = await app.GetConnectionStringAsync("kafka", ct);
-            await WaitForKafkaReady(kafka!, TimeSpan.FromSeconds(90), ct);
+            // Create test topics using base class method
+            TestContext.WriteLine($"📝 Creating Kafka topics: {InputTopic} -> {OutputTopic}");
+            await CreateTopicAsync(InputTopic, 1);
+            await CreateTopicAsync(OutputTopic, 1);
 
-            // Wait for Flink to be ready
-            await WaitForFlinkReadyAsync("http://localhost:8081/v1/overview", TimeSpan.FromSeconds(60), ct);
-
-            // Wait for Gateway to be ready
-            await EnsureGatewayAsync(ct);
-
-            // Create topics
-            await CreateTopicAsync(kafka!, InputTopic, 1);
-            await CreateTopicAsync(kafka!, OutputTopic, 1);
-
-            // Submit a simple DataStream job
+            // Create and submit Flink job
+            TestContext.WriteLine("🔧 Creating Flink job for string operations (uppercase transformation)");
+            // CRITICAL: Use container network address for Kafka since Flink runs inside Docker
+            // The test code uses KafkaConnectionString (localhost:port) to produce/consume
+            // but Flink containers must use kafka:9092 (container network name)
             var job = FlinkDotNet.Flink.JobBuilder
-                .FromKafka(InputTopic, kafka)
-                .Map("upper")
-                .ToKafka(OutputTopic, kafka);
+                .FromKafka(InputTopic, KafkaContainerConnectionString)
+                .Map("toUpper")
+                .ToKafka(OutputTopic, KafkaContainerConnectionString);
             
-            var submitResult = await job.Submit("lt-basic-test", ct);
-            TestContext.WriteLine($"Job submit success={submitResult.Success}; jobId={submitResult.FlinkJobId}; error={submitResult.ErrorMessage}");
-            Assert.That(submitResult.Success, Is.True, "Job must submit successfully");
+            var submitResult = await job.Submit("lt-stringops-test", ct);
+            TestContext.WriteLine($"📊 Job submission result: success={submitResult.Success}, jobId={submitResult.FlinkJobId}, error={submitResult.ErrorMessage}");
+            Assert.That(submitResult.Success, Is.True, $"Job must submit successfully. Error: {submitResult.ErrorMessage}");
 
             // Produce test messages
             var messageCount = 10;
-            await ProduceSimpleMessagesAsync(kafka!, InputTopic, messageCount, ct);
+            TestContext.WriteLine($"📤 Producing {messageCount} test messages to {InputTopic}");
+            await ProduceSimpleMessagesAsync(InputTopic, messageCount, ct);
 
-            // Consume and verify output
-            var consumedCount = await ConsumeAsync(kafka!, OutputTopic, messageCount, TimeSpan.FromSeconds(30), ct);
-            TestContext.WriteLine($"Consumed {consumedCount} messages");
-            Assert.That(consumedCount, Is.GreaterThanOrEqualTo(messageCount), "All messages should be processed");
+            // Consume and verify processed messages
+            TestContext.WriteLine($"📥 Consuming processed messages from {OutputTopic}");
+            var consumedCount = await ConsumeMessagesAsync(OutputTopic, messageCount, TimeSpan.FromSeconds(60), ct);
+            TestContext.WriteLine($"📊 Consumed {consumedCount} messages (expected: {messageCount})");
+            Assert.That(consumedCount, Is.GreaterThanOrEqualTo(messageCount), $"All {messageCount} messages should be processed and consumed");
+            
+            stopwatch.Stop();
+            TestContext.WriteLine($"✅ Test completed successfully in {stopwatch.Elapsed.TotalSeconds:F1} seconds");
         }
-        finally 
-        { 
-            try { await app.DisposeAsync(); } catch { } 
-        }
-    }
-
-    #region Helpers
-    private static async Task EnsureGatewayAsync(CancellationToken ct)
-    {
-        // Flink Job Gateway health endpoint (ASP.NET)
-        await WaitForHttpOkAsync("http://localhost:8080/api/v1/health", TimeSpan.FromSeconds(60), ct);
-    }
-
-    private static async Task CreateTopicAsync(string bootstrapServers, string topic, int partitions)
-    {
-        using var admin = new Confluent.Kafka.AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build();
-        try
+        catch (Exception ex)
         {
-            await admin.CreateTopicsAsync(new[] { new Confluent.Kafka.Admin.TopicSpecification { Name = topic, NumPartitions = partitions, ReplicationFactor = 1 } });
-        }
-        catch (Confluent.Kafka.Admin.CreateTopicsException ex)
-        {
-            if (!ex.Results.Any(r => r.Error.Code == Confluent.Kafka.ErrorCode.TopicAlreadyExists))
-                throw;
+            stopwatch.Stop();
+            TestContext.WriteLine($"❌ Test failed after {stopwatch.Elapsed.TotalSeconds:F1} seconds: {ex.Message}");
+            throw;
         }
     }
 
-    private static async Task ProduceSimpleMessagesAsync(string bootstrap, string topic, int count, CancellationToken ct)
+    #region Helper Methods
+
+    private async Task ProduceSimpleMessagesAsync(string topic, int count, CancellationToken ct)
     {
         using var producer = new ProducerBuilder<string, string>(new ProducerConfig
         {
-            BootstrapServers = bootstrap,
+            BootstrapServers = KafkaConnectionString,
             EnableIdempotence = true,
             Acks = Acks.All,
-            LingerMs = 5
-        }).Build();
+            LingerMs = 5,
+            BrokerAddressFamily = BrokerAddressFamily.V4,
+            SecurityProtocol = SecurityProtocol.Plaintext
+        })
+        .SetLogHandler((_, _) => { /* Suppress logs */ })
+        .SetErrorHandler((_, _) => { /* Suppress errors */ })
+        .Build();
         
+        var stopwatch = Stopwatch.StartNew();
         for (int i = 0; i < count; i++)
         {
-            await producer.ProduceAsync(topic, new Message<string, string> { Key = $"key-{i}", Value = $"value-{i}" }, ct);
+            try
+            {
+                await producer.ProduceAsync(topic, new Message<string, string> 
+                { 
+                    Key = $"key-{i}", 
+                    Value = $"value-{i}" 
+                }, ct);
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"❌ Failed to produce message {i}: {ex.Message}");
+                throw;
+            }
         }
         
         producer.Flush(TimeSpan.FromSeconds(10));
+        stopwatch.Stop();
+        TestContext.WriteLine($"📤 Produced {count} messages in {stopwatch.Elapsed.TotalMilliseconds:F0}ms");
     }
 
-    private static Task<long> ConsumeAsync(string bootstrap, string topic, int expectedMin, TimeSpan timeout, CancellationToken ct)
+    private Task<long> ConsumeMessagesAsync(string topic, int expectedMin, TimeSpan timeout, CancellationToken ct)
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = bootstrap,
-            GroupId = $"lt-flink-basic-consumer-{Guid.NewGuid()}",
+            BootstrapServers = KafkaConnectionString,
+            GroupId = $"lt-flink-stringops-consumer-{Guid.NewGuid()}",
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false
+            EnableAutoCommit = false,
+            BrokerAddressFamily = BrokerAddressFamily.V4,
+            SecurityProtocol = SecurityProtocol.Plaintext
         };
         
-        using var consumer = new ConsumerBuilder<string, string>(config).Build();
+        using var consumer = new ConsumerBuilder<string, string>(config)
+            .SetLogHandler((_, _) => { /* Suppress logs */ })
+            .SetErrorHandler((_, _) => { /* Suppress errors */ })
+            .Build();
+            
         consumer.Subscribe(topic);
         var sw = Stopwatch.StartNew();
         long total = 0;
         
+        TestContext.WriteLine($"📥 Starting to consume from topic '{topic}' (timeout: {timeout.TotalSeconds}s, expected minimum: {expectedMin})");
+        
         while (sw.Elapsed < timeout && total < expectedMin && !ct.IsCancellationRequested)
         {
-            var cr = consumer.Consume(TimeSpan.FromMilliseconds(250));
-            if (cr != null) total++;
+            try
+            {
+                var cr = consumer.Consume(TimeSpan.FromMilliseconds(250));
+                if (cr != null) 
+                {
+                    total++;
+                    if (total <= 5 || total % 5 == 0) // Log first 5 and every 5th message
+                    {
+                        TestContext.WriteLine($"📨 Consumed message {total}: key='{cr.Message.Key}', value='{cr.Message.Value}'");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ Error consuming message: {ex.Message}");
+            }
         }
         
         consumer.Close();
+        TestContext.WriteLine($"📊 Total consumption completed: {total} messages in {sw.Elapsed.TotalSeconds:F1}s");
         return Task.FromResult(total);
     }
 
-    private static async Task WaitForHttpOkAsync(string url, TimeSpan timeout, CancellationToken ct)
-    {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var sw = Stopwatch.StartNew();
-        
-        while (sw.Elapsed < timeout)
-        {
-            try
-            {
-                var resp = await http.GetAsync(url, ct);
-                if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500) return; // tolerate 404 placeholder
-            }
-            catch { }
-            
-            await Task.Delay(500, ct);
-        }
-        
-        throw new TimeoutException($"HTTP probe timed out for {url}");
-    }
-
-    private static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct)
-    {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var sw = Stopwatch.StartNew();
-        
-        while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
-        {
-            try
-            {
-                var resp = await http.GetAsync(overviewUrl, ct);
-                if (resp.IsSuccessStatusCode)
-                {
-                    var content = await resp.Content.ReadAsStringAsync(ct);
-                    if (!string.IsNullOrEmpty(content)) return; // Consider ready
-                }
-            }
-            catch { }
-            
-            await Task.Delay(1000, ct);
-        }
-        
-        throw new TimeoutException("Flink JobManager REST API not ready: " + overviewUrl);
-    }
-
-    private static async Task WaitForKafkaReady(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
-    {
-        var sw = Stopwatch.StartNew();
-        
-        while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
-        {
-            try
-            {
-                using var admin = new Confluent.Kafka.AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, SocketTimeoutMs = 5000 }).Build();
-                var md = admin.GetMetadata(TimeSpan.FromSeconds(3));
-                if (md?.Brokers?.Count > 0) return;
-            }
-            catch { }
-            
-            await Task.Delay(500, ct);
-        }
-        
-        throw new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s at {bootstrapServers}");
-    }
     #endregion
 }

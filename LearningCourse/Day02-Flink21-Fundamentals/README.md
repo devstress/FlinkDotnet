@@ -18,7 +18,7 @@
 dotnet test ../../LocalTesting/LocalTesting.IntegrationTests -c Release --filter TestCategory=observability
 
 # Optional: run the AppHost manually
-dotnet run --project ../../LocalTesting/BackPressure.AppHost/BackPressure.AppHost.csproj
+dotnet run --project ../../LocalTesting/LocalTesting.FlinkSqlAppHost/LocalTesting.FlinkSqlAppHost.csproj
 ```
 
 ### Access UIs
@@ -1695,3 +1695,4 @@ You've successfully set up and validated a **production-grade streaming infrastr
 **Course Progress**: Day 1 of 14 Complete ✅
 
 **Next**: [Day 2: Real-World Stream Processing Patterns →](../Day02-Stream-Processing-Patterns/README.md)
+

@@ -8,11 +8,13 @@
   <version>1.0.0</version>
   <name>Flink IR Runner</name>
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <java.release>17</java.release>
+    <maven.compiler.source>${java.release}</maven.compiler.source>
+    <maven.compiler.target>${java.release}</maven.compiler.target>
     <flink.version>2.1.0</flink.version>
     <jackson.version>2.17.1</jackson.version>
     <shade.plugin.version>3.5.0</shade.plugin.version>
+    <runner.finalName>flink-ir-runner</runner.finalName>
   </properties>
 
   <dependencies>
@@ -66,9 +68,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
+        <version>3.13.0</version>
         <configuration>
-          <release>17</release>
+          <release>${java.release}</release>
         </configuration>
       </plugin>
       <plugin>
@@ -86,11 +88,28 @@
                   <mainClass>com.flink.jobgateway.FlinkJobRunner</mainClass>
                 </transformer>
               </transformers>
-              <finalName>flink-ir-runner</finalName>
+              <finalName>${runner.finalName}</finalName>
             </configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>java17</id>
+      <properties>
+        <java.release>17</java.release>
+        <runner.finalName>flink-ir-runner-java17</runner.finalName>
+      </properties>
+    </profile>
+    <profile>
+      <id>java25</id>
+      <properties>
+        <java.release>25</java.release>
+        <runner.finalName>flink-ir-runner</runner.finalName>
+      </properties>
+    </profile>
+  </profiles>
 </project>

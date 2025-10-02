@@ -13,9 +13,23 @@ public static class Program
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        
+        // Log startup environment for debugging
+        var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
+        logger.LogInformation("=== Gateway Starting ===");
+        logger.LogInformation("FLINK_CLUSTER_HOST: {Host}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST"));
+        logger.LogInformation("FLINK_CLUSTER_PORT: {Port}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"));
+        logger.LogInformation("KAFKA_BOOTSTRAP: {Kafka}", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
+        
+        // Check for Aspire service discovery variables
+        var aspireFlinkEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+        logger.LogInformation("Aspire Flink endpoint: {Endpoint}", aspireFlinkEndpoint ?? "NOT SET");
+        
         ConfigureServices(builder);
         var app = builder.Build();
         ConfigurePipeline(app);
+        
+        logger.LogInformation("Gateway configured, starting web server...");
         await app.RunAsync();
     }
 
@@ -52,7 +66,16 @@ public static class Program
             options.SubstituteApiVersionInUrl = true;
         });
 
-        builder.Services.AddHttpClient<IFlinkJobManager, FlinkJobManager>();
+        // Register FlinkJobManager as singleton to preserve job tracking across requests
+        // The in-memory _jobMapping dictionary must persist for LOCAL mode jobs
+        builder.Services.AddHttpClient(nameof(FlinkJobManager));
+        builder.Services.AddSingleton<IFlinkJobManager>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient(nameof(FlinkJobManager));
+            var logger = sp.GetRequiredService<ILogger<FlinkJobManager>>();
+            return new FlinkJobManager(logger, httpClient);
+        });
         builder.Services.AddLogging(lb => { lb.AddConsole(); lb.AddDebug(); });
     }
 
@@ -103,15 +126,21 @@ public static class Program
         using var mem = new MemoryStream();
         ctx.Response.Body = mem;
         await next();
+        
+        // CRITICAL FIX: Reset memory stream position BEFORE copying back
+        // The controller wrote to the stream, so position is at the end
+        // We must reset to 0 to copy the full response
+        mem.Position = 0;
+        
         if (isSubmit && ctx.Response.StatusCode == 400)
         {
-            mem.Position = 0;
             var bodyText = await new StreamReader(mem).ReadToEndAsync();
             ctx.RequestServices.GetRequiredService<ILoggerFactory>()
                 .CreateLogger("JobSubmitModelState")
                 .LogWarning("Job submission returned 400. Response body: {Body}", bodyText);
-            mem.Position = 0;
+            mem.Position = 0; // Reset again after reading for logging
         }
+        
         await mem.CopyToAsync(originalBody);
         ctx.Response.Body = originalBody;
     }

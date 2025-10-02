@@ -33,7 +33,7 @@ Flink.NET provides an integration architecture that connects .NET applications w
 
 ## Getting Started
 
-Ready to dive in? Our [Getting Started](Getting-Started.md) guide will walk you through setting up FlinkDotnet and deploying Apache Flink infrastructure.
+Ready to dive in? Our [Getting Started](Getting-Started.md) guide will walk you through setting up FlinkDotnet, ensuring Java + Maven prerequisites, and deploying Apache Flink infrastructure.
 
 ## Use Cases
 

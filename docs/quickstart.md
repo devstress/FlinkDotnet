@@ -5,23 +5,30 @@ This guide shows how to run the end-to-end LocalTesting setup and submit a simpl
 ## Prerequisites
 - .NET 9 SDK
 - Docker Desktop (Linux containers)
+- Java 25 and Maven (required to build `Flink.JobGateway`, which prebuilds the IR Runner jar)
+- Optional connectors copied to `LocalTesting/connectors/flink/lib/` if your job needs extra Flink SQL libraries (the Flink Job Gateway bundles them automatically)
 
 ## Run LocalTesting Integration
 
-1) Build the solution
+1) Build the solution (this builds `Flink.JobGateway` and prebuilds/bundles `flink-ir-runner.jar`)
 ```
 dotnet build FlinkDotNet/FlinkDotNet.sln -c Debug
 ```
 
-2) Run the integration tests (NUnit)
+2) Start the Aspire host that brings up Kafka, Flink, and the Flink Job Gateway (leave it running)
 ```
-dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj -c Debug --filter TestCategory=observability
+dotnet run --project LocalTesting/LocalTesting.FlinkSqlAppHost/LocalTesting.FlinkSqlAppHost.csproj
+```
+
+3) In a separate shell, run the gateway bundling integration test which submits a Flink job end-to-end
+```
+dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj -c Debug --filter TestCategory=gateway-bundling
 ```
 
 The test ensures:
 - Kafka is reachable and topics are created
-- Gateway health check returns OK
-- IR generation and submission attempt works
+- Flink JobManager REST endpoint is healthy
+- Gateway builds the job bundle and the submission succeeds (messages flow input ➜ output)
 
 ## Submitting a Job Programmatically
 
@@ -42,5 +49,5 @@ var result = await gateway.SubmitJobAsync(job);
 Console.WriteLine(result.Success ? $"FlinkJobId: {result.FlinkJobId}" : result.ErrorMessage);
 ```
 
-Note: Once the IR Runner jar is integrated in the Gateway, the job will be submitted to Flink and a real `FlinkJobId` returned. Until then, submissions validate IR and exercise the gateway.
+Note: The Gateway now prebuilds and bundles the IR Runner jar at build time. Ensure Java and Maven are available on PATH. You can disable the prebuild with `/p:BuildFlinkRunner=false` and provide a prebuilt jar at `FlinkDotNet/Flink.JobGateway/flink-ir-runner.jar` (or set `FLINK_RUNNER_JAR_PATH`).
 

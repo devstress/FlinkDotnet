@@ -10,6 +10,13 @@ dotnet --version
 # Should show: 9.0.x (if not, install .NET 9.0 SDK)
 ```
 
+### 1b. Verify Java and Maven (for Gateway build)
+```bash
+java -version   # Should be 17+
+mvn -version    # Maven available on PATH
+```
+If Java/Maven are not available, `Flink.JobGateway` build will fail because it prebuilds the IR Runner jar.
+
 ### 2. Quick Validation
 ```bash
 # Run this before any development work

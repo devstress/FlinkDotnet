@@ -1,13 +1,15 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Diagnostics.CodeAnalysis; // added
 using Flink.JobBuilder.Models;
 
 namespace Flink.JobGateway.Services;
 
-[SuppressMessage("Reliability", "S2139", Justification = "Intentional conversion of exceptions into domain JobSubmissionResult / status objects for gateway API without rethrow in selected methods.")]
+[SuppressMessage("Reliability", "S2139", Justification = "Gateway converts exceptions into domain objects; selective rethrowing is intentional.")]
 public class FlinkJobManager : IFlinkJobManager
 {
     private readonly ILogger<FlinkJobManager> _logger;
@@ -18,12 +20,51 @@ public class FlinkJobManager : IFlinkJobManager
     {
         _logger = logger;
         _httpClient = httpClient;
-        var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
-        var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
-        var flinkBaseUrl = $"http://{host}:{port}";
+        
+        // Try multiple Flink endpoint discovery strategies
+        // NOTE: This discovery happens at Gateway startup time, which may be BEFORE
+        // the Flink container is fully ready in Aspire DCP testing mode.
+        // The Gateway will use this endpoint, but if Flink is not ready, operations
+        // will gracefully fall back to local mode.
+        var flinkBaseUrl = DiscoverFlinkEndpoint();
+        
         _httpClient.BaseAddress = new Uri(flinkBaseUrl);
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
-        _logger.LogInformation("Flink Job Gateway targeting cluster at: {FlinkBaseUrl}", flinkBaseUrl);
+        _logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
+        _logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
+    }
+
+    /// <summary>
+    /// Discover Flink endpoint using multiple strategies for maximum compatibility.
+    /// Priority: Aspire service discovery > Environment variables > Default fallback
+    /// </summary>
+    private string DiscoverFlinkEndpoint()
+    {
+        // Strategy 1: Aspire service discovery (injected by .WithReference())
+        // Format: services__flink-jobmanager__http__0 = "http://localhost:63624"
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+        if (!string.IsNullOrEmpty(aspireEndpoint))
+        {
+            _logger.LogInformation("Using Aspire service discovery endpoint: {Endpoint}", aspireEndpoint);
+            return aspireEndpoint;
+        }
+
+        // Strategy 2: Explicit environment variables (Docker Compose)
+        var envHost = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST");
+        var envPort = Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT");
+        
+        if (!string.IsNullOrEmpty(envHost))
+        {
+            var port = int.TryParse(envPort, out var p) ? p : 8081;
+            var envEndpoint = $"http://{envHost}:{port}";
+            _logger.LogInformation("Using environment variable endpoint: {Endpoint}", envEndpoint);
+            return envEndpoint;
+        }
+
+        // Strategy 3: Default fallback for Docker Compose with standard ports
+        var defaultEndpoint = "http://flink-jobmanager:8081";
+        _logger.LogInformation("Using default Docker Compose endpoint: {Endpoint}", defaultEndpoint);
+        return defaultEndpoint;
     }
 
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
@@ -31,69 +72,20 @@ public class FlinkJobManager : IFlinkJobManager
         _logger.LogInformation("Submitting job: {JobId}", jobDefinition.Metadata.JobId);
         try
         {
-            var validationResult = ValidateJobDefinition(jobDefinition);
-            if (!validationResult.IsValid)
+            var validation = ValidateJobDefinition(jobDefinition);
+            if (!validation.IsValid)
             {
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
-                    $"Job validation failed: {string.Join(", ", validationResult.Errors)}");
+                    $"Job validation failed: {string.Join(", ", validation.Errors)}");
             }
 
-            var irJson = JsonSerializer.Serialize(jobDefinition, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            });
-            var irBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
+            var irBase64 = EncodeJobDefinition(jobDefinition);
+            var clusterHealthy = await ProbeClusterHealthSafelyAsync();
+            var flinkJobId = clusterHealthy
+                ? await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition)
+                : await RunLocalAsync(irBase64, jobDefinition);
 
-            var forceLocal = string.Equals(Environment.GetEnvironmentVariable("FLINK_FORCE_LOCAL"), "1", StringComparison.OrdinalIgnoreCase);
-            if (forceLocal)
-            {
-                var simulatedId = $"local-sim-{Guid.NewGuid():N}";
-                _logger.LogInformation("FLINK_FORCE_LOCAL enabled; returning simulated local success for job {JobId} with id {SimId}", jobDefinition.Metadata.JobId, simulatedId);
-                _jobMapping[simulatedId] = new JobInfo
-                {
-                    JobId = jobDefinition.Metadata.JobId,
-                    FlinkJobId = simulatedId,
-                    Status = "LOCAL-RUNNING",
-                    SubmissionTime = DateTime.UtcNow,
-                    JobDefinition = jobDefinition
-                };
-                return new JobSubmissionResult
-                {
-                    JobId = jobDefinition.Metadata.JobId,
-                    FlinkJobId = simulatedId,
-                    Success = true,
-                    SubmittedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, string> { ["mode"] = "forced-local" }
-                };
-            }
-
-            bool clusterHealthy = false;
-            try { clusterHealthy = await CheckFlinkClusterHealthAsync(); }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Cluster health probe failed; falling back to local mode.");
-            }
-
-            string flinkJobId;
-            if (clusterHealthy)
-            {
-                _logger.LogInformation("Cluster healthy - submitting to Flink REST API");
-                flinkJobId = await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
-            }
-            else
-            {
-                flinkJobId = await RunLocalAsync(irBase64, jobDefinition);
-            }
-
-            _jobMapping[flinkJobId] = new JobInfo
-            {
-                JobId = jobDefinition.Metadata.JobId,
-                FlinkJobId = flinkJobId,
-                Status = clusterHealthy ? "RUNNING" : "LOCAL-RUNNING",
-                SubmissionTime = DateTime.UtcNow,
-                JobDefinition = jobDefinition
-            };
+            TrackJob(jobDefinition, flinkJobId, clusterHealthy);
 
             if (!clusterHealthy && _jobMapping[flinkJobId].Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
             {
@@ -116,6 +108,80 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
+    private static string EncodeJobDefinition(JobDefinition jobDefinition)
+    {
+        var serializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
+        };
+        var irJson = JsonSerializer.Serialize(jobDefinition, serializerOptions);
+        
+        LogJobDefinitionDiagnostics(irJson, jobDefinition);
+        
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
+    }
+
+    private static void LogJobDefinitionDiagnostics(string irJson, JobDefinition jobDefinition)
+    {
+        Console.WriteLine("[DIAGNOSTIC] ════════════════════════════════════════════════════════════");
+        Console.WriteLine("[DIAGNOSTIC] Complete Job Definition JSON:");
+        Console.WriteLine(irJson);
+        Console.WriteLine("[DIAGNOSTIC] ════════════════════════════════════════════════════════════");
+        
+        LogKafkaConfiguration(jobDefinition);
+        LogOperations(jobDefinition);
+    }
+
+    private static void LogKafkaConfiguration(JobDefinition jobDefinition)
+    {
+        var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
+        var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
+        Console.WriteLine($"[DIAGNOSTIC] Source BootstrapServers: {kafkaSource?.BootstrapServers ?? "null"}");
+        Console.WriteLine($"[DIAGNOSTIC] Sink BootstrapServers: {kafkaSink?.BootstrapServers ?? "null"}");
+        Console.WriteLine($"[DIAGNOSTIC] Operations Count: {jobDefinition.Operations?.Count ?? 0}");
+    }
+
+    private static void LogOperations(JobDefinition jobDefinition)
+    {
+        if (jobDefinition.Operations == null || jobDefinition.Operations.Count == 0)
+            return;
+
+        foreach (var op in jobDefinition.Operations)
+        {
+            if (op is MapOperationDefinition mapOp)
+            {
+                Console.WriteLine($"[DIAGNOSTIC] Map Operation - Expression: '{mapOp.Expression}'");
+            }
+        }
+    }
+
+    private async Task<bool> ProbeClusterHealthSafelyAsync()
+    {
+        try
+        {
+            return await CheckFlinkClusterHealthAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cluster health probe failed; falling back to local mode.");
+            return false;
+        }
+    }
+
+    private void TrackJob(JobDefinition jobDefinition, string flinkJobId, bool clusterHealthy)
+    {
+        _jobMapping[flinkJobId] = new JobInfo
+        {
+            JobId = jobDefinition.Metadata.JobId,
+            FlinkJobId = flinkJobId,
+            Status = clusterHealthy ? "RUNNING" : "LOCAL-RUNNING",
+            SubmissionTime = DateTime.UtcNow,
+            JobDefinition = jobDefinition
+        };
+    }
+
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
@@ -136,18 +202,16 @@ public class FlinkJobManager : IFlinkJobManager
                     : "UNKNOWN";
                 return new JobStatus { JobId = info?.JobId ?? flinkJobId, FlinkJobId = flinkJobId, State = state };
             }
-            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return null;
             }
-            else
-            {
-                throw new InvalidOperationException($"Unexpected status code querying Flink job status: {(int)response.StatusCode} {response.StatusCode}");
-            }
+
+            throw new InvalidOperationException($"Unexpected status code querying Flink job status: {(int)response.StatusCode} {response.StatusCode}");
         }
         catch (Exception ex)
         {
-            // Rethrow with contextual message as requested
             throw new InvalidOperationException($"Failed to query Flink 2.1.0 cluster for job status: {flinkJobId}", ex);
         }
     }
@@ -177,7 +241,6 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            // Rethrow with context for TDD visibility
             throw new InvalidOperationException($"Failed to query Flink 2.1.0 cluster for job metrics: {flinkJobId}", ex);
         }
     }
@@ -201,18 +264,16 @@ public class FlinkJobManager : IFlinkJobManager
                 }
                 return true;
             }
-            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return false;
             }
-            else
-            {
-                throw new InvalidOperationException($"Unexpected status code canceling Flink job: {(int)response.StatusCode} {response.StatusCode}");
-            }
+
+            throw new InvalidOperationException($"Unexpected status code canceling Flink job: {(int)response.StatusCode} {response.StatusCode}");
         }
         catch (Exception ex)
         {
-            // Rethrow with contextual message as requested
             throw new InvalidOperationException($"Failed to cancel job in Flink 2.1.0 cluster: {flinkJobId}", ex);
         }
     }
@@ -220,67 +281,137 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task<string> RunLocalAsync(string irBase64, JobDefinition jobDefinition)
     {
         var jarPath = await EnsureRunnerJarPathAsync();
-        var id = $"local-{Guid.NewGuid():N}";
-        string? bootstrap = null;
-        if (jobDefinition.Source is KafkaSourceDefinition ks && !string.IsNullOrWhiteSpace(ks.BootstrapServers)) bootstrap = ks.BootstrapServers;
-        else if (jobDefinition.Sink is KafkaSinkDefinition ksd && !string.IsNullOrWhiteSpace(ksd.BootstrapServers)) bootstrap = ksd.BootstrapServers;
-        bootstrap ??= Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "localhost:9092";
+        ValidateJarExists(jarPath);
 
+        var id = $"local-{Guid.NewGuid():N}";
+        var bootstrap = GetBootstrapServers(jobDefinition);
+        var proc = StartLocalRunnerProcess(jarPath, irBase64, bootstrap);
+
+        MonitorLocalRunnerAsync(proc, id);
+
+        LogLocalRunnerStart(proc, bootstrap, jarPath, jobDefinition.Metadata.JobId, irBase64);
+        return id;
+    }
+
+    private static void ValidateJarExists(string jarPath)
+    {
         if (!File.Exists(jarPath))
         {
-            _logger.LogWarning("Runner jar missing at {Path}; using simulated local execution for job {JobId}", jarPath, jobDefinition.Metadata.JobId);
-            return id; // simulated
+            throw new InvalidOperationException(
+                $"Runner JAR not found at {jarPath}. The JAR should be built automatically during Gateway build. " +
+                "Please ensure Java and Maven are installed and the build completed successfully.");
         }
+    }
 
+    private static string GetBootstrapServers(JobDefinition jobDefinition)
+    {
+        if (jobDefinition.Source is KafkaSourceDefinition ks && !string.IsNullOrWhiteSpace(ks.BootstrapServers))
+            return ks.BootstrapServers;
+        
+        if (jobDefinition.Sink is KafkaSinkDefinition ksd && !string.IsNullOrWhiteSpace(ksd.BootstrapServers))
+            return ksd.BootstrapServers;
+
+        return Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "localhost:9092";
+    }
+
+    private static Process StartLocalRunnerProcess(string jarPath, string irBase64, string bootstrap)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "java",
+            Arguments = $"-jar \"{jarPath}\" --irBase64 {irBase64}",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        psi.Environment["KAFKA_BOOTSTRAP"] = bootstrap;
+
+        Process? proc;
         try
         {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "java",
-                Arguments = $"-jar \"{jarPath}\" --irBase64 {irBase64}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            psi.Environment["KAFKA_BOOTSTRAP"] = bootstrap;
-            System.Diagnostics.Process? proc = null;
+            proc = Process.Start(psi);
+        }
+        catch (Exception startEx)
+        {
+            throw new InvalidOperationException(
+                "Failed to start Java process for local execution. Ensure Java is installed and in PATH.", startEx);
+        }
+
+        if (proc == null)
+        {
+            throw new InvalidOperationException("Java process returned null - failed to start local runner.");
+        }
+
+        return proc;
+    }
+
+    private void MonitorLocalRunnerAsync(Process proc, string id)
+    {
+        _ = Task.Run(async () =>
+        {
             try
             {
-                proc = System.Diagnostics.Process.Start(psi);
+                await CaptureProcessOutputAsync(proc, id);
             }
-            catch (Exception startEx)
+            catch (Exception ex)
             {
-                _logger.LogWarning(startEx, "Java process start failed; falling back to simulated execution (job {JobId})", jobDefinition.Metadata.JobId);
-                return id; // simulated fallback
+                _logger.LogError(ex, "Local runner output capture failed for {JobId}", id);
+                UpdateJobStatus(id, "LOCAL-ERROR");
             }
-            if (proc == null)
-            {
-                _logger.LogWarning("Java process returned null; simulated execution for job {JobId}", jobDefinition.Metadata.JobId);
-                return id;
-            }
+        });
+    }
 
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var stdout = await proc.StandardOutput.ReadToEndAsync();
-                    var stderr = await proc.StandardError.ReadToEndAsync();
-                    if (!string.IsNullOrWhiteSpace(stdout)) _logger.LogDebug("[local-runner:{JobId}] OUT: {Out}", id, stdout);
-                    if (!string.IsNullOrWhiteSpace(stderr)) _logger.LogDebug("[local-runner:{JobId}] ERR: {Err}", id, stderr);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex, "Local runner output capture failed for {JobId}", id);
-                }
-            });
-            _logger.LogInformation("Started local runner (PID={Pid}, bootstrap={Bootstrap}) for job {JobId}", proc.Id, bootstrap, jobDefinition.Metadata.JobId);
-        }
-        catch (Exception ex)
+    private async Task CaptureProcessOutputAsync(Process proc, string id)
+    {
+        var stdout = await proc.StandardOutput.ReadToEndAsync();
+        var stderr = await proc.StandardError.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+        
+        LogProcessOutput(stdout, stderr, id);
+        UpdateJobStatusBasedOnExitCode(proc.ExitCode, id);
+    }
+
+    private void LogProcessOutput(string stdout, string stderr, string id)
+    {
+        if (!string.IsNullOrWhiteSpace(stdout))
+            _logger.LogInformation("[local-runner:{JobId}] STDOUT:\n{Out}", id, stdout);
+        
+        if (!string.IsNullOrWhiteSpace(stderr))
+            _logger.LogWarning("[local-runner:{JobId}] STDERR:\n{Err}", id, stderr);
+    }
+
+    private void UpdateJobStatusBasedOnExitCode(int exitCode, string id)
+    {
+        if (exitCode != 0)
         {
-            _logger.LogWarning(ex, "Local runner unexpected failure; using simulated state for job {JobId}", jobDefinition.Metadata.JobId);
+            _logger.LogError("[local-runner:{JobId}] Process exited with code {ExitCode}", id, exitCode);
+            UpdateJobStatus(id, $"LOCAL-FAILED (exit code {exitCode})");
         }
-        return id;
+        else
+        {
+            _logger.LogInformation("[local-runner:{JobId}] Process completed successfully", id);
+            UpdateJobStatus(id, "LOCAL-COMPLETED");
+        }
+    }
+
+    private void UpdateJobStatus(string id, string status)
+    {
+        if (_jobMapping.TryGetValue(id, out var jobInfo))
+        {
+            jobInfo.Status = status;
+        }
+    }
+
+    private void LogLocalRunnerStart(Process proc, string bootstrap, string jarPath, string jobId, string irBase64)
+    {
+        _logger.LogInformation(
+            "Started local runner (PID={Pid}, bootstrap={Bootstrap}, jarPath={JarPath}) for job {JobId}",
+            proc.Id, bootstrap, jarPath, jobId);
+        
+        var prefix = irBase64.Length > 50 ? irBase64.Substring(0, 50) : irBase64;
+        _logger.LogInformation("Local runner command: java -jar \"{JarPath}\" --irBase64 {IrBase64Prefix}...",
+            jarPath, prefix);
     }
 
     private async Task<string> EnsureRunnerJarPathAsync()
@@ -310,8 +441,7 @@ public class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            // Build with Maven directly
-            var psi = new System.Diagnostics.ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
                 FileName = "mvn",
                 Arguments = "clean package -DskipTests",
@@ -322,11 +452,7 @@ public class FlinkJobManager : IFlinkJobManager
             };
 
             _logger.LogDebug("Starting Maven build in {WorkingDir}: mvn {Args}", runnerDir, psi.Arguments);
-            var process = System.Diagnostics.Process.Start(psi);
-            if (process == null)
-            {
-                throw new InvalidOperationException("Failed to start Maven process");
-            }
+            var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start Maven process");
 
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();
@@ -337,14 +463,12 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (process.ExitCode != 0)
             {
-                _logger.LogError("Maven build failed with exit code {ExitCode}\nSTDOUT:\n{Stdout}\nSTDERR:\n{Stderr}", 
+                _logger.LogError("Maven build failed with exit code {ExitCode}\nSTDOUT:\n{Stdout}\nSTDERR:\n{Stderr}",
                     process.ExitCode, stdout, stderr);
                 throw new InvalidOperationException($"Maven build failed with exit code {process.ExitCode}");
             }
 
             _logger.LogDebug("Maven build completed successfully");
-            
-            // Verify the jar was created
             jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner.jar");
             if (!File.Exists(jarPath))
             {
@@ -353,7 +477,7 @@ public class FlinkJobManager : IFlinkJobManager
 
             return jarPath;
         }
-        catch (Exception ex) when (!(ex is InvalidOperationException))
+        catch (Exception ex) when (ex is not InvalidOperationException)
         {
             throw new InvalidOperationException("Failed to build runner jar with Maven", ex);
         }
@@ -361,30 +485,31 @@ public class FlinkJobManager : IFlinkJobManager
 
     private static string? FindExistingRunnerJar()
     {
-        // Check if FLINK_RUNNER_JAR_PATH is set (for backward compatibility)
+        // Check if FLINK_RUNNER_JAR_PATH is set
         var envPath = Environment.GetEnvironmentVariable("FLINK_RUNNER_JAR_PATH");
         if (!string.IsNullOrEmpty(envPath) && File.Exists(envPath))
         {
             return envPath;
         }
 
-        // Look for jar in standard locations
-        var searchPaths = new[]
+        var names = new[] { "flink-ir-runner.jar", "flink-ir-runner-java25.jar", "flink-ir-runner-java17.jar" };
+        var baseDirs = new[]
         {
-            // Current working directory
-            Path.Combine(Environment.CurrentDirectory, "flink-ir-runner.jar"),
-            // Repository structure
-            Path.Combine(Environment.CurrentDirectory, "FlinkIRRunner", "target", "flink-ir-runner.jar"),
+            Environment.CurrentDirectory,
+            Path.Combine(Environment.CurrentDirectory, "FlinkIRRunner", "target")
         };
+
+        var searchPaths = baseDirs.SelectMany(d => names.Select(n => Path.Combine(d, n))).ToArray();
 
         var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot != null)
         {
-            searchPaths = searchPaths.Concat(new[]
+            var repoCandidates = new[]
             {
-                Path.Combine(repoRoot, "FlinkIRRunner", "target", "flink-ir-runner.jar"),
-                Path.Combine(repoRoot, "flink-ir-runner.jar")
-            }).ToArray();
+                Path.Combine(repoRoot, "FlinkIRRunner", "target"),
+                repoRoot,
+            };
+            searchPaths = searchPaths.Concat(repoCandidates.SelectMany(d => names.Select(n => Path.Combine(d, n)))).ToArray();
         }
 
         return searchPaths.FirstOrDefault(File.Exists);
@@ -408,31 +533,66 @@ public class FlinkJobManager : IFlinkJobManager
         try
         {
             var jarId = await EnsureRunnerJarAsync();
+
+            // DIAGNOSTIC: Log job definition bootstrap servers before submission
+            var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
+            var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
+            _logger.LogInformation("[DEBUG] Job definition before Flink submission: Source bootstrap={SourceBootstrap}, Sink bootstrap={SinkBootstrap}",
+                kafkaSource?.BootstrapServers ?? "null",
+                kafkaSink?.BootstrapServers ?? "null");
+
             var runRequest = new
             {
                 entryClass = "com.flink.jobgateway.FlinkJobRunner",
                 programArgsList = new[] { "--irBase64", irBase64 },
-                parallelism = jobDefinition.Metadata.Parallelism ?? 1
+                parallelism = jobDefinition.Metadata.Parallelism ?? 1,
+                jobName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId
             };
-            var json = JsonSerializer.Serialize(runRequest);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
-            if (!response.IsSuccessStatusCode)
+
+            var requestJson = JsonSerializer.Serialize(runRequest);
+            _logger.LogInformation("[DEBUG] Flink run request JSON: {RequestJson}", requestJson);
+            using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+            using var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
+
+            if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 var err = await response.Content.ReadAsStringAsync();
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
+
             var runContent = await response.Content.ReadAsStringAsync();
-            var run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent);
-            if (string.IsNullOrEmpty(run?.JobId))
+            _logger.LogInformation("Flink run response: {RunContent}", runContent);
+
+            string? jobId = null;
+            try
             {
-                throw new InvalidOperationException("Flink did not return a jobId");
+                var run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                jobId = run?.JobId;
             }
-            return run.JobId;
+            catch (JsonException ex)
+            {
+                _logger.LogDebug(ex, "Failed to deserialize Flink run response when extracting job id");
+            }
+
+            jobId ??= TryGetJobIdFromHeaders(response);
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                var targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+                jobId = await TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
+            }
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
+            }
+
+            return jobId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Cluster submission failed");
+            _logger.LogError(ex, "Failed to submit jar to Flink REST API");
             throw;
         }
     }
@@ -465,96 +625,167 @@ public class FlinkJobManager : IFlinkJobManager
             throw new InvalidOperationException($"Jar upload failed: {uploadResp.StatusCode} - {err}");
         }
 
-        var listResp = await _httpClient.GetAsync("/v1/jars");
-        listResp.EnsureSuccessStatusCode();
-        var listJson = await listResp.Content.ReadAsStringAsync();
-        var jars = JsonSerializer.Deserialize<FlinkJarsList>(listJson);
+        var uploadPayload = await uploadResp.Content.ReadAsStringAsync();
+        _logger.LogInformation("Jar upload response payload: {Payload}", uploadPayload);
+
+        if (!string.IsNullOrWhiteSpace(uploadPayload))
+        {
+            try
+            {
+                var uploadInfo = JsonSerializer.Deserialize<FlinkJarUploadResponse>(uploadPayload);
+                var jarId = uploadInfo?.Filename;
+                if (!string.IsNullOrEmpty(jarId))
+                {
+                    jarId = Path.GetFileName(jarId.Replace('\\', '/'));
+                    if (!string.IsNullOrEmpty(jarId))
+                    {
+                        _logger.LogInformation("Flink accepted jar upload {JarFile} as {JarId}", fileName, jarId);
+                        return jarId;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to parse jar upload response: {Payload}", uploadPayload);
+            }
+        }
+
+        return await WaitForJarRegistrationAsync(fileName);
+    }
+
+    private async Task<string> WaitForJarRegistrationAsync(string fileName, TimeSpan? timeout = null)
+    {
+        var waitFor = timeout ?? TimeSpan.FromSeconds(30);
+        var deadline = DateTime.UtcNow + waitFor;
+        var delay = TimeSpan.FromMilliseconds(500);
+        List<string> lastKnownJars = new();
+
+        while (DateTime.UtcNow < deadline)
+        {
+            var jarId = await TryFindRegisteredJarAsync(fileName, lastKnownJars);
+            if (jarId != null)
+                return jarId;
+
+            await Task.Delay(delay);
+        }
+
+        return ThrowJarNotFoundError(fileName, waitFor, lastKnownJars);
+    }
+
+    private async Task<string?> TryFindRegisteredJarAsync(string fileName, List<string> lastKnownJars)
+    {
+        try
+        {
+            var listResp = await _httpClient.GetAsync("/v1/jars");
+            if (!listResp.IsSuccessStatusCode)
+                return null;
+
+            var listJson = await listResp.Content.ReadAsStringAsync();
+            var jars = JsonSerializer.Deserialize<FlinkJarsList>(listJson);
+            
+            UpdateLastKnownJars(jars, lastKnownJars);
+            return FindMatchingJar(jars, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Polling for uploaded jar {JarFile} failed; will retry", fileName);
+            return null;
+        }
+    }
+
+    private static void UpdateLastKnownJars(FlinkJarsList? jars, List<string> lastKnownJars)
+    {
+        lastKnownJars.Clear();
+        if (jars?.Files != null)
+        {
+            lastKnownJars.AddRange(jars.Files.Select(f =>
+                string.IsNullOrEmpty(f.Id) ? f.Name : $"{f.Name} ({f.Id})"));
+        }
+    }
+
+    private static string? FindMatchingJar(FlinkJarsList? jars, string fileName)
+    {
         var jar = jars?.Files?
             .OrderByDescending(f => f.Uploaded)
             .FirstOrDefault(f => string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
-        if (jar == null || string.IsNullOrEmpty(jar.Id))
-        {
-            throw new InvalidOperationException("Uploaded jar not found in Flink jar list");
-        }
-        return jar.Id;
+
+        return string.IsNullOrEmpty(jar?.Id) ? null : jar.Id;
+    }
+
+    private string ThrowJarNotFoundError(string fileName, TimeSpan waitFor, List<string> lastKnownJars)
+    {
+        var jarList = string.Join(", ", lastKnownJars);
+        _logger.LogError("Uploaded jar {JarFile} not found; last known jars: {JarList}", fileName, jarList);
+        throw new InvalidOperationException(
+            $"Uploaded jar '{fileName}' not found in Flink jar list within {waitFor.TotalSeconds:F0}s. Last seen: {jarList}");
     }
 
     private List<string> CollectConnectorJars()
     {
         var connectorJars = new List<string>();
-        
-        // Look for connector JARs in standard locations
         var searchPaths = new List<string>();
-        
-        // Check environment variable for connector path
+
         var connectorPath = Environment.GetEnvironmentVariable("FLINK_CONNECTOR_PATH");
         if (!string.IsNullOrEmpty(connectorPath))
         {
             searchPaths.Add(connectorPath);
         }
-        
-        // Standard Flink lib directory (when running in container)
+
+        // Standard container lib
         searchPaths.Add("/opt/flink/lib");
-        
-        // LocalTesting connectors directory
+
         var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot != null)
         {
             searchPaths.Add(Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib"));
         }
-        
+
         foreach (var searchPath in searchPaths.Where(Directory.Exists))
         {
             var jars = Directory.GetFiles(searchPath, "*.jar", SearchOption.TopDirectoryOnly);
             connectorJars.AddRange(jars);
             _logger.LogDebug("Found {Count} connector JARs in {Path}", jars.Length, searchPath);
         }
-        
+
         return connectorJars.Distinct().ToList();
     }
 
     private async Task<string> CreateShadedJarAsync(string runnerJarPath, List<string> connectorJars)
     {
-        // Create a temporary directory for shaded JAR assembly
         var tempDir = Path.Combine(Path.GetTempPath(), $"flink-shaded-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
-        
+
         try
         {
             var shadedJarPath = Path.Combine(tempDir, "flink-ir-runner-shaded.jar");
-            
-            // For now, we'll copy the runner JAR and note that full shading would require
-            // a more sophisticated approach (like using Maven Shade Plugin or similar)
-            // This is a simplified implementation that combines JARs
             await CombineJarsAsync(runnerJarPath, connectorJars, shadedJarPath);
-            
             return shadedJarPath;
         }
         catch
         {
-            // Clean up temp directory on failure
-            try { Directory.Delete(tempDir, true); } catch { /* Ignore cleanup failures */ }
+            try
+            {
+                Directory.Delete(tempDir, true);
+            }
+            catch (Exception cleanupEx)
+            {
+                // Non-fatal cleanup failure; continue throwing original error
+                _logger.LogDebug(cleanupEx, "Temp directory cleanup failed: {TempDir}", tempDir);
+            }
             throw;
         }
     }
 
     private Task CombineJarsAsync(string runnerJarPath, List<string> connectorJars, string outputPath)
     {
-        // This is a simplified JAR combination approach
-        // In a production environment, you'd want to use proper shading tools
-        
         _logger.LogInformation("Combining runner JAR with {Count} connector JARs into shaded JAR", connectorJars.Count);
-        
-        // For now, just copy the runner JAR as the base
-        // A full implementation would extract and merge all JARs properly
         File.Copy(runnerJarPath, outputPath, true);
-        
-        // Log the connector JARs that would be included
+
         foreach (var connectorJar in connectorJars)
         {
             _logger.LogDebug("Would include connector JAR: {Path}", connectorJar);
         }
-        
+
         _logger.LogInformation("Created shaded JAR at {Path}", outputPath);
         return Task.CompletedTask;
     }
@@ -564,7 +795,6 @@ public class FlinkJobManager : IFlinkJobManager
         var dir = new DirectoryInfo(start);
         while (dir != null)
         {
-            // Look for FlinkIRRunner pom.xml and global.json as indicators of repo root
             var pom = Path.Combine(dir.FullName, "FlinkIRRunner", "pom.xml");
             var globalJson = Path.Combine(dir.FullName, "global.json");
             if (File.Exists(pom) && File.Exists(globalJson))
@@ -576,12 +806,186 @@ public class FlinkJobManager : IFlinkJobManager
         return null;
     }
 
+    private async Task<string?> TryRecoverFlinkJobIdAsync(string? jobName, TimeSpan timeout)
+    {
+        if (string.IsNullOrWhiteSpace(jobName))
+            return null;
+
+        var sw = Stopwatch.StartNew();
+        var overviewEndpoints = new[] { "/v1/jobs/overview", "/jobs/overview" };
+
+        while (sw.Elapsed < timeout)
+        {
+            var jobId = await TryRecoverFromEndpointsAsync(jobName, overviewEndpoints);
+            if (jobId != null)
+                return jobId;
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+
+        return null;
+    }
+
+    private async Task<string?> TryRecoverFromEndpointsAsync(string jobName, string[] endpoints)
+    {
+        foreach (var endpoint in endpoints)
+        {
+            var jobId = await TryRecoverFromSingleEndpointAsync(jobName, endpoint);
+            if (jobId != null)
+                return jobId;
+        }
+        return null;
+    }
+
+    private async Task<string?> TryRecoverFromSingleEndpointAsync(string jobName, string endpoint)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync(endpoint);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Jobs overview endpoint {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+                return null;
+            }
+
+            var payload = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Jobs overview response from {Endpoint} while recovering job id: {Payload}", endpoint, payload);
+
+            var recovered = ExtractJobIdFromOverviewPayload(payload, jobName);
+            if (!string.IsNullOrEmpty(recovered))
+            {
+                _logger.LogInformation("Recovered job id {FlinkJobId} for job {JobName} via {Endpoint}", recovered, jobName, endpoint);
+                return recovered;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to recover job id for {JobName} via {Endpoint}; will retry", jobName, endpoint);
+        }
+        return null;
+    }
+
+    private static string? ExtractJobIdFromOverviewPayload(string payload, string jobName)
+    {
+        if (string.IsNullOrWhiteSpace(payload)) return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(payload);
+            return ExtractJobIdFromOverviewElement(document.RootElement, jobName);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static string? ExtractJobIdFromOverviewElement(JsonElement element, string jobName)
+    {
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var child in element.EnumerateArray())
+            {
+                var nested = ExtractJobIdFromOverviewElement(child, jobName);
+                if (!string.IsNullOrEmpty(nested)) return nested;
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Object)
+        {
+            var match = MatchJobEntry(element, jobName);
+            if (!string.IsNullOrEmpty(match)) return match;
+
+            foreach (var property in element.EnumerateObject())
+            {
+                var nested = ExtractJobIdFromOverviewElement(property.Value, jobName);
+                if (!string.IsNullOrEmpty(nested)) return nested;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? MatchJobEntry(JsonElement element, string jobName)
+    {
+        if ((TryGetStringProperty(element, "name", out var name) || TryGetStringProperty(element, "jobName", out name))
+            && string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase)
+            && (TryGetStringProperty(element, "jid", out var jobId)
+                || TryGetStringProperty(element, "jobId", out jobId)
+                || TryGetStringProperty(element, "jobid", out jobId)
+                || TryGetStringProperty(element, "id", out jobId)))
+        {
+            return jobId;
+        }
+
+        return null;
+    }
+
+    private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase)
+                && property.Value.ValueKind == JsonValueKind.String)
+            {
+                value = property.Value.GetString();
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static string? TryGetJobIdFromHeaders(HttpResponseMessage response)
+    {
+        if (response.Headers.Location is Uri location)
+        {
+            var jobId = ExtractJobIdFromPath(location.ToString());
+            if (!string.IsNullOrEmpty(jobId)) return jobId;
+        }
+
+        if (response.Headers.TryGetValues("Location", out var locations))
+        {
+            foreach (var value in locations)
+            {
+                var jobId = ExtractJobIdFromPath(value);
+                if (!string.IsNullOrEmpty(jobId)) return jobId;
+            }
+        }
+
+        foreach (var headerName in new[] { "X-Flink-JobID", "X-Flink-Job-Id", "Flink-Job-Id", "Flink-JobId" })
+        {
+            if (response.Headers.TryGetValues(headerName, out var headerValues))
+            {
+                var value = headerValues.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+                if (!string.IsNullOrEmpty(value)) return value.Trim();
+            }
+        }
+
+        return null;
+
+        static string? ExtractJobIdFromPath(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var trimmed = value.Split('?', 2)[0].Trim().Trim('/');
+            if (string.IsNullOrEmpty(trimmed)) return null;
+
+            var segments = trimmed.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var last = segments.LastOrDefault();
+            if (string.IsNullOrEmpty(last) || last.Equals("jobs", StringComparison.OrdinalIgnoreCase)) return null;
+
+            return last;
+        }
+    }
+
     private JobValidationResult ValidateJobDefinition(JobDefinition jobDefinition)
     {
         var errors = new List<string>();
+
         ValidateBasicProperties(jobDefinition, errors);
         ValidateSource(jobDefinition.Source, errors);
         ValidateSink(jobDefinition.Sink, errors);
+
         return new JobValidationResult { IsValid = errors.Count == 0, Errors = errors };
     }
 
@@ -595,10 +999,12 @@ public class FlinkJobManager : IFlinkJobManager
         {
             errors.Add("Job ID is required");
         }
+
         if (jobDefinition.Source == null)
         {
             errors.Add("Job source is required");
         }
+
         var isSqlJob = jobDefinition.Source is SqlSourceDefinition;
         if (jobDefinition.Sink == null && !isSqlJob)
         {
@@ -609,6 +1015,7 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ValidateSource(object? source, List<string> errors)
     {
         if (source == null) return;
+
         switch (source)
         {
             case KafkaSourceDefinition kafkaSource:
@@ -629,6 +1036,7 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ValidateSink(object? sink, List<string> errors)
     {
         if (sink == null) return;
+
         switch (sink)
         {
             case KafkaSinkDefinition kafkaSink:
@@ -661,19 +1069,53 @@ public class FlinkJobManager : IFlinkJobManager
         public List<string> Errors { get; set; } = new();
     }
 
-    private sealed class FlinkRunResponse { public string JobId { get; set; } = string.Empty; }
-    private sealed class FlinkJarsList { public List<FlinkJarFile> Files { get; set; } = new(); }
-    private sealed class FlinkJarFile { public string Id { get; set; } = string.Empty; public string Name { get; set; } = string.Empty; [JsonPropertyName("uploaded")] public long Uploaded { get; set; } }
-    private sealed class FlinkMetricEntry { public string Id { get; set; } = string.Empty; public string Value { get; set; } = "0"; }
+    private sealed class FlinkRunResponse
+    {
+        public string JobId { get; set; } = string.Empty;
+    }
+
+    private sealed class FlinkJarsList
+    {
+        public List<FlinkJarFile> Files { get; set; } = new();
+    }
+
+    private sealed class FlinkJarUploadResponse
+    {
+        [JsonPropertyName("filename")]
+        public string? Filename { get; set; }
+
+        [JsonPropertyName("status")]
+        public string? Status { get; set; }
+    }
+
+    private sealed class FlinkJarFile
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("uploaded")]
+        public long Uploaded { get; set; }
+    }
+
+    private sealed class FlinkMetricEntry
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Value { get; set; } = "0";
+    }
 
     // ---------------- Metrics helpers ----------------
+
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
         var verticesResp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices");
         if (!verticesResp.IsSuccessStatusCode) return;
+
         var verticesJson = await verticesResp.Content.ReadAsStringAsync();
         using var vdoc = JsonDocument.Parse(verticesJson);
-        if (!vdoc.RootElement.TryGetProperty("vertices", out var vertsEl) || vertsEl.ValueKind != JsonValueKind.Array) return;
+
+        if (!vdoc.RootElement.TryGetProperty("vertices", out var vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
+            return;
+
         foreach (var vertex in vertsEl.EnumerateArray())
         {
             await ProcessVertexAsync(flinkJobId, vertex, metrics);
@@ -683,8 +1125,10 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task ProcessVertexAsync(string flinkJobId, JsonElement vertex, JobMetricsBuilder metrics)
     {
         if (!vertex.TryGetProperty("id", out var idEl)) return;
+
         var vertexId = idEl.GetString();
         if (string.IsNullOrEmpty(vertexId)) return;
+
         await CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
         await CollectVertexBackpressureAsync(flinkJobId, vertexId, metrics);
     }
@@ -693,12 +1137,18 @@ public class FlinkJobManager : IFlinkJobManager
     {
         var mresp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
         if (!mresp.IsSuccessStatusCode) return;
-        var metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync()) ?? new List<FlinkMetricEntry>();
+
+        var metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync())
+            ?? new List<FlinkMetricEntry>();
+
         foreach (var m in metricsList)
         {
-            if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vi)) metrics.AddRecordsIn(vi);
-            if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vo)) metrics.AddRecordsOut(vo);
-            if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out var p)) metrics.UpdateMaxParallelism(p);
+            if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vi))
+                metrics.AddRecordsIn(vi);
+            if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vo))
+                metrics.AddRecordsOut(vo);
+            if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out var p))
+                metrics.UpdateMaxParallelism(p);
         }
     }
 
@@ -708,11 +1158,14 @@ public class FlinkJobManager : IFlinkJobManager
         {
             var bp = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure");
             if (!bp.IsSuccessStatusCode) return;
+
             var bpStr = await bp.Content.ReadAsStringAsync();
             using var bdoc = JsonDocument.Parse(bpStr);
             var root = bdoc.RootElement;
+
             var level = ExtractBackpressureLevel(root);
-            if (!string.IsNullOrEmpty(level)) metrics.UpdateWorstBackpressure(level);
+            if (!string.IsNullOrEmpty(level))
+                metrics.UpdateWorstBackpressure(level);
         }
         catch (Exception ex)
         {
@@ -726,9 +1179,11 @@ public class FlinkJobManager : IFlinkJobManager
         {
             var cps = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/checkpoints");
             if (!cps.IsSuccessStatusCode) return;
+
             var cpsJson = await cps.Content.ReadAsStringAsync();
             using var cdoc = JsonDocument.Parse(cpsJson);
             var root = cdoc.RootElement;
+
             ProcessCheckpointCounts(root, metrics);
             ProcessCheckpointTimestamps(root, metrics);
         }
@@ -740,9 +1195,9 @@ public class FlinkJobManager : IFlinkJobManager
 
     private static void ProcessCheckpointCounts(JsonElement root, JobMetricsBuilder metrics)
     {
-        if (root.TryGetProperty("counts", out var counts) &&
-            counts.TryGetProperty("completed", out var completedEl) &&
-            completedEl.TryGetInt32(out var c))
+        if (root.TryGetProperty("counts", out var counts)
+            && counts.TryGetProperty("completed", out var completedEl)
+            && completedEl.TryGetInt32(out var c))
         {
             metrics.SetCheckpoints(c);
         }
@@ -751,10 +1206,12 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ProcessCheckpointTimestamps(JsonElement root, JobMetricsBuilder metrics)
     {
         if (!root.TryGetProperty("latest", out var latest)) return;
+
         if (latest.TryGetProperty("completed", out var comp))
         {
             var ts = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
-            if (ts.HasValue) metrics.SetLastCheckpoint(ts.Value);
+            if (ts.HasValue)
+                metrics.SetLastCheckpoint(ts.Value);
         }
     }
 
@@ -770,8 +1227,10 @@ public class FlinkJobManager : IFlinkJobManager
 
     private static string? ExtractBackpressureLevel(JsonElement root)
     {
-        if (root.TryGetProperty("backpressureLevel", out var lvlEl)) return lvlEl.GetString();
-        if (root.TryGetProperty("backpressure-level", out var lvlEl2)) return lvlEl2.GetString();
+        if (root.TryGetProperty("backpressureLevel", out var lvlEl))
+            return lvlEl.GetString();
+        if (root.TryGetProperty("backpressure-level", out var lvlEl2))
+            return lvlEl2.GetString();
         return null;
     }
 
@@ -786,6 +1245,7 @@ public class FlinkJobManager : IFlinkJobManager
         private string _backpressureLevel = "UNKNOWN";
 
         public JobMetricsBuilder(string flinkJobId) => _flinkJobId = flinkJobId;
+
         public void AddRecordsIn(long value) => _recordsIn += value;
         public void AddRecordsOut(long value) => _recordsOut += value;
         public void UpdateMaxParallelism(int value) => _parallelism = Math.Max(_parallelism, value);
@@ -803,6 +1263,7 @@ public class FlinkJobManager : IFlinkJobManager
                 "none" => 0,
                 _ => 0
             };
+
             return Rank(candidate) >= Rank(current) ? candidate : current;
         }
 

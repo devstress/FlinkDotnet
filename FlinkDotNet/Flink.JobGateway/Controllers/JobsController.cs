@@ -25,9 +25,8 @@ public class JobsController : ControllerBase
     }
 
     /// <summary>
-    /// Submit a job to the Flink cluster
+    /// Submit a job to the Flink cluster. The request body must contain a JobDefinition JSON payload.
     /// </summary>
-    /// <param name="jobDefinition">Job definition from .NET SDK</param>
     /// <returns>Job submission result</returns>
     [HttpPost("submit")]
     public async Task<ActionResult<JobSubmissionResult>> SubmitJob()

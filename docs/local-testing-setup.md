@@ -60,6 +60,10 @@ After installing .NET 9.0, verify the environment:
 # Verify .NET version
 dotnet --version  # Should return 9.0.x
 
+# Verify Java and Maven (required for Gateway build that prebuilds the IR Runner jar)
+java -version     # Java 25 required
+mvn -version      # Maven available on PATH
+
 # Install Aspire workload if needed (required on Linux):
 dotnet workload install aspire
 
@@ -68,8 +72,11 @@ dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
 dotnet build Sample/Sample.sln --configuration Release  
 dotnet build LocalTesting/LocalTesting.sln --configuration Release
 
-# Test LocalTesting workflow
-./scripts/test-aspire-localtesting.ps1 -MessageCount 1000
+# Start LocalTesting host (Kafka + Flink + Gateway)
+dotnet run --project LocalTesting/LocalTesting.FlinkSqlAppHost/LocalTesting.FlinkSqlAppHost.csproj
+
+# In a separate shell, run integration test that submits a job
+dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj -c Debug --filter TestCategory=gateway-bundling
 ```
 
 ## GitHub Workflows Validation
@@ -86,3 +93,7 @@ Once .NET 9.0 is installed, run these workflows locally to ensure they pass:
 
 - Linux may require installing the Aspire workload separately: `dotnet workload install aspire`.
 - Ensure Docker Desktop or a compatible container runtime is available for Aspire resources.
+- Place optional Flink connector JARs under `LocalTesting/connectors/flink/lib/` so the LocalTesting gateway bundles them; copy the same jars into `/opt/flink/lib` when targeting a real Flink cluster.
+- Ensure Java 25 and Maven are installed; the Gateway build prebuilds `flink-ir-runner.jar`.
+
+
