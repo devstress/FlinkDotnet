@@ -46,4 +46,34 @@
     <Message Text="[LocalTesting.IntegrationTests] FlinkDotNet projects built in Release configuration successfully" Importance="high" />
   </Target>
 
+  <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->
+  <Target Name="CopyFlinkRunnerJarsToTestOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <_GatewayOutputDir>..\..\FlinkDotNet\Flink.JobGateway\bin\$(Configuration)\net9.0</_GatewayOutputDir>
+      <_TestOutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_TestOutDir>
+    </PropertyGroup>
+
+    <Message Text="[LocalTesting.IntegrationTests] Copying Flink IR Runner JARs from Gateway output to test output..." Importance="high" />
+
+    <!-- Copy flink-ir-runner.jar if it exists -->
+    <Copy SourceFiles="$(_GatewayOutputDir)\flink-ir-runner.jar"
+          DestinationFiles="$(_TestOutDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(_GatewayOutputDir)\flink-ir-runner.jar')" />
+
+    <!-- Copy flink-ir-runner-java17.jar if it exists -->
+    <Copy SourceFiles="$(_GatewayOutputDir)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_TestOutDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(_GatewayOutputDir)\flink-ir-runner-java17.jar')" />
+
+    <!-- If only java17 exists, also copy it as the canonical name -->
+    <Copy SourceFiles="$(_GatewayOutputDir)\flink-ir-runner-java17.jar"
+          DestinationFiles="$(_TestOutDir)flink-ir-runner.jar"
+          SkipUnchangedFiles="true"
+          Condition="!Exists('$(_GatewayOutputDir)\flink-ir-runner.jar') AND Exists('$(_GatewayOutputDir)\flink-ir-runner-java17.jar')" />
+
+    <Message Text="[LocalTesting.IntegrationTests] Flink IR Runner JARs copied to test output directory" Importance="high" />
+  </Target>
+
 </Project>
