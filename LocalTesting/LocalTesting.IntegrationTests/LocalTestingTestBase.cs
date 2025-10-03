@@ -418,7 +418,11 @@ public abstract class LocalTestingTestBase
     /// Enhanced Flink readiness check with proper API validation and TaskManager status checking.
     /// Improved from original LocalTesting tests with better error handling.
     /// </summary>
-    public static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct)
+    /// <param name="overviewUrl">Flink overview API endpoint</param>
+    /// <param name="timeout">Maximum time to wait</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="requireFreeSlots">If true, requires at least one free task slot. Use true for initial setup, false for per-test checks.</param>
+    public static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct, bool requireFreeSlots = true)
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var sw = Stopwatch.StartNew();
@@ -429,9 +433,10 @@ public abstract class LocalTestingTestBase
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
-            if (await CheckFlinkJobManagerAsync(http, overviewUrl, attempt, ct))
+            if (await CheckFlinkJobManagerAsync(http, overviewUrl, attempt, ct, requireFreeSlots))
             {
-                TestContext.WriteLine($"✅ [FlinkReady] JobManager with TaskManagers ready at {overviewUrl} after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
+                var slotsMessage = requireFreeSlots ? " with available slots" : "";
+                TestContext.WriteLine($"✅ [FlinkReady] JobManager with TaskManagers ready{slotsMessage} at {overviewUrl} after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
                 return;
             }
             
@@ -454,17 +459,37 @@ public abstract class LocalTestingTestBase
     }
     
     /// <summary>
-    /// Check if Flink JobManager is ready with TaskManagers.
+    /// Check if Flink JobManager is ready with TaskManagers and available task slots.
+    /// Enhanced to verify task slots are available before allowing job submission.
     /// </summary>
-    private static async Task<bool> CheckFlinkJobManagerAsync(HttpClient http, string overviewUrl, int attempt, CancellationToken ct)
+    /// <param name="http">HTTP client to use for requests</param>
+    /// <param name="overviewUrl">Flink overview API URL</param>
+    /// <param name="attempt">Attempt number for logging</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <param name="requireFreeSlots">If true, requires at least one free task slot</param>
+    private static async Task<bool> CheckFlinkJobManagerAsync(HttpClient http, string overviewUrl, int attempt, CancellationToken ct, bool requireFreeSlots)
     {
         try
         {
+            // First check overview endpoint to verify TaskManagers are registered
             var resp = await http.GetAsync(overviewUrl, ct);
             if (resp.IsSuccessStatusCode)
             {
                 var content = await resp.Content.ReadAsStringAsync(ct);
-                return ValidateFlinkResponse(content, attempt);
+                if (!ValidateFlinkResponse(content, attempt))
+                {
+                    return false;
+                }
+                
+                // TaskManagers are registered - check slots only if required
+                if (requireFreeSlots)
+                {
+                    var baseUrl = overviewUrl.Replace("/v1/overview", "");
+                    return await CheckTaskManagerSlotsAsync(http, baseUrl, attempt, ct);
+                }
+                
+                // Slots not required, just TaskManager registration is enough
+                return true;
             }
             
             TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: HTTP {resp.StatusCode}");
@@ -478,6 +503,61 @@ public abstract class LocalTestingTestBase
         catch (Exception ex)
         {
             TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt} failed: {ex.GetType().Name} - {ex.Message}");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Check if TaskManagers have available task slots for job submission.
+    /// Queries /v1/taskmanagers endpoint to verify at least one free slot exists.
+    /// </summary>
+    private static async Task<bool> CheckTaskManagerSlotsAsync(HttpClient http, string baseUrl, int attempt, CancellationToken ct)
+    {
+        try
+        {
+            var taskManagersUrl = $"{baseUrl}/v1/taskmanagers";
+            var resp = await http.GetAsync(taskManagersUrl, ct);
+            
+            if (!resp.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: TaskManagers endpoint returned {resp.StatusCode}");
+                return false;
+            }
+            
+            var content = await resp.Content.ReadAsStringAsync(ct);
+            
+            // Parse JSON to check for available slots
+            // Expected format: {"taskmanagers":[{"id":"...","slotsNumber":2,"freeSlots":2,...}]}
+            if (string.IsNullOrWhiteSpace(content) || !content.Contains("taskmanagers"))
+            {
+                TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: TaskManagers response missing 'taskmanagers' field");
+                return false;
+            }
+            
+            // Simple JSON parsing to check for freeSlots > 0
+            // Look for "freeSlots": pattern followed by a number greater than 0
+            var freeSlotsMatch = System.Text.RegularExpressions.Regex.Match(content, @"""freeSlots""\s*:\s*(\d+)");
+            if (freeSlotsMatch.Success)
+            {
+                var freeSlots = int.Parse(freeSlotsMatch.Groups[1].Value);
+                if (freeSlots > 0)
+                {
+                    TestContext.WriteLine($"✅ [FlinkReady] Attempt {attempt}: TaskManagers ready with {freeSlots} free slot(s)");
+                    return true;
+                }
+                else
+                {
+                    TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: TaskManagers registered but no free slots available yet");
+                    return false;
+                }
+            }
+            
+            TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: Could not parse freeSlots from TaskManagers response");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: TaskManager slot check failed - {ex.GetType().Name}: {ex.Message}");
             return false;
         }
     }
@@ -718,7 +798,9 @@ public abstract class LocalTestingTestBase
         TestContext.WriteLine($"🔍 Discovered Flink JobManager endpoint: {flinkJobManagerEndpoint}");
 
         // Wait for Flink JobManager and TaskManager
-        await WaitForFlinkReadyAsync($"{flinkJobManagerEndpoint}v1/overview", FlinkReadyTimeout, cancellationToken);
+        // For per-test validation, we don't require free slots since previous jobs may still be running
+        // Free slots are only required during initial global infrastructure setup
+        await WaitForFlinkReadyAsync($"{flinkJobManagerEndpoint}v1/overview", FlinkReadyTimeout, cancellationToken, requireFreeSlots: false);
         TestContext.WriteLine("✅ Flink JobManager and TaskManager are ready");
 
         // Wait for Gateway if included

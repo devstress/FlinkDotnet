@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
 
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("flink-string-ops")]
 public class FlinkIrStringOpsIntegrationTest : LocalTestingTestBase
 {

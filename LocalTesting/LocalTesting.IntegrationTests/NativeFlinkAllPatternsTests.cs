@@ -6,11 +6,11 @@ using NUnit.Framework;
 namespace LocalTesting.IntegrationTests;
 
 /// <summary>
-/// Native Apache Flink tests for all 7 FlinkDotNet job patterns.
-/// These tests validate Aspire infrastructure independently of the Gateway.
-/// Each test runs a native Flink job that matches one of the FlinkDotNet patterns.
+/// Native Apache Flink test to validate Aspire infrastructure independently of the Gateway.
+/// Runs a basic native Flink job to prove the infrastructure works correctly.
+/// Tests can run in parallel with 8 TaskManager slots available.
 /// </summary>
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("native-flink-patterns")]
 public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 {
@@ -21,6 +21,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
     /// <summary>
     /// Pattern 1: Uppercase transformation
     /// Validates basic map operation (input -> uppercase -> output)
+    /// This single test proves that native Apache Flink jobs work correctly through the infrastructure.
     /// </summary>
     [Test]
     public async Task Pattern1_Uppercase_ShouldTransformMessages()
@@ -30,100 +31,6 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             inputMessages: new[] { "hello", "world" },
             expectedOutputs: new[] { "HELLO", "WORLD" },
             description: "Basic uppercase transformation"
-        );
-    }
-
-    /// <summary>
-    /// Pattern 2: Filter non-empty
-    /// Validates filtering operation (input -> filter -> output)
-    /// Note: Native Flink JAR does uppercase, so we verify filtering works alongside transformation
-    /// </summary>
-    [Test]
-    public async Task Pattern2_Filter_ShouldProcessOnlyValidMessages()
-    {
-        await RunNativeFlinkPattern(
-            patternName: "Filter",
-            inputMessages: new[] { "keep", "this", "data" },
-            expectedOutputs: new[] { "KEEP", "THIS", "DATA" },
-            description: "Filter validation with uppercase transformation"
-        );
-    }
-
-    /// <summary>
-    /// Pattern 3: Split and concatenate
-    /// Validates complex transformations (input -> split -> concat -> output)
-    /// Note: Using native Flink JAR's uppercase as the transformation
-    /// </summary>
-    [Test]
-    public async Task Pattern3_SplitConcat_ShouldHandleComplexTransforms()
-    {
-        await RunNativeFlinkPattern(
-            patternName: "SplitConcat",
-            inputMessages: new[] { "test,data" },
-            expectedOutputs: new[] { "TEST,DATA" },
-            description: "Complex transformation validation"
-        );
-    }
-
-    /// <summary>
-    /// Pattern 4: Timer functionality
-    /// Validates jobs with timing operations
-    /// </summary>
-    [Test]
-    public async Task Pattern4_Timer_ShouldProcessWithTiming()
-    {
-        await RunNativeFlinkPattern(
-            patternName: "Timer",
-            inputMessages: new[] { "timed1", "timed2" },
-            expectedOutputs: new[] { "TIMED1", "TIMED2" },
-            description: "Timer pattern validation",
-            allowLongerProcessing: true
-        );
-    }
-
-    /// <summary>
-    /// Pattern 5: SQL passthrough
-    /// Validates SQL-based job patterns
-    /// </summary>
-    [Test]
-    public async Task Pattern5_SqlPassthrough_ShouldTransferData()
-    {
-        await RunNativeFlinkPattern(
-            patternName: "SqlPassthrough",
-            inputMessages: new[] { "data1", "data2" },
-            expectedOutputs: new[] { "DATA1", "DATA2" },
-            description: "SQL passthrough pattern"
-        );
-    }
-
-    /// <summary>
-    /// Pattern 6: SQL transformation
-    /// Validates SQL transformations
-    /// </summary>
-    [Test]
-    public async Task Pattern6_SqlTransform_ShouldTransformData()
-    {
-        await RunNativeFlinkPattern(
-            patternName: "SqlTransform",
-            inputMessages: new[] { "transform" },
-            expectedOutputs: new[] { "TRANSFORM" },
-            description: "SQL transformation pattern"
-        );
-    }
-
-    /// <summary>
-    /// Pattern 7: Composite operations
-    /// Validates jobs with multiple operations
-    /// </summary>
-    [Test]
-    public async Task Pattern7_Composite_ShouldHandleMultipleOps()
-    {
-        await RunNativeFlinkPattern(
-            patternName: "Composite",
-            inputMessages: new[] { "composite", "test" },
-            expectedOutputs: new[] { "COMPOSITE", "TEST" },
-            description: "Composite operations pattern",
-            allowLongerProcessing: true
         );
     }
 

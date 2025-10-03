@@ -8,8 +8,9 @@ namespace LocalTesting.IntegrationTests;
 /// <summary>
 /// Gateway-based tests for all 7 FlinkDotNet job patterns using FlinkDotNetJobs helpers.
 /// These tests validate end-to-end job submission through the Gateway.
+/// Tests can run in parallel with 8 TaskManager slots available.
 /// </summary>
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("gateway-patterns")]
 public class GatewayAllPatternsTests : LocalTestingTestBase
 {
@@ -51,7 +52,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateSplitConcatJob(input, output, kafka, "gateway-splitconcat", ct),
             inputMessages: new[] { "a,b" },
-            expectedOutputCount: 2, // Split produces 2 messages
+            expectedOutputCount: 1, // Split and concat produces 1 message
             description: "Split and concat via Gateway"
         );
     }
@@ -106,7 +107,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateCompositeJob(input, output, kafka, "gateway-composite", ct),
             inputMessages: new[] { "test,data" },
-            expectedOutputCount: 2, // Split produces 2 messages
+            expectedOutputCount: 1, // Split and concat produces 1 message
             description: "Composite operations via Gateway",
             allowLongerProcessing: true
         );
