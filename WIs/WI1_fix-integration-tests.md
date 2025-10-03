@@ -151,6 +151,21 @@ Added two-step validation:
 - ✅ Per-test checks don't require free slots (allows concurrent job execution)
 - ⚠️ Some tests have unrelated job execution failures (separate issues, not infrastructure)
 
+### Missing Kafka Connectors Issue (Discovered During Testing)
+**Problem**: After fixing the slot availability issue, tests revealed a second problem:
+- Error: "Cannot discover a connector using option: 'connector'='kafka'"
+- Root cause: Flink SQL Kafka connector JARs were missing from the Flink classpath
+
+**Solution**: Downloaded and placed required connector JARs in `LocalTesting/connectors/flink/lib/`:
+- `flink-sql-connector-kafka-3.3.0-1.20.jar` (for Kafka connectivity)
+- `flink-sql-json-1.20.0.jar` (for JSON format support)
+
+**Results After Adding Connectors**:
+- ✅ 2 tests now passing completely: Uppercase, Filter
+- ❌ 5 tests still failing with different errors (not infrastructure related)
+- Basic DataStream operations working correctly
+- SQL-based operations still need investigation
+
 ### Performance Metrics
 - Infrastructure ready in ~10 seconds (fast detection)
 - No more 60-second timeouts waiting for slots
