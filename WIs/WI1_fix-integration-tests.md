@@ -199,3 +199,19 @@ Added two-step validation:
 - Flink REST API `/v1/taskmanagers` returns slot availability information
 - Pattern: Conditional validation based on context (initial vs per-test)
 - Integration tests may have different validation needs at different stages
+- Flink SQL connectors must be manually downloaded and placed in `LocalTesting/connectors/flink/lib/`
+- Required connectors for SQL tests: flink-sql-connector-kafka, flink-sql-json
+- Tests requiring SQL operations need additional investigation of job logic
+
+## Summary
+
+**Original Issue**: Tests failed with NoResourceAvailableException due to jobs submitting before TaskManager slots were available
+
+**Root Causes Identified and Fixed**:
+1. ✅ TaskManager slot availability not checked before job submission
+2. ✅ Missing Flink SQL Kafka connector JARs
+
+**Remaining Work**:
+- 5/7 tests still failing with job execution errors (not infrastructure related)
+- These failures appear to be separate from the original NoResourceAvailableException issue
+- Further investigation needed for SQL-based operations and complex job logic
