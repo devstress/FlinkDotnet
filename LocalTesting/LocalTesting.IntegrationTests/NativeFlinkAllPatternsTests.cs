@@ -25,7 +25,6 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
     /// NOTE: Currently ignored - use Gateway pattern tests instead for production workflows.
     /// </summary>
     [Test]
-    [Ignore("Native JAR submission has classloading issues - use Gateway pattern (FlinkDotNet.Flink.JobBuilder) for reliable job submission")]
     public async Task Pattern1_Uppercase_ShouldTransformMessages()
     {
         await RunNativeFlinkPattern(
