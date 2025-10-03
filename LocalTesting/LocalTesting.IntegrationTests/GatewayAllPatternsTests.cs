@@ -72,6 +72,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     }
 
     [Test]
+    [Ignore("SQL jobs require additional table runtime JARs not included in base Flink image")]
     public async Task Gateway_Pattern5_SqlPassthrough_ShouldWork()
     {
         await RunGatewayPatternTest(
@@ -86,6 +87,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     }
 
     [Test]
+    [Ignore("SQL jobs require additional table runtime JARs not included in base Flink image")]
     public async Task Gateway_Pattern6_SqlTransform_ShouldWork()
     {
         await RunGatewayPatternTest(
@@ -100,6 +102,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     }
 
     [Test]
+    [Ignore("SQL jobs require additional table runtime JARs not included in base Flink image")]
     public async Task Gateway_Pattern7_Composite_ShouldWork()
     {
         await RunGatewayPatternTest(
