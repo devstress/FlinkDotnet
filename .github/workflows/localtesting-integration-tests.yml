@@ -45,6 +45,12 @@ jobs:
           dotnet workload install aspire
           echo "✅ Aspire workload installed successfully"
 
+      - name: Build FlinkDotNet solution first (dependency)
+        run: |
+          echo "🔨 Building FlinkDotNet solution (required dependency for LocalTesting)..."
+          dotnet restore FlinkDotNet/FlinkDotNet.sln
+          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
+
       - name: Configure system for Kafka performance
         run: |
           echo "=== Configuring system for optimal Kafka performance ==="
