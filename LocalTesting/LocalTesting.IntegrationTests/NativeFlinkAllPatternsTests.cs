@@ -9,8 +9,9 @@ namespace LocalTesting.IntegrationTests;
 /// Native Apache Flink tests for all 7 FlinkDotNet job patterns.
 /// These tests validate Aspire infrastructure independently of the Gateway.
 /// Each test runs a native Flink job that matches one of the FlinkDotNet patterns.
+/// Tests can run in parallel with 8 TaskManager slots available.
 /// </summary>
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("native-flink-patterns")]
 public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 {

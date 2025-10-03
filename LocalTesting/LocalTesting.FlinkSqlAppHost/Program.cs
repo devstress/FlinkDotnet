@@ -82,17 +82,17 @@ var jobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
     .WithArgs("jobmanager")
     .WaitFor(kafka);  // Wait for Kafka to ensure network connectivity
 
-// Flink TaskManager
+// Flink TaskManager with increased slots for parallel test execution
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "2")
+    .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "8")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
         "rest.bind-address: 0.0.0.0\n" +
         "parallelism.default: 1\n" +
-        "taskmanager.memory.process.size: 1728m\n" +
-        "taskmanager.numberOfTaskSlots: 2\n" +
+        "taskmanager.memory.process.size: 2048m\n" +
+        "taskmanager.numberOfTaskSlots: 8\n" +
         "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(connectorsDir, "/opt/flink/usrlib", isReadOnly: true)

@@ -8,8 +8,9 @@ namespace LocalTesting.IntegrationTests;
 /// <summary>
 /// Gateway-based tests for all 7 FlinkDotNet job patterns using FlinkDotNetJobs helpers.
 /// These tests validate end-to-end job submission through the Gateway.
+/// Tests can run in parallel with 8 TaskManager slots available.
 /// </summary>
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("gateway-patterns")]
 public class GatewayAllPatternsTests : LocalTestingTestBase
 {
