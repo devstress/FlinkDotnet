@@ -53,8 +53,15 @@ public class FlinkJobRunner {
             if (s.statements == null || s.statements.isEmpty()) {
                 throw new IllegalArgumentException("SQL job requires at least one statement");
             }
+            
+            // Get the context classloader to ensure all JARs are accessible
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            
             TableEnvironment tEnv = TableEnvironment.create(
-                    EnvironmentSettings.newInstance().inStreamingMode().build());
+                    EnvironmentSettings.newInstance()
+                            .inStreamingMode()
+                            .withClassLoader(contextClassLoader)
+                            .build());
             boolean hasInsert = false;
             TableResult lastResult = null;
             for (String stmt : s.statements) {
