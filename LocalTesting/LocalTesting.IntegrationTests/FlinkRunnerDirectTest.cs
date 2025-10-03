@@ -12,7 +12,7 @@ namespace LocalTesting.IntegrationTests;
 /// Tests FlinkJobRunner.java directly (bypassing Gateway) to isolate configuration issues.
 /// This proves the JAR works correctly before testing Gateway integration.
 /// </summary>
-[TestFixture, NonParallelizable]
+[TestFixture]
 [Category("flink-runner-direct")]
 public class FlinkRunnerDirectTest : LocalTestingTestBase
 {
