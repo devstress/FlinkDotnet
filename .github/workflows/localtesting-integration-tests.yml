@@ -1,11 +1,14 @@
 name: LocalTesting Integration Tests
 
 on:
-  workflow_call:
+  push:
   workflow_dispatch:
 
+env:
+  configuration: Release
+
 concurrency:
-  group: localtesting-${{ github.ref }}
+  group: localtesting-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -58,7 +61,7 @@ jobs:
         run: |
           echo "🔨 Building LocalTesting solution..."
           dotnet restore LocalTesting/LocalTesting.sln
-          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+          dotnet build LocalTesting/LocalTesting.sln --configuration ${{ env.configuration }} --no-restore
 
       - name: Run LocalTesting Integration Tests
         timeout-minutes: 15  # Optimized: Tests now run with shared infrastructure and parallel execution
@@ -69,7 +72,7 @@ jobs:
         run: |
           echo "=== Starting LocalTesting Integration Tests ==="
           echo "📋 Kafka → Flink → FlinkDotNet pipeline validation"
-          dotnet test LocalTesting/LocalTesting.IntegrationTests --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test LocalTesting/LocalTesting.IntegrationTests --no-build --configuration ${{ env.configuration }} --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
         working-directory: ./
 
       - name: Upload test results

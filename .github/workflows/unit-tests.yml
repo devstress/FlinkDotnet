@@ -1,8 +1,15 @@
 name: Unit Tests
 
 on:
-  workflow_call:
+  push:
   workflow_dispatch:
+
+env:
+  configuration: Release
+
+concurrency:
+  group: unit-tests-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   run-unit-tests:
@@ -35,25 +42,18 @@ jobs:
         with:
           maven-version: '3.9.11'
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-solutions
-
-      - name: Ensure build assemblies
+      - name: Build FlinkDotNet solution
         shell: bash
         run: |
-          if [ ! -f FlinkDotNet/*/bin/Release/net9.0/*.dll ]; then
-            echo "Build artifacts missing. Building solutions..."
-            dotnet restore FlinkDotNet/FlinkDotNet.sln
-            dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
-          fi
+          echo "Building FlinkDotNet solution..."
+          dotnet restore FlinkDotNet/FlinkDotNet.sln
+          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
 
       - name: Run tests for FlinkDotNet solution
         run: |
           Write-Host "Running tests for FlinkDotNet/FlinkDotNet.sln..."
           Push-Location FlinkDotNet
-          dotnet test FlinkDotNet.sln --configuration Release --no-build --logger "trx" --results-directory "TestResults"
+          dotnet test FlinkDotNet.sln --configuration ${{ env.configuration }} --no-build --logger "trx" --results-directory "TestResults"
           Pop-Location
 
       - name: Verify Test Results
