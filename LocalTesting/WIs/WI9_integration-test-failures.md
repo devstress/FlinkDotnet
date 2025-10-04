@@ -109,12 +109,12 @@ org.apache.flink.runtime.rest.handler.RestHandlerException: Could not execute ap
 
 **Possible Root Causes**:
 1. **Java 25 Compatibility**: Flink IR Runner JAR built for Java 17 may not work with Java 25
-2. **Flink version mismatch**: Flink 1.20.0 may not fully support Java 25
+2. **Flink version mismatch**: Flink 2.1.0 may not fully support Java 25
 3. **FlinkDotNet job issues**: Jobs may have Java version-specific issues
 4. **Maven build targeting**: JAR built with Java 17 profile, not compatible with Java 25 runtime
 
 **Next Steps**:
-1. Check if Flink 1.20.0 officially supports Java 25
+1. Check if Flink 2.1.0 officially supports Java 25
 2. Verify Maven build profiles (java17 vs java25)
 3. Check if FlinkDotNet jobs need Java 25-specific compilation
 4. Consider downgrading CI to Java 17 for compatibility OR
@@ -123,7 +123,7 @@ org.apache.flink.runtime.rest.handler.RestHandlerException: Could not execute ap
 ## Phase 2: Design ✅
 
 ### Requirements
-Fix JAR selection to prioritize Java 17 compatible JAR for Flink 1.20.0 compatibility
+Fix JAR selection to prioritize Java 17 compatible JAR for Flink 2.1.0 compatibility
 
 ### Architecture Decisions
 
@@ -137,12 +137,12 @@ The Gateway's `FindExistingRunnerJar()` method searches for JARs in this order:
 - CI environment uses JDK 25 to build
 - Maven builds both Java 25 JAR (`flink-ir-runner.jar`) and Java 17 JAR (`flink-ir-runner-java17.jar`)
 - Gateway selects Java 25 JAR first
-- **But Flink 1.20.0 container runs on Java 17** (per `apache/flink:1.20.0-scala_2.12-java17`)
+- **But Flink 2.1.0 container runs on Java 17** (per `flink:2.1.0-java17`)
 - Java 25 compiled JAR fails to execute in Java 17 Flink environment
 
 **Solution**:
 Reorder JAR search priority to prefer Java 17 JAR:
-1. `flink-ir-runner-java17.jar` (✅ Compatible with Flink 1.20.0)
+1. `flink-ir-runner-java17.jar` (✅ Compatible with Flink 2.1.0)
 2. `flink-ir-runner.jar` (fallback for Java 25 Flink, if available)
 3. `flink-ir-runner-java25.jar` (explicit Java 25 JAR)
 
@@ -157,7 +157,7 @@ This ensures compatibility with the Flink container version while maintaining fl
 
 ### Alternatives Considered
 1. **Downgrade CI to JDK 17**: Rejected - loses ability to build Java 25 features
-2. **Upgrade Flink to Java 25**: Rejected - Flink 1.20.0 not officially Java 25
+2. **Upgrade Flink to Java 25**: Rejected - Flink 2.1.0 not officially Java 25
 3. **Build only Java 17 JAR**: Rejected - loses flexibility for future Java 25 Flink
 4. **Environment variable override**: Rejected - requires CI configuration changes
 
@@ -186,13 +186,13 @@ var names = new[] { "flink-ir-runner.jar", "flink-ir-runner-java25.jar", "flink-
 
 **After**:
 ```csharp
-// Prioritize Java 17 JAR since Flink 1.20.0 runs on Java 17
+// Prioritize Java 17 JAR since Flink 2.1.0 runs on Java 17
 // Even if built with JDK 25, we must use Java 17-compatible JAR for Flink submission
 var names = new[] { "flink-ir-runner-java17.jar", "flink-ir-runner.jar", "flink-ir-runner-java25.jar" };
 ```
 
 **Impact**:
-- Java 17 JAR now selected first (compatible with Flink 1.20.0-java17)
+- Java 17 JAR now selected first (compatible with Flink 2.1.0-java17)
 - Fixes all FlinkDotNet job submission failures in CI
 - Maintains backward compatibility with different build environments
 
@@ -221,7 +221,7 @@ LocalTesting.sln: Build succeeded (0 errors, 0 warnings)
 
 **Fix Validation**:
 - ✅ Java 17 JAR now prioritized in search order
-- ✅ Compatible with Flink 1.20.0-scala_2.12-java17 container
+- ✅ Compatible with Flink 2.1.0-scala_2.12-java17 container
 - ✅ Works regardless of build JDK version (17 or 25)
 - ✅ Maintains backward compatibility
 
@@ -233,7 +233,7 @@ JDK 25 Build → Java 25 JAR (flink-ir-runner.jar)
                     ↓
             Gateway selects Java 25 JAR
                     ↓
-    Submits to Flink 1.20.0 (Java 17 container)
+    Submits to Flink 2.1.0 (Java 17 container)
                     ↓
         ❌ "Could not execute application"
 ```
@@ -244,7 +244,7 @@ JDK 25 Build → Both JARs: Java 25 + Java 17
                     ↓
         Gateway selects Java 17 JAR first
                     ↓
-    Submits to Flink 1.20.0 (Java 17 container)
+    Submits to Flink 2.1.0 (Java 17 container)
                     ↓
             ✅ Jobs execute successfully
 ```
@@ -260,7 +260,7 @@ JDK 25 Build → Both JARs: Java 25 + Java 17
 **Original Issue**: 8 out of 9 integration tests failing in CI
 - Error: "Could not execute application" when submitting FlinkDotNet jobs
 - Environment: GitHub Actions with JDK 25
-- Flink: apache/flink:1.20.0-scala_2.12-java17
+- Flink: flink:2.1.0-java17
 
 **Root Cause Identified**: JAR compatibility mismatch
 - CI builds with JDK 25, producing Java 25 JAR
@@ -269,7 +269,7 @@ JDK 25 Build → Both JARs: Java 25 + Java 17
 
 **Solution Implemented**: Prioritize Java 17 JAR selection
 - Changed JAR search order in `FlinkJobManager.cs`
-- Java 17 JAR now selected first (compatible with Flink 1.20.0)
+- Java 17 JAR now selected first (compatible with Flink 2.1.0)
 - Minimal one-line change with maximum impact
 
 ### Demonstration
@@ -282,7 +282,7 @@ File: FlinkDotNet/Flink.JobGateway/Services/FlinkJobManager.cs (line 495)
 var names = new[] { "flink-ir-runner.jar", "flink-ir-runner-java25.jar", "flink-ir-runner-java17.jar" };
 
 // After: Compatible JAR selected
-// Prioritize Java 17 JAR since Flink 1.20.0 runs on Java 17
+// Prioritize Java 17 JAR since Flink 2.1.0 runs on Java 17
 // Even if built with JDK 25, we must use Java 17-compatible JAR for Flink submission
 var names = new[] { "flink-ir-runner-java17.jar", "flink-ir-runner.jar", "flink-ir-runner-java25.jar" };
 ```
@@ -338,15 +338,15 @@ var names = new[] { "flink-ir-runner-java17.jar", "flink-ir-runner.jar", "flink-
 ### Reference for Future WIs
 - **File**: `FlinkDotNet/Flink.JobGateway/Services/FlinkJobManager.cs` (line 495-497)
 - **Pattern**: Prioritize runtime-compatible JAR over build-time JAR
-- **Flink Version**: apache/flink:1.20.0-scala_2.12-java17 (Java 17 required)
+- **Flink Version**: flink:2.1.0-java17 (Java 17 required)
 - **Build**: Maven profiles support java17 and java25
 - **JAR Selection**: `FindExistingRunnerJar()` method controls JAR priority
 
 ### Critical Success Factors
 1. **Analyzed CI workflow**: Found JDK 25 was used in CI vs Java 17 locally
-2. **Checked Flink container**: Verified Flink 1.20.0 runs Java 17
+2. **Checked Flink container**: Verified Flink 2.1.0 runs Java 17
 3. **Understood Maven build**: Recognized both Java 17 and Java 25 JARs are built
-4. **Fixed priority order**: Ensured Java 17 JAR selected for Flink 1.20.0 compatibility
+4. **Fixed priority order**: Ensured Java 17 JAR selected for Flink 2.1.0 compatibility
 5. **Documented thoroughly**: WI provides complete reference for similar issues
 
 ### Java Version Compatibility Matrix
