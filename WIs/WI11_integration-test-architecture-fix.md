@@ -107,9 +107,76 @@ GlobalTestInfrastructure.cs uses:
 4. Run tests against real infrastructure
 5. Clean shutdown of AppHost process and containers
 
-## Phase 2: Design
+## Phase 2: Design ✅
 
-(To be filled after investigation confirms approach)
+### Requirements
+Replace DistributedApplicationTestingBuilder with process-based AppHost startup for CI compatibility
+
+### Architecture Decisions
+
+**Selected Approach**: Process-based AppHost (Option A)
+
+**Implementation Plan**:
+1. Replace `DistributedApplicationTestingBuilder` with `Process.Start("dotnet run")`
+2. Start AppHost in background process
+3. Wait for containers to be healthy (query Docker for actual containers)
+4. Extract endpoints from running containers (not from Aspire API)
+5. Run tests against real infrastructure
+6. Graceful shutdown: Stop AppHost process, containers auto-cleanup
+
+**Key Changes**:
+- `GlobalTestInfrastructure.cs`:
+  - Remove: `DistributedApplicationTestingBuilder.CreateAsync<AppHost>()`
+  - Add: Start AppHost as real process
+  - Change: Query Docker directly for container endpoints
+  - Fix: Don't rely on Aspire testing framework APIs
+
+**Critical Insight**:
+The AppHost already has all the container definitions. We just need to run it as a real process instead of using the testing builder. Aspire DCP will handle all container orchestration.
+
+### Why This Approach
+1. **Minimal code changes**: Replace one initialization method
+2. **Uses existing infrastructure**: AppHost already defines everything correctly
+3. **CI compatible**: Real process with real containers
+4. **Local/CI parity**: Same behavior in both environments
+5. **Aspire native**: Uses Aspire as designed (DCP + containers)
+
+### Alternatives Considered
+1. **docker-compose**: Rejected - duplicates infrastructure definition
+2. **Manual containers**: Rejected - too complex, reinvents Aspire
+3. **Fix Aspire DCP in CI**: Rejected - out of scope, infrastructure problem
+
+### Implementation Details
+
+**Process Startup**:
+```csharp
+var appHostProcess = new Process
+{
+    StartInfo = new ProcessStartInfo
+    {
+        FileName = "dotnet",
+        Arguments = "run --project LocalTesting/LocalTesting.FlinkSqlAppHost --no-build",
+        WorkingDirectory = repoRoot,
+        UseShellExecute = false,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true
+    }
+};
+appHostProcess.Start();
+```
+
+**Wait Strategy**:
+- Poll Docker for containers (not Aspire API)
+- Check container health: Kafka, Flink JobManager, Flink TaskManager, Gateway
+- Extract actual ports from `docker ps`
+- Timeout if containers don't start
+
+**Cleanup Strategy**:
+```csharp
+appHostProcess.Kill();
+appHostProcess.WaitForExit();
+// Aspire DCP will auto-cleanup containers when process exits
+```
 
 ## Phase 3: TDD/BDD
 

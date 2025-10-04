@@ -1,7 +1,4 @@
 using System.Diagnostics;
-using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
-using Aspire.Hosting.Testing;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using LocalTesting.FlinkSqlAppHost;
@@ -13,16 +10,20 @@ namespace LocalTesting.IntegrationTests;
 /// Assembly-level test infrastructure setup for LocalTesting integration tests.
 /// Initializes infrastructure ONCE for all tests to dramatically reduce startup overhead.
 /// Infrastructure includes: Docker, Kafka, Flink JobManager, Flink TaskManager, and Gateway.
+/// 
+/// ARCHITECTURE: Starts AppHost as a real process (not DistributedApplicationTestingBuilder)
+/// because the testing builder is designed for config validation, not integration testing.
+/// Real process ensures actual containers are started via Aspire DCP in both local and CI.
 /// </summary>
 [SetUpFixture]
 public class GlobalTestInfrastructure
 {
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan KafkaReadyTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(90);
     private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(120);
 
-    public static DistributedApplication? AppHost { get; private set; }
+    private static Process? _appHostProcess;
     public static string? KafkaConnectionString { get; private set; }
     public static string KafkaContainerConnectionString => Ports.KafkaContainerBootstrap;
 
@@ -39,30 +40,29 @@ public class GlobalTestInfrastructure
 
         try
         {
-            // Configure JAR path for Gateway
-            ConfigureGatewayJarPath();
-
             // Validate Docker environment
             await ValidateDockerEnvironmentAsync();
 
-            // Build and start Aspire application
-            TestContext.WriteLine("🔧 Building Aspire ApplicationHost...");
-            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>();
-            var app = await appHost.BuildAsync().WaitAsync(DefaultTimeout);
-            await app.StartAsync().WaitAsync(DefaultTimeout);
+            // Find repository root
+            var repoRoot = FindRepositoryRoot(Environment.CurrentDirectory);
+            if (repoRoot == null)
+            {
+                throw new InvalidOperationException("Could not find repository root (global.json not found)");
+            }
+            TestContext.WriteLine($"✅ Repository root: {repoRoot}");
 
-            AppHost = app;
-            TestContext.WriteLine("✅ Aspire ApplicationHost started");
+            // Start AppHost as a real process (not testing builder)
+            // This ensures real containers are started via Aspire DCP
+            TestContext.WriteLine("🔧 Starting AppHost as real process...");
+            _appHostProcess = StartAppHostProcess(repoRoot);
+            TestContext.WriteLine("✅ AppHost process started");
 
-            // Wait for Kafka
-            TestContext.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
-            await app.ResourceNotifications
-                .WaitForResourceHealthyAsync("kafka")
-                .WaitAsync(DefaultTimeout);
-            TestContext.WriteLine("✅ Kafka resource reported healthy");
+            // Wait for AppHost to initialize and start containers
+            await WaitForAppHostReadyAsync(AppHostStartupTimeout);
+            TestContext.WriteLine("✅ AppHost is running and containers are starting");
 
-            // Get Kafka connection string
-            KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
+            // Discover Kafka endpoint from running containers
+            KafkaConnectionString = await DiscoverKafkaEndpointAsync();
             TestContext.WriteLine($"🔗 Kafka connection string: {KafkaConnectionString}");
 
             // Enhanced Kafka readiness check
@@ -76,12 +76,7 @@ public class GlobalTestInfrastructure
             TestContext.WriteLine("✅ Flink JobManager and TaskManager are ready");
 
             // Wait for Gateway
-            TestContext.WriteLine("⏳ Waiting for Gateway resource to start...");
-            await app.ResourceNotifications
-                .WaitForResourceHealthyAsync("flink-job-gateway")
-                .WaitAsync(GatewayReadyTimeout);
-            TestContext.WriteLine("✅ Gateway resource reported healthy");
-
+            TestContext.WriteLine("⏳ Waiting for Gateway to start...");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             TestContext.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
             await LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", GatewayReadyTimeout, default);
@@ -97,6 +92,14 @@ public class GlobalTestInfrastructure
         {
             TestContext.WriteLine($"❌ Global infrastructure setup failed: {ex.Message}");
             TestContext.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+            
+            // Cleanup on failure
+            if (_appHostProcess != null && !_appHostProcess.HasExited)
+            {
+                _appHostProcess.Kill();
+                await _appHostProcess.WaitForExitAsync();
+            }
+            
             throw;
         }
     }
@@ -108,12 +111,17 @@ public class GlobalTestInfrastructure
         TestContext.WriteLine("🌍 GLOBAL TEST INFRASTRUCTURE TEARDOWN START");
         TestContext.WriteLine("🌍 ========================================");
 
-        if (AppHost != null)
+        if (_appHostProcess != null)
         {
             try
             {
-                await AppHost.StopAsync();
-                TestContext.WriteLine("✅ AppHost stopped successfully");
+                if (!_appHostProcess.HasExited)
+                {
+                    TestContext.WriteLine("🛑 Stopping AppHost process...");
+                    _appHostProcess.Kill();
+                    await _appHostProcess.WaitForExitAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+                    TestContext.WriteLine("✅ AppHost process stopped");
+                }
             }
             catch (Exception ex)
             {
@@ -122,52 +130,121 @@ public class GlobalTestInfrastructure
 
             try
             {
-                await AppHost.DisposeAsync();
-                TestContext.WriteLine("✅ AppHost disposed successfully");
+                _appHostProcess.Dispose();
+                TestContext.WriteLine("✅ AppHost process disposed");
             }
             catch (Exception ex)
             {
                 TestContext.WriteLine($"⚠️ AppHost dispose warning: {ex.Message}");
             }
 
-            AppHost = null;
+            _appHostProcess = null;
         }
+
+        // Give containers time to cleanup
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🌍 GLOBAL INFRASTRUCTURE TEARDOWN COMPLETE");
         TestContext.WriteLine("🌍 ========================================");
     }
 
-    private static void ConfigureGatewayJarPath()
+    private static Process StartAppHostProcess(string repoRoot)
     {
-        var currentDir = Environment.CurrentDirectory;
-        var repoRoot = FindRepositoryRoot(currentDir);
-
-        if (repoRoot == null)
+        var appHostProjectPath = Path.Combine(repoRoot, "LocalTesting", "LocalTesting.FlinkSqlAppHost");
+        
+        var process = new Process
         {
-            TestContext.WriteLine("⚠️ Could not find repository root - Gateway may need to build JAR at runtime");
-            return;
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = "run --no-build --configuration Release",
+                WorkingDirectory = appHostProjectPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            }
+        };
+
+        // Capture output for diagnostics
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                TestContext.WriteLine($"[AppHost] {e.Data}");
+            }
+        };
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                TestContext.WriteLine($"[AppHost ERROR] {e.Data}");
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        return process;
+    }
+
+    private static async Task WaitForAppHostReadyAsync(TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow.Add(timeout);
+        var attempt = 0;
+
+        TestContext.WriteLine("⏳ Waiting for AppHost to start containers...");
+
+        while (DateTime.UtcNow < deadline)
+        {
+            attempt++;
+
+            if (_appHostProcess?.HasExited == true)
+            {
+                throw new InvalidOperationException($"AppHost process exited unexpectedly with code {_appHostProcess.ExitCode}");
+            }
+
+            // Check if any containers have started (indicates AppHost is working)
+            var containers = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            if (!string.IsNullOrWhiteSpace(containers) && containers.Contains("kafka"))
+            {
+                TestContext.WriteLine($"✅ AppHost has started containers after {attempt} attempts");
+                return;
+            }
+
+            if (attempt % 10 == 0)
+            {
+                TestContext.WriteLine($"⏳ Attempt {attempt}: Still waiting for containers...");
+            }
+
+            await Task.Delay(1000);
         }
 
-        var releaseJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
+        throw new TimeoutException($"AppHost did not start containers within {timeout.TotalSeconds:F0}s");
+    }
 
-        if (File.Exists(releaseJarPath))
+    private static async Task<string> DiscoverKafkaEndpointAsync()
+    {
+        // Discover Kafka endpoint from running container
+        var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
+        
+        if (string.IsNullOrWhiteSpace(kafkaContainers))
         {
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", releaseJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path: {releaseJarPath}");
-            return;
+            throw new InvalidOperationException("Kafka container not found");
         }
 
-        var debugJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
-
-        if (File.Exists(debugJarPath))
+        // Parse port mapping (e.g., "0.0.0.0:9092->9092/tcp")
+        var match = System.Text.RegularExpressions.Regex.Match(kafkaContainers, @"127\.0\.0\.1:(\d+)->9092|0\.0\.0\.0:(\d+)->9092");
+        if (match.Success)
         {
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", debugJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path (Debug): {debugJarPath}");
-            return;
+            var port = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
+            return $"localhost:{port}";
         }
 
-        TestContext.WriteLine($"⚠️ Gateway JAR not found - will build on demand");
+        // Fallback to configured port
+        return $"localhost:{Ports.KafkaPort}";
     }
 
     private static string? FindRepositoryRoot(string startPath)

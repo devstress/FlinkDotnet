@@ -1,11 +1,7 @@
 using System.Diagnostics;
-using Aspire.Hosting.Testing;
-using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using LocalTesting.FlinkSqlAppHost;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
@@ -21,11 +17,7 @@ public abstract class LocalTestingTestBase
     private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(45);
 
-    /// <summary>
-    /// Access to shared AppHost instance from GlobalTestInfrastructure.
-    /// Infrastructure is initialized once for all tests, dramatically reducing startup overhead.
-    /// </summary>
-    protected static DistributedApplication? AppHost => GlobalTestInfrastructure.AppHost;
+    // Removed: AppHost property - no longer using DistributedApplication testing framework
     
     /// <summary>
     /// Access to shared Kafka connection string from GlobalTestInfrastructure.
@@ -50,7 +42,7 @@ public abstract class LocalTestingTestBase
     public virtual Task OneTimeSetUp()
     {
         // Verify shared infrastructure is available
-        if (AppHost == null || string.IsNullOrEmpty(KafkaConnectionString))
+        if (string.IsNullOrEmpty(KafkaConnectionString))
         {
             throw new InvalidOperationException(
                 "Global test infrastructure is not initialized. " +
@@ -806,13 +798,7 @@ public abstract class LocalTestingTestBase
             throw new InvalidOperationException("Kafka connection string not available - OneTimeSetUp may have failed");
         }
 
-        if (AppHost == null)
-        {
-            throw new InvalidOperationException("AppHost is not available - OneTimeSetUp may have failed");
-        }
-
-        // Get the dynamically allocated Flink JobManager endpoint from Aspire
-        // Aspire DCP assigns random ports during testing, so we must query the actual endpoint
+        // Get the dynamically allocated Flink JobManager endpoint from running containers
         var flinkJobManagerEndpoint = await GetFlinkJobManagerEndpointAsync();
         TestContext.WriteLine($"🔍 Discovered Flink JobManager endpoint: {flinkJobManagerEndpoint}");
 
@@ -825,13 +811,7 @@ public abstract class LocalTestingTestBase
         // Wait for Gateway if included
         if (includeGateway)
         {
-            // CRITICAL: Aspire testing framework does NOT automatically start .NET project resources
-            // We must explicitly wait for the Gateway resource to become healthy
-            TestContext.WriteLine("⏳ Waiting for Gateway resource to start (Aspire project resources require explicit activation)...");
-            await AppHost.ResourceNotifications
-                .WaitForResourceHealthyAsync("flink-job-gateway", cancellationToken)
-                .WaitAsync(GatewayReadyTimeout, cancellationToken);
-            TestContext.WriteLine("✅ Gateway resource reported healthy by Aspire");
+            TestContext.WriteLine("⏳ Waiting for Gateway to be ready...");
             
             // Now verify Gateway HTTP endpoint is responding
             var gatewayEndpoint = await GetGatewayEndpointAsync();
