@@ -207,33 +207,52 @@ public class GlobalTestInfrastructure
 
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
-        var psi = new ProcessStartInfo
+        // Try Docker first, then Podman if Docker fails or returns empty
+        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
+        if (!string.IsNullOrWhiteSpace(dockerOutput))
         {
-            FileName = "docker",
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(psi);
-        if (process == null)
-        {
-            throw new InvalidOperationException("Failed to start docker process");
+            return dockerOutput;
         }
 
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
+        // Fallback to Podman if Docker didn't return results
+        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
+        return podmanOutput ?? string.Empty;
+    }
 
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode != 0 && !string.IsNullOrWhiteSpace(error))
+    private static async Task<string?> TryRunContainerCommandAsync(string command, string arguments)
+    {
+        try
         {
-            throw new InvalidOperationException($"Docker command failed: {error}");
-        }
+            var psi = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        return output;
+            using var process = Process.Start(psi);
+            if (process == null)
+            {
+                return null;
+            }
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                return output;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static async Task<string> GetFlinkJobManagerEndpointAsync()

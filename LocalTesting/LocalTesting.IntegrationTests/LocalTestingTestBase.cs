@@ -124,33 +124,52 @@ public abstract class LocalTestingTestBase
     /// </summary>
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
-        var psi = new ProcessStartInfo
+        // Try Docker first, then Podman if Docker fails or returns empty
+        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
+        if (!string.IsNullOrWhiteSpace(dockerOutput))
         {
-            FileName = "docker",
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(psi);
-        if (process == null)
-        {
-            throw new InvalidOperationException("Failed to start docker process");
+            return dockerOutput;
         }
 
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        
-        await process.WaitForExitAsync();
-        
-        if (process.ExitCode != 0 && !string.IsNullOrWhiteSpace(error))
-        {
-            throw new InvalidOperationException($"Docker command failed: {error}");
-        }
+        // Fallback to Podman if Docker didn't return results
+        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
+        return podmanOutput ?? string.Empty;
+    }
 
-        return output;
+    private static async Task<string?> TryRunContainerCommandAsync(string command, string arguments)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null)
+            {
+                return null;
+            }
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                return output;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
