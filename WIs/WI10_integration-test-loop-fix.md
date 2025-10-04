@@ -63,16 +63,28 @@ Time Elapsed 00:00:20.02
 
 ### Test Run #1 - Initial State
 
-**Status**: Pending
+**Status**: FAILED - Root cause identified
 
-**Command**: 
-```bash
-dotnet test LocalTesting/LocalTesting.IntegrationTests/LocalTesting.IntegrationTests.csproj \
-  --configuration Release \
-  --logger "console;verbosity=normal"
-```
+**Root Cause Found**: Missing `flink-json-2.1.0.jar` file
+- File was a directory instead of a JAR file in `LocalTesting/connectors/flink/lib/`
+- This caused Flink container bind mount to fail
+- As a result, Aspire could not start Flink containers
+- This prevented ALL integration tests from running
 
-**Results**: To be captured...
+**Fix Applied**:
+- Copied `flink-json-2.1.0.jar` from IntegrationTests output directory to connectors directory
+- File size: 177K (correct JAR file)
+
+**Additional Investigation Findings**:
+- DistributedApplicationTestingBuilder is the correct approach for Aspire integration tests  
+- Tests were failing because infrastructure (Flink containers) never started
+- Once JAR file is fixed, containers should start properly
+
+**Next Steps**:
+1. Ensure flink-json JAR is always properly deployed during build
+2. Revert process-based AppHost approach (not needed)
+3. Return to DistributedApplicationTestingBuilder with proper JAR files
+4. Retest
 
 ### Findings
 
