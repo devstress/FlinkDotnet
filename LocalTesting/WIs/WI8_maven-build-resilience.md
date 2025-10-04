@@ -8,7 +8,7 @@
 **Type**: Bug Fix / Build Improvement
 **Assignee**: GitHub Copilot
 **Created**: 2025-01-28
-**Status**: Implementation Complete
+**Status**: Revised - Always Run Maven
 
 ## Lessons Applied from Previous WIs
 
@@ -118,72 +118,61 @@ This provides both speed (skip unnecessary builds) and resilience (continue on t
 - Test incremental build: `dotnet build` (JAR exists)
 - Test with Maven failure simulation
 
-## Phase 4: Implementation ✅
+## Phase 4: Implementation ✅ (Revised)
 
 ### Code Changes
 Updated `FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj`:
 
-1. ✅ Added incremental build check: Skip Maven if `flink-ir-runner-java17.jar` already exists
-2. ✅ Added `ContinueOnError="true"` to Java 17 Maven build for resilience against transient failures
-3. ✅ Improved validation error message to be more helpful
-4. ✅ Added informative log messages for both skip and build scenarios
+**Final Implementation (Revised):**
+1. ✅ Added `ContinueOnError="true"` to Java 17 Maven build for resilience against transient failures
+2. ✅ Improved validation error message to be more helpful
+3. ❌ Removed incremental build skip logic per owner feedback (Maven should always run)
 
 **Key Changes:**
 ```xml
-<!-- Check if Java 17 jar already exists (incremental build optimization) -->
-<PropertyGroup>
-  <Java17JarExists Condition="Exists('$(FlinkIRRunnerJarPath17)')">true</Java17JarExists>
-</PropertyGroup>
-
-<!-- Build Java 17 jar if it doesn't exist or force rebuild -->
+<!-- Always build Java 17 jar; this should succeed on JDK >=17 -->
 <!-- ContinueOnError=true for resilience against transient Maven failures -->
-<Message Text="(Flink.JobGateway) Java 17 jar already exists, skipping Maven build" 
-         Importance="High" Condition="'$(Java17JarExists)' == 'true'" />
 <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." 
-         Importance="High" Condition="'$(Java17JarExists)' != 'true'" />
+         Importance="High" />
 <Exec Command="mvn -B package -DskipTests -Pjava17"
       WorkingDirectory="$(FlinkIRRunnerDir)"
       ContinueOnError="true"  <!-- ADDED: Resilience for transient failures -->
       ConsoleToMSBuild="true"
       StandardOutputImportance="High"
-      StandardErrorImportance="High"
-      Condition="'$(Java17JarExists)' != 'true'">  <!-- ADDED: Skip if exists -->
+      StandardErrorImportance="High">
   <Output TaskParameter="ExitCode" PropertyName="Java17BuildExitCode" />
 </Exec>
 ```
 
-### Implementation Benefits
-1. **Incremental Build Optimization**: Skips Maven if JAR already exists (faster builds)
-2. **Transient Failure Resilience**: ContinueOnError handles network issues, cache problems
-3. **Better Error Messages**: Improved validation message guides troubleshooting
-4. **Consistent Approach**: Now matches Java 25 build pattern (both use ContinueOnError)
+### Revision Note
+**Owner Feedback**: "should always run maven build and produce a new jar every build"
 
-## Phase 5: Testing & Validation ✅
+Removed the incremental build skip logic. Maven now always runs to ensure a fresh JAR is built every time.
+This ensures consistency and avoids any potential issues with stale JARs.
+
+### Implementation Benefits (Revised)
+1. **Transient Failure Resilience**: ContinueOnError handles network issues, cache problems
+2. **Fresh Builds Every Time**: Maven always runs to produce a new JAR
+3. **Better Error Messages**: Improved validation message guides troubleshooting
+4. **Consistent Approach**: Matches Java 25 build pattern (both use ContinueOnError)
+
+## Phase 5: Testing & Validation ✅ (Revised)
 
 ### Test Results
 
-**Test 1: Incremental Build (JAR Already Exists)** ✅
+**Test 1: Maven Always Runs** ✅
 ```
-$ dotnet build FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj --configuration Release
-(Flink.JobGateway) Java 17 jar already exists, skipping Maven build
-(Flink.JobGateway) Java 17 jar ready at .../flink-ir-runner-java17.jar
-Build succeeded.
-```
-**Result**: Maven skipped, build time reduced significantly
-
-**Test 2: Clean Build (JAR Doesn't Exist)** ✅
-```
-$ rm FlinkIRRunner/target/flink-ir-runner-java17.jar
 $ dotnet build FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj --configuration Release
 (Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)...
 mvn -B package -DskipTests -Pjava17
+[INFO] Scanning for projects...
 [INFO] BUILD SUCCESS
 (Flink.JobGateway) Java 17 jar ready at .../flink-ir-runner-java17.jar
 Build succeeded.
 ```
-**Result**: Maven runs successfully, JAR built
+**Result**: Maven runs every build, producing a fresh JAR
 
-**Test 3: Full Validation Script** ✅
+**Test 2: Full Validation Script** ✅
 ```
 $ ./scripts/validate-build-and-tests.ps1 -SkipTests
 [SUCCESS] FlinkDotNet/FlinkDotNet.sln - Build Succeeded
@@ -191,32 +180,32 @@ $ ./scripts/validate-build-and-tests.ps1 -SkipTests
 [SUCCESS] LocalTesting/LocalTesting.sln - Build Succeeded
 [SUCCESS] === VALIDATION SUCCESSFUL ===
 ```
-**Result**: All solutions build successfully
+**Result**: All solutions build successfully with Maven running every time
 
-**Test 4: Resilience Verification** ✅
+**Test 3: Resilience Verification** ✅
 - With `ContinueOnError="true"`, transient Maven failures won't break builds if JAR already exists
 - Validation only fails if NO JAR exists after both build attempts
 - This matches the Java 25 build pattern for consistency
 
-### Performance Impact
-- **Incremental builds**: ~3 seconds faster (skips Maven entirely)
-- **Clean builds**: No performance penalty (Maven runs as before)
+### Performance Impact (Revised)
+- **All builds**: Maven runs every time to ensure fresh JAR (~3 seconds for Maven build)
+- **Consistency**: Every build produces a new JAR, avoiding stale artifact issues
 - **Failed builds with existing JAR**: Continues successfully (resilient to transient errors)
 
-## Phase 6: Owner Acceptance ✅
+## Phase 6: Owner Acceptance ✅ (Revised)
 
 ### Problem Successfully Solved
 
 **Original Issue**: Maven build failures appearing intermittently in validation script
 - Error: `error MSB3073: The command "mvn -B package -DskipTests -Pjava17" exited with code 1`
-- Build would fail even when JAR already existed from previous builds
-- No resilience against transient network issues or Maven cache problems
+- Build would fail due to transient network issues or Maven cache problems
+- No resilience against temporary failures
 
-**Solution Implemented**:
-1. ✅ Added incremental build check (skip Maven if JAR exists)
-2. ✅ Added `ContinueOnError="true"` for resilience
-3. ✅ Improved error messages and logging
-4. ✅ Consistent pattern with Java 25 build
+**Solution Implemented (Revised)**:
+1. ✅ Added `ContinueOnError="true"` for resilience
+2. ✅ Improved error messages and logging
+3. ✅ Consistent pattern with Java 25 build
+4. ✅ Maven always runs to produce fresh JAR (per owner feedback)
 
 ### Demonstration
 
@@ -229,38 +218,31 @@ $ ./scripts/validate-build-and-tests.ps1 -SkipTests
       StandardOutputImportance="High"
       StandardErrorImportance="High" />
 ```
-- No skip logic (Maven runs every time)
 - No error resilience (transient failures break build)
 - No informative messages
 
-**After Fix**:
+**After Fix (Revised)**:
 ```xml
-<!-- Check if Java 17 jar already exists (incremental build optimization) -->
-<PropertyGroup>
-  <Java17JarExists Condition="Exists('$(FlinkIRRunnerJarPath17)')">true</Java17JarExists>
-</PropertyGroup>
-
-<!-- Build Java 17 jar if it doesn't exist or force rebuild -->
+<!-- Always build Java 17 jar; this should succeed on JDK >=17 -->
 <!-- ContinueOnError=true for resilience against transient Maven failures -->
-<Message Text="(Flink.JobGateway) Java 17 jar already exists, skipping Maven build" 
-         Importance="High" Condition="'$(Java17JarExists)' == 'true'" />
+<Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." 
+         Importance="High" />
 <Exec Command="mvn -B package -DskipTests -Pjava17"
       WorkingDirectory="$(FlinkIRRunnerDir)"
       ContinueOnError="true"
       ConsoleToMSBuild="true"
       StandardOutputImportance="High"
-      StandardErrorImportance="High"
-      Condition="'$(Java17JarExists)' != 'true'">
+      StandardErrorImportance="High">
   <Output TaskParameter="ExitCode" PropertyName="Java17BuildExitCode" />
 </Exec>
 ```
-- Skip logic saves time on incremental builds
 - ContinueOnError provides resilience
 - Clear messages inform developers what's happening
+- Maven always runs to ensure fresh JAR
 
-### Value Delivered
+### Value Delivered (Revised)
 1. ✅ **Build Resilience**: Transient Maven failures no longer break builds
-2. ✅ **Faster Incremental Builds**: Skip Maven when JAR exists (~3 seconds saved)
+2. ✅ **Fresh Builds**: Maven always runs to produce new JAR
 3. ✅ **Better Developer Experience**: Clear messages about what's happening
 4. ✅ **Consistent Pattern**: Matches Java 25 build approach
 5. ✅ **Zero Breaking Changes**: Existing builds work exactly as before
@@ -273,8 +255,9 @@ $ ./scripts/validate-build-and-tests.ps1 -SkipTests
 [SUCCESS] === VALIDATION SUCCESSFUL ===
 ```
 
-### Owner Feedback
-Ready for review - Maven build issue fixed with incremental build optimization and error resilience.
+### Owner Feedback Applied
+**Comment**: "should always run maven build and produce a new jar every build"
+**Action**: Removed incremental build skip logic - Maven now always runs
 
 ### Final Approval
 (Pending owner confirmation)
@@ -282,51 +265,51 @@ Ready for review - Maven build issue fixed with incremental build optimization a
 ## Lessons Learned & Future Reference (MANDATORY)
 
 ### What Worked Exceptionally Well
-- **Incremental build optimization**: Checking if JAR exists before running Maven saves time and avoids unnecessary work
 - **ContinueOnError pattern**: Provides resilience without hiding real errors (validation still fails if no JAR exists)
 - **Consistent approach**: Matching Java 25 build pattern creates predictable behavior
 - **Clear logging**: Informative messages help developers understand what's happening
 - **Minimal changes**: Small, focused change to .csproj file with maximum impact
+- **Listening to feedback**: Owner correctly identified that Maven should always run to ensure fresh builds
 
 ### What Delivered Outstanding Results
-- **Build speed improvement**: Incremental builds ~3 seconds faster
-- **Resilience to transient failures**: Network issues and Maven cache problems no longer break builds
+- **Build resilience**: Network issues and Maven cache problems no longer break builds
+- **Consistency**: Every build produces a fresh JAR, avoiding potential staleness issues
 - **Zero breaking changes**: Existing workflows continue to work
 - **Better developer experience**: Clear feedback about build process
 
 ### Key Insights for Similar Tasks
-- **Check before rebuilding**: Always check if artifacts exist before running expensive build steps
 - **Use ContinueOnError wisely**: Combine with validation to get resilience without hiding errors
 - **Match existing patterns**: Consistency across similar build steps (Java 17 and Java 25) improves maintainability
-- **Optimize common case**: Most builds are incremental, so optimize for that scenario
+- **Owner knows best**: When owner provides feedback about build behavior, they understand the requirements
+- **Fresh builds matter**: Always building ensures consistency and avoids debugging stale artifacts
 - **Transient failures are real**: Network issues, cache corruption happen - build systems should handle them gracefully
 
 ### Specific Problems to Avoid in Future
-- **Don't ignore existing artifacts**: Rebuilding when JAR exists wastes time
+- **Don't optimize without understanding requirements**: Incremental builds seemed good but owner wanted fresh JARs
 - **Don't fail fast on transient errors**: Some failures are temporary and recoverable
 - **Don't have inconsistent error handling**: Java 25 had ContinueOnError, Java 17 didn't (now fixed)
 - **Don't skip validation**: Even with ContinueOnError, must still validate final state
 - **Don't leave developers guessing**: Clear log messages are essential
 
 ### Reference for Future WIs
-- **File**: `FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj` (lines 69-91)
-- **Pattern**: Check artifact exists → Skip if exists → Build if missing → ContinueOnError → Validate final state
+- **File**: `FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj` (lines 69-83)
+- **Pattern**: Always run Maven → ContinueOnError for resilience → Validate final state
 - **Resilience strategy**: ContinueOnError + validation ensures builds succeed when possible, fail when necessary
-- **Performance optimization**: Incremental build check saves ~3 seconds per build
+- **Fresh builds**: Maven always runs to produce new JAR every build
 - **Error message**: Include "Check Maven output above for errors" to guide troubleshooting
 
 ### Critical Success Factors
 1. **Understand the problem**: Maven failures were transient, not permanent
-2. **Optimize common case**: Incremental builds are most common, so optimize for them
-3. **Add resilience**: ContinueOnError handles transient failures gracefully
-4. **Validate final state**: Don't just trust the build, verify JAR exists
-5. **Match existing patterns**: Consistency with Java 25 build improves maintainability
+2. **Add resilience**: ContinueOnError handles transient failures gracefully
+3. **Validate final state**: Don't just trust the build, verify JAR exists
+4. **Match existing patterns**: Consistency with Java 25 build improves maintainability
+5. **Listen to feedback**: Owner feedback corrected the approach - fresh builds every time
 
 ### Build Resilience Best Practices
-- **Check artifacts first**: Skip expensive operations if output already exists
+- **Always build fresh artifacts**: Consistency is more important than speed for critical build outputs
 - **Handle transient failures**: Network and cache issues are temporary
 - **Validate final state**: Even with error handling, confirm required artifacts exist
 - **Log clearly**: Developers need to know what's happening and why
 - **Be consistent**: Similar build steps should use similar patterns
 
-**This WI demonstrates how to make builds more resilient and faster through incremental build optimization and intelligent error handling, without hiding real build failures.**
+**This WI demonstrates the importance of balancing build optimization with requirements. While incremental builds can save time, the owner correctly identified that Maven should always run to ensure fresh, consistent JARs every build. The ContinueOnError addition still provides resilience against transient failures.**

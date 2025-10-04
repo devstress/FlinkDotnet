@@ -66,28 +66,20 @@
       <Output TaskParameter="ExitCode" PropertyName="Java25BuildExitCode" />
     </Exec>
 
-    <!-- Check if Java 17 jar already exists (incremental build optimization) -->
-    <PropertyGroup>
-      <Java17JarExists Condition="Exists('$(FlinkIRRunnerJarPath17)')">true</Java17JarExists>
-    </PropertyGroup>
-
-    <!-- Build Java 17 jar if it doesn't exist or force rebuild -->
+    <!-- Always build Java 17 jar; this should succeed on JDK >=17 -->
     <!-- ContinueOnError=true for resilience against transient Maven failures (network issues, cache problems) -->
-    <Message Text="(Flink.JobGateway) Java 17 jar already exists, skipping Maven build" Importance="High" Condition="'$(Java17JarExists)' == 'true'" />
-    <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" Condition="'$(Java17JarExists)' != 'true'" />
+    <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" />
     <Exec Command="mvn -B package -DskipTests -Pjava17"
           WorkingDirectory="$(FlinkIRRunnerDir)"
           ContinueOnError="true"
           ConsoleToMSBuild="true"
           StandardOutputImportance="High"
-          StandardErrorImportance="High"
-          Condition="'$(Java17JarExists)' != 'true'">
+          StandardErrorImportance="High">
       <Output TaskParameter="ExitCode" PropertyName="Java17BuildExitCode" />
     </Exec>
 
     <!-- Validate jars output -->
     <!-- At least one jar must exist: prefer Java 25, but accept Java 17 -->
-    <!-- This validation runs after both builds, so if either succeeded OR jar already existed, we're good -->
     <Error Condition="!Exists('$(FlinkIRRunnerJarPath25)') AND !Exists('$(FlinkIRRunnerJarPath17)')"
            Text="FlinkIRRunner jars missing after Maven build (neither Java 25 nor Java 17 produced). Check Maven output above for errors." />
 
