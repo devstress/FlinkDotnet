@@ -1,4 +1,31 @@
+// Configure container runtime - prefer Podman if available, fallback to Docker Desktop
+using System.Diagnostics;
 using LocalTesting.FlinkSqlAppHost;
+
+if (IsPodmanAvailable())
+{
+    Console.WriteLine("✅ Using Podman as container runtime");
+    Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
+    
+    // Set DOCKER_HOST to Podman socket for better compatibility
+    SetPodmanDockerHost();
+}
+else if (IsDockerAvailable())
+{
+    Console.WriteLine("✅ Using Docker Desktop as container runtime");
+    // Docker Desktop is the default, no need to set ASPIRE_CONTAINER_RUNTIME
+}
+else
+{
+    Console.WriteLine("❌ No container runtime found. Please install Docker Desktop or Podman.");
+    return;
+}
+
+// Log configured ports for debugging
+Console.WriteLine($"📍 Configured ports:");
+Console.WriteLine($"   - Flink JobManager: {Ports.JobManagerHostPort}");
+Console.WriteLine($"   - Gateway: {Ports.GatewayHostPort}");
+Console.WriteLine($"   - Kafka: {Ports.KafkaPort}");
 
 // Basic environment setup
 Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
@@ -57,7 +84,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Aspire automatically handles port allocation and container networking
 // Note: Kafka resource is created but not referenced by Gateway to prevent
 // Aspire from injecting connection strings that would override job definitions
-var kafka = builder.AddKafka("kafka");  // AddKafka already creates 'internal' endpoint automatically
+builder.AddKafka("kafka");  // AddKafka already creates 'internal' endpoint automatically
 
 if (diagnosticsVerbose)
 {
@@ -65,8 +92,18 @@ if (diagnosticsVerbose)
 }
 
 // Flink JobManager with named HTTP endpoint for service references
-var jobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
-    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "http")
+// All ports are hardcoded - no WaitFor dependencies needed for parallel startup
+var jobManagerBuilder = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
+    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "http");
+
+// Only add Podman-specific container runtime args if Podman is detected
+if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
+{
+    jobManagerBuilder = jobManagerBuilder
+        .WithContainerRuntimeArgs("--publish", $"{Ports.JobManagerHostPort}:8081");
+}
+
+var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
@@ -80,31 +117,29 @@ var jobManager = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
         "classloader.resolve-order: parent-first\n" +
         "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
-    .WithEnvironment("FLINK_CLASSPATH", "/opt/flink/usrlib/*")
-    .WithBindMount(connectorsDir, "/opt/flink/usrlib", isReadOnly: true)
-    .WithArgs("jobmanager")
-    .WaitFor(kafka);  // Wait for Kafka to ensure network connectivity
+    .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithArgs("jobmanager");
 
-// Flink TaskManager with increased slots for parallel test execution
+// Flink TaskManager with increased slots for parallel test execution (10 tests)
+// All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "8")
+    .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
         "rest.bind-address: 0.0.0.0\n" +
         "parallelism.default: 1\n" +
         "taskmanager.memory.process.size: 2048m\n" +
-        "taskmanager.numberOfTaskSlots: 8\n" +
+        "taskmanager.numberOfTaskSlots: 10\n" +
         "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "classloader.resolve-order: parent-first\n" +
         "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
-    .WithEnvironment("FLINK_CLASSPATH", "/opt/flink/usrlib/*")
-    .WithBindMount(connectorsDir, "/opt/flink/usrlib", isReadOnly: true)
-    .WithArgs("taskmanager")
-    .WaitFor(kafka)  // Wait for Kafka first to ensure network connectivity
-    .WaitFor(jobManager);  // Then wait for JobManager
+    .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithArgs("taskmanager");
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
@@ -122,21 +157,138 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
 // 2. Flink containers (JobManager/TaskManager) have KAFKA_BOOTSTRAP=kafka:9092 set
 // 3. Java FlinkJobRunner jobs inherit environment from Flink containers, not Gateway
 // 4. This prevents any confusion about which Kafka address to use
+// Gateway with service reference for Flink discovery
+// All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: Ports.GatewayHostPort, name: "flink-job-gateway")
     .WithEnvironment("ASPNETCORE_URLS", $"http://localhost:{Ports.GatewayHostPort.ToString()}")  // Override launchSettings.json
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
-    .WithReference(jobManager.GetEndpoint("http"))  // Reference the HTTP endpoint for service discovery
-    .WaitFor(jobManager);  // Gateway only depends on Flink, not Kafka directly
+    .WithReference(jobManager.GetEndpoint("http"));  // Reference the HTTP endpoint for service discovery
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();
 #pragma warning restore S6966
 
+static bool IsPodmanAvailable()
+{
+    try
+    {
+        // First check if podman command exists
+        var versionPsi = new ProcessStartInfo
+        {
+            FileName = "podman",
+            Arguments = "version",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
 
+        using var versionProcess = Process.Start(versionPsi);
+        versionProcess?.WaitForExit(5000);
+        
+        if (versionProcess?.ExitCode != 0)
+        {
+            return false;
+        }
 
+        // Check if Podman machine is running (required on Windows/macOS)
+        var machinePsi = new ProcessStartInfo
+        {
+            FileName = "podman",
+            Arguments = "machine list --format \"{{.Running}}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
 
+        using var machineProcess = Process.Start(machinePsi);
+        if (machineProcess != null)
+        {
+            var output = machineProcess.StandardOutput.ReadToEnd();
+            machineProcess.WaitForExit(5000);
+            
+            // If machine list shows "true", Podman machine is running
+            if (output.Contains("true", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("   ℹ️ Podman machine is running");
+                return true;
+            }
+            else if (!string.IsNullOrWhiteSpace(output))
+            {
+                Console.WriteLine("   ⚠️ Podman machine is not running. Start with: podman machine start");
+                return false;
+            }
+        }
 
+        // On Linux, Podman runs natively without a machine
+        // If we got here and machine list had no output, assume Linux
+        Console.WriteLine("   ℹ️ Podman detected (native mode)");
+        return true;
+    }
+    catch
+    {
+        return false;
+    }
+}
 
+static bool IsDockerAvailable()
+{
+    try
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = "version",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        process?.WaitForExit(5000);
+        return process?.ExitCode == 0;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+static void SetPodmanDockerHost()
+{
+    try
+    {
+        // Get Podman connection URI
+        var psi = new ProcessStartInfo
+        {
+            FileName = "podman",
+            Arguments = "system connection ls --format \"{{.URI}}\" --filter default=true",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        if (process != null)
+        {
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit(5000);
+            
+            if (!string.IsNullOrWhiteSpace(output) && process.ExitCode == 0)
+            {
+                Environment.SetEnvironmentVariable("DOCKER_HOST", output);
+                Console.WriteLine($"   ℹ️ DOCKER_HOST set to: {output}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"   ⚠️ Could not set DOCKER_HOST: {ex.Message}");
+    }
+}

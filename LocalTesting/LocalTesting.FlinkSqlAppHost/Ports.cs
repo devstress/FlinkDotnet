@@ -11,6 +11,8 @@ public static class Ports
     // Used by Flink jobs running inside containers to reach Kafka
     // CRITICAL: Aspire's Kafka uses port 9093 for PLAINTEXT_INTERNAL listener (container-to-container)
     // Port 9092 is PLAINTEXT_HOST listener (external access from host machine)
-    // See: https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting.Kafka/KafkaBuilderExtensions.cs#L230
+    // Kafka container address for jobs running inside Flink containers
+    // CRITICAL: Aspire's Kafka uses port 9093 for PLAINTEXT_INTERNAL listener (container-to-container)
+    // Port 9092 is PLAINTEXT_HOST listener (external access from host machine)
     public const string KafkaContainerBootstrap = "kafka:9093";
 }
