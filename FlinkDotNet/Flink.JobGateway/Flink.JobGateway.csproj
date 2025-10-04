@@ -19,6 +19,16 @@
     <IsJdk25>$([System.String]::Copy('$(JavaHome)').Contains('25'))</IsJdk25>
   </PropertyGroup>
 
+  <!-- Maven auto-installation configuration -->
+  <PropertyGroup>
+    <MavenVersion>3.9.11</MavenVersion>
+    <MavenDownloadUrl>https://dlcdn.apache.org/maven/maven-3/$(MavenVersion)/binaries/apache-maven-$(MavenVersion)-bin.zip</MavenDownloadUrl>
+    <ToolsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\tools'))</ToolsDir>
+    <MavenInstallDir>$(ToolsDir)\apache-maven-$(MavenVersion)</MavenInstallDir>
+    <MavenBinPath>$(MavenInstallDir)\bin</MavenBinPath>
+    <MavenZipPath>$(ToolsDir)\maven-$(MavenVersion).zip</MavenZipPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
@@ -31,6 +41,106 @@
   <ItemGroup>
     <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" />
   </ItemGroup>
+
+  <!--
+    Ensure Maven and Java are available before building.
+    This target automatically downloads and installs Maven if not found in PATH.
+  -->
+  <Target Name="EnsureBuildTools" BeforeTargets="BuildFlinkRunner" Condition="'$(BuildFlinkRunner)' != 'false'">
+    <Message Text="(Flink.JobGateway) Checking for build tools..." Importance="High" />
+
+    <!-- Check if Maven exists in PATH -->
+    <Exec Command="where mvn"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+    </Exec>
+
+    <PropertyGroup>
+      <MavenNotFound Condition="'$(MavenFoundExitCode)' != '0'">true</MavenNotFound>
+      <MavenAlreadyInstalled Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd')">true</MavenAlreadyInstalled>
+    </PropertyGroup>
+
+    <!-- Download and install Maven if not found in PATH and not already in tools/ -->
+    <Message Text="(Flink.JobGateway) Maven not found in PATH. Installing Maven $(MavenVersion) to $(MavenInstallDir)..."
+             Importance="High"
+             Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+
+    <!-- Create tools directory if it doesn't exist -->
+    <MakeDir Directories="$(ToolsDir)" Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+
+    <!-- Download Maven ZIP -->
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading Maven from $(MavenDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(MavenDownloadUrl)' -OutFile '$(MavenZipPath)' -UseBasicParsing&quot;"
+          Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
+          StandardOutputImportance="High" />
+
+    <!-- Extract Maven ZIP -->
+    <Message Text="(Flink.JobGateway) Extracting Maven to $(ToolsDir)..."
+             Importance="High"
+             Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
+    
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(MavenZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
+          Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
+          StandardOutputImportance="High" />
+
+    <!-- Verify Maven was extracted successfully -->
+    <Error Condition="'$(MavenNotFound)' == 'true' AND !Exists('$(MavenInstallDir)\bin\mvn.cmd')"
+           Text="Maven installation failed. mvn.cmd not found at $(MavenInstallDir)\bin\mvn.cmd" />
+
+    <Message Text="(Flink.JobGateway) Maven successfully installed to $(MavenInstallDir)"
+             Importance="High"
+             Condition="'$(MavenNotFound)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')" />
+
+    <!-- Determine which Maven command to use -->
+    <PropertyGroup>
+      <!-- Priority 1: Use locally installed Maven if it exists -->
+      <MavenCommand Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
+      <!-- Priority 2: Use system Maven if found in PATH and local doesn't exist -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
+      <!-- Fallback: Use local path (will be created during this build if needed) -->
+      <MavenCommand Condition="'$(MavenCommand)' == ''">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
+    </PropertyGroup>
+
+    <!-- Ensure JAVA_HOME is set and valid for Maven -->
+    <PropertyGroup>
+      <!-- Check if current JAVA_HOME exists -->
+      <JavaHomeExists Condition="'$(JAVA_HOME)' != '' AND Exists('$(JAVA_HOME)\bin\java.exe')">true</JavaHomeExists>
+      
+      <!-- Check if JAVA_HOME version is compatible (JDK 17+, not JDK 1.8 or older) -->
+      <!-- We check by looking for version indicators in the path or by exclusion of old versions -->
+      <JavaHomeIsOldVersion Condition="'$(JavaHomeExists)' == 'true' AND ('$(JAVA_HOME)' == 'C:\Program Files\Java\jdk-1.8' OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('\8\')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jre-1.8')))">true</JavaHomeIsOldVersion>
+      
+      <!-- JAVA_HOME is valid only if it exists AND is not an old version -->
+      <JavaHomeIsValid Condition="'$(JavaHomeExists)' == 'true' AND '$(JavaHomeIsOldVersion)' != 'true'">true</JavaHomeIsValid>
+      
+      <!-- If JAVA_HOME is invalid or not set, try to detect Java installation -->
+      <DetectedJavaHome Condition="'$(JavaHomeIsValid)' != 'true' AND Exists('C:\Program Files\Java\jdk-25\bin\java.exe')">C:\Program Files\Java\jdk-25</DetectedJavaHome>
+      <DetectedJavaHome Condition="'$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-17\bin\java.exe')">C:\Program Files\Java\jdk-17</DetectedJavaHome>
+      
+      <!-- Use detected Java if current JAVA_HOME is invalid -->
+      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
+      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
+    </PropertyGroup>
+
+    <Message Text="(Flink.JobGateway) Using JAVA_HOME: $(EffectiveJavaHome)" Importance="High" Condition="'$(EffectiveJavaHome)' != ''" />
+    <Message Text="(Flink.JobGateway) INFO: Using detected Java instead of JAVA_HOME '$(JAVA_HOME)'"
+             Importance="Low"
+             Condition="'$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' != ''" />
+    
+    <Error Condition="'$(EffectiveJavaHome)' == ''"
+           Text="JAVA_HOME is not set correctly and Java could not be auto-detected. Current JAVA_HOME: '$(JAVA_HOME)'. Please set JAVA_HOME to a valid JDK installation or install Java 17+." />
+
+    <!-- Verify Maven works with the effective JAVA_HOME -->
+    <Message Text="(Flink.JobGateway) Verifying Maven installation with Java..." Importance="High" />
+    <Exec Command="&quot;$(MavenCommand)&quot; -version"
+          StandardOutputImportance="High"
+          EnvironmentVariables="JAVA_HOME=$(EffectiveJavaHome)" />
+
+    <Message Text="(Flink.JobGateway) Build tools verification complete. Maven: $(MavenCommand)" Importance="High" />
+  </Target>
 
   <!--
     Integrate the IR Java runner build directly into the Gateway build.
@@ -50,18 +160,19 @@
     <!-- Require Java; fail if missing -->
     <Exec Command="java -version" />
 
-    <!-- Require Maven; fail if missing -->
-    <Exec Command="mvn -version" />
+    <!-- Maven is now ensured by EnsureBuildTools target -->
 
     <!-- Build Java 25 jar first; if it fails (e.g., JDK<25), continue and rely on Java 17 jar -->
     <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 25)..." Importance="High" Condition="'$(IsJdk25)' == 'True'" />
     <Message Text="(Flink.JobGateway) Skipping Java 25 build (JDK 25 not detected)." Importance="High" Condition="'$(IsJdk25)' != 'True'" />
-    <Exec Command="mvn -B clean package -DskipTests -Pjava25"
+    <Exec Command="&quot;$(MavenCommand)&quot; -B clean package -DskipTests -Pjava25"
           WorkingDirectory="$(FlinkIRRunnerDir)"
           ContinueOnError="true"
           ConsoleToMSBuild="true"
           StandardOutputImportance="High"
-          StandardErrorImportance="High"
+          StandardErrorImportance="Low"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="JAVA_HOME=$(EffectiveJavaHome);MAVEN_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED"
           Condition="'$(IsJdk25)' == 'True'">
       <Output TaskParameter="ExitCode" PropertyName="Java25BuildExitCode" />
     </Exec>
@@ -69,12 +180,14 @@
     <!-- Always build Java 17 jar; this should succeed on JDK >=17 -->
     <!-- ContinueOnError=true for resilience against transient Maven failures (network issues, cache problems) -->
     <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" />
-    <Exec Command="mvn -B package -DskipTests -Pjava17"
+    <Exec Command="&quot;$(MavenCommand)&quot; -B package -DskipTests -Pjava17"
           WorkingDirectory="$(FlinkIRRunnerDir)"
           ContinueOnError="true"
           ConsoleToMSBuild="true"
           StandardOutputImportance="High"
-          StandardErrorImportance="High">
+          StandardErrorImportance="Low"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="JAVA_HOME=$(EffectiveJavaHome);MAVEN_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED">
       <Output TaskParameter="ExitCode" PropertyName="Java17BuildExitCode" />
     </Exec>
 
@@ -92,12 +205,9 @@
           DestinationFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
           SkipUnchangedFiles="true"
           Condition="Exists('$(FlinkIRRunnerJarPath17)')" />
-    <!-- If Java 25 jar is missing, copy Java 17 jar as default name for convenience -->
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
-          DestinationFiles="$(LocalJarPath)"
-          SkipUnchangedFiles="true"
-          Condition="!Exists('$(FlinkIRRunnerJarPath25)') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
-
+    <!-- DO NOT copy Java 17 jar as fallback - let tests use flink-ir-runner-java17.jar directly -->
+    <!-- This ensures the 111 MB JAR with bundled SQL connectors is used, not the old 21 MB JAR -->
+    
     <!-- Log jar outcomes -->
     <Message Text="(Flink.JobGateway) Java 25 jar ready at $(LocalJarPath)" Importance="High" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
     <Message Text="(Flink.JobGateway) Java 17 jar ready at $(MSBuildProjectDirectory)\flink-ir-runner-java17.jar" Importance="High" Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
@@ -109,18 +219,13 @@
       <_OutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_OutDir>
     </PropertyGroup>
 
-    <!-- Prefer canonical name flink-ir-runner.jar in output. If only java17 exists, copy it as canonical name too. -->
+    <!-- Copy Java 25 JAR if present -->
     <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner.jar"
           DestinationFiles="$(_OutDir)flink-ir-runner.jar"
           SkipUnchangedFiles="true"
           Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
 
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
-          DestinationFiles="$(_OutDir)flink-ir-runner.jar"
-          SkipUnchangedFiles="true"
-          Condition="!Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
-
-    <!-- Also copy the java17 variant explicitly if present -->
+    <!-- Always copy the Java 17 JAR with its proper name (do NOT rename to flink-ir-runner.jar) -->
     <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
           DestinationFiles="$(_OutDir)flink-ir-runner-java17.jar"
           SkipUnchangedFiles="true"
@@ -133,14 +238,13 @@
       <_PublishDir>$([MSBuild]::EnsureTrailingSlash('$(PublishDir)'))</_PublishDir>
     </PropertyGroup>
 
+    <!-- Copy Java 25 JAR if present -->
     <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner.jar"
           DestinationFiles="$(_PublishDir)flink-ir-runner.jar"
           SkipUnchangedFiles="true"
           Condition="Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar')" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
-          DestinationFiles="$(_PublishDir)flink-ir-runner.jar"
-          SkipUnchangedFiles="true"
-          Condition="!Exists('$(MSBuildProjectDirectory)\flink-ir-runner.jar') AND Exists('$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar')" />
+    
+    <!-- Always copy the Java 17 JAR with its proper name (do NOT rename to flink-ir-runner.jar) -->
     <Copy SourceFiles="$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar"
           DestinationFiles="$(_PublishDir)flink-ir-runner-java17.jar"
           SkipUnchangedFiles="true"
