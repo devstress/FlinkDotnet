@@ -247,3 +247,57 @@ No new tests needed - fix resolves existing test failures
 
 ### Reference for Future WIs
 (To be documented with specific files and patterns)
+
+## Phase 5: Testing & Validation
+
+### Test Run #3 - After Service File Merging Implementation
+
+**Status**: PARTIAL SUCCESS - JAR combining architecture fixed, SQL tests still fail
+
+**Shaded JAR Verification**: ✅ SUCCESS
+```bash
+Size: 30MB (vs 21MB runner JAR alone)
+Entries: 9859 (vs 5822 in runner JAR)
+
+META-INF/services/org.apache.flink.table.factories.Factory properly merged:
+- org.apache.flink.formats.json.JsonFormatFactory ✅
+- org.apache.flink.formats.json.canal.CanalJsonFormatFactory ✅
+- org.apache.flink.formats.json.debezium.DebeziumJsonFormatFactory ✅  
+- org.apache.flink.formats.json.maxwell.MaxwellJsonFormatFactory ✅
+- org.apache.flink.formats.json.ogg.OggJsonFormatFactory ✅
+- org.apache.flink.streaming.connectors.kafka.table.KafkaDynamicTableFactory ✅
+- org.apache.flink.streaming.connectors.kafka.table.UpsertKafkaDynamicTableFactory ✅
+```
+
+**Test Results**: 5/7 passing (same as before)
+- DataStream jobs: All working ✅
+- SQL jobs: Still failing ❌
+
+**Key Finding**: The root cause was correctly identified and fixed. META-INF/services files are now properly merged. However, SQL jobs still fail, indicating a secondary issue beyond JAR combining.
+
+**Hypothesis for Remaining Issue**:
+The problem occurs at SQL job execution time in Flink, not during JAR upload. Possible causes:
+1. TableEnvironment classloader issue in Flink TaskManager
+2. SQL syntax or Kafka connectivity from SQL context
+3. Missing Table API runtime configuration
+
+**Recommendation**: Need access to full Flink JobManager error logs (not truncated) to diagnose the execution-time failure.
+
+## Lessons Learned & Future Reference
+
+### What Worked Well
+- Systematic debugging with JAR inspection
+- Service file merging implementation
+- ZipArchive approach for JAR manipulation
+
+### Key Technical Insights
+- JARs are ZIP files internally
+- META-INF/services files require special merge handling
+- Service Provider Interface discovery is critical for Flink SQL connectors
+- DataStream and Table API have different runtime requirements
+
+### Files Modified
+- `FlinkDotNet/Flink.JobGateway/Services/FlinkJobManager.cs` - JAR combining with service file merging
+
+### Remaining Work
+SQL jobs still need debugging - requires access to full Flink error logs to identify execution-time issue.
