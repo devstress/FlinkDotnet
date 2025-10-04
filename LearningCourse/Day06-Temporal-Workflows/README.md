@@ -2,6 +2,138 @@
 
 This module is optional and not required to run FlinkDotNet. The current runtime is FlinkDotNet DSL → IR → IR Runner jar (Flink) via the Flink Job Gateway. If you are focusing on FlinkDotNet pipelines, you may skip this day.
 
+---
+
+## ⚠️ When FlinkDotNet Cannot Do the Job: Temporal Integration Required
+
+### Critical Understanding: FlinkDotNet Architectural Limitations
+
+**YES - There ARE Apache Flink jobs that FlinkDotNet cannot handle**, and these scenarios require Temporal for orchestration. Understanding these limitations is critical for architectural decisions.
+
+### 🚫 What FlinkDotNet Cannot Do
+
+#### 1. **Complex .NET Business Logic Inside Flink JVM** (Architectural Limitation)
+- **Problem**: FlinkDotNet focuses on data transport, SQL job submission, and REST API client operations
+- **Cannot**: Natively run .NET code inside Flink JVM operators
+- **Why**: Flink runs on JVM (Java/Scala); FlinkDotNet is a .NET client library, not a runtime integration
+- **Impact**: Complex multi-step .NET business logic cannot execute within the Flink streaming pipeline
+
+#### 2. **Long-Running Workflows** (Hours, Days, or Months)
+- **Problem**: Flink is optimized for millisecond-latency stream processing, not durable workflow orchestration
+- **Cannot**: Efficiently handle workflows that span hours, days, or require human approval steps
+- **Why**: Checkpointing and state management are designed for streaming, not workflow durability
+- **Example**: Security token renewal every 10,000 messages, multi-day approval workflows
+
+#### 3. **Business Process Orchestration**
+- **Cannot Handle**:
+  - Multi-step async business processes
+  - Human-in-the-loop workflows (approvals, manual interventions)
+  - Saga patterns for distributed transactions
+  - Compensation logic and rollback handling
+  - Workflow versioning and migration
+- **Why**: These require specialized orchestration engines with durable execution guarantees
+
+#### 4. **Advanced Retry and Error Handling**
+- **Problem**: Flink has basic retry mechanisms for stream processing failures
+- **Cannot**: Provide enterprise-grade retry policies with:
+  - Exponential backoff with jitter
+  - Retry budgets and circuit breakers
+  - Activity-level timeout management
+  - Compensation activities on failure
+- **Example**: External API calls requiring sophisticated retry logic, payment processing with rollback
+
+#### 5. **Workflow Visualization and Debugging**
+- **Limited**: Flink UI shows job graphs and metrics, but not workflow execution history
+- **Cannot**: Provide detailed workflow execution traces, step-by-step debugging, or historical workflow analysis
+- **Temporal Advantage**: Rich workflow UI showing complete execution history, pending activities, and state transitions
+
+### ✅ Scenarios That REQUIRE Temporal Integration
+
+| Scenario | Why FlinkDotNet Fails | Temporal Solution |
+|----------|----------------------|-------------------|
+| **Security Token Renewal** | Cannot schedule actions based on message count thresholds with durable state | Durable workflow with timer-based renewals |
+| **HTTP Batch Processing** | Limited retry/timeout logic for external API calls | Activities with configurable retry policies |
+| **Multi-Service Orchestration** | Cannot coordinate complex multi-step processes across services | Workflow orchestration with fan-out/fan-in |
+| **Payment Processing** | Lacks compensation and rollback patterns | Saga pattern with compensation activities |
+| **Human Approvals** | Cannot pause and resume based on external signals | Signal-based workflow continuation |
+| **Event Sourcing** | Not designed for event-driven state reconstruction | Native event sourcing support |
+| **State Machines** | Complex state transitions difficult to model in streaming | Explicit state machine workflows |
+
+### 🔄 Integration Pattern Summary
+
+**Use This Hybrid Architecture:**
+
+| Concern | Flink | Temporal | Recommended Approach |
+|---------|-------|----------|---------------------|
+| **Real-time ingest** | ✅ Perfect | ❌ Too slow | Flink handles all streaming |
+| **Simple transformations** | ✅ Ideal | ❌ Overkill | Flink SQL/DataStream API |
+| **Complex .NET workflow** | 🚫 Cannot do | ✅ Native .NET | **Temporal required** |
+| **Durable multi-step logic** | 🚫 Not designed for this | ✅ Core strength | **Temporal required** |
+| **External API orchestration** | ⚠️ Basic only | ✅ Enterprise-grade | **Temporal recommended** |
+| **Human/async interactions** | 🚫 Not possible | ✅ Built for this | **Temporal required** |
+
+### 🏗️ Recommended Architecture: Flink + Temporal Integration
+
+```plaintext
+┌─────────────────────────────────────────────────────────────────┐
+│ Real-time Stream Processing (Flink + FlinkDotNet)              │
+│  • Message ingestion from Kafka                                 │
+│  • Basic transformations and filtering                          │
+│  • Correlation ID addition                                      │
+│  • Stream routing decisions                                     │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+                          ↓ (Kafka topic: "complex-workflows")
+┌─────────────────────────────────────────────────────────────────┐
+│ Workflow Orchestration (Temporal with .NET SDK)                │
+│  • Multi-step business logic in native .NET                     │
+│  • External API calls with retry/compensation                   │
+│  • Long-running workflows with durable state                    │
+│  • Saga patterns for distributed transactions                   │
+│  • Human-in-the-loop approval workflows                         │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+                          ↓ (Kafka topic: "workflow-results")
+┌─────────────────────────────────────────────────────────────────┐
+│ Results Processing (Flink + FlinkDotNet)                       │
+│  • Pick up workflow results                                     │
+│  • Aggregate and analyze outcomes                               │
+│  • Continue stream processing pipeline                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 📚 Comprehensive Decision Guide
+
+For detailed architecture guidance, integration patterns, and real-world examples, see:
+
+**→ [Flink vs Temporal: Complete Decision Guide](../../docs/flink-vs-temporal-decision-guide.md)**
+
+This guide includes:
+- Detailed comparison of capabilities
+- Code examples for integration patterns
+- Performance considerations
+- Migration strategies
+- Monitoring and observability approaches
+
+### 🎯 TL;DR - When to Use Temporal
+
+**Use Temporal when your requirements include:**
+- ✅ Complex .NET business logic that cannot run in Flink JVM
+- ✅ Workflows spanning hours, days, or requiring human interaction
+- ✅ Multi-step processes with compensation/rollback needs
+- ✅ External API orchestration with advanced retry logic
+- ✅ Saga patterns for distributed transactions
+- ✅ State machine patterns with complex transitions
+- ✅ Event sourcing and CQRS patterns
+
+**Skip Temporal if:**
+- ❌ Simple stream transformations and filtering
+- ❌ Real-time analytics with sub-second latency requirements
+- ❌ Pure data movement and routing
+- ❌ Stateless or simple stateful operations
+
+---
+
 ## 🗺️ Course Navigation
 **[← Day 4: Enterprise Observability](../Day04-Enterprise-Observability/)** | **[Course Overview](../README.md)** | **[Next: Day 6 - Advanced Windows & Joins →](../Day06-Advanced-Windows-Joins/)**
 

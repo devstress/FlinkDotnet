@@ -107,45 +107,106 @@ N/A - Documentation change only, no code tests required
 
 ## Phase 4: Implementation
 ### Code Changes
-Will add clear section to Day 6 README documenting FlinkDotNet limitations and Temporal requirements.
+Added comprehensive "When FlinkDotNet Cannot Do the Job" section to Day 6 README with:
+
+1. **⚠️ When FlinkDotNet Cannot Do the Job: Temporal Integration Required** - New major section
+2. **Critical Understanding** - Explicit statement that YES there are jobs FlinkDotNet cannot handle
+3. **🚫 What FlinkDotNet Cannot Do** - Five detailed limitation categories:
+   - Complex .NET business logic inside Flink JVM (architectural)
+   - Long-running workflows (hours/days/months)
+   - Business process orchestration (saga, compensation, rollback)
+   - Advanced retry and error handling
+   - Workflow visualization and debugging
+4. **✅ Scenarios That REQUIRE Temporal Integration** - Table with specific examples
+5. **🔄 Integration Pattern Summary** - Clear decision matrix
+6. **🏗️ Recommended Architecture** - Visual diagram showing Flink + Temporal hybrid pattern
+7. **📚 Comprehensive Decision Guide** - Link to detailed docs/flink-vs-temporal-decision-guide.md
+8. **🎯 TL;DR** - Quick reference checklist for when to use Temporal
 
 ### Challenges Encountered
-TBD
+None - Documentation update only, straightforward implementation.
 
 ### Solutions Applied
-TBD
+- Placed new section prominently after title and before Quick Start Instructions
+- Used clear visual indicators (emojis, tables, diagrams) for scannability
+- Linked to existing comprehensive guide to avoid duplication
+- Maintained consistent formatting with rest of LearningCourse
 
 ## Phase 5: Testing & Validation
 ### Test Results
-- Manual review of updated documentation
-- Verify links work correctly
-- Ensure clarity of message about when Temporal is required
+- ✅ Manual review of updated Day 6 README completed
+- ✅ Link to comprehensive decision guide verified (../../docs/flink-vs-temporal-decision-guide.md)
+- ✅ Formatting consistency checked with rest of LearningCourse
+- ✅ Clear answer to problem statement: YES, there are Flink jobs FlinkDotNet cannot do
+- ✅ Five specific limitation categories documented with examples
+- ✅ Integration patterns clearly explained with visual diagram
+- ✅ Decision matrix provided for architectural guidance
 
 ### Performance Metrics
 N/A - Documentation only
 
+### Content Verification
+**Problem Statement Answer**: "Is there any Apache Flink job that FlinkDotNet cannot do?"
+- **Answer**: YES, documented five major categories of limitations
+- **Location**: Day 6 README (not "week 16" as course uses Day numbering)
+- **Completeness**: Comprehensive section with examples, diagrams, and decision guides
+
 ## Phase 6: Owner Acceptance
 ### Demonstration
-TBD - Will present updated documentation showing clear FlinkDotNet limitations
+Successfully updated Day 6 (Temporal Workflows) README with comprehensive section answering the problem statement.
+
+**Key Deliverables**:
+1. ✅ Clear answer: YES, there ARE Flink jobs FlinkDotNet cannot do
+2. ✅ Five detailed limitation categories documented
+3. ✅ Scenarios requiring Temporal integration table with examples
+4. ✅ Integration pattern summary decision matrix
+5. ✅ Recommended architecture diagram (Flink + Temporal hybrid)
+6. ✅ Link to comprehensive decision guide
+7. ✅ TL;DR checklist for quick reference
+
+**Location**: `/home/runner/work/FlinkDotnet/FlinkDotnet/LearningCourse/Day06-Temporal-Workflows/README.md`
 
 ### Owner Feedback
-TBD
+Pending review
 
 ### Final Approval
-TBD
+Pending review
 
 ## Lessons Learned & Future Reference (MANDATORY)
+
 ### What Worked Well
-TBD
+- Leveraging existing comprehensive documentation (docs/flink-vs-temporal-decision-guide.md) instead of duplicating content
+- Placing new section prominently at top of Day 6 README for maximum visibility
+- Using clear visual indicators (tables, diagrams, emojis) for scannability
+- Providing multiple levels of detail (TL;DR, decision matrix, comprehensive guide link)
 
 ### What Could Be Improved  
-TBD
+- Could have added cross-references from main LearningCourse README to highlight this content
+- Could have added similar summary to main project README.md for broader visibility
+- Could have included real-world customer scenarios/case studies
 
 ### Key Insights for Similar Tasks
-TBD
+- When updating documentation, identify where users naturally look first (Day 6 in this case, not a new "Week 16")
+- Link to existing comprehensive docs rather than duplicating content
+- Use progressive disclosure: TL;DR → Summary → Detailed guide
+- Visual elements (tables, diagrams) significantly improve documentation usability
 
 ### Specific Problems to Avoid in Future
-TBD
+- Don't create new sections/days without understanding existing structure (problem statement said "week 16" but course uses "Day" numbering)
+- Don't duplicate comprehensive documentation - link to it instead
+- Don't bury important architectural limitations deep in optional sections - make them prominent
 
 ### Reference for Future WIs
-TBD
+**For similar documentation enhancement tasks:**
+1. First explore ALL existing documentation thoroughly
+2. Identify where content naturally belongs in existing structure
+3. Use existing comprehensive docs as references rather than duplicating
+4. Place critical information prominently with clear visual hierarchy
+5. Provide multiple levels of detail for different reader needs
+6. Link related documentation together for discoverability
+
+**Answer to Problem Statement**: 
+- Question: "Is there any Apache Flink job that FlinkDotNet cannot do?"
+- Answer: YES - Five major categories documented in Day 6 README
+- Question: "Update LearningCourse week 16 if having this"
+- Answer: Updated Day 6 (not "week 16" - course uses Day numbering) with comprehensive section
