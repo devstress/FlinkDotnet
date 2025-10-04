@@ -49,59 +49,89 @@
   <Target Name="EnsureBuildTools" BeforeTargets="BuildFlinkRunner" Condition="'$(BuildFlinkRunner)' != 'false'">
     <Message Text="(Flink.JobGateway) Checking for build tools..." Importance="High" />
 
-    <!-- Check if Maven exists in PATH -->
+    <!-- Detect OS for cross-platform Maven detection -->
+    <PropertyGroup>
+      <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+      <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+      <IsMacOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsMacOS>
+    </PropertyGroup>
+
+    <!-- Check if Maven exists in PATH (Windows) -->
     <Exec Command="where mvn"
           ContinueOnError="true"
           ConsoleToMSBuild="true"
           StandardOutputImportance="Low"
           StandardErrorImportance="Low"
-          IgnoreExitCode="true">
+          IgnoreExitCode="true"
+          Condition="'$(IsWindows)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+    </Exec>
+
+    <!-- Check if Maven exists in PATH (Linux/macOS) -->
+    <Exec Command="which mvn"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
     </Exec>
 
     <PropertyGroup>
       <MavenNotFound Condition="'$(MavenFoundExitCode)' != '0'">true</MavenNotFound>
-      <MavenAlreadyInstalled Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd')">true</MavenAlreadyInstalled>
+      <MavenAlreadyInstalled Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd') OR Exists('$(MavenInstallDir)/bin/mvn')">true</MavenAlreadyInstalled>
     </PropertyGroup>
 
-    <!-- Download and install Maven if not found in PATH and not already in tools/ -->
+    <!-- Skip Maven download if already in PATH (e.g., from GitHub Actions) -->
+    <Message Text="(Flink.JobGateway) Maven found in PATH, skipping download."
+             Importance="High"
+             Condition="'$(MavenNotFound)' != 'true'" />
+
+    <!-- Download and install Maven if not found in PATH and not already in tools/ (Windows only) -->
     <Message Text="(Flink.JobGateway) Maven not found in PATH. Installing Maven $(MavenVersion) to $(MavenInstallDir)..."
              Importance="High"
-             Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
 
     <!-- Create tools directory if it doesn't exist -->
-    <MakeDir Directories="$(ToolsDir)" Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+    <MakeDir Directories="$(ToolsDir)" Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
 
-    <!-- Download Maven ZIP -->
-    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading Maven from $(MavenDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(MavenDownloadUrl)' -OutFile '$(MavenZipPath)' -UseBasicParsing&quot;"
-          Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
+    <!-- Download Maven ZIP (Windows only - use pwsh for cross-platform PowerShell) -->
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading Maven from $(MavenDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(MavenDownloadUrl)' -OutFile '$(MavenZipPath)' -UseBasicParsing&quot;"
+          Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
           StandardOutputImportance="High" />
 
-    <!-- Extract Maven ZIP -->
+    <!-- Extract Maven ZIP (Windows only) -->
     <Message Text="(Flink.JobGateway) Extracting Maven to $(ToolsDir)..."
              Importance="High"
-             Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
+             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
     
-    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(MavenZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
-          Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(MavenZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
+          Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
           StandardOutputImportance="High" />
 
-    <!-- Verify Maven was extracted successfully -->
-    <Error Condition="'$(MavenNotFound)' == 'true' AND !Exists('$(MavenInstallDir)\bin\mvn.cmd')"
+    <!-- Verify Maven was extracted successfully (Windows) -->
+    <Error Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenInstallDir)\bin\mvn.cmd')"
            Text="Maven installation failed. mvn.cmd not found at $(MavenInstallDir)\bin\mvn.cmd" />
 
     <Message Text="(Flink.JobGateway) Maven successfully installed to $(MavenInstallDir)"
              Importance="High"
-             Condition="'$(MavenNotFound)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')" />
+             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')" />
 
-    <!-- Determine which Maven command to use -->
+    <!-- Error if Maven not found on Linux/macOS (should be pre-installed in CI) -->
+    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'"
+           Text="Maven not found in PATH on Linux/macOS. Please install Maven 3.9.11+ or ensure it's available in PATH. On GitHub Actions, Maven is installed via stCarolas/setup-maven@v4." />
+
+    <!-- Determine which Maven command to use (cross-platform) -->
     <PropertyGroup>
-      <!-- Priority 1: Use locally installed Maven if it exists -->
-      <MavenCommand Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
-      <!-- Priority 2: Use system Maven if found in PATH and local doesn't exist -->
-      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
-      <!-- Fallback: Use local path (will be created during this build if needed) -->
-      <MavenCommand Condition="'$(MavenCommand)' == ''">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
+      <!-- Priority 1: Use system Maven if found in PATH (e.g., from GitHub Actions) -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
+      <!-- Priority 2: Use locally installed Maven if it exists (Windows) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
+      <!-- Priority 3: Use locally installed Maven if it exists (Linux/macOS) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenInstallDir)/bin/mvn')">$(MavenInstallDir)/bin/mvn</MavenCommand>
+      <!-- Fallback: Use mvn from PATH (should be available if checks passed) -->
+      <MavenCommand Condition="'$(MavenCommand)' == ''">mvn</MavenCommand>
     </PropertyGroup>
 
     <!-- Ensure JAVA_HOME is set and valid for Maven -->
