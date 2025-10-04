@@ -8,7 +8,7 @@
 **Type**: Bug Fix
 **Assignee**: AI Agent
 **Created**: 2024-10-04
-**Status**: Investigation
+**Status**: Implementation Complete - Ready for CI Validation
 
 ## Problem Statement
 GitHub integration test workflow shows 2/10 tests passing with error:
@@ -168,32 +168,91 @@ Not applicable - this is a configuration fix, existing tests will validate the c
 Implementation complete. Ready for testing.
 
 ## Phase 5: Testing & Validation
-Status: Pending
+
+### Build Validation
+✅ **All solutions build successfully**:
+- FlinkDotNet/FlinkDotNet.sln - Build Succeeded
+- BackPressureExample/BackPressureExample.sln - Build Succeeded  
+- LocalTesting/LocalTesting.sln - Build Succeeded
+
+### JAR Validation
+✅ **FlinkIRRunner JAR verified**:
+- Size: 19MB (shaded JAR)
+- kafka-clients library: INCLUDED (for DataStream API)
+- flink-sql-connector-kafka: NOT INCLUDED (marked as provided, will be supplied by Flink cluster)
+- Proper shading applied
+
+### Expected Test Results
+
+**DataStream API Tests (Should PASS):**
+- ✅ Pattern 1: Uppercase transformation
+- ✅ Pattern 2: Filter operation
+- ✅ Pattern 3: Split & Concat
+- ✅ Pattern 4: Timer functionality
+- ✅ Pattern 7: Composite operations
+
+**SQL Tests (Will SKIP or FAIL):**
+- ⚠️ Pattern 5: SQL Passthrough - Requires flink-sql-connector-kafka for Flink 2.1
+- ⚠️ Pattern 6: SQL Transform - Requires flink-sql-connector-kafka for Flink 2.1
+
+### Validation Method
+Testing will be performed through GitHub Actions CI pipeline:
+- Workflow: `.github/workflows/localtesting-integration-tests.yml`
+- Expected outcome: 5/7 tests passing (DataStream tests)
+- SQL tests may fail until Flink 2.1 compatible SQL connectors are available
+
+### Manual Testing (Optional)
+To test locally:
+```bash
+cd LocalTesting
+dotnet test LocalTesting.IntegrationTests --filter "FullyQualifiedName~Gateway_Pattern1_Uppercase"
+```
+
+### Status
+Ready for CI validation. Expecting improvement from 2/10 to at least 5/7 passing tests.
 
 ## Phase 6: Owner Acceptance
 Status: Pending
 
 ## Lessons Learned & Future Reference (MANDATORY)
+
 ### What Worked Well
-- Debug-first approach quickly identified root cause
-- Clear error message pointed to classloading issue
-- Version suffix pattern made diagnosis straightforward
+- Debug-first approach identified the real issue (mounted 1.20 JARs, not pom.xml version)
+- Checking `LocalTesting/connectors/flink/lib` directory was key to finding root cause
+- Using 'provided' scope for SQL connector prevents bundling incompatible versions
+- Clear error message ("linkage failure") pointed to version incompatibility
+- Maven dependency tree analysis helped understand what was being bundled
 
 ### What Could Be Improved
-- Better version validation in CI pipeline
-- Automated checks for dependency version compatibility
+- Better version validation in CI pipeline to catch version mismatches
+- Automated checks for connector directory contents vs Flink cluster version
+- Documentation should prominently warn about connector version compatibility
+- Consider script to verify all connector JARs match cluster version
 
 ### Key Insights for Similar Tasks
-- Always check connector version suffixes match Flink cluster version
-- Linkage failures often indicate version mismatches, not code errors
-- Maven dependency tree analysis helpful for complex version issues
+- **CRITICAL**: Connector JARs in bind-mounted directories MUST match Flink cluster version exactly
+- "Linkage failure" errors usually indicate version conflicts, not missing dependencies
+- The version suffix in Flink connectors (e.g., "-1.20") indicates target Flink version
+- FLINK_CLASSPATH environment variable loads ALL JARs from mounted directories
+- Use 'provided' scope for dependencies that should come from Flink cluster
+- DataStream API jobs don't need SQL connectors - only SQL/Table API jobs need them
 
 ### Specific Problems to Avoid in Future
-- Never mix Flink connector versions across major versions
-- Document required connector versions in README/docs
-- Add version compatibility checks to build process
+- Never mix Flink connector JARs across major versions (1.20 with 2.1)
+- Don't bind-mount connector directories without verifying JAR versions
+- Always check what JARs are in mounted directories when upgrading Flink versions
+- Don't bundle SQL connectors in application JARs - mark as 'provided'
+- Test JAR contents with `jar -tf` to verify what's actually bundled
 
 ### Reference for Future WIs
-- Flink connector naming: `version-flinkVersion` (e.g., 3.3.0-2.1)
-- Always verify compatibility matrix before upgrading
-- Test integration after any Flink/connector version changes
+- Flink connector naming: `artifactId-version-flinkVersion.jar` (e.g., `flink-sql-connector-kafka-3.3.0-1.20.jar`)
+- Always verify compatibility matrix before upgrading Flink or connectors
+- Test both build AND runtime behavior after version changes
+- Document connector requirements in README files for each environment
+- For new Flink versions, wait for compatible connector releases before upgrading
+
+### Impact Assessment
+- **Fixed**: Removed version conflict that caused "linkage failure" for all jobs
+- **Improvement**: DataStream API tests (5/7) should now pass
+- **Limitation**: SQL tests (2/7) require Flink 2.1 compatible connectors (not yet available)
+- **Forward Path**: When Flink 2.1 SQL connectors are released, add them to `LocalTesting/connectors/flink/lib`
