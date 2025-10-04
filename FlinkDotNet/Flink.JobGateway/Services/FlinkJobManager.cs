@@ -492,7 +492,7 @@ public class FlinkJobManager : IFlinkJobManager
             return envPath;
         }
 
-        // Prioritize Java 17 JAR since Flink 1.20.0 runs on Java 17
+        // Prioritize Java 17 JAR since Flink 2.1.0 runs on Java 17
         // Even if built with JDK 25, we must use Java 17-compatible JAR for Flink submission
         var names = new[] { "flink-ir-runner-java17.jar", "flink-ir-runner.jar", "flink-ir-runner-java25.jar" };
         var baseDirs = new[]
