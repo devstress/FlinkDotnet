@@ -23,11 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 25
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '25'
-          distribution: 'zulu'
+          java-version: '17'
+          distribution: 'temurin'
 
       - name: Install Maven
         uses: stCarolas/setup-maven@v4
