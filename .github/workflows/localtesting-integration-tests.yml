@@ -60,7 +60,7 @@ jobs:
           docker ps
           echo "=== Pulling required Docker images ==="
           docker pull confluentinc/cp-kafka:latest || true
-          docker pull apache/flink:1.20.0-scala_2.12-java17 || true
+          docker pull flink:2.1.0-java17 || true
           echo "✅ Docker is ready"
 
       - name: Clean Docker environment
