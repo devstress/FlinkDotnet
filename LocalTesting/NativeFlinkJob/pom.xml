@@ -45,12 +45,11 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Flink Kafka Connector (MUST be packaged with job) -->
-    <!-- For Flink 2.x, use the 4.x connector series compatible with Flink 2.0 -->
+    <!-- Kafka Clients (bundled in JAR, same as FlinkJobRunner) -->
     <dependency>
-      <groupId>org.apache.flink</groupId>
-      <artifactId>flink-connector-kafka</artifactId>
-      <version>4.0.0-2.0</version>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>3.7.0</version>
     </dependency>
 
     <!-- Logging -->

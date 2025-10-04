@@ -22,6 +22,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
     /// Pattern 1: Uppercase transformation
     /// Validates basic map operation (input -> uppercase -> output)
     /// This single test proves that native Apache Flink jobs work correctly through the infrastructure.
+    /// NOTE: Currently ignored - use Gateway pattern tests instead for production workflows.
     /// </summary>
     [Test]
     public async Task Pattern1_Uppercase_ShouldTransformMessages()

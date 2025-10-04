@@ -1,11 +1,14 @@
 name: LocalTesting Integration Tests
 
 on:
-  workflow_call:
+  push:
   workflow_dispatch:
 
+env:
+  configuration: Release
+
 concurrency:
-  group: localtesting-${{ github.ref }}
+  group: localtesting-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -42,6 +45,38 @@ jobs:
           dotnet workload install aspire
           echo "✅ Aspire workload installed successfully"
 
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker compose version
+          docker info
+          docker ps -a
+          echo "Docker service status:"
+          sudo systemctl status docker --no-pager || true
+          echo "Starting Docker if not running..."
+          sudo systemctl start docker || true
+          sleep 5
+          docker ps
+          echo "=== Pulling required Docker images ==="
+          docker pull confluentinc/cp-kafka:latest || true
+          docker pull apache/flink:1.20.0-scala_2.12-java17 || true
+          echo "✅ Docker is ready"
+
+      - name: Clean Docker environment
+        run: |
+          echo "=== Cleaning Docker environment ==="
+          docker system prune -af || true
+          docker volume prune -f || true
+          docker network prune -f || true
+          echo "✅ Docker environment cleaned"
+
+      - name: Build FlinkDotNet solution first (dependency)
+        run: |
+          echo "🔨 Building FlinkDotNet solution (required dependency for LocalTesting)..."
+          dotnet restore FlinkDotNet/FlinkDotNet.sln
+          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
+
       - name: Configure system for Kafka performance
         run: |
           echo "=== Configuring system for optimal Kafka performance ==="
@@ -58,18 +93,23 @@ jobs:
         run: |
           echo "🔨 Building LocalTesting solution..."
           dotnet restore LocalTesting/LocalTesting.sln
-          dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+          dotnet build LocalTesting/LocalTesting.sln --configuration ${{ env.configuration }} --no-restore
 
       - name: Run LocalTesting Integration Tests
-        timeout-minutes: 15  # Optimized: Tests now run with shared infrastructure and parallel execution
+        timeout-minutes: 20  # Increased timeout for CI environment
         env:
           DOTNET_ENVIRONMENT: Testing
           KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+          TESTCONTAINERS_RYUK_DISABLED: "false"
+          TESTCONTAINERS_HOST_OVERRIDE: "localhost"
         run: |
           echo "=== Starting LocalTesting Integration Tests ==="
           echo "📋 Kafka → Flink → FlinkDotNet pipeline validation"
-          dotnet test LocalTesting/LocalTesting.IntegrationTests --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          echo "🐳 Docker containers will be started by Aspire..."
+          docker ps
+          dotnet test LocalTesting/LocalTesting.IntegrationTests --no-build --configuration ${{ env.configuration }} --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
         working-directory: ./
 
       - name: Upload test results
@@ -78,6 +118,16 @@ jobs:
           name: LocalTestingResults
           path: TestResults/
         if: always()
+
+      - name: Show Docker containers (diagnostic)
+        if: always()
+        run: |
+          echo "=== Docker containers status ==="
+          docker ps -a
+          echo "=== Docker logs for Kafka ==="
+          docker logs $(docker ps -aq --filter "name=kafka") 2>&1 | tail -100 || echo "No Kafka container found"
+          echo "=== Docker logs for Flink JobManager ==="
+          docker logs $(docker ps -aq --filter "name=flink") 2>&1 | tail -100 || echo "No Flink container found"
  
       - name: Cleanup
         if: always()
