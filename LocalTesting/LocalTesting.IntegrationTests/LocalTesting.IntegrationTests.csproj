@@ -46,6 +46,46 @@
     <Message Text="[LocalTesting.IntegrationTests] FlinkDotNet projects built in Release configuration successfully" Importance="high" />
   </Target>
 
+  <!-- MSBuild Target: Build NativeFlinkJob Maven project -->
+  <Target Name="BuildNativeFlinkJob" BeforeTargets="Build">
+    <PropertyGroup>
+      <_NativeFlinkJobDir>..\NativeFlinkJob</_NativeFlinkJobDir>
+      <_NativeFlinkJobJar>$(_NativeFlinkJobDir)\target\native-flink-kafka-job-1.0.0.jar</_NativeFlinkJobJar>
+    </PropertyGroup>
+
+    <Message Text="[LocalTesting.IntegrationTests] Building NativeFlinkJob Maven project..." Importance="high" />
+    
+    <!-- Check if Maven is available -->
+    <Exec Command="mvn --version" 
+          IgnoreExitCode="true" 
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low">
+      <Output TaskParameter="ExitCode" PropertyName="MavenAvailable" />
+    </Exec>
+
+    <!-- Build NativeFlinkJob with Maven if available -->
+    <Exec Command="mvn -B clean package -DskipTests"
+          WorkingDirectory="$(_NativeFlinkJobDir)"
+          Condition="'$(MavenAvailable)' == '0'"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High">
+      <Output TaskParameter="ExitCode" PropertyName="MavenBuildExitCode" />
+    </Exec>
+
+    <!-- Verify JAR was created -->
+    <Message Text="[LocalTesting.IntegrationTests] NativeFlinkJob JAR built successfully at $(_NativeFlinkJobJar)" 
+             Importance="high" 
+             Condition="Exists('$(_NativeFlinkJobJar)')" />
+    
+    <Warning Text="[LocalTesting.IntegrationTests] NativeFlinkJob JAR not found at $(_NativeFlinkJobJar). Maven build may have failed." 
+             Condition="'$(MavenAvailable)' == '0' AND !Exists('$(_NativeFlinkJobJar)')" />
+    
+    <Warning Text="[LocalTesting.IntegrationTests] Maven not available. NativeFlinkJob will not be built. Some tests may fail." 
+             Condition="'$(MavenAvailable)' != '0'" />
+  </Target>
+
   <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->
   <Target Name="CopyFlinkRunnerJarsToTestOutput" AfterTargets="Build">
     <PropertyGroup>
