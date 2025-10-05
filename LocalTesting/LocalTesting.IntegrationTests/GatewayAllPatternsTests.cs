@@ -158,6 +158,9 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
             // Submit job using FlinkDotNetJobs helper
             TestContext.WriteLine($"🔧 Creating and submitting {patternName} job...");
+            TestContext.WriteLine($"📡 Job Kafka bootstrap (container): {KafkaContainerConnectionString}");
+            TestContext.WriteLine($"📍 Input topic: {inputTopic}");
+            TestContext.WriteLine($"📍 Output topic: {outputTopic}");
             var submitResult = await jobCreator(inputTopic, outputTopic, KafkaContainerConnectionString, ct);
 
             TestContext.WriteLine($"📊 Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");

@@ -105,9 +105,14 @@ public class GlobalTestInfrastructure
             await LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", GatewayReadyTimeout, default);
             TestContext.WriteLine("✅ Gateway is ready");
 
+            // Log TaskManager status for debugging
+            await LogTaskManagerStatusAsync();
+            
             TestContext.WriteLine($"🌍 ========================================");
             TestContext.WriteLine($"🌍 GLOBAL INFRASTRUCTURE READY in {sw.Elapsed.TotalSeconds:F1}s");
             TestContext.WriteLine($"🌍 ========================================");
+            TestContext.WriteLine($"🌍 Kafka container bootstrap: {KafkaContainerConnectionString}");
+            TestContext.WriteLine($"🌍 Kafka external connection: {KafkaConnectionString}");
             TestContext.WriteLine($"🌍 Infrastructure will remain active for all tests");
             TestContext.WriteLine($"🌍 Tests can now run in parallel with shared infrastructure");
         }
