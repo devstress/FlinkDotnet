@@ -42,11 +42,20 @@ public class FlinkJobManager : IFlinkJobManager
     private string DiscoverFlinkEndpoint()
     {
         // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-jobmanager__http__0 = "http://localhost:63624"
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+        // Format: services__flink-jobmanager__jm-http__0 = "http://localhost:63624"
+        // NOTE: The endpoint name is "jm-http" as defined in AppHost Program.cs
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__jm-http__0");
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
             _logger.LogInformation("Using Aspire service discovery endpoint: {Endpoint}", aspireEndpoint);
+            return aspireEndpoint;
+        }
+
+        // Fallback: Try older format with "http" endpoint name
+        aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+        if (!string.IsNullOrEmpty(aspireEndpoint))
+        {
+            _logger.LogInformation("Using Aspire service discovery endpoint (legacy format): {Endpoint}", aspireEndpoint);
             return aspireEndpoint;
         }
 
@@ -65,6 +74,7 @@ public class FlinkJobManager : IFlinkJobManager
         // Strategy 3: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-jobmanager:8081";
         _logger.LogInformation("Using default Docker Compose endpoint: {Endpoint}", defaultEndpoint);
+        _logger.LogWarning("Aspire service discovery not found - Gateway may not be able to connect to Flink in testing mode");
         return defaultEndpoint;
     }
 
@@ -76,11 +86,20 @@ public class FlinkJobManager : IFlinkJobManager
     private string DiscoverSqlGatewayEndpoint()
     {
         // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-sql-gateway__http__0 = "http://localhost:xxxxx"
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        // Format: services__flink-sql-gateway__sg-http__0 = "http://localhost:xxxxx"
+        // NOTE: The endpoint name is "sg-http" as defined in AppHost Program.cs
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__sg-http__0");
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
             _logger.LogInformation("Using Aspire service discovery for SQL Gateway: {Endpoint}", aspireEndpoint);
+            return aspireEndpoint;
+        }
+
+        // Fallback: Try older format with "http" endpoint name
+        aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        if (!string.IsNullOrEmpty(aspireEndpoint))
+        {
+            _logger.LogInformation("Using Aspire service discovery for SQL Gateway (legacy format): {Endpoint}", aspireEndpoint);
             return aspireEndpoint;
         }
 
@@ -99,6 +118,7 @@ public class FlinkJobManager : IFlinkJobManager
         // Strategy 3: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-sql-gateway:8083";
         _logger.LogInformation("Using default Docker network for SQL Gateway: {Endpoint}", defaultEndpoint);
+        _logger.LogWarning("Aspire service discovery not found for SQL Gateway - may not be accessible in testing mode");
         return defaultEndpoint;
     }
     
