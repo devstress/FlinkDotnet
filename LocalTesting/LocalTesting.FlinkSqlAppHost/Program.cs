@@ -161,17 +161,20 @@ builder.Build().Run();
 
 static bool ConfigureContainerRuntime()
 {
-    if (IsPodmanAvailable())
-    {
-        Console.WriteLine("✅ Using Podman as container runtime");
-        Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
-        SetPodmanDockerHost();
-        return true;
-    }
-    
+    // Try Docker Desktop first (preferred)
     if (IsDockerAvailable())
     {
         Console.WriteLine("✅ Using Docker Desktop as container runtime");
+        // No need to set ASPIRE_CONTAINER_RUNTIME - Docker is the default
+        return true;
+    }
+    
+    // Fallback to Podman if Docker is not available
+    if (IsPodmanAvailable())
+    {
+        Console.WriteLine("✅ Using Podman as container runtime (Docker not available)");
+        Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
+        SetPodmanDockerHost();
         return true;
     }
     
