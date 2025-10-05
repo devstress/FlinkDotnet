@@ -161,6 +161,16 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             var submitResult = await jobCreator(inputTopic, outputTopic, KafkaContainerConnectionString, ct);
 
             TestContext.WriteLine($"📊 Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");
+            
+            // If job submission failed, retrieve detailed diagnostics
+            if (!submitResult.Success)
+            {
+                TestContext.WriteLine("⚠️ Job submission failed - retrieving Flink diagnostics...");
+                var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+                var diagnostics = await GetFlinkJobDiagnosticsAsync(flinkEndpoint, submitResult.FlinkJobId);
+                TestContext.WriteLine(diagnostics);
+            }
+            
             Assert.That(submitResult.Success, Is.True, $"Job must submit successfully. Error: {submitResult.ErrorMessage}");
 
             // Wait for job to be running

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Compression;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -559,6 +560,8 @@ public class FlinkJobManager : IFlinkJobManager
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 var err = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Flink job submission failed with {StatusCode}. Full error response: {Error}", 
+                    response.StatusCode, err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
 
@@ -736,17 +739,44 @@ public class FlinkJobManager : IFlinkJobManager
         // Standard container lib
         searchPaths.Add("/opt/flink/lib");
 
+        // Try multiple strategies to find the connector JARs
         var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot != null)
         {
             searchPaths.Add(Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib"));
         }
 
-        foreach (var searchPath in searchPaths.Where(Directory.Exists))
+        // Also try from AppDomain base directory (works better in Aspire scenarios)
+        var appRoot = FindRepoRoot(AppDomain.CurrentDomain.BaseDirectory);
+        if (appRoot != null && appRoot != repoRoot)
         {
-            var jars = Directory.GetFiles(searchPath, "*.jar", SearchOption.TopDirectoryOnly);
-            connectorJars.AddRange(jars);
-            _logger.LogDebug("Found {Count} connector JARs in {Path}", jars.Length, searchPath);
+            searchPaths.Add(Path.Combine(appRoot, "LocalTesting", "connectors", "flink", "lib"));
+        }
+
+        _logger.LogInformation("Searching for connector JARs in {Count} paths", searchPaths.Count);
+
+        foreach (var searchPath in searchPaths.Distinct())
+        {
+            if (Directory.Exists(searchPath))
+            {
+                var jars = Directory.GetFiles(searchPath, "*.jar", SearchOption.TopDirectoryOnly);
+                if (jars.Length > 0)
+                {
+                    connectorJars.AddRange(jars);
+                    _logger.LogInformation("Found {Count} connector JARs in {Path}", jars.Length, searchPath);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Connector path does not exist: {Path}", searchPath);
+            }
+        }
+
+        if (connectorJars.Count == 0)
+        {
+            _logger.LogWarning("No connector JARs found. SQL jobs may fail if they require Kafka/JSON connectors.");
+            _logger.LogWarning("Current directory: {Current}, AppDomain base: {AppBase}, Repo root: {RepoRoot}",
+                Environment.CurrentDirectory, AppDomain.CurrentDomain.BaseDirectory, repoRoot ?? "not found");
         }
 
         return connectorJars.Distinct().ToList();
@@ -781,11 +811,128 @@ public class FlinkJobManager : IFlinkJobManager
     private Task CombineJarsAsync(string runnerJarPath, List<string> connectorJars, string outputPath)
     {
         _logger.LogInformation("Combining runner JAR with {Count} connector JARs into shaded JAR", connectorJars.Count);
+        
+        // Copy runner JAR as base
         File.Copy(runnerJarPath, outputPath, true);
 
-        foreach (var connectorJar in connectorJars)
+        // JARs are ZIP files - use ZipArchive to merge connector JARs into the runner JAR
+        // Special handling: META-INF/services files must be merged, not replaced
+        var serviceFiles = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        
+        using (var outputZip = ZipFile.Open(outputPath, ZipArchiveMode.Update))
         {
-            _logger.LogDebug("Would include connector JAR: {Path}", connectorJar);
+            var existingEntries = new HashSet<string>(
+                outputZip.Entries.Select(e => e.FullName),
+                StringComparer.OrdinalIgnoreCase);
+
+            // First, collect all META-INF/services entries from runner JAR
+            foreach (var entry in outputZip.Entries.ToList())
+            {
+                if (entry.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase) &&
+                    !entry.FullName.EndsWith('/'))
+                {
+                    using var stream = entry.Open();
+                    using var reader = new StreamReader(stream);
+                    var lines = new HashSet<string>();
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        var trimmed = line.Trim();
+                        if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
+                        {
+                            lines.Add(line); // Keep original format including comments
+                        }
+                    }
+                    serviceFiles[entry.FullName] = lines;
+                }
+            }
+
+            foreach (var connectorJar in connectorJars)
+            {
+                if (!File.Exists(connectorJar))
+                {
+                    _logger.LogWarning("Connector JAR not found, skipping: {Path}", connectorJar);
+                    continue;
+                }
+
+                _logger.LogDebug("Merging connector JAR: {Path}", connectorJar);
+                var entriesAdded = 0;
+
+                using (var connectorZip = ZipFile.OpenRead(connectorJar))
+                {
+                    foreach (var entry in connectorZip.Entries)
+                    {
+                        // Skip directories (they're created automatically)
+                        if (entry.FullName.EndsWith('/'))
+                        {
+                            continue;
+                        }
+
+                        // Special handling for META-INF/services files - merge them
+                        if (entry.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase))
+                        {
+                            using var stream = entry.Open();
+                            using var reader = new StreamReader(stream);
+                            
+                            if (!serviceFiles.ContainsKey(entry.FullName))
+                            {
+                                serviceFiles[entry.FullName] = new HashSet<string>();
+                            }
+                            
+                            string? line;
+                            while ((line = reader.ReadLine()) != null)
+                            {
+                                var trimmed = line.Trim();
+                                if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
+                                {
+                                    serviceFiles[entry.FullName].Add(line);
+                                }
+                            }
+                            continue;
+                        }
+
+                        // Skip duplicate entries (keep first occurrence from runner JAR)
+                        if (existingEntries.Contains(entry.FullName))
+                        {
+                            continue;
+                        }
+
+                        // Copy entry to output JAR
+                        var newEntry = outputZip.CreateEntry(entry.FullName, CompressionLevel.Optimal);
+                        using (var sourceStream = entry.Open())
+                        using (var destStream = newEntry.Open())
+                        {
+                            sourceStream.CopyTo(destStream);
+                        }
+
+                        existingEntries.Add(entry.FullName);
+                        entriesAdded++;
+                    }
+                }
+
+                _logger.LogInformation("Added {Count} entries from connector JAR: {Name}", 
+                    entriesAdded, Path.GetFileName(connectorJar));
+            }
+
+            // Now write merged META-INF/services files
+            foreach (var (servicePath, serviceLines) in serviceFiles)
+            {
+                // Remove old entry if it exists
+                var oldEntry = outputZip.Entries.FirstOrDefault(e => 
+                    e.FullName.Equals(servicePath, StringComparison.OrdinalIgnoreCase));
+                oldEntry?.Delete();
+
+                // Create new merged entry
+                var newEntry = outputZip.CreateEntry(servicePath, CompressionLevel.Optimal);
+                using var writer = new StreamWriter(newEntry.Open());
+                foreach (var line in serviceLines.OrderBy(l => l))
+                {
+                    writer.WriteLine(line);
+                }
+                
+                _logger.LogDebug("Merged service file {Path} with {Count} providers", 
+                    servicePath, serviceLines.Count);
+            }
         }
 
         _logger.LogInformation("Created shaded JAR at {Path}", outputPath);

@@ -847,7 +847,7 @@ public abstract class LocalTestingTestBase
     /// Get the dynamically allocated Flink JobManager HTTP endpoint from Aspire.
     /// Aspire DCP assigns random ports during testing, so we cannot use hardcoded ports.
     /// </summary>
-    private static async Task<string> GetFlinkJobManagerEndpointAsync()
+    protected static async Task<string> GetFlinkJobManagerEndpointAsync()
     {
         try
         {
@@ -935,5 +935,270 @@ public abstract class LocalTestingTestBase
         TestContext.WriteLine($"ℹ️ Gateway running as .NET project (not containerized), using configured port {Ports.GatewayHostPort}");
         TestContext.WriteLine($"💡 Gateway may take 15-30 seconds to start after Flink is ready");
         return $"http://localhost:{Ports.GatewayHostPort}/";
+    }
+
+    /// <summary>
+    /// Retrieve JobManager logs from Flink REST API.
+    /// The JobManager handles job submission, so its logs contain errors from failed job submissions.
+    /// </summary>
+    protected static async Task<string> GetFlinkJobManagerLogsAsync(string flinkEndpoint)
+    {
+        try
+        {
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            var logsBuilder = new System.Text.StringBuilder();
+            
+            logsBuilder.AppendLine("\n========== JobManager Logs ==========");
+            
+            // Get JobManager log list
+            var logListUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs";
+            var logListResponse = await httpClient.GetAsync(logListUrl);
+            
+            if (!logListResponse.IsSuccessStatusCode)
+            {
+                return $"Failed to get JobManager log list: HTTP {logListResponse.StatusCode}";
+            }
+            
+            var logListContent = await logListResponse.Content.ReadAsStringAsync();
+            var logListJson = System.Text.Json.JsonDocument.Parse(logListContent);
+            
+            string? mainLogName = null;
+            if (logListJson.RootElement.TryGetProperty("logs", out var logs))
+            {
+                foreach (var logFile in logs.EnumerateArray())
+                {
+                    if (logFile.TryGetProperty("name", out var name))
+                    {
+                        var logName = name.GetString();
+                        logsBuilder.AppendLine($"  Available log: {logName}");
+                        
+                        // Try to get the main log file (usually ends with .log, not .out)
+                        if (logName?.EndsWith(".log") == true)
+                        {
+                            mainLogName = logName;
+                        }
+                    }
+                }
+            }
+            
+            // Try to read the actual log file content if we found one
+            if (!string.IsNullOrEmpty(mainLogName))
+            {
+                var logContentUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs/{mainLogName}";
+                try
+                {
+                    var logResponse = await httpClient.GetAsync(logContentUrl);
+                    if (logResponse.IsSuccessStatusCode)
+                    {
+                        var logContent = await logResponse.Content.ReadAsStringAsync();
+                        // Get last 500 lines which should contain recent errors
+                        var lines = logContent.Split('\n');
+                        var lastLines = lines.Length > 500 ? lines[^500..] : lines;
+                        logsBuilder.AppendLine($"\n  Last 500 lines of {mainLogName}:");
+                        logsBuilder.AppendLine(string.Join('\n', lastLines));
+                    }
+                    else
+                    {
+                        logsBuilder.AppendLine($"  Failed to read log content: HTTP {logResponse.StatusCode}");
+                    }
+                }
+                catch (Exception logEx)
+                {
+                    logsBuilder.AppendLine($"  Error reading log file {mainLogName}: {logEx.Message}");
+                }
+            }
+            
+            return logsBuilder.ToString();
+        }
+        catch (Exception ex)
+        {
+            return $"Error fetching JobManager logs: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Retrieve Flink job exceptions from the Flink REST API.
+    /// This provides detailed error information when jobs fail.
+    /// </summary>
+    protected static async Task<string> GetFlinkJobExceptionsAsync(string flinkEndpoint, string jobId)
+    {
+        try
+        {
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var url = $"{flinkEndpoint.TrimEnd('/')}/jobs/{jobId}/exceptions";
+            TestContext.WriteLine($"🔍 Fetching job exceptions from: {url}");
+            
+            var response = await httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return content;
+            }
+            else
+            {
+                return $"Failed to get job exceptions: HTTP {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            return $"Error fetching job exceptions: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Retrieve TaskManager logs from Flink REST API.
+    /// Returns logs from all TaskManagers if available.
+    /// </summary>
+    protected static async Task<string> GetFlinkTaskManagerLogsAsync(string flinkEndpoint)
+    {
+        try
+        {
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var logsBuilder = new System.Text.StringBuilder();
+            
+            // First, get list of TaskManagers
+            var tmListUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers";
+            var tmListResponse = await httpClient.GetAsync(tmListUrl);
+            
+            if (!tmListResponse.IsSuccessStatusCode)
+            {
+                return $"Failed to get TaskManager list: HTTP {tmListResponse.StatusCode}";
+            }
+            
+            var tmListContent = await tmListResponse.Content.ReadAsStringAsync();
+            var tmListJson = System.Text.Json.JsonDocument.Parse(tmListContent);
+            
+            if (!tmListJson.RootElement.TryGetProperty("taskmanagers", out var taskManagers))
+            {
+                return "No TaskManagers found in response";
+            }
+            
+            // Get logs from each TaskManager
+            int tmCount = 0;
+            foreach (var tm in taskManagers.EnumerateArray())
+            {
+                if (tm.TryGetProperty("id", out var tmId))
+                {
+                    var taskManagerId = tmId.GetString();
+                    tmCount++;
+                    logsBuilder.AppendLine($"\n========== TaskManager {tmCount} (ID: {taskManagerId}) ==========");
+                    
+                    // Try to get logs
+                    var logUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/logs";
+                    try
+                    {
+                        var logResponse = await httpClient.GetAsync(logUrl);
+                        if (logResponse.IsSuccessStatusCode)
+                        {
+                            var logContent = await logResponse.Content.ReadAsStringAsync();
+                            var logJson = System.Text.Json.JsonDocument.Parse(logContent);
+                            
+                            if (logJson.RootElement.TryGetProperty("logs", out var logs))
+                            {
+                                foreach (var logFile in logs.EnumerateArray())
+                                {
+                                    if (logFile.TryGetProperty("name", out var name))
+                                    {
+                                        logsBuilder.AppendLine($"  Log file: {name.GetString()}");
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Also try to get stdout which might have more immediate errors
+                        var stdoutUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/stdout";
+                        var stdoutResponse = await httpClient.GetAsync(stdoutUrl);
+                        if (stdoutResponse.IsSuccessStatusCode)
+                        {
+                            var stdoutContent = await stdoutResponse.Content.ReadAsStringAsync();
+                            // Get last 100 lines
+                            var lines = stdoutContent.Split('\n');
+                            var lastLines = lines.Length > 100 ? lines[^100..] : lines;
+                            logsBuilder.AppendLine($"\n  Last 100 lines of stdout:");
+                            logsBuilder.AppendLine(string.Join('\n', lastLines));
+                        }
+                    }
+                    catch (Exception tmEx)
+                    {
+                        logsBuilder.AppendLine($"  Error getting TaskManager logs: {tmEx.Message}");
+                    }
+                }
+            }
+            
+            if (tmCount == 0)
+            {
+                return "No TaskManagers found";
+            }
+            
+            return logsBuilder.ToString();
+        }
+        catch (Exception ex)
+        {
+            return $"Error fetching TaskManager logs: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Retrieve TaskManager logs from Docker container.
+    /// Fallback method when Flink REST API is not available or doesn't have the logs.
+    /// </summary>
+    protected static async Task<string> GetTaskManagerLogsFromDockerAsync()
+    {
+        try
+        {
+            var containerName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            containerName = containerName.Trim();
+            
+            if (string.IsNullOrEmpty(containerName))
+            {
+                return "No TaskManager container found";
+            }
+            
+            TestContext.WriteLine($"🔍 Getting logs from TaskManager container: {containerName}");
+            var logs = await RunDockerCommandAsync($"logs {containerName} --tail 200");
+            return $"========== TaskManager Container Logs ({containerName}) ==========\n{logs}";
+        }
+        catch (Exception ex)
+        {
+            return $"Error fetching TaskManager logs from Docker: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Get comprehensive diagnostic information when a Flink job fails.
+    /// Includes JobManager logs, job exceptions, TaskManager logs from REST API, and Docker container logs.
+    /// </summary>
+    protected static async Task<string> GetFlinkJobDiagnosticsAsync(string flinkEndpoint, string? jobId = null)
+    {
+        var diagnostics = new System.Text.StringBuilder();
+        diagnostics.AppendLine("\n" + new string('=', 80));
+        diagnostics.AppendLine("FLINK JOB FAILURE DIAGNOSTICS");
+        diagnostics.AppendLine(new string('=', 80));
+        
+        // 1. Get JobManager logs (most important for job submission failures)
+        diagnostics.AppendLine("\n--- JobManager Logs (from Flink REST API) ---");
+        var jmLogs = await GetFlinkJobManagerLogsAsync(flinkEndpoint);
+        diagnostics.AppendLine(jmLogs);
+        
+        // 2. Get job exceptions if jobId is provided
+        if (!string.IsNullOrEmpty(jobId))
+        {
+            diagnostics.AppendLine("\n--- Job Exceptions ---");
+            var exceptions = await GetFlinkJobExceptionsAsync(flinkEndpoint, jobId);
+            diagnostics.AppendLine(exceptions);
+        }
+        
+        // 3. Get TaskManager logs from Flink REST API
+        diagnostics.AppendLine("\n--- TaskManager Logs (from Flink REST API) ---");
+        var tmLogs = await GetFlinkTaskManagerLogsAsync(flinkEndpoint);
+        diagnostics.AppendLine(tmLogs);
+        
+        // 4. Get TaskManager logs from Docker as fallback/additional info
+        diagnostics.AppendLine("\n--- TaskManager Logs (from Docker) ---");
+        var dockerLogs = await GetTaskManagerLogsFromDockerAsync();
+        diagnostics.AppendLine(dockerLogs);
+        
+        diagnostics.AppendLine("\n" + new string('=', 80));
+        return diagnostics.ToString();
     }
 }

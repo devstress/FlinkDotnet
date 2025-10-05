@@ -73,12 +73,18 @@ public class FlinkJobRunner {
                 }
             }
             if (hasInsert && lastResult != null) {
-                // Block so the streaming insert keeps running; do not exit main.
+                // For SQL jobs with INSERT statements, the job is now running in Flink.
+                // In web submission mode (via Flink REST API), we should NOT block or try to get results.
+                // The job runs asynchronously in the Flink cluster.
+                // Simply return and let the JVM exit - the job will continue running in Flink.
                 if (lastResult.getJobClient().isPresent()) {
-                    lastResult.getJobClient().get().getJobExecutionResult().get();
+                    var jobClient = lastResult.getJobClient().get();
+                    System.out.println("SQL INSERT job submitted successfully to Flink. Job ID: " + jobClient.getJobID());
+                    System.out.println("Job is running in Flink cluster. Exiting FlinkJobRunner.");
+                    // Do NOT call getJobExecutionResult() - that's not supported in web submission mode
+                    // Do NOT park the thread - the job runs independently in Flink
                 } else {
-                    // Fallback: park thread indefinitely if job client not present
-                    Thread.sleep(Long.MAX_VALUE);
+                    System.out.println("SQL job submitted (no job client available).");
                 }
             }
             return; // No further DataStream processing for pure SQL jobs
