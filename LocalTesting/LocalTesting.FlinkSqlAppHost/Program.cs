@@ -141,6 +141,31 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("taskmanager");
 
+// Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission
+// SQL Gateway provides /v1/statements endpoint for executing SQL without JAR submission
+// Required for Pattern5 (SqlPassthrough) which uses "gateway" execution mode
+// Runs on port 8083 (separate from JobManager REST API on port 8081)
+var sqlGatewayBuilder = builder.AddContainer("flink-sql-gateway", "flink:2.1.0-java17")
+    .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "http");
+
+if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
+{
+    sqlGatewayBuilder = sqlGatewayBuilder
+        .WithContainerRuntimeArgs("--publish", $"{Ports.SqlGatewayHostPort}:8083");
+}
+
+var sqlGateway = sqlGatewayBuilder
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("FLINK_PROPERTIES",
+        "jobmanager.rpc.address: flink-jobmanager\n" +
+        "sql-gateway.endpoint.rest.address: 0.0.0.0\n" +
+        "sql-gateway.endpoint.rest.port: 8083\n" +
+        "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n")
+    .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
+    .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithArgs("sql-gateway");
+
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
 // Flink jobs run inside Docker containers and must use "kafka:9092" (container network name)
@@ -165,7 +190,8 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
-    .WithReference(jobManager.GetEndpoint("http"));  // Reference the HTTP endpoint for service discovery
+    .WithReference(jobManager.GetEndpoint("http"))  // Reference JobManager for standard job submission
+    .WithReference(sqlGateway.GetEndpoint("http"));  // Reference SQL Gateway for direct SQL execution
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();

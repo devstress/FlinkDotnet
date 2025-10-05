@@ -111,15 +111,88 @@ but finds no containers (empty string), it doesn't try Podman!
 
 ## Phase 2: Design
 
-(To be filled after investigation)
+### Requirements
+Fix the 3 remaining integration test failures:
+1. SQL Gateway Pattern5 - requires Flink SQL Gateway service
+2. Native Flink Pattern1 - needs investigation
+3. DockerNetwork test - diagnostic only, low priority
+
+### Architecture Decisions
+
+**Fix 1: Add Flink SQL Gateway Container** (for Pattern5)
+
+**ROOT CAUSE**: WI17 implemented SQL Gateway client code, but the Flink SQL Gateway service is not running.
+- SQL Gateway is a separate service from JobManager
+- Runs on port 8083 (vs JobManager on 8081)
+- Needs `sql-gateway` command instead of `jobmanager`
+
+**Solution**: Add Flink SQL Gateway container to AppHost
+```csharp
+builder.AddContainer("flink-sql-gateway", "flink:2.1.0-java17")
+    .WithHttpEndpoint(port: 8083, targetPort: 8083, name: "http")
+    .WithEnvironment("FLINK_PROPERTIES", 
+        "sql-gateway.endpoint.rest.address: 0.0.0.0\n" +
+        "sql-gateway.endpoint.rest.port: 8083\n")
+    .WithArgs("sql-gateway");
+```
+
+**Why This Works**:
+- Flink 2.1.0 Docker image includes SQL Gateway
+- `sql-gateway` command starts the service
+- Pattern5 can now connect to `/v1/statements` endpoint
+- Pattern6 continues using TableEnvironment (no changes needed)
+
+**Fix 2: Container Discovery Logic** (for DockerNetwork test)
+
+**Note**: The `RunDockerCommandAsync` logic is actually correct - it tries Docker, then Podman.
+The issue might be timing-related or the filter patterns need adjustment.
+
+**Deferred**: This is a diagnostic test, not critical for production. Can be addressed separately.
+
+**Fix 3: Native Flink Pattern1** (needs investigation)
+
+**Status**: Need to run tests after SQL Gateway fix to see if this is still an issue.
 
 ## Phase 3: TDD/BDD
 
-(To be filled after design)
+### Test Plan
+1. Run integration tests with SQL Gateway container added
+2. Verify Pattern5 (SqlPassthrough) now passes
+3. Check Pattern6 (SqlTransform) still works (uses TableEnvironment, not affected)
+4. Investigate Pattern1 and DockerNetwork test status
+
+### Expected Results
+- ✅ Pattern5 should pass with SQL Gateway available
+- ✅ Pattern6 should still pass (unchanged)
+- ⏳ Pattern1 and DockerNetwork may still need fixes
 
 ## Phase 4: Implementation
 
-(To be filled after TDD/BDD)
+### Code Changes
+
+**File 1**: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
+- Added Flink SQL Gateway container configuration
+- Starts on port 8083 with `sql-gateway` command
+- Includes same connector JARs as JobManager/TaskManager
+- Gateway project now references SQL Gateway endpoint
+
+**File 2**: `LocalTesting/LocalTesting.FlinkSqlAppHost/Ports.cs`
+- Added `SqlGatewayHostPort = 8083` constant
+
+**File 3**: `FlinkDotNet/Flink.JobGateway/Services/FlinkJobManager.cs`
+- Added `DiscoverSqlGatewayEndpoint()` method
+- Updated `SubmitSqlGatewayJobAsync()` to use dedicated HttpClient for SQL Gateway
+- SQL Gateway discovery uses same strategy pattern as Flink JobManager
+- Supports Aspire service discovery, environment variables, and default fallback
+
+### Implementation Summary
+Total changes: ~80 lines added across 3 files
+- SQL Gateway container: ~25 lines
+- Port configuration: 1 line  
+- Endpoint discovery: ~35 lines
+- HttpClient update: ~20 lines
+
+All changes are minimal and focused on enabling SQL Gateway functionality.
 
 ## Phase 5: Testing & Validation
 

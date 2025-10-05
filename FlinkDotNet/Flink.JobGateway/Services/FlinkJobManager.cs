@@ -68,6 +68,40 @@ public class FlinkJobManager : IFlinkJobManager
         return defaultEndpoint;
     }
 
+    /// <summary>
+    /// Discover Flink SQL Gateway endpoint using multiple strategies for maximum compatibility.
+    /// Priority: Aspire service discovery > Environment variables > Default fallback
+    /// SQL Gateway runs on port 8083 (separate from JobManager REST API on 8081)
+    /// </summary>
+    private string DiscoverSqlGatewayEndpoint()
+    {
+        // Strategy 1: Aspire service discovery (injected by .WithReference())
+        // Format: services__flink-sql-gateway__http__0 = "http://localhost:xxxxx"
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        if (!string.IsNullOrEmpty(aspireEndpoint))
+        {
+            _logger.LogInformation("Using Aspire service discovery for SQL Gateway: {Endpoint}", aspireEndpoint);
+            return aspireEndpoint;
+        }
+
+        // Strategy 2: Explicit environment variables
+        var envHost = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST");
+        var envPort = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT");
+        
+        if (!string.IsNullOrEmpty(envHost))
+        {
+            var port = int.TryParse(envPort, out var p) ? p : 8083;
+            var envEndpoint = $"http://{envHost}:{port}";
+            _logger.LogInformation("Using environment variable for SQL Gateway: {Endpoint}", envEndpoint);
+            return envEndpoint;
+        }
+
+        // Strategy 3: Default fallback for Docker Compose with standard ports
+        var defaultEndpoint = "http://flink-sql-gateway:8083";
+        _logger.LogInformation("Using default SQL Gateway endpoint: {Endpoint}", defaultEndpoint);
+        return defaultEndpoint;
+    }
+
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
         _logger.LogInformation("Submitting job: {JobId}", jobDefinition.Metadata.JobId);
@@ -627,6 +661,16 @@ public class FlinkJobManager : IFlinkJobManager
         
         try
         {
+            // Create dedicated HttpClient for SQL Gateway (different endpoint from JobManager)
+            var sqlGatewayEndpoint = DiscoverSqlGatewayEndpoint();
+            using var sqlGatewayClient = new HttpClient
+            {
+                BaseAddress = new Uri(sqlGatewayEndpoint),
+                Timeout = TimeSpan.FromMinutes(5)
+            };
+            
+            _logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
+            
             // Create a session first (optional, but recommended for statement management)
             var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
             _logger.LogInformation("Creating SQL Gateway session: {SessionName}", sessionName);
@@ -654,7 +698,7 @@ public class FlinkJobManager : IFlinkJobManager
                 using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
                 // Submit statement to SQL Gateway
-                using var response = await _httpClient.PostAsync("/v1/statements", content);
+                using var response = await sqlGatewayClient.PostAsync("/v1/statements", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
