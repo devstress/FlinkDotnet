@@ -31,32 +31,60 @@ public class JobsController : ControllerBase
     [HttpPost("submit")]
     public async Task<ActionResult<JobSubmissionResult>> SubmitJob()
     {
+        LogRequestReceived();
+        
+        var requestBodyResult = await ReadRequestBodyAsync();
+        if (requestBodyResult.Error != null)
+            return requestBodyResult.Error;
+
+        var jobDefResult = DeserializeJobDefinition(requestBodyResult.Body!);
+        if (jobDefResult.Error != null)
+            return jobDefResult.Error;
+
+        var jobDefinition = jobDefResult.JobDefinition!;
+        EnsureJobMetadata(jobDefinition);
+
+        _logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}", 
+            jobDefinition.Metadata.JobId, 
+            jobDefinition.Metadata.JobName ?? "Unnamed");
+
+        return await SubmitJobToFlinkAsync(jobDefinition);
+    }
+
+    private void LogRequestReceived()
+    {
         _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
         _logger.LogInformation("║ 🔵 [Gateway] Received job submission request");
         _logger.LogInformation("║ 📡 Client: {ClientIP}", HttpContext.Connection.RemoteIpAddress);
         _logger.LogInformation("║ 🌐 Endpoint: POST /api/v1/jobs/submit");
         _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
-        
-        string raw;
+    }
+
+    private async Task<(string? Body, ActionResult? Error)> ReadRequestBodyAsync()
+    {
         try
         {
             using var reader = new StreamReader(Request.Body, Encoding.UTF8);
-            raw = await reader.ReadToEndAsync();
+            var raw = await reader.ReadToEndAsync();
             _logger.LogDebug("📝 Request body length: {Length} bytes", raw.Length);
+
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                _logger.LogWarning("⚠️ Empty request body received");
+                return (null, BadRequest(new { error = "Empty request body" }));
+            }
+
+            return (raw, null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Failed reading request body");
-            return BadRequest(new { error = "Unable to read request body", ex.Message });
+            return (null, BadRequest(new { error = "Unable to read request body", ex.Message }));
         }
+    }
 
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            _logger.LogWarning("⚠️ Empty request body received");
-            return BadRequest(new { error = "Empty request body" });
-        }
-
-        JobDefinition? jobDefinition = null;
+    private (JobDefinition? JobDefinition, ActionResult? Error) DeserializeJobDefinition(string raw)
+    {
         try
         {
             var opts = new JsonSerializerOptions
@@ -64,20 +92,27 @@ public class JobsController : ControllerBase
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 PropertyNameCaseInsensitive = true,
             };
-            jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, opts);
+            var jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, opts);
+            
             if (jobDefinition == null)
             {
                 _logger.LogError("❌ Unable to deserialize job definition");
-                return BadRequest(new { error = "Unable to deserialize job definition" });
+                return (null, BadRequest(new { error = "Unable to deserialize job definition" }));
             }
+
             _logger.LogInformation("✅ Job definition deserialized successfully");
+            return (jobDefinition, null);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Deserialization failure for job submission. Raw snippet: {Snippet}", raw.Length > 400 ? raw[..400] : raw);
-            return BadRequest(new { error = "Invalid job definition JSON", ex.Message });
+            _logger.LogError(ex, "❌ Deserialization failure for job submission. Raw snippet: {Snippet}", 
+                raw.Length > 400 ? raw[..400] : raw);
+            return (null, BadRequest(new { error = "Invalid job definition JSON", ex.Message }));
         }
+    }
 
+    private void EnsureJobMetadata(JobDefinition jobDefinition)
+    {
         // Allow sink-less SQL jobs
         if (jobDefinition.Source is SqlSourceDefinition && jobDefinition.Sink == null)
         {
@@ -90,11 +125,10 @@ public class JobsController : ControllerBase
         {
             jobDefinition.Metadata.JobId = Guid.NewGuid().ToString();
         }
+    }
 
-        _logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}", 
-            jobDefinition.Metadata.JobId, 
-            jobDefinition.Metadata.JobName ?? "Unnamed");
-
+    private async Task<ActionResult<JobSubmissionResult>> SubmitJobToFlinkAsync(JobDefinition jobDefinition)
+    {
         try
         {
             _logger.LogInformation("🚀 Submitting job to Flink cluster...");
