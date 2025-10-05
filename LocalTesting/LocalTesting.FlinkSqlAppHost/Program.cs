@@ -145,8 +145,10 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
 // SQL Gateway provides /v1/statements endpoint for executing SQL without JAR submission
 // Required for Pattern5 (SqlPassthrough) which uses "gateway" execution mode
 // Runs on port 8083 (separate from JobManager REST API on port 8081)
+// CRITICAL: SQL Gateway must wait for JobManager to be ready before starting
 var sqlGatewayBuilder = builder.AddContainer("flink-sql-gateway", "flink:2.1.0-java17")
-    .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "http");
+    .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "http")
+    .WaitFor(jobManager);  // Wait for JobManager to be ready before starting SQL Gateway
 
 if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 {
@@ -161,7 +163,9 @@ var sqlGateway = sqlGatewayBuilder
         "rest.address: flink-jobmanager\n" +
         "rest.port: 8081\n" +
         "sql-gateway.endpoint.rest.address: 0.0.0.0\n" +
+        "sql-gateway.endpoint.rest.bind-address: 0.0.0.0\n" +
         "sql-gateway.endpoint.rest.port: 8083\n" +
+        "sql-gateway.endpoint.rest.bind-port: 8083\n" +
         "sql-gateway.endpoint.type: remote\n" +
         "sql-gateway.session.check-interval: 60000\n" +
         "sql-gateway.session.idle-timeout: 600000\n" +
