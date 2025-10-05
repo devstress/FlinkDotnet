@@ -67,11 +67,14 @@ public class GlobalTestInfrastructure
             
             // Discover the actual port mapping for Kafka's external listener (9093)
             // Aspire maps port 9093 to a dynamic host port, we need to find that mapping
+            TestContext.WriteLine("🔍 Discovering Kafka external port mapping...");
             var actualKafkaPort = await DiscoverKafkaExternalPortAsync();
             if (actualKafkaPort != null)
             {
                 KafkaConnectionString = $"localhost:{actualKafkaPort}";
-                TestContext.WriteLine($"🔗 Using discovered Kafka connection string: {KafkaConnectionString} (external listener port 9093 -> {actualKafkaPort})");
+                TestContext.WriteLine($"✅ Using discovered Kafka connection string: {KafkaConnectionString}");
+                TestContext.WriteLine($"   📡 External listener: localhost:9093 (container) -> localhost:{actualKafkaPort} (host)");
+                TestContext.WriteLine($"   📡 Internal listener: kafka:9092 (for Flink containers)");
             }
             else
             {
@@ -242,51 +245,84 @@ public class GlobalTestInfrastructure
 
     private static async Task<string?> DiscoverKafkaExternalPortAsync()
     {
-        try
+        // Retry a few times in case Docker is still starting containers
+        for (int attempt = 1; attempt <= 3; attempt++)
         {
-            // Find Kafka container
-            var containerName = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}\" --no-trunc");
-            if (string.IsNullOrWhiteSpace(containerName))
+            try
             {
-                TestContext.WriteLine("⚠️ Kafka container not found");
-                return null;
-            }
-
-            var kafkaContainer = containerName.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
-            if (string.IsNullOrWhiteSpace(kafkaContainer))
-            {
-                return null;
-            }
-
-            // Get port mapping for port 9093 (external listener)
-            var portMapping = await RunDockerCommandAsync($"port {kafkaContainer} 9093");
-            if (string.IsNullOrWhiteSpace(portMapping))
-            {
-                TestContext.WriteLine($"⚠️ Port 9093 not mapped for container {kafkaContainer}");
-                return null;
-            }
-
-            // Parse port mapping (format: "9093/tcp -> 127.0.0.1:32769")
-            var parts = portMapping.Split("->", StringSplitOptions.TrimEntries);
-            if (parts.Length == 2)
-            {
-                var hostPort = parts[1].Trim();
-                // Extract just the port number (format: "127.0.0.1:32769")
-                var portParts = hostPort.Split(':', StringSplitOptions.TrimEntries);
-                if (portParts.Length == 2)
+                TestContext.WriteLine($"🔍 [Attempt {attempt}/3] Looking for Kafka container...");
+                
+                // Find Kafka container
+                var containerName = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}\" --no-trunc");
+                if (string.IsNullOrWhiteSpace(containerName))
                 {
-                    return portParts[1].Trim();
+                    TestContext.WriteLine($"⚠️ [Attempt {attempt}/3] Kafka container not found yet");
+                    if (attempt < 3)
+                    {
+                        await Task.Delay(2000); // Wait 2 seconds before retry
+                        continue;
+                    }
+                    return null;
+                }
+
+                var kafkaContainer = containerName.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                if (string.IsNullOrWhiteSpace(kafkaContainer))
+                {
+                    TestContext.WriteLine($"⚠️ [Attempt {attempt}/3] Could not parse container name");
+                    if (attempt < 3)
+                    {
+                        await Task.Delay(2000);
+                        continue;
+                    }
+                    return null;
+                }
+
+                TestContext.WriteLine($"✅ Found Kafka container: {kafkaContainer}");
+
+                // Get port mapping for port 9093 (external listener)
+                var portMapping = await RunDockerCommandAsync($"port {kafkaContainer} 9093");
+                if (string.IsNullOrWhiteSpace(portMapping))
+                {
+                    TestContext.WriteLine($"⚠️ [Attempt {attempt}/3] Port 9093 not mapped yet for container {kafkaContainer}");
+                    if (attempt < 3)
+                    {
+                        await Task.Delay(2000);
+                        continue;
+                    }
+                    return null;
+                }
+
+                TestContext.WriteLine($"🔍 Port mapping: {portMapping.Trim()}");
+
+                // Parse port mapping (format: "9093/tcp -> 127.0.0.1:32769")
+                var parts = portMapping.Split("->", StringSplitOptions.TrimEntries);
+                if (parts.Length == 2)
+                {
+                    var hostPort = parts[1].Trim();
+                    // Extract just the port number (format: "127.0.0.1:32769")
+                    var portParts = hostPort.Split(':', StringSplitOptions.TrimEntries);
+                    if (portParts.Length == 2)
+                    {
+                        var discoveredPort = portParts[1].Trim();
+                        TestContext.WriteLine($"✅ Discovered external port: {discoveredPort}");
+                        return discoveredPort;
+                    }
+                }
+
+                TestContext.WriteLine($"⚠️ Could not parse port mapping: {portMapping}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ [Attempt {attempt}/3] Error discovering Kafka external port: {ex.Message}");
+                if (attempt < 3)
+                {
+                    await Task.Delay(2000);
                 }
             }
-
-            TestContext.WriteLine($"⚠️ Could not parse port mapping: {portMapping}");
-            return null;
         }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Error discovering Kafka external port: {ex.Message}");
-            return null;
-        }
+        
+        return null;
     }
 
     private static async Task<string> RunDockerCommandAsync(string arguments)

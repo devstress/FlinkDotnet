@@ -181,7 +181,11 @@ public abstract class LocalTestingTestBase
     {
         var sw = Stopwatch.StartNew();
         var attempt = 0;
-        TestContext.WriteLine($"🔎 [KafkaReady] Probing broker metadata at {bootstrapServers}");
+        TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
+        TestContext.WriteLine($"║ 🔎 [KafkaReady] Connecting to Kafka");
+        TestContext.WriteLine($"║ 📡 Bootstrap servers: {bootstrapServers}");
+        TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
+        TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
         
         var bootstrapVariations = await GetBootstrapServerVariationsAsync(bootstrapServers);
         TestContext.WriteLine($"🔗 [KafkaReady] Will try connection variations: {string.Join(", ", bootstrapVariations)}");
@@ -448,6 +452,13 @@ public abstract class LocalTestingTestBase
         var sw = Stopwatch.StartNew();
         var attempt = 0;
         
+        TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
+        TestContext.WriteLine($"║ 🔎 [FlinkReady] Connecting to Flink JobManager");
+        TestContext.WriteLine($"║ 📡 Overview URL: {overviewUrl}");
+        TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
+        TestContext.WriteLine($"║ 🎯 Require free slots: {requireFreeSlots}");
+        TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
+        
         await InitializeFlinkReadinessCheckAsync(overviewUrl, timeout);
         
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
@@ -675,8 +686,12 @@ public abstract class LocalTestingTestBase
 
     private static void LogGatewayReadinessStart(string healthUrl, TimeSpan timeout)
     {
-        TestContext.WriteLine($"🔎 [GatewayReady] Probing Gateway at {healthUrl} (timeout: {timeout.TotalSeconds:F0}s)");
-        TestContext.WriteLine($"💡 [GatewayReady] Gateway is a .NET project that starts after Flink, may need 30-60s");
+        TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
+        TestContext.WriteLine($"║ 🔎 [GatewayReady] Connecting to Flink Job Gateway");
+        TestContext.WriteLine($"║ 📡 Health URL: {healthUrl}");
+        TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
+        TestContext.WriteLine($"║ 💡 Gateway is a .NET project (starts after Flink)");
+        TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
     }
 
     private static async Task<bool> CheckGatewayHealthAsync(
