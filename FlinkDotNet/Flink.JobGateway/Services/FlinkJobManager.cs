@@ -188,7 +188,7 @@ public class FlinkJobManager : IFlinkJobManager
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
                 var flinkJobId = await SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
-                TrackJob(jobDefinition, flinkJobId, true);
+                TrackJob(jobDefinition, flinkJobId);
                 return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
             }
 
@@ -199,24 +199,15 @@ public class FlinkJobManager : IFlinkJobManager
             _logger.LogInformation("🔍 Probing Flink cluster health...");
             var clusterHealthy2 = await ProbeClusterHealthSafelyAsync();
             
-            var flinkJobId2 = clusterHealthy2
-                ? await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition)
-                : await RunLocalAsync(irBase64, jobDefinition);
-
-            TrackJob(jobDefinition, flinkJobId2, clusterHealthy2);
-
-            if (!clusterHealthy2 && _jobMapping[flinkJobId2].Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
+            if (!clusterHealthy2)
             {
-                _logger.LogWarning("⚠️ Job running in LOCAL mode (cluster not available)");
-                return new JobSubmissionResult
-                {
-                    JobId = jobDefinition.Metadata.JobId,
-                    FlinkJobId = flinkJobId2,
-                    Success = true,
-                    SubmittedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, string> { ["mode"] = "local" }
-                };
+                var errorMessage = "Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible.";
+                _logger.LogError("❌ {ErrorMessage}", errorMessage);
+                throw new InvalidOperationException(errorMessage);
             }
+
+            var flinkJobId2 = await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
+            TrackJob(jobDefinition, flinkJobId2);
 
             _logger.LogInformation("✅ Job submitted successfully to Flink cluster");
             return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId2);
@@ -290,13 +281,13 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
-    private void TrackJob(JobDefinition jobDefinition, string flinkJobId, bool clusterHealthy)
+    private void TrackJob(JobDefinition jobDefinition, string flinkJobId)
     {
         _jobMapping[flinkJobId] = new JobInfo
         {
             JobId = jobDefinition.Metadata.JobId,
             FlinkJobId = flinkJobId,
-            Status = clusterHealthy ? "RUNNING" : "LOCAL-RUNNING",
+            Status = "RUNNING",  // Jobs only submitted to healthy clusters
             SubmissionTime = DateTime.UtcNow,
             JobDefinition = jobDefinition
         };
@@ -305,11 +296,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
-        if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
-        {
-            return new JobStatus { JobId = info.JobId, FlinkJobId = flinkJobId, State = info.Status };
-        }
-
+        
         try
         {
             var response = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}");
@@ -320,7 +307,10 @@ public class FlinkJobManager : IFlinkJobManager
                 var state = doc.RootElement.TryGetProperty("state", out var stateProp)
                     ? stateProp.GetString() ?? "UNKNOWN"
                     : "UNKNOWN";
-                return new JobStatus { JobId = info?.JobId ?? flinkJobId, FlinkJobId = flinkJobId, State = state };
+                
+                // Try to get JobId from mapping, fallback to FlinkJobId
+                var jobId = _jobMapping.TryGetValue(flinkJobId, out var info) ? info.JobId : flinkJobId;
+                return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
             }
 
             if (response.StatusCode == HttpStatusCode.NotFound)
@@ -338,19 +328,6 @@ public class FlinkJobManager : IFlinkJobManager
 
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
-        if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
-        {
-            return new JobMetrics
-            {
-                FlinkJobId = flinkJobId,
-                RecordsIn = 0,
-                RecordsOut = 0,
-                Parallelism = info.JobDefinition.Metadata.Parallelism ?? 1,
-                Checkpoints = 0,
-                LastCheckpoint = null,
-                CustomMetrics = new Dictionary<string, object> { ["mode"] = "local" }
-            };
-        }
 
         try
         {
