@@ -181,11 +181,17 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             await WaitForJobRunningViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, JobRunTimeout, ct);
             TestContext.WriteLine("✅ Job is RUNNING");
 
+            // Debug: Check job status immediately to verify it's actually running
+            await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "Immediately after RUNNING check");
+
             // Debug: Check Flink containers and logs after job starts
             await LogFlinkContainerStatusAsync("After job starts running");
 
             // Add delay to ensure job is fully initialized
             await Task.Delay(3000, ct);
+
+            // Debug: Check job status after delay
+            await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "After 3 second delay");
 
             // Produce test messages
             TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");

@@ -1497,6 +1497,35 @@ public abstract class LocalTestingTestBase
     }
 
     /// <summary>
+    /// Log Flink job status via Gateway to check if job is actually running.
+    /// </summary>
+    protected static async Task LogJobStatusViaGatewayAsync(string gatewayBase, string jobId, string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🔍 [Job Status Check] {checkpoint} - Job ID: {jobId}");
+            
+            using var httpClient = new System.Net.Http.HttpClient();
+            var statusUrl = $"{gatewayBase}api/v1/jobs/{jobId}/status";
+            var response = await httpClient.GetAsync(statusUrl);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                TestContext.WriteLine($"📊 Job status response: {content}");
+            }
+            else
+            {
+                TestContext.WriteLine($"⚠️ Failed to get job status: HTTP {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to check job status: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Log Flink container status and recent logs for debugging.
     /// </summary>
     protected static async Task LogFlinkContainerStatusAsync(string checkpoint)
