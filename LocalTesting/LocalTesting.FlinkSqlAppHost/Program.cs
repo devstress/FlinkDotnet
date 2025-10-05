@@ -94,7 +94,7 @@ if (diagnosticsVerbose)
 // Flink JobManager with named HTTP endpoint for service references
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 var jobManagerBuilder = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
-    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "http");
+    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "jm-http");
 
 // Only add Podman-specific container runtime args if Podman is detected
 if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
@@ -147,7 +147,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
 // Runs on port 8083 (separate from JobManager REST API on port 8081)
 // CRITICAL: SQL Gateway must wait for JobManager to be ready before starting
 var sqlGatewayBuilder = builder.AddContainer("flink-sql-gateway", "flink:2.1.0-java17")
-    .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "http")
+    .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "sg-http")
     .WaitFor(jobManager);  // Wait for JobManager to be ready before starting SQL Gateway
 
 if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
@@ -200,8 +200,8 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
-    .WithReference(jobManager.GetEndpoint("http"))  // Reference JobManager for standard job submission
-    .WithReference(sqlGateway.GetEndpoint("http"));  // Reference SQL Gateway for direct SQL execution
+    .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager for standard job submission
+    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway for direct SQL execution
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();

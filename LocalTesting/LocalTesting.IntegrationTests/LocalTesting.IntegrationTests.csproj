@@ -46,28 +46,135 @@
     <Message Text="[LocalTesting.IntegrationTests] FlinkDotNet projects built in Release configuration successfully" Importance="high" />
   </Target>
 
+  <!-- Import Maven configuration from Flink.JobGateway (reuse auto-download logic) -->
+  <PropertyGroup>
+    <MavenVersion>3.9.11</MavenVersion>
+    <ToolsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\tools'))</ToolsDir>
+    <MavenInstallDir>$(ToolsDir)\apache-maven-$(MavenVersion)</MavenInstallDir>
+    <MavenBinPath>$(MavenInstallDir)\bin</MavenBinPath>
+    <JavaHome>$(JAVA_HOME)</JavaHome>
+  </PropertyGroup>
+
+  <!-- MSBuild Target: Ensure Maven and Java are available (reuse logic from Flink.JobGateway) -->
+  <Target Name="EnsureMavenForTests" BeforeTargets="BuildNativeFlinkJob">
+    <Message Text="[LocalTesting.IntegrationTests] Checking for Maven and Java..." Importance="High" />
+
+    <!-- Detect OS for cross-platform Maven detection -->
+    <PropertyGroup>
+      <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+      <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+      <IsMacOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsMacOS>
+    </PropertyGroup>
+
+    <!-- Check if Maven exists in PATH (Windows) -->
+    <Exec Command="where mvn"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(IsWindows)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+    </Exec>
+
+    <!-- Check if Maven exists in PATH (Linux/macOS) -->
+    <Exec Command="which mvn"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+    </Exec>
+
+    <PropertyGroup>
+      <MavenNotFound Condition="'$(MavenFoundExitCode)' != '0'">true</MavenNotFound>
+      <MavenAlreadyInstalled Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd') OR Exists('$(MavenInstallDir)/bin/mvn')">true</MavenAlreadyInstalled>
+    </PropertyGroup>
+
+    <!-- Use system Maven if found, otherwise use auto-installed Maven from Flink.JobGateway build -->
+    <Message Text="[LocalTesting.IntegrationTests] Maven found in PATH"
+             Importance="High"
+             Condition="'$(MavenNotFound)' != 'true'" />
+    
+    <Message Text="[LocalTesting.IntegrationTests] Using auto-installed Maven from $(MavenInstallDir)"
+             Importance="High"
+             Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' == 'true'" />
+
+    <!-- Error if Maven not found anywhere (system PATH or tools directory) -->
+    <Error Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'"
+           Text="Maven not available. Please build Flink.JobGateway first (which will auto-install Maven), or install Maven 3.9.11+ manually and add to PATH." />
+
+    <!-- Determine which Maven command to use -->
+    <PropertyGroup>
+      <!-- Priority 1: Use system Maven if found in PATH -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
+      <!-- Priority 2: Use auto-installed Maven from Flink.JobGateway (Windows) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
+      <!-- Priority 3: Use auto-installed Maven from Flink.JobGateway (Linux/macOS) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenInstallDir)/bin/mvn')">$(MavenInstallDir)/bin/mvn</MavenCommand>
+      <!-- Fallback -->
+      <MavenCommand Condition="'$(MavenCommand)' == ''">mvn</MavenCommand>
+    </PropertyGroup>
+
+    <!-- Ensure JAVA_HOME is set and valid for Maven (same logic as Flink.JobGateway) -->
+    <PropertyGroup>
+      <!-- Check if current JAVA_HOME exists -->
+      <JavaHomeExists Condition="'$(JAVA_HOME)' != '' AND (('$(IsWindows)' == 'true' AND Exists('$(JAVA_HOME)\bin\java.exe')) OR (('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(JAVA_HOME)/bin/java')))">true</JavaHomeExists>
+      
+      <!-- Check if JAVA_HOME version is compatible (not JDK 1.8 or older) -->
+      <JavaHomeIsOldVersion Condition="'$(JavaHomeExists)' == 'true' AND ($([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('/8/')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('\8\')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jre-1.8')))">true</JavaHomeIsOldVersion>
+      
+      <!-- JAVA_HOME is valid only if it exists AND is not an old version -->
+      <JavaHomeIsValid Condition="'$(JavaHomeExists)' == 'true' AND '$(JavaHomeIsOldVersion)' != 'true'">true</JavaHomeIsValid>
+      
+      <!-- Try to detect Java installation if JAVA_HOME is invalid (Windows only - prioritize JDK 17) -->
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND Exists('C:\Program Files\Java\jdk-17\bin\java.exe')">C:\Program Files\Java\jdk-17</DetectedJavaHome>
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-21\bin\java.exe')">C:\Program Files\Java\jdk-21</DetectedJavaHome>
+      
+      <!-- Check if auto-installed JDK exists in tools/ directory (from Flink.JobGateway build) -->
+      <AutoInstalledJdkPath>$(ToolsDir)\jdk-17.0.13+11</AutoInstalledJdkPath>
+      <AutoInstalledJdkExists Condition="Exists('$(AutoInstalledJdkPath)\bin\java.exe') OR Exists('$(AutoInstalledJdkPath)/bin/java')">true</AutoInstalledJdkExists>
+      
+      <!-- Use detected Java if current JAVA_HOME is invalid -->
+      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
+      <!-- Priority 3: Use auto-installed JDK from Flink.JobGateway -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(AutoInstalledJdkExists)' == 'true'">$(AutoInstalledJdkPath)</EffectiveJavaHome>
+      <!-- On Linux/macOS, use JAVA_HOME if set (GitHub Actions sets valid paths) -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JAVA_HOME)' != ''">$(JAVA_HOME)</EffectiveJavaHome>
+    </PropertyGroup>
+
+    <Message Text="[LocalTesting.IntegrationTests] Using JAVA_HOME: $(EffectiveJavaHome)" Importance="High" Condition="'$(EffectiveJavaHome)' != ''" />
+    
+    <Error Condition="'$(EffectiveJavaHome)' == ''"
+           Text="JAVA_HOME is not set correctly and Java could not be auto-detected. Current JAVA_HOME: '$(JAVA_HOME)'. Please set JAVA_HOME to a valid JDK installation or install Java 17+." />
+
+    <Message Text="[LocalTesting.IntegrationTests] Using Maven: $(MavenCommand)" Importance="High" />
+  </Target>
+
   <!-- MSBuild Target: Build NativeFlinkJob Maven project -->
-  <Target Name="BuildNativeFlinkJob" BeforeTargets="Build">
+  <Target Name="BuildNativeFlinkJob" BeforeTargets="Build" DependsOnTargets="EnsureMavenForTests">
     <PropertyGroup>
       <_NativeFlinkJobDir>..\NativeFlinkJob</_NativeFlinkJobDir>
       <_NativeFlinkJobJar>$(_NativeFlinkJobDir)\target\native-flink-kafka-job-1.0.0.jar</_NativeFlinkJobJar>
     </PropertyGroup>
 
-    <Message Text="[LocalTesting.IntegrationTests] Building NativeFlinkJob Maven project..." Importance="high" />
+    <Message Text="[LocalTesting.IntegrationTests] Building NativeFlinkJob Maven project with JAVA_HOME=$(EffectiveJavaHome)..." Importance="high" />
     
-    <!-- Check if Maven is available -->
-    <Exec Command="mvn --version" 
-          IgnoreExitCode="true" 
-          ConsoleToMSBuild="true"
-          StandardOutputImportance="low"
-          StandardErrorImportance="low">
-      <Output TaskParameter="ExitCode" PropertyName="MavenAvailable" />
-    </Exec>
-
-    <!-- Build NativeFlinkJob with Maven if available -->
-    <Exec Command="mvn -B clean package -DskipTests"
+    <!-- Build NativeFlinkJob with detected Maven command and proper JAVA_HOME -->
+    <!-- Use PowerShell to set environment variable and run Maven in one command (Windows) -->
+    <PropertyGroup Condition="'$(IsWindows)' == 'true'">
+      <MavenBuildCommand>powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$env:JAVA_HOME='$(EffectiveJavaHome)'; $env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B clean package -DskipTests&quot;</MavenBuildCommand>
+    </PropertyGroup>
+    <!-- Use direct command with env vars for Linux/macOS -->
+    <PropertyGroup Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">
+      <MavenBuildCommand>JAVA_HOME='$(EffectiveJavaHome)' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B clean package -DskipTests</MavenBuildCommand>
+    </PropertyGroup>
+    
+    <Exec Command="$(MavenBuildCommand)"
           WorkingDirectory="$(_NativeFlinkJobDir)"
-          Condition="'$(MavenAvailable)' == '0'"
           ConsoleToMSBuild="true"
           StandardOutputImportance="High"
           StandardErrorImportance="High">
@@ -75,15 +182,12 @@
     </Exec>
 
     <!-- Verify JAR was created -->
-    <Message Text="[LocalTesting.IntegrationTests] NativeFlinkJob JAR built successfully at $(_NativeFlinkJobJar)" 
-             Importance="high" 
+    <Message Text="[LocalTesting.IntegrationTests] NativeFlinkJob JAR built successfully at $(_NativeFlinkJobJar)"
+             Importance="high"
              Condition="Exists('$(_NativeFlinkJobJar)')" />
     
-    <Warning Text="[LocalTesting.IntegrationTests] NativeFlinkJob JAR not found at $(_NativeFlinkJobJar). Maven build may have failed." 
-             Condition="'$(MavenAvailable)' == '0' AND !Exists('$(_NativeFlinkJobJar)')" />
-    
-    <Warning Text="[LocalTesting.IntegrationTests] Maven not available. NativeFlinkJob will not be built. Some tests may fail." 
-             Condition="'$(MavenAvailable)' != '0'" />
+    <Error Text="[LocalTesting.IntegrationTests] NativeFlinkJob JAR not found at $(_NativeFlinkJobJar). Maven build failed."
+             Condition="!Exists('$(_NativeFlinkJobJar)')" />
   </Target>
 
   <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->

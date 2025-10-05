@@ -281,7 +281,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         return null;
     }
 
-    private static Task<string> GetFlinkJobManagerEndpointAsync()
+    private static new Task<string> GetFlinkJobManagerEndpointAsync()
     {
         try
         {

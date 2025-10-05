@@ -72,15 +72,15 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     }
 
     [Test]
-    public async Task Gateway_Pattern5_SqlPassthrough_ShouldWork()
+    public async Task Gateway_Pattern5_DirectFlinkSQL_ShouldWork()
     {
         await RunGatewayPatternTest(
-            patternName: "SqlPassthrough",
+            patternName: "DirectFlinkSQL",
             jobCreator: (input, output, kafka, ct) =>
-                FlinkDotNetJobs.CreateSqlPassthroughJob(input, output, kafka, "gateway-sql-passthrough", ct),
+                FlinkDotNetJobs.CreateDirectFlinkSQLJob(input, output, kafka, "gateway-direct-flink-sql", ct),
             inputMessages: new[] { "{\"key\":\"k1\",\"value\":\"v1\"}" },
             expectedOutputCount: 1,
-            description: "SQL passthrough via Gateway",
+            description: "Direct Flink SQL via Gateway",
             usesJson: true
         );
     }

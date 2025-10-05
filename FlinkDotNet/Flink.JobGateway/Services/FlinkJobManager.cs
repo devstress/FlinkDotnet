@@ -104,8 +104,10 @@ public class FlinkJobManager : IFlinkJobManager
     
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
     {
-        var maxRetries = 30; // 30 seconds total wait time
+        var maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
         var retryDelay = TimeSpan.FromSeconds(1);
+        
+        _logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
         
         for (int i = 0; i < maxRetries; i++)
         {
@@ -116,7 +118,8 @@ public class FlinkJobManager : IFlinkJobManager
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("SQL Gateway is ready and responding");
+                    var infoContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation("SQL Gateway is ready and responding: {Info}", infoContent);
                     return;
                 }
                 
@@ -124,20 +127,17 @@ public class FlinkJobManager : IFlinkJobManager
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning("SQL Gateway not yet available: {Message}", ex.Message);
+                _logger.LogWarning(ex, "SQL Gateway not yet available (attempt {Attempt}/{Max})", i + 1, maxRetries);
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
-                _logger.LogWarning("SQL Gateway request timed out, retrying...");
+                _logger.LogWarning(ex, "SQL Gateway request timed out (attempt {Attempt}/{Max})", i + 1, maxRetries);
             }
             
             await Task.Delay(retryDelay);
         }
         
-        throw new InvalidOperationException($"SQL Gateway did not become ready after {maxRetries} attempts");
-    }
-        _logger.LogInformation("Using default SQL Gateway endpoint: {Endpoint}", defaultEndpoint);
-        return defaultEndpoint;
+        throw new InvalidOperationException($"SQL Gateway at {client.BaseAddress} did not become ready after {maxRetries} seconds");
     }
 
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
@@ -584,9 +584,8 @@ public class FlinkJobManager : IFlinkJobManager
             return envPath;
         }
 
-        // Prioritize Java 17 JAR since Flink 2.1.0 runs on Java 17
-        // Even if built with JDK 25, we must use Java 17-compatible JAR for Flink submission
-        var names = new[] { "flink-ir-runner-java17.jar", "flink-ir-runner.jar", "flink-ir-runner-java25.jar" };
+        // Use Java 17 JAR for Flink 2.1.0 compatibility
+        var names = new[] { "flink-ir-runner-java17.jar" };
         var baseDirs = new[]
         {
             Environment.CurrentDirectory,
@@ -699,133 +698,146 @@ public class FlinkJobManager : IFlinkJobManager
         
         try
         {
-            // Create dedicated HttpClient for SQL Gateway (different endpoint from JobManager)
-            var sqlGatewayEndpoint = DiscoverSqlGatewayEndpoint();
-            using var sqlGatewayClient = new HttpClient
-            {
-                BaseAddress = new Uri(sqlGatewayEndpoint),
-                Timeout = TimeSpan.FromMinutes(5)
-            };
-            
-            _logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
-            
-            // Wait for SQL Gateway to be ready (it may take time to start)
+            using var sqlGatewayClient = CreateSqlGatewayClient();
             await WaitForSqlGatewayReadyAsync(sqlGatewayClient);
             
-            // Step 1: Create a session (REQUIRED by Flink SQL Gateway REST API)
-            var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
-            _logger.LogInformation("Creating SQL Gateway session: {SessionName}", sessionName);
+            var sessionHandle = await CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
+            var lastJobId = await ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
             
-            var sessionRequest = new
-            {
-                sessionName = sessionName
-            };
-            
-            var sessionJson = JsonSerializer.Serialize(sessionRequest);
-            using var sessionContent = new StringContent(sessionJson, Encoding.UTF8, "application/json");
-            
-            using var sessionResponse = await sqlGatewayClient.PostAsync("/v1/sessions", sessionContent);
-            
-            if (!sessionResponse.IsSuccessStatusCode)
-            {
-                var errorContent = await sessionResponse.Content.ReadAsStringAsync();
-                _logger.LogError("SQL Gateway session creation failed: {StatusCode} - {Error}", 
-                    sessionResponse.StatusCode, errorContent);
-                throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
-            }
-            
-            var sessionResponseContent = await sessionResponse.Content.ReadAsStringAsync();
-            _logger.LogInformation("SQL Gateway session created: {Response}", sessionResponseContent);
-            
-            // Extract session handle from response
-            string sessionHandle;
-            try
-            {
-                var sessionJson2 = JsonDocument.Parse(sessionResponseContent);
-                if (sessionJson2.RootElement.TryGetProperty("sessionHandle", out var handleProp))
-                {
-                    sessionHandle = handleProp.GetString() ?? throw new InvalidOperationException("Session handle is null");
-                    _logger.LogInformation("SQL Gateway session handle: {SessionHandle}", sessionHandle);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Session response doesn't contain sessionHandle");
-                }
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogError(ex, "Failed to parse session response");
-                throw new InvalidOperationException("Failed to parse SQL Gateway session response", ex);
-            }
-            
-            // Step 2: Execute each SQL statement via the session
-            string? lastJobId = null;
-            foreach (var statement in sqlSource.Statements)
-            {
-                if (string.IsNullOrWhiteSpace(statement))
-                    continue;
-                    
-                _logger.LogInformation("Executing SQL statement via Gateway: {Statement}", 
-                    statement.Length > 100 ? statement.Substring(0, 100) + "..." : statement);
-                
-                var requestBody = new
-                {
-                    statement = statement.Trim()
-                };
-                
-                var jsonContent = JsonSerializer.Serialize(requestBody);
-                using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-                
-                // Submit statement to SQL Gateway using session handle
-                var statementEndpoint = $"/v1/sessions/{sessionHandle}/statements";
-                using var response = await sqlGatewayClient.PostAsync(statementEndpoint, content);
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("SQL Gateway statement execution failed: {StatusCode} - {Error}", 
-                        response.StatusCode, errorContent);
-                    throw new InvalidOperationException($"SQL Gateway execution failed: {response.StatusCode} - {errorContent}");
-                }
-                
-                var responseContent = await response.Content.ReadAsStringAsync();
-                _logger.LogDebug("SQL Gateway response: {Response}", responseContent);
-                
-                // Try to extract operation handle or job ID from response
-                try
-                {
-                    var responseJson = JsonDocument.Parse(responseContent);
-                    if (responseJson.RootElement.TryGetProperty("operationHandle", out var opHandleProp))
-                    {
-                        lastJobId = opHandleProp.GetString();
-                        _logger.LogInformation("SQL Gateway returned operation handle: {OperationHandle}", lastJobId);
-                    }
-                    else if (responseJson.RootElement.TryGetProperty("statementId", out var stmtIdProp))
-                    {
-                        lastJobId = stmtIdProp.GetString();
-                        _logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", lastJobId);
-                    }
-                }
-                catch (JsonException ex)
-                {
-                    _logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
-                }
-            }
-            
-            // If no job ID was extracted, use session handle as job ID
-            if (string.IsNullOrEmpty(lastJobId))
-            {
-                lastJobId = sessionHandle;
-                _logger.LogInformation("Using session handle as job ID: {JobId}", lastJobId);
-            }
-            
-            return lastJobId;
+            return lastJobId ?? sessionHandle;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to submit SQL job via SQL Gateway");
             throw new InvalidOperationException("SQL Gateway submission failed. See inner exception for details.", ex);
         }
+    }
+
+    private HttpClient CreateSqlGatewayClient()
+    {
+        var sqlGatewayEndpoint = DiscoverSqlGatewayEndpoint();
+        _logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
+        
+        return new HttpClient
+        {
+            BaseAddress = new Uri(sqlGatewayEndpoint),
+            Timeout = TimeSpan.FromMinutes(5)
+        };
+    }
+
+    private async Task<string> CreateSqlGatewaySessionAsync(HttpClient client, JobDefinition jobDefinition)
+    {
+        var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+        _logger.LogInformation("Creating SQL Gateway session: {SessionName}", sessionName);
+        
+        var sessionRequest = new { sessionName };
+        var sessionJson = JsonSerializer.Serialize(sessionRequest);
+        using var sessionContent = new StringContent(sessionJson, Encoding.UTF8, "application/json");
+        using var sessionResponse = await client.PostAsync("/v1/sessions", sessionContent);
+        
+        if (!sessionResponse.IsSuccessStatusCode)
+        {
+            var errorContent = await sessionResponse.Content.ReadAsStringAsync();
+            _logger.LogError("SQL Gateway session creation failed: {StatusCode} - {Error}",
+                sessionResponse.StatusCode, errorContent);
+            throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
+        }
+        
+        var sessionResponseContent = await sessionResponse.Content.ReadAsStringAsync();
+        _logger.LogInformation("SQL Gateway session created: {Response}", sessionResponseContent);
+        
+        return ExtractSessionHandle(sessionResponseContent);
+    }
+
+    private string ExtractSessionHandle(string sessionResponseContent)
+    {
+        try
+        {
+            var sessionJson = JsonDocument.Parse(sessionResponseContent);
+            if (sessionJson.RootElement.TryGetProperty("sessionHandle", out var handleProp))
+            {
+                var sessionHandle = handleProp.GetString() ?? throw new InvalidOperationException("Session handle is null");
+                _logger.LogInformation("SQL Gateway session handle: {SessionHandle}", sessionHandle);
+                return sessionHandle;
+            }
+            throw new InvalidOperationException("Session response doesn't contain sessionHandle");
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to parse session response");
+            throw new InvalidOperationException("Failed to parse SQL Gateway session response", ex);
+        }
+    }
+
+    private async Task<string?> ExecuteSqlStatementsAsync(HttpClient client, string sessionHandle, List<string> statements)
+    {
+        string? lastJobId = null;
+        
+        foreach (var statement in statements)
+        {
+            if (string.IsNullOrWhiteSpace(statement))
+                continue;
+            
+            lastJobId = await ExecuteSingleStatementAsync(client, sessionHandle, statement) ?? lastJobId;
+        }
+        
+        if (string.IsNullOrEmpty(lastJobId))
+        {
+            _logger.LogInformation("Using session handle as job ID: {JobId}", sessionHandle);
+        }
+        
+        return lastJobId;
+    }
+
+    private async Task<string?> ExecuteSingleStatementAsync(HttpClient client, string sessionHandle, string statement)
+    {
+        _logger.LogInformation("Executing SQL statement via Gateway: {Statement}",
+            statement.Length > 100 ? statement.Substring(0, 100) + "..." : statement);
+        
+        var requestBody = new { statement = statement.Trim() };
+        var jsonContent = JsonSerializer.Serialize(requestBody);
+        using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        
+        var statementEndpoint = $"/v1/sessions/{sessionHandle}/statements";
+        using var response = await client.PostAsync(statementEndpoint, content);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError("SQL Gateway statement execution failed: {StatusCode} - {Error}",
+                response.StatusCode, errorContent);
+            throw new InvalidOperationException($"SQL Gateway execution failed: {response.StatusCode} - {errorContent}");
+        }
+        
+        var responseContent = await response.Content.ReadAsStringAsync();
+        _logger.LogDebug("SQL Gateway response: {Response}", responseContent);
+        
+        return ExtractJobIdFromStatementResponse(responseContent);
+    }
+
+    private string? ExtractJobIdFromStatementResponse(string responseContent)
+    {
+        try
+        {
+            var responseJson = JsonDocument.Parse(responseContent);
+            if (responseJson.RootElement.TryGetProperty("operationHandle", out var opHandleProp))
+            {
+                var jobId = opHandleProp.GetString();
+                _logger.LogInformation("SQL Gateway returned operation handle: {OperationHandle}", jobId);
+                return jobId;
+            }
+            if (responseJson.RootElement.TryGetProperty("statementId", out var stmtIdProp))
+            {
+                var jobId = stmtIdProp.GetString();
+                _logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", jobId);
+                return jobId;
+            }
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
+        }
+        return null;
     }
 
 
@@ -1038,12 +1050,8 @@ public class FlinkJobManager : IFlinkJobManager
     private Task CombineJarsAsync(string runnerJarPath, List<string> connectorJars, string outputPath)
     {
         _logger.LogInformation("Combining runner JAR with {Count} connector JARs into shaded JAR", connectorJars.Count);
-        
-        // Copy runner JAR as base
         File.Copy(runnerJarPath, outputPath, true);
 
-        // JARs are ZIP files - use ZipArchive to merge connector JARs into the runner JAR
-        // Special handling: META-INF/services files must be merged, not replaced
         var serviceFiles = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         
         using (var outputZip = ZipFile.Open(outputPath, ZipArchiveMode.Update))
@@ -1052,118 +1060,129 @@ public class FlinkJobManager : IFlinkJobManager
                 outputZip.Entries.Select(e => e.FullName),
                 StringComparer.OrdinalIgnoreCase);
 
-            // First, collect all META-INF/services entries from runner JAR
-            foreach (var entry in outputZip.Entries.ToList())
-            {
-                if (entry.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase) &&
-                    !entry.FullName.EndsWith('/'))
-                {
-                    using var stream = entry.Open();
-                    using var reader = new StreamReader(stream);
-                    var lines = new HashSet<string>();
-                    string? line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        var trimmed = line.Trim();
-                        if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
-                        {
-                            lines.Add(line); // Keep original format including comments
-                        }
-                    }
-                    serviceFiles[entry.FullName] = lines;
-                }
-            }
-
-            foreach (var connectorJar in connectorJars)
-            {
-                if (!File.Exists(connectorJar))
-                {
-                    _logger.LogWarning("Connector JAR not found, skipping: {Path}", connectorJar);
-                    continue;
-                }
-
-                _logger.LogDebug("Merging connector JAR: {Path}", connectorJar);
-                var entriesAdded = 0;
-
-                using (var connectorZip = ZipFile.OpenRead(connectorJar))
-                {
-                    foreach (var entry in connectorZip.Entries)
-                    {
-                        // Skip directories (they're created automatically)
-                        if (entry.FullName.EndsWith('/'))
-                        {
-                            continue;
-                        }
-
-                        // Special handling for META-INF/services files - merge them
-                        if (entry.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase))
-                        {
-                            using var stream = entry.Open();
-                            using var reader = new StreamReader(stream);
-                            
-                            if (!serviceFiles.ContainsKey(entry.FullName))
-                            {
-                                serviceFiles[entry.FullName] = new HashSet<string>();
-                            }
-                            
-                            string? line;
-                            while ((line = reader.ReadLine()) != null)
-                            {
-                                var trimmed = line.Trim();
-                                if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
-                                {
-                                    serviceFiles[entry.FullName].Add(line);
-                                }
-                            }
-                            continue;
-                        }
-
-                        // Skip duplicate entries (keep first occurrence from runner JAR)
-                        if (existingEntries.Contains(entry.FullName))
-                        {
-                            continue;
-                        }
-
-                        // Copy entry to output JAR
-                        var newEntry = outputZip.CreateEntry(entry.FullName, CompressionLevel.Optimal);
-                        using (var sourceStream = entry.Open())
-                        using (var destStream = newEntry.Open())
-                        {
-                            sourceStream.CopyTo(destStream);
-                        }
-
-                        existingEntries.Add(entry.FullName);
-                        entriesAdded++;
-                    }
-                }
-
-                _logger.LogInformation("Added {Count} entries from connector JAR: {Name}", 
-                    entriesAdded, Path.GetFileName(connectorJar));
-            }
-
-            // Now write merged META-INF/services files
-            foreach (var (servicePath, serviceLines) in serviceFiles)
-            {
-                // Remove old entry if it exists
-                var oldEntry = outputZip.Entries.FirstOrDefault(e => 
-                    e.FullName.Equals(servicePath, StringComparison.OrdinalIgnoreCase));
-                oldEntry?.Delete();
-
-                // Create new merged entry
-                var newEntry = outputZip.CreateEntry(servicePath, CompressionLevel.Optimal);
-                using var writer = new StreamWriter(newEntry.Open());
-                foreach (var line in serviceLines.OrderBy(l => l))
-                {
-                    writer.WriteLine(line);
-                }
-                
-                _logger.LogDebug("Merged service file {Path} with {Count} providers", 
-                    servicePath, serviceLines.Count);
-            }
+            CollectServiceFilesFromRunnerJar(outputZip, serviceFiles);
+            MergeConnectorJars(outputZip, connectorJars, existingEntries, serviceFiles);
+            WriteMergedServiceFiles(outputZip, serviceFiles);
         }
 
         _logger.LogInformation("Created shaded JAR at {Path}", outputPath);
         return Task.CompletedTask;
+    }
+
+    private static void CollectServiceFilesFromRunnerJar(ZipArchive outputZip, Dictionary<string, HashSet<string>> serviceFiles)
+    {
+        foreach (var entry in outputZip.Entries
+            .Where(e => e.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase) && !e.FullName.EndsWith('/')))
+        {
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream);
+            var lines = new HashSet<string>();
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                var trimmed = line.Trim();
+                if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
+                {
+                    lines.Add(line);
+                }
+            }
+            serviceFiles[entry.FullName] = lines;
+        }
+    }
+
+    private void MergeConnectorJars(ZipArchive outputZip, List<string> connectorJars,
+        HashSet<string> existingEntries, Dictionary<string, HashSet<string>> serviceFiles)
+    {
+        foreach (var connectorJar in connectorJars)
+        {
+            if (!File.Exists(connectorJar))
+            {
+                _logger.LogWarning("Connector JAR not found, skipping: {Path}", connectorJar);
+                continue;
+            }
+
+            _logger.LogDebug("Merging connector JAR: {Path}", connectorJar);
+            var entriesAdded = MergeConnectorJar(outputZip, connectorJar, existingEntries, serviceFiles);
+            _logger.LogInformation("Added {Count} entries from connector JAR: {Name}",
+                entriesAdded, Path.GetFileName(connectorJar));
+        }
+    }
+
+    private static int MergeConnectorJar(ZipArchive outputZip, string connectorJar,
+        HashSet<string> existingEntries, Dictionary<string, HashSet<string>> serviceFiles)
+    {
+        var entriesAdded = 0;
+        using var connectorZip = ZipFile.OpenRead(connectorJar);
+        
+        foreach (var entry in connectorZip.Entries)
+        {
+            if (entry.FullName.EndsWith('/'))
+                continue;
+
+            if (entry.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase))
+            {
+                MergeServiceFile(entry, serviceFiles);
+                continue;
+            }
+
+            if (existingEntries.Contains(entry.FullName))
+                continue;
+
+            CopyZipEntry(entry, outputZip);
+            existingEntries.Add(entry.FullName);
+            entriesAdded++;
+        }
+        
+        return entriesAdded;
+    }
+
+    private static void MergeServiceFile(ZipArchiveEntry entry, Dictionary<string, HashSet<string>> serviceFiles)
+    {
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream);
+        
+        if (!serviceFiles.ContainsKey(entry.FullName))
+        {
+            serviceFiles[entry.FullName] = new HashSet<string>();
+        }
+        
+        string? line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
+            {
+                serviceFiles[entry.FullName].Add(line);
+            }
+        }
+    }
+
+    private static void CopyZipEntry(ZipArchiveEntry sourceEntry, ZipArchive destinationZip)
+    {
+        var newEntry = destinationZip.CreateEntry(sourceEntry.FullName, CompressionLevel.Optimal);
+        using var sourceStream = sourceEntry.Open();
+        using var destStream = newEntry.Open();
+        sourceStream.CopyTo(destStream);
+    }
+
+    private void WriteMergedServiceFiles(ZipArchive outputZip, Dictionary<string, HashSet<string>> serviceFiles)
+    {
+        foreach (var (servicePath, serviceLines) in serviceFiles)
+        {
+            var oldEntry = outputZip.Entries.FirstOrDefault(e =>
+                e.FullName.Equals(servicePath, StringComparison.OrdinalIgnoreCase));
+            oldEntry?.Delete();
+
+            var newEntry = outputZip.CreateEntry(servicePath, CompressionLevel.Optimal);
+            using var writer = new StreamWriter(newEntry.Open());
+            foreach (var line in serviceLines.OrderBy(l => l))
+            {
+                writer.WriteLine(line);
+            }
+            
+            _logger.LogDebug("Merged service file {Path} with {Count} providers",
+                servicePath, serviceLines.Count);
+        }
     }
 
     private static string? FindRepoRoot(string start)

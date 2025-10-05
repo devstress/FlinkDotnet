@@ -145,16 +145,12 @@
   <profiles>
     <profile>
       <id>java17</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <properties>
         <java.release>17</java.release>
         <runner.finalName>flink-ir-runner-java17</runner.finalName>
-      </properties>
-    </profile>
-    <profile>
-      <id>java25</id>
-      <properties>
-        <java.release>25</java.release>
-        <runner.finalName>flink-ir-runner</runner.finalName>
       </properties>
     </profile>
   </profiles>

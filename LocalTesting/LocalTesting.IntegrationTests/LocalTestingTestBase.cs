@@ -20,6 +20,7 @@ public abstract class LocalTestingTestBase
     // Optimized timeouts for faster test execution (used in WaitForFullInfrastructureAsync)
     private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan SqlGatewayReadyTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>
     /// Access to shared AppHost instance from GlobalTestInfrastructure.
@@ -740,6 +741,94 @@ public abstract class LocalTestingTestBase
     }
 
     /// <summary>
+    /// Enhanced SQL Gateway readiness check with proper retry logic.
+    /// SQL Gateway is a Flink component that provides REST API for direct SQL execution.
+    /// It starts after JobManager and must be validated before submitting SQL jobs.
+    /// </summary>
+    public static async Task WaitForSqlGatewayReadyAsync(string baseUrl, TimeSpan timeout, CancellationToken ct)
+    {
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        var sw = Stopwatch.StartNew();
+        var attempt = 0;
+        var healthUrl = $"{baseUrl}/v1/info";
+        
+        LogSqlGatewayReadinessStart(healthUrl, timeout);
+        
+        while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
+        {
+            attempt++;
+            if (await CheckSqlGatewayHealthAsync(http, healthUrl, attempt, sw.Elapsed, ct))
+                return;
+            
+            await Task.Delay(1000, ct);
+        }
+        
+        ThrowSqlGatewayTimeoutException(healthUrl, timeout, attempt, sw.Elapsed);
+    }
+
+    private static void LogSqlGatewayReadinessStart(string healthUrl, TimeSpan timeout)
+    {
+        TestContext.WriteLine($"🔎 [SqlGatewayReady] Probing SQL Gateway at {healthUrl} (timeout: {timeout.TotalSeconds:F0}s)");
+        TestContext.WriteLine($"💡 [SqlGatewayReady] SQL Gateway is a Flink component that starts after JobManager");
+    }
+
+    private static async Task<bool> CheckSqlGatewayHealthAsync(HttpClient http, string healthUrl, int attempt, TimeSpan elapsed, CancellationToken ct)
+    {
+        try
+        {
+            var resp = await http.GetAsync(healthUrl, ct);
+            if (resp.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"✅ [SqlGatewayReady] SQL Gateway ready at {healthUrl} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
+                return true;
+            }
+            
+            LogSqlGatewayAttempt(attempt, elapsed, resp.StatusCode);
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            LogSqlGatewayHttpException(attempt, elapsed, ex);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LogSqlGatewayException(attempt, ex);
+            return false;
+        }
+    }
+
+    private static void LogSqlGatewayAttempt(int attempt, TimeSpan elapsed, System.Net.HttpStatusCode statusCode)
+    {
+        if (attempt % 10 == 0)
+        {
+            TestContext.WriteLine($"⏳ [SqlGatewayReady] Attempt {attempt}: HTTP {statusCode} (elapsed: {elapsed.TotalSeconds:F1}s)");
+        }
+    }
+
+    private static void LogSqlGatewayHttpException(int attempt, TimeSpan elapsed, HttpRequestException ex)
+    {
+        if (attempt % 10 == 0)
+        {
+            TestContext.WriteLine($"⏳ [SqlGatewayReady] Attempt {attempt}: {ex.GetType().Name} (elapsed: {elapsed.TotalSeconds:F1}s)");
+        }
+    }
+
+    private static void LogSqlGatewayException(int attempt, Exception ex)
+    {
+        if (attempt % 10 == 0)
+        {
+            TestContext.WriteLine($"⏳ [SqlGatewayReady] Attempt {attempt}: {ex.GetType().Name} - {ex.Message}");
+        }
+    }
+
+    private static void ThrowSqlGatewayTimeoutException(string healthUrl, TimeSpan timeout, int attempt, TimeSpan elapsed)
+    {
+        TestContext.WriteLine($"❌ [SqlGatewayReady] SQL Gateway failed to start after {attempt} attempts over {elapsed.TotalSeconds:F1}s");
+        throw new TimeoutException($"SQL Gateway not ready within {timeout.TotalSeconds:F0}s at {healthUrl}. SQL Gateway may not have started properly - check Flink logs.");
+    }
+
+    /// <summary>
     /// Create Kafka topic with proper error handling for existing topics.
     /// Copied from BackPressureExample patterns.
     /// </summary>
@@ -838,6 +927,27 @@ public abstract class LocalTestingTestBase
             TestContext.WriteLine($"🔍 Discovered Gateway endpoint: {gatewayEndpoint}");
             await WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", GatewayReadyTimeout, cancellationToken);
             TestContext.WriteLine("✅ Flink Job Gateway is ready");
+            
+            // CRITICAL: SQL Gateway validation for DirectFlinkSQL pattern
+            // SQL Gateway is optional and only needed for jobs with executionMode="gateway"
+            // Check if SQL Gateway container exists before attempting validation
+            TestContext.WriteLine("⏳ Checking if SQL Gateway is available...");
+            
+            try
+            {
+                // Try to discover SQL Gateway endpoint
+                var sqlGatewayEndpoint = await GetSqlGatewayEndpointAsync();
+                TestContext.WriteLine($"🔍 Discovered SQL Gateway endpoint: {sqlGatewayEndpoint}");
+                
+                await WaitForSqlGatewayReadyAsync(sqlGatewayEndpoint, SqlGatewayReadyTimeout, cancellationToken);
+                TestContext.WriteLine("✅ Flink SQL Gateway is ready");
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("Could not determine SQL Gateway endpoint"))
+            {
+                // SQL Gateway container not found - this is OK for patterns that don't use it
+                TestContext.WriteLine($"ℹ️ SQL Gateway container not found - DirectFlinkSQL pattern will not be available");
+                TestContext.WriteLine($"   Reason: {ex.Message}");
+            }
         }
 
         TestContext.WriteLine("✅ Complete infrastructure is ready for testing");
@@ -936,6 +1046,44 @@ public abstract class LocalTestingTestBase
         TestContext.WriteLine($"💡 Gateway may take 15-30 seconds to start after Flink is ready");
         return $"http://localhost:{Ports.GatewayHostPort}/";
     }
+    /// <summary>
+    /// Get the dynamically allocated SQL Gateway HTTP endpoint from Aspire.
+    /// SQL Gateway is a Flink container component that provides REST API for SQL execution.
+    /// Aspire DCP assigns random ports during testing, so we must query the actual endpoint.
+    /// </summary>
+    private static async Task<string> GetSqlGatewayEndpointAsync()
+    {
+        try
+        {
+            var sqlGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-sql-gateway\" --format \"{{.Ports}}\"");
+            TestContext.WriteLine($"🔍 SQL Gateway container port mappings: {sqlGatewayContainers.Trim()}");
+            
+            return ExtractSqlGatewayEndpointFromPorts(sqlGatewayContainers);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get SQL Gateway endpoint: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractSqlGatewayEndpointFromPorts(string sqlGatewayContainers)
+    {
+        var lines = sqlGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 8083 (SQL Gateway port)
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8083");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                TestContext.WriteLine($"🔍 Found SQL Gateway port mapping: host {port} -> container 8083");
+                return $"http://localhost:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine SQL Gateway endpoint from Docker ports: {sqlGatewayContainers}");
+    }
+
 
     /// <summary>
     /// Retrieve JobManager logs from Flink REST API.
@@ -947,65 +1095,12 @@ public abstract class LocalTestingTestBase
         {
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
             var logsBuilder = new System.Text.StringBuilder();
-            
             logsBuilder.AppendLine("\n========== JobManager Logs ==========");
             
-            // Get JobManager log list
-            var logListUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs";
-            var logListResponse = await httpClient.GetAsync(logListUrl);
-            
-            if (!logListResponse.IsSuccessStatusCode)
-            {
-                return $"Failed to get JobManager log list: HTTP {logListResponse.StatusCode}";
-            }
-            
-            var logListContent = await logListResponse.Content.ReadAsStringAsync();
-            var logListJson = System.Text.Json.JsonDocument.Parse(logListContent);
-            
-            string? mainLogName = null;
-            if (logListJson.RootElement.TryGetProperty("logs", out var logs))
-            {
-                foreach (var logFile in logs.EnumerateArray())
-                {
-                    if (logFile.TryGetProperty("name", out var name))
-                    {
-                        var logName = name.GetString();
-                        logsBuilder.AppendLine($"  Available log: {logName}");
-                        
-                        // Try to get the main log file (usually ends with .log, not .out)
-                        if (logName?.EndsWith(".log") == true)
-                        {
-                            mainLogName = logName;
-                        }
-                    }
-                }
-            }
-            
-            // Try to read the actual log file content if we found one
+            var mainLogName = await GetJobManagerLogListAsync(httpClient, flinkEndpoint, logsBuilder);
             if (!string.IsNullOrEmpty(mainLogName))
             {
-                var logContentUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs/{mainLogName}";
-                try
-                {
-                    var logResponse = await httpClient.GetAsync(logContentUrl);
-                    if (logResponse.IsSuccessStatusCode)
-                    {
-                        var logContent = await logResponse.Content.ReadAsStringAsync();
-                        // Get last 500 lines which should contain recent errors
-                        var lines = logContent.Split('\n');
-                        var lastLines = lines.Length > 500 ? lines[^500..] : lines;
-                        logsBuilder.AppendLine($"\n  Last 500 lines of {mainLogName}:");
-                        logsBuilder.AppendLine(string.Join('\n', lastLines));
-                    }
-                    else
-                    {
-                        logsBuilder.AppendLine($"  Failed to read log content: HTTP {logResponse.StatusCode}");
-                    }
-                }
-                catch (Exception logEx)
-                {
-                    logsBuilder.AppendLine($"  Error reading log file {mainLogName}: {logEx.Message}");
-                }
+                await AppendJobManagerLogContentAsync(httpClient, flinkEndpoint, mainLogName, logsBuilder);
             }
             
             return logsBuilder.ToString();
@@ -1014,6 +1109,75 @@ public abstract class LocalTestingTestBase
         {
             return $"Error fetching JobManager logs: {ex.Message}";
         }
+    }
+
+    private static async Task<string?> GetJobManagerLogListAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, System.Text.StringBuilder logsBuilder)
+    {
+        var logListUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs";
+        var logListResponse = await httpClient.GetAsync(logListUrl);
+        
+        if (!logListResponse.IsSuccessStatusCode)
+        {
+            logsBuilder.AppendLine($"Failed to get JobManager log list: HTTP {logListResponse.StatusCode}");
+            return null;
+        }
+        
+        var logListContent = await logListResponse.Content.ReadAsStringAsync();
+        var logListJson = System.Text.Json.JsonDocument.Parse(logListContent);
+        
+        return ExtractMainLogName(logListJson, logsBuilder);
+    }
+
+    private static string? ExtractMainLogName(System.Text.Json.JsonDocument logListJson, System.Text.StringBuilder logsBuilder)
+    {
+        string? mainLogName = null;
+        if (logListJson.RootElement.TryGetProperty("logs", out var logs))
+        {
+            foreach (var logFile in logs.EnumerateArray())
+            {
+                if (logFile.TryGetProperty("name", out var name))
+                {
+                    var logName = name.GetString();
+                    logsBuilder.AppendLine($"  Available log: {logName}");
+                    
+                    if (logName?.EndsWith(".log") == true)
+                    {
+                        mainLogName = logName;
+                    }
+                }
+            }
+        }
+        return mainLogName;
+    }
+
+    private static async Task AppendJobManagerLogContentAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string mainLogName, System.Text.StringBuilder logsBuilder)
+    {
+        var logContentUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs/{mainLogName}";
+        try
+        {
+            var logResponse = await httpClient.GetAsync(logContentUrl);
+            if (logResponse.IsSuccessStatusCode)
+            {
+                await AppendLogLines(logResponse, mainLogName, logsBuilder);
+            }
+            else
+            {
+                logsBuilder.AppendLine($"  Failed to read log content: HTTP {logResponse.StatusCode}");
+            }
+        }
+        catch (Exception logEx)
+        {
+            logsBuilder.AppendLine($"  Error reading log file {mainLogName}: {logEx.Message}");
+        }
+    }
+
+    private static async Task AppendLogLines(System.Net.Http.HttpResponseMessage logResponse, string mainLogName, System.Text.StringBuilder logsBuilder)
+    {
+        var logContent = await logResponse.Content.ReadAsStringAsync();
+        var lines = logContent.Split('\n');
+        var lastLines = lines.Length > 500 ? lines[^500..] : lines;
+        logsBuilder.AppendLine($"\n  Last 500 lines of {mainLogName}:");
+        logsBuilder.AppendLine(string.Join('\n', lastLines));
     }
 
     /// <summary>
@@ -1056,85 +1220,108 @@ public abstract class LocalTestingTestBase
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             var logsBuilder = new System.Text.StringBuilder();
             
-            // First, get list of TaskManagers
-            var tmListUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers";
-            var tmListResponse = await httpClient.GetAsync(tmListUrl);
-            
-            if (!tmListResponse.IsSuccessStatusCode)
+            var taskManagers = await GetTaskManagerListAsync(httpClient, flinkEndpoint);
+            if (!taskManagers.HasValue)
             {
-                return $"Failed to get TaskManager list: HTTP {tmListResponse.StatusCode}";
+                return "Failed to get TaskManager list or no TaskManagers found";
             }
             
-            var tmListContent = await tmListResponse.Content.ReadAsStringAsync();
-            var tmListJson = System.Text.Json.JsonDocument.Parse(tmListContent);
+            var tmCount = await ProcessTaskManagersAsync(httpClient, flinkEndpoint, taskManagers.Value, logsBuilder);
             
-            if (!tmListJson.RootElement.TryGetProperty("taskmanagers", out var taskManagers))
-            {
-                return "No TaskManagers found in response";
-            }
-            
-            // Get logs from each TaskManager
-            int tmCount = 0;
-            foreach (var tm in taskManagers.EnumerateArray())
-            {
-                if (tm.TryGetProperty("id", out var tmId))
-                {
-                    var taskManagerId = tmId.GetString();
-                    tmCount++;
-                    logsBuilder.AppendLine($"\n========== TaskManager {tmCount} (ID: {taskManagerId}) ==========");
-                    
-                    // Try to get logs
-                    var logUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/logs";
-                    try
-                    {
-                        var logResponse = await httpClient.GetAsync(logUrl);
-                        if (logResponse.IsSuccessStatusCode)
-                        {
-                            var logContent = await logResponse.Content.ReadAsStringAsync();
-                            var logJson = System.Text.Json.JsonDocument.Parse(logContent);
-                            
-                            if (logJson.RootElement.TryGetProperty("logs", out var logs))
-                            {
-                                foreach (var logFile in logs.EnumerateArray())
-                                {
-                                    if (logFile.TryGetProperty("name", out var name))
-                                    {
-                                        logsBuilder.AppendLine($"  Log file: {name.GetString()}");
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Also try to get stdout which might have more immediate errors
-                        var stdoutUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/stdout";
-                        var stdoutResponse = await httpClient.GetAsync(stdoutUrl);
-                        if (stdoutResponse.IsSuccessStatusCode)
-                        {
-                            var stdoutContent = await stdoutResponse.Content.ReadAsStringAsync();
-                            // Get last 100 lines
-                            var lines = stdoutContent.Split('\n');
-                            var lastLines = lines.Length > 100 ? lines[^100..] : lines;
-                            logsBuilder.AppendLine($"\n  Last 100 lines of stdout:");
-                            logsBuilder.AppendLine(string.Join('\n', lastLines));
-                        }
-                    }
-                    catch (Exception tmEx)
-                    {
-                        logsBuilder.AppendLine($"  Error getting TaskManager logs: {tmEx.Message}");
-                    }
-                }
-            }
-            
-            if (tmCount == 0)
-            {
-                return "No TaskManagers found";
-            }
-            
-            return logsBuilder.ToString();
+            return tmCount == 0 ? "No TaskManagers found" : logsBuilder.ToString();
         }
         catch (Exception ex)
         {
             return $"Error fetching TaskManager logs: {ex.Message}";
+        }
+    }
+
+    private static async Task<System.Text.Json.JsonElement?> GetTaskManagerListAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint)
+    {
+        var tmListUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers";
+        var tmListResponse = await httpClient.GetAsync(tmListUrl);
+        
+        if (!tmListResponse.IsSuccessStatusCode)
+        {
+            return null;
+        }
+        
+        var tmListContent = await tmListResponse.Content.ReadAsStringAsync();
+        var tmListJson = System.Text.Json.JsonDocument.Parse(tmListContent);
+        
+        if (!tmListJson.RootElement.TryGetProperty("taskmanagers", out var taskManagers))
+        {
+            return null;
+        }
+        
+        return taskManagers;
+    }
+
+    private static async Task<int> ProcessTaskManagersAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, System.Text.Json.JsonElement taskManagers, System.Text.StringBuilder logsBuilder)
+    {
+        int tmCount = 0;
+        foreach (var tm in taskManagers.EnumerateArray())
+        {
+            if (tm.TryGetProperty("id", out var tmId))
+            {
+                var taskManagerId = tmId.GetString();
+                tmCount++;
+                logsBuilder.AppendLine($"\n========== TaskManager {tmCount} (ID: {taskManagerId}) ==========");
+                
+                await AppendTaskManagerLogsAsync(httpClient, flinkEndpoint, taskManagerId, logsBuilder);
+            }
+        }
+        return tmCount;
+    }
+
+    private static async Task AppendTaskManagerLogsAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string? taskManagerId, System.Text.StringBuilder logsBuilder)
+    {
+        try
+        {
+            await AppendTaskManagerLogFilesAsync(httpClient, flinkEndpoint, taskManagerId, logsBuilder);
+            await AppendTaskManagerStdoutAsync(httpClient, flinkEndpoint, taskManagerId, logsBuilder);
+        }
+        catch (Exception tmEx)
+        {
+            logsBuilder.AppendLine($"  Error getting TaskManager logs: {tmEx.Message}");
+        }
+    }
+
+    private static async Task AppendTaskManagerLogFilesAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string? taskManagerId, System.Text.StringBuilder logsBuilder)
+    {
+        var logUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/logs";
+        var logResponse = await httpClient.GetAsync(logUrl);
+        
+        if (logResponse.IsSuccessStatusCode)
+        {
+            var logContent = await logResponse.Content.ReadAsStringAsync();
+            var logJson = System.Text.Json.JsonDocument.Parse(logContent);
+            
+            if (logJson.RootElement.TryGetProperty("logs", out var logs))
+            {
+                foreach (var logFile in logs.EnumerateArray())
+                {
+                    if (logFile.TryGetProperty("name", out var name))
+                    {
+                        logsBuilder.AppendLine($"  Log file: {name.GetString()}");
+                    }
+                }
+            }
+        }
+    }
+
+    private static async Task AppendTaskManagerStdoutAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string? taskManagerId, System.Text.StringBuilder logsBuilder)
+    {
+        var stdoutUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/stdout";
+        var stdoutResponse = await httpClient.GetAsync(stdoutUrl);
+        
+        if (stdoutResponse.IsSuccessStatusCode)
+        {
+            var stdoutContent = await stdoutResponse.Content.ReadAsStringAsync();
+            var lines = stdoutContent.Split('\n');
+            var lastLines = lines.Length > 100 ? lines[^100..] : lines;
+            logsBuilder.AppendLine($"\n  Last 100 lines of stdout:");
+            logsBuilder.AppendLine(string.Join('\n', lastLines));
         }
     }
 
