@@ -98,6 +98,44 @@ public class FlinkJobManager : IFlinkJobManager
 
         // Strategy 3: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-sql-gateway:8083";
+        _logger.LogInformation("Using default Docker network for SQL Gateway: {Endpoint}", defaultEndpoint);
+        return defaultEndpoint;
+    }
+    
+    private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
+    {
+        var maxRetries = 30; // 30 seconds total wait time
+        var retryDelay = TimeSpan.FromSeconds(1);
+        
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                _logger.LogInformation("Checking SQL Gateway availability (attempt {Attempt}/{Max})", i + 1, maxRetries);
+                var response = await client.GetAsync("/v1/info");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("SQL Gateway is ready and responding");
+                    return;
+                }
+                
+                _logger.LogWarning("SQL Gateway returned {StatusCode}, retrying...", response.StatusCode);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning("SQL Gateway not yet available: {Message}", ex.Message);
+            }
+            catch (TaskCanceledException)
+            {
+                _logger.LogWarning("SQL Gateway request timed out, retrying...");
+            }
+            
+            await Task.Delay(retryDelay);
+        }
+        
+        throw new InvalidOperationException($"SQL Gateway did not become ready after {maxRetries} attempts");
+    }
         _logger.LogInformation("Using default SQL Gateway endpoint: {Endpoint}", defaultEndpoint);
         return defaultEndpoint;
     }
@@ -670,6 +708,9 @@ public class FlinkJobManager : IFlinkJobManager
             };
             
             _logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
+            
+            // Wait for SQL Gateway to be ready (it may take time to start)
+            await WaitForSqlGatewayReadyAsync(sqlGatewayClient);
             
             // Step 1: Create a session (REQUIRED by Flink SQL Gateway REST API)
             var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
