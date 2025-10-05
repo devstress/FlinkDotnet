@@ -187,6 +187,9 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             // Debug: Check Flink containers and logs after job starts
             await LogFlinkContainerStatusAsync("After job starts running");
 
+            // Debug: Test Kafka connectivity from Flink containers
+            await TestKafkaConnectivityFromFlinkAsync();
+
             // Add delay to ensure job is fully initialized
             await Task.Delay(3000, ct);
 

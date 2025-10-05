@@ -35,10 +35,10 @@ public abstract class LocalTestingTestBase
     
     /// <summary>
     /// Kafka connection string for use by Flink jobs running inside containers.
-    /// CRITICAL: Aspire's Kafka has TWO internal listeners:
-    /// - PLAINTEXT_HOST on port 9092: for external access from host machine
-    /// - PLAINTEXT_INTERNAL on port 9093: for container-to-container communication
-    /// Flink containers must use "kafka:9093" to reach Kafka's PLAINTEXT_INTERNAL listener.
+    /// CRITICAL: Aspire's Kafka has TWO listeners:
+    /// - PLAINTEXT on port 9092: for internal container-to-container communication
+    /// - PLAINTEXT_HOST on port 9093: for external access from host machine
+    /// Flink containers must use "kafka:9092" to reach Kafka's PLAINTEXT listener.
     /// See: https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting.Kafka/KafkaBuilderExtensions.cs
     /// </summary>
     protected static string KafkaContainerConnectionString => GlobalTestInfrastructure.KafkaContainerConnectionString;
@@ -1613,6 +1613,50 @@ public abstract class LocalTestingTestBase
         catch (Exception ex)
         {
             TestContext.WriteLine($"⚠️ Failed to get Flink job logs: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Test Kafka connectivity from within Flink TaskManager container using telnet or nc.
+    /// This diagnostic helps determine if Flink containers can reach Kafka at kafka:9092.
+    /// </summary>
+    protected static async Task TestKafkaConnectivityFromFlinkAsync()
+    {
+        try
+        {
+            TestContext.WriteLine("🔍 [Kafka Connectivity] Testing from Flink TaskManager container...");
+            
+            // Get TaskManager container name
+            var tmName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            tmName = tmName.Trim();
+            
+            if (string.IsNullOrWhiteSpace(tmName))
+            {
+                TestContext.WriteLine("⚠️ No TaskManager container found for connectivity test");
+                return;
+            }
+            
+            TestContext.WriteLine($"🐳 Using TaskManager container: {tmName}");
+            
+            // Test connectivity to kafka:9092
+            var testResult = await RunDockerCommandAsync($"exec {tmName} timeout 2 bash -c 'echo \"test\" | nc -w 1 kafka 9092 && echo \"SUCCESS\" || echo \"FAILED\"' 2>&1");
+            TestContext.WriteLine($"📊 Kafka connectivity (kafka:9092): {testResult.Trim()}");
+            
+            // Also try to resolve the hostname
+            var dnsResult = await RunDockerCommandAsync($"exec {tmName} getent hosts kafka 2>&1 || echo \"DNS resolution failed\"");
+            TestContext.WriteLine($"📊 DNS resolution for 'kafka': {dnsResult.Trim()}");
+            
+            // Check if Kafka connectorJARs are present
+            var connectorCheck = await RunDockerCommandAsync($"exec {tmName} ls -lh /opt/flink/lib/*kafka* 2>&1 || echo \"No Kafka connector found\"");
+            TestContext.WriteLine($"📊 Kafka connector JARs in Flink:\n{connectorCheck.Trim()}");
+            
+            // Check network settings
+            var networkInfo = await RunDockerCommandAsync($"inspect {tmName} --format '{{{{.NetworkSettings.Networks}}}}'");
+            TestContext.WriteLine($"📊 Container network info: {networkInfo.Trim()}");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to test Kafka connectivity from Flink: {ex.Message}");
         }
     }
 }
