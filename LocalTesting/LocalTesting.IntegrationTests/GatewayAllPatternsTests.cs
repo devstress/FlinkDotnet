@@ -181,12 +181,18 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             await WaitForJobRunningViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, JobRunTimeout, ct);
             TestContext.WriteLine("✅ Job is RUNNING");
 
+            // Debug: Check Flink containers and logs after job starts
+            await LogFlinkContainerStatusAsync("After job starts running");
+
             // Add delay to ensure job is fully initialized
             await Task.Delay(3000, ct);
 
             // Produce test messages
             TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
             await ProduceMessagesAsync(inputTopic, inputMessages, ct, usesJson);
+
+            // Debug: Check Flink logs after producing messages
+            await LogFlinkJobLogsAsync(submitResult.FlinkJobId!, "After producing messages");
 
             // Consume and verify
             var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(75) : MessageTimeout;

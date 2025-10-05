@@ -1495,4 +1495,95 @@ public abstract class LocalTestingTestBase
             TestContext.WriteLine($"⚠️ Failed to get Docker containers: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Log Flink container status and recent logs for debugging.
+    /// </summary>
+    protected static async Task LogFlinkContainerStatusAsync(string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🔍 [Flink Container Debug] {checkpoint}");
+            
+            // First, verify containers are still running OR exited
+            var runningContainers = await RunDockerCommandAsync("ps --filter \"name=flink\" --format \"{{.Names}} ({{.Status}})\" || echo 'No running Flink containers'");
+            TestContext.WriteLine($"🐳 Flink containers (running): {runningContainers.Trim()}");
+            
+            var allContainers = await RunDockerCommandAsync("ps -a --filter \"name=flink\" --format \"{{.Names}} ({{.Status}})\" || echo 'No Flink containers at all'");
+            TestContext.WriteLine($"🐳 Flink containers (all): {allContainers.Trim()}");
+            
+            // Get JobManager container name first
+            var jmName = await RunDockerCommandAsync("ps -a --filter \"name=flink-jobmanager\" --format \"{{.Names}}\" | head -1");
+            jmName = jmName.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(jmName))
+            {
+                var jmLogs = await RunDockerCommandAsync($"logs {jmName} --tail 100 2>&1");
+                TestContext.WriteLine($"📋 JobManager ({jmName}) logs (last 100 lines):\n{jmLogs}");
+            }
+            else
+            {
+                TestContext.WriteLine("⚠️ No JobManager container found");
+            }
+            
+            // Get TaskManager container name first
+            var tmName = await RunDockerCommandAsync("ps -a --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            tmName = tmName.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(tmName))
+            {
+                var tmLogs = await RunDockerCommandAsync($"logs {tmName} --tail 100 2>&1");
+                TestContext.WriteLine($"📋 TaskManager ({tmName}) logs (last 100 lines):\n{tmLogs}");
+            }
+            else
+            {
+                TestContext.WriteLine("⚠️ No TaskManager container found");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get Flink container logs: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Log Flink job-specific logs from JobManager.
+    /// </summary>
+    protected static async Task LogFlinkJobLogsAsync(string jobId, string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🔍 [Flink Job Debug] {checkpoint} - Job ID: {jobId}");
+            
+            // Get JobManager container name
+            var jmName = await RunDockerCommandAsync("ps --filter \"name=flink-jobmanager\" --format \"{{.Names}}\" | head -1");
+            jmName = jmName.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(jmName))
+            {
+                // Get logs filtered for this specific job
+                var jobLogs = await RunDockerCommandAsync($"logs {jmName} 2>&1 | grep -i \"{jobId}\" | tail -30 || echo 'No job-specific logs found for {jobId}'");
+                TestContext.WriteLine($"📋 Job-specific logs (last 30 lines):\n{jobLogs}");
+            }
+            
+            // Get TaskManager container name
+            var tmName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            tmName = tmName.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(tmName))
+            {
+                // Check for Kafka-related logs
+                var kafkaLogs = await RunDockerCommandAsync($"logs {tmName} 2>&1 | grep -i \"kafka\" | tail -20 || echo 'No Kafka-related logs found'");
+                TestContext.WriteLine($"📋 Kafka-related logs from TaskManager (last 20 lines):\n{kafkaLogs}");
+                
+                // Also check for any error logs
+                var errorLogs = await RunDockerCommandAsync($"logs {tmName} 2>&1 | grep -iE \"(error|exception|fail)\" | tail -20 || echo 'No error logs found'");
+                TestContext.WriteLine($"📋 Error logs from TaskManager (last 20 lines):\n{errorLogs}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get Flink job logs: {ex.Message}");
+        }
+    }
 }
