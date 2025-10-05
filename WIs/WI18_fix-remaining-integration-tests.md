@@ -194,6 +194,23 @@ Total changes: ~80 lines added across 3 files
 
 All changes are minimal and focused on enabling SQL Gateway functionality.
 
+### Fix Iteration #2: SQL Gateway Session Management
+
+**Problem**: SQL Gateway REST API requires creating a session before submitting statements
+
+**Root Cause**: Original implementation tried to POST directly to `/v1/statements` without a session
+
+**Solution**: Implemented proper Flink SQL Gateway REST API flow:
+1. Create session: `POST /v1/sessions` with `{sessionName: "..."}`
+2. Parse response to get `sessionHandle`
+3. Submit statements: `POST /v1/sessions/{sessionHandle}/statements`
+
+**Code Changes**:
+- `FlinkJobManager.SubmitSqlGatewayJobAsync()`: Added session creation and proper endpoint usage
+- ~50 additional lines for session management
+
+**Testing**: Still times out - SQL Gateway container may not be starting/responding properly
+
 ## Phase 5: Testing & Validation
 
 ### Test Run #1 - After SQL Gateway Implementation

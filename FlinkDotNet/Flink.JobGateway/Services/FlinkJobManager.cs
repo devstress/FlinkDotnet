@@ -671,15 +671,53 @@ public class FlinkJobManager : IFlinkJobManager
             
             _logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
             
-            // Create a session first (optional, but recommended for statement management)
+            // Step 1: Create a session (REQUIRED by Flink SQL Gateway REST API)
             var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
             _logger.LogInformation("Creating SQL Gateway session: {SessionName}", sessionName);
             
-            // Note: Flink 2.1.0 SQL Gateway endpoint is /v1/sessions for session management
-            // For now, we'll submit statements directly without session management
-            // This is a simplified implementation - production would use sessions
+            var sessionRequest = new
+            {
+                sessionName = sessionName
+            };
             
-            // Execute each SQL statement via SQL Gateway
+            var sessionJson = JsonSerializer.Serialize(sessionRequest);
+            using var sessionContent = new StringContent(sessionJson, Encoding.UTF8, "application/json");
+            
+            using var sessionResponse = await sqlGatewayClient.PostAsync("/v1/sessions", sessionContent);
+            
+            if (!sessionResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await sessionResponse.Content.ReadAsStringAsync();
+                _logger.LogError("SQL Gateway session creation failed: {StatusCode} - {Error}", 
+                    sessionResponse.StatusCode, errorContent);
+                throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
+            }
+            
+            var sessionResponseContent = await sessionResponse.Content.ReadAsStringAsync();
+            _logger.LogInformation("SQL Gateway session created: {Response}", sessionResponseContent);
+            
+            // Extract session handle from response
+            string sessionHandle;
+            try
+            {
+                var sessionJson2 = JsonDocument.Parse(sessionResponseContent);
+                if (sessionJson2.RootElement.TryGetProperty("sessionHandle", out var handleProp))
+                {
+                    sessionHandle = handleProp.GetString() ?? throw new InvalidOperationException("Session handle is null");
+                    _logger.LogInformation("SQL Gateway session handle: {SessionHandle}", sessionHandle);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Session response doesn't contain sessionHandle");
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse session response");
+                throw new InvalidOperationException("Failed to parse SQL Gateway session response", ex);
+            }
+            
+            // Step 2: Execute each SQL statement via the session
             string? lastJobId = null;
             foreach (var statement in sqlSource.Statements)
             {
@@ -697,8 +735,9 @@ public class FlinkJobManager : IFlinkJobManager
                 var jsonContent = JsonSerializer.Serialize(requestBody);
                 using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
-                // Submit statement to SQL Gateway
-                using var response = await sqlGatewayClient.PostAsync("/v1/statements", content);
+                // Submit statement to SQL Gateway using session handle
+                var statementEndpoint = $"/v1/sessions/{sessionHandle}/statements";
+                using var response = await sqlGatewayClient.PostAsync(statementEndpoint, content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -711,36 +750,32 @@ public class FlinkJobManager : IFlinkJobManager
                 var responseContent = await response.Content.ReadAsStringAsync();
                 _logger.LogDebug("SQL Gateway response: {Response}", responseContent);
                 
-                // Try to extract job ID from response if this is an INSERT statement
-                if (statement.Trim().ToUpperInvariant().StartsWith("INSERT"))
+                // Try to extract operation handle or job ID from response
+                try
                 {
-                    try
+                    var responseJson = JsonDocument.Parse(responseContent);
+                    if (responseJson.RootElement.TryGetProperty("operationHandle", out var opHandleProp))
                     {
-                        var responseJson = JsonDocument.Parse(responseContent);
-                        if (responseJson.RootElement.TryGetProperty("jobId", out var jobIdProp))
-                        {
-                            lastJobId = jobIdProp.GetString();
-                            _logger.LogInformation("SQL Gateway returned job ID: {JobId}", lastJobId);
-                        }
-                        else if (responseJson.RootElement.TryGetProperty("statementId", out var stmtIdProp))
-                        {
-                            // Some versions return statementId instead
-                            lastJobId = stmtIdProp.GetString();
-                            _logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", lastJobId);
-                        }
+                        lastJobId = opHandleProp.GetString();
+                        _logger.LogInformation("SQL Gateway returned operation handle: {OperationHandle}", lastJobId);
                     }
-                    catch (JsonException ex)
+                    else if (responseJson.RootElement.TryGetProperty("statementId", out var stmtIdProp))
                     {
-                        _logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
+                        lastJobId = stmtIdProp.GetString();
+                        _logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", lastJobId);
                     }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
                 }
             }
             
-            // If no job ID was extracted, generate a synthetic one
+            // If no job ID was extracted, use session handle as job ID
             if (string.IsNullOrEmpty(lastJobId))
             {
-                lastJobId = $"sql-gateway-{Guid.NewGuid():N}";
-                _logger.LogInformation("No job ID returned from SQL Gateway, using synthetic ID: {JobId}", lastJobId);
+                lastJobId = sessionHandle;
+                _logger.LogInformation("Using session handle as job ID: {JobId}", lastJobId);
             }
             
             return lastJobId;
