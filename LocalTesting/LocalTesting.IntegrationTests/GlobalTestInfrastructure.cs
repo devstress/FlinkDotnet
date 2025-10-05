@@ -149,12 +149,32 @@ public class GlobalTestInfrastructure
             return;
         }
 
+        // Try Java 17 JAR first (new naming convention)
+        var releaseJarPath17 = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner-java17.jar");
+
+        if (File.Exists(releaseJarPath17))
+        {
+            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", releaseJarPath17);
+            TestContext.WriteLine($"✅ Configured Gateway JAR path: {releaseJarPath17}");
+            return;
+        }
+
+        var debugJarPath17 = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar");
+
+        if (File.Exists(debugJarPath17))
+        {
+            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", debugJarPath17);
+            TestContext.WriteLine($"✅ Configured Gateway JAR path (Debug): {debugJarPath17}");
+            return;
+        }
+
+        // Fallback to old naming convention for backwards compatibility
         var releaseJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
 
         if (File.Exists(releaseJarPath))
         {
             Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", releaseJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path: {releaseJarPath}");
+            TestContext.WriteLine($"✅ Configured Gateway JAR path (legacy): {releaseJarPath}");
             return;
         }
 
@@ -163,7 +183,7 @@ public class GlobalTestInfrastructure
         if (File.Exists(debugJarPath))
         {
             Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", debugJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path (Debug): {debugJarPath}");
+            TestContext.WriteLine($"✅ Configured Gateway JAR path (Debug, legacy): {debugJarPath}");
             return;
         }
 

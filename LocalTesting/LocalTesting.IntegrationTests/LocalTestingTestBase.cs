@@ -917,10 +917,29 @@ public abstract class LocalTestingTestBase
             // CRITICAL: Aspire testing framework does NOT automatically start .NET project resources
             // We must explicitly wait for the Gateway resource to become healthy
             TestContext.WriteLine("⏳ Waiting for Gateway resource to start (Aspire project resources require explicit activation)...");
-            await AppHost.ResourceNotifications
-                .WaitForResourceHealthyAsync("flink-job-gateway", cancellationToken)
-                .WaitAsync(GatewayReadyTimeout, cancellationToken);
-            TestContext.WriteLine("✅ Gateway resource reported healthy by Aspire");
+            
+            try
+            {
+                await AppHost.ResourceNotifications
+                    .WaitForResourceHealthyAsync("flink-job-gateway", cancellationToken)
+                    .WaitAsync(GatewayReadyTimeout, cancellationToken);
+                TestContext.WriteLine("✅ Gateway resource reported healthy by Aspire");
+            }
+            catch (TimeoutException)
+            {
+                // Check if Gateway resource failed to start
+                var resourceHealth = await GetResourceHealthStatusAsync("flink-job-gateway");
+                if (resourceHealth != null && resourceHealth.Contains("Unhealthy", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        $"Flink.JobGateway failed to start. Resource status: {resourceHealth}. " +
+                        "This usually indicates a build failure or missing dependencies. " +
+                        "Check that Flink.JobGateway builds successfully with all required JARs.");
+                }
+                throw new TimeoutException(
+                    $"Flink.JobGateway did not become healthy within {GatewayReadyTimeout.TotalSeconds}s. " +
+                    "Check Aspire logs for startup errors.");
+            }
             
             // Now verify Gateway HTTP endpoint is responding
             var gatewayEndpoint = await GetGatewayEndpointAsync();
@@ -1387,5 +1406,40 @@ public abstract class LocalTestingTestBase
         
         diagnostics.AppendLine("\n" + new string('=', 80));
         return diagnostics.ToString();
+    }
+
+    /// <summary>
+    /// Get the health status of a specific Aspire resource.
+    /// </summary>
+    private static async Task<string?> GetResourceHealthStatusAsync(string resourceName)
+    {
+        try
+        {
+            if (AppHost == null)
+                return null;
+
+            var resource = AppHost.Services.GetService<IEnumerable<IResource>>()?
+                .FirstOrDefault(r => r.Name == resourceName);
+
+            if (resource == null)
+                return "Resource not found";
+
+            // Try to get resource health status from Aspire
+            var healthStatus = "Unknown";
+            await foreach (var notification in AppHost.ResourceNotifications.WatchAsync(resource).WithCancellation(new CancellationTokenSource(5000).Token))
+            {
+                if (notification.Snapshot.State?.Text != null)
+                {
+                    healthStatus = notification.Snapshot.State.Text;
+                    break;
+                }
+            }
+
+            return healthStatus;
+        }
+        catch (Exception ex)
+        {
+            return $"Error getting resource status: {ex.Message}";
+        }
     }
 }

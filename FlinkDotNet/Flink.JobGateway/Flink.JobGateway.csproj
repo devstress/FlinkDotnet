@@ -17,7 +17,7 @@
 
   <!-- Maven and JDK auto-installation configuration -->
   <PropertyGroup>
-    <MavenVersion>3.9.6</MavenVersion>
+    <MavenVersion>3.9.11</MavenVersion>
     <MavenDownloadUrl>https://dlcdn.apache.org/maven/maven-3/$(MavenVersion)/binaries/apache-maven-$(MavenVersion)-bin.zip</MavenDownloadUrl>
     <ToolsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\tools'))</ToolsDir>
     <MavenInstallDir>$(ToolsDir)\apache-maven-$(MavenVersion)</MavenInstallDir>
@@ -292,28 +292,19 @@
     <Error Condition="!Exists('$(FlinkIRRunnerDir)\pom.xml')"
            Text="FlinkIRRunner project missing. Expected pom.xml at $(FlinkIRRunnerDir)." />
 
-    <!-- Require Java; fail if missing -->
-    <Exec Command="java -version" />
-
     <!-- Maven is now ensured by EnsureBuildTools target -->
 
     <!-- Build Java 17 jar for Flink 2.1.0 compatibility -->
-    <!-- ContinueOnError=true for resilience against transient Maven failures (network issues, cache problems) -->
     <Message Text="(Flink.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" />
-    <!-- Use PowerShell to properly set environment variables and run Maven -->
-    <!-- IgnoreExitCode=true because Maven warnings cause non-zero exit codes, but JAR is still built successfully -->
+    <!-- Set JAVA_HOME environment variable for Maven to use correct JDK -->
     <PropertyGroup>
-      <MavenJava17Command Condition="'$(IsWindows)' == 'true'">powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$$env:JAVA_HOME='$(EffectiveJavaHome)'; $$env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B package -DskipTests -Pjava17; exit 0&quot;</MavenJava17Command>
-      <MavenJava17Command Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">JAVA_HOME='$(EffectiveJavaHome)' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17</MavenJava17Command>
+      <MavenJava17Command Condition="'$(IsWindows)' == 'true'">powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$env:JAVA_HOME='$(EffectiveJavaHome)'; $env:PATH='$(EffectiveJavaHome)\bin;' + $env:PATH; $env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B package -DskipTests -Pjava17&quot;</MavenJava17Command>
+      <MavenJava17Command Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">JAVA_HOME='$(EffectiveJavaHome)' PATH='$(EffectiveJavaHome)/bin:$PATH' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17</MavenJava17Command>
     </PropertyGroup>
     <Exec Command="$(MavenJava17Command)"
           WorkingDirectory="$(FlinkIRRunnerDir)"
-          ContinueOnError="true"
-          ConsoleToMSBuild="true"
           StandardOutputImportance="High"
-          StandardErrorImportance="Low"
-          IgnoreStandardErrorWarningFormat="true"
-          IgnoreExitCode="true">
+          StandardErrorImportance="High">
       <Output TaskParameter="ExitCode" PropertyName="Java17BuildExitCode" />
     </Exec>
 

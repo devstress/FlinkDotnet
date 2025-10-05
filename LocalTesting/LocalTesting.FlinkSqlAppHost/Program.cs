@@ -49,12 +49,22 @@ const string JavaOpenOptions = "--add-opens=java.base/java.lang=ALL-UNNAMED --ad
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
 
-// Configure Gateway JAR path to use Release build
-var gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
+// Configure Gateway JAR path to use Release build (Java 17 version)
+var gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner-java17.jar");
 if (!File.Exists(gatewayJarPath))
 {
     // Fallback to Debug if Release not found
-    gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
+    gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar");
+    
+    // Final fallback to legacy naming convention
+    if (!File.Exists(gatewayJarPath))
+    {
+        gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
+        if (!File.Exists(gatewayJarPath))
+        {
+            gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
+        }
+    }
 }
 
 if (diagnosticsVerbose && File.Exists(gatewayJarPath))

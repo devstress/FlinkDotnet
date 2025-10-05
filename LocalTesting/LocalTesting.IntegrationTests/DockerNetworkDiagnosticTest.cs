@@ -78,21 +78,9 @@ public class DockerNetworkDiagnosticTest : LocalTestingTestBase
             }
             TestContext.WriteLine("");
 
-            // Test 3: Kafka broker connectivity test
-            TestContext.WriteLine("3️⃣ Testing Kafka broker metadata fetch from Flink...");
-            TestContext.WriteLine("   This requires kafka-console-consumer or kafka-broker-api-versions");
-            TestContext.WriteLine("   Skipping - would require installing Kafka tools in Flink container");
-            TestContext.WriteLine("");
-
             TestContext.WriteLine("========================================");
             TestContext.WriteLine("✅ ALL NETWORK DIAGNOSTIC TESTS PASSED");
             TestContext.WriteLine("========================================");
-            TestContext.WriteLine("");
-            TestContext.WriteLine("Network connectivity is working correctly.");
-            TestContext.WriteLine("If Flink jobs still fail to process messages, the issue is likely:");
-            TestContext.WriteLine("  - Kafka listener configuration");
-            TestContext.WriteLine("  - Flink job code/configuration");
-            TestContext.WriteLine("  - Kafka topic configuration");
         }
         catch (Exception ex)
         {
