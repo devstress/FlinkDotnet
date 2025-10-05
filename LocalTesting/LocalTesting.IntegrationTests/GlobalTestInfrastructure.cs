@@ -186,25 +186,6 @@ public class GlobalTestInfrastructure
             return;
         }
 
-        // Fallback to old naming convention for backwards compatibility
-        var releaseJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
-
-        if (File.Exists(releaseJarPath))
-        {
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", releaseJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path (legacy): {releaseJarPath}");
-            return;
-        }
-
-        var debugJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
-
-        if (File.Exists(debugJarPath))
-        {
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", debugJarPath);
-            TestContext.WriteLine($"✅ Configured Gateway JAR path (Debug, legacy): {debugJarPath}");
-            return;
-        }
-
         TestContext.WriteLine($"⚠️ Gateway JAR not found - will build on demand");
     }
 

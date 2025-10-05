@@ -60,7 +60,7 @@ internal static class TestPrerequisites
     {
         TestContext.WriteLine($"Checking for Runner JAR with repoRoot: {repoRoot}");
         
-        var candidateNames = new[] { "flink-ir-runner.jar", "flink-ir-runner-java17.jar" };
+        var candidateNames = new[] { "flink-ir-runner-java17.jar" };
         var candidateDirs = new[]
         {
             // Check Gateway build output directories first (where MSBuild copies JARs)

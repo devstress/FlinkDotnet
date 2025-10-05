@@ -569,7 +569,7 @@ public class FlinkJobManager : IFlinkJobManager
             }
 
             _logger.LogDebug("Maven build completed successfully");
-            jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner.jar");
+            jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner-java17.jar");
             if (!File.Exists(jarPath))
             {
                 throw new InvalidOperationException($"Maven build completed but jar not found at expected path: {jarPath}");
