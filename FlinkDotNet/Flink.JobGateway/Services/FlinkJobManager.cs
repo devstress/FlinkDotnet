@@ -153,18 +153,13 @@ public class FlinkJobManager : IFlinkJobManager
             }
 
             // Check if this is a SQL Gateway job
-            if (jobDefinition.Source is SqlSourceDefinition sqlSource && 
+            if (jobDefinition.Source is SqlSourceDefinition sqlSource &&
                 sqlSource.ExecutionMode == "gateway")
             {
                 _logger.LogInformation("Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
-                var clusterHealthy = await ProbeClusterHealthSafelyAsync();
                 
-                if (!clusterHealthy)
-                {
-                    return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
-                        "SQL Gateway mode requires Flink cluster to be available. Cluster is not healthy.");
-                }
-                
+                // SQL Gateway jobs are submitted directly via SQL Gateway REST API
+                // No need to check JobManager cluster health - SQL Gateway handles job submission
                 var flinkJobId = await SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
                 TrackJob(jobDefinition, flinkJobId, true);
                 return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
