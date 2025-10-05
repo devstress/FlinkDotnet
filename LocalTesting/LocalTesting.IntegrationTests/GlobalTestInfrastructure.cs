@@ -132,34 +132,10 @@ public class GlobalTestInfrastructure
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🔧 CONTAINERS WILL REMAIN RUNNING FOR POST-TEST DEBUGGING");
         TestContext.WriteLine("🔧 Use 'docker ps' and 'docker logs <container>' to investigate");
+        TestContext.WriteLine("🔧 TEMPORARY: Container teardown disabled - will be re-enabled after debugging");
 
-        // TEMPORARILY DISABLED: Keep containers running for debugging
-        // if (AppHost != null)
-        // {
-        //     try
-        //     {
-        //         await AppHost.StopAsync();
-        //         TestContext.WriteLine("✅ AppHost stopped successfully");
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         TestContext.WriteLine($"⚠️ AppHost stop warning: {ex.Message}");
-        //     }
-
-        //     try
-        //     {
-        //         await AppHost.DisposeAsync();
-        //         TestContext.WriteLine("✅ AppHost disposed successfully");
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         TestContext.WriteLine($"⚠️ AppHost dispose warning: {ex.Message}");
-        //     }
-
-        //     AppHost = null;
-        // }
-
-        await Task.CompletedTask; // Keep containers alive
+        // Container teardown temporarily disabled to allow post-test debugging
+        await Task.CompletedTask;
 
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🌍 GLOBAL INFRASTRUCTURE TEARDOWN COMPLETE");
