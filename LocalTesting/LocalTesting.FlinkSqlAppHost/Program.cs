@@ -32,15 +32,21 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Use Aspire's default Kafka configuration - works for BackPressureExample
-// Aspire automatically handles port allocation and container networking
-// Note: Kafka resource is created but not referenced by Gateway to prevent
-// Aspire from injecting connection strings that would override job definitions
-builder.AddKafka("kafka");  // AddKafka already creates 'internal' endpoint automatically
+// Configure Kafka with proper listener configuration for both internal and external access
+// Internal clients (Flink containers) use kafka:9092
+// External clients (test process) use localhost:9093
+#pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
+var kafka = builder.AddKafka("kafka", port: 9093) // Publish 9093 on host for external access
+    .WithEnvironment("KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT")
+    .WithEnvironment("KAFKA_CFG_LISTENERS", "PLAINTEXT://:9092,PLAINTEXT_HOST://:9093")
+    .WithEnvironment("KAFKA_CFG_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093");
+#pragma warning restore S1481
 
 if (diagnosticsVerbose)
 {
-    Console.WriteLine("[diag] Kafka configured - Aspire will inject connection strings automatically");
+    Console.WriteLine("[diag] Kafka configured with dual listeners:");
+    Console.WriteLine("[diag]   - Internal (Flink containers): kafka:9092");
+    Console.WriteLine("[diag]   - External (test process): localhost:9093");
 }
 
 // Flink JobManager with named HTTP endpoint for service references

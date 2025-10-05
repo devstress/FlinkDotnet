@@ -61,9 +61,15 @@ public class GlobalTestInfrastructure
                 .WaitAsync(DefaultTimeout);
             TestContext.WriteLine("✅ Kafka resource reported healthy");
 
-            // Get Kafka connection string
-            KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
-            TestContext.WriteLine($"🔗 Kafka connection string: {KafkaConnectionString}");
+            // Get Kafka connection string from Aspire
+            var aspireKafkaConnectionString = await app.GetConnectionStringAsync("kafka");
+            TestContext.WriteLine($"🔗 Aspire Kafka connection string: {aspireKafkaConnectionString}");
+            
+            // Override with hardcoded localhost:9093 for external access
+            // Aspire's connection string may not respect KAFKA_CFG_ADVERTISED_LISTENERS
+            // We configured Kafka to advertise PLAINTEXT_HOST://localhost:9093 for external clients
+            KafkaConnectionString = "localhost:9093";
+            TestContext.WriteLine($"🔗 Using Kafka connection string: {KafkaConnectionString} (external listener)");
 
             // Enhanced Kafka readiness check
             await LocalTestingTestBase.WaitForKafkaReadyAsync(KafkaConnectionString!, KafkaReadyTimeout, default);
