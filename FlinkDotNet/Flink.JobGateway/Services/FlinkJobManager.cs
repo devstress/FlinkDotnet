@@ -70,14 +70,14 @@ public class FlinkJobManager : IFlinkJobManager
 
     /// <summary>
     /// Discover Flink SQL Gateway endpoint using multiple strategies for maximum compatibility.
+    /// SQL Gateway now runs in the same container as JobManager but on port 8083.
     /// Priority: Aspire service discovery > Environment variables > Default fallback
-    /// SQL Gateway runs on port 8083 (separate from JobManager REST API on 8081)
     /// </summary>
     private string DiscoverSqlGatewayEndpoint()
     {
         // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-sql-gateway__http__0 = "http://localhost:xxxxx"
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        // Format: services__flink-jobmanager__sql-gateway__0 = "http://localhost:xxxxx"
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__sql-gateway__0");
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
             _logger.LogInformation("Using Aspire service discovery for SQL Gateway: {Endpoint}", aspireEndpoint);
@@ -96,8 +96,8 @@ public class FlinkJobManager : IFlinkJobManager
             return envEndpoint;
         }
 
-        // Strategy 3: Default fallback for Docker Compose with standard ports
-        var defaultEndpoint = "http://flink-sql-gateway:8083";
+        // Strategy 3: Default fallback - SQL Gateway in same container as JobManager
+        var defaultEndpoint = "http://flink-jobmanager:8083";
         _logger.LogInformation("Using default SQL Gateway endpoint: {Endpoint}", defaultEndpoint);
         return defaultEndpoint;
     }
