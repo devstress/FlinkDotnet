@@ -63,6 +63,7 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
@@ -83,6 +84,7 @@ var jobManager = jobManagerBuilder
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +

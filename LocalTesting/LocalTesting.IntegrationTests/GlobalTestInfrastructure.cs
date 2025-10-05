@@ -135,6 +135,15 @@ public class GlobalTestInfrastructure
         TestContext.WriteLine("🔧 TEMPORARY: Container teardown disabled - will be re-enabled after debugging");
 
         // Container teardown temporarily disabled to allow post-test debugging
+        // Will re-enable after fixing test failures
+#pragma warning disable S125 // Remove this commented out code - Temporarily disabled for debugging
+        // if (AppHost != null)
+        // {
+        //     try { await AppHost.StopAsync(); } catch { }
+        //     try { await AppHost.DisposeAsync(); } catch { }
+        // }
+#pragma warning restore S125
+        
         await Task.CompletedTask;
 
         TestContext.WriteLine("🌍 ========================================");
