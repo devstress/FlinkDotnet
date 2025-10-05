@@ -9,8 +9,8 @@ Responsibilities:
 - Expose metrics (records in/out, parallelism, checkpoints)
 
 Packaging:
-- Builds both: Java 25 (primary in CI) and Java 17 compatibility, Flink 2.x
-- Default local `mvn package` compiles with `--release 17` (to avoid requiring JDK 25 locally)
+- Builds Java 17 for Flink 2.1.0 compatibility
+- Default local `mvn package` compiles with `--release 17`
 - Uses Kafka client directly (no external connector runtime deps)
 - Published as `flink-ir-runner.jar` in releases/CI
 

@@ -15,8 +15,9 @@ This document outlines the mandatory build and test enforcement rules for FlinkD
 - **Automated version checking** in all workflows
 
 ### 2b. Java + Maven Requirements for Gateway Build
-- **Java 25** and Maven are required to build `Flink.JobGateway` (it prebuilds the IR Runner jar)
-- Ensure CI runners and developer machines have `java` and `mvn` on PATH
+- **Java 17** and Maven 3.9.6 are auto-installed if not found during build
+- Both are required to build `Flink.JobGateway` (it prebuilds the IR Runner jar)
+- CI runners should have `java` and `mvn` pre-configured via GitHub Actions
 - You can opt out per-build with `/p:BuildFlinkRunner=false` if supplying a prebuilt jar
 
 ### 3. Multi-Solution Validation

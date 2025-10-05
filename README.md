@@ -28,9 +28,457 @@ Why this design
 
 Alternatives
 - Client‑only mode (embed Runner jar in SDK and call Flink REST directly): keeps the same runner, but each app handles auth/policy and jar versioning.
-- Flink SQL Gateway: no jar for a subset of pipelines; use when DSL can map cleanly to SQL.
+- **SQL Gateway**: Separate Flink SQL Gateway container forwarding SQL to Flink cluster - follows Flink's recommended deployment pattern for production environments. Enables Flink SQL UI for visual query execution and catalog browsing.
 
 Refer to the docs/ directory for the implementation roadmap and guides.
+
+## 🔬 DSL to IR to Flink Job: Complete Example
+
+### 1. C# DSL (Domain-Specific Language)
+
+```csharp
+using FlinkDotNet;
+
+// Build a streaming job using fluent C# API
+var job = Flink.JobBuilder
+    .FromKafka("input-topic", "kafka:9093")
+    .Map("uppercase")  // Transform each message to uppercase
+    .Filter("non-empty")  // Keep only non-empty messages
+    .ToKafka("output-topic", "kafka:9093");
+
+// Submit to Flink cluster
+var result = await job.Submit("my-uppercase-job");
+```
+
+### 2. IR (Intermediate Representation) - JobDefinition JSON
+
+The DSL compiles to a portable JSON IR that describes the job:
+
+```json
+{
+  "metadata": {
+    "jobId": "job-123",
+    "jobName": "my-uppercase-job",
+    "submittedAt": "2025-01-01T12:00:00Z"
+  },
+  "source": {
+    "type": "kafka",
+    "topic": "input-topic",
+    "bootstrapServers": "kafka:9093",
+    "groupId": "flink-consumer-group"
+  },
+  "operations": [
+    {
+      "type": "map",
+      "operator": "uppercase",
+      "implementation": "com.flinkdotnet.operators.UppercaseMapFunction"
+    },
+    {
+      "type": "filter",
+      "operator": "non-empty",
+      "implementation": "com.flinkdotnet.operators.NonEmptyFilterFunction"
+    }
+  ],
+  "sink": {
+    "type": "kafka",
+    "topic": "output-topic",
+    "bootstrapServers": "kafka:9093"
+  }
+}
+```
+
+### 3. IR Runner JAR: Building the Flink Job
+
+The **IR Runner JAR** (`flink-ir-runner.jar`) is a prebuilt Java artifact that:
+- Reads the IR JSON at runtime
+- Builds the Flink DataStream topology dynamically
+- Instantiates sources, operators, and sinks
+- Handles connector dependencies (Kafka, JSON, etc.)
+
+**IR Runner execution flow:**
+
+```java
+// Simplified IR Runner logic (actual implementation in FlinkIRRunner/)
+public class FlinkIRRunner {
+    public static void main(String[] args) {
+        // 1. Read IR from environment or base64 argument
+        String irJson = System.getenv("FLINK_JOB_IR");
+        JobDefinition jobDef = parseIR(irJson);
+        
+        // 2. Build Flink execution environment
+        StreamExecutionEnvironment env = 
+            StreamExecutionEnvironment.getExecutionEnvironment();
+        
+        // 3. Create source from IR
+        DataStream<String> source = createKafkaSource(env, jobDef.source);
+        
+        // 4. Apply operations from IR
+        for (Operation op : jobDef.operations) {
+            if (op.type.equals("map")) {
+                source = source.map(new UppercaseMapFunction());
+            } else if (op.type.equals("filter")) {
+                source = source.filter(new NonEmptyFilterFunction());
+            }
+        }
+        
+        // 5. Create sink from IR
+        source.addSink(createKafkaSink(jobDef.sink));
+        
+        // 6. Execute job
+        env.execute(jobDef.metadata.jobName);
+    }
+}
+```
+
+**Key benefits:**
+- **No per-job compilation**: Single JAR handles all job types
+- **Connector bundling**: Kafka, JSON, and other connectors included
+- **Version control**: Update runner JAR without changing user code
+- **Debugging**: Logs show IR interpretation and topology building
+
+## 🌐 Flink.JobGateway Connections: How Everything Connects
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        .NET Application                         │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  FlinkDotNet DSL                                         │  │
+│  │  var job = Flink.JobBuilder.FromKafka(...).Map(...)     │  │
+│  └──────────────────┬───────────────────────────────────────┘  │
+│                     │ Compiles to IR (JSON)                     │
+└─────────────────────┼───────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Flink.JobGateway (ASP.NET Core)                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  POST /api/jobs  (receives IR)                           │  │
+│  │  1. Validate IR JobDefinition                            │  │
+│  │  2. Choose execution mode:                               │  │
+│  │     - TableEnvironment SQL → Submit via JM REST          │  │
+│  │     - Gateway SQL → Submit via SQL Gateway REST          │  │
+│  │     - DataStream → Upload IR Runner JAR + Submit         │  │
+│  └──────────────────┬───────────────────────────────────────┘  │
+└─────────────────────┼───────────────────────────────────────────┘
+                      │
+        ┌─────────────┴──────────────┐
+        │                            │
+        ▼                            ▼
+┌───────────────────┐      ┌──────────────────────┐
+│ Flink JobManager  │◄─────│ Flink SQL Gateway    │
+│   (Port 8081)     │      │   (Port 8083)        │
+│                   │      │  (Control-plane)     │
+│ REST API:         │      │                      │
+│ /jars/upload      │      │ REST API:            │
+│ /jars/{id}/run    │      │ /v1/sessions         │
+│ /jobs/{id}        │      │ /v1/sessions/{id}/   │
+│ /jobs/{id}/cancel │      │   statements         │
+└─────────┬─────────┘      └──────────┬───────────┘
+          │                           │
+          │  Submits jobs to cluster  │
+          └───────────┬───────────────┘
+                      │
+          ┌───────────▼────────────┐
+          │   Flink TaskManagers   │
+          │   (Data Plane)         │
+          │                        │
+          │  - Execute operators   │
+          │  - Manage state        │
+          │  - Process streams     │
+          │  - Connect to Kafka    │
+          └────────────────────────┘
+```
+
+### Connection Details
+
+#### 1. **Flink.JobGateway → Flink JobManager** (TableEnvironment & DataStream jobs)
+
+```csharp
+// Gateway discovers JobManager endpoint via Aspire
+var jobManagerEndpoint = DiscoverFlinkJobManagerEndpoint();
+// Priority: Aspire service discovery > Environment vars > Default
+
+using var httpClient = new HttpClient { BaseAddress = new Uri(jobManagerEndpoint) };
+
+// Upload IR Runner JAR (first time only, cached by JM)
+var uploadResponse = await httpClient.PostAsync("/v1/jars/upload", jarContent);
+var jarId = parseJarId(uploadResponse);
+
+// Submit job with IR as argument
+var submitPayload = new {
+    entryClass = "com.flinkdotnet.FlinkIRRunner",
+    programArgs = $"--ir-base64 {Base64.Encode(irJson)}",
+    parallelism = 4
+};
+await httpClient.PostAsync($"/v1/jars/{jarId}/run", submitPayload);
+```
+
+#### 2. **Flink.JobGateway → Flink SQL Gateway** (SQL Gateway mode)
+
+```csharp
+// Gateway discovers SQL Gateway endpoint
+var sqlGatewayEndpoint = DiscoverSqlGatewayEndpoint();
+
+using var sqlClient = new HttpClient { BaseAddress = new Uri(sqlGatewayEndpoint) };
+
+// Step 1: Create session
+var sessionRequest = new { sessionName = "my-sql-job" };
+var sessionResponse = await sqlClient.PostAsync("/v1/sessions", sessionRequest);
+var sessionHandle = parseSessionHandle(sessionResponse);
+
+// Step 2: Execute SQL statements
+foreach (var statement in sqlStatements) {
+    var stmtRequest = new { statement = statement };
+    await sqlClient.PostAsync(
+        $"/v1/sessions/{sessionHandle}/statements", 
+        stmtRequest
+    );
+}
+```
+
+#### 3. **Flink SQL Gateway → Flink JobManager** (Control-plane forwarding)
+
+SQL Gateway is configured to connect to the JobManager:
+
+```yaml
+# SQL Gateway FLINK_PROPERTIES
+jobmanager.rpc.address: flink-jobmanager
+rest.address: flink-jobmanager
+rest.port: 8081
+sql-gateway.endpoint.type: remote  # Forward to cluster
+```
+
+When SQL Gateway receives SQL statements:
+1. Parses and validates SQL
+2. Converts to Flink job graph
+3. Submits to JobManager via REST API
+4. Returns operation handle to client
+
+### SQL Gateway Approaches: Containerized vs Embedded
+
+FlinkDotNet supports two approaches for SQL job submission:
+
+#### **1. Containerized SQL Gateway (Production Pattern)**
+
+**Architecture**: Separate Flink SQL Gateway container (port 8083) forwards SQL to Flink cluster
+
+**Benefits**:
+- ✅ Official Flink component with full SQL feature support
+- ✅ Enables **Flink SQL UI** - visual interface for running queries, browsing catalogs, viewing results
+- ✅ Follows Flink's recommended deployment pattern for Kubernetes/production
+- ✅ Stateless control-plane service - horizontally scalable
+- ✅ Session management for multi-query workflows
+
+**Trade-offs**:
+- Additional container infrastructure complexity
+- Container startup and health check orchestration
+- Network connectivity between Gateway container and Flink cluster
+
+**Configuration**:
+```yaml
+# SQL Gateway connects to Flink JobManager cluster
+sql-gateway:
+  container: apache/flink:2.1.0-java17
+  command: ["sql-gateway.sh", "start-foreground"]
+  environment:
+    rest.address: flink-jobmanager
+    rest.port: 8081
+    sql-gateway.endpoint.type: remote
+```
+
+**Access Flink SQL UI**: Once SQL Gateway is running, access the web UI at `http://sql-gateway:8083` to visually execute SQL queries, explore catalogs, and monitor results.
+
+**Why SQL Gateway Container**:
+- ✅ Official Flink component - full SQL feature support
+- ✅ Flink SQL UI enabled - visual query execution and catalog browsing
+- ✅ Horizontal scaling - stateless control plane
+- ✅ REST and JDBC endpoints for SQL submission
+- ✅ Session management for multi-statement workflows
+- ✅ Production-ready deployment pattern
+
+
+## 📊 Scaling Components: JM/TM Clusters
+
+### Component Scaling Strategies
+
+#### 1. **Flink JobManager (JM)** - Control Plane
+
+**Role**: Coordinates jobs, schedules tasks, maintains job graph, handles checkpoints
+
+**Scaling approach**: 
+- **Session Cluster**: Single JM for multiple jobs (shared resources)
+- **Application Cluster**: One JM per application (isolated resources)
+- **High Availability**: Multiple JM instances with ZooKeeper/Kubernetes HA
+
+```yaml
+# Session cluster (most common)
+jobmanager:
+  replicas: 1  # Single JM
+  resources:
+    cpu: "2"
+    memory: "2Gi"
+  highAvailability:
+    enabled: true
+    storageDir: "s3://flink-ha/checkpoints"
+```
+
+**When to scale JM**:
+- ❌ Don't scale horizontally (only one active JM per cluster)
+- ✅ Scale vertically for more jobs or complex job graphs
+- ✅ Enable HA for production (standby JMs)
+
+#### 2. **Flink TaskManager (TM)** - Data Plane
+
+**Role**: Execute operators, manage state, process data streams
+
+**Scaling approach**:
+- **Horizontal**: Add more TM instances
+- **Vertical**: Increase TM memory/CPU
+- **Auto-scaling**: Reactive mode (Flink 2.1.0+)
+
+```yaml
+# TaskManager horizontal scaling
+taskmanager:
+  replicas: 5  # Start with 5 TMs
+  resources:
+    cpu: "4"
+    memory: "8Gi"
+  numberOfTaskSlots: 4  # 4 slots per TM = 20 total slots
+```
+
+**Scaling formula**:
+```
+Total Parallelism = TM Replicas × Task Slots per TM
+Example: 5 TMs × 4 slots = 20 parallel tasks
+```
+
+**When to scale TM**:
+- ✅ Job parallelism increases
+- ✅ Throughput requirements grow
+- ✅ State size increases (scale vertically for memory)
+- ✅ Backpressure detected (add more TMs)
+
+#### 3. **Flink.JobGateway** - Submission Service
+
+**Role**: Submit jobs, monitor status, normalize metrics
+
+**Scaling approach**:
+- Stateless service - scale horizontally behind load balancer
+- No data processing - lightweight resource requirements
+
+```yaml
+jobgateway:
+  replicas: 3  # Multiple replicas for HA
+  resources:
+    cpu: "1"
+    memory: "512Mi"
+```
+
+**When to scale**:
+- ✅ High submission rate (many concurrent job submissions)
+- ✅ High availability requirements
+- ❌ Don't scale for data throughput (TMs handle that)
+
+#### 4. **Flink SQL Gateway** - SQL Submission Service
+
+**Role**: Accept SQL queries, compile to Flink jobs, forward to cluster
+
+**Scaling approach**:
+- Stateless control-plane - scale horizontally
+- No data processing
+
+```yaml
+sqlgateway:
+  replicas: 2  # Multiple replicas for load distribution
+  resources:
+    cpu: "1"
+    memory: "1Gi"
+  config:
+    sql-gateway.endpoint.type: remote
+    rest.address: flink-jobmanager
+    rest.port: 8081
+```
+
+**When to scale**:
+- ✅ High SQL query submission rate
+- ✅ Many concurrent sessions
+- ❌ Don't scale for data volume (JM/TMs handle execution)
+
+### Complete Scaling Example
+
+**Scenario**: Processing 1M events/sec from Kafka
+
+```yaml
+# Kafka cluster (data source)
+kafka:
+  brokers: 3
+  partitions: 20  # High parallelism
+
+# Flink cluster sizing
+flink:
+  jobmanager:
+    replicas: 1  # With HA standby
+    resources:
+      cpu: "4"
+      memory: "4Gi"
+  
+  taskmanager:
+    replicas: 10  # Scale horizontally
+    resources:
+      cpu: "8"
+      memory: "16Gi"
+    taskSlots: 4
+    # Total parallelism: 10 TMs × 4 slots = 40 parallel tasks
+  
+  config:
+    parallelism.default: 20  # Match Kafka partitions
+    state.backend: rocksdb
+    state.checkpoints.dir: "s3://flink/checkpoints"
+
+# Gateway services (control-plane)
+jobgateway:
+  replicas: 3
+  resources:
+    cpu: "1"
+    memory: "512Mi"
+
+sqlgateway:
+  replicas: 2
+  resources:
+    cpu: "1"
+    memory: "1Gi"
+```
+
+**Scaling decision tree**:
+1. **Throughput issues?** → Scale TM horizontally (add replicas)
+2. **State too large?** → Scale TM vertically (more memory)
+3. **Job submission slow?** → Scale JobGateway/SQL Gateway
+4. **Complex job graphs?** → Scale JM vertically
+5. **Need HA?** → Enable JM HA with standby instances
+
+### Monitoring Scaling Effectiveness
+
+```csharp
+// FlinkDotNet provides metrics to guide scaling decisions
+var metrics = await flinkGateway.GetJobMetricsAsync(jobId);
+
+if (metrics.Backpressure > 0.8) {
+    // High backpressure → need more TM capacity
+    Console.WriteLine("⚠️ Scale TaskManagers horizontally");
+}
+
+if (metrics.CheckpointDuration > TimeSpan.FromMinutes(5)) {
+    // Slow checkpoints → state too large or TM underpowered
+    Console.WriteLine("⚠️ Scale TaskManagers vertically (more memory)");
+}
+
+if (metrics.TaskUtilization < 0.3) {
+    // Low utilization → over-provisioned
+    Console.WriteLine("ℹ️ Consider scaling down TaskManagers");
+}
+```
 
 ## 📚 Learning Course
 
@@ -75,38 +523,105 @@ In today's data-driven enterprise landscape, choosing the right messaging and st
 - **Choose SQS** when you need: Simple queuing, AWS integration, low operational overhead
 - **Choose Event Hubs** when you need: Azure-native big data ingestion, moderate complexity
 
-## 🔄 Architecture Comparison: Kafka + Kafka Streams vs FlinkDotNet + Temporal
+## 🔄 Stream Processing: Kafka Streams vs Apache Flink
 
-When choosing between streaming architectures, it's important to compare complete solutions. This section compares **Kafka + Kafka Streams** (the complete Kafka ecosystem) with **FlinkDotNet + Temporal** for enterprise-scale stream processing:
+When choosing a stream processing framework, the decision isn't between Kafka (the message broker) and Flink, but rather between **Kafka Streams** and **Apache Flink** as processing engines. Both commonly use Kafka as the underlying message transport.
 
-### **Kafka + Kafka Streams vs FlinkDotNet + Temporal Comparison:**
+### **Kafka Streams vs Apache Flink Comparison:**
 
-| **Capability** | **Kafka + Kafka Streams** | **FlinkDotNet + Temporal** |
-|----------------|---------------------------|----------------------------|
-| **Stream Processing** | Kafka Streams provides rich processing (windowing, joins, aggregations) | FlinkDotNet provides equivalent stream processing with Apache Flink 2.1.0 features |
-| **Fault Tolerance** | At-least-once processing, exactly-once within Kafka topics | Exactly-once guarantees with Apache Flink checkpointing + Temporal workflows |
-| **State Management** | Local state stores with changelog topics for fault tolerance | FlinkDotNet savepoints + Temporal durable state persistence |
-| **Scaling** | Horizontal scaling via Kafka partitions, manual rebalancing | FlinkDotNet adaptive scheduler + automatic scaling with Temporal orchestration |
-| **Complex Workflows** | Limited to stream processing topologies | Temporal workflows handle long-running, multi-step business processes |
-| **Error Handling** | Stream-level error handling and dead letter queues | Temporal's advanced retry policies, compensation patterns, and workflow recovery |
-| **Cross-System Coordination** | Limited to Kafka ecosystem, requires external orchestration | Temporal natively coordinates across Kafka + databases + APIs + external systems |
-| **Language Ecosystem** | Java/Scala native, limited .NET support | Full .NET integration with C# APIs and .NET ecosystem |
+| **Capability** | **Kafka Streams** | **Apache Flink (via FlinkDotNet)** |
+|----------------|-------------------|-------------------------------------|
+| **Deployment Model** | Embedded library (runs within your application) | Standalone cluster (JobManager + TaskManagers) |
+| **Language Support** | Java/Scala native | Java/Scala native + .NET via FlinkDotNet |
+| **Learning Curve** | Lower - simpler operational model | Higher - requires cluster management knowledge |
+| **Scale Limits** | Moderate (< 100K events/sec typically) | Massive (millions of events/sec) |
+| **State Management** | Local state stores (RocksDB) per instance | Distributed state with savepoints/checkpoints |
+| **Event-Time Processing** | Basic event-time windowing | Advanced event-time, watermarks, late data handling |
+| **Exactly-Once Semantics** | Within Kafka ecosystem only | Across external systems (databases, APIs, etc.) |
+| **Complex Event Processing** | Basic windowing and joins | Advanced CEP, pattern matching, complex joins |
+| **Batch + Stream** | Streams only | Unified batch and stream processing |
+| **Operational Complexity** | Low - auto-scales with Kafka partitions | Medium - requires cluster deployment |
+| **Resource Efficiency** | High for small/medium scale | Optimized for large-scale workloads |
+| **Fault Tolerance** | Application restart required | Automatic recovery with state restoration |
 
-### **When to Choose Each Architecture:**
+### **When to Choose Kafka Streams:**
 
-**Choose Kafka + Kafka Streams when:**
-- Your team has strong Java/Scala expertise
-- You need tight integration with the Kafka ecosystem
-- Your processing requirements fit well within stream processing topologies
-- You want to minimize infrastructure complexity (single technology stack)
-- Your use cases are primarily stream transformations and aggregations
+**Ideal for:**
+- **Kafka-centric environments** where all data flows through Kafka
+- **Simple to moderate complexity** stream transformations and aggregations
+- **Small to medium scale** (< 100K events/sec)
+- **Microservices architecture** where each service embeds its own processing
+- **Quick deployment** without cluster management overhead
+- **Java/Scala teams** comfortable with embedded library approach
 
-**Choose FlinkDotNet + Temporal when:**
-- Your team uses .NET and C# as primary languages
-- You need complex, long-running business process orchestration
-- You require advanced fault tolerance and workflow recovery capabilities
-- You need to coordinate across multiple external systems and APIs
-- You want Apache Flink 2.1.0 features like adaptive scheduling and reactive mode
+**Trade-offs:**
+- Limited scalability beyond Kafka partition count
+- Lacks advanced event-time processing features
+- No unified batch/stream processing
+- Exactly-once guarantees only within Kafka
+
+### **When to Choose Apache Flink (via FlinkDotNet):**
+
+**Ideal for:**
+- **Large-scale processing** (> 100K events/sec, up to millions)
+- **Complex event processing** requirements (CEP, pattern matching, multi-stream joins)
+- **Advanced event-time handling** with watermarks and out-of-order events
+- **Exactly-once guarantees** across external systems (databases, APIs, file systems)
+- **Unified batch and stream** processing in the same framework
+- **.NET ecosystems** leveraging C# and .NET tooling
+- **Sophisticated windowing** and stateful computations
+- **Production-grade fault tolerance** with savepoints and checkpointing
+
+**Trade-offs:**
+- Higher operational complexity (cluster deployment required)
+- Steeper learning curve
+- More infrastructure overhead for small-scale use cases
+
+### **Decision Matrix:**
+
+```
+Scale & Complexity:
+  Small scale (<10K events/sec)
+  ├─ Kafka-centric → Kafka Streams
+  └─ Multi-system → Consider simpler alternatives
+  
+  Medium scale (10K-100K events/sec)
+  ├─ Simple transforms → Kafka Streams
+  └─ Complex processing → Apache Flink
+  
+  Large scale (>100K events/sec)
+  └─ Apache Flink (mandatory for performance)
+
+Feature Requirements:
+  Basic windowing & aggregations → Kafka Streams
+  Advanced CEP & pattern matching → Apache Flink
+  Exactly-once to external systems → Apache Flink
+  Batch + Stream unified → Apache Flink
+  
+Language & Team:
+  Java/Scala only → Either
+  .NET primary → FlinkDotNet
+  Embedded in app → Kafka Streams
+  Centralized cluster → Apache Flink
+```
+
+### **FlinkDotNet + Temporal Architecture:**
+
+FlinkDotNet combines Apache Flink's processing power with Temporal's orchestration capabilities:
+
+```
+Kafka (Data Highway) + FlinkDotNet (Processing Engine) + Temporal (Orchestration)
+    ↓                        ↓                              ↓
+Stream Transport     →   Real-time Processing      →   Durable Workflows
+Partitioned Topics   →   Windowing/Aggregations    →   Multi-step Coordination  
+At-least-once       →   Exactly-once Processing   →   Workflow Guarantees
+```
+
+**Benefits of the combined stack:**
+- **Flink** handles large-scale, complex stream processing
+- **Temporal** orchestrates long-running workflows and cross-system coordination
+- **Kafka** provides reliable message transport
+- **.NET** enables full-stack development in C#
 
 ### **Technical Architecture Comparison:**
 

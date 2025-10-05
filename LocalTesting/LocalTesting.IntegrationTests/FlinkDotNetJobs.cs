@@ -81,13 +81,13 @@ public static class FlinkDotNetJobs
     }
     
     /// <summary>
-    /// Creates a SQL job that passes through data from input to output using Direct SQL Gateway
+    /// Creates a SQL job that passes through data from input to output using Direct Flink SQL Gateway
     /// </summary>
-    public static async Task<JobSubmissionResult> CreateSqlPassthroughJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+    public static async Task<JobSubmissionResult> CreateDirectFlinkSQLJob(
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
         var sqlStatements = new[]

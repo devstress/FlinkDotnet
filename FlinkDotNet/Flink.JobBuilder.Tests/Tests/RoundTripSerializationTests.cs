@@ -56,7 +56,8 @@ public class RoundTripSerializationTests
         Assert.That(roundTrip.Operations[1], Is.TypeOf<FilterOperationDefinition>());
         Assert.That(roundTrip.Operations[2], Is.TypeOf<WindowOperationDefinition>());
         Assert.That(roundTrip.Sink, Is.TypeOf<KafkaSinkDefinition>());
-        Assert.That(((KafkaSinkDefinition)roundTrip.Sink).Topic, Is.EqualTo("output-topic"));
+        Assert.That(roundTrip.Sink, Is.Not.Null);
+        Assert.That(((KafkaSinkDefinition)roundTrip.Sink!).Topic, Is.EqualTo("output-topic"));
     }
 
     [Test]

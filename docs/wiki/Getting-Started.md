@@ -20,7 +20,7 @@ FlinkDotnet enables .NET developers to build and submit streaming jobs to Apache
 
 - **Docker** - For running Apache Flink infrastructure
 - **Apache Flink Cluster** - Kubernetes deployment or local installation
-- **Java 25 and Maven** - Required to build `Flink.JobGateway` which prebuilds the IR Runner jar used for submissions
+- **Java 17 and Maven** - Required to build `Flink.JobGateway` which prebuilds the IR Runner jar used for submissions
 
 ## Quick Start
 

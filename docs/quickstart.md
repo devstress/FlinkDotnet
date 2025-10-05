@@ -5,7 +5,7 @@ This guide shows how to run the end-to-end LocalTesting setup and submit a simpl
 ## Prerequisites
 - .NET 9 SDK
 - Docker Desktop (Linux containers)
-- Java 25 and Maven (required to build `Flink.JobGateway`, which prebuilds the IR Runner jar)
+- Java 17 and Maven (auto-installed if not found, required to build `Flink.JobGateway`, which prebuilds the IR Runner jar)
 - Optional connectors copied to `LocalTesting/connectors/flink/lib/` if your job needs extra Flink SQL libraries (the Flink Job Gateway bundles them automatically)
 
 ## Run LocalTesting Integration

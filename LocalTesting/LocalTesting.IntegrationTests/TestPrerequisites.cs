@@ -35,10 +35,6 @@ internal static class TestPrerequisites
 
         try
         {
-            // Skip build - assume it's already built (tests run after build in CI/local)
-            // Building during test execution adds 30+ seconds and is unnecessary
-            TestContext.WriteLine("Skipping Gateway build - assuming project is already built");
-            
             var runnerJarExists = CheckRunnerJarExists(repoRoot);
             return runnerJarExists;
         }

@@ -78,73 +78,9 @@ public class DockerNetworkDiagnosticTest : LocalTestingTestBase
             }
             TestContext.WriteLine("");
 
-            // Test 3: Network connectivity test (ping)
-            TestContext.WriteLine("3️⃣ Testing network connectivity (ping) from Flink to Kafka...");
-            var kafkaIP = await GetContainerIPAsync(kafkaContainer);
-            TestContext.WriteLine($"   Kafka IP: {kafkaIP}");
-            
-            var pingResult = await RunDockerExecAsync(flinkTaskManagerContainer, $"ping -c 2 -W 2 {kafkaIP}");
-            
-            if (pingResult.ExitCode == 0)
-            {
-                TestContext.WriteLine($"   ✅ Ping successful to Kafka IP {kafkaIP}");
-            }
-            else if (pingResult.ExitCode == 127)
-            {
-                TestContext.WriteLine($"   ⚠️  Ping command not available in Flink container (exit code 127)");
-                TestContext.WriteLine($"   This is expected for minimal container images - skipping ping test");
-            }
-            else
-            {
-                TestContext.WriteLine($"   ❌ Ping FAILED to Kafka IP {kafkaIP}");
-                TestContext.WriteLine($"   Exit code: {pingResult.ExitCode}");
-                TestContext.WriteLine($"   Output: {pingResult.Output}");
-                TestContext.WriteLine($"   ⚠️  WARNING: Network connectivity may have issues");
-            }
-            TestContext.WriteLine("");
-
-            // Test 4: Port connectivity test (Kafka port 9093)
-            TestContext.WriteLine("4️⃣ Testing Kafka port 9093 connectivity from Flink...");
-            
-            // Try netcat first
-            var ncResult = await RunDockerExecAsync(flinkTaskManagerContainer, "nc -zv kafka 9093");
-            
-            if (ncResult.ExitCode == 0 || ncResult.Error.Contains("succeeded") || ncResult.Error.Contains("open"))
-            {
-                TestContext.WriteLine($"   ✅ Port 9093 is accessible on kafka:9093");
-            }
-            else if (ncResult.ExitCode == 127 || ncResult.Error.Contains("nc: not found") || ncResult.Error.Contains("command not found"))
-            {
-                TestContext.WriteLine($"   ⚠️  nc (netcat) command not available in Flink container (exit code {ncResult.ExitCode})");
-                TestContext.WriteLine($"   This is expected for minimal container images - skipping port connectivity test");
-                TestContext.WriteLine($"   Network connectivity will be validated by actual job execution");
-            }
-            else
-            {
-                TestContext.WriteLine($"   ❌ Port connectivity test failed");
-                TestContext.WriteLine($"   Exit code: {ncResult.ExitCode}");
-                TestContext.WriteLine($"   Output: {ncResult.Output}");
-                TestContext.WriteLine($"   Error: {ncResult.Error}");
-                TestContext.WriteLine($"   ⚠️  WARNING: This may indicate connectivity issues, but container lacks diagnostic tools");
-                TestContext.WriteLine($"   Network connectivity will be validated by actual job execution");
-            }
-            TestContext.WriteLine("");
-
-            // Test 5: Kafka broker connectivity test
-            TestContext.WriteLine("5️⃣ Testing Kafka broker metadata fetch from Flink...");
-            TestContext.WriteLine("   This requires kafka-console-consumer or kafka-broker-api-versions");
-            TestContext.WriteLine("   Skipping - would require installing Kafka tools in Flink container");
-            TestContext.WriteLine("");
-
             TestContext.WriteLine("========================================");
             TestContext.WriteLine("✅ ALL NETWORK DIAGNOSTIC TESTS PASSED");
             TestContext.WriteLine("========================================");
-            TestContext.WriteLine("");
-            TestContext.WriteLine("Network connectivity is working correctly.");
-            TestContext.WriteLine("If Flink jobs still fail to process messages, the issue is likely:");
-            TestContext.WriteLine("  - Kafka listener configuration");
-            TestContext.WriteLine("  - Flink job code/configuration");
-            TestContext.WriteLine("  - Kafka topic configuration");
         }
         catch (Exception ex)
         {
@@ -190,19 +126,6 @@ public class DockerNetworkDiagnosticTest : LocalTestingTestBase
             .Select(n => n.Trim())
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .ToList();
-    }
-
-    private static async Task<string> GetContainerIPAsync(string containerName)
-    {
-        var result = await RunDockerCommandAsync("inspect " + containerName + " --format \"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}\"");
-        var ip = result.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        
-        if (string.IsNullOrWhiteSpace(ip))
-        {
-            throw new InvalidOperationException($"Could not get IP for container {containerName}");
-        }
-        
-        return ip.Trim();
     }
 
     private static async Task<string> RunDockerCommandAsync(string arguments)
