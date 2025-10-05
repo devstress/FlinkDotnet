@@ -358,6 +358,54 @@ public class GlobalTestInfrastructure
         return podmanOutput ?? string.Empty;
     }
 
+    /// <summary>
+    /// Log TaskManager status and recent logs for debugging
+    /// </summary>
+    private static async Task LogTaskManagerStatusAsync()
+    {
+        try
+        {
+            TestContext.WriteLine("\n╔══════════════════════════════════════════════════════════════");
+            TestContext.WriteLine("║ 🔍 [TaskManager] Checking TaskManager Status");
+            TestContext.WriteLine("╚══════════════════════════════════════════════════════════════");
+            
+            // Find TaskManager container
+            var containerName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            containerName = containerName.Trim();
+            
+            if (string.IsNullOrEmpty(containerName))
+            {
+                TestContext.WriteLine("❌ No TaskManager container found");
+                return;
+            }
+            
+            TestContext.WriteLine($"📦 TaskManager container: {containerName}");
+            
+            // Get container status
+            var status = await RunDockerCommandAsync($"ps --filter \"name={containerName}\" --format \"{{{{.Status}}}}\"");
+            TestContext.WriteLine($"📊 Container status: {status.Trim()}");
+            
+            // Get last 100 lines of TaskManager logs
+            var logs = await RunDockerCommandAsync($"logs {containerName} --tail 100");
+            
+            if (!string.IsNullOrWhiteSpace(logs))
+            {
+                TestContext.WriteLine("\n📋 TaskManager Recent Logs (last 100 lines):");
+                TestContext.WriteLine("─────────────────────────────────────────────────────────────");
+                TestContext.WriteLine(logs);
+                TestContext.WriteLine("─────────────────────────────────────────────────────────────");
+            }
+            else
+            {
+                TestContext.WriteLine("⚠️ No TaskManager logs available");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"❌ Error checking TaskManager status: {ex.Message}");
+        }
+    }
+
     private static async Task<string?> TryRunContainerCommandAsync(string command, string arguments)
     {
         try
