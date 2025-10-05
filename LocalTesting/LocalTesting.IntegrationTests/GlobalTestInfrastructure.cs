@@ -130,34 +130,40 @@ public class GlobalTestInfrastructure
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🌍 GLOBAL TEST INFRASTRUCTURE TEARDOWN START");
         TestContext.WriteLine("🌍 ========================================");
+        TestContext.WriteLine("🔧 CONTAINERS WILL REMAIN RUNNING FOR POST-TEST DEBUGGING");
+        TestContext.WriteLine("🔧 Use 'docker ps' and 'docker logs <container>' to investigate");
 
-        if (AppHost != null)
-        {
-            try
-            {
-                await AppHost.StopAsync();
-                TestContext.WriteLine("✅ AppHost stopped successfully");
-            }
-            catch (Exception ex)
-            {
-                TestContext.WriteLine($"⚠️ AppHost stop warning: {ex.Message}");
-            }
+        // TEMPORARILY DISABLED: Keep containers running for debugging
+        // if (AppHost != null)
+        // {
+        //     try
+        //     {
+        //         await AppHost.StopAsync();
+        //         TestContext.WriteLine("✅ AppHost stopped successfully");
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         TestContext.WriteLine($"⚠️ AppHost stop warning: {ex.Message}");
+        //     }
 
-            try
-            {
-                await AppHost.DisposeAsync();
-                TestContext.WriteLine("✅ AppHost disposed successfully");
-            }
-            catch (Exception ex)
-            {
-                TestContext.WriteLine($"⚠️ AppHost dispose warning: {ex.Message}");
-            }
+        //     try
+        //     {
+        //         await AppHost.DisposeAsync();
+        //         TestContext.WriteLine("✅ AppHost disposed successfully");
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         TestContext.WriteLine($"⚠️ AppHost dispose warning: {ex.Message}");
+        //     }
 
-            AppHost = null;
-        }
+        //     AppHost = null;
+        // }
+
+        await Task.CompletedTask; // Keep containers alive
 
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🌍 GLOBAL INFRASTRUCTURE TEARDOWN COMPLETE");
+        TestContext.WriteLine("🌍 Containers remain running - manually stop with 'docker stop $(docker ps -q)'");
         TestContext.WriteLine("🌍 ========================================");
     }
 
