@@ -389,13 +389,16 @@ Both failing tests appear to have container networking or service startup issues
    curl http://localhost:8083/v1/info
    ```
 
-## Final Summary
+## Final Summary & SQL Gateway Analysis
 
 **Work Completed**:
 1. ✅ Added Flink SQL Gateway container infrastructure
 2. ✅ Implemented SQL Gateway endpoint discovery  
 3. ✅ Implemented proper session management for SQL Gateway REST API
-4. ✅ Updated all code to build successfully
+4. ✅ Configured SQL Gateway cluster connectivity to JobManager
+5. ✅ Enhanced README.md with comprehensive architecture documentation
+6. ✅ Created debug-sql-gateway-test.ps1 for log collection
+7. ✅ Updated all code to build successfully
 
 **Test Progress**: 6/9 passing (66% pass rate)
 
@@ -409,8 +412,21 @@ Both failing tests appear to have container networking or service startup issues
 - Pattern1: Job submission and RUNNING status work, but Kafka connectivity from within Flink job appears broken
 - DockerNetwork: Test needs to handle Podman container naming with random suffixes
 
+**SQL Gateway Alternative Approach**:
+The current implementation uses a separate SQL Gateway container that forwards SQL to JobManager. However, this adds complexity and infrastructure overhead. An alternative approach would be to:
+1. **Remove** the separate SQL Gateway container
+2. **Implement** SQL Gateway functionality directly in Flink.JobGateway service (ASP.NET Core)
+3. **Translate** SQL statements to IR (JobDefinition) programmatically
+4. **Submit** jobs via the existing JAR submission path to JobManager
+
+This would:
+- Eliminate the SQL Gateway container startup/connectivity issues
+- Simplify the architecture (fewer moving parts)
+- Maintain full control over SQL-to-IR translation
+- Reuse existing JobManager submission infrastructure
+
 **Recommended Approach**:
 Given the infrastructure issues require deep container debugging with log access, consider:
 1. **Short-term**: Focus on 6 passing tests as success criteria (Gateway patterns work)
-2. **Medium-term**: Debug SQL Gateway and Native Flink with proper container log tooling
-3. **Long-term**: Improve test infrastructure to provide better container debugging capabilities
+2. **Medium-term**: Evaluate SQL Gateway alternatives (containerized vs embedded in JobGateway)
+3. **Long-term**: If containerized SQL Gateway is required, implement proper startup health checks and logging
