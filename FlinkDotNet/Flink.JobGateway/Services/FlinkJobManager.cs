@@ -560,6 +560,8 @@ public class FlinkJobManager : IFlinkJobManager
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 var err = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Flink job submission failed with {StatusCode}. Full error response: {Error}", 
+                    response.StatusCode, err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
 
