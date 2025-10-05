@@ -1426,9 +1426,10 @@ public abstract class LocalTestingTestBase
 
             // Try to get resource health status from Aspire
             var healthStatus = "Unknown";
-            await foreach (var notification in AppHost.ResourceNotifications.WatchAsync(resource).WithCancellation(new CancellationTokenSource(5000).Token))
+            using var cts = new CancellationTokenSource(5000);
+            await foreach (var notification in AppHost.ResourceNotifications.WatchAsync(cts.Token))
             {
-                if (notification.Snapshot.State?.Text != null)
+                if (notification.Resource.Name == resourceName && notification.Snapshot.State?.Text != null)
                 {
                     healthStatus = notification.Snapshot.State.Text;
                     break;

@@ -114,6 +114,8 @@
             <goals><goal>shade</goal></goals>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
+              <!-- Suppress overlapping resource warnings -->
+              <shadeSourcesContent>true</shadeSourcesContent>
               <filters>
                 <filter>
                   <!-- Exclude Flink classes - they're provided by the cluster -->
@@ -124,6 +126,10 @@
                     <exclude>META-INF/*.RSA</exclude>
                     <exclude>META-INF/LICENSE</exclude>
                     <exclude>META-INF/NOTICE</exclude>
+                    <exclude>META-INF/DEPENDENCIES</exclude>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/versions/*/module-info.class</exclude>
                   </excludes>
                 </filter>
               </filters>
