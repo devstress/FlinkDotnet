@@ -73,12 +73,41 @@
 
 ### Investigation Plan
 1. ✅ Run tests and capture current status
-2. ⏳ Access containers during test run to debug
-3. ⏳ Check Kafka container naming and availability
-4. ⏳ Debug SQL Gateway submission for Pattern5
-5. ⏳ Debug Native Flink Pattern1 Kafka connectivity
-6. ⏳ Fix root causes with minimal changes
-7. ⏳ Retest until all 9 pass
+2. ✅ Discovered Aspire creates regular Docker containers (not DCP-specific)
+3. ⏳ Access containers during test run to debug exact naming
+4. ⏳ Check Kafka container naming pattern (filter "name=kafka" finds no matches)
+5. ⏳ Debug SQL Gateway submission for Pattern5
+6. ⏳ Debug Native Flink Pattern1 Kafka connectivity
+7. ⏳ Fix root causes with minimal changes
+8. ⏳ Retest until all 9 pass
+
+### Key Findings (ROOT CAUSE IDENTIFIED)
+
+**Container Discovery Issue - SOLVED**:
+- ✅ Aspire is using **Podman**, not Docker!
+- ✅ Containers have random suffixes: `kafka-acgecwcx`, `flink-jobmanager-pzrujmzn`, etc.
+- ✅ `RunDockerCommandAsync` tries Docker first, but containers are in Podman
+- ✅ Filter `name=kafka` works in Podman: `podman ps --filter "name=kafka"` finds `kafka-acgecwcx`
+- ❌ Docker has no containers, so `docker ps --filter "name=kafka"` returns empty
+
+**Actual Running Containers** (discovered via Podman):
+```
+flink-jobmanager-pzrujmzn   docker.io/library/flink:2.1.0-java17
+kafka-acgecwcx              docker.io/confluentinc/confluent-local:7.9.0
+flink-taskmanager-kpecycqg  docker.io/library/flink:2.1.0-java17
+flink-taskmanager-yewpcqgh  docker.io/library/flink:2.1.0-java17
+kafka-tcezwgwg              docker.io/confluentinc/confluent-local:7.9.0
+```
+
+**Root Cause**:
+The `RunDockerCommandAsync` function works correctly - it tries Docker first, then Podman.
+However, it only returns Podman output if Docker returns **empty**. If Docker command succeeds 
+but finds no containers (empty string), it doesn't try Podman!
+
+**Impact on Tests**:
+1. ❌ DockerNetworkDiagnosticTest - Can't find Kafka container (using Docker, not Podman)
+2. ❌ NativeFlinkAllPatternsTests - Can't connect to Kafka (wrong container runtime)
+3. ❌ Gateway_Pattern5 SQL test - Likely related to Kafka connectivity issue
 
 ## Phase 2: Design
 
