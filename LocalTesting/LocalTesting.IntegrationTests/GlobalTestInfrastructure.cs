@@ -74,7 +74,6 @@ public class GlobalTestInfrastructure
             TestContext.WriteLine($"🔍 Flink JobManager endpoint: {flinkEndpoint}");
             await LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", FlinkReadyTimeout, default);
             TestContext.WriteLine("✅ Flink JobManager and TaskManager are ready");
-            TestContext.WriteLine("ℹ️ SQL Gateway runs in JobManager container on port 8083");
 
             // Wait for Gateway
             TestContext.WriteLine("⏳ Waiting for Gateway resource to start...");
