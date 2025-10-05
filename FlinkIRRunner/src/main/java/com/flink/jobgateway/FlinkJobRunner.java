@@ -90,7 +90,7 @@ public class FlinkJobRunner {
             return; // No further DataStream processing for pure SQL jobs
         } else if (ir.source instanceof KafkaSourceDefinition) {
             KafkaSourceDefinition k = (KafkaSourceDefinition) ir.source;
-            String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+            String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
 
             System.out.println("════════════════════════════════════════════════════════════");
@@ -238,7 +238,7 @@ public class FlinkJobRunner {
             KafkaSinkDefinition s = (KafkaSinkDefinition) ir.sink;
             String bootstrap = orElse(s.bootstrapServers,
                     (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null,
-                    System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+                    System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
 
             System.out.println("════════════════════════════════════════════════════════════");
             System.out.println("[KAFKA SINK] Configuration:");

@@ -60,10 +60,52 @@
 6. Re-enable AppHost cleanup
 
 ### Findings
-(To be updated after test run)
+
+**Test Results - 8/9 Failed**:
+```
+Failed: 8 tests
+- Gateway_Pattern1_Uppercase_ShouldWork ❌
+- Gateway_Pattern2_Filter_ShouldWork ❌
+- Gateway_Pattern3_SplitConcat_ShouldWork ❌
+- Gateway_Pattern4_Timer_ShouldWork ❌
+- Gateway_Pattern5_DirectFlinkSQL_ShouldWork ❌
+- Gateway_Pattern6_SqlTransform_ShouldWork ❌
+- Gateway_Pattern7_Composite_ShouldWork ❌
+- (One more likely Native Flink test)
+
+Passed: 1 test (unknown which one)
+```
+
+**Failure Pattern**:
+1. ✅ Infrastructure starts: Kafka, Flink, Gateway all healthy
+2. ✅ Jobs submit successfully: "Job submission: success=True"
+3. ✅ Jobs reach RUNNING state: "Job is RUNNING"
+4. ✅ Messages produced to input topics: "✅ Produced X messages"
+5. ❌ **NO messages consumed from output topics**: "📊 Consumed 0 messages (expected: X)"
+
+**Root Cause Analysis**:
+- Jobs are running but not processing messages from input to output
+- Kafka connectivity issue suspected - jobs can't read from input topics
+- Checked FlinkJobRunner.java line 93 & 241: Default bootstrap = "kafka:9093" (WRONG!)
+- **Should be "kafka:9092" for internal Flink container communication**
+- Tests explicitly pass "kafka:9092" but there may be an override happening
+
+**Key Evidence from FlinkJobRunner.java**:
+```java
+Line 93:  String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+Line 241: String bootstrap = orElse(s.bootstrapServers, ..., System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+```
+
+The default "kafka:9093" is incorrect - should be "kafka:9092"
+
+**Containers After Test Run**:
+- All containers were torn down (AppHost dispose was actually called despite being "disabled")
+- Cannot examine live containers for debugging
 
 ### Lessons Learned
-(To be updated during investigation)
+- Default Kafka port in FlinkJobRunner.java is incorrect (9093 vs 9092)
+- AppHost teardown happened despite being commented out in GlobalTearDown
+- Need to prevent actual teardown to debug live containers
 
 ## Phase 2: Design
 (To be completed after root cause is identified)
