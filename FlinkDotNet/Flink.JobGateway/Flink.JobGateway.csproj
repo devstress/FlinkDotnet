@@ -152,7 +152,7 @@
     <!-- ==================== MAVEN AUTO-INSTALLATION ==================== -->
     <Message Text="(Flink.JobGateway) Checking for Maven..." Importance="High" />
 
-    <!-- Check if Maven exists in PATH (Windows) -->
+    <!-- Check if Maven exists in PATH and get full path (Windows) -->
     <Exec Command="where mvn"
           ContinueOnError="true"
           ConsoleToMSBuild="true"
@@ -161,9 +161,10 @@
           IgnoreExitCode="true"
           Condition="'$(IsWindows)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="MavenFullPathRaw" />
     </Exec>
 
-    <!-- Check if Maven exists in PATH (Linux/macOS) -->
+    <!-- Check if Maven exists in PATH and get full path (Linux/macOS) -->
     <Exec Command="which mvn"
           ContinueOnError="true"
           ConsoleToMSBuild="true"
@@ -172,6 +173,7 @@
           IgnoreExitCode="true"
           Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="MavenFullPathRaw" />
     </Exec>
 
     <PropertyGroup>
@@ -220,11 +222,16 @@
 
     <!-- Determine which Maven command to use (cross-platform) -->
     <PropertyGroup>
-      <!-- Priority 1: Use system Maven if found in PATH (e.g., from GitHub Actions) -->
-      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
-      <!-- Priority 2: Use locally installed Maven if it exists (Windows) -->
+      <!-- Clean up Maven path output (remove trailing newlines/whitespace) -->
+      <MavenFullPath Condition="'$(MavenFullPathRaw)' != ''">$([System.String]::Copy('$(MavenFullPathRaw)').Trim().Split(&#xD;&#xA;, System.StringSplitOptions.RemoveEmptyEntries)[0].Trim())</MavenFullPath>
+      
+      <!-- Priority 1: Use full path to system Maven if found in PATH (e.g., from GitHub Actions) -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND '$(MavenFullPath)' != ''">$(MavenFullPath)</MavenCommand>
+      <!-- Priority 2: Use relative mvn if found in PATH but full path not captured -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
+      <!-- Priority 3: Use locally installed Maven if it exists (Windows) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
-      <!-- Priority 3: Use locally installed Maven if it exists (Linux/macOS) -->
+      <!-- Priority 4: Use locally installed Maven if it exists (Linux/macOS) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenInstallDir)/bin/mvn')">$(MavenInstallDir)/bin/mvn</MavenCommand>
       <!-- Fallback: Use mvn from PATH (should be available if checks passed) -->
       <MavenCommand Condition="'$(MavenCommand)' == ''">mvn</MavenCommand>
@@ -299,7 +306,7 @@
     <!-- Set JAVA_HOME environment variable for Maven to use correct JDK -->
     <PropertyGroup>
       <MavenJava17Command Condition="'$(IsWindows)' == 'true'">powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$env:JAVA_HOME='$(EffectiveJavaHome)'; $env:PATH='$(EffectiveJavaHome)\bin;' + $env:PATH; $env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B package -DskipTests -Pjava17&quot;</MavenJava17Command>
-      <MavenJava17Command Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">JAVA_HOME='$(EffectiveJavaHome)' PATH='$(EffectiveJavaHome)/bin:$PATH' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17</MavenJava17Command>
+      <MavenJava17Command Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">/bin/bash -c "JAVA_HOME='$(EffectiveJavaHome)' PATH='$(EffectiveJavaHome)/bin:$PATH' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17"</MavenJava17Command>
     </PropertyGroup>
     <Exec Command="$(MavenJava17Command)"
           WorkingDirectory="$(FlinkIRRunnerDir)"

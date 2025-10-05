@@ -142,21 +142,28 @@ public class FlinkJobManager : IFlinkJobManager
 
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
-        _logger.LogInformation("Submitting job: {JobId}", jobDefinition.Metadata.JobId);
+        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+        _logger.LogInformation("║ 🔧 [FlinkJobManager] Processing job submission");
+        _logger.LogInformation("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
+        _logger.LogInformation("║ 📝 Job Name: {JobName}", jobDefinition.Metadata.JobName ?? "Unnamed");
+        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        
         try
         {
             var validation = ValidateJobDefinition(jobDefinition);
             if (!validation.IsValid)
             {
+                _logger.LogError("❌ Job validation failed: {Errors}", string.Join(", ", validation.Errors));
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
                     $"Job validation failed: {string.Join(", ", validation.Errors)}");
             }
+            _logger.LogInformation("✅ Job definition validated successfully");
 
             // Check if this is a SQL Gateway job
             if (jobDefinition.Source is SqlSourceDefinition sqlSource &&
                 sqlSource.ExecutionMode == "gateway")
             {
-                _logger.LogInformation("Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
+                _logger.LogInformation("🔀 Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
                 
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
@@ -166,8 +173,12 @@ public class FlinkJobManager : IFlinkJobManager
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
+            _logger.LogInformation("🔄 Using standard JAR submission flow");
             var irBase64 = EncodeJobDefinition(jobDefinition);
+            
+            _logger.LogInformation("🔍 Probing Flink cluster health...");
             var clusterHealthy2 = await ProbeClusterHealthSafelyAsync();
+            
             var flinkJobId2 = clusterHealthy2
                 ? await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition)
                 : await RunLocalAsync(irBase64, jobDefinition);
@@ -176,6 +187,7 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (!clusterHealthy2 && _jobMapping[flinkJobId2].Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
             {
+                _logger.LogWarning("⚠️ Job running in LOCAL mode (cluster not available)");
                 return new JobSubmissionResult
                 {
                     JobId = jobDefinition.Metadata.JobId,
@@ -186,11 +198,12 @@ public class FlinkJobManager : IFlinkJobManager
                 };
             }
 
+            _logger.LogInformation("✅ Job submitted successfully to Flink cluster");
             return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId2);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to submit job {JobId}", jobDefinition.Metadata.JobId);
+            _logger.LogError(ex, "❌ Failed to submit job {JobId}: {Message}", jobDefinition.Metadata.JobId, ex.Message);
             return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, ex.Message);
         }
     }
@@ -556,7 +569,7 @@ public class FlinkJobManager : IFlinkJobManager
             }
 
             _logger.LogDebug("Maven build completed successfully");
-            jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner.jar");
+            jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner-java17.jar");
             if (!File.Exists(jarPath))
             {
                 throw new InvalidOperationException($"Maven build completed but jar not found at expected path: {jarPath}");
@@ -620,12 +633,18 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
+            _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+            _logger.LogInformation("║ 📡 [FlinkJobManager] Submitting job to Flink JobManager");
+            _logger.LogInformation("║ 🌐 Target: {BaseAddress}", _httpClient.BaseAddress);
+            _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+            
             var jarId = await EnsureRunnerJarAsync();
+            _logger.LogInformation("✅ Flink runner JAR ready: {JarId}", jarId);
 
             // DIAGNOSTIC: Log job definition bootstrap servers before submission
             var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
             var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-            _logger.LogInformation("[DEBUG] Job definition before Flink submission: Source bootstrap={SourceBootstrap}, Sink bootstrap={SinkBootstrap}",
+            _logger.LogInformation("📋 Job Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap}",
                 kafkaSource?.BootstrapServers ?? "null",
                 kafkaSink?.BootstrapServers ?? "null");
 
@@ -638,20 +657,23 @@ public class FlinkJobManager : IFlinkJobManager
             };
 
             var requestJson = JsonSerializer.Serialize(runRequest);
-            _logger.LogInformation("[DEBUG] Flink run request JSON: {RequestJson}", requestJson);
+            _logger.LogDebug("📤 Flink run request: {RequestJson}", requestJson);
+            
             using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+            
+            _logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", _httpClient.BaseAddress, jarId);
             using var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
+            _logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int)response.StatusCode, response.ReasonPhrase);
 
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 var err = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Flink job submission failed with {StatusCode}. Full error response: {Error}", 
-                    response.StatusCode, err);
+                _logger.LogError("❌ Flink job submission failed: {StatusCode} - {Error}", response.StatusCode, err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
 
             var runContent = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation("Flink run response: {RunContent}", runContent);
+            _logger.LogDebug("📥 Flink response body: {RunContent}", runContent);
 
             string? jobId = null;
             try
@@ -659,51 +681,77 @@ public class FlinkJobManager : IFlinkJobManager
                 var run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 jobId = run?.JobId;
+                if (jobId != null)
+                {
+                    _logger.LogInformation("✅ Extracted Flink JobId from response: {JobId}", jobId);
+                }
             }
             catch (JsonException ex)
             {
-                _logger.LogDebug(ex, "Failed to deserialize Flink run response when extracting job id");
+                _logger.LogDebug(ex, "⚠️ Failed to deserialize Flink run response when extracting job id");
             }
 
             jobId ??= TryGetJobIdFromHeaders(response);
 
             if (string.IsNullOrEmpty(jobId))
             {
+                _logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
                 var targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
                 jobId = await TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
             }
 
             if (string.IsNullOrEmpty(jobId))
             {
+                _logger.LogError("❌ Flink did not return a jobId");
                 throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
             }
 
+            _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+            _logger.LogInformation("║ ✅ [FlinkJobManager] Job submitted to Flink successfully");
+            _logger.LogInformation("║ 🆔 Flink JobId: {JobId}", jobId);
+            _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+            
             return jobId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to submit jar to Flink REST API");
+            _logger.LogError(ex, "❌ Failed to submit jar to Flink REST API: {Message}", ex.Message);
             throw;
         }
     }
 
     private async Task<string> SubmitSqlGatewayJobAsync(SqlSourceDefinition sqlSource, JobDefinition jobDefinition)
     {
-        _logger.LogInformation("Submitting SQL job via Flink SQL Gateway for job {JobId}", jobDefinition.Metadata.JobId);
+        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+        _logger.LogInformation("║ 📡 [FlinkJobManager] Submitting SQL job to SQL Gateway");
+        _logger.LogInformation("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
+        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
         
         try
         {
             using var sqlGatewayClient = CreateSqlGatewayClient();
+            _logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress}", sqlGatewayClient.BaseAddress);
+            
+            _logger.LogInformation("⏳ Waiting for SQL Gateway to be ready...");
             await WaitForSqlGatewayReadyAsync(sqlGatewayClient);
+            _logger.LogInformation("✅ SQL Gateway is ready");
             
             var sessionHandle = await CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
+            _logger.LogInformation("✅ SQL Gateway session created: {SessionHandle}", sessionHandle);
+            
             var lastJobId = await ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
             
-            return lastJobId ?? sessionHandle;
+            var result = lastJobId ?? sessionHandle;
+            _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+            _logger.LogInformation("║ ✅ [FlinkJobManager] SQL job submitted successfully");
+            _logger.LogInformation("║ 🆔 JobId/SessionHandle: {Result}", result);
+            _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+            
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to submit SQL job via SQL Gateway");
+            _logger.LogError(ex, "❌ Failed to submit SQL job via SQL Gateway: {Message}", ex.Message);
             throw new InvalidOperationException("SQL Gateway submission failed. See inner exception for details.", ex);
         }
     }
@@ -723,25 +771,32 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task<string> CreateSqlGatewaySessionAsync(HttpClient client, JobDefinition jobDefinition)
     {
         var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
-        _logger.LogInformation("Creating SQL Gateway session: {SessionName}", sessionName);
+        _logger.LogInformation("🚀 POST {BaseAddress}/v1/sessions (Creating session: {SessionName})", client.BaseAddress, sessionName);
         
         var sessionRequest = new { sessionName };
         var sessionJson = JsonSerializer.Serialize(sessionRequest);
+        _logger.LogDebug("📤 Request body: {SessionJson}", sessionJson);
+        
         using var sessionContent = new StringContent(sessionJson, Encoding.UTF8, "application/json");
         using var sessionResponse = await client.PostAsync("/v1/sessions", sessionContent);
+        
+        _logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
         
         if (!sessionResponse.IsSuccessStatusCode)
         {
             var errorContent = await sessionResponse.Content.ReadAsStringAsync();
-            _logger.LogError("SQL Gateway session creation failed: {StatusCode} - {Error}",
+            _logger.LogError("❌ SQL Gateway session creation failed: {StatusCode} - {Error}",
                 sessionResponse.StatusCode, errorContent);
             throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
         }
         
         var sessionResponseContent = await sessionResponse.Content.ReadAsStringAsync();
-        _logger.LogInformation("SQL Gateway session created: {Response}", sessionResponseContent);
+        _logger.LogDebug("📥 Response body: {Response}", sessionResponseContent);
         
-        return ExtractSessionHandle(sessionResponseContent);
+        var handle = ExtractSessionHandle(sessionResponseContent);
+        _logger.LogInformation("✅ Session handle extracted: {Handle}", handle);
+        
+        return handle;
     }
 
     private string ExtractSessionHandle(string sessionResponseContent)

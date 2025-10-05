@@ -32,15 +32,21 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Use Aspire's default Kafka configuration - works for BackPressureExample
-// Aspire automatically handles port allocation and container networking
-// Note: Kafka resource is created but not referenced by Gateway to prevent
-// Aspire from injecting connection strings that would override job definitions
-builder.AddKafka("kafka");  // AddKafka already creates 'internal' endpoint automatically
+// Configure Kafka with proper listener configuration for both internal and external access
+// Internal clients (Flink containers) use kafka:9092
+// External clients (test process) use localhost:9093
+#pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
+var kafka = builder.AddKafka("kafka", port: 9093) // Publish 9093 on host for external access
+    .WithEnvironment("KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT")
+    .WithEnvironment("KAFKA_CFG_LISTENERS", "PLAINTEXT://:9092,PLAINTEXT_HOST://:9093")
+    .WithEnvironment("KAFKA_CFG_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093");
+#pragma warning restore S1481
 
 if (diagnosticsVerbose)
 {
-    Console.WriteLine("[diag] Kafka configured - Aspire will inject connection strings automatically");
+    Console.WriteLine("[diag] Kafka configured with dual listeners:");
+    Console.WriteLine("[diag]   - Internal (Flink containers): kafka:9092");
+    Console.WriteLine("[diag]   - External (test process): localhost:9093");
 }
 
 // Flink JobManager with named HTTP endpoint for service references
@@ -161,17 +167,20 @@ builder.Build().Run();
 
 static bool ConfigureContainerRuntime()
 {
-    if (IsPodmanAvailable())
-    {
-        Console.WriteLine("✅ Using Podman as container runtime");
-        Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
-        SetPodmanDockerHost();
-        return true;
-    }
-    
+    // Try Docker Desktop first (preferred)
     if (IsDockerAvailable())
     {
         Console.WriteLine("✅ Using Docker Desktop as container runtime");
+        // No need to set ASPIRE_CONTAINER_RUNTIME - Docker is the default
+        return true;
+    }
+    
+    // Fallback to Podman if Docker is not available
+    if (IsPodmanAvailable())
+    {
+        Console.WriteLine("✅ Using Podman as container runtime (Docker not available)");
+        Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
+        SetPodmanDockerHost();
         return true;
     }
     
@@ -200,9 +209,7 @@ static string FindGatewayJarPath(string repoRoot)
     var candidates = new[]
     {
         Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner-java17.jar"),
-        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar"),
-        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar"),
-        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar")
+        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar")
     };
 
     return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
@@ -303,24 +310,76 @@ static bool IsDockerAvailable()
 {
     try
     {
-        var psi = new ProcessStartInfo
+        // First check if Docker command is available
+        if (!IsDockerCommandAvailable())
         {
-            FileName = "docker",
-            Arguments = "version",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            return false;
+        }
 
-        using var process = Process.Start(psi);
-        process?.WaitForExit(5000);
-        return process?.ExitCode == 0;
+        // Then check if Docker daemon is running
+        return IsDockerDaemonRunning();
     }
     catch
     {
         return false;
     }
+}
+
+static bool IsDockerCommandAvailable()
+{
+    var versionPsi = new ProcessStartInfo
+    {
+        FileName = "docker",
+        Arguments = "version",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using var versionProcess = Process.Start(versionPsi);
+    versionProcess?.WaitForExit(5000);
+    return versionProcess?.ExitCode == 0;
+}
+
+static bool IsDockerDaemonRunning()
+{
+    var psi = new ProcessStartInfo
+    {
+        FileName = "docker",
+        Arguments = "info",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using var process = Process.Start(psi);
+    if (process == null)
+    {
+        return false;
+    }
+
+    process.StandardOutput.ReadToEnd(); // Consume output to prevent blocking
+    var error = process.StandardError.ReadToEnd();
+    process.WaitForExit(5000);
+
+    if (process.ExitCode == 0)
+    {
+        Console.WriteLine("   ℹ️ Docker daemon is running");
+        return true;
+    }
+
+    // Docker command exists but daemon is not running
+    if (error.Contains("Cannot connect to the Docker daemon", StringComparison.OrdinalIgnoreCase) ||
+        error.Contains("Is the docker daemon running", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.WriteLine("   ⚠️ Docker is installed but daemon is not running. Start Docker Desktop.");
+        return false;
+    }
+
+    Console.WriteLine($"   ⚠️ Docker daemon check failed: {error}");
+    return false;
 }
 
 static void SetPodmanDockerHost()
