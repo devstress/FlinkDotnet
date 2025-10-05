@@ -306,24 +306,76 @@ static bool IsDockerAvailable()
 {
     try
     {
-        var psi = new ProcessStartInfo
+        // First check if Docker command is available
+        if (!IsDockerCommandAvailable())
         {
-            FileName = "docker",
-            Arguments = "version",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            return false;
+        }
 
-        using var process = Process.Start(psi);
-        process?.WaitForExit(5000);
-        return process?.ExitCode == 0;
+        // Then check if Docker daemon is running
+        return IsDockerDaemonRunning();
     }
     catch
     {
         return false;
     }
+}
+
+static bool IsDockerCommandAvailable()
+{
+    var versionPsi = new ProcessStartInfo
+    {
+        FileName = "docker",
+        Arguments = "version",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using var versionProcess = Process.Start(versionPsi);
+    versionProcess?.WaitForExit(5000);
+    return versionProcess?.ExitCode == 0;
+}
+
+static bool IsDockerDaemonRunning()
+{
+    var psi = new ProcessStartInfo
+    {
+        FileName = "docker",
+        Arguments = "info",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using var process = Process.Start(psi);
+    if (process == null)
+    {
+        return false;
+    }
+
+    process.StandardOutput.ReadToEnd(); // Consume output to prevent blocking
+    var error = process.StandardError.ReadToEnd();
+    process.WaitForExit(5000);
+
+    if (process.ExitCode == 0)
+    {
+        Console.WriteLine("   ℹ️ Docker daemon is running");
+        return true;
+    }
+
+    // Docker command exists but daemon is not running
+    if (error.Contains("Cannot connect to the Docker daemon", StringComparison.OrdinalIgnoreCase) ||
+        error.Contains("Is the docker daemon running", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.WriteLine("   ⚠️ Docker is installed but daemon is not running. Start Docker Desktop.");
+        return false;
+    }
+
+    Console.WriteLine($"   ⚠️ Docker daemon check failed: {error}");
+    return false;
 }
 
 static void SetPodmanDockerHost()
