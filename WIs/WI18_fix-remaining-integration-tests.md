@@ -211,6 +211,26 @@ All changes are minimal and focused on enabling SQL Gateway functionality.
 
 **Testing**: Still times out - SQL Gateway container may not be starting/responding properly
 
+### Fix Iteration #3: SQL Gateway Cluster Configuration
+
+**Problem**: SQL Gateway needs to be configured to connect to the Flink JobManager cluster
+
+**Root Cause**: SQL Gateway is a control-plane service that talks to JobManager/TaskManager, not a standalone data runner. It needs to know where the Flink cluster is.
+
+**Solution**: Added Flink cluster connection configuration to SQL Gateway:
+- `rest.address: flink-jobmanager` - Points Gateway to JobManager REST API
+- `rest.port: 8081` - JobManager REST port  
+- `sql-gateway.endpoint.type: remote` - Remote connection mode
+- Session timeout and worker thread configurations
+
+**Code Changes**:
+- `Program.cs`: Updated SQL Gateway FLINK_PROPERTIES with cluster connection settings
+- Added session management and worker configuration
+
+**Testing**: Still times out - SQL Gateway container startup or REST API issue persists
+
+**Key Insight from @devstress**: SQL Gateway is NOT a data runner - it's a client service that forwards SQL to the JobManager. This architecture requires proper connectivity configuration between Gateway and JobManager.
+
 ## Phase 5: Testing & Validation
 
 ### Test Run #1 - After SQL Gateway Session Management Fix
