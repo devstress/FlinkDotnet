@@ -31,20 +31,28 @@ public class JobsController : ControllerBase
     [HttpPost("submit")]
     public async Task<ActionResult<JobSubmissionResult>> SubmitJob()
     {
+        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+        _logger.LogInformation("║ 🔵 [Gateway] Received job submission request");
+        _logger.LogInformation("║ 📡 Client: {ClientIP}", HttpContext.Connection.RemoteIpAddress);
+        _logger.LogInformation("║ 🌐 Endpoint: POST /api/v1/jobs/submit");
+        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        
         string raw;
         try
         {
             using var reader = new StreamReader(Request.Body, Encoding.UTF8);
             raw = await reader.ReadToEndAsync();
+            _logger.LogDebug("📝 Request body length: {Length} bytes", raw.Length);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed reading request body");
+            _logger.LogError(ex, "❌ Failed reading request body");
             return BadRequest(new { error = "Unable to read request body", ex.Message });
         }
 
         if (string.IsNullOrWhiteSpace(raw))
         {
+            _logger.LogWarning("⚠️ Empty request body received");
             return BadRequest(new { error = "Empty request body" });
         }
 
@@ -59,12 +67,14 @@ public class JobsController : ControllerBase
             jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, opts);
             if (jobDefinition == null)
             {
+                _logger.LogError("❌ Unable to deserialize job definition");
                 return BadRequest(new { error = "Unable to deserialize job definition" });
             }
+            _logger.LogInformation("✅ Job definition deserialized successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Deserialization failure for job submission. Raw snippet: {Snippet}", raw.Length > 400 ? raw[..400] : raw);
+            _logger.LogError(ex, "❌ Deserialization failure for job submission. Raw snippet: {Snippet}", raw.Length > 400 ? raw[..400] : raw);
             return BadRequest(new { error = "Invalid job definition JSON", ex.Message });
         }
 
@@ -81,27 +91,44 @@ public class JobsController : ControllerBase
             jobDefinition.Metadata.JobId = Guid.NewGuid().ToString();
         }
 
-        _logger.LogInformation("Received job submission request for job: {JobId}", jobDefinition.Metadata.JobId);
+        _logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}", 
+            jobDefinition.Metadata.JobId, 
+            jobDefinition.Metadata.JobName ?? "Unnamed");
 
         try
         {
+            _logger.LogInformation("🚀 Submitting job to Flink cluster...");
             var result = await _flinkJobManager.SubmitJobAsync(jobDefinition);
 
             if (result.IsSuccess)
             {
-                _logger.LogInformation("Job submitted successfully: {JobId} -> {FlinkJobId}",
-                    result.JobId, result.FlinkJobId);
+                _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+                _logger.LogInformation("║ ✅ [Gateway] Job submitted successfully");
+                _logger.LogInformation("║ 📋 JobId: {JobId}", result.JobId);
+                _logger.LogInformation("║ 🆔 FlinkJobId: {FlinkJobId}", result.FlinkJobId);
+                _logger.LogInformation("║ 📤 Response: 200 OK");
+                _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
                 return Ok(result);
             }
             else
             {
-                _logger.LogError("Job submission failed: {ErrorMessage}", result.ErrorMessage);
+                _logger.LogError("╔══════════════════════════════════════════════════════════════");
+                _logger.LogError("║ ❌ [Gateway] Job submission failed");
+                _logger.LogError("║ 📋 JobId: {JobId}", result.JobId);
+                _logger.LogError("║ ⚠️ Error: {ErrorMessage}", result.ErrorMessage);
+                _logger.LogError("║ 📤 Response: 400 Bad Request");
+                _logger.LogError("╚══════════════════════════════════════════════════════════════");
                 return BadRequest(result);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error submitting job: {Message}", ex.Message);
+            _logger.LogError(ex, "╔══════════════════════════════════════════════════════════════");
+            _logger.LogError("║ ❌ [Gateway] Exception during job submission");
+            _logger.LogError("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
+            _logger.LogError("║ 💥 Exception: {Message}", ex.Message);
+            _logger.LogError("║ 📤 Response: 500 Internal Server Error");
+            _logger.LogError("╚══════════════════════════════════════════════════════════════");
             var result = JobSubmissionResult.CreateFailure(
                 jobDefinition.Metadata.JobId,
                 $"Internal server error: {ex.Message}");
