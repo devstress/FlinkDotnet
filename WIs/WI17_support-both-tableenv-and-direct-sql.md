@@ -161,10 +161,52 @@ if (s.executionMode != null && "gateway".equals(s.executionMode)) {
 ## Phase 4: Implementation
 
 ### Code Changes
-(To be filled during implementation)
+
+**1. SqlSourceDefinition Model Update (JobDefinition.cs)**
+```csharp
+public class SqlSourceDefinition : ISourceDefinition
+{
+    [JsonIgnore]
+    public string Type => "sql";
+    public List<string> Statements { get; set; } = new();
+    public string Mode { get; set; } = "streaming";
+    
+    /// <summary>
+    /// Execution mode: "tableenv" (default, uses TableEnvironment) or "gateway" (uses Flink SQL Gateway REST API)
+    /// </summary>
+    public string ExecutionMode { get; set; } = "tableenv";
+    
+    public Dictionary<string, string> Properties { get; set; } = new();
+}
+```
+
+**2. FlinkJobManager Routing Logic**
+Added conditional routing in `SubmitJobAsync` method to detect SQL Gateway mode and route accordingly.
+
+**3. SubmitSqlGatewayJobAsync Implementation**
+New method in FlinkJobManager.cs that:
+- Submits SQL statements directly to `/v1/statements` endpoint
+- Executes each statement sequentially
+- Extracts job ID from INSERT statement responses
+- Returns synthetic job ID if none returned
+- Handles errors and logging appropriately
+
+**4. Test Job Updates**
+- `CreateSqlPassthroughJob`: Updated to set `ExecutionMode = "gateway"`
+- `CreateSqlTransformJob`: Kept default `ExecutionMode = "tableenv"`
 
 ### Implementation Status
-(To be filled during implementation)
+
+**Completed**:
+- ✅ ExecutionMode property added to SqlSourceDefinition
+- ✅ SQL Gateway submission logic implemented
+- ✅ Routing logic in FlinkJobManager updated
+- ✅ Test jobs updated to specify execution modes
+- ✅ Build verification successful
+
+**Next Steps**:
+- Run integration tests to verify both modes work
+- Update documentation with execution mode examples
 
 ## Phase 5: Testing & Validation
 
