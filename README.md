@@ -32,6 +32,411 @@ Alternatives
 
 Refer to the docs/ directory for the implementation roadmap and guides.
 
+## 🔬 DSL to IR to Flink Job: Complete Example
+
+### 1. C# DSL (Domain-Specific Language)
+
+```csharp
+using FlinkDotNet;
+
+// Build a streaming job using fluent C# API
+var job = Flink.JobBuilder
+    .FromKafka("input-topic", "kafka:9093")
+    .Map("uppercase")  // Transform each message to uppercase
+    .Filter("non-empty")  // Keep only non-empty messages
+    .ToKafka("output-topic", "kafka:9093");
+
+// Submit to Flink cluster
+var result = await job.Submit("my-uppercase-job");
+```
+
+### 2. IR (Intermediate Representation) - JobDefinition JSON
+
+The DSL compiles to a portable JSON IR that describes the job:
+
+```json
+{
+  "metadata": {
+    "jobId": "job-123",
+    "jobName": "my-uppercase-job",
+    "submittedAt": "2025-01-01T12:00:00Z"
+  },
+  "source": {
+    "type": "kafka",
+    "topic": "input-topic",
+    "bootstrapServers": "kafka:9093",
+    "groupId": "flink-consumer-group"
+  },
+  "operations": [
+    {
+      "type": "map",
+      "operator": "uppercase",
+      "implementation": "com.flinkdotnet.operators.UppercaseMapFunction"
+    },
+    {
+      "type": "filter",
+      "operator": "non-empty",
+      "implementation": "com.flinkdotnet.operators.NonEmptyFilterFunction"
+    }
+  ],
+  "sink": {
+    "type": "kafka",
+    "topic": "output-topic",
+    "bootstrapServers": "kafka:9093"
+  }
+}
+```
+
+### 3. IR Runner JAR: Building the Flink Job
+
+The **IR Runner JAR** (`flink-ir-runner.jar`) is a prebuilt Java artifact that:
+- Reads the IR JSON at runtime
+- Builds the Flink DataStream topology dynamically
+- Instantiates sources, operators, and sinks
+- Handles connector dependencies (Kafka, JSON, etc.)
+
+**IR Runner execution flow:**
+
+```java
+// Simplified IR Runner logic (actual implementation in FlinkIRRunner/)
+public class FlinkIRRunner {
+    public static void main(String[] args) {
+        // 1. Read IR from environment or base64 argument
+        String irJson = System.getenv("FLINK_JOB_IR");
+        JobDefinition jobDef = parseIR(irJson);
+        
+        // 2. Build Flink execution environment
+        StreamExecutionEnvironment env = 
+            StreamExecutionEnvironment.getExecutionEnvironment();
+        
+        // 3. Create source from IR
+        DataStream<String> source = createKafkaSource(env, jobDef.source);
+        
+        // 4. Apply operations from IR
+        for (Operation op : jobDef.operations) {
+            if (op.type.equals("map")) {
+                source = source.map(new UppercaseMapFunction());
+            } else if (op.type.equals("filter")) {
+                source = source.filter(new NonEmptyFilterFunction());
+            }
+        }
+        
+        // 5. Create sink from IR
+        source.addSink(createKafkaSink(jobDef.sink));
+        
+        // 6. Execute job
+        env.execute(jobDef.metadata.jobName);
+    }
+}
+```
+
+**Key benefits:**
+- **No per-job compilation**: Single JAR handles all job types
+- **Connector bundling**: Kafka, JSON, and other connectors included
+- **Version control**: Update runner JAR without changing user code
+- **Debugging**: Logs show IR interpretation and topology building
+
+## 🌐 Flink.JobGateway Connections: How Everything Connects
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        .NET Application                         │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  FlinkDotNet DSL                                         │  │
+│  │  var job = Flink.JobBuilder.FromKafka(...).Map(...)     │  │
+│  └──────────────────┬───────────────────────────────────────┘  │
+│                     │ Compiles to IR (JSON)                     │
+└─────────────────────┼───────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Flink.JobGateway (ASP.NET Core)                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  POST /api/jobs  (receives IR)                           │  │
+│  │  1. Validate IR JobDefinition                            │  │
+│  │  2. Choose execution mode:                               │  │
+│  │     - TableEnvironment SQL → Submit via JM REST          │  │
+│  │     - Gateway SQL → Submit via SQL Gateway REST          │  │
+│  │     - DataStream → Upload IR Runner JAR + Submit         │  │
+│  └──────────────────┬───────────────────────────────────────┘  │
+└─────────────────────┼───────────────────────────────────────────┘
+                      │
+        ┌─────────────┴──────────────┐
+        │                            │
+        ▼                            ▼
+┌───────────────────┐      ┌──────────────────────┐
+│ Flink JobManager  │◄─────│ Flink SQL Gateway    │
+│   (Port 8081)     │      │   (Port 8083)        │
+│                   │      │  (Control-plane)     │
+│ REST API:         │      │                      │
+│ /jars/upload      │      │ REST API:            │
+│ /jars/{id}/run    │      │ /v1/sessions         │
+│ /jobs/{id}        │      │ /v1/sessions/{id}/   │
+│ /jobs/{id}/cancel │      │   statements         │
+└─────────┬─────────┘      └──────────┬───────────┘
+          │                           │
+          │  Submits jobs to cluster  │
+          └───────────┬───────────────┘
+                      │
+          ┌───────────▼────────────┐
+          │   Flink TaskManagers   │
+          │   (Data Plane)         │
+          │                        │
+          │  - Execute operators   │
+          │  - Manage state        │
+          │  - Process streams     │
+          │  - Connect to Kafka    │
+          └────────────────────────┘
+```
+
+### Connection Details
+
+#### 1. **Flink.JobGateway → Flink JobManager** (TableEnvironment & DataStream jobs)
+
+```csharp
+// Gateway discovers JobManager endpoint via Aspire
+var jobManagerEndpoint = DiscoverFlinkJobManagerEndpoint();
+// Priority: Aspire service discovery > Environment vars > Default
+
+using var httpClient = new HttpClient { BaseAddress = new Uri(jobManagerEndpoint) };
+
+// Upload IR Runner JAR (first time only, cached by JM)
+var uploadResponse = await httpClient.PostAsync("/v1/jars/upload", jarContent);
+var jarId = parseJarId(uploadResponse);
+
+// Submit job with IR as argument
+var submitPayload = new {
+    entryClass = "com.flinkdotnet.FlinkIRRunner",
+    programArgs = $"--ir-base64 {Base64.Encode(irJson)}",
+    parallelism = 4
+};
+await httpClient.PostAsync($"/v1/jars/{jarId}/run", submitPayload);
+```
+
+#### 2. **Flink.JobGateway → Flink SQL Gateway** (SQL Gateway mode)
+
+```csharp
+// Gateway discovers SQL Gateway endpoint
+var sqlGatewayEndpoint = DiscoverSqlGatewayEndpoint();
+
+using var sqlClient = new HttpClient { BaseAddress = new Uri(sqlGatewayEndpoint) };
+
+// Step 1: Create session
+var sessionRequest = new { sessionName = "my-sql-job" };
+var sessionResponse = await sqlClient.PostAsync("/v1/sessions", sessionRequest);
+var sessionHandle = parseSessionHandle(sessionResponse);
+
+// Step 2: Execute SQL statements
+foreach (var statement in sqlStatements) {
+    var stmtRequest = new { statement = statement };
+    await sqlClient.PostAsync(
+        $"/v1/sessions/{sessionHandle}/statements", 
+        stmtRequest
+    );
+}
+```
+
+#### 3. **Flink SQL Gateway → Flink JobManager** (Control-plane forwarding)
+
+SQL Gateway is configured to connect to the JobManager:
+
+```yaml
+# SQL Gateway FLINK_PROPERTIES
+jobmanager.rpc.address: flink-jobmanager
+rest.address: flink-jobmanager
+rest.port: 8081
+sql-gateway.endpoint.type: remote  # Forward to cluster
+```
+
+When SQL Gateway receives SQL statements:
+1. Parses and validates SQL
+2. Converts to Flink job graph
+3. Submits to JobManager via REST API
+4. Returns operation handle to client
+
+## 📊 Scaling Components: JM/TM Clusters
+
+### Component Scaling Strategies
+
+#### 1. **Flink JobManager (JM)** - Control Plane
+
+**Role**: Coordinates jobs, schedules tasks, maintains job graph, handles checkpoints
+
+**Scaling approach**: 
+- **Session Cluster**: Single JM for multiple jobs (shared resources)
+- **Application Cluster**: One JM per application (isolated resources)
+- **High Availability**: Multiple JM instances with ZooKeeper/Kubernetes HA
+
+```yaml
+# Session cluster (most common)
+jobmanager:
+  replicas: 1  # Single JM
+  resources:
+    cpu: "2"
+    memory: "2Gi"
+  highAvailability:
+    enabled: true
+    storageDir: "s3://flink-ha/checkpoints"
+```
+
+**When to scale JM**:
+- ❌ Don't scale horizontally (only one active JM per cluster)
+- ✅ Scale vertically for more jobs or complex job graphs
+- ✅ Enable HA for production (standby JMs)
+
+#### 2. **Flink TaskManager (TM)** - Data Plane
+
+**Role**: Execute operators, manage state, process data streams
+
+**Scaling approach**:
+- **Horizontal**: Add more TM instances
+- **Vertical**: Increase TM memory/CPU
+- **Auto-scaling**: Reactive mode (Flink 2.1.0+)
+
+```yaml
+# TaskManager horizontal scaling
+taskmanager:
+  replicas: 5  # Start with 5 TMs
+  resources:
+    cpu: "4"
+    memory: "8Gi"
+  numberOfTaskSlots: 4  # 4 slots per TM = 20 total slots
+```
+
+**Scaling formula**:
+```
+Total Parallelism = TM Replicas × Task Slots per TM
+Example: 5 TMs × 4 slots = 20 parallel tasks
+```
+
+**When to scale TM**:
+- ✅ Job parallelism increases
+- ✅ Throughput requirements grow
+- ✅ State size increases (scale vertically for memory)
+- ✅ Backpressure detected (add more TMs)
+
+#### 3. **Flink.JobGateway** - Submission Service
+
+**Role**: Submit jobs, monitor status, normalize metrics
+
+**Scaling approach**:
+- Stateless service - scale horizontally behind load balancer
+- No data processing - lightweight resource requirements
+
+```yaml
+jobgateway:
+  replicas: 3  # Multiple replicas for HA
+  resources:
+    cpu: "1"
+    memory: "512Mi"
+```
+
+**When to scale**:
+- ✅ High submission rate (many concurrent job submissions)
+- ✅ High availability requirements
+- ❌ Don't scale for data throughput (TMs handle that)
+
+#### 4. **Flink SQL Gateway** - SQL Submission Service
+
+**Role**: Accept SQL queries, compile to Flink jobs, forward to cluster
+
+**Scaling approach**:
+- Stateless control-plane - scale horizontally
+- No data processing
+
+```yaml
+sqlgateway:
+  replicas: 2  # Multiple replicas for load distribution
+  resources:
+    cpu: "1"
+    memory: "1Gi"
+  config:
+    sql-gateway.endpoint.type: remote
+    rest.address: flink-jobmanager
+    rest.port: 8081
+```
+
+**When to scale**:
+- ✅ High SQL query submission rate
+- ✅ Many concurrent sessions
+- ❌ Don't scale for data volume (JM/TMs handle execution)
+
+### Complete Scaling Example
+
+**Scenario**: Processing 1M events/sec from Kafka
+
+```yaml
+# Kafka cluster (data source)
+kafka:
+  brokers: 3
+  partitions: 20  # High parallelism
+
+# Flink cluster sizing
+flink:
+  jobmanager:
+    replicas: 1  # With HA standby
+    resources:
+      cpu: "4"
+      memory: "4Gi"
+  
+  taskmanager:
+    replicas: 10  # Scale horizontally
+    resources:
+      cpu: "8"
+      memory: "16Gi"
+    taskSlots: 4
+    # Total parallelism: 10 TMs × 4 slots = 40 parallel tasks
+  
+  config:
+    parallelism.default: 20  # Match Kafka partitions
+    state.backend: rocksdb
+    state.checkpoints.dir: "s3://flink/checkpoints"
+
+# Gateway services (control-plane)
+jobgateway:
+  replicas: 3
+  resources:
+    cpu: "1"
+    memory: "512Mi"
+
+sqlgateway:
+  replicas: 2
+  resources:
+    cpu: "1"
+    memory: "1Gi"
+```
+
+**Scaling decision tree**:
+1. **Throughput issues?** → Scale TM horizontally (add replicas)
+2. **State too large?** → Scale TM vertically (more memory)
+3. **Job submission slow?** → Scale JobGateway/SQL Gateway
+4. **Complex job graphs?** → Scale JM vertically
+5. **Need HA?** → Enable JM HA with standby instances
+
+### Monitoring Scaling Effectiveness
+
+```csharp
+// FlinkDotNet provides metrics to guide scaling decisions
+var metrics = await flinkGateway.GetJobMetricsAsync(jobId);
+
+if (metrics.Backpressure > 0.8) {
+    // High backpressure → need more TM capacity
+    Console.WriteLine("⚠️ Scale TaskManagers horizontally");
+}
+
+if (metrics.CheckpointDuration > TimeSpan.FromMinutes(5)) {
+    // Slow checkpoints → state too large or TM underpowered
+    Console.WriteLine("⚠️ Scale TaskManagers vertically (more memory)");
+}
+
+if (metrics.TaskUtilization < 0.3) {
+    // Low utilization → over-provisioned
+    Console.WriteLine("ℹ️ Consider scaling down TaskManagers");
+}
+```
+
 ## 📚 Learning Course
 
 **New to FlinkDotNet?** Visit our comprehensive [`LearningCourse/`](./LearningCourse/) to understand FlinkDotNet from fundamentals to advanced enterprise patterns. The course includes 15 days of hands-on exercises covering:
