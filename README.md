@@ -28,9 +28,7 @@ Why this design
 
 Alternatives
 - Client‑only mode (embed Runner jar in SDK and call Flink REST directly): keeps the same runner, but each app handles auth/policy and jar versioning.
-- SQL Gateway approaches:
-  - **Containerized SQL Gateway**: Separate Flink SQL Gateway container forwarding SQL to Flink cluster - follows Flink's recommended deployment pattern for production environments. Enables Flink SQL UI for visual query execution and catalog browsing.
-  - **Embedded SQL Gateway**: Implement SQL→IR translation directly in Flink.JobGateway (C#) - simpler architecture, eliminates container dependency, full control over SQL parsing and IR generation.
+- **SQL Gateway**: Separate Flink SQL Gateway container forwarding SQL to Flink cluster - follows Flink's recommended deployment pattern for production environments. Enables Flink SQL UI for visual query execution and catalog browsing.
 
 Refer to the docs/ directory for the implementation roadmap and guides.
 
@@ -292,46 +290,13 @@ sql-gateway:
 
 **Access Flink SQL UI**: Once SQL Gateway is running, access the web UI at `http://sql-gateway:8083` to visually execute SQL queries, explore catalogs, and monitor results.
 
-#### **2. Embedded SQL Gateway (Simplified Pattern)**
-
-**Architecture**: Flink.JobGateway (ASP.NET Core) translates SQL→IR and submits via JAR path
-
-**Benefits**:
-- ✅ Simpler architecture - no separate container needed
-- ✅ Full control over SQL parsing and IR generation in C#
-- ✅ Eliminates container connectivity issues
-- ✅ Uses existing JAR submission path (pattern reuse)
-- ✅ Tight integration with .NET ecosystem
-
-**Trade-offs**:
-- Custom SQL parsing implementation required
-- No Flink SQL UI (unless separately deployed)
-- Must maintain SQL syntax compatibility with Flink
-
-**Implementation approach**:
-```csharp
-// In Flink.JobGateway: Parse SQL and generate IR
-public async Task<JobSubmissionResult> SubmitSqlJobAsync(string[] sqlStatements)
-{
-    // Step 1: Parse SQL and extract table definitions, queries
-    var tableDefinitions = ParseCreateTableStatements(sqlStatements);
-    var queries = ParseInsertStatements(sqlStatements);
-    
-    // Step 2: Generate JobDefinition IR
-    var jobDef = new JobDefinition {
-        Source = ConvertToKafkaSource(tableDefinitions.InputTable),
-        Operations = ConvertSqlToOperations(queries),
-        Sink = ConvertToKafkaSink(tableDefinitions.OutputTable)
-    };
-    
-    // Step 3: Submit via standard JAR path
-    return await SubmitJobAsync(jobDef);
-}
-```
-
-**Decision Guide**:
-- Choose **Containerized** for production deployments requiring SQL UI and official Flink SQL support
-- Choose **Embedded** for .NET-first architectures prioritizing simplicity and avoiding container complexity
+**Why SQL Gateway Container**:
+- ✅ Official Flink component - full SQL feature support
+- ✅ Flink SQL UI enabled - visual query execution and catalog browsing
+- ✅ Horizontal scaling - stateless control plane
+- ✅ REST and JDBC endpoints for SQL submission
+- ✅ Session management for multi-statement workflows
+- ✅ Production-ready deployment pattern
 
 
 ## 📊 Scaling Components: JM/TM Clusters
