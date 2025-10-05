@@ -80,27 +80,46 @@ public class FlinkJobManager : IFlinkJobManager
                     $"Job validation failed: {string.Join(", ", validation.Errors)}");
             }
 
+            // Check if this is a SQL Gateway job
+            if (jobDefinition.Source is SqlSourceDefinition sqlSource && 
+                sqlSource.ExecutionMode == "gateway")
+            {
+                _logger.LogInformation("Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
+                var clusterHealthy = await ProbeClusterHealthSafelyAsync();
+                
+                if (!clusterHealthy)
+                {
+                    return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
+                        "SQL Gateway mode requires Flink cluster to be available. Cluster is not healthy.");
+                }
+                
+                var flinkJobId = await SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
+                TrackJob(jobDefinition, flinkJobId, true);
+                return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
+            }
+
+            // Standard JAR submission flow (including TableEnvironment SQL)
             var irBase64 = EncodeJobDefinition(jobDefinition);
-            var clusterHealthy = await ProbeClusterHealthSafelyAsync();
-            var flinkJobId = clusterHealthy
+            var clusterHealthy2 = await ProbeClusterHealthSafelyAsync();
+            var flinkJobId2 = clusterHealthy2
                 ? await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition)
                 : await RunLocalAsync(irBase64, jobDefinition);
 
-            TrackJob(jobDefinition, flinkJobId, clusterHealthy);
+            TrackJob(jobDefinition, flinkJobId2, clusterHealthy2);
 
-            if (!clusterHealthy && _jobMapping[flinkJobId].Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
+            if (!clusterHealthy2 && _jobMapping[flinkJobId2].Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
             {
                 return new JobSubmissionResult
                 {
                     JobId = jobDefinition.Metadata.JobId,
-                    FlinkJobId = flinkJobId,
+                    FlinkJobId = flinkJobId2,
                     Success = true,
                     SubmittedAt = DateTime.UtcNow,
                     Metadata = new Dictionary<string, string> { ["mode"] = "local" }
                 };
             }
 
-            return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
+            return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId2);
         }
         catch (Exception ex)
         {
@@ -601,6 +620,94 @@ public class FlinkJobManager : IFlinkJobManager
             throw;
         }
     }
+
+    private async Task<string> SubmitSqlGatewayJobAsync(SqlSourceDefinition sqlSource, JobDefinition jobDefinition)
+    {
+        _logger.LogInformation("Submitting SQL job via Flink SQL Gateway for job {JobId}", jobDefinition.Metadata.JobId);
+        
+        try
+        {
+            // Create a session first (optional, but recommended for statement management)
+            var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+            _logger.LogInformation("Creating SQL Gateway session: {SessionName}", sessionName);
+            
+            // Note: Flink 2.1.0 SQL Gateway endpoint is /v1/sessions for session management
+            // For now, we'll submit statements directly without session management
+            // This is a simplified implementation - production would use sessions
+            
+            // Execute each SQL statement via SQL Gateway
+            string? lastJobId = null;
+            foreach (var statement in sqlSource.Statements)
+            {
+                if (string.IsNullOrWhiteSpace(statement))
+                    continue;
+                    
+                _logger.LogInformation("Executing SQL statement via Gateway: {Statement}", 
+                    statement.Length > 100 ? statement.Substring(0, 100) + "..." : statement);
+                
+                var requestBody = new
+                {
+                    statement = statement.Trim()
+                };
+                
+                var jsonContent = JsonSerializer.Serialize(requestBody);
+                using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                
+                // Submit statement to SQL Gateway
+                using var response = await _httpClient.PostAsync("/v1/statements", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("SQL Gateway statement execution failed: {StatusCode} - {Error}", 
+                        response.StatusCode, errorContent);
+                    throw new InvalidOperationException($"SQL Gateway execution failed: {response.StatusCode} - {errorContent}");
+                }
+                
+                var responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("SQL Gateway response: {Response}", responseContent);
+                
+                // Try to extract job ID from response if this is an INSERT statement
+                if (statement.Trim().ToUpperInvariant().StartsWith("INSERT"))
+                {
+                    try
+                    {
+                        var responseJson = JsonDocument.Parse(responseContent);
+                        if (responseJson.RootElement.TryGetProperty("jobId", out var jobIdProp))
+                        {
+                            lastJobId = jobIdProp.GetString();
+                            _logger.LogInformation("SQL Gateway returned job ID: {JobId}", lastJobId);
+                        }
+                        else if (responseJson.RootElement.TryGetProperty("statementId", out var stmtIdProp))
+                        {
+                            // Some versions return statementId instead
+                            lastJobId = stmtIdProp.GetString();
+                            _logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", lastJobId);
+                        }
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
+                    }
+                }
+            }
+            
+            // If no job ID was extracted, generate a synthetic one
+            if (string.IsNullOrEmpty(lastJobId))
+            {
+                lastJobId = $"sql-gateway-{Guid.NewGuid():N}";
+                _logger.LogInformation("No job ID returned from SQL Gateway, using synthetic ID: {JobId}", lastJobId);
+            }
+            
+            return lastJobId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to submit SQL job via SQL Gateway");
+            throw new InvalidOperationException("SQL Gateway submission failed. See inner exception for details.", ex);
+        }
+    }
+
 
     private async Task<string> EnsureRunnerJarAsync()
     {

@@ -99,7 +99,7 @@ namespace Flink.JobBuilder.Models
     }
 
     /// <summary>
-    /// SQL job: a list of Flink SQL statements (DDL/DML) executed by Table API
+    /// SQL job: a list of Flink SQL statements (DDL/DML) executed by Table API or SQL Gateway
     /// </summary>
     public class SqlSourceDefinition : ISourceDefinition
     {
@@ -107,6 +107,12 @@ namespace Flink.JobBuilder.Models
         public string Type => "sql";
         public List<string> Statements { get; set; } = new();
         public string Mode { get; set; } = "streaming"; // streaming or batch (future)
+        
+        /// <summary>
+        /// Execution mode: "tableenv" (default, uses TableEnvironment) or "gateway" (uses Flink SQL Gateway REST API)
+        /// </summary>
+        public string ExecutionMode { get; set; } = "tableenv";
+        
         public Dictionary<string, string> Properties { get; set; } = new();
     }
 

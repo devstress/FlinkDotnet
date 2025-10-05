@@ -69,20 +69,28 @@
    - Has `Mode` property (streaming/batch) but doesn't distinguish TableEnv vs Direct SQL
    - Need to add execution mode: "tableenv" vs "gateway"
 
-2. **FlinkJobRunner.java**:
-   - Lines 51-90: Handles SQL jobs via TableEnvironment
-   - Creates TableEnvironment and executes statements sequentially
-   - Need to add alternative path for Direct SQL Gateway
+2. **Current SQL Submission Flow**:
+   - C# code creates SqlSourceDefinition with SQL statements
+   - FlinkJobGateway submits JAR to Flink via `/v1/jars/{jarId}/run`
+   - FlinkJobRunner.java (in JAR) executes SQL using TableEnvironment
+   - Lines 51-90 in FlinkJobRunner.java handle SQL via TableEnvironment
 
-3. **Test Methods**:
-   - `CreateSqlPassthroughJob`: Simple passthrough (SELECT *)
-   - `CreateSqlTransformJob`: Transformation (UPPER function)
-   - Both currently use same underlying mechanism
+3. **Direct SQL Gateway Alternative**:
+   - Flink SQL Gateway exposes `/v1/statements` REST endpoint
+   - Accepts SQL statements directly without requiring JAR submission
+   - No TableEnvironment needed - statements executed directly by Flink
+   - Ideal for interactive queries and table-oriented streaming
+
+4. **Test Methods**:
+   - `CreateSqlPassthroughJob`: Simple passthrough (SELECT *) - will use SQL Gateway
+   - `CreateSqlTransformJob`: Transformation (UPPER function) - will keep TableEnvironment
+   - Both currently use same underlying mechanism (TableEnvironment)
 
 **Design Decision**:
 - Add `ExecutionMode` property to `SqlSourceDefinition` ("tableenv" or "gateway")
 - Default to "tableenv" for backward compatibility
-- Implement SQL Gateway client in FlinkJobRunner or separate service
+- For "gateway" mode: Implement SQL Gateway REST client in C# (FlinkJobGateway)
+- For "tableenv" mode: Keep existing JAR submission flow (FlinkJobRunner.java)
 - Update test jobs to specify execution mode
 
 ## Phase 2: Design

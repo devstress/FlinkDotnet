@@ -81,7 +81,7 @@ public static class FlinkDotNetJobs
     }
     
     /// <summary>
-    /// Creates a SQL job that passes through data from input to output
+    /// Creates a SQL job that passes through data from input to output using Direct SQL Gateway
     /// </summary>
     public static async Task<JobSubmissionResult> CreateSqlPassthroughJob(
         string inputTopic, 
@@ -109,8 +109,18 @@ public static class FlinkDotNetJobs
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
         
+        // Use SQL Gateway for direct SQL execution
         var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(sqlStatements);
-        return await sqlJob.Submit(jobName, ct);
+        var jobDef = sqlJob.BuildJobDefinition();
+        if (jobDef.Source is SqlSourceDefinition sqlSource)
+        {
+            sqlSource.ExecutionMode = "gateway";
+        }
+        jobDef.Metadata.JobName = jobName;
+        
+        // Submit via gateway service
+        var gatewayService = new Flink.JobBuilder.Services.FlinkJobGatewayService();
+        return await gatewayService.SubmitJobAsync(jobDef, ct);
     }
     
     /// <summary>
