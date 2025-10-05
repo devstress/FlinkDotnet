@@ -16,9 +16,8 @@ public class FlinkRunnerJarBuildTests
         Assert.That(Directory.Exists(gatewayProjectDir), Is.True, $"Gateway project missing at {gatewayProjectDir}");
 
         // The prebuild target should copy/create jar at project root
-        var localJar = Path.Combine(gatewayProjectDir, "flink-ir-runner.jar");
+        // Build now only produces Java 17 JAR for Flink 2.1.0 compatibility
         var localJar17 = Path.Combine(gatewayProjectDir, "flink-ir-runner-java17.jar");
-        Assert.That(File.Exists(localJar), Is.True, $"Runner jar not found at {localJar}. Build should have produced at least one jar.");
         Assert.That(File.Exists(localJar17), Is.True, $"Runner (Java 17) jar not found at {localJar17}. Build should have created or copied it.");
 
         // And Content/CopyToOutputDirectory should copy it to the output folder
@@ -34,9 +33,7 @@ public class FlinkRunnerJarBuildTests
             .FirstOrDefault(d => Path.GetFileName(d)?.StartsWith("net", StringComparison.OrdinalIgnoreCase) == true);
         Assert.That(tfmDir, Is.Not.Null, $"No target framework directory found under {configDir}");
 
-        var outputJar = Path.Combine(tfmDir!, "flink-ir-runner.jar");
         var outputJar17 = Path.Combine(tfmDir!, "flink-ir-runner-java17.jar");
-        Assert.That(File.Exists(outputJar), Is.True, $"Runner jar not copied to output at {outputJar}");
         Assert.That(File.Exists(outputJar17), Is.True, $"Runner (Java 17) jar not copied to output at {outputJar17}");
     }
 
