@@ -75,6 +75,21 @@ public class GlobalTestInfrastructure
             await LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", FlinkReadyTimeout, default);
             TestContext.WriteLine("✅ Flink JobManager and TaskManager are ready");
 
+            // Wait for SQL Gateway to be ready
+            TestContext.WriteLine("⏳ Waiting for SQL Gateway resource to start...");
+            try
+            {
+                await app.ResourceNotifications
+                    .WaitForResourceHealthyAsync("flink-sql-gateway")
+                    .WaitAsync(FlinkReadyTimeout);
+                TestContext.WriteLine("✅ SQL Gateway resource reported healthy");
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ SQL Gateway health check warning: {ex.Message}");
+                TestContext.WriteLine("⚠️ SQL Gateway may not be ready - Pattern5 test may fail");
+            }
+
             // Wait for Gateway
             TestContext.WriteLine("⏳ Waiting for Gateway resource to start...");
             await app.ResourceNotifications
