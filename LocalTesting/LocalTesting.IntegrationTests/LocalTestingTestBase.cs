@@ -904,6 +904,9 @@ public abstract class LocalTestingTestBase
     {
         TestContext.WriteLine("🔧 Validating complete infrastructure readiness...");
 
+        // Debug: Check containers at start of validation
+        await LogDockerContainersAsync("Start of infrastructure validation");
+
         // Kafka is already validated in OneTimeSetUp, but double-check if needed
         if (string.IsNullOrEmpty(KafkaConnectionString))
         {
@@ -920,11 +923,17 @@ public abstract class LocalTestingTestBase
         var flinkJobManagerEndpoint = await GetFlinkJobManagerEndpointAsync();
         TestContext.WriteLine($"🔍 Discovered Flink JobManager endpoint: {flinkJobManagerEndpoint}");
 
+        // Debug: Check containers after Flink endpoint discovery
+        await LogDockerContainersAsync("After Flink endpoint discovery");
+
         // Wait for Flink JobManager and TaskManager
         // For per-test validation, we don't require free slots since previous jobs may still be running
         // Free slots are only required during initial global infrastructure setup
         await WaitForFlinkReadyAsync($"{flinkJobManagerEndpoint}v1/overview", FlinkReadyTimeout, cancellationToken, requireFreeSlots: false);
         TestContext.WriteLine("✅ Flink JobManager and TaskManager are ready");
+
+        // Debug: Check containers after Flink ready check
+        await LogDockerContainersAsync("After Flink ready check");
 
         // Wait for Gateway if included
         if (includeGateway)
@@ -983,6 +992,9 @@ public abstract class LocalTestingTestBase
                 TestContext.WriteLine($"   Reason: {ex.Message}");
             }
         }
+
+        // Debug: Check containers at end of validation
+        await LogDockerContainersAsync("End of infrastructure validation");
 
         TestContext.WriteLine("✅ Complete infrastructure is ready for testing");
     }
@@ -1456,6 +1468,31 @@ public abstract class LocalTestingTestBase
         catch (Exception ex)
         {
             return $"Error getting resource status: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Log current Docker containers status for debugging infrastructure issues.
+    /// </summary>
+    private static async Task LogDockerContainersAsync(string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🐳 [Docker Debug] {checkpoint}");
+            var containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Image}}\\t{{.Status}}\\t{{.Ports}}\"");
+            
+            if (!string.IsNullOrWhiteSpace(containers))
+            {
+                TestContext.WriteLine($"🐳 Running containers:\n{containers}");
+            }
+            else
+            {
+                TestContext.WriteLine("🐳 No containers found");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get Docker containers: {ex.Message}");
         }
     }
 }

@@ -130,25 +130,34 @@ public class GlobalTestInfrastructure
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🌍 GLOBAL TEST INFRASTRUCTURE TEARDOWN START");
         TestContext.WriteLine("🌍 ========================================");
-        TestContext.WriteLine("🔧 CONTAINERS WILL REMAIN RUNNING FOR POST-TEST DEBUGGING");
-        TestContext.WriteLine("🔧 Use 'docker ps' and 'docker logs <container>' to investigate");
-        TestContext.WriteLine("🔧 TEMPORARY: Container teardown disabled - will be re-enabled after debugging");
 
-        // Container teardown temporarily disabled to allow post-test debugging
-        // Will re-enable after fixing test failures
-#pragma warning disable S125 // Remove this commented out code - Temporarily disabled for debugging
-        // if (AppHost != null)
-        // {
-        //     try { await AppHost.StopAsync(); } catch { }
-        //     try { await AppHost.DisposeAsync(); } catch { }
-        // }
-#pragma warning restore S125
-        
-        await Task.CompletedTask;
+        if (AppHost != null)
+        {
+            try
+            {
+                TestContext.WriteLine("🔧 Stopping AppHost...");
+                await AppHost.StopAsync();
+                TestContext.WriteLine("✅ AppHost stopped");
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ Error stopping AppHost: {ex.Message}");
+            }
+
+            try
+            {
+                TestContext.WriteLine("🔧 Disposing AppHost...");
+                await AppHost.DisposeAsync();
+                TestContext.WriteLine("✅ AppHost disposed");
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ Error disposing AppHost: {ex.Message}");
+            }
+        }
 
         TestContext.WriteLine("🌍 ========================================");
         TestContext.WriteLine("🌍 GLOBAL INFRASTRUCTURE TEARDOWN COMPLETE");
-        TestContext.WriteLine("🌍 Containers remain running - manually stop with 'docker stop $(docker ps -q)'");
         TestContext.WriteLine("🌍 ========================================");
     }
 
