@@ -1,39 +1,15 @@
 // Configure container runtime - prefer Podman if available, fallback to Docker Desktop
 using System.Diagnostics;
+using System.Linq;
 using LocalTesting.FlinkSqlAppHost;
 
-if (IsPodmanAvailable())
+if (!ConfigureContainerRuntime())
 {
-    Console.WriteLine("✅ Using Podman as container runtime");
-    Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
-    
-    // Set DOCKER_HOST to Podman socket for better compatibility
-    SetPodmanDockerHost();
-}
-else if (IsDockerAvailable())
-{
-    Console.WriteLine("✅ Using Docker Desktop as container runtime");
-    // Docker Desktop is the default, no need to set ASPIRE_CONTAINER_RUNTIME
-}
-else
-{
-    Console.WriteLine("❌ No container runtime found. Please install Docker Desktop or Podman.");
     return;
 }
 
-// Log configured ports for debugging
-Console.WriteLine($"📍 Configured ports:");
-Console.WriteLine($"   - Flink JobManager: {Ports.JobManagerHostPort}");
-Console.WriteLine($"   - Gateway: {Ports.GatewayHostPort}");
-Console.WriteLine($"   - Kafka: {Ports.KafkaPort}");
-
-// Basic environment setup
-Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
-
-// Set up Aspire dashboard configuration for testing
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:15888");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:16686");
-Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:16687");
+LogConfiguredPorts();
+SetupEnvironment();
 
 var diagnosticsVerbose = Environment.GetEnvironmentVariable("DIAGNOSTICS_VERBOSE") == "1";
 if (diagnosticsVerbose)
@@ -41,52 +17,18 @@ if (diagnosticsVerbose)
     Console.WriteLine("[diag] DIAGNOSTICS_VERBOSE=1 enabled for LocalTesting.FlinkSqlAppHost startup diagnostics");
 }
 
-// Ports to match LearningCourse
-
-
 const string JavaOpenOptions = "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED";
 
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
 
-// Configure Gateway JAR path to use Release build (Java 17 version)
-var gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner-java17.jar");
-if (!File.Exists(gatewayJarPath))
-{
-    // Fallback to Debug if Release not found
-    gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar");
-    
-    // Final fallback to legacy naming convention
-    if (!File.Exists(gatewayJarPath))
-    {
-        gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar");
-        if (!File.Exists(gatewayJarPath))
-        {
-            gatewayJarPath = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar");
-        }
-    }
-}
-
+var gatewayJarPath = FindGatewayJarPath(repoRoot);
 if (diagnosticsVerbose && File.Exists(gatewayJarPath))
 {
     Console.WriteLine($"[diag] Gateway JAR configured: {gatewayJarPath}");
 }
 
-try
-{
-    Directory.CreateDirectory(connectorsDir);
-    if (diagnosticsVerbose)
-    {
-        Console.WriteLine($"[diag] Connector directory ready at {connectorsDir}");
-    }
-}
-catch (Exception ex)
-{
-    if (diagnosticsVerbose)
-    {
-        Console.WriteLine($"[diag][warn] Connector dir prep failed: {ex.Message}");
-    }
-}
+PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -217,68 +159,144 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
 builder.Build().Run();
 #pragma warning restore S6966
 
+static bool ConfigureContainerRuntime()
+{
+    if (IsPodmanAvailable())
+    {
+        Console.WriteLine("✅ Using Podman as container runtime");
+        Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
+        SetPodmanDockerHost();
+        return true;
+    }
+    
+    if (IsDockerAvailable())
+    {
+        Console.WriteLine("✅ Using Docker Desktop as container runtime");
+        return true;
+    }
+    
+    Console.WriteLine("❌ No container runtime found. Please install Docker Desktop or Podman.");
+    return false;
+}
+
+static void LogConfiguredPorts()
+{
+    Console.WriteLine($"📍 Configured ports:");
+    Console.WriteLine($"   - Flink JobManager: {Ports.JobManagerHostPort}");
+    Console.WriteLine($"   - Gateway: {Ports.GatewayHostPort}");
+    Console.WriteLine($"   - Kafka: {Ports.KafkaPort}");
+}
+
+static void SetupEnvironment()
+{
+    Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
+    Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:15888");
+    Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:16686");
+    Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:16687");
+}
+
+static string FindGatewayJarPath(string repoRoot)
+{
+    var candidates = new[]
+    {
+        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner-java17.jar"),
+        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar"),
+        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner.jar"),
+        Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner.jar")
+    };
+
+    return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
+}
+
+static void PrepareConnectorDirectory(string connectorsDir, bool diagnosticsVerbose)
+{
+    try
+    {
+        Directory.CreateDirectory(connectorsDir);
+        if (diagnosticsVerbose)
+        {
+            Console.WriteLine($"[diag] Connector directory ready at {connectorsDir}");
+        }
+    }
+    catch (Exception ex)
+    {
+        if (diagnosticsVerbose)
+        {
+            Console.WriteLine($"[diag][warn] Connector dir prep failed: {ex.Message}");
+        }
+    }
+}
+
 static bool IsPodmanAvailable()
 {
     try
     {
-        // First check if podman command exists
-        var versionPsi = new ProcessStartInfo
-        {
-            FileName = "podman",
-            Arguments = "version",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var versionProcess = Process.Start(versionPsi);
-        versionProcess?.WaitForExit(5000);
-        
-        if (versionProcess?.ExitCode != 0)
+        if (!IsPodmanCommandAvailable())
         {
             return false;
         }
 
-        // Check if Podman machine is running (required on Windows/macOS)
-        var machinePsi = new ProcessStartInfo
-        {
-            FileName = "podman",
-            Arguments = "machine list --format \"{{.Running}}\"",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var machineProcess = Process.Start(machinePsi);
-        if (machineProcess != null)
-        {
-            var output = machineProcess.StandardOutput.ReadToEnd();
-            machineProcess.WaitForExit(5000);
-            
-            // If machine list shows "true", Podman machine is running
-            if (output.Contains("true", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("   ℹ️ Podman machine is running");
-                return true;
-            }
-            else if (!string.IsNullOrWhiteSpace(output))
-            {
-                Console.WriteLine("   ⚠️ Podman machine is not running. Start with: podman machine start");
-                return false;
-            }
-        }
-
-        // On Linux, Podman runs natively without a machine
-        // If we got here and machine list had no output, assume Linux
-        Console.WriteLine("   ℹ️ Podman detected (native mode)");
-        return true;
+        return IsPodmanMachineRunning();
     }
     catch
     {
         return false;
     }
+}
+
+static bool IsPodmanCommandAvailable()
+{
+    var versionPsi = new ProcessStartInfo
+    {
+        FileName = "podman",
+        Arguments = "version",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using var versionProcess = Process.Start(versionPsi);
+    versionProcess?.WaitForExit(5000);
+    return versionProcess?.ExitCode == 0;
+}
+
+static bool IsPodmanMachineRunning()
+{
+    var machinePsi = new ProcessStartInfo
+    {
+        FileName = "podman",
+        Arguments = "machine list --format \"{{.Running}}\"",
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using var machineProcess = Process.Start(machinePsi);
+    if (machineProcess == null)
+    {
+        return false;
+    }
+
+    var output = machineProcess.StandardOutput.ReadToEnd();
+    machineProcess.WaitForExit(5000);
+    
+    if (output.Contains("true", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.WriteLine("   ℹ️ Podman machine is running");
+        return true;
+    }
+    
+    if (!string.IsNullOrWhiteSpace(output))
+    {
+        Console.WriteLine("   ⚠️ Podman machine is not running. Start with: podman machine start");
+        return false;
+    }
+
+    // On Linux, Podman runs natively without a machine
+    Console.WriteLine("   ℹ️ Podman detected (native mode)");
+    return true;
 }
 
 static bool IsDockerAvailable()
