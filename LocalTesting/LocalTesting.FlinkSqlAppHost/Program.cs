@@ -38,8 +38,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Configure Kafka with FIXED external port 9093
 // Both tests and Flink jobs connect to localhost:9093 (mapped to container port 9092)
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka")
-    .WithLifetime(ContainerLifetime.Persistent);
+var kafka = builder.AddKafka("kafka");
 #pragma warning restore S1481
 
 // Flink JobManager with named HTTP endpoint for service references
@@ -77,8 +76,7 @@ var jobManager = jobManagerBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("jobmanager")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithArgs("jobmanager");
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
@@ -101,9 +99,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithReference(kafka)
-    .WithArgs("taskmanager")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithArgs("taskmanager");
 
 // Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission
 // SQL Gateway provides /v1/statements endpoint for executing SQL without JAR submission
@@ -138,8 +134,7 @@ var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers

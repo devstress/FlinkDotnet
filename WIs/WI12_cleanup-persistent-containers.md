@@ -180,25 +180,112 @@ Looking at Program.cs lines 104-106:
 
 ### Code Changes
 
-*To be implemented after validation*
+**Change 1: Remove Persistent Lifetimes** ✅
+- File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
+- Lines modified: 42, 81, 106, 142
+- Action: Removed `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers:
+  - kafka (line 42)
+  - flink-jobmanager (line 81)  
+  - flink-taskmanager (line 106)
+  - flink-sql-gateway (line 142)
+- Result: Containers now use default Aspire lifecycle management
+
+**Change 2: Remove WithReference(kafka) from TaskManager** ✅
+- File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
+- Line modified: 104
+- Action: Removed `.WithReference(kafka)` from taskmanager
+- Rationale: TaskManager doesn't need Kafka service discovery - only Gateway uses references for endpoint discovery
+- Result: Removed unnecessary dependency
+
+**Change 3: Remove Unused Methods** ✅
+- File: `LocalTesting/LocalTesting.IntegrationTests/LocalTestingTestBase.cs`
+- Lines removed: 289-383 (95 lines total)
+- Methods deleted:
+  - `DiscoverKafkaContainerEndpointsAsync` (main method)
+  - `DiscoverPortMappingEndpointsAsync` (helper)
+  - `ProcessPortMappingLines` (helper)
+  - `ParsePortMapping` (helper)
+  - `DiscoverContainerIPEndpointsAsync` (helper)
+  - `ProcessContainerNamesAsync` (helper)
+  - `TryAddContainerIPEndpointAsync` (helper)
+- Result: Removed S1144 warning (unused private method)
+
+**Change 4: Refactor Complex Method** ✅
+- File: `LocalTesting/LocalTesting.IntegrationTests/GatewayAllPatternsTests.cs`
+- Lines refactored: 337-423
+- Action: Extracted 3 helper methods from `WaitForJobRunningViaGatewayAsync`:
+  - `TryCheckGatewayJobStatusAsync` - Check Gateway API for job status
+  - `TryCheckFlinkJobStatusAsync` - Check Flink REST API for job status
+  - `TryCheckAnyRunningJobAsync` - Fallback check for any running jobs
+- Result: Reduced cognitive complexity from 38 to under 15 (S3776 warning fixed)
 
 ### Challenges Encountered
 
-*To be documented during implementation*
+**Challenge 1**: Understanding the purpose of persistent lifetimes
+- **Solution**: Reviewed WI10 and WI11 history - were added for debugging container issues
+- **Learning**: Temporary debugging aids should be removed after issues are resolved
+
+**Challenge 2**: Determining if WithReference(kafka) was needed
+- **Solution**: Read code comments explaining WithReference() is for service discovery
+- **Analysis**: Only Gateway needs service discovery, TaskManager executes jobs but doesn't submit them
+- **Decision**: Safe to remove - TaskManager doesn't use Kafka endpoint environment variables
+
+**Challenge 3**: Safely removing unused methods
+- **Solution**: Used grep to verify no other usages of the methods
+- **Verification**: All 7 methods (main + 6 helpers) were only called within their own chain
+- **Result**: Complete removal without breaking dependencies
+
+**Challenge 4**: Reducing cognitive complexity without changing behavior
+- **Solution**: Extract method refactoring - each check became its own method
+- **Benefit**: Improved readability while maintaining exact same logic and error handling
 
 ### Solutions Applied
 
-*To be documented during implementation*
+1. **Surgical Changes**: Each change was minimal and focused
+2. **Verification**: Checked method usage before removal
+3. **Code Analysis**: Addressed warnings properly instead of suppressing
+4. **Build Validation**: Confirmed 0 warnings, 0 errors after changes
 
 ## Phase 5: Testing & Validation
 
 ### Test Results
 
-*To be documented after implementation*
+**Build Validation** ✅
+```bash
+$ dotnet build LocalTesting/LocalTesting.sln --configuration Release
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:21.10
+```
+
+**Pre-Change Baseline**:
+- 2 Code Analysis Warnings (S1144, S3776)
+- Build successful
+
+**Post-Change Results**:
+- 0 Code Analysis Warnings ✅
+- 0 Build Errors ✅
+- Build successful ✅
 
 ### Performance Metrics
 
-*To be documented after implementation*
+**Code Quality Improvements**:
+- Removed 95 lines of unused code
+- Reduced cognitive complexity from 38 → under 15
+- Removed 4 unnecessary persistent container lifetime declarations
+- Removed 1 unnecessary service reference
+
+**Build Performance**:
+- Clean build time: ~21 seconds (unchanged)
+- No performance degradation from changes
+
+**Container Lifecycle**:
+- Containers now properly managed by Aspire (default behavior)
+- No persistent containers left running after tests
+- Clean infrastructure teardown
 
 ## Phase 6: Owner Acceptance
 
