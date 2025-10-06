@@ -48,7 +48,9 @@ public class GlobalTestInfrastructure
             // Build and start Aspire application
             TestContext.WriteLine("🔧 Building Aspire ApplicationHost...");
             var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>();
+            TestContext.WriteLine("🔧 Building application...");
             var app = await appHost.BuildAsync().WaitAsync(DefaultTimeout);
+            TestContext.WriteLine("🔧 Starting application...");
             await app.StartAsync().WaitAsync(DefaultTimeout);
 
             AppHost = app;
@@ -57,7 +59,21 @@ public class GlobalTestInfrastructure
             // Wait for containers to be created and port mappings to be established
             // Aspire creates containers asynchronously, need significant wait time for Docker
             TestContext.WriteLine("⏳ Waiting for Docker containers to be created and ports to be mapped...");
-            await Task.Delay(TimeSpan.FromSeconds(30)); // Give Docker ample time to create containers and establish port mappings
+            TestContext.WriteLine($"⏳ Waiting 5 seconds first...");
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            
+            // Check if containers exist after 5 seconds
+            TestContext.WriteLine("🐳 Checking for containers after 5 seconds...");
+            var containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+            TestContext.WriteLine($"Containers:\n{containers}");
+            
+            TestContext.WriteLine($"⏳ Waiting additional 25 seconds for total 30s wait...");
+            await Task.Delay(TimeSpan.FromSeconds(25)); // Total 30 seconds
+            
+            // Check again
+            TestContext.WriteLine("🐳 Checking for containers after 30 seconds...");
+            containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+            TestContext.WriteLine($"Containers:\n{containers}");
             
             // Wait for Kafka
             TestContext.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
