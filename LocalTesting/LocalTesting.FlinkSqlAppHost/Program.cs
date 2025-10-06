@@ -33,14 +33,18 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Configure Kafka with proper listener configuration for both internal and external access
-// Internal clients (Flink containers) use kafka:9092
-// External clients (test process) use localhost:9093
+// CRITICAL FIX: Use listener-specific advertised addresses to prevent cross-contamination
+// - PLAINTEXT listener (port 9092) advertises as "kafka:9092" for Flink containers
+// - PLAINTEXT_HOST listener (port 9093) advertises as "localhost:9093" for test process
+// Each listener only advertises itself, preventing clients from getting unreachable broker addresses
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
 var kafka = builder.AddKafka("kafka", port: 9093) // Publish 9093 on host for external access
     .WithLifetime(ContainerLifetime.Persistent) // TEMPORARY: Keep container alive for debugging
     .WithEnvironment("KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT")
     .WithEnvironment("KAFKA_CFG_LISTENERS", "PLAINTEXT://:9092,PLAINTEXT_HOST://:9093")
-    .WithEnvironment("KAFKA_CFG_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093");
+    // CRITICAL: Each listener advertises ONLY its own address to prevent cross-listener broker discovery
+    .WithEnvironment("KAFKA_CFG_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093")
+    .WithEnvironment("KAFKA_CFG_INTER_BROKER_LISTENER_NAME", "PLAINTEXT");
 #pragma warning restore S1481
 
 if (diagnosticsVerbose)
