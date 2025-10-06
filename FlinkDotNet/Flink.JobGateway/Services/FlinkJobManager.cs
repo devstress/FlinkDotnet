@@ -507,6 +507,13 @@ public class FlinkJobManager : IFlinkJobManager
             _logger.LogInformation("📋 Job Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap}",
                 kafkaSource?.BootstrapServers ?? "null",
                 kafkaSink?.BootstrapServers ?? "null");
+            
+            // DIAGNOSTIC: Log environment variables that might override job definition
+            _logger.LogInformation("🌍 Gateway environment: KAFKA_BOOTSTRAP={KafkaBootstrap}",
+                Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set");
+            _logger.LogWarning("⚠️ CRITICAL: Flink containers have KAFKA_BOOTSTRAP set, which will override job definition bootstrap servers in FlinkJobRunner.java!");
+            _logger.LogWarning("⚠️ FlinkJobRunner.java line 93 uses: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\")");
+            _logger.LogWarning("⚠️ This means if Flink container has KAFKA_BOOTSTRAP set, it will override the kafka:9092 value from job definition!");
 
             var runRequest = new
             {

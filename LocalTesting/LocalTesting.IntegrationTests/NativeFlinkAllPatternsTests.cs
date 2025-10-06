@@ -150,10 +150,13 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
         var runUrl = $"{flinkEndpoint}jars/{jarId}/run";
 
+        // Native Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var submitPayload = new
         {
             entryClass = "com.flinkdotnet.NativeKafkaJob",
-            programArgs = $"--bootstrap-servers {KafkaContainerConnectionString} --input-topic {inputTopic} --output-topic {outputTopic} --group-id native-pattern-test-{Guid.NewGuid():N}",
+            programArgs = $"--bootstrap-servers {kafkaBootstrap} --input-topic {inputTopic} --output-topic {outputTopic} --group-id native-pattern-test-{Guid.NewGuid():N}",
             parallelism = 1
         };
 

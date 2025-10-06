@@ -3,6 +3,8 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using LocalTesting.FlinkSqlAppHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
@@ -22,7 +24,7 @@ public class GlobalTestInfrastructure
 
     public static DistributedApplication? AppHost { get; private set; }
     public static string? KafkaConnectionString { get; private set; }
-    public static string KafkaContainerConnectionString => Ports.KafkaContainerBootstrap;
+    public static string? KafkaConnectionStringFromConfig { get; private set; }
 
     [OneTimeSetUp]
     public async Task GlobalSetUp()
@@ -80,27 +82,25 @@ public class GlobalTestInfrastructure
                 .WaitAsync(DefaultTimeout);
             Console.WriteLine("✅ Kafka resource reported healthy");
 
-            // CRITICAL FIX: Always use Docker port discovery, never Aspire's connection string
-            // Aspire's GetConnectionStringAsync() returns stale proxy ports when containers persist across runs
-            // Docker port discovery gets the actual mapped port from the running container
-            Console.WriteLine("🔍 Discovering Kafka external port mapping via Docker...");
-            var actualKafkaPort = await DiscoverKafkaExternalPortAsync();
-            if (actualKafkaPort == null)
-            {
-                // Capture container diagnostics to include in exception message
-                var diagnostics = await GetContainerDiagnosticsAsync();
-                
-                throw new InvalidOperationException(
-                    "Failed to discover Kafka external port via Docker. " +
-                    "Ensure Kafka container is running and port 9093 is mapped. " +
-                    "Check with: docker ps --filter \"name=kafka\" and docker port <container-name> 9093\n\n" +
-                    $"Container Diagnostics:\n{diagnostics}");
-            }
-
-            KafkaConnectionString = $"localhost:{actualKafkaPort}";
-            Console.WriteLine($"✅ Using discovered Kafka connection string: {KafkaConnectionString}");
-            Console.WriteLine($"   📡 External listener: localhost:9093 (container) -> localhost:{actualKafkaPort} (host)");
-            Console.WriteLine($"   📡 Internal listener: kafka:9092 (for Flink containers)");
+            // CRITICAL: Use Aspire's configuration system to get Kafka connection string
+            // This is the proper Aspire pattern instead of hardcoding or Docker inspection
+            Console.WriteLine("🔍 Getting Kafka connection string from Aspire configuration...");
+            KafkaConnectionStringFromConfig = app.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()
+                .GetConnectionString("kafka");
+            
+            // Also discover from Docker for comparison/debugging
+            var discoveredKafkaEndpoint = await GetKafkaEndpointAsync();
+            
+            // Use config value as primary, fallback to discovered if not available
+            KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
+                ? KafkaConnectionStringFromConfig
+                : discoveredKafkaEndpoint;
+            
+            Console.WriteLine($"✅ Kafka connection strings:");
+            Console.WriteLine($"   📡 From Aspire config: {KafkaConnectionStringFromConfig ?? "(not set)"}");
+            Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
+            Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
+            Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
 
             // Enhanced Kafka readiness check
             await LocalTestingTestBase.WaitForKafkaReadyAsync(KafkaConnectionString!, KafkaReadyTimeout, default);
@@ -130,8 +130,7 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"🌍 ========================================");
             Console.WriteLine($"🌍 GLOBAL INFRASTRUCTURE READY in {sw.Elapsed.TotalSeconds:F1}s");
             Console.WriteLine($"🌍 ========================================");
-            Console.WriteLine($"🌍 Kafka container bootstrap: {KafkaContainerConnectionString}");
-            Console.WriteLine($"🌍 Kafka external connection: {KafkaConnectionString}");
+            Console.WriteLine($"🌍 Kafka connection string: {KafkaConnectionString}");
             Console.WriteLine($"🌍 Infrastructure will remain active for all tests");
             Console.WriteLine($"🌍 Tests can now run in parallel with shared infrastructure");
         }
@@ -255,114 +254,6 @@ public class GlobalTestInfrastructure
         }
     }
 
-    private static async Task<string?> DiscoverKafkaExternalPortAsync()
-    {
-        Console.WriteLine("🔍 Starting Kafka port discovery...");
-        
-        // Retry a few times in case Docker is still starting containers
-        for (int attempt = 1; attempt <= 5; attempt++)  // Increased from 3 to 5 attempts
-        {
-            try
-            {
-                var port = await TryDiscoverPortOnAttemptAsync(attempt);
-                if (port != null)
-                {
-                    Console.WriteLine($"✅ Successfully discovered Kafka port: {port}");
-                    return port;
-                }
-
-                if (attempt < 5)
-                {
-                    Console.WriteLine($"⚠️ Attempt {attempt}/5 failed, retrying in 3 seconds...");
-                    await Task.Delay(3000); // Increased delay from 2 to 3 seconds
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ [Attempt {attempt}/5] Error discovering Kafka external port: {ex.Message}");
-                if (attempt < 5)
-                {
-                    Console.WriteLine($"   Retrying in 3 seconds...");
-                    await Task.Delay(3000);
-                }
-            }
-        }
-        
-        Console.WriteLine("❌ Failed to discover Kafka port after 5 attempts");
-        return null;
-    }
-
-    private static async Task<string?> TryDiscoverPortOnAttemptAsync(int attempt)
-    {
-        Console.WriteLine($"🔍 [Attempt {attempt}/3] Looking for Kafka container...");
-        
-        var kafkaContainer = await FindKafkaContainerAsync(attempt);
-        if (kafkaContainer == null)
-            return null;
-
-        var portMapping = await GetPortMappingAsync(kafkaContainer, attempt);
-        if (portMapping == null)
-            return null;
-
-        return ParsePortMapping(portMapping);
-    }
-
-    private static async Task<string?> FindKafkaContainerAsync(int attempt)
-    {
-        var containerName = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}\" --no-trunc");
-        if (string.IsNullOrWhiteSpace(containerName))
-        {
-            Console.WriteLine($"⚠️ [Attempt {attempt}/3] Kafka container not found yet");
-            return null;
-        }
-
-        var kafkaContainer = containerName.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
-        if (string.IsNullOrWhiteSpace(kafkaContainer))
-        {
-            Console.WriteLine($"⚠️ [Attempt {attempt}/3] Could not parse container name");
-            return null;
-        }
-
-        Console.WriteLine($"✅ Found Kafka container: {kafkaContainer}");
-        return kafkaContainer;
-    }
-
-    private static async Task<string?> GetPortMappingAsync(string kafkaContainer, int attempt)
-    {
-        var portMapping = await RunDockerCommandAsync($"port {kafkaContainer} 9093");
-        if (string.IsNullOrWhiteSpace(portMapping))
-        {
-            Console.WriteLine($"⚠️ [Attempt {attempt}/3] Port 9093 not mapped yet for container {kafkaContainer}");
-            return null;
-        }
-
-        Console.WriteLine($"🔍 Port mapping: {portMapping.Trim()}");
-        return portMapping;
-    }
-
-    private static string? ParsePortMapping(string portMapping)
-    {
-        // Parse port mapping (format: "9093/tcp -> 127.0.0.1:32769")
-        var parts = portMapping.Split("->", StringSplitOptions.TrimEntries);
-        if (parts.Length != 2)
-        {
-            Console.WriteLine($"⚠️ Could not parse port mapping: {portMapping}");
-            return null;
-        }
-
-        var hostPort = parts[1].Trim();
-        // Extract just the port number (format: "127.0.0.1:32769")
-        var portParts = hostPort.Split(':', StringSplitOptions.TrimEntries);
-        if (portParts.Length != 2)
-        {
-            Console.WriteLine($"⚠️ Could not parse host port: {hostPort}");
-            return null;
-        }
-
-        var discoveredPort = portParts[1].Trim();
-        Console.WriteLine($"✅ Discovered external port: {discoveredPort}");
-        return discoveredPort;
-    }
 
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
@@ -389,8 +280,8 @@ public class GlobalTestInfrastructure
             Console.WriteLine("║ 🔍 [TaskManager] Checking TaskManager Status");
             Console.WriteLine("╚══════════════════════════════════════════════════════════════");
             
-            // Find TaskManager container
-            var containerName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            // Find TaskManager container (using name filter which matches containers containing the name)
+            var containerName = await RunDockerCommandAsync("ps --filter name=flink-taskmanager --format \"{{.Names}}\" | head -1");
             containerName = containerName.Trim();
             
             if (string.IsNullOrEmpty(containerName))
@@ -443,21 +334,38 @@ public class GlobalTestInfrastructure
             using var process = Process.Start(psi);
             if (process == null)
             {
+                Console.WriteLine($"❌ Failed to start process: {command} {arguments}");
                 return null;
             }
 
             var output = await process.StandardOutput.ReadToEndAsync();
+            var errorOutput = await process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
+
+            Console.WriteLine($"🔍 Command: {command} {arguments}");
+            Console.WriteLine($"🔍 Exit code: {process.ExitCode}");
+            Console.WriteLine($"🔍 Output length: {output?.Length ?? 0}");
+            Console.WriteLine($"🔍 Error output: {(string.IsNullOrWhiteSpace(errorOutput) ? "(none)" : errorOutput)}");
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
                 return output;
             }
 
+            // Also return output even if exit code is non-zero, as long as we have output
+            // Some docker commands return non-zero but still provide useful output
+            if (!string.IsNullOrWhiteSpace(output))
+            {
+                Console.WriteLine($"⚠️ Command returned non-zero exit code ({process.ExitCode}) but has output, returning it anyway");
+                return output;
+            }
+
+            Console.WriteLine($"⚠️ Command failed: exit code {process.ExitCode}, no output");
             return null;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"❌ Exception running command {command} {arguments}: {ex.Message}");
             return null;
         }
     }
@@ -518,6 +426,46 @@ public class GlobalTestInfrastructure
     }
 
     /// <summary>
+    /// Get the dynamically allocated Kafka endpoint from Aspire.
+    /// Aspire DCP assigns random ports during testing, so we must query the actual endpoint.
+    /// Kafka container exposes port 9092 internally, which gets mapped to a random host port.
+    /// </summary>
+    private static async Task<string> GetKafkaEndpointAsync()
+    {
+        try
+        {
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
+            Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
+            
+            return ExtractKafkaEndpointFromPorts(kafkaContainers);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to discover Kafka endpoint from Docker: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractKafkaEndpointFromPorts(string kafkaContainers)
+    {
+        var lines = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 9092 (Kafka's default listener port)
+            // Aspire maps container port 9092 to a dynamic host port for external access
+            // Format: 127.0.0.1:PORT->9092/tcp or 0.0.0.0:PORT->9092/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Kafka port mapping: host {port} -> container 9092");
+                return $"localhost:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}");
+    }
+
+    /// <summary>
     /// Get container diagnostics as a string - detects Docker or Podman and captures container status
     /// </summary>
     private static async Task<string> GetContainerDiagnosticsAsync()
@@ -538,6 +486,9 @@ public class GlobalTestInfrastructure
                 diagnostics.AppendLine(dockerContainers);
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
                 
+                // Add TaskManager logs for debugging
+                await AppendTaskManagerLogsAsync(diagnostics);
+                
                 // Also write to console for immediate visibility
                 Console.WriteLine(diagnostics.ToString());
                 return diagnostics.ToString();
@@ -551,6 +502,9 @@ public class GlobalTestInfrastructure
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
                 diagnostics.AppendLine(podmanContainers);
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
+                
+                // Add TaskManager logs for debugging
+                await AppendTaskManagerLogsAsync(diagnostics);
                 
                 // Also write to console for immediate visibility
                 Console.WriteLine(diagnostics.ToString());
@@ -569,6 +523,42 @@ public class GlobalTestInfrastructure
             var errorMsg = $"⚠️ Failed to get container diagnostics: {ex.Message}";
             Console.WriteLine(errorMsg);
             return errorMsg;
+        }
+    }
+    
+    /// <summary>
+    /// Append TaskManager logs to diagnostics output
+    /// </summary>
+    private static async Task AppendTaskManagerLogsAsync(System.Text.StringBuilder diagnostics)
+    {
+        try
+        {
+            var containerName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
+            containerName = containerName.Trim();
+            
+            if (string.IsNullOrEmpty(containerName))
+            {
+                diagnostics.AppendLine("\n⚠️ No TaskManager container found for log capture");
+                return;
+            }
+            
+            diagnostics.AppendLine($"\n📋 TaskManager ({containerName}) Recent Logs (last 20 lines):");
+            diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
+            
+            var logs = await RunDockerCommandAsync($"logs {containerName} --tail 20 2>&1");
+            if (!string.IsNullOrWhiteSpace(logs))
+            {
+                diagnostics.AppendLine(logs);
+            }
+            else
+            {
+                diagnostics.AppendLine("⚠️ No TaskManager logs available");
+            }
+            diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
+        }
+        catch (Exception ex)
+        {
+            diagnostics.AppendLine($"\n⚠️ Error capturing TaskManager logs: {ex.Message}");
         }
     }
 }
