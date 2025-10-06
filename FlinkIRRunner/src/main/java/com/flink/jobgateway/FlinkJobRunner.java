@@ -93,7 +93,7 @@ public class FlinkJobRunner {
             String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
 
-            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("============================================================");
             System.out.println("[KAFKA SOURCE] Configuration:");
             System.out.println("  - bootstrapServers field from JSON: " + k.bootstrapServers);
             System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
@@ -101,7 +101,7 @@ public class FlinkJobRunner {
             System.out.println("  - Topic: " + k.topic);
             System.out.println("  - GroupId: " + groupId);
             System.out.println("  - Starting offsets: " + orElse(k.startingOffsets, "latest"));
-            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("============================================================");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
@@ -127,13 +127,13 @@ public class FlinkJobRunner {
                 if (op instanceof MapOperationDefinition) {
                     MapOperationDefinition m = (MapOperationDefinition) op;
                     String expr = orElse(m.expression, m.function, "identity");
-                    System.out.println("════════════════════════════════════════════════════════════");
+                    System.out.println("============================================================");
                     System.out.println("[MAP OPERATION] Processing:");
                     System.out.println("  - expression field from JSON: " + m.expression);
                     System.out.println("  - function field from JSON: " + m.function);
                     System.out.println("  - Resolved expression: " + expr);
                     System.out.println("  - Normalized (lowercase): " + expr.toLowerCase(Locale.ROOT));
-                    System.out.println("════════════════════════════════════════════════════════════");
+                    System.out.println("============================================================");
                     
                     switch (expr.toLowerCase(Locale.ROOT)) {
                         case "upper":
@@ -240,14 +240,14 @@ public class FlinkJobRunner {
                     (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null,
                     System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
 
-            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("============================================================");
             System.out.println("[KAFKA SINK] Configuration:");
             System.out.println("  - bootstrapServers field from JSON: " + s.bootstrapServers);
             System.out.println("  - Source bootstrapServers: " + ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
             System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
             System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
             System.out.println("  - Topic: " + s.topic);
-            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("============================================================");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
@@ -442,13 +442,13 @@ public interface Operation {}
 
         @Override
         public void run(org.apache.flink.streaming.api.functions.source.legacy.SourceFunction.SourceContext<String> ctx) throws Exception {
-            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("============================================================");
             System.out.println("[KAFKA SOURCE] Starting consumer...");
             System.out.println("  - Topic: " + topic);
             System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
             System.out.println("  - Group ID: " + props.getProperty("group.id"));
             System.out.println("  - Auto offset reset: " + props.getProperty("auto.offset.reset"));
-            System.out.println("════════════════════════════════════════════════════════════");
+            System.out.println("============================================================");
             
             try (org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(props, new org.apache.kafka.common.serialization.StringDeserializer(), new org.apache.kafka.common.serialization.StringDeserializer())) {
                 System.out.println("[KAFKA SOURCE] ✓ Consumer created, subscribing to topic: " + topic);
@@ -506,11 +506,11 @@ public interface Operation {}
         @Override
         public void invoke(String value, org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction.Context context) {
             if (producer == null) {
-                System.out.println("════════════════════════════════════════════════════════════");
+                System.out.println("============================================================");
                 System.out.println("[KAFKA SINK] Initializing producer...");
                 System.out.println("  - Topic: " + topic);
                 System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
-                System.out.println("════════════════════════════════════════════════════════════");
+                System.out.println("============================================================");
                 
                 try {
                     producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props, new org.apache.kafka.common.serialization.StringSerializer(), new org.apache.kafka.common.serialization.StringSerializer());

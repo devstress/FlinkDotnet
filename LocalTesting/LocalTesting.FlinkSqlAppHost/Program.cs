@@ -130,7 +130,7 @@ var sqlGateway = sqlGatewayBuilder
         "sql-gateway.endpoint.rest.bind-address: 0.0.0.0\n" +
         "sql-gateway.endpoint.rest.port: 8083\n" +
         "sql-gateway.endpoint.rest.bind-port: 8083\n" +
-        "sql-gateway.endpoint.type: remote\n" +
+        "sql-gateway.endpoint.type: rest\n" +
         "sql-gateway.session.check-interval: 60000\n" +
         "sql-gateway.session.idle-timeout: 600000\n" +
         "sql-gateway.worker.threads.max: 10\n" +
@@ -138,7 +138,7 @@ var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("sql-gateway.sh", "start-foreground");
+    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
