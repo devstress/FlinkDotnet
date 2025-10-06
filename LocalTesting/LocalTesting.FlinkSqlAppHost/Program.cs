@@ -7,6 +7,10 @@ if (!ConfigureContainerRuntime())
     return;
 }
 
+// Ensure custom Docker network exists for DNS resolution between containers
+// This is CRITICAL for Flink containers to resolve 'kafka' hostname
+EnsureDockerNetworkExists("aspire-flink-network");
+
 LogConfiguredPorts();
 SetupEnvironment();
 
@@ -416,5 +420,67 @@ static void SetPodmanDockerHost()
     catch (Exception ex)
     {
         Console.WriteLine($"   ⚠️ Could not set DOCKER_HOST: {ex.Message}");
+    }
+}
+
+static void EnsureDockerNetworkExists(string networkName)
+{
+    try
+    {
+        // Check if network already exists
+        var checkPsi = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = $"network inspect {networkName}",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var checkProcess = Process.Start(checkPsi);
+        if (checkProcess != null)
+        {
+            checkProcess.StandardOutput.ReadToEnd();
+            checkProcess.WaitForExit(5000);
+            
+            if (checkProcess.ExitCode == 0)
+            {
+                Console.WriteLine($"✅ Docker network '{networkName}' already exists");
+                return;
+            }
+        }
+
+        // Network doesn't exist, create it
+        var createPsi = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = $"network create {networkName}",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var createProcess = Process.Start(createPsi);
+        if (createProcess != null)
+        {
+            createProcess.StandardOutput.ReadToEnd(); // Consume output
+            var error = createProcess.StandardError.ReadToEnd();
+            createProcess.WaitForExit(5000);
+            
+            if (createProcess.ExitCode == 0)
+            {
+                Console.WriteLine($"✅ Created Docker network '{networkName}' for DNS resolution");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Failed to create network '{networkName}': {error}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Error managing Docker network: {ex.Message}");
     }
 }
