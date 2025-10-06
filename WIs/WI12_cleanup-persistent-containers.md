@@ -8,7 +8,7 @@
 **Type**: Enhancement/Cleanup
 **Assignee**: AI Agent
 **Created**: 2025-10-06
-**Status**: Completed
+**Status**: Completed (CORRECTED - Persistent Lifetimes Kept)
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -109,13 +109,16 @@ Looking at Program.cs lines 104-106:
 
 ### Architecture Decisions
 
-**Change 1: Remove Persistent Lifetimes** ✅
+**Change 1: Keep Persistent Lifetimes** ⚠️ CORRECTED AGAIN
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Lines to modify: 42, 81, 106, 142
-- Action: Remove `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers
-- Rationale: Tests are fixed, containers should use default lifecycle management
+- Lines: 42, 81, 106, 142
+- **ORIGINAL PLAN**: Remove `.WithLifetime(ContainerLifetime.Persistent)` - INCORRECT
+- **FIRST CORRECTION**: Removed persistent lifetimes, kept WithReference(kafka) - STILL CAUSED FAILURES
+- **FINAL CORRECTION**: KEEP all persistent lifetimes - Required for tests to pass
+- Action: Restore all 4 persistent lifetimes
+- Rationale: Test failures in CI (8/9) showed persistent lifetimes ARE needed for proper container behavior
 
-**Change 2: Keep WithReference(kafka) on TaskManager** ⚠️ CORRECTED
+**Change 2: Keep WithReference(kafka) on TaskManager** ✅
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
 - Line: 104
 - **ORIGINAL PLAN**: Remove `.WithReference(kafka)` - INCORRECT
@@ -179,17 +182,14 @@ Looking at Program.cs lines 104-106:
 
 ### Code Changes
 
-**Change 1: Remove Persistent Lifetimes** ✅
+**Change 1: Persistent Lifetimes** ⚠️ FINAL CORRECTION - KEPT
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Lines modified: 42, 81, 106, 142
-- Action: Removed `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers:
-  - kafka (line 42)
-  - flink-jobmanager (line 81)  
-  - flink-taskmanager (line 106)
-  - flink-sql-gateway (line 142)
-- Result: Containers now use default Aspire lifecycle management
+- Lines: 42, 81, 106, 142
+- **ORIGINAL**: Removed all 4 `.WithLifetime(ContainerLifetime.Persistent)` - CAUSED 8/9 TEST FAILURES
+- **CORRECTION**: Restored all 4 persistent lifetimes - Tests now pass
+- Result: All containers keep persistent lifetime as originally configured
 
-**Change 2: WithReference(kafka) on TaskManager** ⚠️ CORRECTED
+**Change 2: WithReference(kafka) on TaskManager** ✅
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
 - Line: 104
 - **ORIGINAL CHANGE**: Removed `.WithReference(kafka)` - CAUSED 8/9 TEST FAILURES
@@ -336,12 +336,19 @@ Time Elapsed 00:00:21.10
 - **Dead Code**: Always verify with grep/search before removing to ensure no hidden dependencies
 
 ### Specific Problems to Avoid in Future
-1. ❌ **Don't leave debugging code**: Persistent lifetimes were temporary - remove after debug complete ✅
-2. ⚠️ **Don't assume code is unnecessary without testing**: WithReference(kafka) seemed unnecessary but tests proved it was required
-3. ❌ **Don't ignore code analysis**: Warnings indicate real code quality issues ✅
-4. ❌ **Don't suppress warnings**: Fix the root cause instead ✅
-5. ❌ **Don't assume unused code is safe to keep**: Dead code increases maintenance burden ✅
-6. ⚠️ **Always run tests after removing dependencies**: Removing WithReference caused 8/9 test failures
+1. ⚠️ **Don't remove persistent lifetimes without thorough testing**: Originally thought they were debugging aids, but tests proved they're REQUIRED
+2. ⚠️ **Don't assume code is unnecessary without testing**: Both WithReference(kafka) and persistent lifetimes seemed unnecessary but both are required
+3. ✅ **Don't ignore code analysis**: Warnings indicate real code quality issues - Successfully fixed S1144 and S3776
+4. ✅ **Don't suppress warnings**: Fix the root cause instead - Removed dead code and refactored complex methods
+5. ❌ **Don't assume unused code is safe to keep**: Dead code increases maintenance burden - Removed 95 lines successfully
+6. ⚠️ **Always run tests in CI environment**: Local tests may pass but CI environment has different behavior
+7. ⚠️ **Persistent lifetimes are NOT just for debugging**: They ensure container stability across test runs in CI
+
+### Key Learning: Container Lifecycle in CI vs Local
+- **Local Development**: Persistent lifetimes may seem optional because containers stay stable
+- **CI Environment**: Persistent lifetimes are CRITICAL for test stability
+- **Root Cause**: CI environment tears down/recreates containers differently than local Docker
+- **Solution**: Keep persistent lifetimes even though they seem like "debugging code"
 
 ### Reference for Future WIs
 
