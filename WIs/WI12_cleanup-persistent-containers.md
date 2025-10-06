@@ -181,12 +181,13 @@ Looking at Program.cs lines 104-106:
 
 ### Code Changes
 
-**Change 1: Use Default Aspire Container Lifecycle** ✅ FINAL
+**Change 1: Keep Persistent Lifetimes** ⚠️ REVERTED TO ORIGINAL
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Action: Removed both `.WithLifetime(ContainerLifetime.Persistent)` and `.WithContainerRuntimeArgs("--rm=false")`
-- All 4 containers now use default Aspire lifecycle behavior
+- Status: Persistent lifetimes RESTORED to original configuration
+- All 4 containers retain: `.WithLifetime(ContainerLifetime.Persistent)`
 - Containers: kafka, flink-jobmanager, flink-taskmanager, flink-sql-gateway
-- Result: Containers start with AppHost, stay alive during all tests, cleanup when AppHost disposes in OneTimeTearDown
+- Reason: Multiple attempts to remove persistent lifetimes caused 8/9 test failures
+- Result: Tests pass with persistent lifetimes; containers must be manually cleaned up after tests
 
 **Change 2: WithReference(kafka) on TaskManager** ✅
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
