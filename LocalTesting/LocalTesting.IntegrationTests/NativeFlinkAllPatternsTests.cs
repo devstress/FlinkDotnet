@@ -150,9 +150,9 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
         var runUrl = $"{flinkEndpoint}jars/{jarId}/run";
 
-        // Native Flink jobs run inside containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "kafka:9092";
+        // Use dynamically discovered Kafka container IP for Flink job connectivity
+        // Docker bridge network doesn't support DNS between containers
+        var kafkaBootstrap = GlobalTestInfrastructure.KafkaContainerIpForFlink;
         var submitPayload = new
         {
             entryClass = "com.flinkdotnet.NativeKafkaJob",
