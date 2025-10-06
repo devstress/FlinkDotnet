@@ -181,15 +181,13 @@ Looking at Program.cs lines 104-106:
 
 ### Code Changes
 
-**Change 1: Remove Persistent Lifetimes** ✅ FINAL
+**Change 1: Remove Persistent Lifetimes, Add --rm=false** ✅ FINAL
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Lines modified: 42, 79, 104, 140
-- Action: Removed `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers:
-  - kafka (line 42)
-  - flink-jobmanager (line 79)
-  - flink-taskmanager (line 104)
-  - flink-sql-gateway (line 140)
-- Result: Containers use default Aspire testing lifecycle - cleaned up on AppHost disposal
+- Lines modified: 42, 80, 105, 140
+- Action: Removed `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers
+- Added: `.WithContainerRuntimeArgs("--rm=false")` to prevent automatic container removal
+- Containers: kafka, flink-jobmanager, flink-taskmanager, flink-sql-gateway
+- Result: Containers stay alive during tests but can be cleaned up manually after test completion
 
 **Change 2: WithReference(kafka) on TaskManager** ✅
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
@@ -347,10 +345,11 @@ Time Elapsed 00:00:21.10
 7. ✅ **Container cleanup happens automatically**: Aspire testing framework cleans up on AppHost disposal
 
 ### Understanding Aspire Container Lifecycle
-- **Default (no lifetime)**: Containers managed by Aspire, cleaned up when AppHost disposes - CORRECT for tests
-- **Persistent**: Containers survive AppHost disposal - meant for debugging, NOT for automated tests
-- **Testing Framework**: Properly handles container lifecycle without persistent lifetime
-- **GlobalTearDown**: Stops and disposes AppHost, triggering automatic container cleanup
+- **Default (no lifetime)**: Containers managed by Aspire, but may be removed when stopped
+- **Persistent**: Containers survive AppHost disposal - NOT suitable for automated tests
+- **--rm=false flag**: Prevents Docker from auto-removing containers when they stop
+- **Solution**: Use default lifecycle + --rm=false for proper test behavior without persistence
+- **GlobalTearDown**: Stops and disposes AppHost; containers remain for manual cleanup if needed
 
 ### Reference for Future WIs
 
