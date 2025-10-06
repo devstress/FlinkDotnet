@@ -156,7 +156,13 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         var submitPayload = new
         {
             entryClass = "com.flinkdotnet.NativeKafkaJob",
-            programArgs = $"--bootstrap-servers {kafkaBootstrap} --input-topic {inputTopic} --output-topic {outputTopic} --group-id native-pattern-test-{Guid.NewGuid():N}",
+            programArgsList = new[]
+            {
+                "--bootstrap-servers", kafkaBootstrap,
+                "--input-topic", inputTopic,
+                "--output-topic", outputTopic,
+                "--group-id", $"native-pattern-test-{Guid.NewGuid():N}"
+            },
             parallelism = 1
         };
 
