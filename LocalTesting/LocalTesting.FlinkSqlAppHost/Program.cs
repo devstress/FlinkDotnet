@@ -37,6 +37,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // External clients (test process) use localhost:9093
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
 var kafka = builder.AddKafka("kafka", port: 9093) // Publish 9093 on host for external access
+    .WithLifetime(ContainerLifetime.Persistent) // TEMPORARY: Keep container alive for debugging
     .WithEnvironment("KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT")
     .WithEnvironment("KAFKA_CFG_LISTENERS", "PLAINTEXT://:9092,PLAINTEXT_HOST://:9093")
     .WithEnvironment("KAFKA_CFG_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093");
@@ -52,6 +53,7 @@ if (diagnosticsVerbose)
 // Flink JobManager with named HTTP endpoint for service references
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 var jobManagerBuilder = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
+    .WithLifetime(ContainerLifetime.Persistent) // TEMPORARY: Keep container alive for debugging
     .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "jm-http");
 
 // Only add Podman-specific container runtime args if Podman is detected
@@ -83,6 +85,7 @@ var jobManager = jobManagerBuilder
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
+    .WithLifetime(ContainerLifetime.Persistent) // TEMPORARY: Keep container alive for debugging
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
@@ -107,6 +110,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
 // Runs on port 8083 (separate from JobManager REST API on port 8081)
 // CRITICAL: SQL Gateway must wait for JobManager to be ready before starting
 var sqlGatewayBuilder = builder.AddContainer("flink-sql-gateway", "flink:2.1.0-java17")
+    .WithLifetime(ContainerLifetime.Persistent) // TEMPORARY: Keep container alive for debugging
     .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "sg-http")
     .WaitFor(jobManager);  // Wait for JobManager to be ready before starting SQL Gateway
 
