@@ -157,14 +157,15 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             await CreateTopicAsync(outputTopic, 1);
 
             // Submit job using FlinkDotNetJobs helper
-            // CRITICAL: Using simplified architecture where both test producers and Flink jobs
-            // use the SAME Kafka address (localhost:port) via Docker port mapping
+            // Use Kafka container IP for Flink jobs (container-to-container communication)
+            // Test producers/consumers use host connection (host-to-container via port mapping)
             TestContext.WriteLine($"🔧 Creating and submitting {patternName} job...");
-            TestContext.WriteLine($"📡 Kafka bootstrap server (from Aspire config): {KafkaConnectionString}");
+            TestContext.WriteLine($"📡 Kafka bootstrap (host): {KafkaConnectionString}");
+            TestContext.WriteLine($"📡 Kafka bootstrap (Flink): {GlobalTestInfrastructure.KafkaContainerIpForFlink}");
             TestContext.WriteLine($"📍 Input topic: {inputTopic}");
             TestContext.WriteLine($"📍 Output topic: {outputTopic}");
-            TestContext.WriteLine($"ℹ️  Both test producers and Flink jobs use the same Kafka address");
-            var submitResult = await jobCreator(inputTopic, outputTopic, KafkaConnectionString!, ct);
+            
+            var submitResult = await jobCreator(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, ct);
 
             TestContext.WriteLine($"📊 Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");
             
