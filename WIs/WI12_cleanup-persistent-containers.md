@@ -181,13 +181,12 @@ Looking at Program.cs lines 104-106:
 
 ### Code Changes
 
-**Change 1: Remove Persistent Lifetimes, Add --rm=false** ✅ FINAL
+**Change 1: Use Default Aspire Container Lifecycle** ✅ FINAL
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Lines modified: 42, 80, 105, 140
-- Action: Removed `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers
-- Added: `.WithContainerRuntimeArgs("--rm=false")` to prevent automatic container removal
+- Action: Removed both `.WithLifetime(ContainerLifetime.Persistent)` and `.WithContainerRuntimeArgs("--rm=false")`
+- All 4 containers now use default Aspire lifecycle behavior
 - Containers: kafka, flink-jobmanager, flink-taskmanager, flink-sql-gateway
-- Result: Containers stay alive during tests but can be cleaned up manually after test completion
+- Result: Containers start with AppHost, stay alive during all tests, cleanup when AppHost disposes in OneTimeTearDown
 
 **Change 2: WithReference(kafka) on TaskManager** ✅
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
@@ -345,11 +344,16 @@ Time Elapsed 00:00:21.10
 7. ✅ **Container cleanup happens automatically**: Aspire testing framework cleans up on AppHost disposal
 
 ### Understanding Aspire Container Lifecycle
-- **Default (no lifetime)**: Containers managed by Aspire, but may be removed when stopped
-- **Persistent**: Containers survive AppHost disposal - NOT suitable for automated tests
-- **--rm=false flag**: Prevents Docker from auto-removing containers when they stop
-- **Solution**: Use default lifecycle + --rm=false for proper test behavior without persistence
-- **GlobalTearDown**: Stops and disposes AppHost; containers remain for manual cleanup if needed
+- **Default Aspire behavior**: Containers managed by AppHost lifecycle
+  - Containers start when AppHost starts
+  - Containers stay alive while AppHost is running
+  - Containers are cleaned up when AppHost disposes
+- **In Testing Framework**: 
+  - AppHost created once in OneTimeSetUp
+  - AppHost stays alive during all test execution
+  - AppHost disposed in OneTimeTearDown, triggering container cleanup
+- **Result**: Containers NOT destroyed between tests, only at OneTimeTearDown
+- **No Persistent/--rm=false needed**: Default behavior provides correct lifecycle
 
 ### Reference for Future WIs
 
