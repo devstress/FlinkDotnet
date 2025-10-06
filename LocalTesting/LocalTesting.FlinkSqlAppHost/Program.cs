@@ -99,6 +99,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithReference(kafka)
     .WithArgs("taskmanager");
 
 // Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission

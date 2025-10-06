@@ -74,21 +74,18 @@ Looking at Program.cs lines 104-106:
 .WithLifetime(ContainerLifetime.Persistent);
 ```
 
-**Evidence for removing WithReference(kafka)**:
-- Lines 149-159 explain WithReference() is for Aspire service discovery
-- Gateway uses WithReference() to discover JobManager and SQL Gateway endpoints
-- TaskManager doesn't need to discover Kafka - it's NOT the Gateway that submits jobs
-- FlinkJobRunner jobs inherit environment from Flink containers, not from TaskManager directly
-- Lines 59-62 show KAFKA_BOOTSTRAP was REMOVED from JobManager because "FlinkJobRunner.java prioritizes environment variable over job definition"
-- Job definitions explicitly provide bootstrapServers (e.g., "kafka:9092")
+**CORRECTION AFTER TEST FAILURES**: Initial analysis was incorrect!
 
-**Purpose of WithReference(kafka) on TaskManager**:
-- Aspire injects environment variables like `services__kafka__tcp__0` pointing to Kafka endpoint
-- But based on comments at lines 155-159, this was NOT the intent
-- The Gateway is the only component that needs references for service discovery
-- TaskManager executes Flink jobs, it doesn't submit them
+**Original (Incorrect) Analysis**:
+- Thought TaskManager didn't need WithReference(kafka) because it doesn't submit jobs
+- Assumed only Gateway needs service discovery
 
-**Conclusion**: WithReference(kafka) on TaskManager appears unnecessary and should be removed.
+**Actual Testing Results**:
+- **8 out of 9 tests failed** when WithReference(kafka) was removed
+- TaskManager DOES need the Kafka reference for Flink jobs to connect to Kafka
+- WithReference() injects environment variables that Flink jobs running in TaskManager use
+
+**Corrected Decision**: **KEEP** WithReference(kafka) on TaskManager - it IS needed for tests to pass
 
 **3. Code Analysis Warnings**:
 
@@ -112,19 +109,21 @@ Looking at Program.cs lines 104-106:
 
 ### Architecture Decisions
 
-**Change 1: Remove Persistent Lifetimes**
+**Change 1: Remove Persistent Lifetimes** ✅
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
 - Lines to modify: 42, 81, 106, 142
 - Action: Remove `.WithLifetime(ContainerLifetime.Persistent)` from all 4 containers
 - Rationale: Tests are fixed, containers should use default lifecycle management
 
-**Change 2: Remove WithReference(kafka) from TaskManager**
+**Change 2: Keep WithReference(kafka) on TaskManager** ⚠️ CORRECTED
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Line to modify: 104
-- Action: Remove `.WithReference(kafka)` 
-- Rationale: TaskManager doesn't need Kafka service discovery - only Gateway needs references
+- Line: 104
+- **ORIGINAL PLAN**: Remove `.WithReference(kafka)` - INCORRECT
+- **CORRECTED**: KEEP `.WithReference(kafka)` - Required for tests to pass
+- Action: No change to this line (keep as-is)
+- Rationale: Test failures (8/9) showed TaskManager needs Kafka reference for Flink jobs
 
-**Change 3: Remove Unused Method**
+**Change 3: Remove Unused Method** ✅
 - File: `LocalTesting/LocalTesting.IntegrationTests/LocalTestingTestBase.cs`
 - Lines to remove: 292-307 (method DiscoverKafkaContainerEndpointsAsync and its helpers if only used by it)
 - Action: Delete unused private method
@@ -190,12 +189,12 @@ Looking at Program.cs lines 104-106:
   - flink-sql-gateway (line 142)
 - Result: Containers now use default Aspire lifecycle management
 
-**Change 2: Remove WithReference(kafka) from TaskManager** ✅
+**Change 2: WithReference(kafka) on TaskManager** ⚠️ CORRECTED
 - File: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
-- Line modified: 104
-- Action: Removed `.WithReference(kafka)` from taskmanager
-- Rationale: TaskManager doesn't need Kafka service discovery - only Gateway uses references for endpoint discovery
-- Result: Removed unnecessary dependency
+- Line: 104
+- **ORIGINAL CHANGE**: Removed `.WithReference(kafka)` - CAUSED 8/9 TEST FAILURES
+- **CORRECTION**: Restored `.WithReference(kafka)` - Required for tests to pass
+- Result: TaskManager keeps Kafka reference (needed by Flink jobs)
 
 **Change 3: Remove Unused Methods** ✅
 - File: `LocalTesting/LocalTesting.IntegrationTests/LocalTestingTestBase.cs`
@@ -226,9 +225,11 @@ Looking at Program.cs lines 104-106:
 - **Learning**: Temporary debugging aids should be removed after issues are resolved
 
 **Challenge 2**: Determining if WithReference(kafka) was needed
-- **Solution**: Read code comments explaining WithReference() is for service discovery
-- **Analysis**: Only Gateway needs service discovery, TaskManager executes jobs but doesn't submit them
-- **Decision**: Safe to remove - TaskManager doesn't use Kafka endpoint environment variables
+- **Initial Analysis**: Reviewed code comments, concluded it wasn't needed
+- **Test Results**: 8 out of 9 tests failed when removed - TaskManager DOES need it!
+- **Lesson Learned**: Always validate assumptions with actual tests before removing code
+- **Correction**: Restored WithReference(kafka) on TaskManager
+- **Understanding**: Flink jobs running in TaskManager containers need Kafka endpoint from Aspire service discovery
 
 **Challenge 3**: Safely removing unused methods
 - **Solution**: Used grep to verify no other usages of the methods
@@ -335,11 +336,12 @@ Time Elapsed 00:00:21.10
 - **Dead Code**: Always verify with grep/search before removing to ensure no hidden dependencies
 
 ### Specific Problems to Avoid in Future
-1. ❌ **Don't leave debugging code**: Persistent lifetimes were temporary - remove after debug complete
-2. ❌ **Don't add unnecessary references**: WithReference() should only be used when service discovery is actually needed
-3. ❌ **Don't ignore code analysis**: Warnings indicate real code quality issues
-4. ❌ **Don't suppress warnings**: Fix the root cause instead
-5. ❌ **Don't assume unused code is safe to keep**: Dead code increases maintenance burden
+1. ❌ **Don't leave debugging code**: Persistent lifetimes were temporary - remove after debug complete ✅
+2. ⚠️ **Don't assume code is unnecessary without testing**: WithReference(kafka) seemed unnecessary but tests proved it was required
+3. ❌ **Don't ignore code analysis**: Warnings indicate real code quality issues ✅
+4. ❌ **Don't suppress warnings**: Fix the root cause instead ✅
+5. ❌ **Don't assume unused code is safe to keep**: Dead code increases maintenance burden ✅
+6. ⚠️ **Always run tests after removing dependencies**: Removing WithReference caused 8/9 test failures
 
 ### Reference for Future WIs
 
@@ -355,9 +357,10 @@ Time Elapsed 00:00:21.10
 - Always address warnings properly rather than suppressing them
 
 **Container Lifecycle Management**:
-- Default Aspire lifecycle: Containers stop when AppHost stops (correct behavior)
-- Persistent lifetime: Only for debugging, prevents proper cleanup
-- WithReference(): Only for service discovery (Gateway needs it, TaskManager doesn't)
+- Default Aspire lifecycle: Containers stop when AppHost stops (correct behavior) ✅
+- Persistent lifetime: Only for debugging, prevents proper cleanup - REMOVE after debug ✅
+- WithReference(): Used for Aspire service discovery - TaskManager NEEDS it for Kafka connectivity ⚠️
+- **KEY LESSON**: Don't remove WithReference() based on assumptions - validate with tests first!
 
 **Refactoring Complex Methods**:
 - Extract helper methods for each logical step
