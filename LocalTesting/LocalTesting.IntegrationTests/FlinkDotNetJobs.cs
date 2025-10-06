@@ -11,16 +11,19 @@ public static class FlinkDotNetJobs
     /// Creates a simple DataStream job that converts input strings to uppercase
     /// </summary>
     public static async Task<JobSubmissionResult> CreateUppercaseJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
+        // Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafka)
+            .FromKafka(inputTopic, kafkaBootstrap)
             .Map("upper")
-            .ToKafka(outputTopic, kafka);
+            .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
     }
@@ -29,16 +32,19 @@ public static class FlinkDotNetJobs
     /// Creates a DataStream job with filtering
     /// </summary>
     public static async Task<JobSubmissionResult> CreateFilterJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
+        // Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafka)
+            .FromKafka(inputTopic, kafkaBootstrap)
             .Where("nonempty")
-            .ToKafka(outputTopic, kafka);
+            .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
     }
@@ -47,17 +53,20 @@ public static class FlinkDotNetJobs
     /// Creates a DataStream job with string splitting and concatenation
     /// </summary>
     public static async Task<JobSubmissionResult> CreateSplitConcatJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
+        // Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafka)
+            .FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
             .Map("concat:-joined")
-            .ToKafka(outputTopic, kafka);
+            .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
     }
@@ -66,16 +75,19 @@ public static class FlinkDotNetJobs
     /// Creates a DataStream job with timer functionality
     /// </summary>
     public static async Task<JobSubmissionResult> CreateTimerJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
+        // Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafka)
+            .FromKafka(inputTopic, kafkaBootstrap)
             .WithTimer(5)
-            .ToKafka(outputTopic, kafka);
+            .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
     }
@@ -90,20 +102,23 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
+        // SQL Gateway jobs run inside Flink containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var sqlStatements = new[]
         {
-            $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH ( 
+            $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{inputTopic}',
-                'properties.bootstrap.servers'='{kafka}',
+                'properties.bootstrap.servers'='{kafkaBootstrap}',
                 'properties.group.id'='flink-sql-test',
                 'scan.startup.mode'='earliest-offset',
                 'format'='json'
             )",
-            $@"CREATE TABLE output ( `key` STRING, `value` STRING ) WITH ( 
+            $@"CREATE TABLE output ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
-                'properties.bootstrap.servers'='{kafka}',
+                'properties.bootstrap.servers'='{kafkaBootstrap}',
                 'format'='json'
             )",
             "INSERT INTO output SELECT `key`, `value` FROM input"
@@ -127,26 +142,29 @@ public static class FlinkDotNetJobs
     /// Creates a SQL job that transforms data
     /// </summary>
     public static async Task<JobSubmissionResult> CreateSqlTransformJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
+        // Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var sqlStatements = new[]
         {
-            $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH ( 
+            $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{inputTopic}',
-                'properties.bootstrap.servers'='{kafka}',
+                'properties.bootstrap.servers'='{kafkaBootstrap}',
                 'properties.group.id'='flink-sql-transform',
                 'scan.startup.mode'='earliest-offset',
                 'format'='json'
             )",
-            $@"CREATE TABLE output ( `key` STRING, `transformed` STRING ) WITH ( 
+            $@"CREATE TABLE output ( `key` STRING, `transformed` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
-                'properties.bootstrap.servers'='{kafka}',
+                'properties.bootstrap.servers'='{kafkaBootstrap}',
                 'format'='json'
             )",
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
@@ -160,20 +178,23 @@ public static class FlinkDotNetJobs
     /// Creates a composite job that combines multiple operations
     /// </summary>
     public static async Task<JobSubmissionResult> CreateCompositeJob(
-        string inputTopic, 
-        string outputTopic, 
-        string kafka, 
-        string jobName, 
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName,
         CancellationToken ct)
     {
+        // Flink jobs run inside containers and must use container network name 'kafka:9092'
+        // NOT the host connection string (e.g., localhost:17901)
+        const string kafkaBootstrap = "kafka:9092";
         var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafka)
+            .FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
             .Map("concat:-tail")
             .Map("upper")
             .Where("nonempty")
             .WithTimer(5)
-            .ToKafka(outputTopic, kafka);
+            .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
     }

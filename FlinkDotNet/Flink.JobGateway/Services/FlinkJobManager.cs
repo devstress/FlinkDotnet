@@ -25,8 +25,7 @@ public class FlinkJobManager : IFlinkJobManager
         // Try multiple Flink endpoint discovery strategies
         // NOTE: This discovery happens at Gateway startup time, which may be BEFORE
         // the Flink container is fully ready in Aspire DCP testing mode.
-        // The Gateway will use this endpoint, but if Flink is not ready, operations
-        // will gracefully fall back to local mode.
+        // The Gateway will verify Flink connectivity when jobs are submitted.
         var flinkBaseUrl = DiscoverFlinkEndpoint();
         
         _httpClient.BaseAddress = new Uri(flinkBaseUrl);
@@ -42,11 +41,20 @@ public class FlinkJobManager : IFlinkJobManager
     private string DiscoverFlinkEndpoint()
     {
         // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-jobmanager__http__0 = "http://localhost:63624"
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+        // Format: services__flink-jobmanager__jm-http__0 = "http://localhost:63624"
+        // NOTE: The endpoint name is "jm-http" as defined in AppHost Program.cs
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__jm-http__0");
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
             _logger.LogInformation("Using Aspire service discovery endpoint: {Endpoint}", aspireEndpoint);
+            return aspireEndpoint;
+        }
+
+        // Fallback: Try older format with "http" endpoint name
+        aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+        if (!string.IsNullOrEmpty(aspireEndpoint))
+        {
+            _logger.LogInformation("Using Aspire service discovery endpoint (legacy format): {Endpoint}", aspireEndpoint);
             return aspireEndpoint;
         }
 
@@ -65,6 +73,7 @@ public class FlinkJobManager : IFlinkJobManager
         // Strategy 3: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-jobmanager:8081";
         _logger.LogInformation("Using default Docker Compose endpoint: {Endpoint}", defaultEndpoint);
+        _logger.LogWarning("Aspire service discovery not found - Gateway may not be able to connect to Flink in testing mode");
         return defaultEndpoint;
     }
 
@@ -76,11 +85,20 @@ public class FlinkJobManager : IFlinkJobManager
     private string DiscoverSqlGatewayEndpoint()
     {
         // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-sql-gateway__http__0 = "http://localhost:xxxxx"
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        // Format: services__flink-sql-gateway__sg-http__0 = "http://localhost:xxxxx"
+        // NOTE: The endpoint name is "sg-http" as defined in AppHost Program.cs
+        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__sg-http__0");
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
             _logger.LogInformation("Using Aspire service discovery for SQL Gateway: {Endpoint}", aspireEndpoint);
+            return aspireEndpoint;
+        }
+
+        // Fallback: Try older format with "http" endpoint name
+        aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        if (!string.IsNullOrEmpty(aspireEndpoint))
+        {
+            _logger.LogInformation("Using Aspire service discovery for SQL Gateway (legacy format): {Endpoint}", aspireEndpoint);
             return aspireEndpoint;
         }
 
@@ -99,6 +117,7 @@ public class FlinkJobManager : IFlinkJobManager
         // Strategy 3: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-sql-gateway:8083";
         _logger.LogInformation("Using default Docker network for SQL Gateway: {Endpoint}", defaultEndpoint);
+        _logger.LogWarning("Aspire service discovery not found for SQL Gateway - may not be accessible in testing mode");
         return defaultEndpoint;
     }
     
@@ -168,7 +187,7 @@ public class FlinkJobManager : IFlinkJobManager
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
                 var flinkJobId = await SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
-                TrackJob(jobDefinition, flinkJobId, true);
+                TrackJob(jobDefinition, flinkJobId);
                 return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
             }
 
@@ -179,24 +198,15 @@ public class FlinkJobManager : IFlinkJobManager
             _logger.LogInformation("🔍 Probing Flink cluster health...");
             var clusterHealthy2 = await ProbeClusterHealthSafelyAsync();
             
-            var flinkJobId2 = clusterHealthy2
-                ? await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition)
-                : await RunLocalAsync(irBase64, jobDefinition);
-
-            TrackJob(jobDefinition, flinkJobId2, clusterHealthy2);
-
-            if (!clusterHealthy2 && _jobMapping[flinkJobId2].Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
+            if (!clusterHealthy2)
             {
-                _logger.LogWarning("⚠️ Job running in LOCAL mode (cluster not available)");
-                return new JobSubmissionResult
-                {
-                    JobId = jobDefinition.Metadata.JobId,
-                    FlinkJobId = flinkJobId2,
-                    Success = true,
-                    SubmittedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, string> { ["mode"] = "local" }
-                };
+                var errorMessage = "Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible.";
+                _logger.LogError("❌ {ErrorMessage}", errorMessage);
+                throw new InvalidOperationException(errorMessage);
             }
+
+            var flinkJobId2 = await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
+            TrackJob(jobDefinition, flinkJobId2);
 
             _logger.LogInformation("✅ Job submitted successfully to Flink cluster");
             return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId2);
@@ -270,13 +280,13 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
-    private void TrackJob(JobDefinition jobDefinition, string flinkJobId, bool clusterHealthy)
+    private void TrackJob(JobDefinition jobDefinition, string flinkJobId)
     {
         _jobMapping[flinkJobId] = new JobInfo
         {
             JobId = jobDefinition.Metadata.JobId,
             FlinkJobId = flinkJobId,
-            Status = clusterHealthy ? "RUNNING" : "LOCAL-RUNNING",
+            Status = "RUNNING",  // Jobs only submitted to healthy clusters
             SubmissionTime = DateTime.UtcNow,
             JobDefinition = jobDefinition
         };
@@ -285,11 +295,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
-        if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
-        {
-            return new JobStatus { JobId = info.JobId, FlinkJobId = flinkJobId, State = info.Status };
-        }
-
+        
         try
         {
             var response = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}");
@@ -300,7 +306,10 @@ public class FlinkJobManager : IFlinkJobManager
                 var state = doc.RootElement.TryGetProperty("state", out var stateProp)
                     ? stateProp.GetString() ?? "UNKNOWN"
                     : "UNKNOWN";
-                return new JobStatus { JobId = info?.JobId ?? flinkJobId, FlinkJobId = flinkJobId, State = state };
+                
+                // Try to get JobId from mapping, fallback to FlinkJobId
+                var jobId = _jobMapping.TryGetValue(flinkJobId, out var info) ? info.JobId : flinkJobId;
+                return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
             }
 
             if (response.StatusCode == HttpStatusCode.NotFound)
@@ -318,19 +327,6 @@ public class FlinkJobManager : IFlinkJobManager
 
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
-        if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
-        {
-            return new JobMetrics
-            {
-                FlinkJobId = flinkJobId,
-                RecordsIn = 0,
-                RecordsOut = 0,
-                Parallelism = info.JobDefinition.Metadata.Parallelism ?? 1,
-                Checkpoints = 0,
-                LastCheckpoint = null,
-                CustomMetrics = new Dictionary<string, object> { ["mode"] = "local" }
-            };
-        }
 
         try
         {
@@ -376,142 +372,6 @@ public class FlinkJobManager : IFlinkJobManager
         {
             throw new InvalidOperationException($"Failed to cancel job in Flink 2.1.0 cluster: {flinkJobId}", ex);
         }
-    }
-
-    private async Task<string> RunLocalAsync(string irBase64, JobDefinition jobDefinition)
-    {
-        var jarPath = await EnsureRunnerJarPathAsync();
-        ValidateJarExists(jarPath);
-
-        var id = $"local-{Guid.NewGuid():N}";
-        var bootstrap = GetBootstrapServers(jobDefinition);
-        var proc = StartLocalRunnerProcess(jarPath, irBase64, bootstrap);
-
-        MonitorLocalRunnerAsync(proc, id);
-
-        LogLocalRunnerStart(proc, bootstrap, jarPath, jobDefinition.Metadata.JobId, irBase64);
-        return id;
-    }
-
-    private static void ValidateJarExists(string jarPath)
-    {
-        if (!File.Exists(jarPath))
-        {
-            throw new InvalidOperationException(
-                $"Runner JAR not found at {jarPath}. The JAR should be built automatically during Gateway build. " +
-                "Please ensure Java and Maven are installed and the build completed successfully.");
-        }
-    }
-
-    private static string GetBootstrapServers(JobDefinition jobDefinition)
-    {
-        if (jobDefinition.Source is KafkaSourceDefinition ks && !string.IsNullOrWhiteSpace(ks.BootstrapServers))
-            return ks.BootstrapServers;
-        
-        if (jobDefinition.Sink is KafkaSinkDefinition ksd && !string.IsNullOrWhiteSpace(ksd.BootstrapServers))
-            return ksd.BootstrapServers;
-
-        return Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "localhost:9092";
-    }
-
-    private static Process StartLocalRunnerProcess(string jarPath, string irBase64, string bootstrap)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = "java",
-            Arguments = $"-jar \"{jarPath}\" --irBase64 {irBase64}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        psi.Environment["KAFKA_BOOTSTRAP"] = bootstrap;
-
-        Process? proc;
-        try
-        {
-            proc = Process.Start(psi);
-        }
-        catch (Exception startEx)
-        {
-            throw new InvalidOperationException(
-                "Failed to start Java process for local execution. Ensure Java is installed and in PATH.", startEx);
-        }
-
-        if (proc == null)
-        {
-            throw new InvalidOperationException("Java process returned null - failed to start local runner.");
-        }
-
-        return proc;
-    }
-
-    private void MonitorLocalRunnerAsync(Process proc, string id)
-    {
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await CaptureProcessOutputAsync(proc, id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Local runner output capture failed for {JobId}", id);
-                UpdateJobStatus(id, "LOCAL-ERROR");
-            }
-        });
-    }
-
-    private async Task CaptureProcessOutputAsync(Process proc, string id)
-    {
-        var stdout = await proc.StandardOutput.ReadToEndAsync();
-        var stderr = await proc.StandardError.ReadToEndAsync();
-        await proc.WaitForExitAsync();
-        
-        LogProcessOutput(stdout, stderr, id);
-        UpdateJobStatusBasedOnExitCode(proc.ExitCode, id);
-    }
-
-    private void LogProcessOutput(string stdout, string stderr, string id)
-    {
-        if (!string.IsNullOrWhiteSpace(stdout))
-            _logger.LogInformation("[local-runner:{JobId}] STDOUT:\n{Out}", id, stdout);
-        
-        if (!string.IsNullOrWhiteSpace(stderr))
-            _logger.LogWarning("[local-runner:{JobId}] STDERR:\n{Err}", id, stderr);
-    }
-
-    private void UpdateJobStatusBasedOnExitCode(int exitCode, string id)
-    {
-        if (exitCode != 0)
-        {
-            _logger.LogError("[local-runner:{JobId}] Process exited with code {ExitCode}", id, exitCode);
-            UpdateJobStatus(id, $"LOCAL-FAILED (exit code {exitCode})");
-        }
-        else
-        {
-            _logger.LogInformation("[local-runner:{JobId}] Process completed successfully", id);
-            UpdateJobStatus(id, "LOCAL-COMPLETED");
-        }
-    }
-
-    private void UpdateJobStatus(string id, string status)
-    {
-        if (_jobMapping.TryGetValue(id, out var jobInfo))
-        {
-            jobInfo.Status = status;
-        }
-    }
-
-    private void LogLocalRunnerStart(Process proc, string bootstrap, string jarPath, string jobId, string irBase64)
-    {
-        _logger.LogInformation(
-            "Started local runner (PID={Pid}, bootstrap={Bootstrap}, jarPath={JarPath}) for job {JobId}",
-            proc.Id, bootstrap, jarPath, jobId);
-        
-        var prefix = irBase64.Length > 50 ? irBase64.Substring(0, 50) : irBase64;
-        _logger.LogInformation("Local runner command: java -jar \"{JarPath}\" --irBase64 {IrBase64Prefix}...",
-            jarPath, prefix);
     }
 
     private async Task<string> EnsureRunnerJarPathAsync()
@@ -647,6 +507,13 @@ public class FlinkJobManager : IFlinkJobManager
             _logger.LogInformation("📋 Job Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap}",
                 kafkaSource?.BootstrapServers ?? "null",
                 kafkaSink?.BootstrapServers ?? "null");
+            
+            // DIAGNOSTIC: Log environment variables that might override job definition
+            _logger.LogInformation("🌍 Gateway environment: KAFKA_BOOTSTRAP={KafkaBootstrap}",
+                Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set");
+            _logger.LogWarning("⚠️ CRITICAL: Flink containers have KAFKA_BOOTSTRAP set, which will override job definition bootstrap servers in FlinkJobRunner.java!");
+            _logger.LogWarning("⚠️ FlinkJobRunner.java line 93 uses: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\")");
+            _logger.LogWarning("⚠️ This means if Flink container has KAFKA_BOOTSTRAP set, it will override the kafka:9092 value from job definition!");
 
             var runRequest = new
             {

@@ -30,18 +30,11 @@ public abstract class LocalTestingTestBase
     
     /// <summary>
     /// Access to shared Kafka connection string from GlobalTestInfrastructure.
+    /// CRITICAL: This address is used by BOTH test producers/consumers AND Flink jobs.
+    /// The simplified architecture uses a single Kafka address (localhost:port) accessible
+    /// from both host and containers via Docker port mapping.
     /// </summary>
     protected static string? KafkaConnectionString => GlobalTestInfrastructure.KafkaConnectionString;
-    
-    /// <summary>
-    /// Kafka connection string for use by Flink jobs running inside containers.
-    /// CRITICAL: Aspire's Kafka has TWO internal listeners:
-    /// - PLAINTEXT_HOST on port 9092: for external access from host machine
-    /// - PLAINTEXT_INTERNAL on port 9093: for container-to-container communication
-    /// Flink containers must use "kafka:9093" to reach Kafka's PLAINTEXT_INTERNAL listener.
-    /// See: https://github.com/dotnet/aspire/blob/main/src/Aspire.Hosting.Kafka/KafkaBuilderExtensions.cs
-    /// </summary>
-    protected static string KafkaContainerConnectionString => GlobalTestInfrastructure.KafkaContainerConnectionString;
 
     /// <summary>
     /// No infrastructure setup needed - using shared global infrastructure.
@@ -277,30 +270,20 @@ public abstract class LocalTestingTestBase
     }
 
     /// <summary>
-    /// Get comprehensive bootstrap server variations including dynamic container discovery.
+    /// Get bootstrap server variations for dynamic port configuration.
+    /// CRITICAL: Aspire allocates dynamic ports, so we use the discovered bootstrap server.
+    /// We only add localhost/127.0.0.1 variations of the discovered endpoint.
     /// </summary>
-    private static async Task<string[]> GetBootstrapServerVariationsAsync(string originalBootstrap)
+    private static Task<string[]> GetBootstrapServerVariationsAsync(string originalBootstrap)
     {
-        var variations = new List<string> { originalBootstrap };
+        var variations = new List<string>
+        {
+            originalBootstrap,
+            originalBootstrap.Replace("localhost", "127.0.0.1")
+        };
         
-        try
-        {
-            // Standard localhost variations
-            variations.Add(originalBootstrap.Replace("localhost", "127.0.0.1"));
-            variations.Add($"127.0.0.1:{Ports.KafkaPort}");
-            
-            // Try to discover actual container IP and ports
-            var containerPorts = await DiscoverKafkaContainerEndpointsAsync();
-            variations.AddRange(containerPorts);
-            
-            // Remove duplicates
-            return variations.Distinct().ToArray();
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Could not discover container endpoints: {ex.Message}");
-            return variations.Distinct().ToArray();
-        }
+        // Remove duplicates
+        return Task.FromResult(variations.Distinct().ToArray());
     }
 
     /// <summary>
@@ -904,6 +887,9 @@ public abstract class LocalTestingTestBase
     {
         TestContext.WriteLine("🔧 Validating complete infrastructure readiness...");
 
+        // Debug: Check containers at start of validation
+        await LogDockerContainersAsync("Start of infrastructure validation");
+
         // Kafka is already validated in OneTimeSetUp, but double-check if needed
         if (string.IsNullOrEmpty(KafkaConnectionString))
         {
@@ -1367,8 +1353,10 @@ public abstract class LocalTestingTestBase
     {
         try
         {
-            var containerName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
-            containerName = containerName.Trim();
+            // Get all container names and filter in C# to handle Aspire's random suffixes
+            var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var containerName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
             
             if (string.IsNullOrEmpty(containerName))
             {
@@ -1376,8 +1364,8 @@ public abstract class LocalTestingTestBase
             }
             
             TestContext.WriteLine($"🔍 Getting logs from TaskManager container: {containerName}");
-            var logs = await RunDockerCommandAsync($"logs {containerName} --tail 200");
-            return $"========== TaskManager Container Logs ({containerName}) ==========\n{logs}";
+            var logs = await RunDockerCommandAsync($"logs {containerName} --tail 20 2>&1");
+            return $"========== TaskManager Container Logs ({containerName}) - Last 20 Lines ==========\n{logs}";
         }
         catch (Exception ex)
         {
@@ -1456,6 +1444,213 @@ public abstract class LocalTestingTestBase
         catch (Exception ex)
         {
             return $"Error getting resource status: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Log current Docker containers status for debugging infrastructure issues.
+    /// </summary>
+    private static async Task LogDockerContainersAsync(string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🐳 [Docker Debug] {checkpoint}");
+            var containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Image}}\\t{{.Status}}\\t{{.Ports}}\"");
+            
+            if (!string.IsNullOrWhiteSpace(containers))
+            {
+                TestContext.WriteLine($"🐳 Running containers:\n{containers}");
+            }
+            else
+            {
+                TestContext.WriteLine("🐳 No containers found");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get Docker containers: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Log Flink job status via Gateway to check if job is actually running.
+    /// </summary>
+    protected static async Task LogJobStatusViaGatewayAsync(string gatewayBase, string jobId, string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🔍 [Job Status Check] {checkpoint} - Job ID: {jobId}");
+            
+            using var httpClient = new System.Net.Http.HttpClient();
+            var statusUrl = $"{gatewayBase}api/v1/jobs/{jobId}/status";
+            var response = await httpClient.GetAsync(statusUrl);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                TestContext.WriteLine($"📊 Job status response: {content}");
+            }
+            else
+            {
+                TestContext.WriteLine($"⚠️ Failed to get job status: HTTP {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to check job status: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Log Flink container status and recent logs for debugging.
+    /// </summary>
+    protected static async Task LogFlinkContainerStatusAsync(string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🔍 [Flink Container Debug] {checkpoint}");
+            
+            // Get ALL container names and filter in C# to handle Aspire's random suffixes
+            var allContainersList = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            var allContainers = allContainersList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            var flinkContainers = allContainers.Where(name => name.Contains("flink", StringComparison.OrdinalIgnoreCase)).ToList();
+            
+            TestContext.WriteLine($"🐳 Flink containers found: {string.Join(", ", flinkContainers)}");
+            
+            // Find JobManager container
+            var jmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(jmName))
+            {
+                TestContext.WriteLine($"📋 Found JobManager container: {jmName}");
+                var jmLogs = await RunDockerCommandAsync($"logs {jmName} --tail 100 2>&1");
+                TestContext.WriteLine($"📋 JobManager logs (last 100 lines):\n{jmLogs}");
+            }
+            else
+            {
+                TestContext.WriteLine("⚠️ No JobManager container found");
+                TestContext.WriteLine($"   Available containers: {string.Join(", ", allContainers)}");
+            }
+            
+            // Find TaskManager container
+            var tmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(tmName))
+            {
+                TestContext.WriteLine($"📋 Found TaskManager container: {tmName}");
+                var tmLogs = await RunDockerCommandAsync($"logs {tmName} --tail 20 2>&1");
+                TestContext.WriteLine($"📋 TaskManager logs (last 20 lines):\n{tmLogs}");
+            }
+            else
+            {
+                TestContext.WriteLine("⚠️ No TaskManager container found");
+                TestContext.WriteLine($"   Available containers: {string.Join(", ", allContainers)}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get Flink container logs: {ex.Message}");
+            TestContext.WriteLine($"   Exception details: {ex.GetType().Name} - {ex.Message}");
+            if (ex.StackTrace != null)
+            {
+                TestContext.WriteLine($"   Stack trace: {ex.StackTrace}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Log Flink job-specific logs from JobManager.
+    /// </summary>
+    protected static async Task LogFlinkJobLogsAsync(string jobId, string checkpoint)
+    {
+        try
+        {
+            TestContext.WriteLine($"🔍 [Flink Job Debug] {checkpoint} - Job ID: {jobId}");
+            
+            // Get all container names and filter in C# to handle Aspire's random suffixes
+            var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Find JobManager container
+            var jmName = containers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(jmName))
+            {
+                // Get logs filtered for this specific job
+                var jobLogs = await RunDockerCommandAsync($"logs {jmName} 2>&1");
+                var jobLogLines = jobLogs.Split('\n').Where(line => line.Contains(jobId, StringComparison.OrdinalIgnoreCase)).Take(30);
+                TestContext.WriteLine($"📋 Job-specific logs (last 30 lines):\n{string.Join('\n', jobLogLines)}");
+            }
+            
+            // Find TaskManager container
+            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            
+            if (!string.IsNullOrWhiteSpace(tmName))
+            {
+                // Get TaskManager logs and filter locally
+                var allLogs = await RunDockerCommandAsync($"logs {tmName} 2>&1");
+                
+                // Check for Kafka-related logs
+                var kafkaLogLines = allLogs.Split('\n').Where(line => line.Contains("kafka", StringComparison.OrdinalIgnoreCase)).Take(20);
+                TestContext.WriteLine($"📋 Kafka-related logs from TaskManager (last 20 lines):\n{string.Join('\n', kafkaLogLines)}");
+                
+                // Also check for any error logs
+                var errorLogLines = allLogs.Split('\n').Where(line =>
+                    line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("exception", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("fail", StringComparison.OrdinalIgnoreCase)).Take(20);
+                TestContext.WriteLine($"📋 Error logs from TaskManager (last 20 lines):\n{string.Join('\n', errorLogLines)}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get Flink job logs: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Test Kafka connectivity from within Flink TaskManager container using telnet or nc.
+    /// This diagnostic helps determine if Flink containers can reach Kafka at kafka:9092.
+    /// </summary>
+    protected static async Task TestKafkaConnectivityFromFlinkAsync()
+    {
+        try
+        {
+            TestContext.WriteLine("🔍 [Kafka Connectivity] Testing from Flink TaskManager container...");
+            
+            // Get all container names and filter in C# to handle Aspire's random suffixes
+            var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            
+            if (string.IsNullOrWhiteSpace(tmName))
+            {
+                TestContext.WriteLine("⚠️ No TaskManager container found for connectivity test");
+                return;
+            }
+            
+            TestContext.WriteLine($"🐳 Using TaskManager container: {tmName}");
+            
+            // Test connectivity to kafka:9092
+            var testResult = await RunDockerCommandAsync($"exec {tmName} timeout 2 bash -c 'echo \"test\" | nc -w 1 kafka 9092 && echo \"SUCCESS\" || echo \"FAILED\"' 2>&1");
+            TestContext.WriteLine($"📊 Kafka connectivity (kafka:9092): {testResult.Trim()}");
+            
+            // Also try to resolve the hostname
+            var dnsResult = await RunDockerCommandAsync($"exec {tmName} getent hosts kafka 2>&1 || echo \"DNS resolution failed\"");
+            TestContext.WriteLine($"📊 DNS resolution for 'kafka': {dnsResult.Trim()}");
+            
+            // Check if Kafka connectorJARs are present
+            var connectorCheck = await RunDockerCommandAsync($"exec {tmName} ls -lh /opt/flink/lib/*kafka* 2>&1 || echo \"No Kafka connector found\"");
+            TestContext.WriteLine($"📊 Kafka connector JARs in Flink:\n{connectorCheck.Trim()}");
+            
+            // Check network settings
+            var networkInfo = await RunDockerCommandAsync($"inspect {tmName} --format '{{{{.NetworkSettings.Networks}}}}'");
+            TestContext.WriteLine($"📊 Container network info: {networkInfo.Trim()}");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to test Kafka connectivity from Flink: {ex.Message}");
         }
     }
 }

@@ -222,19 +222,19 @@
 
     <!-- Determine which Maven command to use (cross-platform) -->
     <PropertyGroup>
-      <!-- Clean up Maven path output (remove trailing newlines/whitespace) -->
-      <MavenFullPath Condition="'$(MavenFullPathRaw)' != ''">$([System.String]::Copy('$(MavenFullPathRaw)').Trim().Split(&#xD;&#xA;, System.StringSplitOptions.RemoveEmptyEntries)[0].Trim())</MavenFullPath>
-      
-      <!-- Priority 1: Use full path to system Maven if found in PATH (e.g., from GitHub Actions) -->
-      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND '$(MavenFullPath)' != ''">$(MavenFullPath)</MavenCommand>
-      <!-- Priority 2: Use relative mvn if found in PATH but full path not captured -->
-      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(MavenFoundExitCode)' == '0'">mvn</MavenCommand>
+      <!-- Windows 'where' command returns multiple matches separated by newlines -->
+      <!-- Just skip parsing 'where' output and use simple approach: mvn.cmd on Windows, mvn on Linux -->
+      <!-- Priority 1: Use mvn.cmd if found in PATH on Windows -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
+      <!-- Priority 2: Use mvn if found in PATH on Linux/macOS -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
       <!-- Priority 3: Use locally installed Maven if it exists (Windows) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
       <!-- Priority 4: Use locally installed Maven if it exists (Linux/macOS) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenInstallDir)/bin/mvn')">$(MavenInstallDir)/bin/mvn</MavenCommand>
-      <!-- Fallback: Use mvn from PATH (should be available if checks passed) -->
-      <MavenCommand Condition="'$(MavenCommand)' == ''">mvn</MavenCommand>
+      <!-- Fallback: Use mvn.cmd on Windows, mvn on Linux/macOS -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
     </PropertyGroup>
 
     <!-- Ensure JAVA_HOME is set and valid for Maven (cross-platform) -->

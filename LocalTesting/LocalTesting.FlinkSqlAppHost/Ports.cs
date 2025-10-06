@@ -6,12 +6,18 @@ public static class Ports
     public const int JobManagerRpcPort = 8081;  // Container REST/UI port
     public const int SqlGatewayHostPort = 8083; // SQL Gateway REST API port
     public const int GatewayHostPort = 8080;    // Gateway HTTP port
-    public const int KafkaPort = 9093;          // Kafka external listener for host (Aspire will map to dynamic port)
     
-    // Kafka connection string for containers within Docker network
-    // Used by Flink jobs running inside containers to reach Kafka
-    // CRITICAL: Kafka dual listener configuration:
-    // - PLAINTEXT (port 9092): Internal access for containers (kafka:9092)
-    // - PLAINTEXT_HOST (port 9093): External access from host (localhost:9093 -> dynamic port)
-    public const string KafkaContainerBootstrap = "kafka:9092";
+    // Kafka FIXED port configuration (no dynamic allocation)
+    // CRITICAL: Kafka dual listener setup with FIXED ports:
+    // - PLAINTEXT (port 9092): Internal container-to-container communication
+    //   * Used by Flink TaskManager to connect: kafka:9092
+    //   * Advertised listener: kafka:9092 (keeps containers on container network)
+    // - PLAINTEXT_HOST (port 9093): External host machine access
+    //   * Used by tests and external clients: localhost:9093
+    //   * Advertised listener: localhost:9093 (accessible from host)
+    // This ensures TaskManager always connects through kafka:9092 without dynamic port issues
+    public const int KafkaInternalPort = 9092;  // Container network port
+    public const int KafkaExternalPort = 9093;  // Host machine port
+    public const string KafkaContainerBootstrap = "kafka:9092";  // For Flink containers
+    public const string KafkaHostBootstrap = "localhost:9093";   // For tests/external access
 }

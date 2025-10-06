@@ -1,6 +1,5 @@
 // Configure container runtime - prefer Podman if available, fallback to Docker Desktop
 using System.Diagnostics;
-using System.Linq;
 using LocalTesting.FlinkSqlAppHost;
 
 if (!ConfigureContainerRuntime())
@@ -32,22 +31,12 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Configure Kafka with proper listener configuration for both internal and external access
-// Internal clients (Flink containers) use kafka:9092
-// External clients (test process) use localhost:9093
+// Configure Kafka with FIXED external port 9093
+// Both tests and Flink jobs connect to localhost:9093 (mapped to container port 9092)
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka", port: 9093) // Publish 9093 on host for external access
-    .WithEnvironment("KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT")
-    .WithEnvironment("KAFKA_CFG_LISTENERS", "PLAINTEXT://:9092,PLAINTEXT_HOST://:9093")
-    .WithEnvironment("KAFKA_CFG_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093");
+var kafka = builder.AddKafka("kafka")
+    .WithLifetime(ContainerLifetime.Persistent);
 #pragma warning restore S1481
-
-if (diagnosticsVerbose)
-{
-    Console.WriteLine("[diag] Kafka configured with dual listeners:");
-    Console.WriteLine("[diag]   - Internal (Flink containers): kafka:9092");
-    Console.WriteLine("[diag]   - External (test process): localhost:9093");
-}
 
 // Flink JobManager with named HTTP endpoint for service references
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
@@ -63,6 +52,10 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    // REMOVED: .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
+    // REASON: FlinkJobRunner.java prioritizes environment variable over job definition
+    // This caused jobs to use wrong Kafka address (localhost:17901 instead of kafka:9092)
+    // Job definitions explicitly provide bootstrapServers, so environment variable is not needed
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
@@ -70,14 +63,18 @@ var jobManager = jobManagerBuilder
         "parallelism.default: 1\n" +
         "rest.port: 8081\n" +
         "rest.bind-port: 8081\n" +
-        "jobmanager.memory.process.size: 1600m\n" +
+        "jobmanager.memory.process.size: 2048m\n" +
+        "heartbeat.interval: 5000\n" +
+        "heartbeat.timeout: 30000\n" +
+        "pekko.ask.timeout: 30s\n" +
         "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "classloader.resolve-order: parent-first\n" +
         "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("jobmanager");
+    .WithArgs("jobmanager")
+    .WithLifetime(ContainerLifetime.Persistent);
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
@@ -89,15 +86,20 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
         "rest.address: 0.0.0.0\n" +
         "rest.bind-address: 0.0.0.0\n" +
         "parallelism.default: 1\n" +
-        "taskmanager.memory.process.size: 2048m\n" +
+        "taskmanager.memory.process.size: 3072m\n" +
         "taskmanager.numberOfTaskSlots: 10\n" +
+        "heartbeat.interval: 5000\n" +
+        "heartbeat.timeout: 30000\n" +
+        "pekko.ask.timeout: 30s\n" +
         "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "classloader.resolve-order: parent-first\n" +
         "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("taskmanager");
+    .WithReference(kafka)
+    .WithArgs("taskmanager")
+    .WithLifetime(ContainerLifetime.Persistent);
 
 // Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission
 // SQL Gateway provides /v1/statements endpoint for executing SQL without JAR submission
@@ -124,7 +126,7 @@ var sqlGateway = sqlGatewayBuilder
         "sql-gateway.endpoint.rest.bind-address: 0.0.0.0\n" +
         "sql-gateway.endpoint.rest.port: 8083\n" +
         "sql-gateway.endpoint.rest.bind-port: 8083\n" +
-        "sql-gateway.endpoint.type: remote\n" +
+        "sql-gateway.endpoint.type: rest\n" +
         "sql-gateway.session.check-interval: 60000\n" +
         "sql-gateway.session.idle-timeout: 600000\n" +
         "sql-gateway.worker.threads.max: 10\n" +
@@ -132,7 +134,8 @@ var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("sql-gateway");
+    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
+    .WithLifetime(ContainerLifetime.Persistent);
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
@@ -153,7 +156,7 @@ var sqlGateway = sqlGatewayBuilder
 // Gateway with service reference for Flink discovery
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(port: Ports.GatewayHostPort, name: "flink-job-gateway")
+    .WithHttpEndpoint(name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", $"http://localhost:{Ports.GatewayHostPort.ToString()}")  // Override launchSettings.json
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
@@ -193,7 +196,7 @@ static void LogConfiguredPorts()
     Console.WriteLine($"📍 Configured ports:");
     Console.WriteLine($"   - Flink JobManager: {Ports.JobManagerHostPort}");
     Console.WriteLine($"   - Gateway: {Ports.GatewayHostPort}");
-    Console.WriteLine($"   - Kafka: {Ports.KafkaPort}");
+    Console.WriteLine($"   - Kafka: <dynamic port allocated by Aspire>");
 }
 
 static void SetupEnvironment()
