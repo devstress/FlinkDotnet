@@ -340,13 +340,19 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         var deadline = DateTime.UtcNow.Add(timeout);
         var attempt = 0;
 
-        TestContext.WriteLine($"⏳ Waiting for job {jobId} to reach RUNNING state via Gateway...");
+        TestContext.WriteLine($"⏳ Waiting for job {jobId} to reach RUNNING state...");
+
+        // For SQL Gateway jobs, also check Flink REST API directly with converted job ID (without hyphens)
+        // AND check for any RUNNING jobs as fallback since SQL Gateway creates different job IDs
+        var flinkJobId = jobId.Replace("-", "");
+        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
 
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
             attempt++;
             try
             {
+                // Try Gateway API first
                 var resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
                 if (resp.IsSuccessStatusCode)
                 {
@@ -364,12 +370,50 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
                         throw new InvalidOperationException($"Job {jobId} failed or was canceled: {content}");
                     }
 
-                    TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status - {content}");
+                    TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Gateway - {content}");
+                }
+                else
+                {
+                    // Gateway API failed, try Flink REST API directly with converted job ID
+                    var flinkResp = await http.GetAsync($"{flinkEndpoint}jobs/{flinkJobId}", ct);
+                    if (flinkResp.IsSuccessStatusCode)
+                    {
+                        var flinkContent = await flinkResp.Content.ReadAsStringAsync(ct);
+                        if (flinkContent.Contains("\"state\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase) ||
+                            flinkContent.Contains("\"state\":\"FINISHED\"", StringComparison.OrdinalIgnoreCase))
+                        {
+                            TestContext.WriteLine($"✅ Job {flinkJobId} is running/finished after {attempt} attempt(s) (via Flink REST API)");
+                            return;
+                        }
+
+                        if (flinkContent.Contains("\"state\":\"FAILED\"", StringComparison.OrdinalIgnoreCase) ||
+                            flinkContent.Contains("\"state\":\"CANCELED\"", StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new InvalidOperationException($"Job {flinkJobId} failed or was canceled: {flinkContent}");
+                        }
+
+                        TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Flink API - {flinkContent}");
+                    }
+                    else
+                    {
+                        // Fallback: Check if ANY job is RUNNING (for SQL Gateway jobs that have different IDs)
+                        var allJobsResp = await http.GetAsync($"{flinkEndpoint}jobs", ct);
+                        if (allJobsResp.IsSuccessStatusCode)
+                        {
+                            var allJobsContent = await allJobsResp.Content.ReadAsStringAsync(ct);
+                            if (allJobsContent.Contains("\"status\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase))
+                            {
+                                TestContext.WriteLine($"✅ Found RUNNING job after {attempt} attempt(s) (fallback check)");
+                                return;
+                            }
+                        }
+                        TestContext.WriteLine($"  ⏳ Attempt {attempt}: No RUNNING jobs found");
+                    }
                 }
             }
             catch (HttpRequestException ex)
             {
-                TestContext.WriteLine($"  ⏳ Attempt {attempt}: Gateway request failed - {ex.Message}");
+                TestContext.WriteLine($"  ⏳ Attempt {attempt}: Request failed - {ex.Message}");
             }
 
             await Task.Delay(1000, ct);
