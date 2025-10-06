@@ -54,6 +54,10 @@ public class GlobalTestInfrastructure
             AppHost = app;
             TestContext.WriteLine("✅ Aspire ApplicationHost started");
 
+            // Wait for containers to be created and port mappings to be established
+            TestContext.WriteLine("⏳ Waiting for Docker containers to be created and ports to be mapped...");
+            await Task.Delay(TimeSpan.FromSeconds(10)); // Give Docker time to create containers and establish port mappings
+            
             // Wait for Kafka
             TestContext.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
             await app.ResourceNotifications
