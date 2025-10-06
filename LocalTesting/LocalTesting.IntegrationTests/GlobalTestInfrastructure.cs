@@ -490,12 +490,13 @@ public class GlobalTestInfrastructure
                 throw new InvalidOperationException("Kafka container not found");
             }
 
-            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format '{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}'");
-            var ip = ipAddress.Trim().Split('\n').FirstOrDefault()?.Trim();
+            // Get Kafka IP from bridge network (Aspire uses default bridge network)
+            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
+            var ip = ipAddress.Trim();
             
             if (string.IsNullOrWhiteSpace(ip))
             {
-                throw new InvalidOperationException($"Could not determine Kafka container IP from: {ipAddress}");
+                throw new InvalidOperationException($"Could not determine Kafka container IP from bridge network. Raw output: '{ipAddress}'");
             }
 
             // Return IP with PLAINTEXT_INTERNAL port (9093)
