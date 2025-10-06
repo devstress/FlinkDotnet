@@ -82,9 +82,7 @@ var jobManager = jobManagerBuilder
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
-// Add extra hosts entry for Kafka resolution on Linux (host.docker.internal doesn't exist on Linux)
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
-    .WithContainerRuntimeArgs("--add-host", "host.docker.internal:172.17.0.1")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
     .WithEnvironment("FLINK_PROPERTIES",

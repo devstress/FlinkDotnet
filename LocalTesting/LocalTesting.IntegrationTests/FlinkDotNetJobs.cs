@@ -41,7 +41,7 @@ public static class FlinkDotNetJobs
     {
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "172.17.0.1:9093";
+        var kafkaBootstrap = kafka;
         var job = FlinkDotNet.Flink.JobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
             .Where("nonempty")
@@ -62,7 +62,7 @@ public static class FlinkDotNetJobs
     {
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "172.17.0.1:9093";
+        var kafkaBootstrap = kafka;
         var job = FlinkDotNet.Flink.JobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
@@ -84,7 +84,7 @@ public static class FlinkDotNetJobs
     {
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "172.17.0.1:9093";
+        var kafkaBootstrap = kafka;
         var job = FlinkDotNet.Flink.JobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
             .WithTimer(5)
@@ -105,7 +105,7 @@ public static class FlinkDotNetJobs
     {
         // SQL Gateway jobs run inside Flink containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "172.17.0.1:9093";
+        var kafkaBootstrap = kafka;
         var sqlStatements = new[]
         {
             $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
@@ -151,7 +151,7 @@ public static class FlinkDotNetJobs
     {
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "172.17.0.1:9093";
+        var kafkaBootstrap = kafka;
         var sqlStatements = new[]
         {
             $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
@@ -187,7 +187,7 @@ public static class FlinkDotNetJobs
     {
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
-        const string kafkaBootstrap = "172.17.0.1:9093";
+        var kafkaBootstrap = kafka;
         var job = FlinkDotNet.Flink.JobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
