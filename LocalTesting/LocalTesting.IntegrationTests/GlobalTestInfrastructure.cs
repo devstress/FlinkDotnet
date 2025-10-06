@@ -25,6 +25,7 @@ public class GlobalTestInfrastructure
     public static DistributedApplication? AppHost { get; private set; }
     public static string? KafkaConnectionString { get; private set; }
     public static string? KafkaConnectionStringFromConfig { get; private set; }
+    public static string? KafkaContainerIpForFlink { get; private set; } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
 
     [OneTimeSetUp]
     public async Task GlobalSetUp()
@@ -81,6 +82,15 @@ public class GlobalTestInfrastructure
                 .WaitForResourceHealthyAsync("kafka")
                 .WaitAsync(DefaultTimeout);
             Console.WriteLine("✅ Kafka resource reported healthy");
+
+            // CRITICAL FIX: Discover Kafka container IP for Flink job configurations
+            // Docker default bridge doesn't support DNS, so we need to use the actual container IP
+            Console.WriteLine("🔧 Discovering Kafka container IP for Flink jobs...");
+            var kafkaContainerIp = await GetKafkaContainerIpAsync();
+            Console.WriteLine($"✅ Kafka container IP: {kafkaContainerIp}");
+            
+            // Store for use in tests (replaces hostname-based connection)
+            KafkaContainerIpForFlink = kafkaContainerIp;
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
@@ -463,6 +473,38 @@ public class GlobalTestInfrastructure
         }
 
         throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}");
+    }
+
+    /// <summary>
+    /// Get Kafka container IP address for use in Flink job configurations
+    /// </summary>
+    private static async Task<string> GetKafkaContainerIpAsync()
+    {
+        try
+        {
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka-\" --format \"{{.Names}}\"");
+            var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            
+            if (string.IsNullOrWhiteSpace(kafkaContainer))
+            {
+                throw new InvalidOperationException("Kafka container not found");
+            }
+
+            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format '{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}'");
+            var ip = ipAddress.Trim().Split('\n').FirstOrDefault()?.Trim();
+            
+            if (string.IsNullOrWhiteSpace(ip))
+            {
+                throw new InvalidOperationException($"Could not determine Kafka container IP from: {ipAddress}");
+            }
+
+            // Return IP with PLAINTEXT_INTERNAL port (9093)
+            return $"{ip}:9093";
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Kafka container IP: {ex.Message}", ex);
+        }
     }
 
     /// <summary>

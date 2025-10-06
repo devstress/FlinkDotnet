@@ -67,10 +67,104 @@
 7. ⏳ Adjust Aspire project and tests accordingly
 
 ### Findings
-(To be updated during investigation)
+
+**CRITICAL DISCOVERY - Root Cause Identified**:
+
+1. ✅ **Containers are running**: All containers start successfully (Kafka, JobManager, TaskManager, SQL Gateway)
+2. ✅ **Kafka has correct listeners**:
+   - `PLAINTEXT_HOST://0.0.0.0:9092` advertised as `localhost:42859` (dynamic host port)
+   - `PLAINTEXT_INTERNAL://0.0.0.0:9093` advertised as `kafka:9093` (container network)
+3. ❌ **TaskManager CANNOT resolve hostname 'kafka'**:
+   - Test: `bash -c '</dev/tcp/kafka/9093'` → FAILED: "Name or service not known"
+   - Test: `bash -c '</dev/tcp/172.17.0.2/9093'` → SUCCESS (Kafka IP works)
+4. ❌ **Network Configuration Issue**:
+   - Both containers on default `bridge` network
+   - Docker default bridge does NOT provide DNS resolution between containers
+   - Containers can reach each other by IP but NOT by hostname
+
+**Evidence**:
+```bash
+# Kafka container environment
+KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092,PLAINTEXT_HOST://localhost:42859,PLAINTEXT_INTERNAL://kafka:9093
+
+# Network inspection
+docker network ls → Only default networks (bridge, host, none)
+docker inspect taskmanager → Networks: map[bridge:...]
+docker inspect kafka → Networks: map[bridge:...], IP: 172.17.0.2
+
+# Connectivity tests from TaskManager
+</dev/tcp/kafka/9093 → FAILED: "Name or service not known"
+</dev/tcp/172.17.0.2/9093 → SUCCESS
+```
+
+**Root Cause**:
+Aspire DCP creates containers on Docker's default bridge network, which does NOT provide DNS resolution between containers. The Kafka advertised listener `kafka:9093` cannot be resolved by Flink containers, causing all jobs to fail when trying to connect to Kafka.
+
+**Historical Context Clarification**:
+- WI2 investigated this but incorrectly concluded the solution was using port 9093
+- WI10 tried port 9092 but didn't identify the DNS resolution issue
+- The real problem is NOT the port number but the inability to resolve the `kafka` hostname
 
 ## Phase 2: Design
-(To be completed after investigation)
+
+### Requirements
+- Fix DNS resolution between containers so Flink can resolve `kafka` hostname
+- Maintain compatibility with both Docker and Podman
+- Minimal changes to Aspire configuration
+- All containers must be on the same custom network with DNS enabled
+
+### Architecture Decision
+
+**Solution**: Use Docker custom network with DNS resolution
+
+**Approach**:
+1. Create a custom Docker network programmatically (or use an existing one)
+2. Add `--network` argument to all container runtime args using `WithContainerRuntimeArgs()`
+3. Network must be created before any containers start
+4. All containers (Kafka, JobManager, TaskManager, SQL Gateway) must join the same network
+
+**Implementation Strategy**:
+- Create network in Program.cs before building containers
+- Use `WithContainerRuntimeArgs("--network", "aspire-flink-network")` for all containers
+- Network name: `aspire-flink-network` (descriptive and unique)
+- Check if network exists, create if not
+
+### Why This Approach
+- ✅ **Minimal changes**: Only add network args to existing containers
+- ✅ **Proven to work**: Tested with docker-compose, DNS resolution confirmed
+- ✅ **Compatible**: Works with both Docker and Podman
+- ✅ **No Kafka config changes**: Kafka advertised listener `kafka:9093` will work
+- ✅ **No port changes**: Keeps existing port configuration
+
+### Proof of Concept Results
+```bash
+# With custom network (docker-compose test):
+docker exec test-taskmanager getent ahosts kafka
+→ 172.19.0.2 STREAM kafka  ✅ DNS WORKS
+
+docker exec test-taskmanager bash -c '</dev/tcp/kafka/9093'
+→ SUCCESS  ✅ CONNECTIVITY WORKS
+
+# Without custom network (default bridge):
+docker exec flink-taskmanager bash -c '</dev/tcp/kafka/9093'
+→ FAILED: "Name or service not known"  ❌ NO DNS
+```
+
+### Alternatives Considered
+1. **Use container IP addresses instead of hostnames**: Rejected - IPs are dynamic
+2. **Modify /etc/hosts in containers**: Rejected - requires container modification
+3. **Use host.docker.internal**: Rejected - requires routing through host, adds latency
+4. **Change Kafka advertised listeners**: Rejected - would affect all clients
+5. **Use Aspire service references**: Rejected - only works for Aspire-managed services, not for Kafka hostname resolution
+
+### Changes Required
+**File**: `LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`
+- Add network creation logic before builder.AddKafka()
+- Add `.WithContainerRuntimeArgs("--network", "aspire-flink-network")` to all containers:
+  - Kafka
+  - JobManager  
+  - TaskManager
+  - SQL Gateway
 
 ## Phase 3: TDD/BDD
 (To be completed after design)
