@@ -227,30 +227,38 @@ public class GlobalTestInfrastructure
 
     private static async Task<string?> DiscoverKafkaExternalPortAsync()
     {
+        TestContext.WriteLine("🔍 Starting Kafka port discovery...");
+        
         // Retry a few times in case Docker is still starting containers
-        for (int attempt = 1; attempt <= 3; attempt++)
+        for (int attempt = 1; attempt <= 5; attempt++)  // Increased from 3 to 5 attempts
         {
             try
             {
                 var port = await TryDiscoverPortOnAttemptAsync(attempt);
                 if (port != null)
-                    return port;
-
-                if (attempt < 3)
                 {
-                    await Task.Delay(2000); // Wait 2 seconds before retry
+                    TestContext.WriteLine($"✅ Successfully discovered Kafka port: {port}");
+                    return port;
+                }
+
+                if (attempt < 5)
+                {
+                    TestContext.WriteLine($"⚠️ Attempt {attempt}/5 failed, retrying in 3 seconds...");
+                    await Task.Delay(3000); // Increased delay from 2 to 3 seconds
                 }
             }
             catch (Exception ex)
             {
-                TestContext.WriteLine($"⚠️ [Attempt {attempt}/3] Error discovering Kafka external port: {ex.Message}");
-                if (attempt < 3)
+                TestContext.WriteLine($"⚠️ [Attempt {attempt}/5] Error discovering Kafka external port: {ex.Message}");
+                if (attempt < 5)
                 {
-                    await Task.Delay(2000);
+                    TestContext.WriteLine($"   Retrying in 3 seconds...");
+                    await Task.Delay(3000);
                 }
             }
         }
         
+        TestContext.WriteLine("❌ Failed to discover Kafka port after 5 attempts");
         return null;
     }
 
