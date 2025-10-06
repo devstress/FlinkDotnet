@@ -61,27 +61,23 @@ public class GlobalTestInfrastructure
                 .WaitAsync(DefaultTimeout);
             TestContext.WriteLine("✅ Kafka resource reported healthy");
 
-            // Get Kafka connection string from Aspire
-            var aspireKafkaConnectionString = await app.GetConnectionStringAsync("kafka");
-            TestContext.WriteLine($"🔗 Aspire Kafka connection string: {aspireKafkaConnectionString}");
-            
-            // Discover the actual port mapping for Kafka's external listener (9093)
-            // Aspire maps port 9093 to a dynamic host port, we need to find that mapping
-            TestContext.WriteLine("🔍 Discovering Kafka external port mapping...");
+            // CRITICAL FIX: Always use Docker port discovery, never Aspire's connection string
+            // Aspire's GetConnectionStringAsync() returns stale proxy ports when containers persist across runs
+            // Docker port discovery gets the actual mapped port from the running container
+            TestContext.WriteLine("🔍 Discovering Kafka external port mapping via Docker...");
             var actualKafkaPort = await DiscoverKafkaExternalPortAsync();
-            if (actualKafkaPort != null)
+            if (actualKafkaPort == null)
             {
-                KafkaConnectionString = $"localhost:{actualKafkaPort}";
-                TestContext.WriteLine($"✅ Using discovered Kafka connection string: {KafkaConnectionString}");
-                TestContext.WriteLine($"   📡 External listener: localhost:9093 (container) -> localhost:{actualKafkaPort} (host)");
-                TestContext.WriteLine($"   📡 Internal listener: kafka:9092 (for Flink containers)");
+                throw new InvalidOperationException(
+                    "Failed to discover Kafka external port via Docker. " +
+                    "Ensure Kafka container is running and port 9093 is mapped. " +
+                    "Check with: docker ps --filter \"name=kafka\" and docker port <container-name> 9093");
             }
-            else
-            {
-                // Fallback to Aspire's connection string if port discovery fails
-                KafkaConnectionString = aspireKafkaConnectionString;
-                TestContext.WriteLine($"⚠️ Could not discover Kafka external port, using Aspire connection string: {KafkaConnectionString}");
-            }
+
+            KafkaConnectionString = $"localhost:{actualKafkaPort}";
+            TestContext.WriteLine($"✅ Using discovered Kafka connection string: {KafkaConnectionString}");
+            TestContext.WriteLine($"   📡 External listener: localhost:9093 (container) -> localhost:{actualKafkaPort} (host)");
+            TestContext.WriteLine($"   📡 Internal listener: kafka:9092 (for Flink containers)");
 
             // Enhanced Kafka readiness check
             await LocalTestingTestBase.WaitForKafkaReadyAsync(KafkaConnectionString!, KafkaReadyTimeout, default);
