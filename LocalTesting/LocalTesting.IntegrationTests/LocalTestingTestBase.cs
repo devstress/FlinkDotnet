@@ -1416,12 +1416,33 @@ public abstract class LocalTestingTestBase
 
             if (!string.IsNullOrWhiteSpace(containerInfo))
             {
-                TestContext.WriteLine("🐳 Container Status and Ports:");
-                TestContext.WriteLine(containerInfo);
+                // Check if we only got the header (no actual containers)
+                var lines = containerInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                if (lines.Length <= 1)
+                {
+                    // Only header, no containers
+                    TestContext.WriteLine("⚠️ No containers found - this is unexpected in lightweight mode");
+                    TestContext.WriteLine("🔍 Container info output:");
+                    TestContext.WriteLine(containerInfo);
+                    
+                    // Try listing ALL containers including stopped ones for diagnostics
+                    var allContainersInfo = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                    if (!string.IsNullOrWhiteSpace(allContainersInfo))
+                    {
+                        TestContext.WriteLine("🔍 All containers (including stopped):");
+                        TestContext.WriteLine(allContainersInfo);
+                    }
+                }
+                else
+                {
+                    TestContext.WriteLine("🐳 Container Status and Ports:");
+                    TestContext.WriteLine(containerInfo);
+                }
             }
             else
             {
-                TestContext.WriteLine("🐳 No containers found or container runtime not available");
+                TestContext.WriteLine("🐳 No container output - container runtime not available or command failed");
             }
         }
         catch (Exception ex)
