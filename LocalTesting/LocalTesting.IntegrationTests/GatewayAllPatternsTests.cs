@@ -8,9 +8,10 @@ namespace LocalTesting.IntegrationTests;
 /// <summary>
 /// Gateway-based tests for all 7 FlinkDotNet job patterns using FlinkDotNetJobs helpers.
 /// These tests validate end-to-end job submission through the Gateway.
-/// Tests can run in parallel with 8 TaskManager slots available.
+/// Tests run in parallel with 8 TaskManager slots available.
 /// </summary>
 [TestFixture]
+[Parallelizable(ParallelScope.All)]
 [Category("gateway-patterns")]
 public class GatewayAllPatternsTests : LocalTestingTestBase
 {
@@ -146,10 +147,10 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
         try
         {
-            // Wait for complete infrastructure including Gateway
-            TestContext.WriteLine("⏳ Waiting for complete infrastructure (Kafka + Flink + Gateway)...");
-            await WaitForFullInfrastructureAsync(includeGateway: true, ct);
-            TestContext.WriteLine("✅ All infrastructure components ready");
+            // Quick health check - global setup already validated everything
+            TestContext.WriteLine("⏳ Quick infrastructure health check...");
+            await WaitForFullInfrastructureAsync(includeGateway: true, lightweightMode: true, ct);
+            TestContext.WriteLine("✅ Infrastructure ready");
 
             // Create topics
             TestContext.WriteLine($"📝 Creating topics: {inputTopic} -> {outputTopic}");
@@ -188,38 +189,9 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             // Debug: Check job status immediately to verify it's actually running
             await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "Immediately after RUNNING check");
 
-            // Debug: Check Flink containers and logs after job starts
-            await LogFlinkContainerStatusAsync("After job starts running");
-
-            // Debug: Test Kafka connectivity from Flink containers
-            await TestKafkaConnectivityFromFlinkAsync();
-            
-            // Debug: Verify topics exist and have messages
-            await VerifyTopicStatusAsync(inputTopic, "input");
-            await VerifyTopicStatusAsync(outputTopic, "output");
-
-            // Add delay to ensure job is fully initialized
-            await Task.Delay(3000, ct);
-
-            // Debug: Check job status after delay
-            await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "After 3 second delay");
-
-            // Produce test messages
+            // Produce test messages immediately - job is already running
             TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
             await ProduceMessagesAsync(inputTopic, inputMessages, ct, usesJson);
-
-            // Debug: Check Flink logs after producing messages
-            await LogFlinkJobLogsAsync(submitResult.FlinkJobId!, "After producing messages");
-            
-            // Debug: Check if messages are in input topic
-            await VerifyMessagesInTopicAsync(inputTopic, "input", inputMessages.Length);
-            
-            // Debug: Wait a bit more for processing
-            TestContext.WriteLine($"⏳ Waiting 5 seconds for message processing...");
-            await Task.Delay(5000, ct);
-            
-            // Debug: Check Flink job status before consuming
-            await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "Before consuming output");
 
             // Consume and verify
             var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(75) : MessageTimeout;
@@ -453,104 +425,6 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         return false;
     }
 
-    /// <summary>
-    /// Verify that a Kafka topic exists and is accessible
-    /// </summary>
-    private Task VerifyTopicStatusAsync(string topicName, string topicType)
-    {
-        try
-        {
-            TestContext.WriteLine($"🔍 [Topic Verify] Checking {topicType} topic: {topicName}");
-            
-            using var admin = new AdminClientBuilder(new AdminClientConfig
-            {
-                BootstrapServers = KafkaConnectionString,
-                BrokerAddressFamily = BrokerAddressFamily.V4,
-                SecurityProtocol = SecurityProtocol.Plaintext
-            })
-            .SetLogHandler((_, _) => { })
-            .SetErrorHandler((_, _) => { })
-            .Build();
-
-            var metadata = admin.GetMetadata(topicName, TimeSpan.FromSeconds(5));
-            var topicMetadata = metadata.Topics.FirstOrDefault(t => t.Topic == topicName);
-            
-            if (topicMetadata != null)
-            {
-                TestContext.WriteLine($"✅ Topic '{topicName}' exists with {topicMetadata.Partitions.Count} partition(s)");
-                foreach (var partition in topicMetadata.Partitions)
-                {
-                    TestContext.WriteLine($"   Partition {partition.PartitionId}: Leader={partition.Leader}, Replicas={partition.Replicas.Length}");
-                }
-            }
-            else
-            {
-                TestContext.WriteLine($"⚠️ Topic '{topicName}' not found in metadata");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"❌ Failed to verify topic '{topicName}': {ex.Message}");
-        }
-        
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Verify messages exist in a Kafka topic
-    /// </summary>
-    private Task VerifyMessagesInTopicAsync(string topicName, string topicType, int expectedCount)
-    {
-        try
-        {
-            TestContext.WriteLine($"🔍 [Message Verify] Checking for messages in {topicType} topic: {topicName}");
-            
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = KafkaConnectionString,
-                GroupId = $"diagnostic-consumer-{Guid.NewGuid()}",
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false,
-                BrokerAddressFamily = BrokerAddressFamily.V4,
-                SecurityProtocol = SecurityProtocol.Plaintext
-            };
-
-            using var consumer = new ConsumerBuilder<Ignore, string>(config)
-                .SetLogHandler((_, _) => { })
-                .SetErrorHandler((_, _) => { })
-                .Build();
-
-            consumer.Subscribe(topicName);
-            
-            var messageCount = 0;
-            var deadline = DateTime.UtcNow.AddSeconds(5);
-            
-            while (DateTime.UtcNow < deadline && messageCount < expectedCount + 5) // Read a bit more to be sure
-            {
-                var result = consumer.Consume(TimeSpan.FromMilliseconds(500));
-                if (result != null)
-                {
-                    messageCount++;
-                    TestContext.WriteLine($"   📩 Message {messageCount}: {result.Message.Value}");
-                }
-            }
-            
-            if (messageCount > 0)
-            {
-                TestContext.WriteLine($"✅ Found {messageCount} message(s) in '{topicName}' (expected: {expectedCount})");
-            }
-            else
-            {
-                TestContext.WriteLine($"⚠️ No messages found in '{topicName}' (expected: {expectedCount})");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"❌ Failed to verify messages in topic '{topicName}': {ex.Message}");
-        }
-        
-        return Task.CompletedTask;
-    }
 
     #endregion
 }

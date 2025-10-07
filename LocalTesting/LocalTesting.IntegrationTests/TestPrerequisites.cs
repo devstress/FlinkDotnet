@@ -114,7 +114,7 @@ internal static class TestPrerequisites
                 return false;
             }
 
-            if (!process.WaitForExit(5000))
+            if (!process.WaitForExit(1000))
             {
                 try
                 {

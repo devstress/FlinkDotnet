@@ -8,9 +8,10 @@ namespace LocalTesting.IntegrationTests;
 /// <summary>
 /// Native Apache Flink test to validate Aspire infrastructure independently of the Gateway.
 /// Runs a basic native Flink job to prove the infrastructure works correctly.
-/// Tests can run in parallel with 8 TaskManager slots available.
+/// Tests run in parallel with 8 TaskManager slots available.
 /// </summary>
 [TestFixture]
+[Parallelizable(ParallelScope.All)]
 [Category("native-flink-patterns")]
 public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 {
@@ -63,9 +64,9 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
         try
         {
-            // Wait for infrastructure (Kafka + Flink, no Gateway needed)
-            TestContext.WriteLine("⏳ Waiting for infrastructure (Kafka + Flink)...");
-            await WaitForFullInfrastructureAsync(includeGateway: false, ct);
+            // Quick health check - global setup already validated everything
+            TestContext.WriteLine("⏳ Quick infrastructure health check...");
+            await WaitForFullInfrastructureAsync(includeGateway: false, lightweightMode: true, ct);
             TestContext.WriteLine("✅ Infrastructure ready");
 
             // Create topics
@@ -83,10 +84,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             await WaitForJobRunningAsync(httpClient, jobId, JobRunTimeout, ct);
             TestContext.WriteLine("✅ Job is RUNNING");
 
-            // Add small delay to ensure job is fully initialized
-            await Task.Delay(2000, ct);
-
-            // Produce test messages
+            // Produce test messages immediately - job is already running
             TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
             await ProduceMessagesAsync(inputTopic, inputMessages, KafkaConnectionString!, ct);
 

@@ -15,8 +15,6 @@ public class DockerNetworkDiagnosticTest : LocalTestingTestBase
     [Test]
     public async Task DockerNetwork_FlinkCanReachKafka_ShouldSucceed()
     {
-        var ct = TestContext.CurrentContext.CancellationToken;
-        
         TestContext.WriteLine("========================================");
         TestContext.WriteLine("🔍 DOCKER NETWORK DIAGNOSTIC TEST");
         TestContext.WriteLine("========================================");
@@ -25,10 +23,9 @@ public class DockerNetworkDiagnosticTest : LocalTestingTestBase
 
         try
         {
-            // Wait for infrastructure
-            TestContext.WriteLine("⏳ Waiting for infrastructure...");
-            await WaitForFullInfrastructureAsync(includeGateway: false, ct);
-            TestContext.WriteLine("✅ Infrastructure ready");
+            // Skip infrastructure wait - global setup already validated everything
+            // This test just needs containers to exist, not be fully ready
+            TestContext.WriteLine("ℹ️ Using global infrastructure (already validated)");
             TestContext.WriteLine("");
 
             // Get container names

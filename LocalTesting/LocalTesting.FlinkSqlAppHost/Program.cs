@@ -7,9 +7,9 @@ if (!ConfigureContainerRuntime())
     return;
 }
 
-// Ensure custom Docker network exists for DNS resolution between containers
-// This is CRITICAL for Flink containers to resolve 'kafka' hostname
-EnsureDockerNetworkExists("aspire-flink-network");
+// Custom network creation removed - Aspire doesn't automatically use custom networks with Podman
+// Containers will use default network and rely on port mapping for connectivity
+// EnsureDockerNetworkExists("aspire-flink-network");  // Disabled - not effective with Aspire + Podman
 
 LogConfiguredPorts();
 SetupEnvironment();
@@ -427,10 +427,13 @@ static void EnsureDockerNetworkExists(string networkName)
 {
     try
     {
+        // Detect which container runtime to use (docker or podman)
+        var containerRuntime = GetContainerRuntimeCommand();
+        
         // Check if network already exists
         var checkPsi = new ProcessStartInfo
         {
-            FileName = "docker",
+            FileName = containerRuntime,
             Arguments = $"network inspect {networkName}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -446,7 +449,7 @@ static void EnsureDockerNetworkExists(string networkName)
             
             if (checkProcess.ExitCode == 0)
             {
-                Console.WriteLine($"✅ Docker network '{networkName}' already exists");
+                Console.WriteLine($"✅ {containerRuntime} network '{networkName}' already exists");
                 return;
             }
         }
@@ -454,7 +457,7 @@ static void EnsureDockerNetworkExists(string networkName)
         // Network doesn't exist, create it
         var createPsi = new ProcessStartInfo
         {
-            FileName = "docker",
+            FileName = containerRuntime,
             Arguments = $"network create {networkName}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -471,16 +474,40 @@ static void EnsureDockerNetworkExists(string networkName)
             
             if (createProcess.ExitCode == 0)
             {
-                Console.WriteLine($"✅ Created Docker network '{networkName}' for DNS resolution");
+                Console.WriteLine($"✅ Created {containerRuntime} network '{networkName}' for DNS resolution");
             }
             else
             {
-                Console.WriteLine($"⚠️ Failed to create network '{networkName}': {error}");
+                Console.WriteLine($"⚠️ Failed to create network '{networkName}' with {containerRuntime}: {error}");
             }
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"⚠️ Error managing Docker network: {ex.Message}");
+        Console.WriteLine($"⚠️ Error managing container network: {ex.Message}");
     }
+}
+
+static string GetContainerRuntimeCommand()
+{
+    // Check if Podman is available and preferred
+    if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
+    {
+        return "podman";
+    }
+    
+    // Check if Docker is available
+    if (IsDockerAvailable())
+    {
+        return "docker";
+    }
+    
+    // Check if Podman is available as fallback
+    if (IsPodmanAvailable())
+    {
+        return "podman";
+    }
+    
+    // Default to docker (will fail gracefully if not available)
+    return "docker";
 }

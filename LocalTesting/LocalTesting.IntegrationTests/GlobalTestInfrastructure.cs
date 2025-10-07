@@ -57,24 +57,40 @@ public class GlobalTestInfrastructure
             AppHost = app;
             Console.WriteLine("✅ Aspire ApplicationHost started");
 
-            // Wait for containers to be created and port mappings to be established
-            // Aspire creates containers asynchronously, need significant wait time for Docker
-            Console.WriteLine("⏳ Waiting for Docker containers to be created and ports to be mapped...");
-            Console.WriteLine($"⏳ Waiting 5 seconds first...");
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            // Smart polling: Wait for containers to be created and port mappings to be established
+            // Aspire creates containers asynchronously - use smart polling instead of fixed delays
+            Console.WriteLine("⏳ Waiting for Docker/Podman containers to be created and ports to be mapped...");
+            Console.WriteLine("🔍 Using smart polling (check every 2s, max 30s)...");
             
-            // Check if containers exist after 5 seconds
-            Console.WriteLine("🐳 Checking for containers after 5 seconds...");
-            var containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
-            Console.WriteLine($"Containers:\n{containers}");
+            bool containersDetected = false;
+            for (int attempt = 1; attempt <= 15; attempt++) // 15 attempts × 2s = 30s max
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                
+                var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
+                if (!string.IsNullOrWhiteSpace(containers))
+                {
+                    Console.WriteLine($"✅ Kafka container detected after {attempt * 2}s");
+                    containersDetected = true;
+                    
+                    // Show all containers for diagnostics
+                    var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                    Console.WriteLine($"🐳 All containers:\n{allContainers}");
+                    break;
+                }
+                
+                if (attempt % 5 == 0)
+                {
+                    Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 2}s elapsed)");
+                }
+            }
             
-            Console.WriteLine($"⏳ Waiting additional 25 seconds for total 30s wait...");
-            await Task.Delay(TimeSpan.FromSeconds(25)); // Total 30 seconds
-            
-            // Check again
-            Console.WriteLine("🐳 Checking for containers after 30 seconds...");
-            containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
-            Console.WriteLine($"Containers:\n{containers}");
+            if (!containersDetected)
+            {
+                Console.WriteLine("⚠️ Containers not detected within 30s, proceeding anyway...");
+                var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                Console.WriteLine($"🐳 Current containers:\n{allContainers}");
+            }
             
             // Wait for Kafka
             Console.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
@@ -477,6 +493,7 @@ public class GlobalTestInfrastructure
 
     /// <summary>
     /// Get Kafka container IP address for use in Flink job configurations
+    /// Works with both Docker (bridge network) and Podman (podman network)
     /// </summary>
     private static async Task<string> GetKafkaContainerIpAsync()
     {
@@ -490,15 +507,33 @@ public class GlobalTestInfrastructure
                 throw new InvalidOperationException("Kafka container not found");
             }
 
-            // Get Kafka IP from bridge network (Aspire uses default bridge network)
+            // Try Docker bridge network first
             var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
             var ip = ipAddress.Trim();
             
-            if (string.IsNullOrWhiteSpace(ip))
+            // If bridge network doesn't have IP, try podman network (for Podman runtime)
+            if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
-                throw new InvalidOperationException($"Could not determine Kafka container IP from bridge network. Raw output: '{ipAddress}'");
+                Console.WriteLine($"🔍 Bridge network IP not found, trying podman network...");
+                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.podman.IPAddress}}}}\"");
+                ip = ipAddress.Trim();
+            }
+            
+            if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
+            {
+                // Fallback: Get the first available network IP
+                Console.WriteLine($"🔍 Specific network not found, getting first available IP...");
+                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}\"");
+                ip = ipAddress.Trim();
+            }
+            
+            if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
+            {
+                throw new InvalidOperationException($"Could not determine Kafka container IP from any network. Container: {kafkaContainer}");
             }
 
+            Console.WriteLine($"✅ Kafka container IP discovered: {ip}");
+            
             // Return IP with PLAINTEXT_INTERNAL port (9093)
             return $"{ip}:9093";
         }

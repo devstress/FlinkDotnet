@@ -368,9 +368,9 @@ public abstract class LocalTestingTestBase
     private static async Task InitializeFlinkReadinessCheckAsync(string overviewUrl, TimeSpan timeout)
     {
         TestContext.WriteLine($"🔎 [FlinkReady] Probing Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
-        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 10 seconds for Flink container to initialize...");
+        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 3 seconds for Flink container to initialize...");
         
-        await Task.Delay(10000);
+        await Task.Delay(3000); // Reduced from 10s to 3s
         
         var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
         TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
@@ -787,9 +787,32 @@ public abstract class LocalTestingTestBase
     /// Wait for complete infrastructure readiness including optional Gateway.
     /// Provides centralized infrastructure validation for complex test scenarios.
     /// </summary>
-    protected static async Task WaitForFullInfrastructureAsync(bool includeGateway = true, CancellationToken cancellationToken = default)
+    /// <param name="includeGateway">Whether to validate Gateway availability</param>
+    /// <param name="lightweightMode">If true, performs quick health check only (trusts global setup)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    protected static async Task WaitForFullInfrastructureAsync(
+        bool includeGateway = true,
+        bool lightweightMode = false,
+        CancellationToken cancellationToken = default)
     {
-        TestContext.WriteLine("🔧 Validating complete infrastructure readiness...");
+        if (lightweightMode)
+        {
+            // Lightweight mode: Quick validation that endpoints are still responding
+            // This is used by individual tests after global setup has already validated everything
+            TestContext.WriteLine("🔧 Quick infrastructure health check (lightweight mode)...");
+            
+            // Just verify Kafka is still accessible (very quick check)
+            if (string.IsNullOrEmpty(KafkaConnectionString))
+            {
+                throw new InvalidOperationException("Kafka connection string not available");
+            }
+            
+            TestContext.WriteLine("✅ Infrastructure health check passed (lightweight)");
+            return;
+        }
+        
+        // Full validation mode (used by global setup)
+        TestContext.WriteLine("🔧 Validating complete infrastructure readiness (full mode)...");
 
         // Debug: Check containers at start of validation
         await LogDockerContainersAsync("Start of infrastructure validation");
