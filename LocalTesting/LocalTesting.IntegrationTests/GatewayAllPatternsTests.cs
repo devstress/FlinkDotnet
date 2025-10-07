@@ -8,9 +8,10 @@ namespace LocalTesting.IntegrationTests;
 /// <summary>
 /// Gateway-based tests for all 7 FlinkDotNet job patterns using FlinkDotNetJobs helpers.
 /// These tests validate end-to-end job submission through the Gateway.
-/// Tests can run in parallel with 8 TaskManager slots available.
+/// Tests run in parallel with 8 TaskManager slots available.
 /// </summary>
 [TestFixture]
+[Parallelizable(ParallelScope.All)]
 [Category("gateway-patterns")]
 public class GatewayAllPatternsTests : LocalTestingTestBase
 {
@@ -146,10 +147,10 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
         try
         {
-            // Wait for complete infrastructure including Gateway
-            TestContext.WriteLine("⏳ Waiting for complete infrastructure (Kafka + Flink + Gateway)...");
-            await WaitForFullInfrastructureAsync(includeGateway: true, ct);
-            TestContext.WriteLine("✅ All infrastructure components ready");
+            // Quick health check - global setup already validated everything
+            TestContext.WriteLine("⏳ Quick infrastructure health check...");
+            await WaitForFullInfrastructureAsync(includeGateway: true, lightweightMode: true, ct);
+            TestContext.WriteLine("✅ Infrastructure ready");
 
             // Create topics
             TestContext.WriteLine($"📝 Creating topics: {inputTopic} -> {outputTopic}");
@@ -188,38 +189,9 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             // Debug: Check job status immediately to verify it's actually running
             await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "Immediately after RUNNING check");
 
-            // Debug: Check Flink containers and logs after job starts
-            await LogFlinkContainerStatusAsync("After job starts running");
-
-            // Debug: Test Kafka connectivity from Flink containers
-            await TestKafkaConnectivityFromFlinkAsync();
-            
-            // Debug: Verify topics exist and have messages
-            await VerifyTopicStatusAsync(inputTopic, "input");
-            await VerifyTopicStatusAsync(outputTopic, "output");
-
-            // Add delay to ensure job is fully initialized
-            await Task.Delay(3000, ct);
-
-            // Debug: Check job status after delay
-            await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "After 3 second delay");
-
-            // Produce test messages
+            // Produce test messages immediately - job is already running
             TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
             await ProduceMessagesAsync(inputTopic, inputMessages, ct, usesJson);
-
-            // Debug: Check Flink logs after producing messages
-            await LogFlinkJobLogsAsync(submitResult.FlinkJobId!, "After producing messages");
-            
-            // Debug: Check if messages are in input topic
-            await VerifyMessagesInTopicAsync(inputTopic, "input", inputMessages.Length);
-            
-            // Debug: Wait a bit more for processing
-            TestContext.WriteLine($"⏳ Waiting 5 seconds for message processing...");
-            await Task.Delay(5000, ct);
-            
-            // Debug: Check Flink job status before consuming
-            await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "Before consuming output");
 
             // Consume and verify
             var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(75) : MessageTimeout;
@@ -353,62 +325,21 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             try
             {
                 // Try Gateway API first
-                var resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
-                if (resp.IsSuccessStatusCode)
+                if (await TryCheckGatewayJobStatusAsync(http, gatewayBaseUrl, jobId, attempt, ct))
                 {
-                    var content = await resp.Content.ReadAsStringAsync(ct);
-                    if (content.Contains("RUNNING", StringComparison.OrdinalIgnoreCase) ||
-                        content.Contains("FINISHED", StringComparison.OrdinalIgnoreCase))
-                    {
-                        TestContext.WriteLine($"✅ Job {jobId} is running/finished after {attempt} attempt(s)");
-                        return;
-                    }
-
-                    if (content.Contains("FAILED", StringComparison.OrdinalIgnoreCase) ||
-                        content.Contains("CANCELED", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new InvalidOperationException($"Job {jobId} failed or was canceled: {content}");
-                    }
-
-                    TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Gateway - {content}");
+                    return;
                 }
-                else
+
+                // Gateway API failed, try Flink REST API directly with converted job ID
+                if (await TryCheckFlinkJobStatusAsync(http, flinkEndpoint, flinkJobId, attempt, ct))
                 {
-                    // Gateway API failed, try Flink REST API directly with converted job ID
-                    var flinkResp = await http.GetAsync($"{flinkEndpoint}jobs/{flinkJobId}", ct);
-                    if (flinkResp.IsSuccessStatusCode)
-                    {
-                        var flinkContent = await flinkResp.Content.ReadAsStringAsync(ct);
-                        if (flinkContent.Contains("\"state\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase) ||
-                            flinkContent.Contains("\"state\":\"FINISHED\"", StringComparison.OrdinalIgnoreCase))
-                        {
-                            TestContext.WriteLine($"✅ Job {flinkJobId} is running/finished after {attempt} attempt(s) (via Flink REST API)");
-                            return;
-                        }
+                    return;
+                }
 
-                        if (flinkContent.Contains("\"state\":\"FAILED\"", StringComparison.OrdinalIgnoreCase) ||
-                            flinkContent.Contains("\"state\":\"CANCELED\"", StringComparison.OrdinalIgnoreCase))
-                        {
-                            throw new InvalidOperationException($"Job {flinkJobId} failed or was canceled: {flinkContent}");
-                        }
-
-                        TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Flink API - {flinkContent}");
-                    }
-                    else
-                    {
-                        // Fallback: Check if ANY job is RUNNING (for SQL Gateway jobs that have different IDs)
-                        var allJobsResp = await http.GetAsync($"{flinkEndpoint}jobs", ct);
-                        if (allJobsResp.IsSuccessStatusCode)
-                        {
-                            var allJobsContent = await allJobsResp.Content.ReadAsStringAsync(ct);
-                            if (allJobsContent.Contains("\"status\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase))
-                            {
-                                TestContext.WriteLine($"✅ Found RUNNING job after {attempt} attempt(s) (fallback check)");
-                                return;
-                            }
-                        }
-                        TestContext.WriteLine($"  ⏳ Attempt {attempt}: No RUNNING jobs found");
-                    }
+                // Fallback: Check if ANY job is RUNNING (for SQL Gateway jobs that have different IDs)
+                if (await TryCheckAnyRunningJobAsync(http, flinkEndpoint, attempt, ct))
+                {
+                    return;
                 }
             }
             catch (HttpRequestException ex)
@@ -422,104 +353,78 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         throw new TimeoutException($"Job {jobId} did not reach RUNNING state within {timeout.TotalSeconds:F0}s");
     }
 
-    /// <summary>
-    /// Verify that a Kafka topic exists and is accessible
-    /// </summary>
-    private Task VerifyTopicStatusAsync(string topicName, string topicType)
+    private static async Task<bool> TryCheckGatewayJobStatusAsync(HttpClient http, string gatewayBaseUrl, string jobId, int attempt, CancellationToken ct)
     {
-        try
+        var resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
+        if (!resp.IsSuccessStatusCode)
         {
-            TestContext.WriteLine($"🔍 [Topic Verify] Checking {topicType} topic: {topicName}");
-            
-            using var admin = new AdminClientBuilder(new AdminClientConfig
-            {
-                BootstrapServers = KafkaConnectionString,
-                BrokerAddressFamily = BrokerAddressFamily.V4,
-                SecurityProtocol = SecurityProtocol.Plaintext
-            })
-            .SetLogHandler((_, _) => { })
-            .SetErrorHandler((_, _) => { })
-            .Build();
+            return false;
+        }
 
-            var metadata = admin.GetMetadata(topicName, TimeSpan.FromSeconds(5));
-            var topicMetadata = metadata.Topics.FirstOrDefault(t => t.Topic == topicName);
-            
-            if (topicMetadata != null)
-            {
-                TestContext.WriteLine($"✅ Topic '{topicName}' exists with {topicMetadata.Partitions.Count} partition(s)");
-                foreach (var partition in topicMetadata.Partitions)
-                {
-                    TestContext.WriteLine($"   Partition {partition.PartitionId}: Leader={partition.Leader}, Replicas={partition.Replicas.Length}");
-                }
-            }
-            else
-            {
-                TestContext.WriteLine($"⚠️ Topic '{topicName}' not found in metadata");
-            }
-        }
-        catch (Exception ex)
+        var content = await resp.Content.ReadAsStringAsync(ct);
+        if (content.Contains("RUNNING", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("FINISHED", StringComparison.OrdinalIgnoreCase))
         {
-            TestContext.WriteLine($"❌ Failed to verify topic '{topicName}': {ex.Message}");
+            TestContext.WriteLine($"✅ Job {jobId} is running/finished after {attempt} attempt(s)");
+            return true;
         }
-        
-        return Task.CompletedTask;
+
+        if (content.Contains("FAILED", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("CANCELED", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Job {jobId} failed or was canceled: {content}");
+        }
+
+        TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Gateway - {content}");
+        return false;
     }
 
-    /// <summary>
-    /// Verify messages exist in a Kafka topic
-    /// </summary>
-    private Task VerifyMessagesInTopicAsync(string topicName, string topicType, int expectedCount)
+    private static async Task<bool> TryCheckFlinkJobStatusAsync(HttpClient http, string flinkEndpoint, string flinkJobId, int attempt, CancellationToken ct)
     {
-        try
+        var flinkResp = await http.GetAsync($"{flinkEndpoint}jobs/{flinkJobId}", ct);
+        if (!flinkResp.IsSuccessStatusCode)
         {
-            TestContext.WriteLine($"🔍 [Message Verify] Checking for messages in {topicType} topic: {topicName}");
-            
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = KafkaConnectionString,
-                GroupId = $"diagnostic-consumer-{Guid.NewGuid()}",
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false,
-                BrokerAddressFamily = BrokerAddressFamily.V4,
-                SecurityProtocol = SecurityProtocol.Plaintext
-            };
-
-            using var consumer = new ConsumerBuilder<Ignore, string>(config)
-                .SetLogHandler((_, _) => { })
-                .SetErrorHandler((_, _) => { })
-                .Build();
-
-            consumer.Subscribe(topicName);
-            
-            var messageCount = 0;
-            var deadline = DateTime.UtcNow.AddSeconds(5);
-            
-            while (DateTime.UtcNow < deadline && messageCount < expectedCount + 5) // Read a bit more to be sure
-            {
-                var result = consumer.Consume(TimeSpan.FromMilliseconds(500));
-                if (result != null)
-                {
-                    messageCount++;
-                    TestContext.WriteLine($"   📩 Message {messageCount}: {result.Message.Value}");
-                }
-            }
-            
-            if (messageCount > 0)
-            {
-                TestContext.WriteLine($"✅ Found {messageCount} message(s) in '{topicName}' (expected: {expectedCount})");
-            }
-            else
-            {
-                TestContext.WriteLine($"⚠️ No messages found in '{topicName}' (expected: {expectedCount})");
-            }
+            return false;
         }
-        catch (Exception ex)
+
+        var flinkContent = await flinkResp.Content.ReadAsStringAsync(ct);
+        if (flinkContent.Contains("\"state\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase) ||
+            flinkContent.Contains("\"state\":\"FINISHED\"", StringComparison.OrdinalIgnoreCase))
         {
-            TestContext.WriteLine($"❌ Failed to verify messages in topic '{topicName}': {ex.Message}");
+            TestContext.WriteLine($"✅ Job {flinkJobId} is running/finished after {attempt} attempt(s) (via Flink REST API)");
+            return true;
         }
-        
-        return Task.CompletedTask;
+
+        if (flinkContent.Contains("\"state\":\"FAILED\"", StringComparison.OrdinalIgnoreCase) ||
+            flinkContent.Contains("\"state\":\"CANCELED\"", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Job {flinkJobId} failed or was canceled: {flinkContent}");
+        }
+
+        TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Flink API - {flinkContent}");
+        return false;
     }
+
+    private static async Task<bool> TryCheckAnyRunningJobAsync(HttpClient http, string flinkEndpoint, int attempt, CancellationToken ct)
+    {
+        var allJobsResp = await http.GetAsync($"{flinkEndpoint}jobs", ct);
+        if (!allJobsResp.IsSuccessStatusCode)
+        {
+            TestContext.WriteLine($"  ⏳ Attempt {attempt}: No RUNNING jobs found");
+            return false;
+        }
+
+        var allJobsContent = await allJobsResp.Content.ReadAsStringAsync(ct);
+        if (allJobsContent.Contains("\"status\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase))
+        {
+            TestContext.WriteLine($"✅ Found RUNNING job after {attempt} attempt(s) (fallback check)");
+            return true;
+        }
+
+        TestContext.WriteLine($"  ⏳ Attempt {attempt}: No RUNNING jobs found");
+        return false;
+    }
+
 
     #endregion
 }

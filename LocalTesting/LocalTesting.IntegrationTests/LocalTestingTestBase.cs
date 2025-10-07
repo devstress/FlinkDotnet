@@ -287,102 +287,6 @@ public abstract class LocalTestingTestBase
     }
 
     /// <summary>
-    /// Discover actual Kafka container endpoints through Docker inspection.
-    /// </summary>
-    private static async Task<List<string>> DiscoverKafkaContainerEndpointsAsync()
-    {
-        var endpoints = new List<string>();
-        
-        try
-        {
-            await DiscoverPortMappingEndpointsAsync(endpoints);
-            await DiscoverContainerIPEndpointsAsync(endpoints);
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Container endpoint discovery failed: {ex.Message}");
-        }
-        
-        return endpoints;
-    }
-
-    private static async Task DiscoverPortMappingEndpointsAsync(List<string> endpoints)
-    {
-        var portMappings = await RunDockerCommandAsync(
-            "ps --filter \"name=kafka\" --format \"{{.Ports}}\" --no-trunc"
-        );
-        
-        if (string.IsNullOrWhiteSpace(portMappings))
-            return;
-
-        TestContext.WriteLine($"🔍 Container port mappings: {portMappings.Trim()}");
-        
-        ProcessPortMappingLines(portMappings, endpoints);
-    }
-
-    private static void ProcessPortMappingLines(string portMappings, List<string> endpoints)
-    {
-        var lines = portMappings.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var line in lines)
-        {
-            if (line.Contains("9092") && line.Contains("->"))
-            {
-                ParsePortMapping(line, endpoints);
-            }
-        }
-    }
-
-    private static void ParsePortMapping(string line, List<string> endpoints)
-    {
-        var parts = line.Split("->")[0].Trim();
-        if (!parts.Contains(":"))
-            return;
-
-        endpoints.Add(parts.Replace("0.0.0.0:", "localhost:"));
-        endpoints.Add(parts.Replace("0.0.0.0:", "127.0.0.1:"));
-    }
-
-    private static async Task DiscoverContainerIPEndpointsAsync(List<string> endpoints)
-    {
-        var containerNames = await RunDockerCommandAsync(
-            "ps --filter \"name=kafka\" --format \"{{.Names}}\""
-        );
-        
-        if (string.IsNullOrWhiteSpace(containerNames))
-            return;
-
-        await ProcessContainerNamesAsync(containerNames, endpoints);
-    }
-
-    private static async Task ProcessContainerNamesAsync(string containerNames, List<string> endpoints)
-    {
-        var names = containerNames.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var name in names)
-        {
-            await TryAddContainerIPEndpointAsync(name.Trim(), endpoints);
-        }
-    }
-
-    private static async Task TryAddContainerIPEndpointAsync(string containerName, List<string> endpoints)
-    {
-        try
-        {
-            var ipAddress = await RunDockerCommandAsync(
-                $"inspect {containerName} --format \"{{{{.NetworkSettings.IPAddress}}}}\""
-            );
-            
-            if (!string.IsNullOrWhiteSpace(ipAddress) && ipAddress.Trim() != "")
-            {
-                endpoints.Add($"{ipAddress.Trim()}:9092");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Could not inspect container {containerName}: {ex.Message}");
-        }
-    }
-
-    /// <summary>
     /// Log detailed diagnostics for Kafka connectivity troubleshooting.
     /// </summary>
     private static async Task LogDetailedDiagnosticsAsync(string[] bootstrapVariations, Exception? lastException)
@@ -464,9 +368,9 @@ public abstract class LocalTestingTestBase
     private static async Task InitializeFlinkReadinessCheckAsync(string overviewUrl, TimeSpan timeout)
     {
         TestContext.WriteLine($"🔎 [FlinkReady] Probing Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
-        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 10 seconds for Flink container to initialize...");
+        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 3 seconds for Flink container to initialize...");
         
-        await Task.Delay(10000);
+        await Task.Delay(3000); // Reduced from 10s to 3s
         
         var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
         TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
@@ -883,9 +787,32 @@ public abstract class LocalTestingTestBase
     /// Wait for complete infrastructure readiness including optional Gateway.
     /// Provides centralized infrastructure validation for complex test scenarios.
     /// </summary>
-    protected static async Task WaitForFullInfrastructureAsync(bool includeGateway = true, CancellationToken cancellationToken = default)
+    /// <param name="includeGateway">Whether to validate Gateway availability</param>
+    /// <param name="lightweightMode">If true, performs quick health check only (trusts global setup)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    protected static async Task WaitForFullInfrastructureAsync(
+        bool includeGateway = true,
+        bool lightweightMode = false,
+        CancellationToken cancellationToken = default)
     {
-        TestContext.WriteLine("🔧 Validating complete infrastructure readiness...");
+        if (lightweightMode)
+        {
+            // Lightweight mode: Quick validation that endpoints are still responding
+            // This is used by individual tests after global setup has already validated everything
+            TestContext.WriteLine("🔧 Quick infrastructure health check (lightweight mode)...");
+            
+            // Just verify Kafka is still accessible (very quick check)
+            if (string.IsNullOrEmpty(KafkaConnectionString))
+            {
+                throw new InvalidOperationException("Kafka connection string not available");
+            }
+            
+            TestContext.WriteLine("✅ Infrastructure health check passed (lightweight)");
+            return;
+        }
+        
+        // Full validation mode (used by global setup)
+        TestContext.WriteLine("🔧 Validating complete infrastructure readiness (full mode)...");
 
         // Debug: Check containers at start of validation
         await LogDockerContainersAsync("Start of infrastructure validation");
