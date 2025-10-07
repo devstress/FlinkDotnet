@@ -17,11 +17,6 @@ namespace LocalTesting.IntegrationTests;
 /// </summary>
 public abstract class LocalTestingTestBase
 {
-    // Optimized timeouts for faster test execution (used in WaitForFullInfrastructureAsync)
-    private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(45);
-    private static readonly TimeSpan SqlGatewayReadyTimeout = TimeSpan.FromSeconds(60);
-
     /// <summary>
     /// Access to shared AppHost instance from GlobalTestInfrastructure.
     /// Infrastructure is initialized once for all tests, dramatically reducing startup overhead.
@@ -785,122 +780,28 @@ public abstract class LocalTestingTestBase
 
     /// <summary>
     /// Wait for complete infrastructure readiness including optional Gateway.
-    /// Provides centralized infrastructure validation for complex test scenarios.
+    /// Performs quick health check only (trusts global setup).
     /// </summary>
     /// <param name="includeGateway">Whether to validate Gateway availability</param>
-    /// <param name="lightweightMode">If true, performs quick health check only (trusts global setup)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     protected static async Task WaitForFullInfrastructureAsync(
         bool includeGateway = true,
-        bool lightweightMode = false,
         CancellationToken cancellationToken = default)
     {
-        if (lightweightMode)
-        {
-            // Lightweight mode: Quick validation that endpoints are still responding
-            // This is used by individual tests after global setup has already validated everything
-            TestContext.WriteLine("🔧 Quick infrastructure health check (lightweight mode)...");
-            
-            // Just verify Kafka is still accessible (very quick check)
-            if (string.IsNullOrEmpty(KafkaConnectionString))
-            {
-                throw new InvalidOperationException("Kafka connection string not available");
-            }
-            
-            // Display container status with ports for visibility (no polling - containers should already be running)
-            await DisplayContainerStatusAsync();
-            
-            TestContext.WriteLine("✅ Infrastructure health check passed (lightweight)");
-            return;
-        }
+        // Quick validation that endpoints are still responding
+        // This is used by individual tests after global setup has already validated everything
+        TestContext.WriteLine("🔧 Quick infrastructure health check...");
         
-        // Full validation mode (used by global setup)
-        TestContext.WriteLine("🔧 Validating complete infrastructure readiness (full mode)...");
-
-        // Debug: Check containers at start of validation
-        await LogDockerContainersAsync("Start of infrastructure validation");
-
-        // Kafka is already validated in OneTimeSetUp, but double-check if needed
+        // Just verify Kafka is still accessible (very quick check)
         if (string.IsNullOrEmpty(KafkaConnectionString))
         {
-            throw new InvalidOperationException("Kafka connection string not available - OneTimeSetUp may have failed");
+            throw new InvalidOperationException("Kafka connection string not available");
         }
-
-        if (AppHost == null)
-        {
-            throw new InvalidOperationException("AppHost is not available - OneTimeSetUp may have failed");
-        }
-
-        // Get the dynamically allocated Flink JobManager endpoint from Aspire
-        // Aspire DCP assigns random ports during testing, so we must query the actual endpoint
-        var flinkJobManagerEndpoint = await GetFlinkJobManagerEndpointAsync();
-        TestContext.WriteLine($"🔍 Discovered Flink JobManager endpoint: {flinkJobManagerEndpoint}");
-
-        // Wait for Flink JobManager and TaskManager
-        // For per-test validation, we don't require free slots since previous jobs may still be running
-        // Free slots are only required during initial global infrastructure setup
-        await WaitForFlinkReadyAsync($"{flinkJobManagerEndpoint}v1/overview", FlinkReadyTimeout, cancellationToken, requireFreeSlots: false);
-        TestContext.WriteLine("✅ Flink JobManager and TaskManager are ready");
-
-        // Wait for Gateway if included
-        if (includeGateway)
-        {
-            // CRITICAL: Aspire testing framework does NOT automatically start .NET project resources
-            // We must explicitly wait for the Gateway resource to become healthy
-            TestContext.WriteLine("⏳ Waiting for Gateway resource to start (Aspire project resources require explicit activation)...");
-            
-            try
-            {
-                await AppHost.ResourceNotifications
-                    .WaitForResourceHealthyAsync("flink-job-gateway", cancellationToken)
-                    .WaitAsync(GatewayReadyTimeout, cancellationToken);
-                TestContext.WriteLine("✅ Gateway resource reported healthy by Aspire");
-            }
-            catch (TimeoutException)
-            {
-                // Check if Gateway resource failed to start
-                var resourceHealth = await GetResourceHealthStatusAsync("flink-job-gateway");
-                if (resourceHealth != null && resourceHealth.Contains("Unhealthy", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException(
-                        $"Flink.JobGateway failed to start. Resource status: {resourceHealth}. " +
-                        "This usually indicates a build failure or missing dependencies. " +
-                        "Check that Flink.JobGateway builds successfully with all required JARs.");
-                }
-                throw new TimeoutException(
-                    $"Flink.JobGateway did not become healthy within {GatewayReadyTimeout.TotalSeconds}s. " +
-                    "Check Aspire logs for startup errors.");
-            }
-            
-            // Now verify Gateway HTTP endpoint is responding
-            var gatewayEndpoint = await GetGatewayEndpointAsync();
-            TestContext.WriteLine($"🔍 Discovered Gateway endpoint: {gatewayEndpoint}");
-            await WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", GatewayReadyTimeout, cancellationToken);
-            TestContext.WriteLine("✅ Flink Job Gateway is ready");
-            
-            // CRITICAL: SQL Gateway validation for DirectFlinkSQL pattern
-            // SQL Gateway is optional and only needed for jobs with executionMode="gateway"
-            // Check if SQL Gateway container exists before attempting validation
-            TestContext.WriteLine("⏳ Checking if SQL Gateway is available...");
-            
-            try
-            {
-                // Try to discover SQL Gateway endpoint
-                var sqlGatewayEndpoint = await GetSqlGatewayEndpointAsync();
-                TestContext.WriteLine($"🔍 Discovered SQL Gateway endpoint: {sqlGatewayEndpoint}");
-                
-                await WaitForSqlGatewayReadyAsync(sqlGatewayEndpoint, SqlGatewayReadyTimeout, cancellationToken);
-                TestContext.WriteLine("✅ Flink SQL Gateway is ready");
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("Could not determine SQL Gateway endpoint"))
-            {
-                // SQL Gateway container not found - this is OK for patterns that don't use it
-                TestContext.WriteLine($"ℹ️ SQL Gateway container not found - DirectFlinkSQL pattern will not be available");
-                TestContext.WriteLine($"   Reason: {ex.Message}");
-            }
-        }
-
-        TestContext.WriteLine("✅ Complete infrastructure is ready for testing");
+        
+        // Display container status with ports for visibility (no polling - containers should already be running)
+        await DisplayContainerStatusAsync();
+        
+        TestContext.WriteLine("✅ Infrastructure health check passed");
     }
 
     /// <summary>
@@ -942,96 +843,6 @@ public abstract class LocalTestingTestBase
 
         var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
         return match.Success ? $"http://localhost:{match.Groups[1].Value}/" : null;
-    }
-
-    /// <summary>
-    /// Get the dynamically allocated Gateway HTTP endpoint from Aspire.
-    /// The Gateway is a .NET project (not a container), and Aspire DCP may assign random ports during testing.
-    /// We check Docker first (for containerized scenarios), then check process listening ports, then fallback to configured port.
-    /// </summary>
-    private static async Task<string> GetGatewayEndpointAsync()
-    {
-        try
-        {
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
-            
-            if (!string.IsNullOrWhiteSpace(gatewayContainers))
-            {
-                var endpoint = TryExtractGatewayContainerEndpoint(gatewayContainers);
-                if (endpoint != null)
-                    return endpoint;
-            }
-            
-            return GetDefaultGatewayEndpoint();
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.GatewayHostPort}");
-            return $"http://localhost:{Ports.GatewayHostPort}/";
-        }
-    }
-
-    private static string? TryExtractGatewayContainerEndpoint(string gatewayContainers)
-    {
-        TestContext.WriteLine($"🔍 Gateway container port mappings: {gatewayContainers.Trim()}");
-        
-        var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var line in lines)
-        {
-            var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
-            if (match.Success)
-            {
-                var hostPort = match.Groups[1].Value;
-                var containerPort = match.Groups[2].Value;
-                TestContext.WriteLine($"🔍 Found Gateway container port mapping: host {hostPort} -> container {containerPort}");
-                return $"http://localhost:{hostPort}/";
-            }
-        }
-        return null;
-    }
-
-    private static string GetDefaultGatewayEndpoint()
-    {
-        TestContext.WriteLine($"ℹ️ Gateway running as .NET project (not containerized), using configured port {Ports.GatewayHostPort}");
-        TestContext.WriteLine($"💡 Gateway may take 15-30 seconds to start after Flink is ready");
-        return $"http://localhost:{Ports.GatewayHostPort}/";
-    }
-    /// <summary>
-    /// Get the dynamically allocated SQL Gateway HTTP endpoint from Aspire.
-    /// SQL Gateway is a Flink container component that provides REST API for SQL execution.
-    /// Aspire DCP assigns random ports during testing, so we must query the actual endpoint.
-    /// </summary>
-    private static async Task<string> GetSqlGatewayEndpointAsync()
-    {
-        try
-        {
-            var sqlGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-sql-gateway\" --format \"{{.Ports}}\"");
-            TestContext.WriteLine($"🔍 SQL Gateway container port mappings: {sqlGatewayContainers.Trim()}");
-            
-            return ExtractSqlGatewayEndpointFromPorts(sqlGatewayContainers);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Failed to get SQL Gateway endpoint: {ex.Message}", ex);
-        }
-    }
-
-    private static string ExtractSqlGatewayEndpointFromPorts(string sqlGatewayContainers)
-    {
-        var lines = sqlGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var line in lines)
-        {
-            // Look for port mapping to 8083 (SQL Gateway port)
-            var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8083");
-            if (match.Success)
-            {
-                var port = match.Groups[1].Value;
-                TestContext.WriteLine($"🔍 Found SQL Gateway port mapping: host {port} -> container 8083");
-                return $"http://localhost:{port}";
-            }
-        }
-
-        throw new InvalidOperationException($"Could not determine SQL Gateway endpoint from Docker ports: {sqlGatewayContainers}");
     }
 
 
@@ -1339,67 +1150,6 @@ public abstract class LocalTestingTestBase
         
         diagnostics.AppendLine("\n" + new string('=', 80));
         return diagnostics.ToString();
-    }
-
-    /// <summary>
-    /// Get the health status of a specific Aspire resource.
-    /// </summary>
-    private static async Task<string?> GetResourceHealthStatusAsync(string resourceName)
-    {
-        try
-        {
-            if (AppHost == null)
-                return null;
-
-            var resource = AppHost.Services.GetService<IEnumerable<IResource>>()?
-                .FirstOrDefault(r => r.Name == resourceName);
-
-            if (resource == null)
-                return "Resource not found";
-
-            // Try to get resource health status from Aspire
-            var healthStatus = "Unknown";
-            using var cts = new CancellationTokenSource(5000);
-            await foreach (var notification in AppHost.ResourceNotifications.WatchAsync(cts.Token))
-            {
-                if (notification.Resource.Name == resourceName && notification.Snapshot.State?.Text != null)
-                {
-                    healthStatus = notification.Snapshot.State.Text;
-                    break;
-                }
-            }
-
-            return healthStatus;
-        }
-        catch (Exception ex)
-        {
-            return $"Error getting resource status: {ex.Message}";
-        }
-    }
-
-    /// <summary>
-    /// Log current Docker containers status for debugging infrastructure issues.
-    /// </summary>
-    private static async Task LogDockerContainersAsync(string checkpoint)
-    {
-        try
-        {
-            TestContext.WriteLine($"🐳 [Docker Debug] {checkpoint}");
-            var containers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Image}}\\t{{.Status}}\\t{{.Ports}}\"");
-            
-            if (!string.IsNullOrWhiteSpace(containers))
-            {
-                TestContext.WriteLine($"🐳 Running containers:\n{containers}");
-            }
-            else
-            {
-                TestContext.WriteLine("🐳 No containers found");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Failed to get Docker containers: {ex.Message}");
-        }
     }
 
     /// <summary>

@@ -149,7 +149,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         {
             // Quick health check - global setup already validated everything
             TestContext.WriteLine("⏳ Quick infrastructure health check...");
-            await WaitForFullInfrastructureAsync(includeGateway: true, lightweightMode: true, ct);
+            await WaitForFullInfrastructureAsync(includeGateway: true, ct);
             TestContext.WriteLine("✅ Infrastructure ready");
 
             // Create topics

@@ -66,7 +66,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         {
             // Quick health check - global setup already validated everything
             TestContext.WriteLine("⏳ Quick infrastructure health check...");
-            await WaitForFullInfrastructureAsync(includeGateway: false, lightweightMode: true, ct);
+            await WaitForFullInfrastructureAsync(includeGateway: false, ct);
             TestContext.WriteLine("✅ Infrastructure ready");
 
             // Create topics
