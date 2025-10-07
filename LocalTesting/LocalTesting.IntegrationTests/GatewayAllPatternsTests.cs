@@ -16,8 +16,8 @@ namespace LocalTesting.IntegrationTests;
 public class GatewayAllPatternsTests : LocalTestingTestBase
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(2);
-    private static readonly TimeSpan JobRunTimeout = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan JobRunTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     public async Task Gateway_Pattern1_Uppercase_ShouldWork()
@@ -147,12 +147,8 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
         try
         {
-            // Quick health check - global setup already validated everything
-            TestContext.WriteLine("⏳ Quick infrastructure health check...");
-            await WaitForFullInfrastructureAsync(includeGateway: true, ct);
-            TestContext.WriteLine("✅ Infrastructure ready");
-
-            // Create topics
+            // Skip health check - global setup already validated everything
+            // Create topics immediately
             TestContext.WriteLine($"📝 Creating topics: {inputTopic} -> {outputTopic}");
             await CreateTopicAsync(inputTopic, 1);
             await CreateTopicAsync(outputTopic, 1);
@@ -193,8 +189,8 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
             await ProduceMessagesAsync(inputTopic, inputMessages, ct, usesJson);
 
-            // Consume and verify
-            var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(75) : MessageTimeout;
+            // Consume and verify (reduced timeout for faster tests)
+            var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(45) : MessageTimeout;
             var consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputCount, consumeTimeout, ct);
 
             TestContext.WriteLine($"📊 Consumed {consumed.Count} messages (expected: {expectedOutputCount})");
@@ -347,7 +343,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
                 TestContext.WriteLine($"  ⏳ Attempt {attempt}: Request failed - {ex.Message}");
             }
 
-            await Task.Delay(1000, ct);
+            await Task.Delay(500, ct); // Reduced from 1000ms to 500ms
         }
 
         throw new TimeoutException($"Job {jobId} did not reach RUNNING state within {timeout.TotalSeconds:F0}s");

@@ -64,12 +64,8 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
         try
         {
-            // Quick health check - global setup already validated everything
-            TestContext.WriteLine("⏳ Quick infrastructure health check...");
-            await WaitForFullInfrastructureAsync(includeGateway: false, ct);
-            TestContext.WriteLine("✅ Infrastructure ready");
-
-            // Create topics
+            // Skip health check - global setup already validated everything
+            // Create topics immediately
             TestContext.WriteLine($"📝 Creating topics: {inputTopic} -> {outputTopic}");
             await CreateTopicAsync(inputTopic, 1);
             await CreateTopicAsync(outputTopic, 1);
@@ -190,7 +186,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
                 Assert.Fail($"Job entered terminal state: {jobInfo.State}");
             }
 
-            await Task.Delay(1000, ct);
+            await Task.Delay(500, ct); // Reduced from 1000ms to 500ms
         }
 
         Assert.Fail($"Job did not reach RUNNING state within {timeout.TotalSeconds}s");
