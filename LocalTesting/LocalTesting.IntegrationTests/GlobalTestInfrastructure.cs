@@ -186,24 +186,29 @@ public class GlobalTestInfrastructure
         {
             try
             {
-                Console.WriteLine("🔧 Stopping AppHost...");
-                await AppHost.StopAsync();
-                Console.WriteLine("✅ AppHost stopped");
+                Console.WriteLine("🔧 Stopping and disposing AppHost (with timeout)...");
+                
+                // Use a timeout to prevent hanging on cleanup
+                var stopTask = Task.Run(async () =>
+                {
+                    await AppHost.StopAsync();
+                    await AppHost.DisposeAsync();
+                });
+                
+                var completed = await Task.WhenAny(stopTask, Task.Delay(TimeSpan.FromSeconds(5)));
+                
+                if (completed == stopTask)
+                {
+                    Console.WriteLine("✅ AppHost stopped and disposed");
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ AppHost cleanup timed out after 5s - containers will be cleaned up by runtime");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⚠️ Error stopping AppHost: {ex.Message}");
-            }
-
-            try
-            {
-                Console.WriteLine("🔧 Disposing AppHost...");
-                await AppHost.DisposeAsync();
-                Console.WriteLine("✅ AppHost disposed");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ Error disposing AppHost: {ex.Message}");
+                Console.WriteLine($"⚠️ Error during AppHost cleanup: {ex.Message}");
             }
         }
 

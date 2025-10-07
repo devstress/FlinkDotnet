@@ -85,6 +85,9 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <!-- Suppress harmless warnings about overlapping resources -->
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
               <artifactSet>
                 <excludes>
                   <exclude>org.apache.flink:flink-shaded-force-shading</exclude>
@@ -100,10 +103,15 @@
                     <exclude>META-INF/*.SF</exclude>
                     <exclude>META-INF/*.DSA</exclude>
                     <exclude>META-INF/*.RSA</exclude>
+                    <!-- Exclude module-info to avoid strong encapsulation warnings -->
+                    <exclude>module-info.class</exclude>
+                    <!-- Only keep one MANIFEST.MF (from this project) -->
+                    <exclude>META-INF/MANIFEST.MF</exclude>
                   </excludes>
                 </filter>
               </filters>
               <transformers>
+                <!-- Create new MANIFEST.MF with main class -->
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.flinkdotnet.NativeKafkaJob</mainClass>
                 </transformer>
