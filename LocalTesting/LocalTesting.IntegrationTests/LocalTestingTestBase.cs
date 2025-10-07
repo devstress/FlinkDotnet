@@ -807,6 +807,9 @@ public abstract class LocalTestingTestBase
                 throw new InvalidOperationException("Kafka connection string not available");
             }
             
+            // Poll and display container status with ports for visibility
+            await PollAndDisplayContainerStatusAsync(maxAttempts: 30, intervalSeconds: 1, cancellationToken);
+            
             TestContext.WriteLine("✅ Infrastructure health check passed (lightweight)");
             return;
         }
@@ -1396,6 +1399,60 @@ public abstract class LocalTestingTestBase
         catch (Exception ex)
         {
             TestContext.WriteLine($"⚠️ Failed to get Docker containers: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Poll container status until all are running or timeout, then display container information.
+    /// Used in lightweight mode to provide visibility into container ports without full validation overhead.
+    /// </summary>
+    private static async Task PollAndDisplayContainerStatusAsync(
+        int maxAttempts = 30,
+        int intervalSeconds = 1,
+        CancellationToken cancellationToken = default)
+    {
+        TestContext.WriteLine($"🔍 Polling container status (every {intervalSeconds}s, max {maxAttempts}s)...");
+
+        bool allRunning = false;
+        string? containerInfo = null;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Check container status
+            var statusOutput = await RunDockerCommandAsync("ps --format \"{{.Names}}\\t{{.Status}}\"");
+
+            if (!string.IsNullOrWhiteSpace(statusOutput))
+            {
+                var lines = statusOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                // Check if all containers show "Up" status
+                allRunning = lines.Length > 0 && lines.All(line => line.Contains("Up", StringComparison.OrdinalIgnoreCase));
+
+                if (allRunning)
+                {
+                    TestContext.WriteLine($"✅ All containers running after {attempt}s");
+                    break;
+                }
+            }
+
+            if (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), cancellationToken);
+            }
+        }
+
+        // Display container information (ports included)
+        containerInfo = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+
+        if (!string.IsNullOrWhiteSpace(containerInfo))
+        {
+            TestContext.WriteLine($"🐳 Container Status and Ports{(allRunning ? " (All Running)" : " (Timeout - showing current state)")}:");
+            TestContext.WriteLine(containerInfo);
+        }
+        else
+        {
+            TestContext.WriteLine("🐳 No containers found or container runtime not available");
         }
     }
 
