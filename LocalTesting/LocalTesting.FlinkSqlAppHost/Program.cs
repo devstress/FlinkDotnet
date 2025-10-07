@@ -7,9 +7,8 @@ if (!ConfigureContainerRuntime())
     return;
 }
 
-// Custom network creation removed - Aspire doesn't automatically use custom networks with Podman
-// Containers will use default network and rely on port mapping for connectivity
-// EnsureDockerNetworkExists("aspire-flink-network");  // Disabled - not effective with Aspire + Podman
+// Ensure Flink/Kafka network exists for container communication
+EnsureFlinkKafkaNetwork();
 
 LogConfiguredPorts();
 SetupEnvironment();
@@ -38,8 +37,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Configure Kafka with FIXED external port 9093
 // Both tests and Flink jobs connect to localhost:9093 (mapped to container port 9092)
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka")
-    .WithLifetime(ContainerLifetime.Persistent);
+var kafka = builder.AddKafka("kafka");
+    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 #pragma warning restore S1481
 
 // Flink JobManager with named HTTP endpoint for service references
@@ -77,8 +76,8 @@ var jobManager = jobManagerBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("jobmanager")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithArgs("jobmanager");
+    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
@@ -102,8 +101,8 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithReference(kafka)
-    .WithArgs("taskmanager")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithArgs("taskmanager");
+    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 
 // Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission
 // SQL Gateway provides /v1/statements endpoint for executing SQL without JAR submission
@@ -138,8 +137,8 @@ var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
+    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
@@ -423,11 +422,12 @@ static void SetPodmanDockerHost()
     }
 }
 
-static void EnsureDockerNetworkExists(string networkName)
+static void EnsureFlinkKafkaNetwork()
 {
+    const string networkName = "aspire-flink-network";
+    
     try
     {
-        // Detect which container runtime to use (docker or podman)
         var containerRuntime = GetContainerRuntimeCommand();
         
         // Check if network already exists
@@ -468,29 +468,29 @@ static void EnsureDockerNetworkExists(string networkName)
         using var createProcess = Process.Start(createPsi);
         if (createProcess != null)
         {
-            createProcess.StandardOutput.ReadToEnd(); // Consume output
+            createProcess.StandardOutput.ReadToEnd();
             var error = createProcess.StandardError.ReadToEnd();
             createProcess.WaitForExit(5000);
             
             if (createProcess.ExitCode == 0)
             {
-                Console.WriteLine($"✅ Created {containerRuntime} network '{networkName}' for DNS resolution");
+                Console.WriteLine($"✅ Created {containerRuntime} network '{networkName}' for Flink-Kafka communication");
             }
             else
             {
-                Console.WriteLine($"⚠️ Failed to create network '{networkName}' with {containerRuntime}: {error}");
+                Console.WriteLine($"⚠️ Failed to create network '{networkName}': {error}");
             }
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"⚠️ Error managing container network: {ex.Message}");
+        Console.WriteLine($"⚠️ Error managing Flink-Kafka network: {ex.Message}");
     }
 }
 
 static string GetContainerRuntimeCommand()
 {
-    // Check if Podman is available and preferred
+    // Check if Podman is configured as the runtime
     if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
     {
         return "podman";
@@ -508,6 +508,6 @@ static string GetContainerRuntimeCommand()
         return "podman";
     }
     
-    // Default to docker (will fail gracefully if not available)
+    // Default to docker
     return "docker";
 }
