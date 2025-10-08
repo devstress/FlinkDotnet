@@ -63,14 +63,6 @@ jobs:
           docker pull flink:2.1.0-java17 || true
           echo "✅ Docker is ready"
 
-      - name: Clean Docker environment
-        run: |
-          echo "=== Cleaning Docker environment ==="
-          docker system prune -af || true
-          docker volume prune -f || true
-          docker network prune -f || true
-          echo "✅ Docker environment cleaned"
-
       - name: Configure system for Kafka performance
         run: |
           echo "=== Configuring system for optimal Kafka performance ==="
