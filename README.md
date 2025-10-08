@@ -36,7 +36,7 @@ Refer to the docs/ directory for the implementation roadmap and guides.
 
 FlinkDotNet is a **production-ready, fully tested framework** with comprehensive integration tests validating the complete pipeline. Don't take our word for it - see the tests running in CI:
 
-🔗 **[View Live Integration Test Results](../../actions/workflows/localtesting-integration-tests.yml)** - 9 tests passing on every commit
+🔗 **[View Live Integration Test Results](../../../actions/workflows/localtesting-integration-tests.yml)** - 9 tests passing on every commit
 
 ### What's Validated
 
