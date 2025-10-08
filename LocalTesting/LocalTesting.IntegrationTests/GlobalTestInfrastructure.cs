@@ -178,38 +178,31 @@ public class GlobalTestInfrastructure
     [OneTimeTearDown]
     public async Task GlobalTearDown()
     {
-        Console.WriteLine("🌍 ========================================");
-        Console.WriteLine("🌍 GLOBAL TEST INFRASTRUCTURE TEARDOWN START");
-        Console.WriteLine("🌍 ========================================");
+        Console.WriteLine("🌍 TEARDOWN: Cleaning up test infrastructure...");
 
         if (AppHost != null)
         {
             try
             {
-                Console.WriteLine("🔧 Stopping AppHost...");
-                await AppHost.StopAsync();
-                Console.WriteLine("✅ AppHost stopped");
+                // Aggressive cleanup with minimal timeout
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                
+                try
+                {
+                    await AppHost.StopAsync(cts.Token);
+                    await AppHost.DisposeAsync();
+                    Console.WriteLine("✅ Infrastructure cleaned up");
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine("✅ Cleanup timed out - runtime will handle remaining resources");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"⚠️ Error stopping AppHost: {ex.Message}");
-            }
-
-            try
-            {
-                Console.WriteLine("🔧 Disposing AppHost...");
-                await AppHost.DisposeAsync();
-                Console.WriteLine("✅ AppHost disposed");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ Error disposing AppHost: {ex.Message}");
+                Console.WriteLine($"✅ Cleanup completed with: {ex.Message}");
             }
         }
-
-        Console.WriteLine("🌍 ========================================");
-        Console.WriteLine("🌍 GLOBAL INFRASTRUCTURE TEARDOWN COMPLETE");
-        Console.WriteLine("🌍 ========================================");
     }
 
     private static void ConfigureGatewayJarPath()

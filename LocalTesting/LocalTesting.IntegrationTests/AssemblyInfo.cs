@@ -4,4 +4,4 @@ using NUnit.Framework;
 // Tests will reuse the shared GlobalTestInfrastructure (Kafka + Flink + Gateway)
 // Each test uses unique topics via TestContext.CurrentContext.Test.ID to avoid conflicts
 [assembly: Parallelizable(ParallelScope.All)]
-[assembly: LevelOfParallelism(7)] // Run up to 7 tests in parallel
+[assembly: LevelOfParallelism(10)] // Run up to 10 tests in parallel (more than test count for max parallelism)

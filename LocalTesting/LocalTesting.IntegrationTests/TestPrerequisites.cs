@@ -5,15 +5,17 @@ namespace LocalTesting.IntegrationTests;
 
 internal static class TestPrerequisites
 {
-    private static bool? _dockerAvailable;
+    private static bool? _containerRuntimeAvailable;
 
     internal static void EnsureDockerAvailable()
     {
-        _dockerAvailable ??= ProbeDocker();
+        _containerRuntimeAvailable ??= ProbeContainerRuntime();
 
-        if (_dockerAvailable != true)
+        if (_containerRuntimeAvailable != true)
         {
-            Assert.That(_dockerAvailable, Is.True, "Docker CLI is not available or not responsive. Ensure Docker Desktop is running before executing LocalTesting integration tests.");
+            Assert.That(_containerRuntimeAvailable, Is.True,
+                "Container runtime (Docker or Podman) is not available or not responsive. " +
+                "Ensure Docker Desktop or Podman is running before executing LocalTesting integration tests.");
         }
     }
 
@@ -92,21 +94,53 @@ internal static class TestPrerequisites
         return false;
     }
 
-    private static bool ProbeDocker()
+    private static bool ProbeContainerRuntime()
+    {
+        // Try Docker first
+        if (ProbeRuntime("docker"))
+        {
+            TestContext.WriteLine("✓ Docker runtime is available");
+            return true;
+        }
+
+        // Try Podman as fallback
+        if (ProbeRuntime("podman"))
+        {
+            TestContext.WriteLine("✓ Podman runtime is available");
+            return true;
+        }
+
+        TestContext.WriteLine("✗ No container runtime (Docker or Podman) is available");
+        return false;
+    }
+
+    private static bool ProbeRuntime(string runtimeCommand)
     {
         try
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "docker",
+                FileName = runtimeCommand,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            psi.ArgumentList.Add("info");
+            
+            // Use 'version' command which works consistently for both Docker and Podman
+            psi.ArgumentList.Add("version");
             psi.ArgumentList.Add("--format");
-            psi.ArgumentList.Add("{{json .ServerVersion}}");
+            
+            // Docker uses {{.Server.Version}}, Podman uses {{.Version}}
+            // Use the simpler format that works for both
+            if (runtimeCommand.Equals("docker", StringComparison.OrdinalIgnoreCase))
+            {
+                psi.ArgumentList.Add("{{.Server.Version}}");
+            }
+            else // podman
+            {
+                psi.ArgumentList.Add("{{.Version}}");
+            }
 
             using var process = Process.Start(psi);
             if (process == null)
@@ -130,14 +164,14 @@ internal static class TestPrerequisites
             if (process.ExitCode != 0)
             {
                 var error = process.StandardError.ReadToEnd();
-                TestContext.WriteLine($"Docker probe failed with exit code {process.ExitCode}: {error}");
+                TestContext.WriteLine($"{runtimeCommand} probe failed with exit code {process.ExitCode}: {error}");
                 return false;
             }
 
             var output = process.StandardOutput.ReadToEnd().Trim();
-            if (string.IsNullOrEmpty(output) || string.Equals(output, "null", System.StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(output) || string.Equals(output, "null", StringComparison.OrdinalIgnoreCase))
             {
-                TestContext.WriteLine("Docker probe returned an unexpected payload.");
+                TestContext.WriteLine($"{runtimeCommand} probe returned an unexpected payload.");
                 return false;
             }
 
@@ -145,7 +179,7 @@ internal static class TestPrerequisites
         }
         catch (Exception ex)
         {
-            TestContext.WriteLine($"Docker probe threw {ex.GetType().Name}: {ex.Message}");
+            TestContext.WriteLine($"{runtimeCommand} probe threw {ex.GetType().Name}: {ex.Message}");
             return false;
         }
     }
