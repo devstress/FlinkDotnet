@@ -73,16 +73,6 @@ per second globally     restaurant/chef/         with global context         mul
                         kitchen station          memory & patterns           across all locations       everywhere
 ```
 
-**Real Example: Managing Billions of Restaurant Orders/Second Globally**
-
-Think about the scale: Every restaurant chain worldwide (McDonald's, Starbucks, local restaurants) processing orders simultaneously 24/7 across all time zones.
-
-| Component | What It Does | Global Restaurant Example at Billion-Order Scale |
-|-----------|--------------|--------------------------------------------------|
-| **Kafka** | Distributed routing that never loses orders | "Handle 2 billion orders/second: Route Italian order to Rome chef, Sushi to Tokyo chef, Burger to NYC chef across 1 million+ restaurants - even if entire data centers go offline, orders are safely stored and rerouted" |
-| **Flink** | Real-time processing with global context | "Process billions of orders instantly: This customer ordered from 3 continents in 10 minutes → FLAG for fraud. Calculate real-time kitchen load balancing across 1 million restaurants. Detect pattern: 'Burger orders spike in USA on Fridays' across all locations simultaneously" |
-| **Temporal** | Coordinates complex multi-location workflows | "Manage millions of simultaneous complex workflows: Catering order needs 100 restaurants across 20 countries to coordinate delivery at exact same time. If any of 1000 steps fails in any location, automatically retry, reroute, and keep all locations synchronized" |
-
 **FlinkDotNet brings this billion-scale architecture to .NET developers** - you write C# code, and it handles routing billions of messages per second across distributed systems, processing them in real-time with global context awareness, and coordinating millions of complex workflows simultaneously across multiple services and locations worldwide.
 
 ## Runtime Architecture (IR Runner + Gateway + Temporal)
