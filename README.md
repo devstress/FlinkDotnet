@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a comprehensive dotnet framework that enables developers to build and submit streaming jobs to Apache Flink 2.1.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1.0. It focuses on three core technologies - **Apache Flink** (real-time stream processing), **Kafka** (message streaming broker), and **Temporal** (workflow orchestration) - making it easier for .NET developers to handle large-scale data processing challenges focused on multi-tiered, distributed real time stream processing.
+**FlinkDotNet** is a comprehensive dotnet framework that enables developers to build and submit streaming jobs to Apache Flink 2.1.0 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1.0. It focuses on three core technologies - **Apache Flink** (real-time stream processing), **Kafka** (message streaming broker), and **Temporal** (workflow orchestration) - making it easier for .NET developers to handle large-scale data processing challenges focused on multi-tiered, distributed real-time stream processing.
 
 ## What is Kafka and Flink? Why Do We Need Them?
 
