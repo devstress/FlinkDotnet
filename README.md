@@ -119,7 +119,7 @@ Refer to the docs/ directory for the implementation roadmap and guides.
 
 FlinkDotNet is a **production-ready, fully tested framework** with comprehensive integration tests validating the complete pipeline. Don't take our word for it - see the tests running in CI:
 
-🔗 **[View Live Integration Test Results](../../actions/workflows/localtesting-integration-tests.yml)** - 9 tests passing on every commit
+🔗 **[View Live Integration Test Results](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml)** - 9 tests passing on every commit
 
 ### What's Validated
 
@@ -136,7 +136,7 @@ FlinkDotNet is a **production-ready, fully tested framework** with comprehensive
 - Complex multi-step pipelines
 - Aspire orchestration and container management
 
-**✅ 9 Integration Tests Cover:**
+**✅ 10 Integration Tests Cover:**
 
 | Test | What It Proves | Status |
 |------|---------------|--------|
@@ -148,8 +148,7 @@ FlinkDotNet is a **production-ready, fully tested framework** with comprehensive
 | **Gateway Pattern 6**: [`SqlTransform`](LocalTesting/LocalTesting.IntegrationTests/GatewayAllPatternsTests.cs#L90) | SQL transformation pipeline works | ✅ Passing |
 | **Gateway Pattern 7**: [`Composite`](LocalTesting/LocalTesting.IntegrationTests/GatewayAllPatternsTests.cs#L104) | Complex multi-step operations work | ✅ Passing |
 | **Native Flink**: [`Uppercase`](LocalTesting/LocalTesting.IntegrationTests/NativeFlinkAllPatternsTests.cs#L29) | Aspire infrastructure works correctly | ✅ Passing |
-| **Infrastructure**: [`AspireValidation`](LocalTesting/LocalTesting.IntegrationTests/AspireValidationTest.cs#L16) | All services are accessible | ✅ Passing |
-
+| **Temporal Integration**: [`BizTalkStyleOrchestration`](LocalTesting/LocalTesting.IntegrationTests/TemporalIntegrationTests.cs#L16) | Temporal + Kafka + FlinkDotNet integration works | ✅ Passing |
 ### Run Tests Yourself
 
 Verify FlinkDotNet works on your machine:
@@ -160,7 +159,7 @@ cd LocalTesting
 dotnet test LocalTesting.IntegrationTests --configuration Release
 ```
 
-**Expected output**: All 9 tests pass, proving the complete pipeline works end-to-end.
+**Expected output**: All 10 tests pass, proving the complete pipeline works end-to-end.
 
 
 ## 🔬 DSL to IR to Flink Job: Complete Example
@@ -1755,7 +1754,7 @@ builder.Build().Run();
 
 ## 🔨 Build and Test Enforcement
 
-### NET 9.0 Requirements
+### .NET 9.0 Requirements
 
 FlinkDotNet implements comprehensive build and test validation to ensure code quality and prevent build failures.
 
@@ -1765,10 +1764,10 @@ FlinkDotNet implements comprehensive build and test validation to ensure code qu
 dotnet --version  # Must show 9.0.x
 
 # Run complete validation
-./scripts/validate-build-and-tests.ps1
+./validate-build-and-tests.ps1
 
 # Quick build check (skip tests)
-./scripts/validate-build-and-tests.ps1 -SkipTests
+./validate-build-and-tests.ps1 -SkipTests
 ```
 
 ### Enforcement Rules
@@ -1780,7 +1779,7 @@ dotnet --version  # Must show 9.0.x
 ### Pre-Commit Validation
 ```bash
 # Always run before committing
-./scripts/pre-commit-validation.ps1
+./pre-commit-validation.ps1
 ```
 
 ### Documentation
@@ -1900,7 +1899,7 @@ FlinkDotNet includes comprehensive observability testing that validates message-
 
 ### **LocalTesting Integration Tests Workflow**
 
-🔗 **[View LocalTesting Test Runs](../../actions/workflows/localtesting-integration-tests.yml)** - Monitor real-time FlinkDotNet integration test execution
+🔗 **[View LocalTesting Test Runs](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml)** - Monitor real-time FlinkDotNet integration test execution
 
 The LocalTesting integration tests validate FlinkDotNet functionality with Kafka and Flink:
 - **Kafka Integration**: Producer and consumer functionality with Kafka broker
@@ -1910,7 +1909,7 @@ The LocalTesting integration tests validate FlinkDotNet functionality with Kafka
 
 ### **BackPressure Integration Tests Workflow**
 
-🔗 **[View BackPressure Test Runs](../../actions/workflows/backpressure-integration-tests.yml)** - Monitor real-time backpressure and performance test execution
+🔗 **[View BackPressure Test Runs](https://github.com/devstress/FlinkDotnet/actions/workflows/backpressure-integration-tests.yml)** - Monitor real-time backpressure and performance test execution
 
 The BackPressure integration tests validate high-throughput message processing capabilities:
 - **Kafka Performance**: High-volume message production and consumption testing
@@ -1972,7 +1971,7 @@ This section provides detailed documentation for developers who want to understa
 
 ### Test Suite Details
 
-The **LocalTesting** project provides **9 comprehensive integration tests** organized into three categories:
+The **LocalTesting** project provides **10 comprehensive integration tests** organized into four categories:
 
 ##### 🔧 Gateway Pattern Tests (7 tests)
 Tests that validate FlinkDotNet job submission through the [`Flink.JobGateway`](FlinkDotNet/Flink.JobGateway/) service:
@@ -2020,6 +2019,20 @@ Direct Apache Flink validation independent of Gateway:
    - **Flow**: Native Flink JAR → Direct JobManager submission → Kafka processing
    - **Expected**: 2 input messages become 2 uppercased outputs via native Flink
 
+##### 🔄 Temporal Workflow Integration Test (1 test)
+Validates enterprise workflow orchestration with Temporal:
+
+9. **[`Temporal_BizTalkStyleOrchestration_ComplexOrderProcessing`](LocalTesting/LocalTesting.IntegrationTests/TemporalIntegrationTests.cs:16)** - Validates Temporal workflow orchestration with Kafka and FlinkDotNet
+   - **Proves**: Complete integration of Temporal workflows with Kafka messaging and FlinkDotNet availability
+   - **Flow**: Temporal workflow → Order processing → Kafka integration → FlinkDotNet health checks
+   - **Architecture**: Demonstrates BizTalk-style orchestration using Temporal for multi-step business workflows
+   - **Integration Points**:
+     - **Temporal Workflows**: Durable workflow execution with exactly-once guarantees
+     - **Kafka Integration**: Async message processing through Kafka topics
+     - **FlinkDotNet Availability**: Health checks for JobManager and Gateway services
+     - **Infrastructure Validation**: Kafka connectivity and Temporal server status
+   - **Expected**: Order workflow executes successfully with all infrastructure components healthy
+
 ##### 🔍 Infrastructure Validation Test (1 test)
 Validates core infrastructure components:
 
@@ -2049,6 +2062,9 @@ dotnet test LocalTesting.IntegrationTests --filter "Category=gateway-patterns"
 
 # Native Flink tests only (1 test)
 dotnet test LocalTesting.IntegrationTests --filter "Category=native-flink-patterns"
+
+# Temporal integration tests only (1 test)
+dotnet test LocalTesting.IntegrationTests --filter "Category=temporal-integration"
 ```
 
 **View test results in real-time:**
@@ -2060,10 +2076,10 @@ dotnet test LocalTesting.IntegrationTests --logger "console;verbosity=detailed"
 
 The integration tests run automatically on every push via GitHub Actions. View test execution and results:
 
-🔗 **[LocalTesting Integration Tests Workflow](../../actions/workflows/localtesting-integration-tests.yml)** - Monitor live test execution and historical results
+🔗 **[LocalTesting Integration Tests Workflow](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml)** - Monitor live test execution and historical results
 
 **Workflow validates:**
-- ✅ All 9 integration tests pass in CI environment
+- ✅ All 10 integration tests pass in CI environment
 - ✅ Docker container orchestration via Aspire
 - ✅ Kafka → Flink → FlinkDotNet complete pipeline
 - ✅ Cross-platform compatibility (Ubuntu)
@@ -2111,9 +2127,10 @@ The integration tests run automatically on every push via GitHub Actions. View t
 │  └──────────────────────────────────────────────────────┘   │
 │                           ↓                                  │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │  9 Parallel Integration Tests                        │   │
+│  │  10 Parallel Integration Tests                       │   │
 │  │  • Gateway Patterns (7 tests)                        │   │
 │  │  • Native Flink Pattern (1 test)                     │   │
+│  │  • Temporal Workflow Integration (1 test)            │   │
 │  │  • Infrastructure Validation (1 test)                │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘

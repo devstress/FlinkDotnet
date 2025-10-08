@@ -38,7 +38,6 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Both tests and Flink jobs connect to localhost:9093 (mapped to container port 9092)
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
 var kafka = builder.AddKafka("kafka");
-    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 #pragma warning restore S1481
 
 // Flink JobManager with named HTTP endpoint for service references
@@ -77,7 +76,6 @@ var jobManager = jobManagerBuilder
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("jobmanager");
-    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
@@ -102,7 +100,6 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithReference(kafka)
     .WithArgs("taskmanager");
-    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 
 // Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission
 // SQL Gateway provides /v1/statements endpoint for executing SQL without JAR submission
@@ -138,7 +135,6 @@ var sqlGateway = sqlGatewayBuilder
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
-    // .WithLifetime(ContainerLifetime.Persistent);  // Commented out for testing without persistence
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
@@ -166,6 +162,40 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager for standard job submission
     .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway for direct SQL execution
+
+// Temporal PostgreSQL - Database for Temporal server
+// CRITICAL: Must configure PostgreSQL WITHOUT password for Temporal auto-setup compatibility
+// Temporal's auto-setup expects simple authentication (trust or no password)
+var temporalDbServer = builder.AddPostgres("temporal-postgres")
+    .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")  // Allow trust authentication (no password)
+    .WithEnvironment("POSTGRES_DB", "temporal");  // Create temporal database on startup
+    // PostgreSQL will use default "postgres" user with trust authentication
+
+// Note: Temporal auto-setup will also create "temporal_visibility" database
+
+// Temporal Server - Official temporalio/auto-setup image from temporal.io
+// Auto-setup handles schema creation and namespace setup automatically
+// CRITICAL: Temporal provides durable workflow execution with:
+// - Workflow state persistence and recovery
+// - Activity retry and compensation patterns
+// - Signal and query support for interactive workflows
+// - Timer services for delayed/scheduled operations
+// IMPORTANT: Using .WithReference() to get Aspire-injected connection details
+// Aspire will inject: ConnectionStrings__temporal-postgres = "Host=...;Port=...;Username=postgres;Password=..."
+// Temporal will parse this connection string and extract credentials automatically
+builder.AddContainer("temporal-server", "temporalio/auto-setup", "1.22.4")
+    .WithHttpEndpoint(port: Ports.TemporalGrpcPort, targetPort: 7233, name: "temporal-grpc")
+    .WithHttpEndpoint(port: Ports.TemporalUIPort, targetPort: 8233, name: "temporal-ui")
+    .WithEnvironment("DB", "postgres12")
+    .WithEnvironment("POSTGRES_SEEDS", temporalDbServer.Resource.Name)  // Use Aspire resource name for hostname
+    .WithEnvironment("DB_PORT", "5432")  // Explicit port
+    .WithEnvironment("POSTGRES_USER", "postgres")  // Default PostgreSQL user
+    .WithEnvironment("POSTGRES_PWD", "")  // No password with trust authentication
+    .WithEnvironment("DBNAME", "temporal")  // Specify database name for Temporal
+    .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")  // Specify visibility database name
+    .WithEnvironment("SKIP_DB_CREATE", "false")  // Let Temporal create databases
+    .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false")  // Create default namespace
+    .WaitFor(temporalDbServer);  // Wait for PostgreSQL server to be ready
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();

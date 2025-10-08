@@ -21,11 +21,13 @@ public class GlobalTestInfrastructure
     private static readonly TimeSpan KafkaReadyTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(90);
     private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan TemporalReadyTimeout = TimeSpan.FromSeconds(120); // Temporal needs more time for SQLite initialization
 
     public static DistributedApplication? AppHost { get; private set; }
     public static string? KafkaConnectionString { get; private set; }
     public static string? KafkaConnectionStringFromConfig { get; private set; }
     public static string? KafkaContainerIpForFlink { get; private set; } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
+    public static string? TemporalEndpoint { get; private set; } // Discovered Temporal endpoint with dynamic port
 
     [OneTimeSetUp]
     public async Task GlobalSetUp()
@@ -149,6 +151,26 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
             await LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", GatewayReadyTimeout, default);
             Console.WriteLine("✅ Gateway is ready");
+
+            // Wait for Temporal server resource to be healthy first
+            Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
+            await app.ResourceNotifications
+                .WaitForResourceHealthyAsync("temporal-server")
+                .WaitAsync(TemporalReadyTimeout);
+            Console.WriteLine("✅ Temporal server resource reported healthy");
+            
+            // Then wait for Temporal to be fully initialized
+            Console.WriteLine("⏳ Waiting for Temporal server to be fully ready...");
+            Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
+            
+            // Give Temporal time to complete schema setup
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            
+            // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
+            TemporalEndpoint = await GetTemporalEndpointAsync();
+            Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
+            await LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, TemporalReadyTimeout, default);
+            Console.WriteLine("✅ Temporal server is fully ready");
 
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();
@@ -441,6 +463,34 @@ public class GlobalTestInfrastructure
         {
             Console.WriteLine($"⚠️ Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.GatewayHostPort}");
             return $"http://localhost:{Ports.GatewayHostPort}/";
+        }
+    }
+
+    private static async Task<string> GetTemporalEndpointAsync()
+    {
+        try
+        {
+            var temporalContainers = await RunDockerCommandAsync("ps --filter \"name=temporal-server\" --format \"{{.Ports}}\"");
+            var lines = temporalContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                // Look for port mapping to 7233 (Temporal gRPC port)
+                if (line.Contains("->7233/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->7233");
+                    if (match.Success)
+                    {
+                        return $"localhost:{match.Groups[1].Value}";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Temporal endpoint from Docker ports: {temporalContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Temporal endpoint: {ex.Message}", ex);
         }
     }
 
