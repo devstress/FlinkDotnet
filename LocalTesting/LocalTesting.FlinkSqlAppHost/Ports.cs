@@ -20,4 +20,16 @@ public static class Ports
     public const int KafkaExternalPort = 9093;  // Host machine port
     public const string KafkaContainerBootstrap = "kafka:9092";  // For Flink containers
     public const string KafkaHostBootstrap = "localhost:9093";   // For tests/external access
+    
+    // Temporal Server ports
+    // CRITICAL: Temporal dual port configuration:
+    // - Port 7233: gRPC frontend for workflow/activity execution
+    //   * Used by Temporalio SDK clients to connect
+    //   * Primary interface for workflow submission and queries
+    // - Port 8088: HTTP UI for workflow monitoring
+    //   * Web-based dashboard for observability
+    //   * Displays workflow history, status, and execution details
+    public const int TemporalGrpcPort = 7233;   // gRPC frontend port
+    public const int TemporalUIPort = 8088;     // HTTP UI port
+    public const string TemporalHostAddress = "localhost:7233";  // For SDK clients
 }

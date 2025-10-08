@@ -30,6 +30,12 @@ public abstract class LocalTestingTestBase
     /// from both host and containers via Docker port mapping.
     /// </summary>
     protected static string? KafkaConnectionString => GlobalTestInfrastructure.KafkaConnectionString;
+    
+    /// <summary>
+    /// Access to discovered Temporal endpoint from GlobalTestInfrastructure.
+    /// Aspire allocates dynamic ports during testing, so we must use the discovered endpoint.
+    /// </summary>
+    protected static string? TemporalEndpoint => GlobalTestInfrastructure.TemporalEndpoint;
 
     /// <summary>
     /// No infrastructure setup needed - using shared global infrastructure.
@@ -724,6 +730,102 @@ public abstract class LocalTestingTestBase
         TestContext.WriteLine($"❌ [SqlGatewayReady] SQL Gateway failed to start after {attempt} attempts over {elapsed.TotalSeconds:F1}s");
         throw new TimeoutException($"SQL Gateway not ready within {timeout.TotalSeconds:F0}s at {healthUrl}. SQL Gateway may not have started properly - check Flink logs.");
     }
+    /// <summary>
+    /// Enhanced Temporal readiness check with proper retry logic.
+    /// Temporal is a workflow orchestration system that starts after basic infrastructure.
+    /// SQLite initialization can take significant time on first startup.
+    /// </summary>
+    public static async Task WaitForTemporalReadyAsync(string address, TimeSpan timeout, CancellationToken ct)
+    {
+        var sw = Stopwatch.StartNew();
+        var attempt = 0;
+        Exception? lastException = null;
+        
+        LogTemporalReadinessStart(address, timeout);
+        
+        while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
+        {
+            attempt++;
+            
+            var (success, exception) = await TryConnectToTemporalAsync(address, attempt, sw.Elapsed);
+            if (success)
+            {
+                return;
+            }
+            
+            lastException = exception;
+            await LogTemporalConnectionAttemptAsync(attempt, sw.Elapsed, lastException);
+            await Task.Delay(1000, ct);
+        }
+        
+        throw CreateTemporalTimeoutException(address, timeout, attempt, sw.Elapsed, lastException);
+    }
+
+    private static void LogTemporalReadinessStart(string address, TimeSpan timeout)
+    {
+        TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
+        TestContext.WriteLine($"║ 🔎 [TemporalReady] Connecting to Temporal Server");
+        TestContext.WriteLine($"║ 📡 Address: {address}");
+        TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
+        TestContext.WriteLine($"║ ℹ️  PostgreSQL initialization may take 30-60s on first start");
+        TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
+    }
+
+    private static async Task<(bool success, Exception? exception)> TryConnectToTemporalAsync(string address, int attempt, TimeSpan elapsed)
+    {
+        try
+        {
+            var client = await Temporalio.Client.TemporalClient.ConnectAsync(new Temporalio.Client.TemporalClientConnectOptions
+            {
+                TargetHost = address,
+                Namespace = "default",
+            });
+            
+            if (client.Connection != null)
+            {
+                TestContext.WriteLine($"✅ [TemporalReady] Temporal ready at {address} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
+                return (true, null);
+            }
+            
+            return (false, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex);
+        }
+    }
+
+    private static Task LogTemporalConnectionAttemptAsync(int attempt, TimeSpan elapsed, Exception? lastException)
+    {
+        if (attempt % 10 == 0 || (attempt % 30 == 0 && elapsed.TotalSeconds >= 30))
+        {
+            if (lastException != null)
+            {
+                TestContext.WriteLine($"⏳ [TemporalReady] Attempt {attempt} ({elapsed.TotalSeconds:F0}s elapsed): {lastException.GetType().Name}");
+            }
+            
+            if (elapsed.TotalSeconds >= 30 && attempt % 30 == 0)
+            {
+                TestContext.WriteLine($"   💡 Temporal PostgreSQL initialization can be slow - this is normal for first startup");
+            }
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    private static TimeoutException CreateTemporalTimeoutException(string address, TimeSpan timeout, int attempt, TimeSpan elapsed, Exception? lastException)
+    {
+        var errorMessage = $"Temporal not ready within {timeout.TotalSeconds:F0}s at {address}. " +
+                          $"Attempted {attempt} times over {elapsed.TotalSeconds:F1}s.";
+        
+        if (lastException != null)
+        {
+            errorMessage += $" Last error: {lastException.GetType().Name} - {lastException.Message}";
+        }
+        
+        return new TimeoutException(errorMessage);
+    }
+
 
     /// <summary>
     /// Create Kafka topic with proper error handling for existing topics.
