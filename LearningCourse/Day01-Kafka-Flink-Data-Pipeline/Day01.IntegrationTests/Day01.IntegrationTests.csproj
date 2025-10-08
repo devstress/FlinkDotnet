@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <IsAspireIntegrationTest>true</IsAspireIntegrationTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="NUnit" Version="4.3.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\LearningCourse.IntegrationTests\LearningCourse.IntegrationTests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference pre-built FlinkDotNet DLLs to avoid rebuilding during tests -->
+    <Reference Include="FlinkDotNet">
+      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet\bin\Release\net9.0\FlinkDotNet.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Flink.JobBuilder">
+      <HintPath>..\..\..\FlinkDotNet\Flink.JobBuilder\bin\Release\net9.0\Flink.JobBuilder.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="FlinkDotNet.Common">
+      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.Common\bin\Release\net9.0\FlinkDotNet.Common.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="FlinkDotNet.DataStream">
+      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.DataStream\bin\Release\net9.0\FlinkDotNet.DataStream.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="FlinkDotNet.Table">
+      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.Table\bin\Release\net9.0\FlinkDotNet.Table.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="FlinkDotNet.Util">
+      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.Util\bin\Release\net9.0\FlinkDotNet.Util.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

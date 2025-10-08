@@ -1,696 +1,232 @@
-# FlinkDotNet Learning Course - Real-Time Stream Processing Mastery
+# LearningCourse Integration Tests
 
-🎓 **Master Apache Flink 2.1.0 + .NET Integration for Real-Time Stream Processing**
+This directory contains integration tests for the FlinkDotNet Learning Course tutorials.
 
-Welcome to the comprehensive **FlinkDotNet Learning Course** - a 14-day intensive journey that transforms developers into **real-time stream processing experts** using Apache Flink 2.1.0 features and production-grade patterns from Netflix, Uber, LinkedIn, and other industry leaders.
+## ⚠️ IMPORTANT: Running Integration Tests
 
-## 🚀 Quick Start - Begin Your Journey
+**All LearningCourse integration tests MUST be run through `LocalTesting/LocalTesting.sln`** to share the same Aspire infrastructure.
 
-### 🎯 **FASTEST SETUP** (Automated - Recommended for Beginners)
-
-Run the automated setup script for your platform:
+### Quick Start
 
 ```bash
-# Download and run the universal setup script
-git clone https://github.com/devstress/FlinkDotnet.git
-# Linux/macOS: 
-./scripts/setup-environment-linux-macos.sh  
-# Windows: 
-./scripts/setup-environment-windows.ps1
+# Run ALL integration tests (LocalTesting + LearningCourse)
+dotnet test LocalTesting/LocalTesting.sln --configuration Release
+
+# Run ONLY Day01 tests
+dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day01"
+
+# Run ONLY LocalTesting tests  
+dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~LocalTesting"
+
+# Run specific test
+dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~UppercaseTransform"
 ```
 
-**✅ The automated setup installs:**
-- ✅ .NET 9.0 SDK
-- ✅ Docker Desktop 
-- ✅ Aspire workload (auto-installed on Windows/macOS, manually installed on Linux)
-- ✅ All dependencies
+## Why Use LocalTesting.sln?
 
-### 🔧 Manual Setup (Alternative)
+### Architecture Explanation
 
-If you prefer manual installation or the automated setup fails:
+LearningCourse tests are integrated into `LocalTesting.sln` because:
 
-#### ✅ Step 1: Install Prerequisites
+1. **Shared Infrastructure**: Both LocalTesting and LearningCourse tests use the same .NET Aspire application host
+2. **Single Aspire Instance**: Only ONE Aspire instance can manage containers (Flink, Kafka, etc.) at a time
+3. **No Container Conflicts**: Multiple Aspire instances cause containers to get stuck in "Created" state
+
+### What Doesn't Work ❌
+
+**Separate solution approach (broken)**:
 ```bash
-# 1. Install .NET 9.0 SDK from: https://dotnet.microsoft.com/download/dotnet/9.0
-dotnet --version  # Should show 9.0.x
-
-# 2. Install Docker Desktop from: https://docs.docker.com/get-docker/ or Podman https://podman-desktop.io/
-docker --version  # Should show version without errors
+# ❌ This creates a SECOND Aspire instance
+dotnet test LearningCourse/IntegrationTests.sln
 ```
 
-#### ✅ Step 2: Clone Repository
+**Problem**: 
+- Day01 tests try to create their own `GlobalTestInfrastructure`
+- Results in TWO Aspire instances competing for the same containers
+- Flink containers stuck in "Created" status, never reaching "Up"
+- Tests fail with "Global test infrastructure is not initialized"
+
+### What Works ✅
+
+**Unified solution approach (correct)**:
 ```bash
-# Clone
-git clone https://github.com/devstress/FlinkDotnet.git
-
-# Install Aspire workload (Platform-specific requirement)
-# Windows/macOS: included with .NET SDK (.NET 8+)
-# Linux: Manual installation required
-dotnet workload install aspire
+# ✅ This uses ONE shared Aspire instance
+dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~Day01"
 ```
 
-#### ✅ Step 3: Start Infrastructure
+**Benefits**:
+- Single `GlobalTestInfrastructure` instance shared across all tests
+- Clean container lifecycle management
+- All tests work reliably
+- No container conflicts
+
+## Solution Structure
+
+The `LocalTesting/LocalTesting.sln` includes:
+- **LocalTesting.IntegrationTests** - Core LocalTesting integration tests
+- **Day01.IntegrationTests** - Kafka-Flink pipeline learning course tests (added)
+- **LocalTesting.FlinkSqlAppHost** - Shared Aspire application host
+- **FlinkDotNet** - Core FlinkDotNet library  
+- **Flink.JobBuilder** - Job definition and building utilities
+
+## Test Projects
+
+### Day01.IntegrationTests
+Located in `LearningCourse/Day01-Kafka-Flink-Data-Pipeline/Day01.IntegrationTests/`
+
+Tests:
+- `PipelineDemo_IdentityTransform_ShouldPassthrough100Messages` - Tests basic pipeline functionality
+- `PipelineDemo_UppercaseTransform_ShouldConvertToUppercase` - Tests uppercase transformation
+
+**Key Point**: Day01 tests inherit from `LocalTestingTestBase` and rely on the shared `GlobalTestInfrastructure`.
+
+## Prerequisites
+
+Before running tests, ensure:
+
+1. **.NET 9.0 SDK** is installed (`dotnet --version` shows 9.0.x)
+2. **Docker Desktop** is running (required for Aspire containers)
+3. **Maven** is available in PATH (for Java component builds)
+4. **Java JDK 17** is available (automatically managed by the build)
+5. **Sufficient system resources**:
+   - Minimum 4GB RAM available
+   - Minimum 10GB disk space
+
+## Test Environment
+
+The integration tests use .NET Aspire for orchestration, which automatically manages:
+- Apache Flink (JobManager and TaskManager)
+- Apache Kafka broker
+- Temporal workflow server (if needed)
+- PostgreSQL database (if needed)
+
+All infrastructure is ephemeral and cleaned up after tests complete.
+
+## Troubleshooting
+
+### Tests fail with "Docker daemon not running"
+Ensure Docker Desktop is running before executing tests:
 ```bash
-# Start LocalTesting infrastructure (used by all days)
-cd LocalTesting
-dotnet run --project LocalTesting.AppHost
-# Wait 90 seconds for all services to start
+# Windows
+docker ps
+
+# Should show containers, not an error
 ```
 
-### ✅ Verify Environment is Working
-Open these endpoints:
-- **Flink JobManager UI**: http://localhost:8081
-- **Flink Job Gateway**: http://localhost:8080/api/v1/health
+### Tests fail with "Global test infrastructure is not initialized"
+This occurs when trying to run Day01 tests standalone through `LearningCourse/IntegrationTests.sln`.
 
-**LocalTesting stack:** Kafka + Flink (JM/TM) + Flink Job Gateway. For SQL exercises, place connector JARs under `LocalTesting/connectors/flink/lib`.
-
-**Note: Please press Control + C to stop Aspire. It will stop and delete all the related containers in Docker.**  
-**✅ All working? You're ready to start Day 1!**  
-**❌ If your PC cannot handle heavy Aspire setup? Please check [Azure Container Apps Deployment](#alternative-azure-container-apps-deployment) below**
-
-### 📖 How to Follow Each Day
-
-Each day follows the same simple pattern:
-
-#### 📂 1. Navigate to the Day
+**Solution**: Always run through `LocalTesting.sln`:
 ```bash
-cd Day[XX]-[Topic-Name]/Exercise-Solutions
+dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~Day01"
 ```
 
-#### 📚 2. Open the Step-by-Step Guide
-Look for: **`README.md`** in each Exercise-Solutions folder
-
-#### 🏃‍♂️ 3. Follow the Instructions
-Each guide contains:
-- ✅ Prerequisites check
-- 🏢 Company-specific exercises (Netflix, Uber, etc.)
-- 📋 Copy/paste commands
-- ✅ Success indicators
-- ❓ Troubleshooting help
-
-#### 🎯 4. Complete the Checklist
-Mark off each exercise as you complete it
-
-## 📅 Course Overview - What You'll Build
-
-| Day | Topic | Company Patterns | What You'll Build |
-|-----|-------|------------------|-------------------|
-| **Day 1** | [Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/README.md) | Baeldung Tutorial Implementation | Complete Kafka ↔ Flink Pipeline |
-| **Day 2** | [Flink Fundamentals](Day02-Flink21-Fundamentals/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Infrastructure + AI Recommendations |
-| **Day 3** | [AI Stream Processing](Day03-AI-Stream-Processing/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn, Amazon | ML Model Management + Fraud Detection |
-| **Day 4** | [Production Backpressure](Day04-Production-Backpressure/Exercise-Solutions/README.md) | Netflix, Uber, LinkedIn | Global Rate Limiting + Chaos Engineering |
-| **Day 5** | Enterprise Observability | Google, Datadog, Netflix | SRE Monitoring + Alert Management |
-| **Day 6** | Temporal Workflows | Uber, Airbnb, Stripe | Workflow Orchestration + Event Sourcing |
-| **Day 7** | Advanced Windows/Joins | LinkedIn, Twitter, Facebook | Social Graph + Real-time Analytics |
-| **Day 8** | Stress Testing | Netflix, Uber, Amazon | Load Testing + Performance Validation |
-| **Day 9** | Exactly-Once Semantics | Uber, Stripe, PayPal | Financial Accuracy + Transaction Processing |
-| **Day 10** | Performance Optimization | Netflix, LinkedIn, Google | Auto-scaling + Resource Management |
-| **Day 11** | Security & Compliance | Banking, Healthcare, Finance | GDPR + PCI DSS + SOX Compliance |
-| **Day 12** | Disaster Recovery | Netflix, AWS, Azure | Multi-region + Backup/Restore |
-| **Day 13** | Advanced Patterns | Uber, LinkedIn, Airbnb | Complex Event Processing + State Machines |
-| **Day 14** | Testing & Chaos | Netflix, Amazon, Google | Chaos Engineering + Integration Testing |
-| **Day 15** | Capstone Project | All Companies | Complete Production System |
-
-## 📚 Day-by-Day Quick Links
-
-### Week 1: Foundations
-- **[Day 1: Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/README.md)** ← START HERE
-- **[Day 2: Flink Fundamentals](Day02-Flink21-Fundamentals/Exercise-Solutions/README.md)**
-- **[Day 3: AI Stream Processing](Day03-AI-Stream-Processing/Exercise-Solutions/README.md)**
-- **[Day 4: Production Backpressure](Day04-Production-Backpressure/Exercise-Solutions/README.md)**
-- **[Day 5: Enterprise Observability](Day05-Enterprise-Observability/Exercise-Solutions/README.md)**
-~~**[Day 6: Temporal Workflows](Day06-Temporal-Workflows/Exercise-Solutions/README.md)**~~ (Optional/reference only)
-- **[Day 7: Advanced Windows/Joins](Day07-Advanced-Windows-Joins/Exercise-Solutions/README.md)**
-- **[Day 8: Stress Testing](Day08-Stress-Testing/Exercise-Solutions/README.md)**
-
-### Week 2: Advanced Patterns  
-- **[Day 9: Exactly-Once Semantics](Day09-Exactly-Once-Semantics/Exercise-Solutions/README.md)**
-- **[Day 10: Performance Optimization](Day10-Performance-Optimization-Scaling/Exercise-Solutions/README.md)**
-- **[Day 11: Security & Compliance](Day11-Security-Privacy-Compliance/Exercise-Solutions/README.md)**
-- **[Day 12: Disaster Recovery](Day12-Disaster-Recovery-Multi-Region/Exercise-Solutions/README.md)**
-- **[Day 13: Advanced Patterns](Day13-Advanced-Streaming-Patterns/Exercise-Solutions/README.md)**
-- **[Day 14: Testing & Chaos](Day14-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/README.md)**
-- **[Day 15: Capstone Project](Day15-Capstone-Project/Exercise-Solutions/README.md)**
-
-## 🌟 Course Overview
-
-This course provides hands-on experience with **Apache Flink 2.1.0's real-time stream processing capabilities** and **.NET integration** through FlinkDotNet, covering everything from fundamentals to building production-ready streaming platforms. Each day builds upon the previous, culminating in a capstone project that demonstrates mastery of enterprise-scale real-time stream processing patterns including messaging systems, complex integrations, and advanced data processing workflows.
-
-## 🚀 NEW: Apache Flink 2.1.0 - Unified Real-Time Data Processing Platform
-
-**Released July 31, 2025** - Apache Flink 2.1.0 represents a **major advancement in stream processing**, enhancing the platform with improved real-time capabilities, advanced integration patterns, and expanded data processing features.
-
-### 🔄 Enhanced Real-Time Stream Processing
-
-#### 📊 VARIANT Data Type & JSON Processing
-- **Efficient semi-structured data handling** (JSON, XML, Avro)
-- **PARSE_JSON function** with lakehouse formats (Apache Paimon)
-- **Dynamic schema evolution** for flexible data processing
-
-#### ⚡ Advanced Streaming Joins & Integration Patterns
-- **DeltaJoin strategies** eliminating state bottlenecks
-- **MultiJoin optimization** improving resource utilization
-- **Enhanced job stability** for production workloads
-- **Complex event correlation** for enterprise integration
-
-#### 🔗 Enhanced Messaging & Integration Capabilities
-- **Advanced connector ecosystem** for enterprise systems
-- **Message queue integration** patterns (Kafka, RabbitMQ, Azure Service Bus)
-- **API gateway integration** for RESTful and GraphQL endpoints
-- **Database connectivity** optimizations for high-throughput scenarios
-
-### 🤖 AI Integration Capabilities
-
-#### 🎯 AI Model DDL (Data Definition Language)
-- **Flexible AI model management** through Flink SQL and Table API
-- **Dynamic model registration, versioning, and lifecycle management**
-- **Enterprise-grade model governance and deployment patterns**
-
-#### ⚡ ML_PREDICT Table-Valued Function (TVF)
-- **Real-time AI model invocation** directly within Flink SQL queries
-- **Native streaming inference** with sub-millisecond latency
-- **End-to-end real-time AI workflow foundations**
-
-#### 🔄 Process Table Functions (PTFs)
-- **Event-driven applications** with full access to Flink's managed state
-- **Event-time and timer services** for complex temporal patterns
-- **Underlying table changelog access** for sophisticated processing workflows
-
-### 🎯 Learning Outcomes
-
-By completing this course, you will:
-
-- **Master Apache Flink 2.1.0** fundamentals and advanced stream processing capabilities
-- **Build production-grade streaming applications** using FlinkDotNet and C#
-- **Implement complex integration patterns** with enterprise messaging systems
-- **Design intelligent streaming architectures** with advanced join strategies and event processing
-- **Handle dynamic data schemas** using VARIANT data types and JSON processing
-- **Optimize streaming performance** with DeltaJoin and MultiJoin strategies
-- **Create enterprise messaging patterns** for scalability, reliability, and maintainability
-- **Design fault-tolerant systems** with exactly-once semantics and disaster recovery
-- **Build comprehensive monitoring** and observability solutions
-- **Apply security and compliance** requirements for sensitive data processing
-- **Orchestrate complex workflows** using Temporal for durable execution
-- **Optimize performance** at scale with advanced tuning techniques
-- **Integrate AI capabilities** where appropriate for enhanced data processing
-
-### ⏱️ Time Commitment
-
-- **Total Duration**: 15 days (88-98 hours)
-- **Daily Time**: 3-8 hours per day (comprehensive hands-on stream processing coverage)
-- **Learning Format**: Progressive skill building with hands-on exercises
-- **Prerequisites**: C#/.NET experience, basic distributed systems knowledge
-
-## 🗺️ Complete Learning Path
-
-### 📚 Getting Started & Fundamentals (Days 1-3)
-
-#### [Day 1: Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/)
-**Time**: 2-3 hours | **Focus**: Basic Pipeline Concepts & Hands-on Implementation
-
-Learn the fundamentals of stream processing with a hands-on implementation of the Baeldung Kafka-Flink tutorial. Build a complete data pipeline using FlinkDotNet that reads from Kafka, processes data, and writes back to Kafka.
-
-**Key Topics**: Kafka producers/consumers, Flink job submission, basic stream processing, FlinkDotNet basics, LocalTesting infrastructure
-
-#### [Day 2: Apache Flink 2.1.0 Fundamentals & Production Environment](Day02-Flink21-Fundamentals/)
-**Time**: 6-7 hours | **Focus**: Core Concepts & Production Platform Setup
-
-Master Apache Flink 2.1.0 fundamentals while setting up a complete production-grade streaming stack. Learn platform improvements including advanced data processing, integration patterns, and enhanced streaming capabilities.
-
-**Key Topics**: Flink 2.1.0 architecture, unified platform capabilities, DataStream API, integration foundations, production deployment patterns
-
-#### [Day 3: Advanced Stream Processing & AI Integration](Day03-AI-Stream-Processing/)
-**Time**: 7-8 hours | **Focus**: Deep Dive into Flink 2.1.0 Advanced Capabilities
-
-Comprehensive coverage of all Flink 2.1.0 enhancements with detailed exercises:
-- **Advanced Stream Processing** - Complex event processing and data transformation
-- **AI Model Integration** - Where applicable for enhanced processing capabilities
-- **VARIANT Data Types** - Dynamic schema handling for flexible data processing
-- **End-to-End Processing Workflows** - Production-ready real-time pipelines
-
-**Key Topics**: Advanced stream processing, AI integration patterns, VARIANT types, PARSE_JSON, real-time workflows, performance optimization
-
-### 🏗️ Production Patterns & Messaging (Days 4-6)
-
-#### [Day 4: Production-Grade Backpressure & Distributed Rate Limiting](Day04-Production-Backpressure/)
-**Time**: 6-7 hours | **Focus**: Flow Control & Rate Limiting
-
-Implement the "Local bucket + Regional Redis budget bank + Global controller" pattern used by Netflix and Uber for fault-tolerant distributed rate limiting and enterprise messaging integration.
-
-**Key Topics**: Backpressure handling, distributed rate limiting, gRPC ingress patterns, fault tolerance, messaging system integration
-
-#### [Day 5: Enterprise Observability & Monitoring](Day05-Enterprise-Observability/)
-**Time**: 5-6 hours | **Focus**: Monitoring & Metrics with LocalTesting Integration
-
-Build comprehensive observability solutions with Prometheus, Grafana, and enterprise monitoring patterns using the **LocalTesting observability stack**. Implement SLA monitoring and alerting systems with real business flows and automated testing procedures.
-
-**Key Topics**: Metrics collection, dashboards, alerting, SLA monitoring, performance analysis, **LocalTesting observability integration**, automated observability testing
-
-#### Day 6 (Optional): Workflow Orchestration (Reference)
-Time: self-paced | Focus: Optional orchestration patterns (not required for FlinkDotNet runtime)
-
-Master Temporal's durable execution platform for orchestrating complex, long-running business processes with fault tolerance and state management. Focus on integration patterns for enterprise systems.
-
-**Key Topics**: Temporal workflows, durable execution, saga patterns, workflow orchestration, compensation, enterprise integration patterns
-
-### 🔧 Advanced Processing & Integration (Days 7-9)
-
-#### [Day 7: Advanced Windowing, Complex Joins & Enhanced Analytics](Day07-Advanced-Windows-Joins/)
-**Time**: 7-8 hours | **Focus**: Complex Stream Operations & Advanced Analytics
-
-Implement advanced windowing strategies, Flink 2.1.0's revolutionary DeltaJoin and MultiJoin patterns, and enhanced complex event processing for real-time analytics and intelligent event correlation.
-
-**Key Topics**: Advanced windowing, DeltaJoin/MultiJoin strategies, enhanced CEP, temporal analytics, intelligent stream correlation
-
-#### [Day 8: Complex Logic Stress Testing](Day08-Stress-Testing/)
-**Time**: 4-5 hours | **Focus**: Performance Validation
-
-Master stress testing methodologies for Flink applications using the LocalTesting framework. Build comprehensive performance benchmarking systems for enterprise workloads.
-
-**Key Topics**: Stress testing, performance benchmarking, reliability testing, load simulation
-
-#### [Day 9: Exactly-Once Semantics and End-to-End Guarantees](Day09-Exactly-Once-Semantics/)
-**Time**: 6-7 hours | **Focus**: Data Consistency
-
-Implement exactly-once processing guarantees with comprehensive transactional patterns for financial-grade data consistency across complex integration scenarios.
-
-**Key Topics**: Exactly-once semantics, transactional patterns, checkpoint/savepoint management, data consistency
-
-### ⚡ Optimization & Scale (Days 10-12)
-
-#### [Day 10: Performance Optimization and Scaling Patterns](Day10-Performance-Optimization-Scaling/)
-**Time**: 6-7 hours | **Focus**: Performance Tuning
-
-Advanced performance optimization techniques including parallelism tuning, memory management, and auto-scaling patterns.
-
-**Key Topics**: Performance tuning, parallelism optimization, memory management, auto-scaling, resource optimization
-
-#### [Day 11: Security, Privacy, and Compliance in Stream Processing](Day11-Security-Privacy-Compliance/)
-**Time**: 5-6 hours | **Focus**: Security & Compliance
-
-Implement enterprise-grade security, data privacy, and regulatory compliance patterns for sensitive data processing (GDPR, CCPA, financial regulations).
-
-**Key Topics**: End-to-end encryption, data anonymization, access control, audit logging, compliance patterns
-
-#### [Day 12: Disaster Recovery and Multi-Region Deployment](Day12-Disaster-Recovery-Multi-Region/)
-**Time**: 6-7 hours | **Focus**: Resilience & DR
-
-Design and implement disaster recovery strategies with multi-region deployment patterns for mission-critical streaming applications.
-
-**Key Topics**: Disaster recovery, multi-region deployment, backup strategies, failover patterns, business continuity
-
-### 🎯 Advanced Patterns & Integration (Days 13-15)
-
-#### [Day 13: Advanced Streaming Patterns - Event Sourcing, CQRS, and Sagas](Day13-Advanced-Streaming-Patterns/)
-**Time**: 7-8 hours | **Focus**: Architecture Patterns
-
-Implement advanced architectural patterns including event sourcing, CQRS, and distributed saga patterns for complex business workflows.
-
-**Key Topics**: Event sourcing, CQRS, saga patterns, event-driven architecture, domain-driven design
-
-#### [Day 14: Advanced Testing Strategies and Chaos Engineering](Day14-Advanced-Testing-Chaos-Engineering/)
-**Time**: 5-6 hours | **Focus**: Testing & Reliability
-
-Master advanced testing strategies including chaos engineering, fault injection, and comprehensive testing frameworks for distributed systems.
-
-**Key Topics**: Chaos engineering, fault injection, distributed testing, reliability engineering, test automation
-
-#### [Day 15: Capstone Project - Real-World Streaming Platform](Day15-Capstone-Project/)
-**Time**: 8-10 hours | **Focus**: Integration & Application
-
-Build a comprehensive, production-ready streaming platform integrating all course concepts into a multi-domain, multi-tenant system serving e-commerce, financial services, IoT, and social media use cases.
-
-**Key Topics**: System integration, multi-tenancy, real-world application, architectural decisions, project presentation
-
-## 🎯 Learning Path Recommendations
-
-### 🏃‍♂️ Fast Track (1 day = 2-3 hours)
-- Complete all exercises in order
-- Focus on getting them running successfully
-- Read theory sections for context
-
-### 🚶‍♂️ Comprehensive (1 day = 4-6 hours)  
-- Read full theory in each day's main README.md
-- Complete all exercises with understanding
-- Explore the company patterns and business context
-
-### 🧠 Expert Track (1 day = 6-8 hours)
-- Deep dive into source code implementations
-- Modify exercises for your own use cases
-- Contribute improvements back to the course
-
-## ❓ Common Issues Across All Days
-
-### Problem: Infrastructure won't start
-**Solution:**
+### Flink Container Issues
+If tests fail with "Flink JobManager endpoint not found" or containers show "Created" status instead of "Up":
+- Check Docker Desktop is running and has sufficient resources
+- Verify no port conflicts (Flink uses 8081, Kafka uses 9092/9093)
+- Check Docker logs: `docker logs <container-name>`
+- **Most common cause**: Multiple Aspire instances - use LocalTesting.sln!
+
+### Tests timeout or fail to start
+Check Docker Desktop has sufficient resources allocated (Settings → Resources).
+
+### Port conflict errors
+Stop any services using conflicting ports or configure alternative ports in the test configuration.
+
+### Build errors
+Run a clean build before testing:
 ```bash
-# Stop everything and restart
-Ctrl+C  # Stop current processes
-cd LocalTesting
-dotnet run --project LocalTesting.AppHost
-# Wait 90 seconds
+dotnet clean LocalTesting/LocalTesting.sln
+dotnet build LocalTesting/LocalTesting.sln --configuration Release
 ```
 
-### Problem: Port already in use
-**Solution:**
-```bash
-# Find and kill conflicting processes
-netstat -an | findstr "8081\|8082\|5000"
-# Kill the processes, then restart
+## CI/CD Integration
+
+The unified solution file can be easily integrated into CI/CD workflows:
+
+```yaml
+- name: Run All Integration Tests
+  run: dotnet test LocalTesting/LocalTesting.sln --configuration Release --logger "trx;LogFileName=integration-test-results.trx"
+
+- name: Run Only LearningCourse Tests
+  run: dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day" --logger "trx;LogFileName=learningcourse-test-results.trx"
 ```
 
-### Problem: Out of memory errors
-**Solution:**
-- Close other applications
-- Restart Docker Desktop or Podman
-- Ensure 8GB+ RAM available
+## Adding New Integration Tests
 
-### Problem: .NET build failures
-**Solution:**
-```bash
-# Clean and restore all projects
-dotnet clean
-dotnet restore  
-dotnet build
-```
+To add a new day's integration tests:
 
-## 🏆 Completion Tracking
-
-Track your progress through the course:
-
-### Week 1 Progress
-- [ ] **Day 1**: Netflix/Uber/LinkedIn Fundamentals ✅
-- [ ] **Day 2**: AI Stream Processing ✅  
-- [ ] **Day 3**: Production Backpressure ✅
-- [ ] **Day 4**: Enterprise Observability ✅
-- [ ] **Day 5**: Temporal Workflows ✅
-- [ ] **Day 6**: Advanced Windows/Joins ✅
-- [ ] **Day 7**: Stress Testing ✅
-
-### Week 2 Progress  
-- [ ] **Day 8**: Exactly-Once Semantics ✅
-- [ ] **Day 9**: Performance Optimization ✅
-- [ ] **Day 10**: Security & Compliance ✅
-- [ ] **Day 11**: Disaster Recovery ✅
-- [ ] **Day 12**: Advanced Patterns ✅
-- [ ] **Day 13**: Testing & Chaos ✅
-- [ ] **Day 14**: Capstone Project ✅
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-Before starting the course, ensure you have:
-
-- **Development Environment**: Visual Studio 2022 or VS Code with C# support
-- **.NET Requirements**: .NET 9.0 SDK (see [installation guide](../README.md#net-90-requirements))
-- **Docker**: Docker Desktop for container orchestration
-- **Basic Knowledge**: 
-  - C# and .NET development experience
-  - Basic understanding of distributed systems concepts
-  - Familiarity with REST APIs and JSON
-  - Basic knowledge of containerization (Docker)
-
-### Environment Setup
-
-1. **Install .NET 9.0 SDK**:
+1. Create the test project in the appropriate Day folder:
    ```bash
-   # Download from https://learn.microsoft.com/en-us/dotnet/core/install/
-   dotnet --version  # Should show 9.0.x
+   dotnet new nunit -n DayXX.IntegrationTests -o LearningCourse/DayXX-Topic/DayXX.IntegrationTests
    ```
 
-2. **Verify FlinkDotNet Environment**:
+2. Add project reference to `LocalTesting.sln` (NOT a separate solution):
    ```bash
-   cd /path/to/FlinkDotnet
-   ./validate-build-and-tests.ps1 -SkipTests
+   dotnet sln LocalTesting/LocalTesting.sln add LearningCourse/DayXX-Topic/DayXX.IntegrationTests/DayXX.IntegrationTests.csproj
    ```
 
-3. **Docker Setup**:
-   ```bash
-   # Ensure Docker Desktop is running
-   docker --version
-   docker-compose --version
+3. Make test class inherit from `LocalTestingTestBase`:
+   ```csharp
+   using LocalTesting.IntegrationTests;
+   
+   public class DayXXTests : LocalTestingTestBase
+   {
+       // Tests here
+   }
    ```
 
-4. **Start Infrastructure**:
-   ```bash
-   # Start LocalTesting infrastructure (used by all days)
-   cd ../LocalTesting
-   dotnet run --project LocalTesting.AppHost
-   # Wait 90 seconds for all services to start
+4. Create minimal `GlobalSetup.cs` (DO NOT create infrastructure):
+   ```csharp
+   using NUnit.Framework;
+   
+   namespace DayXX.IntegrationTests;
+   
+   [SetUpFixture]
+   public class GlobalSetup
+   {
+       [OneTimeSetUp]
+       public void AssemblySetUp()
+       {
+           // NO infrastructure setup - relies on LocalTesting
+       }
+   }
    ```
 
-### Alternative: Azure Container Apps Deployment
+5. Run tests to verify:
+   ```bash
+   dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~DayXX"
+   ```
 
-If your computer is unable to run the local setup (Docker Desktop issues, hardware limitations, or .NET installation problems), you can use **Azure Container Apps** with **Azure Developer CLI (azd)** to deploy and run the LearningCourse in the cloud.
+## Migration from PowerShell Script
 
-#### Prerequisites for Azure Deployment
+Previous versions used `run-all-integration-tests.ps1` PowerShell script. This has been replaced by the solution file approach.
 
-- **Azure Account**: Free Azure account with $200 credit for new users
-- **Azure Developer CLI**: Cross-platform tool for deploying to Azure
-- **Git**: For cloning and managing code
-
-#### Step 1: Create Azure Account
-
-1. **Register for Azure** (if you don't have an account):
-   - Visit [Azure Free Account](https://azure.microsoft.com/en-us/free/)
-   - Click "Start free" and follow the registration process
-   - Provides $200 credit for 30 days (more than enough for learning)
-   - No charges after credit expires unless you upgrade
-
-2. **Verify your account**:
-   - Complete email verification
-   - Provide payment method (required for verification, but won't be charged with free account)
-   - Complete identity verification process
-
-#### Step 2: Install Azure Developer CLI (azd)
-
-Choose your platform for azd installation:
-
-**Windows:**
+**Before** (❌ deprecated):
 ```powershell
-# Using PowerShell (recommended)
-Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression
-
-# Or using winget
-winget install microsoft.azd
+.\LearningCourse\run-all-integration-tests.ps1
 ```
 
-**macOS:**
+**Now** (✅ correct):
 ```bash
-# Using Homebrew (recommended)
-brew tap azure/azd && brew install azd
-
-# Or using curl
-curl -fsSL https://aka.ms/install-azd.sh | bash
+dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day"
 ```
 
-**Linux:**
-```bash
-# Using curl
-curl -fsSL https://aka.ms/install-azd.sh | bash
+The solution file approach offers several advantages:
+- Better Visual Studio/VS Code integration
+- Consistent with standard .NET testing workflows  
+- Easier to run specific tests or test categories
+- No PowerShell-specific quirks or compatibility issues
+- Standard NUnit test filtering and reporting
+- **Shared infrastructure** prevents container conflicts
+- Works on all platforms (Windows, Linux, macOS)
 
-# Or download directly
-wget -q https://aka.ms/install-azd.sh -O - | bash
-```
+## Deprecated Files
 
-**Verify installation:**
-```bash
-azd version
-# Should display version 1.5.0 or later
-```
+The following files are deprecated and should not be used:
 
-#### Step 3: Setup and Deploy LearningCourse
+- ❌ `LearningCourse/IntegrationTests.sln` - Creates duplicate Aspire instance (if it exists, delete it)
+- ❌ `LearningCourse/run-all-integration-tests.ps1` - Replaced by solution file approach (deleted)
 
-1. **Login to Azure**:
-   ```bash
-   azd auth login
-   # Opens browser for Azure authentication
-   ```
-
-2. **Initialize the project**:
-   ```bash
-   cd /path/to/FlinkDotnet/LearningCourse
-   azd init
-   # Follow prompts to configure Azure Container Apps deployment
-   ```
-
-3. **Deploy to Azure**:
-   ```bash
-   azd up
-   # Provisions Azure resources and deploys the application
-   # Creates Container Apps, databases, and monitoring resources
-   ```
-
-4. **Access your deployed LearningCourse**:
-   - azd will provide the URL of your deployed application
-   - All exercises and examples will run in Azure Container Apps
-   - Full observability and monitoring included
-
-#### Step 4: Learning Course Access
-
-Once deployed, you'll have:
-
-- **Web-based IDE**: Use GitHub Codespaces or Azure Cloud Shell for development
-- **Container Apps Environment**: All FlinkDotNet services running in Azure
-- **Integrated Monitoring**: Built-in logging, metrics, and distributed tracing
-- **Scalable Resources**: Automatically scales based on your learning needs
-
-#### Step 5: Cost Management
-
-- **Free Tier**: Azure Container Apps includes generous free tier
-- **Monitor Usage**: Use Azure Cost Management to track spending
-- **Clean Up**: Run `azd down` to remove all resources when finished
-
-#### Azure Resources and References
-
-- **[Azure Container Apps Documentation](https://docs.microsoft.com/azure/container-apps/)**: Complete guide to Container Apps
-- **[Azure Developer CLI Documentation](https://docs.microsoft.com/azure/developer/azure-developer-cli/)**: azd command reference and tutorials
-- **[Azure Free Account Guide](https://azure.microsoft.com/en-us/free/)**: Detailed information about free tier limits
-- **[Azure Cost Management](https://docs.microsoft.com/azure/cost-management-billing/)**: Tools for monitoring and controlling costs
-- **[Azure Container Apps Pricing](https://azure.microsoft.com/en-us/pricing/details/container-apps/)**: Detailed pricing information
-
-#### Troubleshooting Azure Deployment
-
-**Common Issues:**
-- **Authentication problems**: Ensure you're logged in with `azd auth login`
-- **Resource limits**: Check Azure subscription limits and quotas
-- **Deployment failures**: Use `azd logs` to view detailed error information
-- **Cost concerns**: Monitor usage in Azure Portal Cost Management section
-
-**Getting Help:**
-- **Azure Support**: Use Azure Portal support options
-- **Community**: [Azure Container Apps GitHub](https://github.com/microsoft/azure-container-apps)
-- **Documentation**: [Azure Container Apps Troubleshooting](https://docs.microsoft.com/azure/container-apps/troubleshooting)
-
-### Solution Files for Professional IDE Integration
-
-Each day includes complete Visual Studio solution files for immediate IDE integration:
-
-#### **🎯 Professional IDE Integration**
-
-```bash
-# Open complete day's exercises in Visual Studio Code
-code Day02-AI-Stream-Processing/Day02Tutorial.sln
-
-# Build all day's projects with .NET CLI
-cd Day02-AI-Stream-Processing
-dotnet build Day02Tutorial.sln --configuration Release
-
-# Run specific stream processing exercise
-dotnet run --project Exercise-Solutions/StreamProcessingMastery
-
-# Debug with full IntelliSense support
-# Open any .sln file in Visual Studio, VS Code, or JetBrains Rider
-```
-
-#### **📊 Day 2: Advanced Stream Processing Implementation Highlights**
-
-- **StreamProcessingMastery**: 25,900+ lines of complete stream processing workflows and patterns
-- **AdvancedIntegrationPatterns**: 39,000+ lines of enterprise integration capabilities  
-- **Working demonstrations**: Enterprise messaging, complex event processing, multi-system integration
-- **Performance validation**: Sub-50ms processing latency, 1000+ transactions/second processing
-
-#### **🔥 Zero Setup Friction**
-
-- **One-click setup**: Open any Day##-*/DayXXTutorial.sln file for immediate coding
-- **Integrated debugging**: Full breakpoint and debugging support across all projects
-- **IntelliSense support**: Complete code completion and navigation
-- **Build automation**: Single command builds all day's exercises
-- **Project discovery**: Easy navigation between related exercises
-
-### Learning Approach
-
-1. **Sequential Learning**: Follow days 1-14 in order for optimal skill building
-2. **Hands-on Practice**: Each day includes practical exercises and real-world examples
-3. **Reference Use**: Individual days can be referenced for specific topics after completing prerequisites
-4. **Progressive Complexity**: Concepts build upon each other, so completing previous days is recommended
-
-## 🎓 What You'll Achieve
-
-By completing this 14-day course, you'll have:
-
-✅ **Built 50+ working applications** using enterprise patterns  
-✅ **Mastered Netflix-scale recommendation systems** with real-time AI  
-✅ **Implemented Uber-scale financial processing** with exactly-once semantics  
-✅ **Created LinkedIn-style social platforms** with 900M+ user capacity  
-✅ **Applied Google SRE practices** for 99.99% uptime reliability  
-✅ **Demonstrated enterprise security** meeting banking compliance standards  
-✅ **Designed disaster recovery** for multi-region deployments  
-✅ **Validated production systems** with chaos engineering
-
-**🚀 Ready to become an enterprise streaming expert? Start with Day 1!**
-
-## 📋 Quick Navigation
-
-| Day | Topic | Duration | Prerequisites | Focus |
-|-----|-------|----------|---------------|-------|
-| [Day 1](Day01-Kafka-Flink-Data-Pipeline/) | **Kafka-Flink Data Pipeline** | **2-3 hours** | None | **Basic Pipeline Implementation** |
-| [Day 2](Day02-Flink21-Fundamentals/) | Flink 2.1.0 Fundamentals | 6-7 hours | Day 1 | Core + AI Platform Setup |
-| [Day 3](Day03-AI-Stream-Processing/) | **Advanced Stream Processing & AI Integration** | **7-8 hours** | Days 1-2 | **Stream Processing, Integration Patterns, AI Capabilities** |
-| [Day 4](Day04-Production-Backpressure/) | Backpressure & Rate Limiting | 6-7 hours | Days 1-3 | Production Patterns |
-| [Day 5](Day05-Enterprise-Observability/) | Observability & LocalTesting | 5-6 hours | Days 1-4 | LocalTesting Observability Integration |
-| [Day 6](Day06-Temporal-Workflows/) | Temporal Workflows | 7-8 hours | Days 1-5 | Workflow Orchestration & Integration |
-| [Day 7](Day07-Advanced-Windows-Joins/) | **Advanced Joins & Enhanced Analytics** | **7-8 hours** | Days 1-6 | **DeltaJoin, MultiJoin, Enhanced CEP** |
-| [Day 8](Day08-Stress-Testing/) | Stress Testing | 4-5 hours | Days 1-7 | Performance Testing |
-| [Day 9](Day09-Exactly-Once-Semantics/) | Exactly-Once Semantics | 6-7 hours | Days 1-8 | Data Consistency |
-| [Day 10](Day10-Performance-Optimization-Scaling/) | Performance & Scaling | 6-7 hours | Days 1-9 | Performance Optimization |
-| [Day 11](Day11-Security-Privacy-Compliance/) | Security & Compliance | 5-6 hours | Days 1-10 | Security & Privacy |
-| [Day 12](Day12-Disaster-Recovery-Multi-Region/) | Disaster Recovery | 6-7 hours | Days 1-11 | Resilience |
-| [Day 13](Day13-Advanced-Streaming-Patterns/) | Advanced Patterns | 7-8 hours | Days 1-12 | Event Sourcing |
-| [Day 14](Day14-Advanced-Testing-Chaos-Engineering/) | Testing & Chaos Engineering | 5-6 hours | Days 1-13 | Reliability Testing |
-| [Day 15](Day15-Capstone-Project/) | **Enterprise Capstone Project** | **8-10 hours** | Days 1-14 | **Complete Stream Processing Platform** |
-
-## 🔗 Related Resources
-
-### FlinkDotNet Documentation
-- **[Main Project README](../README.md)** - Project overview and setup
-- **[Getting Started Guide](../docs/wiki/Getting-Started.md)** - Quick start tutorial
-- **[API Documentation](../docs/wiki/Wiki-Structure-Outline.md)** - Complete API reference
-
-### Sample Projects
-- **[Sample Applications](../Sample/README.md)** - Real-world integration examples
-- **[LocalTesting Environment](../LocalTesting/README.md)** - Interactive testing platform
-
-### External Learning Resources
-- **[Apache Flink 2.1.0 Release Announcement](https://flink.apache.org/2025/07/31/apache-flink-2.1.0-ushers-in-a-new-era-of-unified-real-time-data--ai-with-comprehensive-upgrades/)** - Enhanced Data + AI platform features
-- **[Apache Flink Documentation](https://flink.apache.org/)** - Official Flink 2.1.0 documentation
-- **[Apache Flink Training](https://nightlies.apache.org/flink/flink-docs-master/docs/learn-flink/overview/)** - Official learning modules updated for 2.1.0
-- **[Temporal Documentation](https://docs.temporal.io/)** - Workflow orchestration guide for complex business workflows
-
-## 📞 Support & Community
-
-- **Issues & Questions**: Use the main [FlinkDotNet Issues](https://github.com/devstress/FlinkDotnet/issues) for technical questions
-- **Discussions**: Join project discussions for learning support and best practices
-- **Contribution**: See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on contributing improvements
-
-## 📞 Getting Help
-
-- **Issues with instructions**: Each day has troubleshooting sections
-- **Code not working**: Check the Working Solutions in each Exercise-Solutions folder
-- **Understanding concepts**: Read the theory sections in each day's main README.md
-
-**Remember**: The goal is learning enterprise patterns, not perfection. Focus on getting the exercises running and understanding the business patterns!
-
----
-
-**🎯 [START YOUR JOURNEY: Day 1 Instructions →](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/README.md)**
-
-**Ready to become a stream processing expert?** Start with [Day 1: Kafka-Flink Data Pipeline](Day01-Kafka-Flink-Data-Pipeline/) and begin your journey to mastering enterprise-scale stream processing with FlinkDotNet!
-
-## ✅ Beginner-Friendly Validation Complete
-
-**All 15 days have been validated for beginner accessibility:**
-
-🎯 **100% Success Rate**: Every day includes consistent beginner-friendly structure  
-📋 **Prerequisites Check**: All days verify LocalTesting infrastructure first  
-🚀 **QUICK START**: Every day has "Students: Complete these exercises in order - no experience needed!"  
-📄 **Copy/Paste Commands**: Ready-to-use bash commands in all exercises  
-✅ **Success Indicators**: Clear expected outputs and troubleshooting guidance  
-
-**Validation Details**: See [Learning Course Validation Summary](../docs/learning-course-validation-summary.md) for complete validation results and methodology.
-
-**Run Validation Yourself**:
-```bash
-./scripts/validate-learning-course.sh
-```
+**Always use**: `LocalTesting/LocalTesting.sln` for running all integration tests.
