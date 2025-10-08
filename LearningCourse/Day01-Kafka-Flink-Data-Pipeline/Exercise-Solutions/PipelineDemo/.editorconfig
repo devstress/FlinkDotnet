@@ -1,4 +1,0 @@
-[*.cs]
-# Disable Sonar rules for learning example
-dotnet_diagnostic.S1075.severity = none
-dotnet_diagnostic.S138.severity = none

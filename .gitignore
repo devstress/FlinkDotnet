@@ -22,7 +22,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-.vs/
+**/.vs/
 tools/
 
 # .NET Core
