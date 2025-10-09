@@ -125,9 +125,18 @@ namespace FlinkDotNet.DataStream
                 throw new System.InvalidOperationException("No Kafka source defined. Use AddKafkaSource() or FromKafka() before executing.");
             }
 
-            var jobDef = new JobDefinition
+            var jobDef = CreateJobDefinition(jobId, jobName);
+            ConfigureJobMetadata(jobDef);
+            TranslateOperations(jobDef);
+
+            return jobDef;
+        }
+
+        private JobDefinition CreateJobDefinition(string jobId, string jobName)
+        {
+            return new JobDefinition
             {
-                Source = _kafkaSource,
+                Source = _kafkaSource!,
                 Operations = new List<IOperationDefinition>(),
                 Sink = _kafkaSink,
                 Metadata = new JobMetadata
@@ -139,85 +148,104 @@ namespace FlinkDotNet.DataStream
                     Properties = new Dictionary<string, string>()
                 }
             };
+        }
 
-            // Add time characteristic if timestamp assigner is present
+        private void ConfigureJobMetadata(JobDefinition jobDef)
+        {
             if (_hasTimestampAssigner)
             {
                 jobDef.Metadata.Properties["timeCharacteristic"] = "EventTime";
             }
 
-            // Store function metadata for runtime execution
             if (_deserializationFunction != null)
             {
                 jobDef.Metadata.Properties["deserializationFunction"] = _deserializationFunction.GetType().FullName ?? "Unknown";
             }
+
             if (_serializationFunction != null)
             {
                 jobDef.Metadata.Properties["serializationFunction"] = _serializationFunction.GetType().FullName ?? "Unknown";
             }
+        }
 
-            // Translate operations to JobDefinition format
+        private void TranslateOperations(JobDefinition jobDef)
+        {
             foreach (var operation in _operations)
             {
                 switch (operation.Type)
                 {
                     case "Map":
-                        if (operation.OperationType == "upper")
-                        {
-                            jobDef.Operations.Add(new MapOperationDefinition { Expression = "upper" });
-                        }
-                        else if (operation.OperationType == "lower")
-                        {
-                            jobDef.Operations.Add(new MapOperationDefinition { Expression = "lower" });
-                        }
-                        else if (operation.Function != null)
-                        {
-                            // Store function type name for Gateway to handle
-                            jobDef.Operations.Add(new MapOperationDefinition
-                            {
-                                Expression = $"function:{operation.Function.GetType().FullName}"
-                            });
-                        }
+                        TranslateMapOperation(jobDef, operation);
                         break;
-
                     case "Filter":
-                        if (operation.Function != null)
-                        {
-                            jobDef.Operations.Add(new FilterOperationDefinition
-                            {
-                                Expression = $"function:{operation.Function.GetType().FullName}"
-                            });
-                        }
+                        TranslateFilterOperation(jobDef, operation);
                         break;
-
                     case "TimeWindowAll":
-                        if (_windowDefinition != null)
-                        {
-                            jobDef.Operations.Add(new WindowOperationDefinition
-                            {
-                                WindowType = _windowDefinition.WindowType,
-                                Size = (int)(_windowDefinition.Size / 3600000), // Convert milliseconds to hours
-                                TimeUnit = "HOURS",
-                                TimeField = "sentAt" // This should be extracted from TimestampAssigner
-                            });
-                        }
+                        TranslateWindowOperation(jobDef);
                         break;
-
                     case "Aggregate":
-                        if (operation.Function != null)
-                        {
-                            jobDef.Metadata.Properties["aggregateFunction"] = operation.Function.GetType().FullName ?? "Unknown";
-                        }
-                        jobDef.Operations.Add(new AggregateOperationDefinition
-                        {
-                            AggregationType = "COLLECT",
-                            Field = "*"
-                        });
+                        TranslateAggregateOperation(jobDef, operation);
                         break;
                 }
             }
+        }
 
-            return jobDef;
+        private void TranslateMapOperation(JobDefinition jobDef, CapturedOperation operation)
+        {
+            if (operation.OperationType == "upper")
+            {
+                jobDef.Operations.Add(new MapOperationDefinition { Expression = "upper" });
+            }
+            else if (operation.OperationType == "lower")
+            {
+                jobDef.Operations.Add(new MapOperationDefinition { Expression = "lower" });
+            }
+            else if (operation.Function != null)
+            {
+                jobDef.Operations.Add(new MapOperationDefinition
+                {
+                    Expression = $"function:{operation.Function.GetType().FullName}"
+                });
+            }
+        }
+
+        private void TranslateFilterOperation(JobDefinition jobDef, CapturedOperation operation)
+        {
+            if (operation.Function != null)
+            {
+                jobDef.Operations.Add(new FilterOperationDefinition
+                {
+                    Expression = $"function:{operation.Function.GetType().FullName}"
+                });
+            }
+        }
+
+        private void TranslateWindowOperation(JobDefinition jobDef)
+        {
+            if (_windowDefinition != null)
+            {
+                jobDef.Operations.Add(new WindowOperationDefinition
+                {
+                    WindowType = _windowDefinition.WindowType,
+                    Size = (int)(_windowDefinition.Size / 3600000), // Convert milliseconds to hours
+                    TimeUnit = "HOURS",
+                    TimeField = "sentAt" // This should be extracted from TimestampAssigner
+                });
+            }
+        }
+
+        private void TranslateAggregateOperation(JobDefinition jobDef, CapturedOperation operation)
+        {
+            if (operation.Function != null)
+            {
+                jobDef.Metadata.Properties["aggregateFunction"] = operation.Function.GetType().FullName ?? "Unknown";
+            }
+            
+            jobDef.Operations.Add(new AggregateOperationDefinition
+            {
+                AggregationType = "COLLECT",
+                Field = "*"
+            });
         }
 
         public bool HasOperations() => _operations.Count > 0 || _kafkaSource != null;

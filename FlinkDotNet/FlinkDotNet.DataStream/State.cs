@@ -185,7 +185,7 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     /// <typeparam name="TIn">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of aggregated output</typeparam>
-    public interface IAggregatingState<in TIn, TOut>
+    public interface IAggregatingState<TIn, TOut>
     {
         /// <summary>
         /// Gets the current aggregated value.
@@ -233,8 +233,14 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of value stored in the state</typeparam>
     public class ValueStateDescriptor<T> : StateDescriptor
     {
+        /// <summary>
+        /// Gets the type information for the state value.
+        /// </summary>
+        public System.Type ValueType { get; }
+
         public ValueStateDescriptor(string name) : base(name)
         {
+            ValueType = typeof(T);
         }
     }
 
@@ -245,8 +251,14 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of elements in the list</typeparam>
     public class ListStateDescriptor<T> : StateDescriptor
     {
+        /// <summary>
+        /// Gets the type information for list elements.
+        /// </summary>
+        public System.Type ElementType { get; }
+
         public ListStateDescriptor(string name) : base(name)
         {
+            ElementType = typeof(T);
         }
     }
 
@@ -258,8 +270,20 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TValue">The type of values</typeparam>
     public class MapStateDescriptor<TKey, TValue> : StateDescriptor
     {
+        /// <summary>
+        /// Gets the type information for map keys.
+        /// </summary>
+        public System.Type KeyType { get; }
+
+        /// <summary>
+        /// Gets the type information for map values.
+        /// </summary>
+        public System.Type ValueType { get; }
+
         public MapStateDescriptor(string name) : base(name)
         {
+            KeyType = typeof(TKey);
+            ValueType = typeof(TValue);
         }
     }
 

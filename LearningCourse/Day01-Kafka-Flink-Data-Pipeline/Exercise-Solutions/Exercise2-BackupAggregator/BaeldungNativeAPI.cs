@@ -10,7 +10,7 @@ namespace Exercise2_BackupAggregator
     /// Native DataStream API implementation matching Baeldung Sections 7-11 exactly
     /// Reference: https://www.baeldung.com/kafka-flink-data-pipeline
     /// </summary>
-    public static class BaeldungNativeAPI
+    public static class BaeldungNativeApi
     {
         /// <summary>
         /// Section 7: Custom Object Deserialization
@@ -35,7 +35,7 @@ namespace Exercise2_BackupAggregator
 
             public TypeInformation<InputMessage> GetProducedType()
             {
-                return TypeInformation.Of<InputMessage>();
+                return TypeInformation<InputMessage>.Of();
             }
         }
 
@@ -75,8 +75,7 @@ namespace Exercise2_BackupAggregator
             public long ExtractTimestamp(InputMessage element, long previousElementTimestamp)
             {
                 // Convert LocalDateTime to EpochSecond (milliseconds)
-                var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                var milliseconds = (long)(element.SentAt - epoch).TotalMilliseconds;
+                var milliseconds = (long)(element.SentAt - DateTime.UnixEpoch).TotalMilliseconds;
                 return milliseconds;
             }
 
@@ -180,15 +179,16 @@ namespace Exercise2_BackupAggregator
         /// Baeldung equivalent: createInputMessageConsumer()
         /// </summary>
         private static KafkaSourceFunction<InputMessage> CreateInputMessageConsumer(
-            string topic, 
-            string bootstrapServers, 
+            string topic,
+            string bootstrapServers,
             string groupId)
         {
+            var deserializationSchema = new InputMessageDeserializationSchema();
             return new KafkaSourceFunction<InputMessage>(
                 topic,
                 bootstrapServers,
                 groupId,
-                new InputMessageDeserializationSchema().Deserialize,
+                (json) => deserializationSchema.Deserialize(System.Text.Encoding.UTF8.GetBytes(json)),
                 StartingOffsets.Earliest
             );
         }

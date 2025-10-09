@@ -28,7 +28,7 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     /// <typeparam name="T">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
-    public interface IProcessFunction<in T, TOut>
+    public interface IProcessFunction<in T, out TOut>
     {
         /// <summary>
         /// Processes one element from the input stream.
@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TKey">The type of the key</typeparam>
     /// <typeparam name="T">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
-    public interface IKeyedProcessFunction<TKey, in T, TOut>
+    public interface IKeyedProcessFunction<TKey, in T, out TOut>
     {
         /// <summary>
         /// Processes one element from the input stream.
@@ -74,7 +74,7 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T1">The type of the first input stream</typeparam>
     /// <typeparam name="T2">The type of the second input stream</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
-    public interface ICoProcessFunction<in T1, in T2, TOut>
+    public interface ICoProcessFunction<in T1, in T2, out TOut>
     {
         /// <summary>
         /// Processes an element from the first input stream.
@@ -99,7 +99,7 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TIn">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
     /// <typeparam name="TKey">The type of the key</typeparam>
-    public interface IProcessWindowFunction<in TIn, TOut, TKey>
+    public interface IProcessWindowFunction<in TIn, out TOut, TKey>
     {
         /// <summary>
         /// Processes all elements in a window.
@@ -121,7 +121,7 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     /// <typeparam name="TIn">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
-    public interface IAsyncFunction<in TIn, TOut>
+    public interface IAsyncFunction<in TIn, out TOut>
     {
         /// <summary>
         /// Trigger async operation for each stream input.
@@ -144,7 +144,7 @@ namespace FlinkDotNet.DataStream
     /// <summary>
     /// Result future for async operations.
     /// </summary>
-    public interface IResultFuture<T>
+    public interface IResultFuture<in T>
     {
         /// <summary>
         /// Completes the future with a collection of results.
@@ -349,7 +349,7 @@ namespace FlinkDotNet.DataStream
     /// Interface for flat join functions.
     /// Corresponds to org.apache.flink.api.common.functions.FlatJoinFunction in Java Flink.
     /// </summary>
-    public interface IFlatJoinFunction<in T1, in T2, TOut>
+    public interface IFlatJoinFunction<in T1, in T2, out TOut>
     {
         /// <summary>
         /// Joins two elements and produces zero, one, or more result elements.
@@ -361,7 +361,7 @@ namespace FlinkDotNet.DataStream
     /// Interface for co-group functions.
     /// Corresponds to org.apache.flink.api.common.functions.CoGroupFunction in Java Flink.
     /// </summary>
-    public interface ICoGroupFunction<in T1, in T2, TOut>
+    public interface ICoGroupFunction<in T1, in T2, out TOut>
     {
         /// <summary>
         /// Co-groups two groups of elements.

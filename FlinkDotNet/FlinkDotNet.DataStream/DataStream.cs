@@ -489,6 +489,17 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
+        /// Applies a reduce function to this KeyedStream using a ReduceFunction (Flink-compatible).
+        /// This matches the Java Flink API: keyedStream.reduce(new MyReduceFunction())
+        /// </summary>
+        /// <param name="reduceFunction">The ReduceFunction instance to apply</param>
+        /// <returns>The reduced DataStream</returns>
+        public DataStream<T> Reduce(IReduceFunction<T> reduceFunction)
+        {
+            return Reduce(reduceFunction.Reduce);
+        }
+
+        /// <summary>
         /// Applies an aggregation function to this KeyedStream.
         /// </summary>
         /// <param name="aggregationType">The type of aggregation</param>
@@ -498,17 +509,6 @@ namespace FlinkDotNet.DataStream
         {
             // This would apply the aggregation function based on the type and field
             return _dataStream;
-        }
-
-        /// <summary>
-        /// Applies a reduce function to this KeyedStream using a ReduceFunction (Flink-compatible).
-        /// This matches the Java Flink API: keyedStream.reduce(new MyReduceFunction())
-        /// </summary>
-        /// <param name="reduceFunction">The ReduceFunction instance to apply</param>
-        /// <returns>The reduced DataStream</returns>
-        public DataStream<T> Reduce(IReduceFunction<T> reduceFunction)
-        {
-            return Reduce(reduceFunction.Reduce);
         }
 
         /// <summary>

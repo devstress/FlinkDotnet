@@ -22,10 +22,10 @@ namespace FlinkDotNet.DataStream
 {
     /// <summary>
     /// Source function for reading from Kafka with custom deserialization.
-    /// This is used internally by the DataStream API to support custom object deserialization.
+    /// Corresponds to org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements to deserialize</typeparam>
-    internal class KafkaSourceFunction<T> : ISourceFunction<T>
+    public class KafkaSourceFunction<T> : ISourceFunction<T>
     {
 #pragma warning disable S4487 // Unread private fields - These will be used when Kafka integration is implemented
         private readonly string _topic;
