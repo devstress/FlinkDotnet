@@ -158,10 +158,19 @@ public static void capitalize() {
 }
 ```
 
-**FlinkDotNet C# API (Direct Translation):**
+**FlinkDotNet C# API (Exact Translation with MapFunction):**
 
 ```csharp
 using FlinkDotNet.DataStream;
+
+// WordsCapitalizer MapFunction - exact match to Java
+public class WordsCapitalizer : IMapFunction<string, string>
+{
+    public string Map(string s)
+    {
+        return s.ToUpperInvariant();
+    }
+}
 
 public static async Task Capitalize()
 {
@@ -183,7 +192,7 @@ public static async Task Capitalize()
 
     // stringInputStream.map(new WordsCapitalizer()).addSink(flinkKafkaProducer);
     stringInputStream
-        .Map("value.ToUpperInvariant()")  // WordsCapitalizer: return s.toUpperCase();
+        .Map(new WordsCapitalizer())  // Exact same as Java: new WordsCapitalizer()
         .SinkToKafka(outputTopic, address);
 
     // Execute the job
@@ -199,7 +208,8 @@ The application will read data from the `flink_input` topic, perform operations 
 |---------------|----------------|
 | `StreamExecutionEnvironment.getExecutionEnvironment()` | `StreamExecutionEnvironment.GetExecutionEnvironment()` |
 | `environment.addSource(flinkKafkaConsumer)` | `environment.FromKafka(topic, servers, groupId)` |
-| `.map(new WordsCapitalizer())` | `.Map("value.ToUpperInvariant()")` |
+| `implements MapFunction<In, Out>` | `: IMapFunction<TIn, TOut>` |
+| `.map(new WordsCapitalizer())` | `.Map(new WordsCapitalizer())` ✅ Exact match |
 | `.addSink(flinkKafkaProducer)` | `.SinkToKafka(outputTopic, servers)` |
 | `environment.execute()` | `await environment.ExecuteAsync(jobName)` |
 

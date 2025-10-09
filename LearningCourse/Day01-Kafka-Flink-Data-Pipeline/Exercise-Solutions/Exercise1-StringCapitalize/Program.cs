@@ -1,7 +1,7 @@
 using System;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Serilog;
@@ -120,11 +120,11 @@ namespace Exercise1_StringCapitalize
         ///     .map(new WordsCapitalizer())
         ///     .addSink(flinkKafkaProducer);
         ///
-        /// FlinkDotNet equivalent:
+        /// FlinkDotNet equivalent (exact match):
         ///   var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
         ///   var stringInputStream = environment.FromKafka(topic, servers, groupId);
         ///   stringInputStream
-        ///     .Map("value.ToUpperInvariant()")
+        ///     .Map(new WordsCapitalizer())  // Same as Java: new WordsCapitalizer()
         ///     .SinkToKafka(outputTopic, servers);
         ///   await environment.ExecuteAsync("string-capitalize-pipeline");
         /// </summary>
@@ -148,9 +148,10 @@ namespace Exercise1_StringCapitalize
                     startingOffsets: "earliest"
                 );
 
-                // Apply map transformation and add Kafka sink (WordsCapitalizer equivalent)
+                // Apply map transformation and add Kafka sink
+                // Using WordsCapitalizer class - exact match to Baeldung Java API
                 stringInputStream
-                    .Map("value.ToUpperInvariant()")
+                    .Map(new WordsCapitalizer())
                     .SinkToKafka(OutputTopic, KafkaBootstrapServers);
 
                 // Execute the job
@@ -383,6 +384,26 @@ namespace Exercise1_StringCapitalize
             }
 
             throw new TimeoutException($"Kafka not ready within {timeout.TotalSeconds} seconds");
+        }
+    }
+
+    /// <summary>
+    /// WordsCapitalizer MapFunction (Baeldung Section 6)
+    /// Implements MapFunction&lt;String, String&gt; to uppercase strings
+    ///
+    /// Java equivalent:
+    /// public class WordsCapitalizer implements MapFunction&lt;String, String&gt; {
+    ///     @Override
+    ///     public String map(String s) {
+    ///         return s.toUpperCase();
+    ///     }
+    /// }
+    /// </summary>
+    public class WordsCapitalizer : FlinkDotNet.DataStream.IMapFunction<string, string>
+    {
+        public string Map(string s)
+        {
+            return s.ToUpperInvariant();
         }
     }
 }

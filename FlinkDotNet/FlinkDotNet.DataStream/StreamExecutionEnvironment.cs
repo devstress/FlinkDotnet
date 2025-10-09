@@ -42,6 +42,7 @@ namespace FlinkDotNet.DataStream
         private bool _reactiveModeEnabled = false;
         private string? _savepointPath;
         private JobDefinition? _activeJob;
+        private OperationCapture? _operationCapture;
 
         /// <summary>
         /// Creates a new StreamExecutionEnvironment.
@@ -93,6 +94,39 @@ namespace FlinkDotNet.DataStream
             };
             SetActiveJob(jd);
             return new DataStream<string>(jd, this);
+        }
+
+        /// <summary>
+        /// Creates a Kafka source with custom deserialization function.
+        /// This enables reading custom objects (like InputMessage) from Kafka.
+        /// Corresponds to Baeldung tutorial sections 7-11.
+        /// </summary>
+        /// <typeparam name="T">The type of elements to deserialize</typeparam>
+        /// <param name="topic">Kafka topic name</param>
+        /// <param name="bootstrapServers">Kafka bootstrap servers</param>
+        /// <param name="groupId">Consumer group ID</param>
+        /// <param name="deserializer">Deserialization function (byte[] -> T or string -> T)</param>
+        /// <param name="startingOffsets">Starting offset strategy (earliest/latest)</param>
+        /// <returns>DataStream of deserialized elements</returns>
+        public DataStream<T> AddKafkaSource<T>(
+            string topic,
+            string bootstrapServers,
+            string groupId,
+            System.Func<string, T> deserializer,
+            string startingOffsets = "earliest")
+        {
+            // Initialize operation capture for native API usage
+            _operationCapture = new OperationCapture();
+            _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId, startingOffsets, deserializer);
+
+            // Create a source function that uses the deserializer
+            var sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
+            var dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
+            
+            // Attach operation capture to the stream
+            dataStream.AttachOperationCapture(_operationCapture);
+            
+            return dataStream;
         }
 
         /// <summary>
@@ -304,19 +338,33 @@ namespace FlinkDotNet.DataStream
             var name = jobName ?? _activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
             _logger?.LogInformation("Starting execution of job: {JobName}", name);
 
-            if (_activeJob == null)
+            JobDefinition jobToSubmit;
+
+            // Check if we have captured operations from native API usage
+            if (_operationCapture != null && _operationCapture.HasOperations())
             {
-                throw new InvalidOperationException("No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before Execute().");
+                // Translate captured operations to JobDefinition
+                var jobId = System.Guid.NewGuid().ToString();
+                jobToSubmit = _operationCapture.ToJobDefinition(jobId, name);
+                _logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
+            }
+            else if (_activeJob != null)
+            {
+                // Use existing JobDefinition (IR-backed stream)
+                jobToSubmit = _activeJob;
+                jobToSubmit.Metadata.JobName = name;
+            }
+            else
+            {
+                throw new InvalidOperationException("No Flink-compatible job is defined. Use AddKafkaSource(...) or FromKafka(...) before Execute().");
             }
 
-            _activeJob.Metadata.JobName = name;
-
             var gateway = new FlinkJobGatewayService();
-            var submit = await gateway.SubmitJobAsync(_activeJob, cancellationToken).ConfigureAwait(false);
+            var submit = await gateway.SubmitJobAsync(jobToSubmit, cancellationToken).ConfigureAwait(false);
 
             return new JobExecutionResult
             {
-                JobId = submit.FlinkJobId ?? _activeJob.Metadata.JobId,
+                JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId,
                 JobName = name,
                 Success = submit.Success,
                 StartTime = DateTime.UtcNow,
