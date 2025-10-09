@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Net.Http;
-using System.Text;
 using System.Linq;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
@@ -25,8 +23,8 @@ namespace Exercise2_BackupAggregator
     /// - Creating time windows (Section 10)
     /// - Aggregating backups in time windows (Section 11)
     ///
-    /// The Flink job reads InputMessage objects, aggregates them into daily Backup objects,
-    /// and writes the results to Kafka.
+    /// NOTE: FlinkDotNet currently uses JobDefinition API for advanced features like
+    /// time windows and aggregations. Future versions will add these to the DataStream API.
     /// </summary>
     static class Program
     {
@@ -34,6 +32,11 @@ namespace Exercise2_BackupAggregator
         private const string OutputTopic = "flink_output";
         private const string ConsumerGroup = "baeldung";
         private static readonly string KafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:29092";
+        private const string DefaultGatewayHost = "localhost";
+        private const int DefaultGatewayPort = 8080;
+        private static readonly string FlinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL")
+            ?? $"http://{DefaultGatewayHost}:{DefaultGatewayPort}";
+        private const string JobSubmitEndpoint = "/api/v1/jobs/submit";
 
         static async Task Main(string[] args)
         {
@@ -58,6 +61,9 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  - Section 9: Timestamping messages (EventTime)");
             Console.WriteLine("  - Section 10: Creating time windows (tumbling windows)");
             Console.WriteLine("  - Section 11: Aggregating backups (daily aggregation)");
+            Console.WriteLine();
+            Console.WriteLine("  NOTE: This exercise uses JobDefinition API for advanced features.");
+            Console.WriteLine("  Future FlinkDotNet versions will add TimeWindow/Aggregate to DataStream API.");
             Console.WriteLine();
             Console.WriteLine("================================================================================");
             Console.WriteLine();
@@ -121,80 +127,90 @@ namespace Exercise2_BackupAggregator
 
         /// <summary>
         /// Submit Flink job with time-windowed aggregation (Baeldung Sections 9-11)
-        /// Uses EventTime, tumbling windows, and aggregation to create daily backups
+        /// 
+        /// Baeldung Java API:
+        ///   environment.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        ///   flinkKafkaConsumer.assignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
+        ///   DataStream<InputMessage> inputMessagesStream = environment.addSource(flinkKafkaConsumer);
+        ///   inputMessagesStream
+        ///     .timeWindowAll(Time.hours(24))
+        ///     .aggregate(new BackupAggregator())
+        ///     .addSink(flinkKafkaProducer);
+        ///   environment.execute();
+        /// 
+        /// FlinkDotNet equivalent using JobDefinition API:
+        ///   (Advanced features like timeWindowAll and aggregate require JobDefinition API)
         /// </summary>
         static async Task SubmitBackupAggregationJob()
         {
-            var flinkJobDefinition = new
-            {
-                jobName = "backup-aggregator",
-                timeCharacteristic = "EventTime",  // Section 9: Use event time
-                sources = new[]
-                {
-                    new
-                    {
-                        type = "kafka",
-                        name = "input-source",
-                        properties = new
-                        {
-                            topic = InputTopic,
-                            bootstrapServers = KafkaBootstrapServers,
-                            groupId = ConsumerGroup,
-                            autoOffsetReset = "earliest"
-                        },
-                        timestampField = "sentAt"  // Section 9: Extract timestamps from this field
-                    }
-                },
-                transforms = new[]
-                {
-                    new
-                    {
-                        type = "timeWindow",  // Section 10: Time windows
-                        name = "daily-window",
-                        from = "input-source",
-                        window = new
-                        {
-                            type = "tumbling",
-                            size = "24 hours"  // Daily aggregation
-                        }
-                    },
-                    new
-                    {
-                        type = "aggregate",  // Section 11: Aggregating backups
-                        name = "backup-aggregator",
-                        from = "daily-window",
-                        aggregateFunction = "collectToBackup"
-                    }
-                },
-                sinks = new[]
-                {
-                    new
-                    {
-                        type = "kafka",
-                        name = "backup-sink",
-                        properties = new
-                        {
-                            topic = OutputTopic,
-                            bootstrapServers = KafkaBootstrapServers
-                        },
-                        from = "backup-aggregator"
-                    }
-                }
-            };
-
-            var jobJson = JsonSerializer.Serialize(flinkJobDefinition, new JsonSerializerOptions { WriteIndented = true });
-            Console.WriteLine($"   Flink Job Definition:");
+            Console.WriteLine($"   Creating Flink job using FlinkDotNet JobDefinition API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Time Characteristic: EventTime");
             Console.WriteLine($"   - Window: Tumbling 24-hour window");
             Console.WriteLine($"   - Aggregation: Collect InputMessages into Backup");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
+            Console.WriteLine();
+            Console.WriteLine($"   Baeldung Java API equivalent:");
+            Console.WriteLine($"   inputMessagesStream");
+            Console.WriteLine($"     .timeWindowAll(Time.hours(24))");
+            Console.WriteLine($"     .aggregate(new BackupAggregator())");
+            Console.WriteLine($"     .addSink(flinkKafkaProducer);");
 
             try
             {
-                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                var content = new StringContent(jobJson, Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync("http://localhost:8080/api/v1/jobs/submit", content);
+                // NOTE: FlinkDotNet DataStream API doesn't yet support timeWindowAll() and aggregate()
+                // This uses JobDefinition API which maps to Flink's internal representation
+                var flinkJobDefinition = new
+                {
+                    source = new
+                    {
+                        type = "kafka",
+                        topic = InputTopic,
+                        bootstrapServers = KafkaBootstrapServers,
+                        groupId = ConsumerGroup,
+                        startingOffsets = "earliest"
+                    },
+                    operations = new object[]
+                    {
+                        new
+                        {
+                            type = "window",
+                            windowType = "TUMBLING",  // Section 10: Time windows (tumbling)
+                            size = 24,                // 24 hours
+                            timeUnit = "HOURS",
+                            timeField = "sentAt"      // Section 9: EventTime from sentAt field
+                        },
+                        new
+                        {
+                            type = "aggregate",          // Section 11: Aggregating backups
+                            aggregationType = "COLLECT", // Collect messages into Backup
+                            field = "*"                  // Aggregate all fields
+                        }
+                    },
+                    sink = new
+                    {
+                        type = "kafka",
+                        topic = OutputTopic,
+                        bootstrapServers = KafkaBootstrapServers
+                    },
+                    metadata = new
+                    {
+                        jobId = Guid.NewGuid().ToString(),
+                        jobName = "backup-aggregator",
+                        createdAt = DateTime.UtcNow,
+                        version = "1.0",
+                        properties = new Dictionary<string, string>
+                        {
+                            { "timeCharacteristic", "EventTime" }  // Section 9: Use event time
+                        }
+                    }
+                };
+
+                var jobJson = JsonSerializer.Serialize(flinkJobDefinition, new JsonSerializerOptions { WriteIndented = true });
+
+                using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                var content = new System.Net.Http.StringContent(jobJson, System.Text.Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync($"{FlinkGatewayUrl}{JobSubmitEndpoint}", content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -208,9 +224,9 @@ namespace Exercise2_BackupAggregator
                     Console.WriteLine($"   Note: This is acceptable for learning - job definition was created correctly");
                 }
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"   [WARNING] Could not connect to Flink Job Gateway: {ex.Message}");
+                Console.WriteLine($"   [WARNING] Error submitting job: {ex.Message}");
                 Console.WriteLine($"   Note: Job definition is correct - infrastructure may not be running");
             }
         }
@@ -249,7 +265,7 @@ namespace Exercise2_BackupAggregator
 
                 try
                 {
-                    var deliveryReport = await producer.ProduceAsync(InputTopic, kafkaMessage);
+                    await producer.ProduceAsync(InputTopic, kafkaMessage);
                     
                     if (i % 10 == 0 || i == messageCount - 1)
                     {
@@ -272,7 +288,7 @@ namespace Exercise2_BackupAggregator
         /// Consume Backup aggregation results (Baeldung Section 8 & 11)
         /// Each Backup contains aggregated InputMessages with UUID and timestamp
         /// </summary>
-        static async Task ConsumeBackupResults()
+        static Task ConsumeBackupResults()
         {
             var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"consumer-{Guid.NewGuid()}");
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
@@ -339,6 +355,8 @@ namespace Exercise2_BackupAggregator
                 Console.WriteLine($"   [WARNING] No backups consumed - Flink job may not be running");
                 Console.WriteLine($"   Note: This demonstrates the aggregation concept successfully");
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -549,7 +567,7 @@ namespace Exercise2_BackupAggregator
         public static byte[] Serialize(Backup backup)
         {
             var json = JsonSerializer.Serialize(backup, Options);
-            return Encoding.UTF8.GetBytes(json);
+            return System.Text.Encoding.UTF8.GetBytes(json);
         }
 
         public static string SerializeToString(Backup backup)

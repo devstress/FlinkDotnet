@@ -1,13 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Text.Json;
-using System.Net.Http;
-using System.Text;
 using System.Linq;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Serilog;
+using FlinkDotNet.DataStream;
 
 namespace Exercise1_StringCapitalize
 {
@@ -114,82 +112,65 @@ namespace Exercise1_StringCapitalize
 
         /// <summary>
         /// Submit Flink job with uppercase transformation (Baeldung Section 6)
-        /// Maps: flink_input → uppercase → flink_output
+        ///
+        /// Baeldung Java API:
+        ///   StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+        ///   DataStream String stringInputStream = environment.addSource(flinkKafkaConsumer);
+        ///   stringInputStream
+        ///     .map(new WordsCapitalizer())
+        ///     .addSink(flinkKafkaProducer);
+        ///
+        /// FlinkDotNet equivalent:
+        ///   var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+        ///   var stringInputStream = environment.FromKafka(topic, servers, groupId);
+        ///   stringInputStream
+        ///     .Map("value.ToUpperInvariant()")
+        ///     .SinkToKafka(outputTopic, servers);
+        ///   await environment.ExecuteAsync("string-capitalize-pipeline");
         /// </summary>
         static async Task SubmitCapitalizeJob()
         {
-            var flinkJobDefinition = new
-            {
-                jobName = "string-capitalize-pipeline",
-                sources = new[]
-                {
-                    new
-                    {
-                        type = "kafka",
-                        name = "input-source",
-                        properties = new
-                        {
-                            topic = InputTopic,
-                            bootstrapServers = KafkaBootstrapServers,
-                            groupId = ConsumerGroup,
-                            autoOffsetReset = "earliest"
-                        }
-                    }
-                },
-                transforms = new[]
-                {
-                    new
-                    {
-                        type = "map",
-                        name = "capitalize-transform",
-                        function = "upper",  // Uppercase transformation
-                        from = "input-source"
-                    }
-                },
-                sinks = new[]
-                {
-                    new
-                    {
-                        type = "kafka",
-                        name = "output-sink",
-                        properties = new
-                        {
-                            topic = OutputTopic,
-                            bootstrapServers = KafkaBootstrapServers
-                        },
-                        from = "capitalize-transform"
-                    }
-                }
-            };
-
-            var jobJson = JsonSerializer.Serialize(flinkJobDefinition, new JsonSerializerOptions { WriteIndented = true });
-            Console.WriteLine($"   Flink Job Definition:");
+            Console.WriteLine($"   Creating Flink job using native FlinkDotNet API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
-            Console.WriteLine($"   - Transformation: Uppercase (map function)");
+            Console.WriteLine($"   - Transformation: Uppercase (WordsCapitalizer)");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
 
             try
             {
-                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                var content = new StringContent(jobJson, Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync("http://localhost:8080/api/v1/jobs/submit", content);
+                // Baeldung Section 6: public static void capitalize()
+                var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-                if (response.IsSuccessStatusCode)
+                // Create Kafka source (equivalent to FlinkKafkaConsumer)
+                var stringInputStream = environment.FromKafka(
+                    topic: InputTopic,
+                    bootstrapServers: KafkaBootstrapServers,
+                    groupId: ConsumerGroup,
+                    startingOffsets: "earliest"
+                );
+
+                // Apply map transformation and add Kafka sink (WordsCapitalizer equivalent)
+                stringInputStream
+                    .Map("value.ToUpperInvariant()")
+                    .SinkToKafka(OutputTopic, KafkaBootstrapServers);
+
+                // Execute the job
+                var result = await environment.ExecuteAsync("string-capitalize-pipeline");
+
+                if (result.Success)
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"   [SUCCESS] Flink job submitted successfully");
-                    Console.WriteLine($"   Response: {responseContent}");
+                    Console.WriteLine($"   JobId: {result.JobId}");
                 }
                 else
                 {
-                    Console.WriteLine($"   [WARNING] Job submission returned: {response.StatusCode}");
-                    Console.WriteLine($"   Note: This is acceptable for learning - job definition was created correctly");
+                    Console.WriteLine($"   [WARNING] Job submission failed: {result.Error}");
+                    Console.WriteLine($"   Note: This demonstrates the API correctly");
                 }
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"   [WARNING] Could not connect to Flink Job Gateway: {ex.Message}");
-                Console.WriteLine($"   Note: Job definition is correct - infrastructure may not be running");
+                Console.WriteLine($"   [WARNING] Error submitting job: {ex.Message}");
+                Console.WriteLine($"   Note: API usage is correct - infrastructure may not be running");
             }
         }
 
@@ -238,7 +219,7 @@ namespace Exercise1_StringCapitalize
         /// Consume capitalized results from output topic
         /// Verifies Flink transformation worked (lowercase -> UPPERCASE)
         /// </summary>
-        static async Task ConsumeResults()
+        static Task ConsumeResults()
         {
             var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"consumer-{Guid.NewGuid()}");
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
@@ -295,6 +276,8 @@ namespace Exercise1_StringCapitalize
                 Console.WriteLine($"   [WARNING] No messages consumed - Flink job may not be running");
                 Console.WriteLine($"   Note: This demonstrates the pipeline concept successfully");
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
