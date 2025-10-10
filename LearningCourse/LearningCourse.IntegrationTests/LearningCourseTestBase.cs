@@ -26,7 +26,9 @@ public abstract class LearningCourseTestBase
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
         
         // Set Kafka bootstrap servers to FIXED external port (see Ports.cs in AppHost)
-        // Kafka uses dual listener setup: internal (kafka:9092) and external (localhost:9093)
+        // Kafka uses dual listener setup:
+        // - Internal: kafka:9092 (container-to-container communication for Flink containers)
+        // - External: localhost:9093 (host machine access for tests and external clients)
         const string kafkaBootstrap = "localhost:9093";
         Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
         TestContext.WriteLine($"🔧 KAFKA_BOOTSTRAP_SERVERS set to: {kafkaBootstrap} (FIXED external port)");

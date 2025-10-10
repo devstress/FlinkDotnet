@@ -103,10 +103,10 @@ namespace Exercise1_StringCapitalize
             Console.WriteLine("================================================================================");
             Console.WriteLine();
             Console.WriteLine("What you learned (Baeldung Section 6):");
-            Console.WriteLine("  [✓] Created Kafka consumer configuration (CreateConsumerConfig)");
-            Console.WriteLine("  [✓] Created Kafka producer configuration (CreateProducerConfig)");
-            Console.WriteLine("  [✓] Submitted Flink job with map transformation (uppercase)");
-            Console.WriteLine("  [✓] Verified end-to-end pipeline: Input -> Transform -> Output");
+            Console.WriteLine("  [OK] Created Kafka consumer configuration (CreateConsumerConfig)");
+            Console.WriteLine("  [OK] Created Kafka producer configuration (CreateProducerConfig)");
+            Console.WriteLine("  [OK] Submitted Flink job with map transformation (uppercase)");
+            Console.WriteLine("  [OK] Verified end-to-end pipeline: Input -> Transform -> Output");
             Console.WriteLine();
         }
 
@@ -135,43 +135,37 @@ namespace Exercise1_StringCapitalize
             Console.WriteLine($"   - Transformation: Uppercase (WordsCapitalizer)");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
 
-            try
+            // Baeldung Section 6: public static void capitalize()
+            var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Create Kafka source (equivalent to FlinkKafkaConsumer)
+            var stringInputStream = environment.FromKafka(
+                topic: InputTopic,
+                bootstrapServers: KafkaBootstrapServers,
+                groupId: ConsumerGroup,
+                startingOffsets: "earliest"
+            );
+
+            // Apply map transformation and add Kafka sink
+            // Using WordsCapitalizer class - exact match to Baeldung Java API
+            stringInputStream
+                .Map(new WordsCapitalizer())
+                .SinkToKafka(OutputTopic, KafkaBootstrapServers);
+
+            // Execute the job
+            var result = await environment.ExecuteAsync("string-capitalize-pipeline");
+
+            if (result.Success)
             {
-                // Baeldung Section 6: public static void capitalize()
-                var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
-
-                // Create Kafka source (equivalent to FlinkKafkaConsumer)
-                var stringInputStream = environment.FromKafka(
-                    topic: InputTopic,
-                    bootstrapServers: KafkaBootstrapServers,
-                    groupId: ConsumerGroup,
-                    startingOffsets: "earliest"
-                );
-
-                // Apply map transformation and add Kafka sink
-                // Using WordsCapitalizer class - exact match to Baeldung Java API
-                stringInputStream
-                    .Map(new WordsCapitalizer())
-                    .SinkToKafka(OutputTopic, KafkaBootstrapServers);
-
-                // Execute the job
-                var result = await environment.ExecuteAsync("string-capitalize-pipeline");
-
-                if (result.Success)
-                {
-                    Console.WriteLine($"   [SUCCESS] Flink job submitted successfully");
-                    Console.WriteLine($"   JobId: {result.JobId}");
-                }
-                else
-                {
-                    Console.WriteLine($"   [WARNING] Job submission failed: {result.Error}");
-                    Console.WriteLine($"   Note: This demonstrates the API correctly");
-                }
+                Console.WriteLine($"   [SUCCESS] Flink job submitted successfully");
+                Console.WriteLine($"   JobId: {result.JobId}");
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine($"   [WARNING] Error submitting job: {ex.Message}");
-                Console.WriteLine($"   Note: API usage is correct - infrastructure may not be running");
+                Console.WriteLine($"   [ERROR] Job submission failed");
+                Console.WriteLine($"   Error: {result.Error}");
+                Console.WriteLine();
+                throw new InvalidOperationException($"DataStream has no valid source or sink. Error: {result.Error}");
             }
         }
 
@@ -220,7 +214,7 @@ namespace Exercise1_StringCapitalize
         /// Consume capitalized results from output topic
         /// Verifies Flink transformation worked (lowercase -> UPPERCASE)
         /// </summary>
-        static Task ConsumeResults()
+        static async Task ConsumeResults()
         {
             var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"consumer-{Guid.NewGuid()}");
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
@@ -247,7 +241,7 @@ namespace Exercise1_StringCapitalize
                         bool isUppercase = result.Message.Value == result.Message.Value.ToUpperInvariant();
                         if (isUppercase)
                         {
-                            Console.WriteLine($"        [✓] Successfully capitalized!");
+                            Console.WriteLine($"        [OK] Successfully capitalized!");
                         }
 
                         consumer.Commit(result);
@@ -262,6 +256,7 @@ namespace Exercise1_StringCapitalize
             catch (ConsumeException ex)
             {
                 Console.WriteLine($"   [ERROR] Consumption error: {ex.Error.Reason}");
+                throw;
             }
             finally
             {
@@ -274,11 +269,86 @@ namespace Exercise1_StringCapitalize
             }
             else
             {
-                Console.WriteLine($"   [WARNING] No messages consumed - Flink job may not be running");
-                Console.WriteLine($"   Note: This demonstrates the pipeline concept successfully");
+                Console.WriteLine($"   [ERROR] No messages consumed - Flink job may not be running");
+                Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
+                Console.WriteLine();
+                
+                // Print last 20 lines of TaskManager container logs
+                await PrintTaskManagerLogsAsync();
+                
+                Console.WriteLine();
+                throw new InvalidOperationException("No messages consumed from output topic. Flink job may not be processing data correctly.");
             }
-
-            return Task.CompletedTask;
+        }
+        
+        /// <summary>
+        /// Print last 20 lines of TaskManager container logs for debugging
+        /// </summary>
+        static async Task PrintTaskManagerLogsAsync()
+        {
+            string[] containerCommands = { "docker", "podman" };
+            
+            foreach (var command in containerCommands)
+            {
+                try
+                {
+                    // Find TaskManager container
+                    var findProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = command,
+                            Arguments = "ps --filter name=taskmanager --format {{.ID}}",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    findProcess.Start();
+                    var containerId = (await findProcess.StandardOutput.ReadToEndAsync()).Trim();
+                    await findProcess.WaitForExitAsync();
+                    
+                    if (findProcess.ExitCode == 0 && !string.IsNullOrEmpty(containerId))
+                    {
+                        // Get last 20 lines of logs
+                        var logsProcess = new Process
+                        {
+                            StartInfo = new ProcessStartInfo
+                            {
+                                FileName = command,
+                                Arguments = $"logs --tail 20 {containerId}",
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }
+                        };
+                        logsProcess.Start();
+                        var logs = await logsProcess.StandardOutput.ReadToEndAsync();
+                        await logsProcess.WaitForExitAsync();
+                        
+                        if (logsProcess.ExitCode == 0 && !string.IsNullOrEmpty(logs))
+                        {
+                            Console.WriteLine($"   [DEBUG] TaskManager logs (last 20 lines):");
+                            Console.WriteLine("   " + new string('-', 78));
+                            foreach (var line in logs.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)))
+                            {
+                                Console.WriteLine($"   {line}");
+                            }
+                            Console.WriteLine("   " + new string('-', 78));
+                            return; // Successfully printed logs
+                        }
+                    }
+                }
+                catch
+                {
+                    // Try next command
+                }
+            }
+            
+            Console.WriteLine("   [WARNING] Could not find or access TaskManager container logs");
+            Console.WriteLine("   Verify Flink TaskManager is running: docker ps | grep taskmanager");
         }
 
         /// <summary>

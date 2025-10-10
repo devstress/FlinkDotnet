@@ -90,13 +90,15 @@ public class FlinkJobRunner {
             return; // No further DataStream processing for pure SQL jobs
         } else if (ir.source instanceof KafkaSourceDefinition) {
             KafkaSourceDefinition k = (KafkaSourceDefinition) ir.source;
-            String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+            // Priority: JSON field → Default (kafka:9092)
+            // Do NOT check environment variables - they're set for host machine access (localhost:9093)
+            // Flink jobs run inside containers and must use internal network (kafka:9092)
+            String bootstrap = orElse(k.bootstrapServers, "kafka:9092");
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
 
             System.out.println("============================================================");
             System.out.println("[KAFKA SOURCE] Configuration:");
             System.out.println("  - bootstrapServers field from JSON: " + k.bootstrapServers);
-            System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
             System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
             System.out.println("  - Topic: " + k.topic);
             System.out.println("  - GroupId: " + groupId);
@@ -224,27 +226,83 @@ public class FlinkJobRunner {
                     // attach sink to side output (Kafka-only supported here)
                     DataStream<String> side = main.getSideOutput(tag);
                     if (so.sideOutputSink != null && so.sideOutputSink.type != null && so.sideOutputSink.type.equals("kafka")) {
-                        String bootstrap = orElse(so.sideOutputSink.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+                        // Priority: JSON field → Default (kafka:9092)
+                        // Do NOT check environment variables - Flink jobs run inside containers
+                        String bootstrap = orElse(so.sideOutputSink.bootstrapServers, "kafka:9092");
                         Properties props = new Properties();
                         props.put("bootstrap.servers", bootstrap);
                         side.addSink(new KafkaStringSink(so.sideOutputSink.topic, props)).name("SideKafkaSink:"+so.outputTag);
                     }
                     stream = main;
+                } else if (op instanceof AggregateOperationDefinition) {
+                    AggregateOperationDefinition agg = (AggregateOperationDefinition) op;
+                    String aggType = orElse(agg.aggregationType, "COLLECT").toUpperCase(Locale.ROOT);
+                    
+                    System.out.println("============================================================");
+                    System.out.println("[AGGREGATE OPERATION] Processing:");
+                    System.out.println("  - aggregationType: " + aggType);
+                    System.out.println("  - field: " + orElse(agg.field, "*"));
+                    System.out.println("============================================================");
+                    
+                    // For COLLECT aggregation, collect all strings in window into a JSON array
+                    if ("COLLECT".equals(aggType)) {
+                        // Note: This is a simplified implementation for string streams
+                        // In production, you'd use proper AggregateFunction with typed objects
+                        KeyedStream<String, String> keyed = stream.keyBy(v -> "all"); // Global window key
+                        stream = keyed.window(TumblingProcessingTimeWindows.of(Duration.ofHours(24)))
+                                .aggregate(new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<String>, String>() {
+                                    @Override
+                                    public java.util.List<String> createAccumulator() {
+                                        return new java.util.ArrayList<>();
+                                    }
+                                    
+                                    @Override
+                                    public java.util.List<String> add(String value, java.util.List<String> accumulator) {
+                                        accumulator.add(value);
+                                        return accumulator;
+                                    }
+                                    
+                                    @Override
+                                    public String getResult(java.util.List<String> accumulator) {
+                                        // Convert to JSON array format for backup
+                                        StringBuilder json = new StringBuilder("{\"inputMessages\":[");
+                                        for (int i = 0; i < accumulator.size(); i++) {
+                                            if (i > 0) json.append(",");
+                                            json.append(accumulator.get(i));
+                                        }
+                                        json.append("],\"backupTimestamp\":\"");
+                                        json.append(java.time.Instant.now().toString());
+                                        json.append("\",\"uuid\":\"");
+                                        json.append(java.util.UUID.randomUUID().toString());
+                                        json.append("\"}");
+                                        return json.toString();
+                                    }
+                                    
+                                    @Override
+                                    public java.util.List<String> merge(java.util.List<String> a, java.util.List<String> b) {
+                                        a.addAll(b);
+                                        return a;
+                                    }
+                                });
+                        System.out.println("[AGGREGATE OPERATION] ✓ COLLECT aggregation configured");
+                    }
                 }
             }
         }
 
         if (ir.sink instanceof KafkaSinkDefinition) {
             KafkaSinkDefinition s = (KafkaSinkDefinition) ir.sink;
+            // Priority: Sink JSON field → Source JSON field → Default (kafka:9092)
+            // Do NOT check environment variables - they're set for host machine access (localhost:9093)
+            // Flink jobs run inside containers and must use internal network (kafka:9092)
             String bootstrap = orElse(s.bootstrapServers,
                     (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null,
-                    System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+                    "kafka:9092");
 
             System.out.println("============================================================");
             System.out.println("[KAFKA SINK] Configuration:");
             System.out.println("  - bootstrapServers field from JSON: " + s.bootstrapServers);
             System.out.println("  - Source bootstrapServers: " + ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
-            System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
             System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
             System.out.println("  - Topic: " + s.topic);
             System.out.println("============================================================");
@@ -334,7 +392,8 @@ public interface Sink {}
         @JsonSubTypes.Type(value = RetryOperationDefinition.class, name = "retry"),
         @JsonSubTypes.Type(value = AsyncFunctionOperationDefinition.class, name = "async"),
         @JsonSubTypes.Type(value = StateOperationDefinition.class, name = "state"),
-        @JsonSubTypes.Type(value = SideOutputOperationDefinition.class, name = "side-output")
+        @JsonSubTypes.Type(value = SideOutputOperationDefinition.class, name = "side-output"),
+        @JsonSubTypes.Type(value = AggregateOperationDefinition.class, name = "aggregate")
 })
 public interface Operation {}
 
@@ -427,6 +486,13 @@ public interface Operation {}
         public String outputTag;
         public String condition;
         public KafkaSinkDefinition sideOutputSink;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AggregateOperationDefinition implements Operation {
+        public String type;
+        public String aggregationType;  // COLLECT, SUM, COUNT, etc.
+        public String field;             // Field to aggregate, or "*" for all
     }
 
     // Simple Kafka Source using Kafka client

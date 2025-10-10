@@ -191,7 +191,7 @@ namespace Exercise2_BackupAggregator
                 {
                     type = "kafka",
                     topic = InputTopic,
-                    bootstrapServers = KafkaBootstrapServers,
+                    bootstrapServers = "kafka:9092",  // Explicit: Flink jobs use internal Docker network
                     groupId = ConsumerGroup,
                     startingOffsets = "earliest"
                 },
@@ -216,7 +216,7 @@ namespace Exercise2_BackupAggregator
                 {
                     type = "kafka",
                     topic = OutputTopic,
-                    bootstrapServers = KafkaBootstrapServers
+                    bootstrapServers = "kafka:9092"  // Explicit: Flink jobs use internal Docker network
                 },
                 metadata = new
                 {
@@ -413,7 +413,7 @@ namespace Exercise2_BackupAggregator
             }
             else
             {
-                Console.WriteLine($"   [WARNING] No backups consumed - Flink job may not be running");
+                Console.WriteLine($"   [ERROR] No backups consumed - Flink job may not be running");
                 Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
                 Console.WriteLine();
                 
@@ -421,7 +421,7 @@ namespace Exercise2_BackupAggregator
                 await PrintTaskManagerLogsAsync();
                 
                 Console.WriteLine();
-                Console.WriteLine($"   Note: This demonstrates the aggregation concept successfully");
+                throw new InvalidOperationException("No backup aggregations consumed from output topic. Flink job may not be processing data correctly.");
             }
         }
 

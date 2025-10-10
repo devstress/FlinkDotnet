@@ -35,9 +35,13 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Configure Kafka with FIXED external port 9093
-// Both tests and Flink jobs connect to localhost:9093 (mapped to container port 9092)
+// CRITICAL: Use WithEndpoint to ensure external port is FIXED at 9093
+// - Internal listener (PLAINTEXT): kafka:9092 (container-to-container)
+// - External listener (PLAINTEXT_HOST): localhost:9093 (host machine access)
+// Tests and external clients MUST use localhost:9093
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka");
+var kafka = builder.AddKafka("kafka")
+    .WithEndpoint("tcp", endpoint => endpoint.Port = Ports.KafkaExternalPort);
 #pragma warning restore S1481
 
 // Flink JobManager with named HTTP endpoint for service references
