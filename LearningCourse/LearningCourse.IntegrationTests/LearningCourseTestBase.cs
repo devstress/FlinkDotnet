@@ -24,6 +24,12 @@ public abstract class LearningCourseTestBase
     {
         TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
+        
+        // Set Kafka bootstrap servers to FIXED external port (see Ports.cs in AppHost)
+        // Kafka uses dual listener setup: internal (kafka:9092) and external (localhost:9093)
+        const string kafkaBootstrap = "localhost:9093";
+        Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
+        TestContext.WriteLine($"🔧 KAFKA_BOOTSTRAP_SERVERS set to: {kafkaBootstrap} (FIXED external port)");
 
         var psi = new ProcessStartInfo
         {
@@ -243,6 +249,14 @@ public abstract class LearningCourseTestBase
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        
+        // Pass KAFKA_BOOTSTRAP_SERVERS environment variable if set
+        var kafkaBootstrap = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS");
+        if (!string.IsNullOrEmpty(kafkaBootstrap))
+        {
+            psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = kafkaBootstrap;
+            TestContext.WriteLine($"🔧 Setting KAFKA_BOOTSTRAP_SERVERS={kafkaBootstrap} for exercise");
+        }
 
         using var process = Process.Start(psi);
         if (process == null)

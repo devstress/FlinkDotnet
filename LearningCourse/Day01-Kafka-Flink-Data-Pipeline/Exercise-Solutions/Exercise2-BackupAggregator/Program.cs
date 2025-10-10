@@ -31,7 +31,9 @@ namespace Exercise2_BackupAggregator
         private const string InputTopic = "flink_input";
         private const string OutputTopic = "flink_output";
         private const string ConsumerGroup = "baeldung";
-        private static readonly string KafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:29092";
+        private static readonly string KafkaBootstrapServers =
+            Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
+            ?? throw new InvalidOperationException("KAFKA_BOOTSTRAP_SERVERS environment variable must be set");
         private const string DefaultGatewayHost = "localhost";
         private const int DefaultGatewayPort = 8080;
         private static readonly string FlinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL")
@@ -117,11 +119,11 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("================================================================================");
             Console.WriteLine();
             Console.WriteLine("What you learned (Baeldung Sections 7-11):");
-            Console.WriteLine("  [✓] Custom object deserialization (InputMessageDeserializer)");
-            Console.WriteLine("  [✓] Custom object serialization (BackupSerializer)");
-            Console.WriteLine("  [✓] EventTime for message timestamps");
-            Console.WriteLine("  [✓] Time windows (tumbling 24-hour window)");
-            Console.WriteLine("  [✓] Aggregation functions (collect messages into Backup)");
+            Console.WriteLine("  [OK] Custom object deserialization (InputMessageDeserializer)");
+            Console.WriteLine("  [OK] Custom object serialization (BackupSerializer)");
+            Console.WriteLine("  [OK] EventTime for message timestamps");
+            Console.WriteLine("  [OK] Time windows (tumbling 24-hour window)");
+            Console.WriteLine("  [OK] Aggregation functions (collect messages into Backup)");
             Console.WriteLine();
         }
 
@@ -143,6 +145,27 @@ namespace Exercise2_BackupAggregator
         /// </summary>
         static async Task SubmitBackupAggregationJob()
         {
+            PrintJobConfiguration();
+            
+            try
+            {
+                var flinkJobDefinition = CreateFlinkJobDefinition();
+                var jobJson = JsonSerializer.Serialize(flinkJobDefinition, new JsonSerializerOptions { WriteIndented = true });
+                
+                await PostJobToFlinkGateway(jobJson);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   [WARNING] Error submitting job: {ex.Message}");
+                Console.WriteLine($"   Note: Job definition is correct - infrastructure may not be running");
+            }
+        }
+
+        /// <summary>
+        /// Print Flink job configuration details
+        /// </summary>
+        static void PrintJobConfiguration()
+        {
             Console.WriteLine($"   Creating Flink job using FlinkDotNet JobDefinition API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Time Characteristic: EventTime");
@@ -155,79 +178,117 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine($"     .timeWindowAll(Time.hours(24))");
             Console.WriteLine($"     .aggregate(new BackupAggregator())");
             Console.WriteLine($"     .addSink(flinkKafkaProducer);");
+        }
 
+        /// <summary>
+        /// Create Flink job definition object
+        /// </summary>
+        static object CreateFlinkJobDefinition()
+        {
+            return new
+            {
+                source = new
+                {
+                    type = "kafka",
+                    topic = InputTopic,
+                    bootstrapServers = KafkaBootstrapServers,
+                    groupId = ConsumerGroup,
+                    startingOffsets = "earliest"
+                },
+                operations = new object[]
+                {
+                    new
+                    {
+                        type = "window",
+                        windowType = "TUMBLING",  // Section 10: Time windows (tumbling)
+                        size = 24,                // 24 hours
+                        timeUnit = "HOURS",
+                        timeField = "sentAt"      // Section 9: EventTime from sentAt field
+                    },
+                    new
+                    {
+                        type = "aggregate",          // Section 11: Aggregating backups
+                        aggregationType = "COLLECT", // Collect messages into Backup
+                        field = "*"                  // Aggregate all fields
+                    }
+                },
+                sink = new
+                {
+                    type = "kafka",
+                    topic = OutputTopic,
+                    bootstrapServers = KafkaBootstrapServers
+                },
+                metadata = new
+                {
+                    jobId = Guid.NewGuid().ToString(),
+                    jobName = "backup-aggregator",
+                    createdAt = DateTime.UtcNow,
+                    version = "1.0",
+                    properties = new Dictionary<string, string>
+                    {
+                        { "timeCharacteristic", "EventTime" }  // Section 9: Use event time
+                    }
+                }
+            };
+        }
+
+        /// <summary>
+        /// Post job definition to Flink Gateway
+        /// </summary>
+        static async Task PostJobToFlinkGateway(string jobJson)
+        {
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var content = new System.Net.Http.StringContent(jobJson, System.Text.Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync($"{FlinkGatewayUrl}{JobSubmitEndpoint}", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted successfully");
+                Console.WriteLine($"   Response: {responseContent}");
+            }
+            else
+            {
+                HandleJobSubmissionFailure(response).Wait();
+            }
+        }
+
+        /// <summary>
+        /// Handle job submission failure with detailed error reporting
+        /// </summary>
+        static async Task HandleJobSubmissionFailure(System.Net.Http.HttpResponseMessage response)
+        {
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"   [ERROR] Job submission failed with status: {response.StatusCode}");
+            Console.WriteLine($"   Response: {responseContent}");
+            
+            PrintValidationErrors(responseContent);
+            
+            throw new InvalidOperationException($"Flink job submission failed: {response.StatusCode} - {responseContent}");
+        }
+
+        /// <summary>
+        /// Parse and print validation errors from response
+        /// </summary>
+        static void PrintValidationErrors(string responseContent)
+        {
             try
             {
-                // NOTE: FlinkDotNet DataStream API doesn't yet support timeWindowAll() and aggregate()
-                // This uses JobDefinition API which maps to Flink's internal representation
-                var flinkJobDefinition = new
+                var errorResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent);
+                if (errorResponse != null)
                 {
-                    source = new
+                    Console.WriteLine();
+                    Console.WriteLine("   [ERROR] Validation errors detected:");
+                    foreach (var kvp in errorResponse)
                     {
-                        type = "kafka",
-                        topic = InputTopic,
-                        bootstrapServers = KafkaBootstrapServers,
-                        groupId = ConsumerGroup,
-                        startingOffsets = "earliest"
-                    },
-                    operations = new object[]
-                    {
-                        new
-                        {
-                            type = "window",
-                            windowType = "TUMBLING",  // Section 10: Time windows (tumbling)
-                            size = 24,                // 24 hours
-                            timeUnit = "HOURS",
-                            timeField = "sentAt"      // Section 9: EventTime from sentAt field
-                        },
-                        new
-                        {
-                            type = "aggregate",          // Section 11: Aggregating backups
-                            aggregationType = "COLLECT", // Collect messages into Backup
-                            field = "*"                  // Aggregate all fields
-                        }
-                    },
-                    sink = new
-                    {
-                        type = "kafka",
-                        topic = OutputTopic,
-                        bootstrapServers = KafkaBootstrapServers
-                    },
-                    metadata = new
-                    {
-                        jobId = Guid.NewGuid().ToString(),
-                        jobName = "backup-aggregator",
-                        createdAt = DateTime.UtcNow,
-                        version = "1.0",
-                        properties = new Dictionary<string, string>
-                        {
-                            { "timeCharacteristic", "EventTime" }  // Section 9: Use event time
-                        }
+                        Console.WriteLine($"      - {kvp.Key}: {kvp.Value}");
                     }
-                };
-
-                var jobJson = JsonSerializer.Serialize(flinkJobDefinition, new JsonSerializerOptions { WriteIndented = true });
-
-                using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                var content = new System.Net.Http.StringContent(jobJson, System.Text.Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync($"{FlinkGatewayUrl}{JobSubmitEndpoint}", content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted successfully");
-                    Console.WriteLine($"   Response: {responseContent}");
-                }
-                else
-                {
-                    Console.WriteLine($"   [WARNING] Job submission returned: {response.StatusCode}");
-                    Console.WriteLine($"   Note: This is acceptable for learning - job definition was created correctly");
+                    Console.WriteLine();
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"   [WARNING] Error submitting job: {ex.Message}");
-                Console.WriteLine($"   Note: Job definition is correct - infrastructure may not be running");
+                // Response is not JSON or cannot be parsed - already printed above
             }
         }
 
@@ -288,7 +349,7 @@ namespace Exercise2_BackupAggregator
         /// Consume Backup aggregation results (Baeldung Section 8 & 11)
         /// Each Backup contains aggregated InputMessages with UUID and timestamp
         /// </summary>
-        static Task ConsumeBackupResults()
+        static async Task ConsumeBackupResults()
         {
             var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"consumer-{Guid.NewGuid()}");
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
@@ -321,7 +382,7 @@ namespace Exercise2_BackupAggregator
                         if (backup.InputMessages?.Count > 0)
                         {
                             Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
-                            Console.WriteLine($"        [✓] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
+                            Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
                         }
 
                         consumer.Commit(result);
@@ -353,10 +414,15 @@ namespace Exercise2_BackupAggregator
             else
             {
                 Console.WriteLine($"   [WARNING] No backups consumed - Flink job may not be running");
+                Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
+                Console.WriteLine();
+                
+                // Print last 20 lines of TaskManager container logs
+                await PrintTaskManagerLogsAsync();
+                
+                Console.WriteLine();
                 Console.WriteLine($"   Note: This demonstrates the aggregation concept successfully");
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -393,8 +459,8 @@ namespace Exercise2_BackupAggregator
 
         static async Task CreateTopicsAsync()
         {
-            var adminConfig = new AdminClientConfig 
-            { 
+            var adminConfig = new AdminClientConfig
+            {
                 BootstrapServers = KafkaBootstrapServers,
                 BrokerAddressFamily = BrokerAddressFamily.V4,
                 SecurityProtocol = SecurityProtocol.Plaintext
@@ -429,7 +495,7 @@ namespace Exercise2_BackupAggregator
 
         static async Task WaitForKafkaReadyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(60);
+            var timeout = TimeSpan.FromSeconds(20);
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.Elapsed < timeout)
@@ -461,7 +527,129 @@ namespace Exercise2_BackupAggregator
                 await Task.Delay(1000);
             }
 
-            throw new TimeoutException($"Kafka not ready within {timeout.TotalSeconds} seconds");
+            // Print docker/podman ps to help diagnose the issue
+            Console.WriteLine();
+            Console.WriteLine("   [DEBUG] Checking container status:");
+            
+            string[] containerCommands = { "docker", "podman" };
+            bool containerStatusShown = false;
+            
+            foreach (var command in containerCommands)
+            {
+                try
+                {
+                    var process = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = command,
+                            Arguments = "ps",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    process.Start();
+                    var output = await process.StandardOutput.ReadToEndAsync();
+                    _ = await process.StandardError.ReadToEndAsync();
+                    await process.WaitForExitAsync();
+                    
+                    if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
+                    {
+                        Console.WriteLine($"   [DEBUG] Running '{command} ps':");
+                        Console.WriteLine(output);
+                        containerStatusShown = true;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Try next command
+                }
+            }
+            
+            if (!containerStatusShown)
+            {
+                Console.WriteLine("   [WARNING] Could not run docker or podman ps - container runtime not available");
+            }
+            Console.WriteLine();
+
+            throw new TimeoutException(
+                $"Kafka not ready within {timeout.TotalSeconds} seconds. " +
+                $"Attempted to connect to: {KafkaBootstrapServers}. " +
+                $"Verify KAFKA_BOOTSTRAP_SERVERS environment variable is set correctly and Kafka is running. " +
+                $"Check 'docker ps' to confirm Kafka container port mapping.");
+        }
+        
+        /// <summary>
+        /// Print last 20 lines of TaskManager container logs for debugging
+        /// </summary>
+        static async Task PrintTaskManagerLogsAsync()
+        {
+            string[] containerCommands = { "docker", "podman" };
+            
+            foreach (var command in containerCommands)
+            {
+                try
+                {
+                    // Find TaskManager container
+                    var findProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = command,
+                            Arguments = "ps --filter name=taskmanager --format {{.ID}}",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    findProcess.Start();
+                    var containerId = (await findProcess.StandardOutput.ReadToEndAsync()).Trim();
+                    await findProcess.WaitForExitAsync();
+                    
+                    if (findProcess.ExitCode == 0 && !string.IsNullOrEmpty(containerId))
+                    {
+                        // Get last 20 lines of logs
+                        var logsProcess = new Process
+                        {
+                            StartInfo = new ProcessStartInfo
+                            {
+                                FileName = command,
+                                Arguments = $"logs --tail 20 {containerId}",
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            }
+                        };
+                        logsProcess.Start();
+                        var logs = await logsProcess.StandardOutput.ReadToEndAsync();
+                        await logsProcess.WaitForExitAsync();
+                        
+                        if (logsProcess.ExitCode == 0 && !string.IsNullOrEmpty(logs))
+                        {
+                            Console.WriteLine($"   [DEBUG] TaskManager logs (last 20 lines):");
+                            Console.WriteLine("   " + new string('-', 78));
+                            foreach (var line in logs.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)))
+                            {
+                                Console.WriteLine($"   {line}");
+                            }
+                            Console.WriteLine("   " + new string('-', 78));
+                            return; // Successfully printed logs
+                        }
+                    }
+                }
+                catch
+                {
+                    // Try next command
+                }
+            }
+            
+            Console.WriteLine("   [WARNING] Could not find or access TaskManager container logs");
+            Console.WriteLine("   Verify Flink TaskManager is running: docker ps | grep taskmanager");
         }
     }
 

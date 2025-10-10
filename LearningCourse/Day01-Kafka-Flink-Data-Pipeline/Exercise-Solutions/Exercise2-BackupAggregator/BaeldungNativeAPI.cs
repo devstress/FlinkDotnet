@@ -143,7 +143,14 @@ namespace Exercise2_BackupAggregator
             string inputTopic = "flink_input";
             string outputTopic = "flink_output";
             string consumerGroup = "baeldung";
-            string kafkaAddress = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:29092";
+            string? kafkaAddress = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS");
+            if (string.IsNullOrWhiteSpace(kafkaAddress))
+            {
+                throw new InvalidOperationException(
+                    "KAFKA_BOOTSTRAP_SERVERS environment variable is required but not set. " +
+                    "Please set it to your Kafka broker address (e.g., 'localhost:9092' or 'localhost:9093'). " +
+                    "Check 'docker ps' to find the actual mapped port for Kafka.");
+            }
 
             // Get StreamExecutionEnvironment
             var environment = StreamExecutionEnvironment.GetExecutionEnvironment();

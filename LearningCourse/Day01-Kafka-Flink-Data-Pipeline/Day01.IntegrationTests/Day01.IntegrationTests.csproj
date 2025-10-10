@@ -19,31 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reference pre-built FlinkDotNet DLLs to avoid rebuilding during tests -->
-    <Reference Include="FlinkDotNet">
-      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet\bin\Release\net9.0\FlinkDotNet.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="Flink.JobBuilder">
-      <HintPath>..\..\..\FlinkDotNet\Flink.JobBuilder\bin\Release\net9.0\Flink.JobBuilder.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="FlinkDotNet.Common">
-      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.Common\bin\Release\net9.0\FlinkDotNet.Common.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="FlinkDotNet.DataStream">
-      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.DataStream\bin\Release\net9.0\FlinkDotNet.DataStream.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="FlinkDotNet.Table">
-      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.Table\bin\Release\net9.0\FlinkDotNet.Table.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-    <Reference Include="FlinkDotNet.Util">
-      <HintPath>..\..\..\FlinkDotNet\FlinkDotNet.Util\bin\Release\net9.0\FlinkDotNet.Util.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
+    <!-- Use project references for proper build dependency tracking -->
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.Table\FlinkDotNet.Table.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.Util\FlinkDotNet.Util.csproj" />
   </ItemGroup>
 
 </Project>

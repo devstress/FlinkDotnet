@@ -65,16 +65,17 @@ public class ExerciseExecutionTests : LearningCourseTestBase
         TestContext.WriteLine("Test Validation");
         TestContext.WriteLine("--------------------------------------------------------------------------------");
 
-        // Check for infrastructure timeout (acceptable for learning)
+        // Check for infrastructure timeout - this should FAIL the test
         bool isInfrastructureTimeout = output.Contains("Kafka not ready") ||
                                        output.Contains("Could not connect to Flink") ||
                                        error.Contains("TimeoutException");
 
         if (isInfrastructureTimeout)
         {
-            TestContext.WriteLine("[INFO] Infrastructure not fully ready - acceptable for learning purposes");
-            TestContext.WriteLine("[INFO] Exercise demonstrates the concepts correctly");
-            Assert.Pass("Exercise 1 executed successfully - infrastructure readiness is optional");
+            TestContext.WriteLine("[FAIL] Infrastructure timeout detected");
+            TestContext.WriteLine($"Output: {output}");
+            TestContext.WriteLine($"Error: {error}");
+            Assert.Fail("Exercise 1 failed due to infrastructure not being ready. Kafka or Flink is not available.");
             return;
         }
 
@@ -148,16 +149,17 @@ public class ExerciseExecutionTests : LearningCourseTestBase
         TestContext.WriteLine("Test Validation");
         TestContext.WriteLine("--------------------------------------------------------------------------------");
 
-        // Check for infrastructure timeout (acceptable for learning)
+        // Check for infrastructure timeout - this should FAIL the test
         bool isInfrastructureTimeout = output.Contains("Kafka not ready") ||
                                        output.Contains("Could not connect to Flink") ||
                                        error.Contains("TimeoutException");
 
         if (isInfrastructureTimeout)
         {
-            TestContext.WriteLine("[INFO] Infrastructure not fully ready - acceptable for learning purposes");
-            TestContext.WriteLine("[INFO] Exercise demonstrates the concepts correctly");
-            Assert.Pass("Exercise 2 executed successfully - infrastructure readiness is optional");
+            TestContext.WriteLine("[FAIL] Infrastructure timeout detected");
+            TestContext.WriteLine($"Output: {output}");
+            TestContext.WriteLine($"Error: {error}");
+            Assert.Fail("Exercise 2 failed due to infrastructure not being ready. Kafka or Flink is not available.");
             return;
         }
 
@@ -166,34 +168,96 @@ public class ExerciseExecutionTests : LearningCourseTestBase
             $"Exercise 2 should complete successfully. Exit code: {exitCode}\nError: {error}");
 
         // Validate all required steps occurred
-        bool hasKafkaReady = output.Contains("Kafka is ready") || output.Contains("Verifying Kafka");
-        bool hasTopicsCreated = output.Contains("Topics created") || output.Contains("Topics already exist");
-        bool hasJobSubmit = output.Contains("Submitting Flink") && output.Contains("backup aggregation");
-        bool hasEventTime = output.Contains("EventTime") || output.Contains("timestamped");
-        bool hasTimeWindow = output.Contains("Time windows") || output.Contains("tumbling") || output.Contains("24-hour");
-        bool hasProducing = output.Contains("Producing") && output.Contains("InputMessage");
-        bool hasConsuming = output.Contains("Consuming") && output.Contains("Backup");
-        bool hasAggregation = output.Contains("aggregated") || output.Contains("UUID");
-        bool hasCompletion = output.Contains("EXERCISE 2 COMPLETED") || output.Contains("COMPLETED");
+        var validationChecks = new Dictionary<string, (bool result, string failureMessage)>
+        {
+            ["Kafka Ready"] = (output.Contains("Kafka is ready") || output.Contains("Verifying Kafka"), "Kafka is not ready"),
+            ["Topics Created"] = (output.Contains("Topics created") || output.Contains("Topics already exist"), "Kafka topics were not created"),
+            ["Job Submitted"] = (output.Contains("Submitting Flink") && output.Contains("backup aggregation"), "Flink backup aggregation job was not submitted"),
+            ["EventTime Used"] = (output.Contains("EventTime") || output.Contains("timestamped"), "EventTime was not used"),
+            ["Time Windows"] = (output.Contains("Time windows") || output.Contains("tumbling") || output.Contains("24-hour"), "Time windows were not configured"),
+            ["InputMessages Produced"] = (output.Contains("Producing") && output.Contains("InputMessage"), "InputMessage objects were not produced"),
+            ["Backups Consumed"] = (output.Contains("Consuming") && output.Contains("Backup"), "Backup aggregations were not consumed"),
+            ["Aggregation Verified"] = (output.Contains("aggregated") || output.Contains("UUID"), "Aggregation was not verified (UUID not found)"),
+            ["Exercise Completed"] = (output.Contains("EXERCISE 2 COMPLETED") || output.Contains("COMPLETED"), "Exercise did not complete successfully")
+        };
 
-        TestContext.WriteLine($"[CHECK] Kafka Ready: {hasKafkaReady}");
-        TestContext.WriteLine($"[CHECK] Topics Created: {hasTopicsCreated}");
-        TestContext.WriteLine($"[CHECK] Job Submitted: {hasJobSubmit}");
-        TestContext.WriteLine($"[CHECK] EventTime Used: {hasEventTime}");
-        TestContext.WriteLine($"[CHECK] Time Windows: {hasTimeWindow}");
-        TestContext.WriteLine($"[CHECK] InputMessages Produced: {hasProducing}");
-        TestContext.WriteLine($"[CHECK] Backups Consumed: {hasConsuming}");
-        TestContext.WriteLine($"[CHECK] Aggregation Verified: {hasAggregation}");
-        TestContext.WriteLine($"[CHECK] Exercise Completed: {hasCompletion}");
+        // Print all validation results
+        foreach (var check in validationChecks)
+        {
+            TestContext.WriteLine($"[CHECK] {check.Key}: {check.Value.result}");
+        }
 
-        Assert.That(hasKafkaReady, Is.True, "Should verify Kafka is ready");
-        Assert.That(hasTopicsCreated, Is.True, "Should create Kafka topics");
-        Assert.That(hasJobSubmit, Is.True, "Should submit Flink backup aggregation job");
-        Assert.That(hasProducing, Is.True, "Should produce InputMessage objects");
-        Assert.That(hasCompletion, Is.True, "Should complete exercise successfully");
+        // Collect failures and report if any
+        ValidateExerciseResults(validationChecks, output, error, "Exercise 2");
 
         TestContext.WriteLine();
         TestContext.WriteLine("[PASS] Exercise 2 validated all Baeldung Sections 7-11 concepts");
         TestContext.WriteLine();
+    }
+
+    /// <summary>
+    /// Helper method to validate exercise results and report failures
+    /// </summary>
+    private static void ValidateExerciseResults(
+        Dictionary<string, (bool result, string failureMessage)> validationChecks,
+        string output,
+        string error,
+        string exerciseName)
+    {
+        var validationFailures = validationChecks
+            .Where(kvp => !kvp.Value.result)
+            .Select(kvp => kvp.Value.failureMessage)
+            .ToList();
+
+        if (validationFailures.Count == 0)
+            return;
+
+        ReportValidationFailures(validationFailures, output, error, exerciseName);
+    }
+
+    /// <summary>
+    /// Helper method to report validation failures with debug information
+    /// </summary>
+    private static void ReportValidationFailures(
+        List<string> validationFailures,
+        string output,
+        string error,
+        string exerciseName)
+    {
+        TestContext.WriteLine();
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("VALIDATION FAILURES DETECTED");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine($"Failed validations ({validationFailures.Count}):");
+        
+        foreach (var failure in validationFailures)
+        {
+            TestContext.WriteLine($"  - {failure}");
+        }
+
+        PrintDebugOutput(output, error);
+
+        Assert.Fail($"{exerciseName} validation failed. {validationFailures.Count} check(s) failed:\n  - {string.Join("\n  - ", validationFailures)}");
+    }
+
+    /// <summary>
+    /// Helper method to print debug output
+    /// </summary>
+    private static void PrintDebugOutput(string output, string error)
+    {
+        TestContext.WriteLine();
+        TestContext.WriteLine("Full Output:");
+        TestContext.WriteLine("--------------------------------------------------------------------------------");
+        TestContext.WriteLine(output);
+        TestContext.WriteLine("--------------------------------------------------------------------------------");
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            TestContext.WriteLine();
+            TestContext.WriteLine("Error Output:");
+            TestContext.WriteLine("--------------------------------------------------------------------------------");
+            TestContext.WriteLine(error);
+            TestContext.WriteLine("--------------------------------------------------------------------------------");
+        }
     }
 }

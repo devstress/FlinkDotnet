@@ -27,8 +27,8 @@ namespace Exercise1_StringCapitalize
         private const string InputTopic = "flink_input";
         private const string OutputTopic = "flink_output";
         private const string ConsumerGroup = "baeldung";
-        private static readonly string KafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:29092";
-
+        private static readonly string KafkaBootstrapServers = "localhost:9093";
+ 
         static async Task Main(string[] args)
         {
             // Set console encoding to UTF-8
@@ -351,7 +351,7 @@ namespace Exercise1_StringCapitalize
 
         static async Task WaitForKafkaReadyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(60);
+            var timeout = TimeSpan.FromSeconds(20);
             var stopwatch = Stopwatch.StartNew();
 
             while (stopwatch.Elapsed < timeout)
@@ -383,7 +383,59 @@ namespace Exercise1_StringCapitalize
                 await Task.Delay(1000);
             }
 
-            throw new TimeoutException($"Kafka not ready within {timeout.TotalSeconds} seconds");
+            // Print docker/podman ps to help diagnose the issue
+            Console.WriteLine();
+            Console.WriteLine("   [DEBUG] Checking container status:");
+            
+            string[] containerCommands = { "docker", "podman" };
+            bool containerStatusShown = false;
+            
+            foreach (var command in containerCommands)
+            {
+                try
+                {
+                    var process = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = command,
+                            Arguments = "ps",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    process.Start();
+                    var output = await process.StandardOutput.ReadToEndAsync();
+                    _ = await process.StandardError.ReadToEndAsync();
+                    await process.WaitForExitAsync();
+                    
+                    if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
+                    {
+                        Console.WriteLine($"   [DEBUG] Running '{command} ps':");
+                        Console.WriteLine(output);
+                        containerStatusShown = true;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Try next command
+                }
+            }
+            
+            if (!containerStatusShown)
+            {
+                Console.WriteLine("   [WARNING] Could not run docker or podman ps - container runtime not available");
+            }
+            Console.WriteLine();
+
+            throw new TimeoutException(
+                $"Kafka not ready within {timeout.TotalSeconds} seconds. " +
+                $"Attempted to connect to: {KafkaBootstrapServers}. " +
+                $"Verify KAFKA_BOOTSTRAP_SERVERS environment variable is set correctly and Kafka is running. " +
+                $"Check 'docker ps' to confirm Kafka container port mapping.");
         }
     }
 
