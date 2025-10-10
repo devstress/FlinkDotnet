@@ -90,10 +90,12 @@ public class FlinkJobRunner {
             return; // No further DataStream processing for pure SQL jobs
         } else if (ir.source instanceof KafkaSourceDefinition) {
             KafkaSourceDefinition k = (KafkaSourceDefinition) ir.source;
-            // Priority: JSON field → Default (kafka:9092)
-            // Do NOT check environment variables - they're set for host machine access (localhost:9093)
-            // Flink jobs run inside containers and must use internal network (kafka:9092)
-            String bootstrap = orElse(k.bootstrapServers, "kafka:9092");
+            
+            if (k.bootstrapServers == null || k.bootstrapServers.isEmpty()) {
+                throw new RuntimeException("Kafka source bootstrapServers is required but was not provided");
+            }
+            
+            String bootstrap = k.bootstrapServers;
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
 
             System.out.println("============================================================");
@@ -226,9 +228,10 @@ public class FlinkJobRunner {
                     // attach sink to side output (Kafka-only supported here)
                     DataStream<String> side = main.getSideOutput(tag);
                     if (so.sideOutputSink != null && so.sideOutputSink.type != null && so.sideOutputSink.type.equals("kafka")) {
-                        // Priority: JSON field → Default (kafka:9092)
-                        // Do NOT check environment variables - Flink jobs run inside containers
-                        String bootstrap = orElse(so.sideOutputSink.bootstrapServers, "kafka:9092");
+                        if (so.sideOutputSink.bootstrapServers == null || so.sideOutputSink.bootstrapServers.isEmpty()) {
+                            throw new RuntimeException("Side output Kafka sink bootstrapServers is required but was not provided");
+                        }
+                        String bootstrap = so.sideOutputSink.bootstrapServers;
                         Properties props = new Properties();
                         props.put("bootstrap.servers", bootstrap);
                         side.addSink(new KafkaStringSink(so.sideOutputSink.topic, props)).name("SideKafkaSink:"+so.outputTag);
@@ -292,12 +295,13 @@ public class FlinkJobRunner {
 
         if (ir.sink instanceof KafkaSinkDefinition) {
             KafkaSinkDefinition s = (KafkaSinkDefinition) ir.sink;
-            // Priority: Sink JSON field → Source JSON field → Default (kafka:9092)
-            // Do NOT check environment variables - they're set for host machine access (localhost:9093)
-            // Flink jobs run inside containers and must use internal network (kafka:9092)
+            // Priority: Sink JSON field → Source JSON field
             String bootstrap = orElse(s.bootstrapServers,
-                    (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null,
-                    "kafka:9092");
+                    (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null);
+            
+            if (bootstrap == null || bootstrap.isEmpty()) {
+                throw new RuntimeException("Kafka sink bootstrapServers is required but was not provided");
+            }
 
             System.out.println("============================================================");
             System.out.println("[KAFKA SINK] Configuration:");

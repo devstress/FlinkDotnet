@@ -139,9 +139,11 @@ namespace Exercise1_StringCapitalize
             var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Create Kafka source (equivalent to FlinkKafkaConsumer)
+            // Note: Use kafka:9092 for Flink job (internal Docker network)
+            // NOT localhost:9093 which is for host machine access
             var stringInputStream = environment.FromKafka(
                 topic: InputTopic,
-                bootstrapServers: KafkaBootstrapServers,
+                bootstrapServers: "kafka:9092",  // Flink jobs run inside containers
                 groupId: ConsumerGroup,
                 startingOffsets: "earliest"
             );
@@ -150,7 +152,7 @@ namespace Exercise1_StringCapitalize
             // Using WordsCapitalizer class - exact match to Baeldung Java API
             stringInputStream
                 .Map(new WordsCapitalizer())
-                .SinkToKafka(OutputTopic, KafkaBootstrapServers);
+                .SinkToKafka(OutputTopic, "kafka:9092");  // Flink jobs run inside containers
 
             // Execute the job
             var result = await environment.ExecuteAsync("string-capitalize-pipeline");

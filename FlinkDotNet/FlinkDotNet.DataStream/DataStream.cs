@@ -263,16 +263,24 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public DataStream<T> SinkToKafka(string topic, string? bootstrapServers = null, System.Func<T, string>? serializer = null)
         {
+            if (string.IsNullOrWhiteSpace(bootstrapServers))
+            {
+                throw new ArgumentException(
+                    "Kafka bootstrap servers must be provided via bootstrapServers parameter.",
+                    nameof(bootstrapServers));
+            }
+            
             // Support native API with operation capture
             if (_operationCapture != null)
             {
-                _operationCapture.CaptureKafkaSink(topic, bootstrapServers ?? "localhost:9092", serializer);
+                _operationCapture.CaptureKafkaSink(topic, bootstrapServers, serializer);
                 return this;
             }
             
             // Support IR-backed streams
             if (_job == null)
                 throw new InvalidOperationException("SinkToKafka requires an IR-backed stream created via environment.FromKafka(...) or AddKafkaSource(...)");
+            
             _job.Sink = new Flink.JobBuilder.Models.KafkaSinkDefinition { Topic = topic, BootstrapServers = bootstrapServers };
             _environment.SetActiveJob(_job);
             return this;

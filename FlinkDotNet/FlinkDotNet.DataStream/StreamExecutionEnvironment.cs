@@ -75,9 +75,16 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public DataStream<string> FromKafka(string topic, string? bootstrapServers = null, string? groupId = null, string startingOffsets = "latest")
         {
+            if (string.IsNullOrWhiteSpace(bootstrapServers))
+            {
+                throw new ArgumentException(
+                    "Kafka bootstrap servers must be provided via bootstrapServers parameter.",
+                    nameof(bootstrapServers));
+            }
+            
             // Initialize operation capture for native API usage
             _operationCapture = new OperationCapture();
-            _operationCapture.CaptureKafkaSource(topic, bootstrapServers ?? "localhost:9092", groupId ?? "default-group", startingOffsets, null);
+            _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
             
             var jd = new JobDefinition
             {
