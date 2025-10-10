@@ -121,15 +121,99 @@ Fix error handling in Exercise1 and Exercise2 programs to:
 
 ## Phase 3: Implementation
 
-### Code Changes Required
+### Code Changes Completed
 
 **Exercise1/Program.cs:**
-1. Lines 106-109: Replace `[✓]` with `[OK]`
-2. Line 250: Replace `[✓]` with `[OK]`
-3. Lines 131-176: Refactor `SubmitCapitalizeJob` to throw exceptions
-4. Lines 223-282: Refactor `ConsumeResults` to throw exceptions and print TaskManager logs
-5. Add `PrintTaskManagerLogsAsync` method (copy from Exercise2)
+1. ✅ Lines 106-109: Replaced `[✓]` with `[OK]` for cross-platform compatibility
+2. ✅ Line 250: Replaced `[✓]` with `[OK]`
+3. ✅ Lines 131-176: Refactored `SubmitCapitalizeJob` to throw exceptions on failure
+   - Removed try-catch that converted failures to warnings
+   - Now throws `InvalidOperationException` with descriptive error message
+   - Includes full error details from result.Error
+4. ✅ Lines 223-282: Refactored `ConsumeResults` to throw exceptions and print TaskManager logs
+   - Changed return type from `Task` to `async Task`
+   - Replaced `[WARNING]` with `[ERROR]` for no messages consumed
+   - Added call to `PrintTaskManagerLogsAsync()` before throwing exception
+   - Throws `InvalidOperationException` when no messages consumed
+5. ✅ Added `PrintTaskManagerLogsAsync` method (lines 283-347)
+   - Copied from Exercise2 implementation
+   - Supports both docker and podman
+   - Prints last 20 lines of TaskManager container logs
+   - Provides clear diagnostics when logs unavailable
 
 **Exercise2/Program.cs:**
-1. Lines 122-126: Replace `[OK]` checkmarks (already ASCII - VERIFY)
-2. Lines 385: Replace `[OK]` with verification (already ASCII - VERIFY)
+1. ✅ Line 416: Changed `[WARNING]` to `[ERROR]` for no backups consumed
+2. ✅ Line 424: Added exception throw after printing TaskManager logs
+   - Throws `InvalidOperationException` with descriptive error message
+   - Ensures test fails when Flink job doesn't produce results
+3. ✅ Exercise2 already had proper error handling for job submission (line 267)
+4. ✅ Exercise2 already had TaskManager log printing functionality (lines 588-653)
+
+### Implementation Summary
+
+**Key Changes:**
+- **Error Handling**: Both exercises now throw exceptions instead of printing warnings
+- **Diagnostics**: Both exercises print TaskManager logs when messages/backups not consumed
+- **UTF-8 Fix**: Replaced UTF-8 checkmarks with ASCII `[OK]` for reliability
+- **Consistency**: Exercise1 now matches Exercise2's error handling patterns
+
+**Error Flow:**
+1. Job submission failure → Immediate exception with full error details
+2. No messages consumed → Print TaskManager logs → Throw exception with context
+3. Consumption errors → Rethrow exception (no silent failures)
+
+**Test Impact:**
+- Tests will now FAIL (as expected) when infrastructure issues occur
+- Error messages provide actionable diagnostics
+- TaskManager logs help identify root causes
+- No more false positives from warning-only behavior
+
+## Phase 4: Testing & Validation
+
+### Test Plan
+1. Run Exercise1 with working Kafka/Flink → Should pass with `[OK]` indicators
+2. Run Exercise1 without Flink → Should fail with TaskManager logs
+3. Run Exercise2 with working infrastructure → Should pass
+4. Run Exercise2 without working aggregation → Should fail with diagnostics
+5. Verify UTF-8 checkmarks replaced with ASCII `[OK]`
+
+### Expected Outcomes
+- **Success Case**: Programs complete successfully with `[OK]` indicators
+- **Failure Case**: Programs throw exceptions with:
+  - Clear error messages
+  - TaskManager container logs (last 20 lines)
+  - Actionable guidance for resolution
+
+## Phase 5: Documentation
+
+### Lessons Learned & Future Reference
+
+**What Worked Well:**
+- Exercise2 already had robust error handling as a template
+- TaskManager log printing provides invaluable diagnostics
+- Throwing exceptions ensures tests fail fast with context
+
+**What Could Be Improved:**
+- Could add retry logic for transient failures
+- Could capture JobManager logs in addition to TaskManager
+- Could add health check endpoints for better diagnostics
+
+**Key Insights for Similar Tasks:**
+- Always fail fast with detailed error context
+- Diagnostic information (logs, status) is critical for debugging
+- ASCII characters are more reliable than UTF-8 for cross-platform output
+- Consistent error handling patterns improve maintainability
+
+**Specific Problems to Avoid in Future:**
+- ❌ Never silently handle errors with warnings only
+- ❌ Don't rely on UTF-8 characters for important indicators
+- ❌ Don't assume infrastructure is working - validate and fail fast
+- ✅ Always provide actionable error messages
+- ✅ Include diagnostic information in error paths
+- ✅ Maintain consistent error handling across similar components
+
+**Reference for Future WIs:**
+- When adding new exercises, use Exercise2 error handling as template
+- Always include TaskManager log printing for Flink jobs
+- Test both success and failure paths before completing WI
+- Document error scenarios in exercise README files

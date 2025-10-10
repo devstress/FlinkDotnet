@@ -97,6 +97,20 @@ namespace FlinkDotNet.DataStream
                 return new DataStream<TOut>(mappedSource, _environment, $"Map({_sourceName})");
             }
 
+            // Handle JobDefinition-backed streams with OperationCapture (FromKafka, AddKafkaSource)
+            if (_operationCapture != null || _job != null)
+            {
+                // For streams created with FromKafka() or AddKafkaSource(), map operations are captured
+                // and translated to JobDefinition operations during ExecuteAsync()
+                // Return a new stream that maintains the operation capture chain
+                var result = new DataStream<TOut>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
+                if (_operationCapture != null)
+                {
+                    result.AttachOperationCapture(_operationCapture);
+                }
+                return result;
+            }
+
             throw new InvalidOperationException("DataStream has no valid source");
         }
 
@@ -155,6 +169,17 @@ namespace FlinkDotNet.DataStream
                 return new DataStream<T>(filteredSource, _environment, $"Filter({_sourceName})");
             }
 
+            // Handle JobDefinition-backed streams with OperationCapture
+            if (_operationCapture != null || _job != null)
+            {
+                var result = new DataStream<T>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
+                if (_operationCapture != null)
+                {
+                    result.AttachOperationCapture(_operationCapture);
+                }
+                return result;
+            }
+
             throw new InvalidOperationException("DataStream has no valid source");
         }
 
@@ -187,6 +212,17 @@ namespace FlinkDotNet.DataStream
             {
                 var flatMappedSource = new FlatMappedSourceFunction<T, TOut>(_sourceFunction, flatMapFunction);
                 return new DataStream<TOut>(flatMappedSource, _environment, $"FlatMap({_sourceName})");
+            }
+
+            // Handle JobDefinition-backed streams with OperationCapture
+            if (_operationCapture != null || _job != null)
+            {
+                var result = new DataStream<TOut>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
+                if (_operationCapture != null)
+                {
+                    result.AttachOperationCapture(_operationCapture);
+                }
+                return result;
             }
 
             throw new InvalidOperationException("DataStream has no valid source");

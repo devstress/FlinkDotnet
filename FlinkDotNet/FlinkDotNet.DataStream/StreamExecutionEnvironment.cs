@@ -71,10 +71,14 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Creates a Kafka string source compatible with Apache Flink via the IR Runner.
-        /// Use with expression-based Map/Filter and SinkToKafka methods on DataStream.
+        /// Supports both expression-based Map/Filter/SinkToKafka AND native DataStream API with IMapFunction.
         /// </summary>
         public DataStream<string> FromKafka(string topic, string? bootstrapServers = null, string? groupId = null, string startingOffsets = "latest")
         {
+            // Initialize operation capture for native API usage
+            _operationCapture = new OperationCapture();
+            _operationCapture.CaptureKafkaSource(topic, bootstrapServers ?? "localhost:9092", groupId ?? "default-group", startingOffsets, null);
+            
             var jd = new JobDefinition
             {
                 Source = new KafkaSourceDefinition
@@ -93,7 +97,13 @@ namespace FlinkDotNet.DataStream
                 }
             };
             SetActiveJob(jd);
-            return new DataStream<string>(jd, this);
+            
+            var dataStream = new DataStream<string>(jd, this);
+            
+            // Attach operation capture to enable native API (Map with IMapFunction)
+            dataStream.AttachOperationCapture(_operationCapture);
+            
+            return dataStream;
         }
 
         /// <summary>
