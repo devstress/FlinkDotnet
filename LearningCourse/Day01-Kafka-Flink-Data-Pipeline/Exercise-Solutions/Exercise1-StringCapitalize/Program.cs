@@ -31,20 +31,15 @@ namespace Exercise1_StringCapitalize
         // Kafka addresses - read from environment variables set by test infrastructure
         // KAFKA_BOOTSTRAP_SERVERS: For host-to-container communication (producer/consumer operations from this exercise)
         // KAFKA_FLINK_BOOTSTRAP_SERVERS: For container-to-container communication (Flink job Kafka connectivity)
-        private static readonly string KafkaBootstrapServers =
+        // Lazy evaluation - reads env var when first accessed, not at class load time
+        private static string KafkaBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
-        private static readonly string KafkaFlinkBootstrapServers =
+        private static string KafkaFlinkBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
-        static Program()
-        {
-            // Log environment variable values on startup for debugging
-            Console.WriteLine($"[DEBUG] KAFKA_BOOTSTRAP_SERVERS env var: {Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "NOT SET"}");
-            Console.WriteLine($"[DEBUG] KAFKA_FLINK_BOOTSTRAP_SERVERS env var: {Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "NOT SET"}");
-            Console.WriteLine($"[DEBUG] KafkaBootstrapServers resolved to: {KafkaBootstrapServers}");
-            Console.WriteLine($"[DEBUG] KafkaFlinkBootstrapServers resolved to: {KafkaFlinkBootstrapServers}");
-        }
- 
+        private static string FlinkGatewayUrl =>
+            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+
         static async Task Main(string[] args)
         {
             // Set console encoding to UTF-8
@@ -92,25 +87,29 @@ namespace Exercise1_StringCapitalize
         /// </summary>
         static async Task RunCapitalizeDemo()
         {
-            Console.WriteLine(">> Step 1/5: Verifying Kafka is ready...");
+            Console.WriteLine(">> Step 1/6: Verifying Kafka is ready...");
             await WaitForKafkaReadyAsync();
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 2/5: Creating Kafka topics...");
+            Console.WriteLine(">> Step 2/6: Verifying Flink cluster is ready...");
+            await WaitForFlinkHealthyAsync();
+            Console.WriteLine();
+
+            Console.WriteLine(">> Step 3/6: Creating Kafka topics...");
             await CreateTopicsAsync();
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 3/5: Submitting Flink capitalize job...");
+            Console.WriteLine(">> Step 4/6: Submitting Flink capitalize job...");
             await SubmitCapitalizeJob();
             await Task.Delay(3000); // Wait for job to start
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 4/5: Producing lowercase messages to input topic...");
+            Console.WriteLine(">> Step 5/6: Producing lowercase messages to input topic...");
             await ProduceMessages();
             await Task.Delay(2000); // Wait for Flink to process
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 5/5: Consuming capitalized results from output topic...");
+            Console.WriteLine(">> Step 6/6: Consuming capitalized results from output topic...");
             await ConsumeResults();
             Console.WriteLine();
 
@@ -439,8 +438,9 @@ namespace Exercise1_StringCapitalize
 
         static async Task WaitForKafkaReadyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(20);
+            var timeout = TimeSpan.FromSeconds(30);  // Increased from 20s to 30s - Confluent Local takes time to initialize
             var stopwatch = Stopwatch.StartNew();
+            var retryDelay = 1000;  // Start with 1 second
 
             while (stopwatch.Elapsed < timeout)
             {
@@ -465,10 +465,14 @@ namespace Exercise1_StringCapitalize
                 }
                 catch
                 {
-                    // Continue waiting
+                    // Continue waiting - use exponential backoff
                 }
 
-                await Task.Delay(1000);
+                Console.WriteLine($"   [RETRY] Kafka not ready yet, retrying in {retryDelay/1000.0:F1}s... (elapsed: {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                await Task.Delay(retryDelay);
+                
+                // Exponential backoff: 1s, 2s, 3s, 4s, 5s (max)
+                retryDelay = Math.Min(retryDelay + 1000, 5000);
             }
 
             // Print docker/podman ps to help diagnose the issue
@@ -524,6 +528,42 @@ namespace Exercise1_StringCapitalize
                 $"Attempted to connect to: {KafkaBootstrapServers}. " +
                 $"Verify KAFKA_BOOTSTRAP_SERVERS environment variable is set correctly and Kafka is running. " +
                 $"Check 'docker ps' to confirm Kafka container port mapping.");
+        }
+
+        static async Task WaitForFlinkHealthyAsync()
+        {
+            var timeout = TimeSpan.FromSeconds(30);
+            var stopwatch = Stopwatch.StartNew();
+            var retryDelay = 1000;
+
+            while (stopwatch.Elapsed < timeout)
+            {
+                try
+                {
+                    using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"   [SUCCESS] Flink cluster is healthy and ready");
+                        return;
+                    }
+                }
+                catch
+                {
+                    // Continue waiting
+                }
+
+                Console.WriteLine($"   [RETRY] Flink not ready yet, retrying in {retryDelay/1000.0:F1}s... (elapsed: {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                await Task.Delay(retryDelay);
+                
+                // Exponential backoff: 1s, 2s, 3s, 4s, 5s (max)
+                retryDelay = Math.Min(retryDelay + 1000, 5000);
+            }
+
+            throw new TimeoutException(
+                $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
+                $"Verify Flink JobManager is running and accessible at {FlinkGatewayUrl}");
         }
     }
 

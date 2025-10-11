@@ -65,17 +65,18 @@ public class ExerciseExecutionTests : LearningCourseTestBase
         TestContext.WriteLine("Test Validation");
         TestContext.WriteLine("--------------------------------------------------------------------------------");
 
-        // Check for infrastructure timeout - this should FAIL the test
-        bool isInfrastructureTimeout = output.Contains("Kafka not ready") ||
-                                       output.Contains("Could not connect to Flink") ||
-                                       error.Contains("TimeoutException");
+        // Check for actual infrastructure failure (not retry messages)
+        // Distinguish between temporary retries (expected) and permanent failures (unexpected)
+        bool hasKafkaTimeoutError = error.Contains("Kafka not ready within") && error.Contains("TimeoutException");
+        bool hasFlinkTimeoutError = error.Contains("Could not connect to Flink") && error.Contains("TimeoutException");
+        bool isInfrastructureTimeout = hasKafkaTimeoutError || hasFlinkTimeoutError;
 
         if (isInfrastructureTimeout)
         {
-            TestContext.WriteLine("[FAIL] Infrastructure timeout detected");
+            TestContext.WriteLine("[FAIL] Infrastructure timeout detected - services did not become ready");
             TestContext.WriteLine($"Output: {output}");
             TestContext.WriteLine($"Error: {error}");
-            Assert.Fail("Exercise 1 failed due to infrastructure not being ready. Kafka or Flink is not available.");
+            Assert.Fail("Exercise 1 failed due to infrastructure timeout. Kafka or Flink did not become available within the timeout period.");
             return;
         }
 
@@ -125,6 +126,36 @@ public class ExerciseExecutionTests : LearningCourseTestBase
     [Description("Exercise 2: Custom Objects and Backup Aggregation (Baeldung Sections 7-11)")]
     public async Task Exercise2_BackupAggregator_ShouldExecuteSuccessfully()
     {
+        PrintExercise2Header();
+
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            Exercise2Path,
+            Array.Empty<string>(),
+            ExerciseTimeout);
+
+        TestContext.WriteLine();
+        TestContext.WriteLine("--------------------------------------------------------------------------------");
+        TestContext.WriteLine("Test Validation");
+        TestContext.WriteLine("--------------------------------------------------------------------------------");
+
+        CheckForInfrastructureTimeout(error, "Exercise 2");
+        CheckForDeserializationErrors(output);
+
+        // Validate execution completed successfully
+        Assert.That(exitCode, Is.EqualTo(0),
+            $"Exercise 2 should complete successfully. Exit code: {exitCode}\nError: {error}");
+
+        var validationChecks = BuildExercise2ValidationChecks(output);
+        PrintValidationResults(validationChecks);
+        ValidateExerciseResults(validationChecks, output, error, "Exercise 2");
+
+        TestContext.WriteLine();
+        TestContext.WriteLine("[PASS] Exercise 2 validated all Baeldung Sections 7-11 concepts");
+        TestContext.WriteLine();
+    }
+
+    private static void PrintExercise2Header()
+    {
         TestContext.WriteLine("================================================================================");
         TestContext.WriteLine("  Exercise 2: Custom Objects and Backup Aggregation");
         TestContext.WriteLine("================================================================================");
@@ -138,40 +169,47 @@ public class ExerciseExecutionTests : LearningCourseTestBase
         TestContext.WriteLine("  - Section 10: Creating Time Windows (Tumbling)");
         TestContext.WriteLine("  - Section 11: Aggregating Backups (Daily aggregation)");
         TestContext.WriteLine();
+    }
 
-        var (exitCode, output, error) = await ExecuteExerciseAsync(
-            Exercise2Path,
-            Array.Empty<string>(),
-            ExerciseTimeout);
-
-        TestContext.WriteLine();
-        TestContext.WriteLine("--------------------------------------------------------------------------------");
-        TestContext.WriteLine("Test Validation");
-        TestContext.WriteLine("--------------------------------------------------------------------------------");
-
-        // Check for infrastructure timeout - this should FAIL the test
-        bool isInfrastructureTimeout = output.Contains("Kafka not ready") ||
-                                       output.Contains("Could not connect to Flink") ||
-                                       error.Contains("TimeoutException");
-
-        if (isInfrastructureTimeout)
+    private static void CheckForInfrastructureTimeout(string error, string exerciseName)
+    {
+        bool hasKafkaTimeoutError = error.Contains("Kafka not ready within") && error.Contains("TimeoutException");
+        bool hasFlinkTimeoutError = error.Contains("Could not connect to Flink") && error.Contains("TimeoutException");
+        
+        if (hasKafkaTimeoutError || hasFlinkTimeoutError)
         {
-            TestContext.WriteLine("[FAIL] Infrastructure timeout detected");
-            TestContext.WriteLine($"Output: {output}");
-            TestContext.WriteLine($"Error: {error}");
-            Assert.Fail("Exercise 2 failed due to infrastructure not being ready. Kafka or Flink is not available.");
-            return;
+            TestContext.WriteLine("[FAIL] Infrastructure timeout detected - services did not become ready");
+            Assert.Fail($"{exerciseName} failed due to infrastructure timeout. Kafka or Flink did not become available within the timeout period.");
         }
+    }
 
-        // Validate execution completed successfully
-        Assert.That(exitCode, Is.EqualTo(0),
-            $"Exercise 2 should complete successfully. Exit code: {exitCode}\nError: {error}");
+    private static void CheckForDeserializationErrors(string output)
+    {
+        bool hasDeserializationError = output.Contains("[ERROR] Deserialization error:") ||
+                                       output.Contains("is an invalid start of a value");
+        
+        if (hasDeserializationError)
+        {
+            TestContext.WriteLine("[FAIL] Deserialization error detected in Backup aggregation consumption");
+            
+            var errorLines = output.Split('\n')
+                .Where(line => line.Contains("[ERROR] Deserialization error:"))
+                .ToList();
+            
+            foreach (var errorLine in errorLines)
+            {
+                TestContext.WriteLine($"  {errorLine.Trim()}");
+            }
+            
+            Assert.Fail("Exercise 2 failed: Deserialization error when consuming Backup aggregations. " +
+                       "This indicates the Flink job is outputting malformed JSON. " +
+                       "Expected valid JSON objects but received text starting with 'm'.");
+        }
+    }
 
-        // Validate all required steps occurred
-        // NOTE: Exercise 2 uses 24-hour window (matching Baeldung tutorial)
-        // The window will NOT fire during the test, so Backup consumption will fail
-        // This is expected behavior - main learning objectives are job submission and message production
-        var validationChecks = new Dictionary<string, (bool result, string failureMessage)>
+    private static Dictionary<string, (bool result, string failureMessage)> BuildExercise2ValidationChecks(string output)
+    {
+        return new Dictionary<string, (bool result, string failureMessage)>
         {
             ["Kafka Ready"] = (output.Contains("Kafka is ready") || output.Contains("Verifying Kafka"), "Kafka is not ready"),
             ["Topics Created"] = (output.Contains("Topics created") || output.Contains("Topics already exist"), "Kafka topics were not created"),
@@ -179,23 +217,17 @@ public class ExerciseExecutionTests : LearningCourseTestBase
             ["EventTime Used"] = (output.Contains("EventTime") || output.Contains("timestamped"), "EventTime was not used"),
             ["Time Windows"] = (output.Contains("Time windows") || output.Contains("tumbling") || output.Contains("24-hour"), "Time windows were not configured"),
             ["InputMessages Produced"] = (output.Contains("Producing") && output.Contains("InputMessage") || output.Contains("All 50 InputMessage objects produced"), "InputMessage objects were not produced"),
-            // Backups and aggregation checks are optional since 24-hour window won't fire during test
             ["Backups Consumed"] = (output.Contains("Consuming") && output.Contains("Backup"), "Backup consumption attempted (window may not have fired - this is expected)"),
             ["Job Running"] = (output.Contains("Job is running") || output.Contains("job submitted") || output.Contains("Flink"), "Job should be running in Flink")
         };
+    }
 
-        // Print all validation results
+    private static void PrintValidationResults(Dictionary<string, (bool result, string failureMessage)> validationChecks)
+    {
         foreach (var check in validationChecks)
         {
             TestContext.WriteLine($"[CHECK] {check.Key}: {check.Value.result}");
         }
-
-        // Collect failures and report if any
-        ValidateExerciseResults(validationChecks, output, error, "Exercise 2");
-
-        TestContext.WriteLine();
-        TestContext.WriteLine("[PASS] Exercise 2 validated all Baeldung Sections 7-11 concepts");
-        TestContext.WriteLine();
     }
 
     /// <summary>

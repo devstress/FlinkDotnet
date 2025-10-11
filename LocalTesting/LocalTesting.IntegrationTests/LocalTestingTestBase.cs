@@ -196,7 +196,7 @@ public abstract class LocalTestingTestBase
             
             lastException = exception;
             await LogKafkaAttemptDiagnosticsAsync(attempt, bootstrapVariations, lastException);
-            await Task.Delay(250, ct); // Optimized: Reduced to 250ms
+            await Task.Delay(100, ct); // Optimized: Reduced to 100ms (was 250ms)
         }
         
         throw await CreateKafkaTimeoutExceptionAsync(timeout, bootstrapVariations, lastException);
@@ -359,7 +359,7 @@ public abstract class LocalTestingTestBase
                 return;
             }
             
-            await Task.Delay(500, ct); // Optimized: Reduced to 500ms
+            await Task.Delay(200, ct); // Optimized: Reduced to 200ms (was 500ms)
         }
         
         await LogFlinkContainerDiagnosticsAsync();
@@ -369,9 +369,9 @@ public abstract class LocalTestingTestBase
     private static async Task InitializeFlinkReadinessCheckAsync(string overviewUrl, TimeSpan timeout)
     {
         TestContext.WriteLine($"🔎 [FlinkReady] Probing Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
-        TestContext.WriteLine($"⏳ [FlinkReady] Waiting initial 2 seconds for Flink container to initialize...");
+        TestContext.WriteLine($"⏳ [FlinkReady] Checking Flink container status immediately...");
         
-        await Task.Delay(2000); // Reduced to 2s for faster tests
+        await Task.Delay(500); // Optimized: Reduced to 500ms (was 2000ms)
         
         var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
         TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
@@ -863,8 +863,8 @@ public abstract class LocalTestingTestBase
             await admin.CreateTopicsAsync(new[] { topicSpec });
             TestContext.WriteLine($"✅ Topic '{topicName}' created successfully");
             
-            // Reduced delay for faster test execution
-            await Task.Delay(500);
+            // Optimized delay for faster test execution
+            await Task.Delay(100);
         }
         catch (CreateTopicsException ex)
         {

@@ -62,17 +62,17 @@ public class GlobalTestInfrastructure
             // Smart polling: Wait for containers to be created and port mappings to be established
             // Aspire creates containers asynchronously - use smart polling instead of fixed delays
             Console.WriteLine("⏳ Waiting for Docker/Podman containers to be created and ports to be mapped...");
-            Console.WriteLine("🔍 Using smart polling (check every 2s, max 30s)...");
+            Console.WriteLine("🔍 Using optimized polling (check every 500ms, max 15s)...");
             
             bool containersDetected = false;
-            for (int attempt = 1; attempt <= 15; attempt++) // 15 attempts × 2s = 30s max
+            for (int attempt = 1; attempt <= 30; attempt++) // 30 attempts × 500ms = 15s max
             {
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromMilliseconds(500)); // Optimized: 500ms instead of 2s
                 
                 var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
                 {
-                    Console.WriteLine($"✅ Kafka container detected after {attempt * 2}s");
+                    Console.WriteLine($"✅ Kafka container detected after {attempt * 0.5:F1}s");
                     containersDetected = true;
                     
                     // Show all containers for diagnostics
@@ -81,15 +81,15 @@ public class GlobalTestInfrastructure
                     break;
                 }
                 
-                if (attempt % 5 == 0)
+                if (attempt % 10 == 0)
                 {
-                    Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 2}s elapsed)");
+                    Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 0.5:F1}s elapsed)");
                 }
             }
             
             if (!containersDetected)
             {
-                Console.WriteLine("⚠️ Containers not detected within 30s, proceeding anyway...");
+                Console.WriteLine("⚠️ Containers not detected within 15s, proceeding anyway...");
                 var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                 Console.WriteLine($"🐳 Current containers:\n{allContainers}");
             }
@@ -164,7 +164,7 @@ public class GlobalTestInfrastructure
             Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
             
             // Give Temporal time to complete schema setup
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(5)); // Optimized: Reduced from 10s to 5s
             
             // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
             TemporalEndpoint = await GetTemporalEndpointAsync();

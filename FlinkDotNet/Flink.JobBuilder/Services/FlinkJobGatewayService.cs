@@ -342,29 +342,93 @@ namespace Flink.JobBuilder.Services
                 {
                     var response = await operation();
                     
-                    // Don't retry on client errors (4xx) except 429 (Too Many Requests)
-                    if (response.IsSuccessStatusCode || 
-                        ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500 && response.StatusCode != HttpStatusCode.TooManyRequests))
+                    if (response.IsSuccessStatusCode)
                     {
                         return response;
                     }
-
-                    if (retryCount == _configuration.MaxRetries)
+                    
+                    var shouldRetry = await ShouldRetryResponseAsync(response, retryCount);
+                    if (!shouldRetry || retryCount == _configuration.MaxRetries)
                     {
                         return response;
                     }
                 }
                 catch (Exception ex) when (retryCount < _configuration.MaxRetries)
                 {
-                    _logger?.LogWarning(ex, "Request failed, retrying ({RetryCount}/{MaxRetries})", 
+                    _logger?.LogWarning(ex, "Request failed, retrying ({RetryCount}/{MaxRetries})",
                         retryCount + 1, _configuration.MaxRetries);
                 }
 
                 retryCount++;
-                await Task.Delay(_configuration.RetryDelay * retryCount); // Exponential backoff
+                await Task.Delay(_configuration.RetryDelay * (retryCount + 1)); // Exponential backoff: 2s, 4s, 6s
             }
 
             throw new HttpRequestException($"Request failed after {_configuration.MaxRetries} retries");
+        }
+        
+        private async Task<bool> ShouldRetryResponseAsync(HttpResponseMessage response, int retryCount)
+        {
+            // Retry on server errors (5xx)
+            if ((int)response.StatusCode >= 500)
+            {
+                return true;
+            }
+            
+            // For client errors (4xx), only retry on specific conditions
+            if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500)
+            {
+                return await ShouldRetryClientErrorAsync(response, retryCount);
+            }
+            
+            return false;
+        }
+        
+        private async Task<bool> ShouldRetryClientErrorAsync(HttpResponseMessage response, int retryCount)
+        {
+            // Always retry on 429 (Too Many Requests)
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                return true;
+            }
+            
+            // Retry on 400 (Bad Request) if Flink cluster is not ready
+            var shouldRetryFlinkNotReady = await ShouldRetryFlinkClusterNotReadyAsync(response);
+            if (shouldRetryFlinkNotReady)
+            {
+                LogFlinkClusterNotReady(retryCount);
+                return true;
+            }
+            
+            return false;
+        }
+        
+        private void LogFlinkClusterNotReady(int retryCount)
+        {
+            if (retryCount < _configuration.MaxRetries)
+            {
+                _logger?.LogWarning("Flink cluster not ready, retrying ({RetryCount}/{MaxRetries}) after {Delay}ms",
+                    retryCount + 1, _configuration.MaxRetries, _configuration.RetryDelay * (retryCount + 1));
+                _serilogLogger.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] Flink cluster not ready, retry {RetryCount}/{MaxRetries}",
+                    retryCount + 1, _configuration.MaxRetries);
+            }
+        }
+        
+        private static async Task<bool> ShouldRetryFlinkClusterNotReadyAsync(HttpResponseMessage response)
+        {
+            if (response.StatusCode != HttpStatusCode.BadRequest)
+                return false;
+                
+            try
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                // Check if the error message contains "Flink cluster is not healthy or unreachable"
+                return content.Contains("Flink cluster is not healthy", StringComparison.OrdinalIgnoreCase) ||
+                       content.Contains("Flink cluster is not healthy or unreachable", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private bool _disposed = false;

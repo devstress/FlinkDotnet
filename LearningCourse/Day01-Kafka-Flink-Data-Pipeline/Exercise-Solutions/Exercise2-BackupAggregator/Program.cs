@@ -8,7 +8,6 @@ using System.Text.Json.Serialization;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Serilog;
-using FlinkDotNet.DataStream;
 
 namespace Exercise2_BackupAggregator
 {
@@ -32,20 +31,23 @@ namespace Exercise2_BackupAggregator
         private const string InputTopic = "flink_input";
         private const string OutputTopic = "flink_output";
         private const string ConsumerGroup = "baeldung";
+        
         // Kafka configuration for HOST operations (producer/consumer)
-        private static readonly string KafkaBootstrapServers =
+        // Lazy evaluation - reads env var when first accessed, not at class load time
+        private static string KafkaBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
             ?? throw new InvalidOperationException("KAFKA_BOOTSTRAP_SERVERS environment variable must be set");
         
         // Kafka configuration for FLINK JOB submissions (JSON API)
         // Docker bridge network requires container IP, not DNS names
-        private static readonly string KafkaFlinkBootstrapServers =
+        // Lazy evaluation - reads env var when first accessed, not at class load time
+        private static string KafkaFlinkBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS")
             ?? throw new InvalidOperationException("KAFKA_FLINK_BOOTSTRAP_SERVERS environment variable must be set");
-        private const string DefaultGatewayHost = "localhost";
-        private const int DefaultGatewayPort = 8080;
-        private static readonly string FlinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL")
-            ?? $"http://{DefaultGatewayHost}:{DefaultGatewayPort}";
+        // Flink Gateway configuration
+        // Lazy evaluation - reads env var when first accessed, not at class load time
+        private static string FlinkGatewayUrl =>
+            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
         private const string JobSubmitEndpoint = "/api/v1/jobs/submit";
 
         static async Task Main(string[] args)
@@ -100,25 +102,29 @@ namespace Exercise2_BackupAggregator
         /// </summary>
         static async Task RunBackupAggregationDemo()
         {
-            Console.WriteLine(">> Step 1/5: Verifying Kafka is ready...");
+            Console.WriteLine(">> Step 1/6: Verifying Kafka is ready...");
             await WaitForKafkaReadyAsync();
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 2/5: Creating Kafka topics...");
+            Console.WriteLine(">> Step 2/6: Verifying Flink cluster is ready...");
+            await WaitForFlinkHealthyAsync();
+            Console.WriteLine();
+
+            Console.WriteLine(">> Step 3/6: Creating Kafka topics...");
             await CreateTopicsAsync();
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 3/5: Submitting Flink backup aggregation job...");
+            Console.WriteLine(">> Step 4/6: Submitting Flink backup aggregation job...");
             await SubmitBackupAggregationJob();
             await Task.Delay(3000); // Wait for job to start
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 4/5: Producing timestamped InputMessage objects...");
+            Console.WriteLine(">> Step 5/6: Producing timestamped InputMessage objects...");
             await ProduceInputMessages();
             await Task.Delay(2000); // Wait for Flink to aggregate
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 5/5: Consuming Backup aggregation results...");
+            Console.WriteLine(">> Step 6/6: Consuming Backup aggregation results...");
             await ConsumeBackupResults();
             Console.WriteLine();
 
@@ -130,8 +136,10 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  [OK] Custom object deserialization (InputMessageDeserializer)");
             Console.WriteLine("  [OK] Custom object serialization (BackupSerializer)");
             Console.WriteLine("  [OK] EventTime for message timestamps");
-            Console.WriteLine("  [OK] Time windows (tumbling 24-hour window)");
+            Console.WriteLine("  [OK] Time windows (tumbling 10-second window for testing)");
             Console.WriteLine("  [OK] Aggregation functions (collect messages into Backup)");
+            Console.WriteLine();
+            Console.WriteLine("  NOTE: Baeldung tutorial uses 24-hour window for production use.");
             Console.WriteLine();
         }
 
@@ -177,15 +185,17 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine($"   Creating Flink job using FlinkDotNet JobDefinition API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Time Characteristic: EventTime");
-            Console.WriteLine($"   - Window: Tumbling 24-hour window");
+            Console.WriteLine($"   - Window: Tumbling 10-second window (for testing)");
             Console.WriteLine($"   - Aggregation: Collect InputMessages into Backup");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
             Console.WriteLine();
-            Console.WriteLine($"   Baeldung Java API equivalent:");
+            Console.WriteLine($"   NOTE: Baeldung tutorial uses 24-hour window for production:");
             Console.WriteLine($"   inputMessagesStream");
             Console.WriteLine($"     .timeWindowAll(Time.hours(24))");
             Console.WriteLine($"     .aggregate(new BackupAggregator())");
             Console.WriteLine($"     .addSink(flinkKafkaProducer);");
+            Console.WriteLine();
+            Console.WriteLine($"   This exercise uses 10-second window for faster testing.");
         }
 
         /// <summary>
@@ -209,8 +219,8 @@ namespace Exercise2_BackupAggregator
                     {
                         type = "window",
                         windowType = "TUMBLING",  // Section 10: Time windows (tumbling)
-                        size = 24,                // 24 hours
-                        timeUnit = "HOURS",
+                        size = 10,                // 10 seconds for testing (Baeldung uses 24 hours)
+                        timeUnit = "SECONDS",
                         timeField = "sentAt"      // Section 9: EventTime from sentAt field
                     },
                     new
@@ -218,7 +228,7 @@ namespace Exercise2_BackupAggregator
                         type = "aggregate",          // Section 11: Aggregating backups
                         aggregationType = "COLLECT", // Collect messages into Backup
                         field = "*",                 // Aggregate all fields
-                        windowSeconds = Time.Hours(24).ToMilliseconds() / 1000  // Baeldung: inputMessagesStream.timeWindowAll(Time.hours(24))
+                        windowSeconds = 10           // 10 seconds for testing (Baeldung uses 24 hours)
                     }
                 },
                 sink = new
@@ -504,8 +514,9 @@ namespace Exercise2_BackupAggregator
 
         static async Task WaitForKafkaReadyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(20);
+            var timeout = TimeSpan.FromSeconds(30);  // Increased from 20s to 30s - Confluent Local takes time to initialize
             var stopwatch = Stopwatch.StartNew();
+            var retryDelay = 1000;  // Start with 1 second
 
             while (stopwatch.Elapsed < timeout)
             {
@@ -530,10 +541,14 @@ namespace Exercise2_BackupAggregator
                 }
                 catch
                 {
-                    // Continue waiting
+                    // Continue waiting - use exponential backoff
                 }
 
-                await Task.Delay(1000);
+                Console.WriteLine($"   [RETRY] Kafka not ready yet, retrying in {retryDelay/1000.0:F1}s... (elapsed: {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                await Task.Delay(retryDelay);
+                
+                // Exponential backoff: 1s, 2s, 3s, 4s, 5s (max)
+                retryDelay = Math.Min(retryDelay + 1000, 5000);
             }
 
             // Print docker/podman ps to help diagnose the issue
@@ -589,6 +604,49 @@ namespace Exercise2_BackupAggregator
                 $"Attempted to connect to: {KafkaBootstrapServers}. " +
                 $"Verify KAFKA_BOOTSTRAP_SERVERS environment variable is set correctly and Kafka is running. " +
                 $"Check 'docker ps' to confirm Kafka container port mapping.");
+        }
+        
+        /// <summary>
+        /// Wait for Flink cluster to become healthy before submitting jobs
+        /// Polls Flink health endpoint with exponential backoff retry logic
+        /// </summary>
+        static async Task WaitForFlinkHealthyAsync()
+        {
+            var timeout = TimeSpan.FromSeconds(30);
+            var stopwatch = Stopwatch.StartNew();
+            var retryDelay = 1000;  // Start with 1 second
+
+            while (stopwatch.Elapsed < timeout)
+            {
+                try
+                {
+                    using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"   [SUCCESS] Flink cluster is healthy");
+                        Console.WriteLine($"   Gateway URL: {FlinkGatewayUrl}");
+                        return;
+                    }
+                }
+                catch
+                {
+                    // Continue waiting - use exponential backoff
+                }
+
+                Console.WriteLine($"   [RETRY] Flink not ready yet, retrying in {retryDelay/1000.0:F1}s... (elapsed: {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                await Task.Delay(retryDelay);
+                
+                // Exponential backoff: 1s, 2s, 3s, 4s, 5s (max)
+                retryDelay = Math.Min(retryDelay + 1000, 5000);
+            }
+
+            throw new TimeoutException(
+                $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
+                $"Attempted to connect to: {FlinkGatewayUrl}. " +
+                $"Verify FLINK_GATEWAY_URL environment variable is set correctly and Flink is running. " +
+                $"Check Flink JobManager logs for issues.");
         }
         
         /// <summary>

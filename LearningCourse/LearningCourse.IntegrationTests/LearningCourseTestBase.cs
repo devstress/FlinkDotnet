@@ -47,6 +47,20 @@ public abstract class LearningCourseTestBase
         // available to exercise processes, NOT to AppHost or Flink containers.
         TestContext.WriteLine($"✅ NOT setting KAFKA_BOOTSTRAP_SERVERS globally to prevent Docker inheritance");
 
+        _appHostProcess = StartAppHostProcess();
+        
+        TestContext.WriteLine("✅ AppHost process started, polling for infrastructure readiness...");
+        
+        await WaitForInfrastructureReadyAsync();
+        
+        TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+    }
+    
+    /// <summary>
+    /// Start AppHost process with output capture
+    /// </summary>
+    private static Process StartAppHostProcess()
+    {
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -58,22 +72,22 @@ public abstract class LearningCourseTestBase
             CreateNoWindow = true
         };
 
-        _appHostProcess = Process.Start(psi);
+        var process = Process.Start(psi);
         
-        if (_appHostProcess == null)
+        if (process == null)
         {
             throw new InvalidOperationException("Failed to start AppHost process");
         }
 
         // Capture output for diagnostics
-        _appHostProcess.OutputDataReceived += (sender, e) =>
+        process.OutputDataReceived += (sender, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 TestContext.WriteLine($"[AppHost] {e.Data}");
             }
         };
-        _appHostProcess.ErrorDataReceived += (sender, e) =>
+        process.ErrorDataReceived += (sender, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
@@ -81,45 +95,115 @@ public abstract class LearningCourseTestBase
             }
         };
         
-        _appHostProcess.BeginOutputReadLine();
-        _appHostProcess.BeginErrorReadLine();
-
-        TestContext.WriteLine("✅ AppHost process started, waiting for infrastructure to be ready...");
-        TestContext.WriteLine($"⏱️ Waiting {AppHostStartupTimeout.TotalSeconds} seconds for infrastructure startup...");
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         
-        // Wait for infrastructure to be ready
-        await Task.Delay(AppHostStartupTimeout);
+        return process;
+    }
+    
+    /// <summary>
+    /// Smart polling: Check if containers are actually ready instead of blind wait
+    /// Ensures BOTH Kafka and Flink are ready before proceeding
+    /// </summary>
+    private static async Task WaitForInfrastructureReadyAsync()
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var maxWait = AppHostStartupTimeout;
+        var pollInterval = TimeSpan.FromMilliseconds(500);
         
-        TestContext.WriteLine("✅ Infrastructure startup time elapsed");
+        string? kafkaFlinkIp = null;
+        string? kafkaHostEndpoint = null;
+        bool flinkReady = false;
         
-        // Discover Kafka container IP for Flink jobs
-        // Docker bridge network doesn't support DNS between containers, so we need actual IP
-        TestContext.WriteLine("🔍 Discovering Kafka container IP for Flink jobs...");
+        while (stopwatch.Elapsed < maxWait)
+        {
+            var discovered = await TryDiscoverEndpointsAsync(kafkaFlinkIp, kafkaHostEndpoint, stopwatch);
+            kafkaFlinkIp = discovered.flinkIp ?? kafkaFlinkIp;
+            kafkaHostEndpoint = discovered.hostEndpoint ?? kafkaHostEndpoint;
+            
+            // Also check if Flink is ready (not just Kafka)
+            if (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
+            {
+                flinkReady = await IsFlinkHealthyAsync();
+                if (flinkReady)
+                {
+                    TestContext.WriteLine($"✅ Flink cluster is healthy (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            // All infrastructure must be ready: Kafka AND Flink
+            if (kafkaFlinkIp != null && kafkaHostEndpoint != null && flinkReady)
+            {
+                KafkaFlinkBootstrapServers = kafkaFlinkIp;
+                KafkaHostBootstrapServers = kafkaHostEndpoint;
+                TestContext.WriteLine($"✅ All infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {(maxWait - stopwatch.Elapsed).TotalSeconds:F1}s)");
+                return;
+            }
+            
+            await Task.Delay(pollInterval);
+        }
+        
+        throw new TimeoutException(
+            $"Infrastructure not ready within {maxWait.TotalSeconds}s. " +
+            $"KafkaFlinkIp: {KafkaFlinkBootstrapServers ?? "null"}, " +
+            $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
+            $"FlinkReady: {flinkReady}");
+    }
+    
+    /// <summary>
+    /// Check if Flink JobManager is healthy and ready to accept jobs
+    /// </summary>
+    private static async Task<bool> IsFlinkHealthyAsync()
+    {
         try
         {
-            KafkaFlinkBootstrapServers = await DockerInfrastructure.GetKafkaContainerIpAsync();
-            TestContext.WriteLine($"✅ Kafka container IP for Flink: {KafkaFlinkBootstrapServers}");
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health");
+            return response.IsSuccessStatusCode;
         }
-        catch (Exception ex)
+        catch
         {
-            TestContext.WriteLine($"⚠️ Failed to discover Kafka container IP: {ex.Message}");
-            throw;
+            return false;
         }
-        
-        // Discover Kafka host endpoint for exercise producers/consumers
-        TestContext.WriteLine("🔍 Discovering Kafka host endpoint for exercises...");
+    }
+    
+    /// <summary>
+    /// Try to discover Kafka endpoints with logging
+    /// </summary>
+    private static async Task<(string? flinkIp, string? hostEndpoint)> TryDiscoverEndpointsAsync(
+        string? currentFlinkIp,
+        string? currentHostEndpoint,
+        Stopwatch stopwatch)
+    {
         try
         {
-            KafkaHostBootstrapServers = await DockerInfrastructure.GetKafkaHostEndpointAsync();
-            TestContext.WriteLine($"✅ Kafka host endpoint for exercises: {KafkaHostBootstrapServers}");
+            string? flinkIp = currentFlinkIp;
+            string? hostEndpoint = currentHostEndpoint;
+            
+            if (flinkIp == null)
+            {
+                flinkIp = await DockerInfrastructure.GetKafkaContainerIpAsync();
+                if (flinkIp != null)
+                {
+                    TestContext.WriteLine($"✅ Kafka container IP discovered: {flinkIp} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            if (hostEndpoint == null)
+            {
+                hostEndpoint = await DockerInfrastructure.GetKafkaHostEndpointAsync();
+                if (hostEndpoint != null)
+                {
+                    TestContext.WriteLine($"✅ Kafka host endpoint discovered: {hostEndpoint} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            return (flinkIp, hostEndpoint);
         }
-        catch (Exception ex)
+        catch
         {
-            TestContext.WriteLine($"⚠️ Failed to discover Kafka host endpoint: {ex.Message}");
-            throw;
+            return (null, null);
         }
-        
-        TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
     }
 
     /// <summary>
