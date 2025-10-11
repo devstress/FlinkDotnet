@@ -237,6 +237,10 @@ public abstract class LearningCourseTestBase
     {
         TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
         
+        // Copy FlinkIRRunner logs from Flink containers BEFORE stopping them
+        TestContext.WriteLine("📋 Copying FlinkIRRunner logs from Flink containers...");
+        CopyFlinkIRRunnerLogs();
+        
         if (_appHostProcess != null && !_appHostProcess.HasExited)
         {
             try
@@ -270,6 +274,164 @@ public abstract class LearningCourseTestBase
         CleanupContainers();
         
         TestContext.WriteLine("✅ Teardown complete");
+    }
+    
+    /// <summary>
+    /// Copy FlinkIRRunner logs from Flink containers to host filesystem before containers are stopped
+    /// </summary>
+    private static void CopyFlinkIRRunnerLogs()
+    {
+        try
+        {
+            var repoRoot = FindRepositoryRoot();
+            if (repoRoot == null)
+            {
+                TestContext.WriteLine("⚠️ Could not find repository root, skipping log copy");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            
+            // Get all Flink container IDs (JobManager and TaskManager)
+            var getContainersPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=flink",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var getContainersProcess = Process.Start(getContainersPsi);
+            if (getContainersProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to get Flink container list");
+                return;
+            }
+            
+            var containerIds = getContainersProcess.StandardOutput.ReadToEnd().Trim();
+            getContainersProcess.WaitForExit();
+            
+            if (string.IsNullOrWhiteSpace(containerIds))
+            {
+                TestContext.WriteLine("⚠️ No Flink containers found");
+                return;
+            }
+            
+            var containerIdList = containerIds.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            TestContext.WriteLine($"📦 Found {containerIdList.Length} Flink containers");
+            
+            // Copy logs from each Flink container
+            foreach (var containerId in containerIdList)
+            {
+                CopyLogsFromContainer(containerId, testLogsDir);
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error copying FlinkIRRunner logs: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Copy Flink native logs from a specific container (contains FlinkJobRunner output)
+    /// Renames them to FlinkIRRunner.log.YYYYMMDD format for consistency
+    /// </summary>
+    private static void CopyLogsFromContainer(string containerId, string testLogsDir)
+    {
+        try
+        {
+            // List all log files in Flink's native log directory
+            var checkLogsPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"exec {containerId} sh -c \"ls /opt/flink/log/*.log* 2>/dev/null || echo ''\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var checkProcess = Process.Start(checkLogsPsi);
+            if (checkProcess == null) return;
+            
+            var logFiles = checkProcess.StandardOutput.ReadToEnd().Trim();
+            checkProcess.WaitForExit();
+            
+            if (string.IsNullOrWhiteSpace(logFiles))
+            {
+                TestContext.WriteLine($"   No Flink logs found in container {containerId.Substring(0, 12)}");
+                return;
+            }
+            
+            var logFileList = logFiles.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            TestContext.WriteLine($"   Found {logFileList.Length} Flink log files in container {containerId.Substring(0, 12)}");
+            
+            // Get container name to determine which Flink component this is
+            var getNamePsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"inspect --format={{{{.Name}}}} {containerId}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var getNameProcess = Process.Start(getNamePsi);
+            var containerName = getNameProcess?.StandardOutput.ReadToEnd().Trim().TrimStart('/') ?? "unknown";
+            getNameProcess?.WaitForExit();
+            
+            // Determine component type from container name
+            string componentType = "unknown";
+            if (containerName.Contains("jobmanager", StringComparison.OrdinalIgnoreCase))
+                componentType = "jobmanager";
+            else if (containerName.Contains("taskmanager", StringComparison.OrdinalIgnoreCase) ||
+                     containerName.Contains("taskexecutor", StringComparison.OrdinalIgnoreCase))
+                componentType = "taskmanager";
+            else if (containerName.Contains("sql-gateway", StringComparison.OrdinalIgnoreCase))
+                componentType = "sql-gateway";
+            
+            // Copy each Flink log file with standardized FlinkIRRunner naming
+            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            foreach (var logFile in logFileList)
+            {
+                var fileName = Path.GetFileName(logFile);
+                // Use FlinkIRRunner.log.YYYYMMDD naming with component suffix
+                var standardizedName = $"FlinkIRRunner.{componentType}.log.{dateStamp}";
+                var destPath = Path.Combine(testLogsDir, standardizedName);
+                
+                var copyPsi = new ProcessStartInfo
+                {
+                    FileName = "docker",
+                    Arguments = $"cp {containerId}:{logFile} \"{destPath}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                
+                using var copyProcess = Process.Start(copyPsi);
+                if (copyProcess == null) continue;
+                
+                copyProcess.WaitForExit(TimeSpan.FromSeconds(5));
+                
+                if (copyProcess.ExitCode == 0 && File.Exists(destPath))
+                {
+                    var fileInfo = new FileInfo(destPath);
+                    TestContext.WriteLine($"   ✅ Copied {fileName} as {standardizedName} ({fileInfo.Length} bytes)");
+                }
+                else
+                {
+                    var error = copyProcess.StandardError.ReadToEnd();
+                    TestContext.WriteLine($"   ⚠️ Failed to copy {fileName}: {error}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️ Error copying logs from container {containerId.Substring(0, 12)}: {ex.Message}");
+        }
     }
     
     /// <summary>
