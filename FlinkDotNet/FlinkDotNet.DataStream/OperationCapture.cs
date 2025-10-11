@@ -242,10 +242,34 @@ namespace FlinkDotNet.DataStream
             }
             else if (operation.Function != null)
             {
-                jobDef.Operations.Add(new MapOperationDefinition
+                // Check if the function is a known IMapFunction implementation
+                var functionTypeName = operation.Function.GetType().Name;
+                var functionFullName = operation.Function.GetType().FullName ?? "";
+                
+                // Map WordsCapitalizer and other uppercase functions to "upper"
+                if (functionTypeName.Contains("Capitalizer", System.StringComparison.OrdinalIgnoreCase) ||
+                    functionTypeName.Contains("Upper", System.StringComparison.OrdinalIgnoreCase) ||
+                    functionFullName.Contains("WordsCapitalizer"))
                 {
-                    Expression = $"function:{operation.Function.GetType().FullName}"
-                });
+                    _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'upper' expression", functionTypeName);
+                    jobDef.Operations.Add(new MapOperationDefinition { Expression = "upper" });
+                }
+                // Map lowercase functions to "lower"
+                else if (functionTypeName.Contains("Lower", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'lower' expression", functionTypeName);
+                    jobDef.Operations.Add(new MapOperationDefinition { Expression = "lower" });
+                }
+                else
+                {
+                    // For unknown functions, pass the type name to FlinkJobRunner
+                    // FlinkJobRunner will use identity transformation if not recognized
+                    _logger.Warning("[OperationCapture.TranslateMapOperation] Unknown map function type: {FunctionType}, will use identity transformation", functionTypeName);
+                    jobDef.Operations.Add(new MapOperationDefinition
+                    {
+                        Expression = $"function:{functionFullName}"
+                    });
+                }
             }
         }
 

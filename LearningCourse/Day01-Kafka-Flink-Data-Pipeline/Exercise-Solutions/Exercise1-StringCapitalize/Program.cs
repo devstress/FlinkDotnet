@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -239,28 +240,33 @@ namespace Exercise1_StringCapitalize
 
             Console.WriteLine($"   Consuming from '{OutputTopic}' (max 30 seconds)...");
 
+            var (consumedMessages, capitalizedCount, partitionCounts) = ConsumeMessagesFromKafka(consumer);
+
+            await ValidateConsumptionResults(consumedMessages, capitalizedCount, partitionCounts);
+        }
+
+        /// <summary>
+        /// Consume messages from Kafka and track statistics
+        /// </summary>
+        static (int consumedMessages, int capitalizedCount, Dictionary<int, int> partitionCounts)
+            ConsumeMessagesFromKafka(IConsumer<string, string> consumer)
+        {
             var consumedMessages = 0;
+            var capitalizedCount = 0;
+            var partitionCounts = new Dictionary<int, int>();
+            var allMessages = new List<(int partition, string value)>();
             var stopwatch = Stopwatch.StartNew();
             var timeout = TimeSpan.FromSeconds(30);
 
             try
             {
-                while (stopwatch.Elapsed < timeout && consumedMessages < 10) // Show first 10 results
+                while (stopwatch.Elapsed < timeout && consumedMessages < 50)
                 {
                     var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
 
                     if (result != null)
                     {
-                        consumedMessages++;
-                        Console.WriteLine($"   [{consumedMessages:D3}] Received: \"{result.Message.Value}\"");
-                        
-                        // Verify capitalization happened
-                        bool isUppercase = result.Message.Value == result.Message.Value.ToUpperInvariant();
-                        if (isUppercase)
-                        {
-                            Console.WriteLine($"        [OK] Successfully capitalized!");
-                        }
-
+                        ProcessConsumedMessage(result, ref consumedMessages, ref capitalizedCount, partitionCounts, allMessages);
                         consumer.Commit(result);
                     }
                     else if (consumedMessages > 0)
@@ -269,6 +275,9 @@ namespace Exercise1_StringCapitalize
                         break;
                     }
                 }
+                
+                // Print first 5 and last 5 messages after consumption completes
+                PrintMessageSummary(allMessages);
             }
             catch (ConsumeException ex)
             {
@@ -280,22 +289,132 @@ namespace Exercise1_StringCapitalize
                 consumer.Close();
             }
 
+            return (consumedMessages, capitalizedCount, partitionCounts);
+        }
+
+        /// <summary>
+        /// Process a single consumed message and update statistics
+        /// </summary>
+        static void ProcessConsumedMessage(
+            ConsumeResult<string, string> result,
+            ref int consumedMessages,
+            ref int capitalizedCount,
+            Dictionary<int, int> partitionCounts,
+            List<(int partition, string value)> allMessages)
+        {
+            consumedMessages++;
+            var partition = result.Partition.Value;
+            
+            // Print partition header when we encounter a new partition
+            if (!partitionCounts.ContainsKey(partition))
+            {
+                partitionCounts[partition] = 0;
+                Console.WriteLine($"   --- Partition {partition} ---");
+            }
+            partitionCounts[partition]++;
+            
+            // Store all messages for later display
+            allMessages.Add((partition, result.Message.Value));
+            
+            // Verify capitalization
+            bool isUppercase = result.Message.Value == result.Message.Value.ToUpperInvariant();
+            if (isUppercase)
+            {
+                capitalizedCount++;
+            }
+        }
+        
+        /// <summary>
+        /// Print first 5 and last 5 messages summary
+        /// </summary>
+        static void PrintMessageSummary(List<(int partition, string value)> allMessages)
+        {
+            if (allMessages.Count == 0)
+                return;
+                
+            Console.WriteLine();
+            Console.WriteLine("   Message Summary (First 5 and Last 5):");
+            Console.WriteLine("   " + new string('-', 60));
+            
+            // Group by partition for display
+            var byPartition = allMessages.GroupBy(m => m.partition).OrderBy(g => g.Key);
+            
+            foreach (var partitionGroup in byPartition)
+            {
+                var messages = partitionGroup.ToList();
+                var partition = partitionGroup.Key;
+                
+                Console.WriteLine($"   Partition {partition}: {messages.Count} messages");
+                
+                // Show first 5
+                var first5 = messages.Take(5).ToList();
+                for (int i = 0; i < first5.Count; i++)
+                {
+                    Console.WriteLine($"     [{i + 1:D2}] {first5[i].value}");
+                }
+                
+                // Show "..." if there are more than 10 messages
+                if (messages.Count > 10)
+                {
+                    Console.WriteLine($"     ... ({messages.Count - 10} more messages) ...");
+                }
+                
+                // Show last 5 (if different from first 5)
+                if (messages.Count > 5)
+                {
+                    var last5 = messages.Skip(Math.Max(0, messages.Count - 5)).ToList();
+                    for (int i = 0; i < last5.Count; i++)
+                    {
+                        Console.WriteLine($"     [{messages.Count - last5.Count + i + 1:D2}] {last5[i].value}");
+                    }
+                }
+            }
+            
+            Console.WriteLine("   " + new string('-', 60));
+        }
+
+        /// <summary>
+        /// Validate consumption results and throw errors if validation fails
+        /// </summary>
+        static async Task ValidateConsumptionResults(
+            int consumedMessages,
+            int capitalizedCount,
+            Dictionary<int, int> partitionCounts)
+        {
             if (consumedMessages > 0)
             {
-                Console.WriteLine($"   [SUCCESS] Consumed {consumedMessages} capitalized messages");
+                Console.WriteLine($"   [SUCCESS] Consumed {consumedMessages}/50 messages ({capitalizedCount} capitalized)");
+                Console.WriteLine($"   Partition distribution: {string.Join(", ", partitionCounts.OrderBy(kv => kv.Key).Select(kv => $"P{kv.Key}={kv.Value}"))}");
+                
+                if (consumedMessages < 50)
+                {
+                    Console.WriteLine($"   [WARNING] Only {consumedMessages}/50 messages received - some messages may still be processing");
+                }
+                
+                if (capitalizedCount != consumedMessages)
+                {
+                    throw new InvalidOperationException($"Capitalization validation failed: {capitalizedCount}/{consumedMessages} messages were capitalized");
+                }
             }
             else
             {
-                Console.WriteLine($"   [ERROR] No messages consumed - Flink job may not be running");
-                Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
-                Console.WriteLine();
-                
-                // Print last 20 lines of TaskManager container logs
-                await PrintTaskManagerLogsAsync();
-                
-                Console.WriteLine();
-                throw new InvalidOperationException("No messages consumed from output topic. Flink job may not be processing data correctly.");
+                await HandleNoMessagesConsumed();
             }
+        }
+
+        /// <summary>
+        /// Handle the case when no messages were consumed
+        /// </summary>
+        static async Task HandleNoMessagesConsumed()
+        {
+            Console.WriteLine($"   [ERROR] No messages consumed - Flink job may not be running");
+            Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
+            Console.WriteLine();
+            
+            await PrintTaskManagerLogsAsync();
+            
+            Console.WriteLine();
+            throw new InvalidOperationException("No messages consumed from output topic. Flink job may not be processing data correctly.");
         }
         
         /// <summary>

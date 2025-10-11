@@ -190,21 +190,81 @@ public class ExerciseExecutionTests : LearningCourseTestBase
         
         if (hasDeserializationError)
         {
-            TestContext.WriteLine("[FAIL] Deserialization error detected in Backup aggregation consumption");
-            
-            var errorLines = output.Split('\n')
-                .Where(line => line.Contains("[ERROR] Deserialization error:"))
-                .ToList();
-            
-            foreach (var errorLine in errorLines)
-            {
-                TestContext.WriteLine($"  {errorLine.Trim()}");
-            }
-            
-            Assert.Fail("Exercise 2 failed: Deserialization error when consuming Backup aggregations. " +
-                       "This indicates the Flink job is outputting malformed JSON. " +
-                       "Expected valid JSON objects but received text starting with 'm'.");
+            PrintDeserializationDiagnostics(output);
+            FailWithDeserializationError();
         }
+    }
+    
+    private static void PrintDeserializationDiagnostics(string output)
+    {
+        TestContext.WriteLine("[FAIL] Deserialization error detected in Backup aggregation consumption");
+        TestContext.WriteLine();
+        TestContext.WriteLine("=== DIAGNOSTIC OUTPUT ===");
+        
+        var lines = output.Split('\n');
+        ProcessDiagnosticLines(lines);
+        
+        TestContext.WriteLine();
+        TestContext.WriteLine("=== END DIAGNOSTIC OUTPUT ===");
+        TestContext.WriteLine();
+    }
+    
+    private static void ProcessDiagnosticLines(string[] lines)
+    {
+        bool inRawMessageSection = false;
+        bool inDebugSection = false;
+        
+        foreach (var line in lines)
+        {
+            ProcessSingleDiagnosticLine(line, ref inRawMessageSection, ref inDebugSection);
+        }
+    }
+    
+    private static void ProcessSingleDiagnosticLine(string line, ref bool inRawMessageSection, ref bool inDebugSection)
+    {
+        // Capture raw Kafka message sections
+        if (line.Contains("Raw Kafka Message:"))
+        {
+            inRawMessageSection = true;
+        }
+        
+        // Capture full raw value
+        if (line.Contains("Full Raw Value:"))
+        {
+            TestContext.WriteLine($">>> {line.Trim()}");
+            inRawMessageSection = false;
+        }
+        
+        // Capture character breakdown
+        if (line.Contains("Character breakdown"))
+        {
+            inDebugSection = true;
+            TestContext.WriteLine($">>> {line.Trim()}");
+        }
+        
+        if (inRawMessageSection || inDebugSection)
+        {
+            TestContext.WriteLine($">>> {line.Trim()}");
+        }
+        
+        // End of debug section
+        if (inDebugSection && (line.Contains("Backup Deserialized:") || line.Contains("[FAIL]")))
+        {
+            inDebugSection = false;
+        }
+        
+        // Print error lines
+        if (line.Contains("[ERROR]") || line.Contains("[FAIL]"))
+        {
+            TestContext.WriteLine($">>> {line.Trim()}");
+        }
+    }
+    
+    private static void FailWithDeserializationError()
+    {
+        Assert.Fail("Exercise 2 failed: Deserialization error when consuming Backup aggregations. " +
+                   "This indicates the Flink job is outputting malformed JSON. " +
+                   "Check the diagnostic output above for the exact raw content that caused the error.");
     }
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise2ValidationChecks(string output)

@@ -23,14 +23,13 @@ namespace Exercise2_BackupAggregator
     /// - Creating time windows (Section 10)
     /// - Aggregating backups in time windows (Section 11)
     ///
-    /// NOTE: FlinkDotNet currently uses JobDefinition API for advanced features like
-    /// time windows and aggregations. Future versions will add these to the DataStream API.
+    /// NOW USING NATIVE DATASTREAM API - EXACT MATCH TO BAELDUNG JAVA API!
+    /// See BaeldungNativeAPI.cs for the implementation that matches the tutorial line-by-line.
     /// </summary>
     static class Program
     {
         private const string InputTopic = "flink_input";
         private const string OutputTopic = "flink_output";
-        private const string ConsumerGroup = "baeldung";
         
         // Kafka configuration for HOST operations (producer/consumer)
         // Lazy evaluation - reads env var when first accessed, not at class load time
@@ -38,17 +37,10 @@ namespace Exercise2_BackupAggregator
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
             ?? throw new InvalidOperationException("KAFKA_BOOTSTRAP_SERVERS environment variable must be set");
         
-        // Kafka configuration for FLINK JOB submissions (JSON API)
-        // Docker bridge network requires container IP, not DNS names
-        // Lazy evaluation - reads env var when first accessed, not at class load time
-        private static string KafkaFlinkBootstrapServers =>
-            Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS")
-            ?? throw new InvalidOperationException("KAFKA_FLINK_BOOTSTRAP_SERVERS environment variable must be set");
         // Flink Gateway configuration
         // Lazy evaluation - reads env var when first accessed, not at class load time
         private static string FlinkGatewayUrl =>
             Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
-        private const string JobSubmitEndpoint = "/api/v1/jobs/submit";
 
         static async Task Main(string[] args)
         {
@@ -74,8 +66,9 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  - Section 10: Creating time windows (tumbling windows)");
             Console.WriteLine("  - Section 11: Aggregating backups (daily aggregation)");
             Console.WriteLine();
-            Console.WriteLine("  NOTE: This exercise uses JobDefinition API for advanced features.");
-            Console.WriteLine("  Future FlinkDotNet versions will add TimeWindow/Aggregate to DataStream API.");
+            Console.WriteLine("  NOW USING NATIVE DATASTREAM API - EXACT BAELDUNG MATCH!");
+            Console.WriteLine("  .TimeWindowAll(Time.Hours(24))");
+            Console.WriteLine("  .Aggregate(new BackupAggregator())");
             Console.WriteLine();
             Console.WriteLine("================================================================================");
             Console.WriteLine();
@@ -133,19 +126,20 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("================================================================================");
             Console.WriteLine();
             Console.WriteLine("What you learned (Baeldung Sections 7-11):");
-            Console.WriteLine("  [OK] Custom object deserialization (InputMessageDeserializer)");
-            Console.WriteLine("  [OK] Custom object serialization (BackupSerializer)");
-            Console.WriteLine("  [OK] EventTime for message timestamps");
-            Console.WriteLine("  [OK] Time windows (tumbling 10-second window for testing)");
-            Console.WriteLine("  [OK] Aggregation functions (collect messages into Backup)");
-            Console.WriteLine();
-            Console.WriteLine("  NOTE: Baeldung tutorial uses 24-hour window for production use.");
+            Console.WriteLine("  [OK] Custom object deserialization (InputMessage)");
+            Console.WriteLine("  [OK] Custom object serialization (Backup)");
+            Console.WriteLine("  [OK] EventTime timestamp assignment");
+            Console.WriteLine("  [OK] Time windows: .TimeWindowAll(Time.Hours(24))");
+            Console.WriteLine("  [OK] Aggregation: .Aggregate(new BackupAggregator())");
+            Console.WriteLine("  [OK] NATIVE DATASTREAM API - EXACT BAELDUNG MATCH!");
             Console.WriteLine();
         }
 
         /// <summary>
         /// Submit Flink job with time-windowed aggregation (Baeldung Sections 9-11)
-        /// 
+        ///
+        /// NOW USING NATIVE DATASTREAM API - EXACT MATCH TO BAELDUNG!
+        ///
         /// Baeldung Java API:
         ///   environment.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         ///   flinkKafkaConsumer.assignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
@@ -155,161 +149,31 @@ namespace Exercise2_BackupAggregator
         ///     .aggregate(new BackupAggregator())
         ///     .addSink(flinkKafkaProducer);
         ///   environment.execute();
-        /// 
-        /// FlinkDotNet equivalent using JobDefinition API:
-        ///   (Advanced features like timeWindowAll and aggregate require JobDefinition API)
         /// </summary>
         static async Task SubmitBackupAggregationJob()
         {
-            PrintJobConfiguration();
+            Console.WriteLine($"   Creating Flink job using native DataStream API (EXACT Baeldung match)...");
+            Console.WriteLine($"   - Input Topic: {InputTopic}");
+            Console.WriteLine($"   - Time Characteristic: EventTime");
+            Console.WriteLine($"   - Window: Time.Hours(24) - EXACTLY like Baeldung!");
+            Console.WriteLine($"   - Aggregation: BackupAggregator");
+            Console.WriteLine($"   - Output Topic: {OutputTopic}");
+            Console.WriteLine();
             
             try
             {
-                var flinkJobDefinition = CreateFlinkJobDefinition();
-                var jobJson = JsonSerializer.Serialize(flinkJobDefinition, new JsonSerializerOptions { WriteIndented = true });
-                
-                await PostJobToFlinkGateway(jobJson);
+                // Call the native API that matches Baeldung exactly
+                await BaeldungNativeApi.CreateBackup();
+                Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted using native API");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"   [WARNING] Error submitting job: {ex.Message}");
-                Console.WriteLine($"   Note: Job definition is correct - infrastructure may not be running");
+                Console.WriteLine($"   [ERROR] Error submitting job: {ex.Message}");
+                Console.WriteLine($"   Stack trace: {ex.StackTrace}");
+                throw;
             }
         }
 
-        /// <summary>
-        /// Print Flink job configuration details
-        /// </summary>
-        static void PrintJobConfiguration()
-        {
-            Console.WriteLine($"   Creating Flink job using FlinkDotNet JobDefinition API...");
-            Console.WriteLine($"   - Input Topic: {InputTopic}");
-            Console.WriteLine($"   - Time Characteristic: EventTime");
-            Console.WriteLine($"   - Window: Tumbling 10-second window (for testing)");
-            Console.WriteLine($"   - Aggregation: Collect InputMessages into Backup");
-            Console.WriteLine($"   - Output Topic: {OutputTopic}");
-            Console.WriteLine();
-            Console.WriteLine($"   NOTE: Baeldung tutorial uses 24-hour window for production:");
-            Console.WriteLine($"   inputMessagesStream");
-            Console.WriteLine($"     .timeWindowAll(Time.hours(24))");
-            Console.WriteLine($"     .aggregate(new BackupAggregator())");
-            Console.WriteLine($"     .addSink(flinkKafkaProducer);");
-            Console.WriteLine();
-            Console.WriteLine($"   This exercise uses 10-second window for faster testing.");
-        }
-
-        /// <summary>
-        /// Create Flink job definition object
-        /// </summary>
-        static object CreateFlinkJobDefinition()
-        {
-            return new
-            {
-                source = new
-                {
-                    type = "kafka",
-                    topic = InputTopic,
-                    bootstrapServers = KafkaFlinkBootstrapServers,  // Use container IP discovered by test infrastructure
-                    groupId = ConsumerGroup,
-                    startingOffsets = "earliest"
-                },
-                operations = new object[]
-                {
-                    new
-                    {
-                        type = "window",
-                        windowType = "TUMBLING",  // Section 10: Time windows (tumbling)
-                        size = 10,                // 10 seconds for testing (Baeldung uses 24 hours)
-                        timeUnit = "SECONDS",
-                        timeField = "sentAt"      // Section 9: EventTime from sentAt field
-                    },
-                    new
-                    {
-                        type = "aggregate",          // Section 11: Aggregating backups
-                        aggregationType = "COLLECT", // Collect messages into Backup
-                        field = "*",                 // Aggregate all fields
-                        windowSeconds = 10           // 10 seconds for testing (Baeldung uses 24 hours)
-                    }
-                },
-                sink = new
-                {
-                    type = "kafka",
-                    topic = OutputTopic,
-                    bootstrapServers = KafkaFlinkBootstrapServers  // Use container IP discovered by test infrastructure
-                },
-                metadata = new
-                {
-                    jobId = Guid.NewGuid().ToString(),
-                    jobName = "backup-aggregator",
-                    createdAt = DateTime.UtcNow,
-                    version = "1.0",
-                    properties = new Dictionary<string, string>
-                    {
-                        { "timeCharacteristic", "EventTime" }  // Section 9: Use event time
-                    }
-                }
-            };
-        }
-
-        /// <summary>
-        /// Post job definition to Flink Gateway
-        /// </summary>
-        static async Task PostJobToFlinkGateway(string jobJson)
-        {
-            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            var content = new System.Net.Http.StringContent(jobJson, System.Text.Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync($"{FlinkGatewayUrl}{JobSubmitEndpoint}", content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted successfully");
-                Console.WriteLine($"   Response: {responseContent}");
-            }
-            else
-            {
-                HandleJobSubmissionFailure(response).Wait();
-            }
-        }
-
-        /// <summary>
-        /// Handle job submission failure with detailed error reporting
-        /// </summary>
-        static async Task HandleJobSubmissionFailure(System.Net.Http.HttpResponseMessage response)
-        {
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"   [ERROR] Job submission failed with status: {response.StatusCode}");
-            Console.WriteLine($"   Response: {responseContent}");
-            
-            PrintValidationErrors(responseContent);
-            
-            throw new InvalidOperationException($"Flink job submission failed: {response.StatusCode} - {responseContent}");
-        }
-
-        /// <summary>
-        /// Parse and print validation errors from response
-        /// </summary>
-        static void PrintValidationErrors(string responseContent)
-        {
-            try
-            {
-                var errorResponse = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent);
-                if (errorResponse != null)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("   [ERROR] Validation errors detected:");
-                    foreach (var kvp in errorResponse)
-                    {
-                        Console.WriteLine($"      - {kvp.Key}: {kvp.Value}");
-                    }
-                    Console.WriteLine();
-                }
-            }
-            catch
-            {
-                // Response is not JSON or cannot be parsed - already printed above
-            }
-        }
 
         /// <summary>
         /// Produce timestamped InputMessage objects (Baeldung Section 7 & 9)
@@ -390,18 +254,55 @@ namespace Exercise2_BackupAggregator
                     {
                         consumedBackups++;
                         
-                        // Section 8: Custom deserialization
-                        var backup = BackupDeserializer.Deserialize(result.Message.Value);
+                        // Print raw message for debugging
+                        Console.WriteLine($"   [{consumedBackups:D2}] Raw Kafka Message:");
+                        Console.WriteLine($"        Partition: {result.Partition}");
+                        Console.WriteLine($"        Offset: {result.Offset}");
+                        Console.WriteLine($"        Timestamp: {result.Message.Timestamp.UtcDateTime:yyyy-MM-dd HH:mm:ss.fff} UTC");
+                        Console.WriteLine($"        Key: {result.Message.Key ?? "(null)"}");
+                        Console.WriteLine($"        Value Length: {result.Message.Value?.Length ?? 0} characters");
+                        Console.WriteLine($"        Value (first 200 chars): {(result.Message.Value?.Length > 200 ? result.Message.Value.Substring(0, 200) + "..." : result.Message.Value ?? "(null)")}");
+                        Console.WriteLine($"        Full Raw Value: {result.Message.Value ?? "(null)"}");
+                        Console.WriteLine();
                         
-                        Console.WriteLine($"   [{consumedBackups:D2}] Backup Received:");
-                        Console.WriteLine($"        UUID: {backup.Uuid}");
-                        Console.WriteLine($"        Timestamp: {backup.BackupTimestamp:yyyy-MM-dd HH:mm:ss} UTC");
-                        Console.WriteLine($"        Messages Count: {backup.InputMessages?.Count ?? 0}");
-                        
-                        if (backup.InputMessages?.Count > 0)
+                        try
                         {
-                            Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
-                            Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
+                            // Section 8: Custom deserialization
+                            var backup = BackupDeserializer.Deserialize(result.Message.Value ?? string.Empty);
+                            
+                            Console.WriteLine($"   [{consumedBackups:D2}] Backup Deserialized:");
+                            Console.WriteLine($"        UUID: {backup.Uuid}");
+                            Console.WriteLine($"        Timestamp: {backup.BackupTimestamp:yyyy-MM-dd HH:mm:ss} UTC");
+                            Console.WriteLine($"        Messages Count: {backup.InputMessages?.Count ?? 0}");
+                            
+                            if (backup.InputMessages?.Count > 0)
+                            {
+                                Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
+                                Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
+                            }
+                        }
+                        catch (JsonException deserEx)
+                        {
+                            Console.WriteLine($"   [FAIL] Deserialization error detected in Backup aggregation consumption");
+                            Console.WriteLine($"        [ERROR] Deserialization error: {deserEx.Message}");
+                            Console.WriteLine($"        [ERROR] Inner exception: {deserEx.InnerException?.Message ?? "(none)"}");
+                            Console.WriteLine($"        [ERROR] Stack trace: {deserEx.StackTrace}");
+                            Console.WriteLine();
+                            Console.WriteLine($"   [DEBUG] Attempting to parse as different formats:");
+                            
+                            // Try to identify the format
+                            var rawValue = result.Message.Value;
+                            if (rawValue != null)
+                            {
+                                Console.WriteLine($"        Character breakdown (first 50):");
+                                for (int i = 0; i < Math.Min(50, rawValue.Length); i++)
+                                {
+                                    var c = rawValue[i];
+                                    Console.WriteLine($"          [{i}] '{c}' (ASCII: {(int)c}, Hex: 0x{(int)c:X2})");
+                                }
+                            }
+                            
+                            throw; // Re-throw to be caught by outer handler
                         }
 
                         consumer.Commit(result);
@@ -419,7 +320,11 @@ namespace Exercise2_BackupAggregator
             }
             catch (JsonException ex)
             {
-                Console.WriteLine($"   [ERROR] Deserialization error: {ex.Message}");
+                Console.WriteLine($"   [FINAL ERROR] JSON deserialization failed");
+                Console.WriteLine($"   [ERROR] Message: {ex.Message}");
+                Console.WriteLine($"   [ERROR] Path: {ex.Path ?? "(none)"}");
+                Console.WriteLine($"   [ERROR] Line: {ex.LineNumber?.ToString() ?? "(none)"}");
+                Console.WriteLine($"   [ERROR] Position: {ex.BytePositionInLine?.ToString() ?? "(none)"}");
             }
             finally
             {
