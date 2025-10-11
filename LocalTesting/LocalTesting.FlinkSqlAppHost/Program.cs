@@ -212,7 +212,8 @@ builder.AddContainer("temporal-server", "temporalio/auto-setup", "1.22.4")
     .WithEnvironment("DBNAME", "temporal")  // Specify database name for Temporal
     .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")  // Specify visibility database name
     .WithEnvironment("SKIP_DB_CREATE", "false")  // Let Temporal create databases
-    .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false");  // Create default namespace
+    .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false")  // Create default namespace
+    .WaitFor(temporalDbServer);  // Wait for PostgreSQL to be ready
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();
