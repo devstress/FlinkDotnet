@@ -498,7 +498,7 @@ function Show-Help {
     Write-Info "  • Java 17 JDK (for Flink components)"
 }
 
-# NOTE: Flink IR Runner Java build integrated into Flink.JobGateway project (MSBuild target BuildFlinkRunner).
+# NOTE: Flink IR Runner Java build integrated into FlinkDotNet.JobGateway project (MSBuild target BuildFlinkRunner).
 # Legacy Build-FlinkRunner function removed to avoid duplicate execution during repository build.
  
 #endregion
@@ -567,7 +567,7 @@ function Main {
             Write-Warning "Skipping restore operations as requested"
         }
 
-        # Step 4: (Removed) Java runner build now handled inside Flink.JobGateway csproj (MSBuild target 'BuildFlinkRunner').
+        # Step 4: (Removed) Java runner build now handled inside FlinkDotNet.JobGateway csproj (MSBuild target 'BuildFlinkRunner').
         
         # Step 5: Build all solutions
         Build-Solutions

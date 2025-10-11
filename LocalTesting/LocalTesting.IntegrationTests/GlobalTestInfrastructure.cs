@@ -17,11 +17,8 @@ namespace LocalTesting.IntegrationTests;
 [SetUpFixture]
 public class GlobalTestInfrastructure
 {
+
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan KafkaReadyTimeout = TimeSpan.FromSeconds(45);
-    private static readonly TimeSpan FlinkReadyTimeout = TimeSpan.FromSeconds(90);
-    private static readonly TimeSpan GatewayReadyTimeout = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan TemporalReadyTimeout = TimeSpan.FromSeconds(120); // Temporal needs more time for SQLite initialization
 
     public static DistributedApplication? AppHost { get; private set; }
     public static string? KafkaConnectionString { get; private set; }
@@ -62,17 +59,17 @@ public class GlobalTestInfrastructure
             // Smart polling: Wait for containers to be created and port mappings to be established
             // Aspire creates containers asynchronously - use smart polling instead of fixed delays
             Console.WriteLine("⏳ Waiting for Docker/Podman containers to be created and ports to be mapped...");
-            Console.WriteLine("🔍 Using optimized polling (check every 500ms, max 15s)...");
+            Console.WriteLine("🔍 Using optimized polling (check every 2s, max 20s)...");
             
             bool containersDetected = false;
-            for (int attempt = 1; attempt <= 30; attempt++) // 30 attempts × 500ms = 15s max
+            for (int attempt = 1; attempt <= 10; attempt++) // 10 attempts × 2s = 20s max
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(500)); // Optimized: 500ms instead of 2s
+                await Task.Delay(TimeSpan.FromSeconds(2));
                 
                 var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
                 {
-                    Console.WriteLine($"✅ Kafka container detected after {attempt * 0.5:F1}s");
+                    Console.WriteLine($"✅ Kafka container detected after {attempt * 2}s");
                     containersDetected = true;
                     
                     // Show all containers for diagnostics
@@ -81,24 +78,22 @@ public class GlobalTestInfrastructure
                     break;
                 }
                 
-                if (attempt % 10 == 0)
+                if (attempt % 5 == 0)
                 {
-                    Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 0.5:F1}s elapsed)");
+                    Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 2}s elapsed)");
                 }
             }
             
             if (!containersDetected)
             {
-                Console.WriteLine("⚠️ Containers not detected within 15s, proceeding anyway...");
+                Console.WriteLine("⚠️ Containers not detected within 20s, proceeding anyway...");
                 var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                 Console.WriteLine($"🐳 Current containers:\n{allContainers}");
             }
             
-            // Wait for Kafka
+            // Wait for Kafka with retry mechanism
             Console.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
-            await app.ResourceNotifications
-                .WaitForResourceHealthyAsync("kafka")
-                .WaitAsync(DefaultTimeout);
+            await RetryHealthCheckAsync("kafka", app, 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Kafka resource reported healthy");
 
             // CRITICAL FIX: Discover Kafka container IP for Flink job configurations
@@ -130,33 +125,29 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
             Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
 
-            // Enhanced Kafka readiness check
-            await LocalTestingTestBase.WaitForKafkaReadyAsync(KafkaConnectionString!, KafkaReadyTimeout, default);
+            // Enhanced Kafka readiness check with retry mechanism
+            await RetryWaitForReadyAsync("Kafka", () => LocalTestingTestBase.WaitForKafkaReadyAsync(KafkaConnectionString!, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Kafka is fully operational");
 
-            // Get Flink endpoint and wait for readiness
+            // Get Flink endpoint and wait for readiness with retry mechanism
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
             Console.WriteLine($"🔍 Flink JobManager endpoint: {flinkEndpoint}");
-            await LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", FlinkReadyTimeout, default);
+            await RetryWaitForReadyAsync("Flink", () => LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Flink JobManager and TaskManager are ready");
 
-            // Wait for Gateway
+            // Wait for Gateway with retry mechanism
             Console.WriteLine("⏳ Waiting for Gateway resource to start...");
-            await app.ResourceNotifications
-                .WaitForResourceHealthyAsync("flink-job-gateway")
-                .WaitAsync(GatewayReadyTimeout);
+            await RetryHealthCheckAsync("flink-job-gateway", app, 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway resource reported healthy");
 
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
-            await LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", GatewayReadyTimeout, default);
+            await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway is ready");
 
-            // Wait for Temporal server resource to be healthy first
+            // Wait for Temporal server resource with retry mechanism
             Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
-            await app.ResourceNotifications
-                .WaitForResourceHealthyAsync("temporal-server")
-                .WaitAsync(TemporalReadyTimeout);
+            await RetryHealthCheckAsync("temporal-server", app, 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Temporal server resource reported healthy");
             
             // Then wait for Temporal to be fully initialized
@@ -169,7 +160,7 @@ public class GlobalTestInfrastructure
             // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
             TemporalEndpoint = await GetTemporalEndpointAsync();
             Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
-            await LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, TemporalReadyTimeout, default);
+            await RetryWaitForReadyAsync("Temporal", () => LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Temporal server is fully ready");
 
             // Log TaskManager status for debugging
@@ -681,5 +672,82 @@ public class GlobalTestInfrastructure
         {
             diagnostics.AppendLine($"\n⚠️ Error capturing TaskManager logs: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Retry health check for a resource with configurable retries and delay
+    /// </summary>
+    private static async Task RetryHealthCheckAsync(string resourceName, DistributedApplication app, int maxRetries, TimeSpan delayBetweenRetries)
+    {
+        Exception? lastException = null;
+        
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                Console.WriteLine($"🔄 Health check attempt {attempt}/{maxRetries} for '{resourceName}'...");
+                
+                // Wait for resource to be healthy (with a reasonable timeout per attempt)
+                await app.ResourceNotifications
+                    .WaitForResourceHealthyAsync(resourceName)
+                    .WaitAsync(TimeSpan.FromSeconds(30));
+                
+                Console.WriteLine($"✅ '{resourceName}' became healthy on attempt {attempt}");
+                return; // Success!
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                Console.WriteLine($"⚠️ Attempt {attempt}/{maxRetries} failed for '{resourceName}': {ex.Message}");
+                
+                if (attempt < maxRetries)
+                {
+                    Console.WriteLine($"⏳ Waiting {delayBetweenRetries.TotalSeconds}s before retry...");
+                    await Task.Delay(delayBetweenRetries);
+                }
+            }
+        }
+        
+        // All retries failed
+        throw new InvalidOperationException(
+            $"Resource '{resourceName}' failed to become healthy after {maxRetries} attempts. " +
+            $"Last error: {lastException?.Message}",
+            lastException);
+    }
+
+    /// <summary>
+    /// Retry a readiness check operation (like WaitForKafkaReadyAsync, WaitForFlinkReadyAsync, etc.)
+    /// </summary>
+    private static async Task RetryWaitForReadyAsync(string serviceName, Func<Task> readyCheckFunc, int maxRetries, TimeSpan delayBetweenRetries)
+    {
+        Exception? lastException = null;
+        
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                Console.WriteLine($"🔄 Readiness check attempt {attempt}/{maxRetries} for '{serviceName}'...");
+                await readyCheckFunc();
+                Console.WriteLine($"✅ '{serviceName}' became ready on attempt {attempt}");
+                return; // Success!
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                Console.WriteLine($"⚠️ Attempt {attempt}/{maxRetries} failed for '{serviceName}': {ex.Message}");
+                
+                if (attempt < maxRetries)
+                {
+                    Console.WriteLine($"⏳ Waiting {delayBetweenRetries.TotalSeconds}s before retry...");
+                    await Task.Delay(delayBetweenRetries);
+                }
+            }
+        }
+        
+        // All retries failed
+        throw new InvalidOperationException(
+            $"Service '{serviceName}' failed to become ready after {maxRetries} attempts. " +
+            $"Last error: {lastException?.Message}",
+            lastException);
     }
 }

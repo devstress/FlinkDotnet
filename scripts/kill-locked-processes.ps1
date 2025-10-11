@@ -46,7 +46,7 @@ Write-Host "[2/3] Killing processes by name..." -ForegroundColor Yellow
 $processesToKill = @(
     "Exercise1-StringCapitalize",
     "Exercise2-BackupAggregator",
-    "Flink.JobGateway",
+    "FlinkDotNet.JobGateway",
     "Flink.JobBuilder",
     "FlinkDotNet",
     "testhost",

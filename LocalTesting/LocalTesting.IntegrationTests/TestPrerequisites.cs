@@ -25,10 +25,7 @@ internal static class TestPrerequisites
         // The previous caching caused tests to fail even after JARs were built
         
         var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
-        TestContext.WriteLine($"ProbeFlinkGatewayBuildable - BaseDirectory: {AppContext.BaseDirectory}");
-        TestContext.WriteLine($"ProbeFlinkGatewayBuildable - RepoRoot: {repoRoot}");
-        
-        var gatewayProj = Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "Flink.JobGateway.csproj");
+        var gatewayProj = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "FlinkDotNet.JobGateway.csproj");
         
         if (!ValidateGatewayProjectExists(gatewayProj))
         {
@@ -42,7 +39,7 @@ internal static class TestPrerequisites
         }
         catch (Exception ex)
         {
-            TestContext.WriteLine($"Flink.JobGateway build probe threw {ex.GetType().Name}: {ex.Message}");
+            TestContext.WriteLine($"FlinkDotNet.JobGateway build probe threw {ex.GetType().Name}: {ex.Message}");
             return false;
         }
     }
@@ -54,43 +51,35 @@ internal static class TestPrerequisites
             return true;
         }
         
-        TestContext.WriteLine($"Flink.JobGateway project not found at {gatewayProj}");
+        TestContext.WriteLine($"FlinkDotNet.JobGateway project not found at {gatewayProj}");
         return false;
     }
 
     private static bool CheckRunnerJarExists(string repoRoot)
     {
-        TestContext.WriteLine($"Checking for Runner JAR with repoRoot: {repoRoot}");
-        
         var candidateNames = new[] { "flink-ir-runner-java17.jar" };
         var candidateDirs = new[]
         {
             // Check Gateway build output directories first (where MSBuild copies JARs)
-            Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Release", "net9.0"),
-            Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "bin", "Debug", "net9.0"),
+            Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "bin", "Release", "net9.0"),
+            Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "bin", "Debug", "net9.0"),
             // Then check Maven build locations
             Path.Combine(repoRoot, "FlinkIRRunner", "target"),
-            Path.Combine(repoRoot, "FlinkDotNet", "Flink.JobGateway", "FlinkIRRunner", "target")
+            Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "FlinkIRRunner", "target")
         };
 
         foreach (var dir in candidateDirs)
         {
-            TestContext.WriteLine($"Checking directory: {dir}");
-            TestContext.WriteLine($"Directory exists: {Directory.Exists(dir)}");
-            
             foreach (var name in candidateNames)
             {
                 var full = Path.Combine(dir, name);
-                TestContext.WriteLine($"Checking file: {full}");
                 if (File.Exists(full))
                 {
-                    TestContext.WriteLine($"✓ Found Flink IR Runner JAR: {full}");
                     return true;
                 }
             }
         }
         
-        TestContext.WriteLine("✗ Flink IR Runner JAR not found in any expected location.");
         return false;
     }
 
@@ -99,18 +88,15 @@ internal static class TestPrerequisites
         // Try Docker first
         if (ProbeRuntime("docker"))
         {
-            TestContext.WriteLine("✓ Docker runtime is available");
             return true;
         }
 
         // Try Podman as fallback
         if (ProbeRuntime("podman"))
         {
-            TestContext.WriteLine("✓ Podman runtime is available");
             return true;
         }
 
-        TestContext.WriteLine("✗ No container runtime (Docker or Podman) is available");
         return false;
     }
 

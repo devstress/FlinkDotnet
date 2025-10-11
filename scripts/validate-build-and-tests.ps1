@@ -107,7 +107,7 @@ if (-not $AllSolutionsExist) {
 }
 
 # Step 2b: Build / ensure Flink IR Runner JAR (Java) so gateway submissions succeed
-Write-Info "Step 2b: Flink IR Runner will be built by Flink.JobGateway prebuild target."
+Write-Info "Step 2b: Flink IR Runner will be built by FlinkDotNet.JobGateway prebuild target."
 
 # Step 3: Build all solutions
 Write-Info "Step 3: Building all solutions..."

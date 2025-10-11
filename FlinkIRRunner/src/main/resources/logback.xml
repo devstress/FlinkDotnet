@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- Define log file location - respects LOG_FILE_PATH environment variable -->
-    <property name="LOG_FILE" value="${LOG_FILE_PATH:-./test-logs}/FlinkIRRunner.log" />
+    <!-- Define log file location - write to Flink's native log directory -->
+    <property name="LOG_FILE" value="/opt/flink/log/FlinkIRRunner.log" />
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
 
     <!-- Console Appender -->
@@ -19,7 +19,7 @@
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- Daily rollover with date suffix matching *.log.YYYYMMDD pattern -->
-            <fileNamePattern>${LOG_FILE_PATH:-./test-logs}/FlinkIRRunner.log.%d{yyyyMMdd}</fileNamePattern>
+            <fileNamePattern>/opt/flink/log/FlinkIRRunner.log.%d{yyyyMMdd}</fileNamePattern>
             <!-- Keep 1 day of history -->
             <maxHistory>1</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>

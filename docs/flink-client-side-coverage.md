@@ -19,13 +19,13 @@ Based on the Apache Flink architecture, client-side components are responsible f
 
 Our implementation covers job lifecycle management through:
 
-- **JobGateway Service** (`Flink.JobGateway/`) - REST API for job management
+- **JobGateway Service** (`FlinkDotNet.JobGateway/`) - REST API for job management
 - **FlinkJobManager Service** - Job execution coordination
 - **JobsController** - HTTP endpoints for job operations
 
 **Key Files:**
-- `FlinkDotNet/Flink.JobGateway/Controllers/JobsController.cs`
-- `FlinkDotNet/Flink.JobGateway/Services/FlinkJobManager.cs`
+- `FlinkDotNet/FlinkDotNet.JobGateway/Controllers/JobsController.cs`
+- `FlinkDotNet/FlinkDotNet.JobGateway/Services/FlinkJobManager.cs`
 
 **Flink JobManager Compatibility:**
 - ✅ Synchronous patterns for job submission

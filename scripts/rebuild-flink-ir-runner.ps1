@@ -15,10 +15,10 @@ Write-Host "========================================"
 # Get repository root
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
-# Build the Flink.JobGateway project, which will rebuild the JAR via Maven
+# Build the FlinkDotNet.JobGateway project, which will rebuild the JAR via Maven
 Write-Host ""
-Write-Host "Building Flink.JobGateway project (triggers Maven build)..."
-$gatewayProject = Join-Path $repoRoot "FlinkDotNet\Flink.JobGateway\Flink.JobGateway.csproj"
+Write-Host "Building FlinkDotNet.JobGateway project (triggers Maven build)..."
+$gatewayProject = Join-Path $repoRoot "FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj"
 
 try {
     $buildArgs = @("build", $gatewayProject, "--configuration", "Release")
@@ -34,10 +34,10 @@ try {
         exit $LASTEXITCODE
     }
     
-    Write-Host "Flink.JobGateway build completed successfully"
+    Write-Host "FlinkDotNet.JobGateway build completed successfully"
     
     # Verify JAR was created
-    $jarPath = Join-Path $repoRoot "FlinkDotNet\Flink.JobGateway\bin\Release\net9.0\flink-ir-runner-java17.jar"
+    $jarPath = Join-Path $repoRoot "FlinkDotNet\FlinkDotNet.JobGateway\bin\Release\net9.0\flink-ir-runner-java17.jar"
     if (Test-Path $jarPath) {
         $jarInfo = Get-Item $jarPath
         Write-Host ""

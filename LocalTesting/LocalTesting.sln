@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTesting.FlinkSqlAppHos
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTesting.IntegrationTests", "LocalTesting.IntegrationTests\LocalTesting.IntegrationTests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flink.JobGateway", "..\FlinkDotNet\Flink.JobGateway\Flink.JobGateway.csproj", "{7ABD8F6C-CEA5-AD0A-07DA-5F5D5B28A530}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobGateway", "..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj", "{7ABD8F6C-CEA5-AD0A-07DA-5F5D5B28A530}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -171,7 +171,7 @@ var sqlGateway = sqlGatewayBuilder
 // 4. This prevents any confusion about which Kafka address to use
 // Gateway with service reference for Flink discovery
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
-builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
+builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", $"http://localhost:{Ports.GatewayHostPort.ToString()}")  // Override launchSettings.json
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
@@ -187,7 +187,7 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
 var temporalDbServer = builder.AddPostgres("temporal-postgres")
     .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")  // Allow trust authentication (no password)
     .WithEnvironment("POSTGRES_DB", "temporal");  // Create temporal database on startup
-    // PostgreSQL will use default "postgres" user with trust authentication
+                                                  // PostgreSQL will use default "postgres" user with trust authentication
 
 // Note: Temporal auto-setup will also create "temporal_visibility" database
 
@@ -212,8 +212,7 @@ builder.AddContainer("temporal-server", "temporalio/auto-setup", "1.22.4")
     .WithEnvironment("DBNAME", "temporal")  // Specify database name for Temporal
     .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")  // Specify visibility database name
     .WithEnvironment("SKIP_DB_CREATE", "false")  // Let Temporal create databases
-    .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false")  // Create default namespace
-    .WaitFor(temporalDbServer);  // Wait for PostgreSQL server to be ready
+    .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false");  // Create default namespace
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();

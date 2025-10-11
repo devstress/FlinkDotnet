@@ -15,7 +15,7 @@ dotnet --version
 java -version   # Should be 17+
 mvn -version    # Maven available on PATH
 ```
-If Java/Maven are not available, `Flink.JobGateway` build will fail because it prebuilds the IR Runner jar.
+If Java/Maven are not available, `FlinkDotNet.JobGateway` build will fail because it prebuilds the IR Runner jar.
 
 ### 2. Quick Validation
 ```bash

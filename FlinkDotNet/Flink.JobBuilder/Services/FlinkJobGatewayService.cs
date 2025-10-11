@@ -26,14 +26,14 @@ namespace Flink.JobBuilder.Services
         {
             var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
             var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
-            var logFile = System.IO.Path.Combine(logFilePath, $"Flink.JobGateway.log.{today}");
+            var logFile = System.IO.Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
             
             // Clean up old log files (older than 1 day)
             try
             {
                 if (System.IO.Directory.Exists(logFilePath))
                 {
-                    var logFiles = System.IO.Directory.GetFiles(logFilePath, "Flink.JobGateway.log.*");
+                    var logFiles = System.IO.Directory.GetFiles(logFilePath, "FlinkDotNet.JobGateway.log.*");
                     foreach (var file in logFiles)
                     {
                         var fileInfo = new System.IO.FileInfo(file);

@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\FlinkDotNet\Flink.JobGateway\Flink.JobGateway.csproj">
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj">
       <SetConfiguration>Configuration=Release</SetConfiguration>
     </ProjectReference>
   </ItemGroup>

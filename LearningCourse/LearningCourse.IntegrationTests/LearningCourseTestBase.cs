@@ -237,9 +237,10 @@ public abstract class LearningCourseTestBase
     {
         TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
         
-        // Copy FlinkIRRunner logs from Flink containers BEFORE stopping them
-        TestContext.WriteLine("📋 Copying FlinkIRRunner logs from Flink containers...");
-        CopyFlinkIRRunnerLogs();
+        // Copy Flink logs from Flink containers BEFORE stopping them
+        // Note: FlinkJobRunner logs are embedded within Flink's logging system
+        TestContext.WriteLine("📋 Copying Flink logs from Flink containers...");
+        CopyFlinkLogs();
         
         if (_appHostProcess != null && !_appHostProcess.HasExited)
         {
@@ -277,9 +278,11 @@ public abstract class LearningCourseTestBase
     }
     
     /// <summary>
-    /// Copy FlinkIRRunner logs from Flink containers to host filesystem before containers are stopped
+    /// Copy Flink logs from Flink containers to host filesystem before containers are stopped.
+    /// This includes Apache Flink logs (JobManager, TaskManager, SQL Gateway) which contain
+    /// embedded FlinkJobRunner application logs since FlinkJobRunner runs as a job within Flink.
     /// </summary>
-    private static void CopyFlinkIRRunnerLogs()
+    private static void CopyFlinkLogs()
     {
         try
         {
@@ -330,19 +333,21 @@ public abstract class LearningCourseTestBase
         }
         catch (Exception ex)
         {
-            TestContext.WriteLine($"⚠️ Error copying FlinkIRRunner logs: {ex.Message}");
+            TestContext.WriteLine($"⚠️ Error copying Flink logs: {ex.Message}");
         }
     }
     
     /// <summary>
-    /// Copy Flink native logs from a specific container (contains FlinkJobRunner output)
-    /// Renames them to FlinkIRRunner.log.YYYYMMDD format for consistency
+    /// Copy all logs from /opt/flink/log/ in a specific container.
+    /// This includes both Apache Flink logs and FlinkJobRunner logs (both write to same directory).
+    /// Renames Apache Flink logs to Flink.{component}.log.YYYYMMDD format.
+    /// FlinkJobRunner logs already follow the correct naming convention.
     /// </summary>
     private static void CopyLogsFromContainer(string containerId, string testLogsDir)
     {
         try
         {
-            // List all log files in Flink's native log directory
+            // List all log files in Flink's log directory
             var checkLogsPsi = new ProcessStartInfo
             {
                 FileName = "docker",
@@ -392,14 +397,26 @@ public abstract class LearningCourseTestBase
             else if (containerName.Contains("sql-gateway", StringComparison.OrdinalIgnoreCase))
                 componentType = "sql-gateway";
             
-            // Copy each Flink log file with standardized FlinkIRRunner naming
+            // Copy each log file with appropriate naming
             var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
             foreach (var logFile in logFileList)
             {
                 var fileName = Path.GetFileName(logFile);
-                // Use FlinkIRRunner.log.YYYYMMDD naming with component suffix
-                var standardizedName = $"FlinkIRRunner.{componentType}.log.{dateStamp}";
-                var destPath = Path.Combine(testLogsDir, standardizedName);
+                
+                // Determine destination name based on file type
+                string destName;
+                if (fileName.StartsWith("FlinkIRRunner.", StringComparison.OrdinalIgnoreCase))
+                {
+                    // FlinkJobRunner logs already have correct naming - keep as is
+                    destName = fileName;
+                }
+                else
+                {
+                    // Apache Flink logs - rename to Flink.{component}.log.YYYYMMDD
+                    destName = $"Flink.{componentType}.log.{dateStamp}";
+                }
+                
+                var destPath = Path.Combine(testLogsDir, destName);
                 
                 var copyPsi = new ProcessStartInfo
                 {
@@ -616,5 +633,78 @@ public abstract class LearningCourseTestBase
         }
 
         return (process.ExitCode, output, error);
+    }
+    
+    /// <summary>
+    /// Copy FlinkJobRunner logs from /opt/flink/test-logs/ directory in a specific container.
+    /// These logs are created by FlinkJobRunner's logback.xml configuration.
+    /// </summary>
+    private static void CopyFlinkJobRunnerLogsFromContainer(string containerId, string testLogsDir)
+    {
+        try
+        {
+            // Check if /opt/flink/test-logs/ directory exists and has FlinkJobRunner logs
+            var checkLogsPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"exec {containerId} sh -c \"ls /opt/flink/test-logs/FlinkIRRunner.log* 2>/dev/null || echo ''\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var checkProcess = Process.Start(checkLogsPsi);
+            if (checkProcess == null) return;
+            
+            var logFiles = checkProcess.StandardOutput.ReadToEnd().Trim();
+            checkProcess.WaitForExit();
+            
+            if (string.IsNullOrWhiteSpace(logFiles))
+            {
+                // FlinkJobRunner logs not found - this is normal if no jobs were submitted
+                return;
+            }
+            
+            var logFileList = logFiles.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            TestContext.WriteLine($"   Found {logFileList.Length} FlinkJobRunner log files in container {containerId.Substring(0, 12)}");
+            
+            // Copy each FlinkJobRunner log file (they already have correct naming)
+            foreach (var logFile in logFileList)
+            {
+                var fileName = Path.GetFileName(logFile);
+                var destPath = Path.Combine(testLogsDir, fileName);
+                
+                var copyPsi = new ProcessStartInfo
+                {
+                    FileName = "docker",
+                    Arguments = $"cp {containerId}:{logFile} \"{destPath}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                
+                using var copyProcess = Process.Start(copyPsi);
+                if (copyProcess == null) continue;
+                
+                copyProcess.WaitForExit(TimeSpan.FromSeconds(5));
+                
+                if (copyProcess.ExitCode == 0 && File.Exists(destPath))
+                {
+                    var fileInfo = new FileInfo(destPath);
+                    TestContext.WriteLine($"   ✅ Copied FlinkJobRunner log: {fileName} ({fileInfo.Length} bytes)");
+                }
+                else
+                {
+                    var error = copyProcess.StandardError.ReadToEnd();
+                    TestContext.WriteLine($"   ⚠️ Failed to copy {fileName}: {error}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️ Error copying FlinkJobRunner logs from container {containerId.Substring(0, 12)}: {ex.Message}");
+        }
     }
 }

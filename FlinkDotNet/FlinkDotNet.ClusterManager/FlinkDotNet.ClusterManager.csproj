@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
-    <ProjectReference Include="..\Flink.JobGateway\Flink.JobGateway.csproj" />
+    <ProjectReference Include="..\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj" />
   </ItemGroup>
 
 </Project>

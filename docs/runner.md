@@ -16,14 +16,14 @@ Packaging:
 
 Build locally:
 - Recommended: build the gateway which pre-builds the runner jars automatically
-  - `dotnet build FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj -c Release`
+  - `dotnet build FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj -c Release`
   - Outputs in project root and bin output:
     - `flink-ir-runner.jar` (Java 25 when JDK 25 available, otherwise Java 17 fallback)
     - `flink-ir-runner-java17.jar` (compat)
 - Alternative (manual): with Maven installed
   - `cd FlinkIRRunner && mvn -DskipTests package`  # builds Java 17 by default
   - To build both explicitly: `mvn -DskipTests clean package -Pjava25 && mvn -DskipTests package -Pjava17`
-  - Copy `FlinkIRRunner/target/*.jar` to `FlinkDotNet/Flink.JobGateway/` or set `FLINK_RUNNER_JAR_PATH`
+  - Copy `FlinkIRRunner/target/*.jar` to `FlinkDotNet/FlinkDotNet.JobGateway/` or set `FLINK_RUNNER_JAR_PATH`
 
 Notes:
 - Building via the gateway requires Java 25 and Maven on PATH.
