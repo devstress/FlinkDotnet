@@ -66,7 +66,7 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  - Section 10: Creating time windows (tumbling windows)");
             Console.WriteLine("  - Section 11: Aggregating backups (daily aggregation)");
             Console.WriteLine();
-            Console.WriteLine("  NOW USING NATIVE DATASTREAM API - EXACT BAELDUNG MATCH!");
+            Console.WriteLine("  Using native DataStream API matching Baeldung tutorial structure");
             Console.WriteLine("  .TimeWindowAll(Time.Hours(24))");
             Console.WriteLine("  .Aggregate(new BackupAggregator())");
             Console.WriteLine();
@@ -152,10 +152,10 @@ namespace Exercise2_BackupAggregator
         /// </summary>
         static async Task SubmitBackupAggregationJob()
         {
-            Console.WriteLine($"   Creating Flink job using native DataStream API (EXACT Baeldung match)...");
+            Console.WriteLine($"   Creating Flink job using native DataStream API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Time Characteristic: EventTime");
-            Console.WriteLine($"   - Window: Time.Hours(24) - EXACTLY like Baeldung!");
+            Console.WriteLine($"   - Window: Time.Hours(24)");
             Console.WriteLine($"   - Aggregation: BackupAggregator");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
             Console.WriteLine();
@@ -246,91 +246,131 @@ namespace Exercise2_BackupAggregator
 
             try
             {
-                while (stopwatch.Elapsed < timeout && consumedBackups < 5) // Show first 5 backups
-                {
-                    var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
-
-                    if (result != null)
-                    {
-                        consumedBackups++;
-                        
-                        // Print raw message for debugging
-                        Console.WriteLine($"   [{consumedBackups:D2}] Raw Kafka Message:");
-                        Console.WriteLine($"        Partition: {result.Partition}");
-                        Console.WriteLine($"        Offset: {result.Offset}");
-                        Console.WriteLine($"        Timestamp: {result.Message.Timestamp.UtcDateTime:yyyy-MM-dd HH:mm:ss.fff} UTC");
-                        Console.WriteLine($"        Key: {result.Message.Key ?? "(null)"}");
-                        Console.WriteLine($"        Value Length: {result.Message.Value?.Length ?? 0} characters");
-                        Console.WriteLine($"        Value (first 200 chars): {(result.Message.Value?.Length > 200 ? result.Message.Value.Substring(0, 200) + "..." : result.Message.Value ?? "(null)")}");
-                        Console.WriteLine($"        Full Raw Value: {result.Message.Value ?? "(null)"}");
-                        Console.WriteLine();
-                        
-                        try
-                        {
-                            // Section 8: Custom deserialization
-                            var backup = BackupDeserializer.Deserialize(result.Message.Value ?? string.Empty);
-                            
-                            Console.WriteLine($"   [{consumedBackups:D2}] Backup Deserialized:");
-                            Console.WriteLine($"        UUID: {backup.Uuid}");
-                            Console.WriteLine($"        Timestamp: {backup.BackupTimestamp:yyyy-MM-dd HH:mm:ss} UTC");
-                            Console.WriteLine($"        Messages Count: {backup.InputMessages?.Count ?? 0}");
-                            
-                            if (backup.InputMessages?.Count > 0)
-                            {
-                                Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
-                                Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
-                            }
-                        }
-                        catch (JsonException deserEx)
-                        {
-                            Console.WriteLine($"   [FAIL] Deserialization error detected in Backup aggregation consumption");
-                            Console.WriteLine($"        [ERROR] Deserialization error: {deserEx.Message}");
-                            Console.WriteLine($"        [ERROR] Inner exception: {deserEx.InnerException?.Message ?? "(none)"}");
-                            Console.WriteLine($"        [ERROR] Stack trace: {deserEx.StackTrace}");
-                            Console.WriteLine();
-                            Console.WriteLine($"   [DEBUG] Attempting to parse as different formats:");
-                            
-                            // Try to identify the format
-                            var rawValue = result.Message.Value;
-                            if (rawValue != null)
-                            {
-                                Console.WriteLine($"        Character breakdown (first 50):");
-                                for (int i = 0; i < Math.Min(50, rawValue.Length); i++)
-                                {
-                                    var c = rawValue[i];
-                                    Console.WriteLine($"          [{i}] '{c}' (ASCII: {(int)c}, Hex: 0x{(int)c:X2})");
-                                }
-                            }
-                            
-                            throw; // Re-throw to be caught by outer handler
-                        }
-
-                        consumer.Commit(result);
-                    }
-                    else if (consumedBackups > 0)
-                    {
-                        Console.WriteLine("   No new backups - consumption complete");
-                        break;
-                    }
-                }
+                consumedBackups = await ConsumeMessagesLoop(consumer, stopwatch, timeout);
             }
             catch (ConsumeException ex)
             {
-                Console.WriteLine($"   [ERROR] Consumption error: {ex.Error.Reason}");
+                HandleConsumeException(ex);
             }
             catch (JsonException ex)
             {
-                Console.WriteLine($"   [FINAL ERROR] JSON deserialization failed");
-                Console.WriteLine($"   [ERROR] Message: {ex.Message}");
-                Console.WriteLine($"   [ERROR] Path: {ex.Path ?? "(none)"}");
-                Console.WriteLine($"   [ERROR] Line: {ex.LineNumber?.ToString() ?? "(none)"}");
-                Console.WriteLine($"   [ERROR] Position: {ex.BytePositionInLine?.ToString() ?? "(none)"}");
+                HandleJsonException(ex);
             }
             finally
             {
                 consumer.Close();
             }
 
+            await ValidateConsumptionResults(consumedBackups);
+        }
+
+        /// <summary>
+        /// Main message consumption loop
+        /// </summary>
+        private static Task<int> ConsumeMessagesLoop(IConsumer<string, string> consumer, Stopwatch stopwatch, TimeSpan timeout)
+        {
+            var consumedBackups = 0;
+            var messageNumber = 0;
+            
+            while (stopwatch.Elapsed < timeout && consumedBackups < 5)
+            {
+                var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
+
+                if (result == null)
+                {
+                    if (consumedBackups > 0)
+                    {
+                        Console.WriteLine("   No new backups - consumption complete");
+                        break;
+                    }
+                    continue;
+                }
+
+                messageNumber++;
+                var (shouldCommit, wasBackup) = ProcessConsumedMessage(result, messageNumber);
+                
+                if (wasBackup)
+                {
+                    consumedBackups++;
+                }
+                
+                if (shouldCommit)
+                {
+                    consumer.Commit(result);
+                }
+            }
+            
+            return Task.FromResult(consumedBackups);
+        }
+
+        /// <summary>
+        /// Process a single consumed message
+        /// Returns: (shouldCommit, wasBackup) tuple
+        /// </summary>
+        private static (bool shouldCommit, bool wasBackup) ProcessConsumedMessage(ConsumeResult<string, string> result, int messageNumber)
+        {
+            var messageValue = result.Message.Value ?? string.Empty;
+            if (!IsJsonMessage(messageValue))
+            {
+                // Commit offset to skip Exercise 1 messages on next run - don't print or count them
+                return (true, false); // Commit to advance offset, but wasn't a backup
+            }
+            
+            PrintRawMessageDetails(result, messageNumber);
+            
+            if (!TryDeserializeBackup(messageValue, messageNumber, out var errorOccurred) && errorOccurred)
+            {
+                throw new JsonException($"Failed to deserialize backup message at offset {result.Offset}");
+            }
+
+            return (true, true); // Should commit, was a backup
+        }
+
+        /// <summary>
+        /// Print raw message details for debugging
+        /// </summary>
+        private static void PrintRawMessageDetails(ConsumeResult<string, string> result, int messageNumber)
+        {
+            Console.WriteLine($"   [{messageNumber:D2}] Raw Kafka Message:");
+            Console.WriteLine($"        Partition: {result.Partition}");
+            Console.WriteLine($"        Offset: {result.Offset}");
+            Console.WriteLine($"        Timestamp: {result.Message.Timestamp.UtcDateTime:yyyy-MM-dd HH:mm:ss.fff} UTC");
+            Console.WriteLine($"        Key: {result.Message.Key ?? "(null)"}");
+            Console.WriteLine($"        Value Length: {result.Message.Value?.Length ?? 0} characters");
+            
+            var valuePreview = result.Message.Value?.Length > 200
+                ? result.Message.Value.Substring(0, 200) + "..."
+                : result.Message.Value ?? "(null)";
+            Console.WriteLine($"        Value (first 200 chars): {valuePreview}");
+            Console.WriteLine($"        Full Raw Value: {result.Message.Value ?? "(null)"}");
+            Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Handle Kafka consumption exceptions
+        /// </summary>
+        private static void HandleConsumeException(ConsumeException ex)
+        {
+            Console.WriteLine($"   [ERROR] Consumption error: {ex.Error.Reason}");
+        }
+
+        /// <summary>
+        /// Handle JSON deserialization exceptions
+        /// </summary>
+        private static void HandleJsonException(JsonException ex)
+        {
+            Console.WriteLine($"   [FINAL ERROR] JSON deserialization failed");
+            Console.WriteLine($"   [ERROR] Message: {ex.Message}");
+            Console.WriteLine($"   [ERROR] Path: {ex.Path ?? "(none)"}");
+            Console.WriteLine($"   [ERROR] Line: {ex.LineNumber?.ToString() ?? "(none)"}");
+            Console.WriteLine($"   [ERROR] Position: {ex.BytePositionInLine?.ToString() ?? "(none)"}");
+        }
+
+        /// <summary>
+        /// Validate consumption results and handle failures
+        /// </summary>
+        private static async Task ValidateConsumptionResults(int consumedBackups)
+        {
             if (consumedBackups > 0)
             {
                 Console.WriteLine($"   [SUCCESS] Consumed {consumedBackups} Backup aggregations");
@@ -341,7 +381,6 @@ namespace Exercise2_BackupAggregator
                 Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
                 Console.WriteLine();
                 
-                // Print last 20 lines of TaskManager container logs
                 await PrintTaskManagerLogsAsync();
                 
                 Console.WriteLine();
@@ -379,6 +418,63 @@ namespace Exercise2_BackupAggregator
                 BrokerAddressFamily = BrokerAddressFamily.V4,
                 SecurityProtocol = SecurityProtocol.Plaintext
             };
+        }
+
+        /// <summary>
+        /// Check if message value is JSON (starts with '{')
+        /// </summary>
+        private static bool IsJsonMessage(string messageValue)
+        {
+            return messageValue.TrimStart().StartsWith('{');
+        }
+
+        /// <summary>
+        /// Try to deserialize and display backup message
+        /// </summary>
+        private static bool TryDeserializeBackup(string messageValue, int messageNumber, out bool errorOccurred)
+        {
+            errorOccurred = false;
+            try
+            {
+                // Section 8: Custom deserialization
+                var backup = BackupDeserializer.Deserialize(messageValue);
+                
+                Console.WriteLine($"   [{messageNumber:D2}] Backup Deserialized:");
+                Console.WriteLine($"        UUID: {backup.Uuid}");
+                Console.WriteLine($"        Timestamp: {backup.BackupTimestamp:yyyy-MM-dd HH:mm:ss} UTC");
+                Console.WriteLine($"        Messages Count: {backup.InputMessages?.Count ?? 0}");
+                
+                if (backup.InputMessages?.Count > 0)
+                {
+                    Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
+                    Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
+                }
+                return true;
+            }
+            catch (JsonException deserEx)
+            {
+                Console.WriteLine($"   [WARN] Skipping non-JSON message (likely from Exercise 1)");
+                Console.WriteLine($"        [ERROR] Deserialization error: {deserEx.Message}");
+                PrintCharacterBreakdown(messageValue);
+                errorOccurred = true;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Print character breakdown for debugging deserialization issues
+        /// </summary>
+        private static void PrintCharacterBreakdown(string messageValue)
+        {
+            if (messageValue != null)
+            {
+                Console.WriteLine($"        Character breakdown (first 50):");
+                for (int i = 0; i < Math.Min(50, messageValue.Length); i++)
+                {
+                    var c = messageValue[i];
+                    Console.WriteLine($"          [{i}] '{c}' (ASCII: {(int)c}, Hex: 0x{(int)c:X2})");
+                }
+            }
         }
 
         static async Task CreateTopicsAsync()

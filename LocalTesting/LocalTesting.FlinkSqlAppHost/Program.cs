@@ -40,8 +40,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // - External listener (PLAINTEXT_HOST): localhost:9093 (host machine access)
 // Tests and external clients MUST use localhost:9093
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka")
-    .WithEndpoint("tcp", endpoint => endpoint.Port = Ports.KafkaExternalPort);
+var kafka = builder.AddKafka("kafka");
 #pragma warning restore S1481
 
 // Flink JobManager with named HTTP endpoint for service references
