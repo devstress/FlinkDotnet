@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LearningCourse.Common;
 using NUnit.Framework;
 
 namespace LearningCourse.IntegrationTests;
@@ -15,6 +16,18 @@ public abstract class LearningCourseTestBase
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
+    
+    /// <summary>
+    /// Kafka container IP for Flink jobs (e.g., "172.17.0.2:9093").
+    /// Docker bridge network doesn't support DNS, so we use actual IP address.
+    /// </summary>
+    public static string? KafkaFlinkBootstrapServers { get; private set; }
+    
+    /// <summary>
+    /// Kafka host endpoint for exercise producers/consumers (e.g., "localhost:43175").
+    /// Dynamically allocated host port mapped to Kafka's container port.
+    /// </summary>
+    public static string? KafkaHostBootstrapServers { get; private set; }
 
     /// <summary>
     /// Start LocalTesting AppHost once for all tests
@@ -25,13 +38,14 @@ public abstract class LearningCourseTestBase
         TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
         
-        // Set Kafka bootstrap servers to FIXED external port (see Ports.cs in AppHost)
-        // Kafka uses dual listener setup:
-        // - Internal: kafka:9092 (container-to-container communication for Flink containers)
-        // - External: localhost:9093 (host machine access for tests and external clients)
-        const string kafkaBootstrap = "localhost:9093";
-        Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
-        TestContext.WriteLine($"🔧 KAFKA_BOOTSTRAP_SERVERS set to: {kafkaBootstrap} (FIXED external port)");
+        // DO NOT set KAFKA_BOOTSTRAP_SERVERS here!
+        // REASON: Environment variables set here are inherited by AppHost process,
+        // which then passes them to all Docker containers including Flink containers.
+        // This causes Kafka client inside Flink TaskManager to use localhost:9093 instead of kafka:9092.
+        //
+        // SOLUTION: Set KAFKA_BOOTSTRAP_SERVERS only in ExecuteExerciseAsync() so it's ONLY
+        // available to exercise processes, NOT to AppHost or Flink containers.
+        TestContext.WriteLine($"✅ NOT setting KAFKA_BOOTSTRAP_SERVERS globally to prevent Docker inheritance");
 
         var psi = new ProcessStartInfo
         {
@@ -76,7 +90,36 @@ public abstract class LearningCourseTestBase
         // Wait for infrastructure to be ready
         await Task.Delay(AppHostStartupTimeout);
         
-        TestContext.WriteLine("✅ Infrastructure startup time elapsed, tests can proceed");
+        TestContext.WriteLine("✅ Infrastructure startup time elapsed");
+        
+        // Discover Kafka container IP for Flink jobs
+        // Docker bridge network doesn't support DNS between containers, so we need actual IP
+        TestContext.WriteLine("🔍 Discovering Kafka container IP for Flink jobs...");
+        try
+        {
+            KafkaFlinkBootstrapServers = await DockerInfrastructure.GetKafkaContainerIpAsync();
+            TestContext.WriteLine($"✅ Kafka container IP for Flink: {KafkaFlinkBootstrapServers}");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to discover Kafka container IP: {ex.Message}");
+            throw;
+        }
+        
+        // Discover Kafka host endpoint for exercise producers/consumers
+        TestContext.WriteLine("🔍 Discovering Kafka host endpoint for exercises...");
+        try
+        {
+            KafkaHostBootstrapServers = await DockerInfrastructure.GetKafkaHostEndpointAsync();
+            TestContext.WriteLine($"✅ Kafka host endpoint for exercises: {KafkaHostBootstrapServers}");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to discover Kafka host endpoint: {ex.Message}");
+            throw;
+        }
+        
+        TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
     }
 
     /// <summary>
@@ -252,13 +295,22 @@ public abstract class LearningCourseTestBase
             CreateNoWindow = true
         };
         
-        // Pass KAFKA_BOOTSTRAP_SERVERS environment variable if set
-        var kafkaBootstrap = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS");
-        if (!string.IsNullOrEmpty(kafkaBootstrap))
+        // Set Kafka environment variables for exercise process
+        // Two different addresses needed because of Docker networking:
+        // 1. KAFKA_BOOTSTRAP_SERVERS: For exercise's own Kafka operations (producer/consumer on host)
+        // 2. KAFKA_FLINK_BOOTSTRAP_SERVERS: For Flink job configurations (container-to-container)
+        //
+        // Docker bridge network doesn't support DNS between containers, so Flink needs actual container IP
+        if (string.IsNullOrEmpty(KafkaHostBootstrapServers) || string.IsNullOrEmpty(KafkaFlinkBootstrapServers))
         {
-            psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = kafkaBootstrap;
-            TestContext.WriteLine($"🔧 Setting KAFKA_BOOTSTRAP_SERVERS={kafkaBootstrap} for exercise");
+            throw new InvalidOperationException("Kafka bootstrap servers not discovered. Ensure GlobalSetUp ran successfully.");
         }
+        
+        psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
+        psi.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
+        
+        TestContext.WriteLine($"🔧 Setting KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers} for exercise (host access)");
+        TestContext.WriteLine($"🔧 Setting KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers} for Flink jobs (container access)");
 
         using var process = Process.Start(psi);
         if (process == null)

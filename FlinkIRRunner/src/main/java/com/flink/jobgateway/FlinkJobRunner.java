@@ -1,5 +1,7 @@
 package com.flink.jobgateway;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -32,7 +34,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class FlinkJobRunner {
+    private static final Logger logger = LoggerFactory.getLogger(FlinkJobRunner.class);
+    
     public static void main(String[] args) throws Exception {
+        logger.info("========================================");
+        logger.info("FlinkJobRunner Starting");
+        logger.info("========================================");
+        
         Map<String, String> argMap = parseArgs(args);
         String base64 = argMap.getOrDefault("--irBase64", argMap.get("-ir"));
         if (base64 == null || base64.isEmpty()) {
@@ -98,27 +106,29 @@ public class FlinkJobRunner {
             String bootstrap = k.bootstrapServers;
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
 
-            System.out.println("============================================================");
-            System.out.println("[KAFKA SOURCE] Configuration:");
-            System.out.println("  - bootstrapServers field from JSON: " + k.bootstrapServers);
-            System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
-            System.out.println("  - Topic: " + k.topic);
-            System.out.println("  - GroupId: " + groupId);
-            System.out.println("  - Starting offsets: " + orElse(k.startingOffsets, "latest"));
-            System.out.println("============================================================");
+            logger.info("============================================================");
+            logger.info("[KAFKA SOURCE] Configuration:");
+            logger.info("  - bootstrapServers field from JSON: {}", k.bootstrapServers);
+            logger.info("  - FINAL bootstrap.servers: {}", bootstrap);
+            logger.info("  - Topic: {}", k.topic);
+            logger.info("  - GroupId: {}", groupId);
+            logger.info("  - Starting offsets: {}", orElse(k.startingOffsets, "latest"));
+            logger.info("  - KAFKA_BOOTSTRAP_SERVERS env var: {}", System.getenv("KAFKA_BOOTSTRAP_SERVERS"));
+            logger.info("  - bootstrap.servers system property: {}", System.getProperty("bootstrap.servers"));
+            logger.info("============================================================");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
             props.put("group.id", groupId);
             props.put("auto.offset.reset", orElse(k.startingOffsets, "latest"));
             
-            System.out.println("[KAFKA SOURCE] Creating Kafka consumer with properties:");
-            System.out.println("  - bootstrap.servers: " + props.getProperty("bootstrap.servers"));
-            System.out.println("  - group.id: " + props.getProperty("group.id"));
-            System.out.println("  - auto.offset.reset: " + props.getProperty("auto.offset.reset"));
+            logger.info("[KAFKA SOURCE] Creating Kafka consumer with properties:");
+            logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
+            logger.info("  - group.id: {}", props.getProperty("group.id"));
+            logger.info("  - auto.offset.reset: {}", props.getProperty("auto.offset.reset"));
 
             stream = env.addSource(new KafkaStringSource(k.topic, props)).name("KafkaSource");
-            System.out.println("[KAFKA SOURCE] Source created successfully");
+            logger.info("[KAFKA SOURCE] Source created successfully");
         } else {
             // Fallback source
             stream = env.fromElements("sample");
@@ -131,27 +141,27 @@ public class FlinkJobRunner {
                 if (op instanceof MapOperationDefinition) {
                     MapOperationDefinition m = (MapOperationDefinition) op;
                     String expr = orElse(m.expression, m.function, "identity");
-                    System.out.println("============================================================");
-                    System.out.println("[MAP OPERATION] Processing:");
-                    System.out.println("  - expression field from JSON: " + m.expression);
-                    System.out.println("  - function field from JSON: " + m.function);
-                    System.out.println("  - Resolved expression: " + expr);
-                    System.out.println("  - Normalized (lowercase): " + expr.toLowerCase(Locale.ROOT));
-                    System.out.println("============================================================");
+                    logger.info("============================================================");
+                    logger.info("[MAP OPERATION] Processing:");
+                    logger.info("  - expression field from JSON: {}", m.expression);
+                    logger.info("  - function field from JSON: {}", m.function);
+                    logger.info("  - Resolved expression: {}", expr);
+                    logger.info("  - Normalized (lowercase): {}", expr.toLowerCase(Locale.ROOT));
+                    logger.info("============================================================");
                     
                     switch (expr.toLowerCase(Locale.ROOT)) {
                         case "upper":
                         case "toupper":
-                            System.out.println("[MAP OPERATION] ✓ Applying toUpperCase transformation");
+                            logger.info("[MAP OPERATION] ✓ Applying toUpperCase transformation");
                             stream = stream.map(String::toUpperCase);
                             break;
                         case "lower":
                         case "tolower":
-                            System.out.println("[MAP OPERATION] ✓ Applying toLowerCase transformation");
+                            logger.info("[MAP OPERATION] ✓ Applying toLowerCase transformation");
                             stream = stream.map(String::toLowerCase);
                             break;
                         default:
-                            System.out.println("[MAP OPERATION] ⚠ Using identity transformation (pass-through) for: " + expr);
+                            logger.info("[MAP OPERATION] ⚠ Using identity transformation (pass-through) for: {}", expr);
                             // identity or unrecognized: pass through
                             break;
                     }
@@ -241,53 +251,79 @@ public class FlinkJobRunner {
                     AggregateOperationDefinition agg = (AggregateOperationDefinition) op;
                     String aggType = orElse(agg.aggregationType, "COLLECT").toUpperCase(Locale.ROOT);
                     
-                    System.out.println("============================================================");
-                    System.out.println("[AGGREGATE OPERATION] Processing:");
-                    System.out.println("  - aggregationType: " + aggType);
-                    System.out.println("  - field: " + orElse(agg.field, "*"));
-                    System.out.println("============================================================");
+                    logger.info("============================================================");
+                    logger.info("[AGGREGATE OPERATION] Processing:");
+                    logger.info("  - aggregationType: {}", aggType);
+                    logger.info("  - field: {}", orElse(agg.field, "*"));
+                    logger.info("  - windowSeconds: {}", agg.windowSeconds);
+                    logger.info("============================================================");
                     
                     // For COLLECT aggregation, collect all strings in window into a JSON array
                     if ("COLLECT".equals(aggType)) {
-                        // Note: This is a simplified implementation for string streams
-                        // In production, you'd use proper AggregateFunction with typed objects
+                        // Use Jackson ObjectMapper for proper JSON handling
+                        final ObjectMapper jsonMapper = new ObjectMapper();
+                        
+                        // Get window duration from metadata or default to 10 seconds for testing
+                        long windowSeconds = agg.windowSeconds != null && agg.windowSeconds > 0 ? agg.windowSeconds : 10;
+                        Duration windowDuration = Duration.ofSeconds(windowSeconds);
+                        
+                        logger.info("[AGGREGATE] Using window duration: {} seconds", windowSeconds);
+                        
                         KeyedStream<String, String> keyed = stream.keyBy(v -> "all"); // Global window key
-                        stream = keyed.window(TumblingProcessingTimeWindows.of(Duration.ofHours(24)))
-                                .aggregate(new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<String>, String>() {
+                        stream = keyed.window(TumblingProcessingTimeWindows.of(windowDuration))
+                                .aggregate(new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String>() {
                                     @Override
-                                    public java.util.List<String> createAccumulator() {
+                                    public java.util.List<com.fasterxml.jackson.databind.JsonNode> createAccumulator() {
+                                        logger.info("[AGGREGATE] Creating new accumulator for COLLECT aggregation");
                                         return new java.util.ArrayList<>();
                                     }
                                     
                                     @Override
-                                    public java.util.List<String> add(String value, java.util.List<String> accumulator) {
-                                        accumulator.add(value);
-                                        return accumulator;
-                                    }
-                                    
-                                    @Override
-                                    public String getResult(java.util.List<String> accumulator) {
-                                        // Convert to JSON array format for backup
-                                        StringBuilder json = new StringBuilder("{\"inputMessages\":[");
-                                        for (int i = 0; i < accumulator.size(); i++) {
-                                            if (i > 0) json.append(",");
-                                            json.append(accumulator.get(i));
+                                    public java.util.List<com.fasterxml.jackson.databind.JsonNode> add(String value, java.util.List<com.fasterxml.jackson.databind.JsonNode> accumulator) {
+                                        try {
+                                            // Parse JSON string to JsonNode to ensure valid JSON
+                                            com.fasterxml.jackson.databind.JsonNode node = jsonMapper.readTree(value);
+                                            accumulator.add(node);
+                                            logger.debug("[AGGREGATE] Added message to accumulator, total count: {}", accumulator.size());
+                                            return accumulator;
+                                        } catch (Exception e) {
+                                            logger.error("[AGGREGATE] Failed to parse JSON message: {}", value, e);
+                                            // Skip invalid JSON messages
+                                            return accumulator;
                                         }
-                                        json.append("],\"backupTimestamp\":\"");
-                                        json.append(java.time.Instant.now().toString());
-                                        json.append("\",\"uuid\":\"");
-                                        json.append(java.util.UUID.randomUUID().toString());
-                                        json.append("\"}");
-                                        return json.toString();
                                     }
                                     
                                     @Override
-                                    public java.util.List<String> merge(java.util.List<String> a, java.util.List<String> b) {
+                                    public String getResult(java.util.List<com.fasterxml.jackson.databind.JsonNode> accumulator) {
+                                        try {
+                                            logger.info("[AGGREGATE] Finalizing Backup with {} messages", accumulator.size());
+                                            
+                                            // Build Backup object using Jackson
+                                            java.util.Map<String, Object> backup = new java.util.LinkedHashMap<>();
+                                            backup.put("inputMessages", accumulator);
+                                            backup.put("backupTimestamp", java.time.Instant.now().toString());
+                                            backup.put("uuid", java.util.UUID.randomUUID().toString());
+                                            
+                                            String json = jsonMapper.writeValueAsString(backup);
+                                            logger.info("[AGGREGATE] Generated Backup JSON: {}", json);
+                                            return json;
+                                        } catch (Exception e) {
+                                            logger.error("[AGGREGATE] Failed to serialize Backup", e);
+                                            return "{\"inputMessages\":[],\"backupTimestamp\":\"" +
+                                                   java.time.Instant.now().toString() +
+                                                   "\",\"uuid\":\"" + java.util.UUID.randomUUID().toString() + "\"}";
+                                        }
+                                    }
+                                    
+                                    @Override
+                                    public java.util.List<com.fasterxml.jackson.databind.JsonNode> merge(java.util.List<com.fasterxml.jackson.databind.JsonNode> a,
+                                                                                                        java.util.List<com.fasterxml.jackson.databind.JsonNode> b) {
                                         a.addAll(b);
+                                        logger.debug("[AGGREGATE] Merged accumulators, total count: {}", a.size());
                                         return a;
                                     }
                                 });
-                        System.out.println("[AGGREGATE OPERATION] ✓ COLLECT aggregation configured");
+                        logger.info("[AGGREGATE OPERATION] ✓ COLLECT aggregation configured with Jackson JSON handling");
                     }
                 }
             }
@@ -303,23 +339,23 @@ public class FlinkJobRunner {
                 throw new RuntimeException("Kafka sink bootstrapServers is required but was not provided");
             }
 
-            System.out.println("============================================================");
-            System.out.println("[KAFKA SINK] Configuration:");
-            System.out.println("  - bootstrapServers field from JSON: " + s.bootstrapServers);
-            System.out.println("  - Source bootstrapServers: " + ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
-            System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
-            System.out.println("  - Topic: " + s.topic);
-            System.out.println("============================================================");
+            logger.info("============================================================");
+            logger.info("[KAFKA SINK] Configuration:");
+            logger.info("  - bootstrapServers field from JSON: {}", s.bootstrapServers);
+            logger.info("  - Source bootstrapServers: {}", ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
+            logger.info("  - FINAL bootstrap.servers: {}", bootstrap);
+            logger.info("  - Topic: {}", s.topic);
+            logger.info("============================================================");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
             
-            System.out.println("[KAFKA SINK] Creating Kafka producer with properties:");
-            System.out.println("  - bootstrap.servers: " + props.getProperty("bootstrap.servers"));
-            System.out.println("  - Target topic: " + s.topic);
+            logger.info("[KAFKA SINK] Creating Kafka producer with properties:");
+            logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
+            logger.info("  - Target topic: {}", s.topic);
             
             stream.addSink(new KafkaStringSink(s.topic, props)).name("KafkaSink");
-            System.out.println("[KAFKA SINK] Sink created successfully");
+            logger.info("[KAFKA SINK] Sink created successfully");
         } else {
             stream.print();
         }
@@ -497,6 +533,7 @@ public interface Operation {}
         public String type;
         public String aggregationType;  // COLLECT, SUM, COUNT, etc.
         public String field;             // Field to aggregate, or "*" for all
+        public Long windowSeconds;       // Window duration in seconds (default: 10 for testing, 86400 for production)
     }
 
     // Simple Kafka Source using Kafka client
@@ -512,18 +549,18 @@ public interface Operation {}
 
         @Override
         public void run(org.apache.flink.streaming.api.functions.source.legacy.SourceFunction.SourceContext<String> ctx) throws Exception {
-            System.out.println("============================================================");
-            System.out.println("[KAFKA SOURCE] Starting consumer...");
-            System.out.println("  - Topic: " + topic);
-            System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
-            System.out.println("  - Group ID: " + props.getProperty("group.id"));
-            System.out.println("  - Auto offset reset: " + props.getProperty("auto.offset.reset"));
-            System.out.println("============================================================");
+            logger.info("============================================================");
+            logger.info("[KAFKA SOURCE] Starting consumer...");
+            logger.info("  - Topic: {}", topic);
+            logger.info("  - Bootstrap servers: {}", props.getProperty("bootstrap.servers"));
+            logger.info("  - Group ID: {}", props.getProperty("group.id"));
+            logger.info("  - Auto offset reset: {}", props.getProperty("auto.offset.reset"));
+            logger.info("============================================================");
             
             try (org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(props, new org.apache.kafka.common.serialization.StringDeserializer(), new org.apache.kafka.common.serialization.StringDeserializer())) {
-                System.out.println("[KAFKA SOURCE] ✓ Consumer created, subscribing to topic: " + topic);
+                logger.info("[KAFKA SOURCE] ✓ Consumer created, subscribing to topic: {}", topic);
                 consumer.subscribe(Collections.singletonList(topic));
-                System.out.println("[KAFKA SOURCE] ✓ Subscribed successfully, starting poll loop...");
+                logger.info("[KAFKA SOURCE] ✓ Subscribed successfully, starting poll loop...");
                 
                 int pollCount = 0;
                 int totalRecords = 0;
@@ -533,25 +570,24 @@ public interface Operation {}
                     pollCount++;
                     
                     if (records.count() > 0) {
-                        System.out.println("[KAFKA SOURCE] Poll #" + pollCount + ": Received " + records.count() + " records");
+                        logger.info("[KAFKA SOURCE] Poll #{}: Received {} records", pollCount, records.count());
                         totalRecords += records.count();
                     } else if (pollCount % 20 == 0) {
                         // Log every 10 seconds (20 polls * 500ms) to show we're still polling
-                        System.out.println("[KAFKA SOURCE] Poll #" + pollCount + ": Still polling, total records so far: " + totalRecords);
+                        logger.info("[KAFKA SOURCE] Poll #{}: Still polling, total records so far: {}", pollCount, totalRecords);
                     }
                     
                     for (var rec : records) {
                         synchronized (ctx.getCheckpointLock()) {
-                            System.out.println("[KAFKA SOURCE] Collecting record: " + rec.value());
+                            logger.debug("[KAFKA SOURCE] Collecting record: {}", rec.value());
                             ctx.collect(rec.value());
                         }
                     }
                 }
                 
-                System.out.println("[KAFKA SOURCE] Stopped. Total records processed: " + totalRecords);
+                logger.info("[KAFKA SOURCE] Stopped. Total records processed: {}", totalRecords);
             } catch (Exception e) {
-                System.err.println("[KAFKA SOURCE] ✗ ERROR: " + e.getClass().getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("[KAFKA SOURCE] ✗ ERROR: {}: {}", e.getClass().getName(), e.getMessage(), e);
                 throw e;
             }
         }
@@ -576,29 +612,27 @@ public interface Operation {}
         @Override
         public void invoke(String value, org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction.Context context) {
             if (producer == null) {
-                System.out.println("============================================================");
-                System.out.println("[KAFKA SINK] Initializing producer...");
-                System.out.println("  - Topic: " + topic);
-                System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
-                System.out.println("============================================================");
+                logger.info("============================================================");
+                logger.info("[KAFKA SINK] Initializing producer...");
+                logger.info("  - Topic: {}", topic);
+                logger.info("  - Bootstrap servers: {}", props.getProperty("bootstrap.servers"));
+                logger.info("============================================================");
                 
                 try {
                     producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props, new org.apache.kafka.common.serialization.StringSerializer(), new org.apache.kafka.common.serialization.StringSerializer());
-                    System.out.println("[KAFKA SINK] ✓ Producer created successfully");
+                    logger.info("[KAFKA SINK] ✓ Producer created successfully");
                 } catch (Exception e) {
-                    System.err.println("[KAFKA SINK] ✗ ERROR creating producer: " + e.getClass().getName() + ": " + e.getMessage());
-                    e.printStackTrace();
+                    logger.error("[KAFKA SINK] ✗ ERROR creating producer: {}: {}", e.getClass().getName(), e.getMessage(), e);
                     throw e;
                 }
             }
             
             try {
-                System.out.println("[KAFKA SINK] Sending message to topic '" + topic + "': " + value);
+                logger.debug("[KAFKA SINK] Sending message to topic '{}': {}", topic, value);
                 producer.send(new org.apache.kafka.clients.producer.ProducerRecord<>(topic, value));
-                System.out.println("[KAFKA SINK] ✓ Message sent successfully");
+                logger.debug("[KAFKA SINK] ✓ Message sent successfully");
             } catch (Exception e) {
-                System.err.println("[KAFKA SINK] ✗ ERROR sending message: " + e.getClass().getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("[KAFKA SINK] ✗ ERROR sending message: {}: {}", e.getClass().getName(), e.getMessage(), e);
                 throw e;
             }
         }

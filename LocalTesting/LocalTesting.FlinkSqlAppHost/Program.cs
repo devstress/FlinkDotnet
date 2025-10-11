@@ -82,7 +82,9 @@ var jobManager = jobManagerBuilder
     .WithArgs("jobmanager");
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
-// All ports are hardcoded - no WaitFor dependencies needed for parallel startup
+// CRITICAL: TaskManager must wait for both JobManager and Kafka to be ready
+// - WaitFor(jobManager): Ensures TaskManager can register with JobManager
+// - WaitFor(kafka): Ensures Kafka is ready before TaskManager starts processing jobs
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
@@ -103,6 +105,8 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithReference(kafka)
+    .WaitFor(jobManager)  // Wait for JobManager to be ready
+    .WaitFor(kafka)       // Wait for Kafka to be ready before processing jobs
     .WithArgs("taskmanager");
 
 // Flink SQL Gateway - Enables SQL Gateway REST API for direct SQL submission

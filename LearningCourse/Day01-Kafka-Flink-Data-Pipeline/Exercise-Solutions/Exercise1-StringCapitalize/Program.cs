@@ -27,7 +27,23 @@ namespace Exercise1_StringCapitalize
         private const string InputTopic = "flink_input";
         private const string OutputTopic = "flink_output";
         private const string ConsumerGroup = "baeldung";
-        private static readonly string KafkaBootstrapServers = "localhost:9093";
+        
+        // Kafka addresses - read from environment variables set by test infrastructure
+        // KAFKA_BOOTSTRAP_SERVERS: For host-to-container communication (producer/consumer operations from this exercise)
+        // KAFKA_FLINK_BOOTSTRAP_SERVERS: For container-to-container communication (Flink job Kafka connectivity)
+        private static readonly string KafkaBootstrapServers =
+            Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+        private static readonly string KafkaFlinkBootstrapServers =
+            Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
+        
+        static Program()
+        {
+            // Log environment variable values on startup for debugging
+            Console.WriteLine($"[DEBUG] KAFKA_BOOTSTRAP_SERVERS env var: {Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "NOT SET"}");
+            Console.WriteLine($"[DEBUG] KAFKA_FLINK_BOOTSTRAP_SERVERS env var: {Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "NOT SET"}");
+            Console.WriteLine($"[DEBUG] KafkaBootstrapServers resolved to: {KafkaBootstrapServers}");
+            Console.WriteLine($"[DEBUG] KafkaFlinkBootstrapServers resolved to: {KafkaFlinkBootstrapServers}");
+        }
  
         static async Task Main(string[] args)
         {
@@ -143,7 +159,7 @@ namespace Exercise1_StringCapitalize
             // NOT localhost:9093 which is for host machine access
             var stringInputStream = environment.FromKafka(
                 topic: InputTopic,
-                bootstrapServers: "kafka:9092",  // Flink jobs run inside containers
+                bootstrapServers: KafkaFlinkBootstrapServers,  // Use container IP discovered by test infrastructure
                 groupId: ConsumerGroup,
                 startingOffsets: "earliest"
             );
@@ -152,7 +168,7 @@ namespace Exercise1_StringCapitalize
             // Using WordsCapitalizer class - exact match to Baeldung Java API
             stringInputStream
                 .Map(new WordsCapitalizer())
-                .SinkToKafka(OutputTopic, "kafka:9092");  // Flink jobs run inside containers
+                .SinkToKafka(OutputTopic, KafkaFlinkBootstrapServers);  // Use container IP discovered by test infrastructure
 
             // Execute the job
             var result = await environment.ExecuteAsync("string-capitalize-pipeline");

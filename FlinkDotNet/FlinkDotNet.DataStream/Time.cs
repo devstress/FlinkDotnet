@@ -59,6 +59,37 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public static Time Days(long days) => new Time(days * 24 * 60 * 60 * 1000);
 
+        // Java Flink-compatible lowercase aliases
+        /// <summary>
+        /// Creates a time duration in milliseconds (Java Flink style).
+        /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.milliseconds()
+        /// </summary>
+        public static Time milliseconds(long milliseconds) => Milliseconds(milliseconds);
+
+        /// <summary>
+        /// Creates a time duration in seconds (Java Flink style).
+        /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.seconds()
+        /// </summary>
+        public static Time seconds(long seconds) => Seconds(seconds);
+
+        /// <summary>
+        /// Creates a time duration in minutes (Java Flink style).
+        /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.minutes()
+        /// </summary>
+        public static Time minutes(long minutes) => Minutes(minutes);
+
+        /// <summary>
+        /// Creates a time duration in hours (Java Flink style).
+        /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.hours()
+        /// </summary>
+        public static Time hours(long hours) => Hours(hours);
+
+        /// <summary>
+        /// Creates a time duration in days (Java Flink style).
+        /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.days()
+        /// </summary>
+        public static Time days(long days) => Days(days);
+
         public override string ToString() => $"{_milliseconds}ms";
     }
 

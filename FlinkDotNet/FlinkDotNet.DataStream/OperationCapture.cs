@@ -16,6 +16,7 @@
 
 using System.Collections.Generic;
 using Flink.JobBuilder.Models;
+using Serilog;
 
 namespace FlinkDotNet.DataStream
 {
@@ -25,6 +26,18 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     internal class OperationCapture
     {
+        private static readonly ILogger _logger = new LoggerConfiguration()
+            .WriteTo.File(
+                path: "LocalTesting/test-logs/flink-dotnet-.log",
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                fileSizeLimitBytes: 100_000_000,
+                retainedFileCountLimit: 30,
+                shared: true)
+            .WriteTo.Console()
+            .MinimumLevel.Debug()
+            .CreateLogger();
+        
         private readonly List<CapturedOperation> _operations = new();
         private KafkaSourceDefinition? _kafkaSource;
         private KafkaSinkDefinition? _kafkaSink;
@@ -35,6 +48,9 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureKafkaSource(string topic, string bootstrapServers, string groupId, string startingOffsets, object? deserializer = null)
         {
+            _logger.Information("[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
+                topic, bootstrapServers, groupId, startingOffsets);
+            
             _kafkaSource = new KafkaSourceDefinition
             {
                 Topic = topic,
@@ -43,6 +59,8 @@ namespace FlinkDotNet.DataStream
                 StartingOffsets = startingOffsets
             };
             _deserializationFunction = deserializer;
+            
+            _logger.Information("[OperationCapture.CaptureKafkaSource] Created KafkaSourceDefinition with BootstrapServers={BootstrapServers}", _kafkaSource.BootstrapServers);
         }
 
         public void CaptureMapOperation(string operationType, object? function = null)
@@ -110,31 +128,50 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureKafkaSink(string topic, string bootstrapServers, object? serializer = null)
         {
+            _logger.Information("[OperationCapture.CaptureKafkaSink] Capturing Kafka sink: topic={Topic}, bootstrapServers={BootstrapServers}",
+                topic, bootstrapServers);
+            
             _kafkaSink = new KafkaSinkDefinition
             {
                 Topic = topic,
                 BootstrapServers = bootstrapServers
             };
             _serializationFunction = serializer;
+            
+            _logger.Information("[OperationCapture.CaptureKafkaSink] Created KafkaSinkDefinition with BootstrapServers={BootstrapServers}", _kafkaSink.BootstrapServers);
         }
 
         public JobDefinition ToJobDefinition(string jobId, string jobName)
         {
+            _logger.Information("[OperationCapture.ToJobDefinition] Starting translation to JobDefinition: jobId={JobId}, jobName={JobName}", jobId, jobName);
+            _logger.Information("[OperationCapture.ToJobDefinition] Current _kafkaSource.BootstrapServers={BootstrapServers}", _kafkaSource?.BootstrapServers);
+            
             if (_kafkaSource == null)
             {
+                _logger.Error("[OperationCapture.ToJobDefinition] No Kafka source defined!");
                 throw new System.InvalidOperationException("No Kafka source defined. Use AddKafkaSource() or FromKafka() before executing.");
             }
 
             var jobDef = CreateJobDefinition(jobId, jobName);
+            _logger.Information("[OperationCapture.ToJobDefinition] After CreateJobDefinition: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            
             ConfigureJobMetadata(jobDef);
+            _logger.Information("[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            
             TranslateOperations(jobDef);
+            _logger.Information("[OperationCapture.ToJobDefinition] After TranslateOperations: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            
+            _logger.Information("[OperationCapture.ToJobDefinition] Final JobDefinition: Source.BootstrapServers={BootstrapServers}, Sink.BootstrapServers={SinkBootstrapServers}",
+                (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers, (jobDef.Sink as KafkaSinkDefinition)?.BootstrapServers);
 
             return jobDef;
         }
 
         private JobDefinition CreateJobDefinition(string jobId, string jobName)
         {
-            return new JobDefinition
+            _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", _kafkaSource?.BootstrapServers);
+            
+            var jobDef = new JobDefinition
             {
                 Source = _kafkaSource!,
                 Operations = new List<IOperationDefinition>(),
@@ -148,6 +185,9 @@ namespace FlinkDotNet.DataStream
                     Properties = new Dictionary<string, string>()
                 }
             };
+            
+            _logger.Debug("[OperationCapture.CreateJobDefinition] Created JobDefinition.Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            return jobDef;
         }
 
         private void ConfigureJobMetadata(JobDefinition jobDef)

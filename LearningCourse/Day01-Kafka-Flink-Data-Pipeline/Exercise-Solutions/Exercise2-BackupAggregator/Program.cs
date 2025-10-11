@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Linq;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Serilog;
+using FlinkDotNet.DataStream;
 
 namespace Exercise2_BackupAggregator
 {
@@ -31,9 +32,16 @@ namespace Exercise2_BackupAggregator
         private const string InputTopic = "flink_input";
         private const string OutputTopic = "flink_output";
         private const string ConsumerGroup = "baeldung";
+        // Kafka configuration for HOST operations (producer/consumer)
         private static readonly string KafkaBootstrapServers =
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
             ?? throw new InvalidOperationException("KAFKA_BOOTSTRAP_SERVERS environment variable must be set");
+        
+        // Kafka configuration for FLINK JOB submissions (JSON API)
+        // Docker bridge network requires container IP, not DNS names
+        private static readonly string KafkaFlinkBootstrapServers =
+            Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS")
+            ?? throw new InvalidOperationException("KAFKA_FLINK_BOOTSTRAP_SERVERS environment variable must be set");
         private const string DefaultGatewayHost = "localhost";
         private const int DefaultGatewayPort = 8080;
         private static readonly string FlinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL")
@@ -191,7 +199,7 @@ namespace Exercise2_BackupAggregator
                 {
                     type = "kafka",
                     topic = InputTopic,
-                    bootstrapServers = "kafka:9092",  // Explicit: Flink jobs use internal Docker network
+                    bootstrapServers = KafkaFlinkBootstrapServers,  // Use container IP discovered by test infrastructure
                     groupId = ConsumerGroup,
                     startingOffsets = "earliest"
                 },
@@ -209,14 +217,15 @@ namespace Exercise2_BackupAggregator
                     {
                         type = "aggregate",          // Section 11: Aggregating backups
                         aggregationType = "COLLECT", // Collect messages into Backup
-                        field = "*"                  // Aggregate all fields
+                        field = "*",                 // Aggregate all fields
+                        windowSeconds = Time.Hours(24).ToMilliseconds() / 1000  // Baeldung: inputMessagesStream.timeWindowAll(Time.hours(24))
                     }
                 },
                 sink = new
                 {
                     type = "kafka",
                     topic = OutputTopic,
-                    bootstrapServers = "kafka:9092"  // Explicit: Flink jobs use internal Docker network
+                    bootstrapServers = KafkaFlinkBootstrapServers  // Use container IP discovered by test infrastructure
                 },
                 metadata = new
                 {

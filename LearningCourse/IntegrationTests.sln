@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exercise1-StringCapitalize"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exercise2-BackupAggregator", "Day01-Kafka-Flink-Data-Pipeline\Exercise-Solutions\Exercise2-BackupAggregator\Exercise2-BackupAggregator.csproj", "{557D7A56-2E8D-7942-5A8C-1B38781FA266}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LearningCourse.Common", "LearningCourse.Common\LearningCourse.Common.csproj", "{999245EB-227F-4620-889E-A3813EFF018B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +82,18 @@ Global
 		{557D7A56-2E8D-7942-5A8C-1B38781FA266}.Release|x64.Build.0 = Release|Any CPU
 		{557D7A56-2E8D-7942-5A8C-1B38781FA266}.Release|x86.ActiveCfg = Release|Any CPU
 		{557D7A56-2E8D-7942-5A8C-1B38781FA266}.Release|x86.Build.0 = Release|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Debug|x64.Build.0 = Debug|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Debug|x86.Build.0 = Debug|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Release|x64.ActiveCfg = Release|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Release|x64.Build.0 = Release|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Release|x86.ActiveCfg = Release|Any CPU
+		{999245EB-227F-4620-889E-A3813EFF018B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
