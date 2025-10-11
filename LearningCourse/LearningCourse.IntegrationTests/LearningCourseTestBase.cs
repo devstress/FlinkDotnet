@@ -436,7 +436,7 @@ public abstract class LearningCourseTestBase
                 if (copyProcess.ExitCode == 0 && File.Exists(destPath))
                 {
                     var fileInfo = new FileInfo(destPath);
-                    TestContext.WriteLine($"   ✅ Copied {fileName} as {standardizedName} ({fileInfo.Length} bytes)");
+                    TestContext.WriteLine($"   ✅ Copied {fileName} as {destName} ({fileInfo.Length} bytes)");
                 }
                 else
                 {
