@@ -20,16 +20,47 @@ namespace Flink.JobBuilder.Services
         private readonly HttpClient _httpClient;
         private readonly FlinkJobGatewayConfiguration _configuration;
         private readonly ILogger? _logger;
-        private static readonly Serilog.ILogger _serilogLogger = new LoggerConfiguration()
-            .WriteTo.File(
-                path: "LocalTesting/test-logs/flink-job-gateway-.log",
-                rollingInterval: RollingInterval.Day,
-                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-                fileSizeLimitBytes: 100_000_000,
-                retainedFileCountLimit: 30)
-            .WriteTo.Console()
-            .MinimumLevel.Debug()
-            .CreateLogger();
+        private static readonly Serilog.ILogger _serilogLogger = CreateLogger();
+        
+        private static Serilog.ILogger CreateLogger()
+        {
+            var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
+            var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
+            var logFile = System.IO.Path.Combine(logFilePath, $"Flink.JobGateway.log.{today}");
+            
+            // Clean up old log files (older than 1 day)
+            try
+            {
+                if (System.IO.Directory.Exists(logFilePath))
+                {
+                    var logFiles = System.IO.Directory.GetFiles(logFilePath, "Flink.JobGateway.log.*");
+                    foreach (var file in logFiles)
+                    {
+                        var fileInfo = new System.IO.FileInfo(file);
+                        if (fileInfo.LastWriteTimeUtc < System.DateTime.UtcNow.AddDays(-1))
+                        {
+                            System.IO.File.Delete(file);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore cleanup errors
+            }
+            
+            return new LoggerConfiguration()
+                .WriteTo.File(
+                    path: logFile,
+                    rollingInterval: RollingInterval.Infinite,
+                    rollOnFileSizeLimit: false,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                    fileSizeLimitBytes: 100_000_000,
+                    shared: true)
+                .WriteTo.Console()
+                .MinimumLevel.Debug()
+                .CreateLogger();
+        }
         
         private readonly JsonSerializerOptions _jsonOptions;
 

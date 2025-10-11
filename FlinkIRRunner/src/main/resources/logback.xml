@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- Define log file location - will be created in LocalTesting/test-logs when run from there -->
-    <property name="LOG_FILE" value="${LOG_FILE_PATH:-./LocalTesting/test-logs}/flink-ir-runner-%d{yyyy-MM-dd}.log" />
+    <!-- Define log file location - respects LOG_FILE_PATH environment variable -->
+    <property name="LOG_FILE" value="${LOG_FILE_PATH:-./test-logs}/FlinkIRRunner.log" />
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
 
     <!-- Console Appender -->
@@ -18,14 +18,11 @@
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- Daily rollover -->
-            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <!-- or whenever file size reaches 100MB -->
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-            <!-- Keep 30 days of history -->
-            <maxHistory>30</maxHistory>
+            <!-- Daily rollover with date suffix matching *.log.YYYYMMDD pattern -->
+            <fileNamePattern>${LOG_FILE_PATH:-./test-logs}/FlinkIRRunner.log.%d{yyyyMMdd}</fileNamePattern>
+            <!-- Keep 1 day of history -->
+            <maxHistory>1</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
     </appender>
 

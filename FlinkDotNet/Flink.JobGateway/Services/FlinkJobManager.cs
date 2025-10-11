@@ -218,7 +218,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
-    private static string EncodeJobDefinition(JobDefinition jobDefinition)
+    private string EncodeJobDefinition(JobDefinition jobDefinition)
     {
         var serializerOptions = new JsonSerializerOptions
         {
@@ -233,27 +233,27 @@ public class FlinkJobManager : IFlinkJobManager
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
     }
 
-    private static void LogJobDefinitionDiagnostics(string irJson, JobDefinition jobDefinition)
+    private void LogJobDefinitionDiagnostics(string irJson, JobDefinition jobDefinition)
     {
-        Console.WriteLine("[DIAGNOSTIC] ════════════════════════════════════════════════════════════");
-        Console.WriteLine("[DIAGNOSTIC] Complete Job Definition JSON:");
-        Console.WriteLine(irJson);
-        Console.WriteLine("[DIAGNOSTIC] ════════════════════════════════════════════════════════════");
+        _logger.LogDebug("════════════════════════════════════════════════════════════");
+        _logger.LogDebug("Complete Job Definition JSON:");
+        _logger.LogDebug("{IrJson}", irJson);
+        _logger.LogDebug("════════════════════════════════════════════════════════════");
         
         LogKafkaConfiguration(jobDefinition);
         LogOperations(jobDefinition);
     }
 
-    private static void LogKafkaConfiguration(JobDefinition jobDefinition)
+    private void LogKafkaConfiguration(JobDefinition jobDefinition)
     {
         var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
         var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-        Console.WriteLine($"[DIAGNOSTIC] Source BootstrapServers: {kafkaSource?.BootstrapServers ?? "null"}");
-        Console.WriteLine($"[DIAGNOSTIC] Sink BootstrapServers: {kafkaSink?.BootstrapServers ?? "null"}");
-        Console.WriteLine($"[DIAGNOSTIC] Operations Count: {jobDefinition.Operations?.Count ?? 0}");
+        _logger.LogDebug("Source BootstrapServers: {SourceBootstrapServers}", kafkaSource?.BootstrapServers ?? "null");
+        _logger.LogDebug("Sink BootstrapServers: {SinkBootstrapServers}", kafkaSink?.BootstrapServers ?? "null");
+        _logger.LogDebug("Operations Count: {OperationsCount}", jobDefinition.Operations?.Count ?? 0);
     }
 
-    private static void LogOperations(JobDefinition jobDefinition)
+    private void LogOperations(JobDefinition jobDefinition)
     {
         if (jobDefinition.Operations == null || jobDefinition.Operations.Count == 0)
             return;
@@ -262,7 +262,7 @@ public class FlinkJobManager : IFlinkJobManager
         {
             if (op is MapOperationDefinition mapOp)
             {
-                Console.WriteLine($"[DIAGNOSTIC] Map Operation - Expression: '{mapOp.Expression}'");
+                _logger.LogDebug("Map Operation - Expression: '{Expression}'", mapOp.Expression);
             }
         }
     }

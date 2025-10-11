@@ -23,6 +23,12 @@ const string JavaOpenOptions = "--add-opens=java.base/java.lang=ALL-UNNAMED --ad
 
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
+var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
+
+// Ensure test-logs directory exists and set LOG_FILE_PATH for all components
+Directory.CreateDirectory(testLogsDir);
+Environment.SetEnvironmentVariable("LOG_FILE_PATH", testLogsDir);
+Console.WriteLine($"📁 Log files will be written to: {testLogsDir}");
 
 var gatewayJarPath = FindGatewayJarPath(repoRoot);
 if (diagnosticsVerbose && File.Exists(gatewayJarPath))
@@ -57,6 +63,7 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
     // REMOVED: .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     // REASON: FlinkJobRunner.java prioritizes environment variable over job definition
     // This caused jobs to use wrong Kafka address (localhost:17901 instead of kafka:9092)
@@ -78,6 +85,7 @@ var jobManager = jobManagerBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
     .WithArgs("jobmanager");
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
@@ -87,6 +95,7 @@ var jobManager = jobManagerBuilder
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
@@ -103,6 +112,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
     .WithReference(kafka)
     .WithArgs("taskmanager");
 
@@ -123,6 +133,7 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 
 var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: flink-jobmanager\n" +
@@ -139,6 +150,7 @@ var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
@@ -165,6 +177,7 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
+    .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Set log file path for Gateway
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager for standard job submission
     .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway for direct SQL execution
 

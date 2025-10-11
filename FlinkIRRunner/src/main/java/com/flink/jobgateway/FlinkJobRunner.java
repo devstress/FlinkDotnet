@@ -37,8 +37,19 @@ public class FlinkJobRunner {
     private static final Logger logger = LoggerFactory.getLogger(FlinkJobRunner.class);
     
     public static void main(String[] args) throws Exception {
+        // DEBUG: Log environment variable for debugging log file location
+        String logFilePath = System.getenv("LOG_FILE_PATH");
+        System.out.println("========================================");
+        System.out.println("FlinkJobRunner Starting");
+        System.out.println("[DEBUG] LOG_FILE_PATH environment variable: " + logFilePath);
+        System.out.println("[DEBUG] Current working directory: " + System.getProperty("user.dir"));
+        System.out.println("[DEBUG] Java temp directory: " + System.getProperty("java.io.tmpdir"));
+        System.out.println("========================================");
+        
         logger.info("========================================");
         logger.info("FlinkJobRunner Starting");
+        logger.info("[DEBUG] LOG_FILE_PATH environment variable: {}", logFilePath);
+        logger.info("[DEBUG] Current working directory: {}", System.getProperty("user.dir"));
         logger.info("========================================");
         
         Map<String, String> argMap = parseArgs(args);
@@ -52,8 +63,17 @@ public class FlinkJobRunner {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         JobDefinition ir = mapper.readValue(json, JobDefinition.class);
 
+        logger.info("============================================================");
+        logger.info("[FLINK ENVIRONMENT] Creating StreamExecutionEnvironment");
+        logger.info("============================================================");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.getConfig().setParallelism(ir.metadata != null && ir.metadata.parallelism != null ? ir.metadata.parallelism : 1);
+        int parallelism = ir.metadata != null && ir.metadata.parallelism != null ? ir.metadata.parallelism : 1;
+        env.getConfig().setParallelism(parallelism);
+        logger.info("[FLINK ENVIRONMENT] ✓ Environment created");
+        logger.info("[FLINK ENVIRONMENT] ✓ Parallelism set to: {}", parallelism);
+        logger.info("[FLINK ENVIRONMENT] Java equivalent: StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();");
+        logger.info("[FLINK ENVIRONMENT] Java equivalent: env.getConfig().setParallelism({});", parallelism);
+        
         DataStream<String> stream;
 
         if (ir.source instanceof SqlSourceDefinition) {
@@ -127,8 +147,11 @@ public class FlinkJobRunner {
             logger.info("  - group.id: {}", props.getProperty("group.id"));
             logger.info("  - auto.offset.reset: {}", props.getProperty("auto.offset.reset"));
 
+            logger.info("[KAFKA SOURCE] Adding source to Flink environment...");
+            logger.info("[KAFKA SOURCE] Java equivalent: DataStream<String> stream = env.addSource(new KafkaStringSource(\"{}\", props)).name(\"KafkaSource\");", k.topic);
             stream = env.addSource(new KafkaStringSource(k.topic, props)).name("KafkaSource");
-            logger.info("[KAFKA SOURCE] Source created successfully");
+            logger.info("[KAFKA SOURCE] ✓ Source created successfully");
+            logger.info("[KAFKA SOURCE] ✓ Stream type: DataStream<String>");
         } else {
             // Fallback source
             stream = env.fromElements("sample");
@@ -153,11 +176,13 @@ public class FlinkJobRunner {
                         case "upper":
                         case "toupper":
                             logger.info("[MAP OPERATION] ✓ Applying toUpperCase transformation");
+                            logger.info("[MAP OPERATION] Java equivalent: stream = stream.map(String::toUpperCase);");
                             stream = stream.map(String::toUpperCase);
                             break;
                         case "lower":
                         case "tolower":
                             logger.info("[MAP OPERATION] ✓ Applying toLowerCase transformation");
+                            logger.info("[MAP OPERATION] Java equivalent: stream = stream.map(String::toLowerCase);");
                             stream = stream.map(String::toLowerCase);
                             break;
                         default:
@@ -268,8 +293,12 @@ public class FlinkJobRunner {
                         Duration windowDuration = Duration.ofSeconds(windowSeconds);
                         
                         logger.info("[AGGREGATE] Using window duration: {} seconds", windowSeconds);
+                        logger.info("[AGGREGATE] Java equivalent: KeyedStream<String, String> keyed = stream.keyBy(v -> \"all\");");
                         
                         KeyedStream<String, String> keyed = stream.keyBy(v -> "all"); // Global window key
+                        logger.info("[AGGREGATE] ✓ Keyed stream created with global key");
+                        logger.info("[AGGREGATE] Java equivalent: stream = keyed.window(TumblingProcessingTimeWindows.of(Duration.ofSeconds({})))", windowSeconds);
+                        
                         stream = keyed.window(TumblingProcessingTimeWindows.of(windowDuration))
                                 .aggregate(new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String>() {
                                     @Override
@@ -323,7 +352,9 @@ public class FlinkJobRunner {
                                         return a;
                                     }
                                 });
-                        logger.info("[AGGREGATE OPERATION] ✓ COLLECT aggregation configured with Jackson JSON handling");
+                       logger.info("[AGGREGATE OPERATION] ✓ COLLECT aggregation configured with Jackson JSON handling");
+                       logger.info("[AGGREGATE OPERATION] Java equivalent: stream = keyed.window(TumblingProcessingTimeWindows.of(windowDuration)).aggregate(new BackupAggregator());");
+                       logger.info("[AGGREGATE OPERATION] Complete pipeline: stream.keyBy(v -> \"all\").window(TumblingProcessingTimeWindows.of(Duration.ofSeconds({}))).aggregate(aggregateFunction)", windowSeconds);
                     }
                 }
             }
@@ -354,13 +385,26 @@ public class FlinkJobRunner {
             logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
             logger.info("  - Target topic: {}", s.topic);
             
+            logger.info("[KAFKA SINK] Adding sink to stream...");
+            logger.info("[KAFKA SINK] Java equivalent: stream.addSink(new KafkaStringSink(\"{}\", props)).name(\"KafkaSink\");", s.topic);
             stream.addSink(new KafkaStringSink(s.topic, props)).name("KafkaSink");
-            logger.info("[KAFKA SINK] Sink created successfully");
+            logger.info("[KAFKA SINK] ✓ Sink created successfully");
         } else {
             stream.print();
         }
 
         String jobName = ir.metadata != null && ir.metadata.jobName != null ? ir.metadata.jobName : "flinkdotnet-ir-job";
+        logger.info("============================================================");
+        logger.info("[FLINK EXECUTION] Starting job execution");
+        logger.info("[FLINK EXECUTION] Job name: {}", jobName);
+        logger.info("[FLINK EXECUTION] Java equivalent: env.execute(\"{}\");", jobName);
+        logger.info("============================================================");
+        logger.info("[PIPELINE SUMMARY] Complete Flink DataStream pipeline built:");
+        logger.info("  1. Source: env.addSource(KafkaStringSource)");
+        logger.info("  2. Operations: {} transformation(s) applied", ir.operations != null ? ir.operations.size() : 0);
+        logger.info("  3. Sink: stream.addSink(KafkaStringSink)");
+        logger.info("  4. Execute: env.execute(\"{}\");", jobName);
+        logger.info("============================================================");
         env.execute(jobName);
     }
 

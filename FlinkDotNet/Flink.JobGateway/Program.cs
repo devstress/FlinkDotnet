@@ -5,6 +5,7 @@ using Flink.JobGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 namespace Flink.JobGateway;
 
@@ -12,25 +13,78 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        // Configure Serilog early for startup logging
+        var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
+        // To achieve Flink.JobGateway.log.YYYYMMDD pattern:
+        // Use the filename with explicit date, and let Serilog handle it with Infinite rolling
+        var today = DateTime.UtcNow.ToString("yyyyMMdd");
+        var logFile = Path.Combine(logFilePath, $"Flink.JobGateway.log.{today}");
         
-        // Log startup environment for debugging
-        var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
-        logger.LogInformation("=== Gateway Starting ===");
-        logger.LogInformation("FLINK_CLUSTER_HOST: {Host}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST"));
-        logger.LogInformation("FLINK_CLUSTER_PORT: {Port}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"));
-        logger.LogInformation("KAFKA_BOOTSTRAP: {Kafka}", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
+        // Clean up old log files (older than 1 day)
+        try
+        {
+            if (Directory.Exists(logFilePath))
+            {
+                var logFiles = Directory.GetFiles(logFilePath, "Flink.JobGateway.log.*");
+                foreach (var file in logFiles)
+                {
+                    var fileInfo = new FileInfo(file);
+                    if (fileInfo.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1))
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
         
-        // Check for Aspire service discovery variables
-        var aspireFlinkEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
-        logger.LogInformation("Aspire Flink endpoint: {Endpoint}", aspireFlinkEndpoint ?? "NOT SET");
-        
-        ConfigureServices(builder);
-        var app = builder.Build();
-        ConfigurePipeline(app);
-        
-        logger.LogInformation("Gateway configured, starting web server...");
-        await app.RunAsync();
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File(
+                logFile,
+                rollingInterval: RollingInterval.Infinite,
+                rollOnFileSizeLimit: false,
+                shared: true,
+                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+
+        try
+        {
+            Log.Information("=== Gateway Starting ===");
+            Log.Information("LOG_FILE_PATH: {LogPath}", logFilePath);
+            Log.Information("Log file: {LogFile}", logFile);
+            Log.Information("FLINK_CLUSTER_HOST: {Host}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST"));
+            Log.Information("FLINK_CLUSTER_PORT: {Port}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"));
+            Log.Information("KAFKA_BOOTSTRAP: {Kafka}", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
+            
+            // Check for Aspire service discovery variables
+            var aspireFlinkEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
+            Log.Information("Aspire Flink endpoint: {Endpoint}", aspireFlinkEndpoint ?? "NOT SET");
+            
+            var builder = WebApplication.CreateBuilder(args);
+            
+            // Use Serilog for ASP.NET Core logging
+            builder.Host.UseSerilog();
+            
+            ConfigureServices(builder);
+            var app = builder.Build();
+            ConfigurePipeline(app);
+            
+            Log.Information("Gateway configured, starting web server...");
+            await app.RunAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Gateway failed to start");
+        }
+        finally
+        {
+            await Log.CloseAndFlushAsync();
+        }
     }
 
     private static void ConfigureServices(WebApplicationBuilder builder)
@@ -76,7 +130,7 @@ public static class Program
             var logger = sp.GetRequiredService<ILogger<FlinkJobManager>>();
             return new FlinkJobManager(logger, httpClient);
         });
-        builder.Services.AddLogging(lb => { lb.AddConsole(); lb.AddDebug(); });
+        // Logging is now configured via Serilog in Main()
     }
 
     private static void ConfigurePipeline(WebApplication app)

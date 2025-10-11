@@ -308,7 +308,6 @@ namespace FlinkDotNet.DataStream
         {
             // For basic field-based grouping, we'll create a simple key function
             // This allows the API to work for basic scenarios
-            Console.WriteLine($"Grouping by field: {keyField}");
             return new KeyedStream<T, string>(this, _ => keyField);
         }
 
@@ -318,7 +317,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> Print()
         {
-            Console.WriteLine($"Print sink registered for stream: {_sourceName}");
+            // Print sink registered - actual output happens during execution
             return this;
         }
 
@@ -330,7 +329,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> AddSink(ISinkFunction<T> sinkFunction)
         {
-            Console.WriteLine($"Sink function registered: {sinkFunction.GetType().Name}");
+            // Sink function registered for execution
             return this;
         }
 

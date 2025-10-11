@@ -38,6 +38,28 @@ public abstract class LearningCourseTestBase
         TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
         
+        // Clean up test-logs directory from previous runs
+        var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
+        var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+        
+        if (Directory.Exists(testLogsDir))
+        {
+            TestContext.WriteLine($"🧹 Cleaning up test logs directory: {testLogsDir}");
+            try
+            {
+                Directory.Delete(testLogsDir, recursive: true);
+                TestContext.WriteLine("✅ Test logs directory cleaned");
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ Warning: Could not clean test logs directory: {ex.Message}");
+            }
+        }
+        
+        // Recreate the directory
+        Directory.CreateDirectory(testLogsDir);
+        TestContext.WriteLine($"📁 Test logs directory ready: {testLogsDir}");
+        
         // DO NOT set KAFKA_BOOTSTRAP_SERVERS here!
         // REASON: Environment variables set here are inherited by AppHost process,
         // which then passes them to all Docker containers including Flink containers.
@@ -393,8 +415,14 @@ public abstract class LearningCourseTestBase
         psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
         psi.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
         
+        // Set LOG_FILE_PATH to ensure all logs go to LocalTesting/test-logs/
+        // Use absolute path to ensure logs are written to the correct location
+        var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
+        psi.Environment["LOG_FILE_PATH"] = testLogsDir;
+        
         TestContext.WriteLine($"🔧 Setting KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers} for exercise (host access)");
         TestContext.WriteLine($"🔧 Setting KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers} for Flink jobs (container access)");
+        TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 
         using var process = Process.Start(psi);
         if (process == null)
