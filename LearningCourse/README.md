@@ -15,6 +15,9 @@ dotnet test LocalTesting/LocalTesting.sln --configuration Release
 # Run ONLY Day01 tests
 dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day01"
 
+# Run ONLY Day02 tests
+dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day02"
+
 # Run ONLY LocalTesting tests  
 dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~LocalTesting"
 
@@ -64,7 +67,8 @@ dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~Day01"
 
 The `LocalTesting/LocalTesting.sln` includes:
 - **LocalTesting.IntegrationTests** - Core LocalTesting integration tests
-- **Day01.IntegrationTests** - Kafka-Flink pipeline learning course tests (added)
+- **Day01.IntegrationTests** - Kafka-Flink pipeline learning course tests
+- **Day02.IntegrationTests** - Flink 2.1.0 fundamentals learning course tests
 - **LocalTesting.FlinkSqlAppHost** - Shared Aspire application host
 - **FlinkDotNet** - Core FlinkDotNet library  
 - **Flink.JobBuilder** - Job definition and building utilities
@@ -75,10 +79,21 @@ The `LocalTesting/LocalTesting.sln` includes:
 Located in `LearningCourse/Day01-Kafka-Flink-Data-Pipeline/Day01.IntegrationTests/`
 
 Tests:
-- `PipelineDemo_IdentityTransform_ShouldPassthrough100Messages` - Tests basic pipeline functionality
-- `PipelineDemo_UppercaseTransform_ShouldConvertToUppercase` - Tests uppercase transformation
+- `Exercise1_StringCapitalize_ShouldExecuteSuccessfully` - Tests string stream processing with capitalize transformation
+- `Exercise2_BackupAggregator_ShouldExecuteSuccessfully` - Tests custom objects and backup aggregation with time windows
 
-**Key Point**: Day01 tests inherit from `LocalTestingTestBase` and rely on the shared `GlobalTestInfrastructure`.
+**Key Point**: Day01 tests inherit from `LearningCourseTestBase` and rely on the shared infrastructure.
+
+### Day02.IntegrationTests
+Located in `LearningCourse/Day02-Flink21-Fundamentals/Day02.IntegrationTests/`
+
+Tests:
+- `Exercise1_InfrastructureValidation_ShouldExecuteSuccessfully` - Tests production infrastructure validation
+- `Exercise2_ProductionApp_ShouldExecuteSuccessfully` - Tests enterprise-grade streaming application
+- `Exercise3_ObservabilityDashboard_ShouldExecuteSuccessfully` - Tests Google-style SRE observability patterns
+- `Exercise4_LoadTesting_ShouldExecuteSuccessfully` - Tests performance validation and benchmarking
+
+**Key Point**: Day02 tests inherit from `LearningCourseTestBase` and rely on the shared infrastructure.
 
 ## Prerequisites
 
