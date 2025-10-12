@@ -14,10 +14,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Install Maven
+      uses: stCarolas/setup-maven@v4
+      with:
+        maven-version: '3.9.6'
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
+    
+    - name: Install .NET Aspire workload
+      run: |
+        echo "📦 Installing .NET Aspire workload..."
+        dotnet workload install aspire
+        echo "✅ Aspire workload installed successfully"
         
     - name: Ensure Docker is running
       run: docker info
@@ -34,17 +51,11 @@ jobs:
         echo "CPU info: $(nproc) cores"
         cat /proc/cpuinfo | grep "model name" | head -1
 
-    - name: Restore FlinkDotNet dependencies
-      run: dotnet restore FlinkDotNet/FlinkDotNet.sln
-      
-    - name: Build FlinkDotNet solution (Required for LearningCourse)
-      run: dotnet build FlinkDotNet/FlinkDotNet.sln --no-restore --configuration Release
-      
-    - name: Restore LearningCourse dependencies
-      run: dotnet restore LearningCourse/IntegrationTests.sln
-      
-    - name: Build LearningCourse solution
-      run: dotnet build LearningCourse/IntegrationTests.sln --no-restore --configuration Release
+    - name: Build LocalTesting solution
+      run: |
+        echo "🔨 Building LocalTesting solution (includes all LearningCourse projects)..."
+        dotnet restore LocalTesting/LocalTesting.sln
+        dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
       
     - name: Run LearningCourse Integration Tests
       run: |
@@ -52,6 +63,8 @@ jobs:
         dotnet test LearningCourse/IntegrationTests.sln --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
       env:
         DOTNET_ENVIRONMENT: Testing
+        ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+        DOCKER_HOST: "unix:///var/run/docker.sock"
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
