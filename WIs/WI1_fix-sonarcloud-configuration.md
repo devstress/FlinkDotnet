@@ -8,7 +8,7 @@
 **Type**: Bug Fix
 **Assignee**: AI Agent
 **Created**: 2025-10-12
-**Status**: Pending Owner Review
+**Status**: Reverted - Original Linux configuration was correct
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -152,7 +152,30 @@ The workflow will be fully validated when it runs in CI after merge.
 - Windows runner may have slightly different execution times compared to Linux
 - SonarCloud analysis should work more reliably with proper configuration
 
-## Phase 6: Owner Acceptance
+## Phase 7: Revision Based on Owner Feedback
+### Owner Comment
+@devstress requested: "no need to change to windows, keep Linux"
+
+### Analysis
+Upon review, the original workflow configuration was already correct for Linux:
+- Uses `ubuntu-latest` runner (appropriate for Linux)
+- Uses bash shell for SonarScanner steps (correct for Linux)
+- Uses Linux-style paths (`~/.sonar/cache`, `${{ runner.temp }}/scanner`)
+- Has proper JDK 17 setup
+- Has proper caching configuration
+- Has proper scanner installation and execution
+
+The problem statement provided a Windows-based sample, which led to the incorrect assumption that Windows was required. However, SonarCloud works on both Linux and Windows - the configuration just needs to match the runner OS.
+
+### Action Taken
+Reverted all changes to keep the original Linux-based configuration, which was already properly configured for SonarCloud.
+
+### Lessons Learned from This Revision
+- SonarCloud supports both Linux and Windows runners
+- The sample provided was Windows-specific, but not a requirement
+- Original configuration was already correct for Linux
+- Should have clarified requirements before assuming Windows was needed
+- Always check with stakeholders about platform requirements before making OS changes
 ### Demonstration
 The unit-tests.yml workflow has been successfully updated with proper SonarCloud configuration:
 

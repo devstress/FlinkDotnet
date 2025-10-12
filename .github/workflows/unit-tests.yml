@@ -14,7 +14,7 @@ concurrency:
 jobs:
   run-unit-tests:
     name: Run .NET Unit Tests
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     defaults:
       run:
@@ -45,7 +45,7 @@ jobs:
       - name: Cache SonarQube Cloud packages
         uses: actions/cache@v4
         with:
-          path: ~\sonar\cache
+          path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
@@ -53,29 +53,33 @@ jobs:
         id: cache-sonar-scanner
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}\scanner
+          path: ${{ runner.temp }}/scanner
           key: ${{ runner.os }}-sonar-scanner
           restore-keys: ${{ runner.os }}-sonar-scanner
 
       - name: Install SonarQube Cloud scanner
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
-        shell: powershell
+        shell: bash
         run: |
-          New-Item -Path ${{ runner.temp }}\scanner -ItemType Directory
-          dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}\scanner
+          mkdir -p ${{ runner.temp }}/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}/scanner
 
       - name: Begin SonarQube Cloud analysis
         if: github.event_name == 'push' || github.event_name == 'pull_request'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        shell: powershell
+        shell: bash
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"devstress_flinkdotnet" /o:"devstress" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+          ${{ runner.temp }}/scanner/dotnet-sonarscanner begin \
+            /k:"devstress_flinkdotnet" \
+            /o:"devstress" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io"
 
       - name: Build FlinkDotNet solution
-        shell: powershell
+        shell: bash
         run: |
-          Write-Host "Building FlinkDotNet solution..."
+          echo "Building FlinkDotNet solution..."
           dotnet restore FlinkDotNet/FlinkDotNet.sln
           dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
 
@@ -90,9 +94,9 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'pull_request'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        shell: powershell
+        shell: bash
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Verify Test Results
         run: |
