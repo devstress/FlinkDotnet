@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <IsAspireIntegrationTest>true</IsAspireIntegrationTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="NUnit" Version="4.3.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\LearningCourse.IntegrationTests\LearningCourse.IntegrationTests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use project references for proper build dependency tracking -->
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.Table\FlinkDotNet.Table.csproj" />
+    <ProjectReference Include="..\..\..\FlinkDotNet\FlinkDotNet.Util\FlinkDotNet.Util.csproj" />
+  </ItemGroup>
+
+</Project>

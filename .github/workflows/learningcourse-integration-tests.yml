@@ -1,0 +1,67 @@
+name: LearningCourse Integration Tests
+
+on:
+  push:
+    paths: 
+      - 'LearningCourse/**'
+  workflow_dispatch:
+
+jobs:
+  learningcourse-integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+        
+    - name: Ensure Docker is running
+      run: docker info
+
+    - name: Configure system for optimal performance
+      run: |
+        echo "=== Configuring system for optimal performance ==="
+        sudo sysctl -w vm.max_map_count=262144
+        sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+        sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+        echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+        echo "Current ulimit -n: $(ulimit -n)"
+        echo "Available memory: $(free -h)"
+        echo "CPU info: $(nproc) cores"
+        cat /proc/cpuinfo | grep "model name" | head -1
+
+    - name: Restore FlinkDotNet dependencies
+      run: dotnet restore FlinkDotNet/FlinkDotNet.sln
+      
+    - name: Build FlinkDotNet solution (Required for LocalTesting)
+      run: dotnet build FlinkDotNet/FlinkDotNet.sln --no-restore --configuration Release
+      
+    - name: Restore LocalTesting dependencies
+      run: dotnet restore LocalTesting/LocalTesting.sln
+      
+    - name: Build LocalTesting solution
+      run: dotnet build LocalTesting/LocalTesting.sln --no-restore --configuration Release
+      
+    - name: Run LearningCourse Integration Tests
+      run: |
+        echo "=== Starting LearningCourse Integration Tests ==="
+        dotnet test LocalTesting/LocalTesting.sln --no-build --configuration Release --filter "FullyQualifiedName~Day" --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
+      env:
+        DOTNET_ENVIRONMENT: Testing
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: LearningCourseTestResults
+        path: TestResults/
+      if: always()
+ 
+    - name: Cleanup
+      if: always()
+      run: |
+        docker system prune -f || true
+        docker volume prune -f || true
