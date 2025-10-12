@@ -12,19 +12,11 @@ using Serilog;
 namespace Exercise2_BackupAggregator
 {
     /// <summary>
-    /// Exercise 2: Custom Objects and Backup Aggregation (Sections 7-11 from Baeldung Tutorial)
+    /// Exercise 2: Custom Objects and Backup Aggregation (Baeldung Sections 7-11)
     ///
-    /// Reference: https://www.baeldung.com/kafka-flink-data-pipeline (Sections 7-11)
-    ///
-    /// This exercise demonstrates:
-    /// - Custom object deserialization (Section 7)
-    /// - Custom object serialization (Section 8)
-    /// - Timestamping messages with EventTime (Section 9)
-    /// - Creating time windows (Section 10)
-    /// - Aggregating backups in time windows (Section 11)
-    ///
-    /// NOW USING NATIVE DATASTREAM API - EXACT MATCH TO BAELDUNG JAVA API!
-    /// See BaeldungNativeAPI.cs for the implementation that matches the tutorial line-by-line.
+    /// Demonstrates Flink event-time windowing with custom object serialization.
+    /// Uses 1-minute windows for testing instead of 24-hour production windows.
+    /// See BaeldungNativeApi.cs for the DataStream API implementation.
     /// </summary>
     static class Program
     {
@@ -92,8 +84,7 @@ namespace Exercise2_BackupAggregator
         }
 
         /// <summary>
-        /// Main demo following Baeldung Section 11: CreateBackup() method
-        /// Steps: Submit aggregation job → Produce timestamped messages → Consume backup results
+        /// Main demo flow: Submit Flink job → Produce messages → Consume aggregated results
         /// </summary>
         static async Task RunBackupAggregationDemo()
         {
@@ -139,19 +130,8 @@ namespace Exercise2_BackupAggregator
         }
 
         /// <summary>
-        /// Submit Flink job with time-windowed aggregation (Baeldung Sections 9-11)
-        ///
-        /// NOW USING NATIVE DATASTREAM API - EXACT MATCH TO BAELDUNG!
-        ///
-        /// Baeldung Java API:
-        ///   environment.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-        ///   flinkKafkaConsumer.assignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
-        ///   DataStream<InputMessage> inputMessagesStream = environment.addSource(flinkKafkaConsumer);
-        ///   inputMessagesStream
-        ///     .timeWindowAll(Time.hours(24))
-        ///     .aggregate(new BackupAggregator())
-        ///     .addSink(flinkKafkaProducer);
-        ///   environment.execute();
+        /// Submit Flink job with event-time windowing and aggregation.
+        /// Creates pipeline: Kafka source → timestamp extraction → window aggregation → Kafka sink
         /// </summary>
         static async Task SubmitBackupAggregationJob()
         {
@@ -166,9 +146,8 @@ namespace Exercise2_BackupAggregator
             
             try
             {
-                // Call the native API that matches Baeldung exactly
                 await BaeldungNativeApi.CreateBackup();
-                Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted using native API");
+                Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted");
             }
             catch (Exception ex)
             {
@@ -180,8 +159,8 @@ namespace Exercise2_BackupAggregator
 
 
         /// <summary>
-        /// Produce timestamped InputMessage objects (Baeldung Section 7 & 9)
-        /// Each message has sender, recipient, sentAt timestamp, and message content
+        /// Produce timestamped messages for Flink to process.
+        /// Messages span 5 seconds with 100ms intervals between each.
         /// </summary>
         static async Task ProduceInputMessages()
         {
@@ -191,23 +170,20 @@ namespace Exercise2_BackupAggregator
             const int messageCount = 50;
             Console.WriteLine($"   Producing {messageCount} InputMessage objects with historical timestamps...");
 
-            // Generate messages with timestamps from 30 seconds ago
-            // This ensures ALL messages are "historical" by the time watermark advances
-            // Messages span from T-30s to T-25s (5-second span fits in single 10-second window)
+            // Start timestamps 30 seconds in the past to ensure they're historical
+            // when watermark advances. Messages span 5 seconds (50 × 100ms).
             var baseTimestamp = DateTime.UtcNow.AddSeconds(-30);
             
             for (int i = 0; i < messageCount; i++)
             {
-                // Section 7: InputMessage custom object
                 var inputMessage = new InputMessage
                 {
                     Sender = $"sender-{i}",
                     Recipient = $"recipient-{i}",
-                    SentAt = baseTimestamp.AddMilliseconds(i * 100),  // Section 9: EventTime (100ms intervals = 5s total)
+                    SentAt = baseTimestamp.AddMilliseconds(i * 100),  // 100ms intervals
                     Message = $"Test message {i}"
                 };
 
-                // Section 7: Custom serialization
                 var json = InputMessageSerializer.Serialize(inputMessage);
 
                 var kafkaMessage = new Message<string, string>
@@ -233,16 +209,14 @@ namespace Exercise2_BackupAggregator
                 await Task.Delay(50); // Small delay for observability
             }
 
-            // CRITICAL: Send a "marker" message with timestamp 1+ minutes AFTER last message
-            // For 1-minute window: messages at T-30s, window ends at next minute boundary
-            // Marker must be sent with timestamp > window end to trigger firing
-            // Use T+35s (65 seconds after first message) to ensure watermark advances past any 1-minute window
+            // Send marker message with timestamp far in future to advance watermark
+            // This triggers window closure and output generation
             Console.WriteLine($"   [DEBUG] Sending marker message 95 seconds after base to advance watermark...");
             var markerMessage = new InputMessage
             {
                 Sender = "marker",
                 Recipient = "system",
-                SentAt = baseTimestamp.AddSeconds(95),  // 95s after T-30s = T+65s (way past 1-min window)
+                SentAt = baseTimestamp.AddSeconds(95),  // T+65s advances watermark past window end
                 Message = "Marker message to advance watermark"
             };
             var markerJson = InputMessageSerializer.Serialize(markerMessage);
@@ -251,7 +225,7 @@ namespace Exercise2_BackupAggregator
                 Key = "marker",
                 Value = markerJson
             });
-            Console.WriteLine($"   [DEBUG] Marker message sent with timestamp {markerMessage.SentAt:HH:mm:ss} to advance watermark past 1-minute window");
+            Console.WriteLine($"   [DEBUG] Marker message sent with timestamp {markerMessage.SentAt:HH:mm:ss} to trigger window");
 
             producer.Flush(TimeSpan.FromSeconds(10));
             Console.WriteLine($"   [SUCCESS] All {messageCount} InputMessage objects produced to '{InputTopic}'");
@@ -259,8 +233,8 @@ namespace Exercise2_BackupAggregator
         }
 
         /// <summary>
-        /// Consume Backup aggregation results (Baeldung Section 8 & 11)
-        /// Each Backup contains aggregated InputMessages with UUID and timestamp
+        /// Consume Backup aggregation results from output topic.
+        /// Expects one Backup containing all 50 messages from the window.
         /// </summary>
         static async Task ConsumeBackupResults()
         {
@@ -427,7 +401,7 @@ namespace Exercise2_BackupAggregator
         }
 
         /// <summary>
-        /// Create Kafka consumer configuration (Baeldung Section 4)
+        /// Create Kafka consumer configuration
         /// </summary>
         public static ConsumerConfig CreateConsumerConfig(string kafkaAddress, string kafkaGroup)
         {
@@ -443,7 +417,7 @@ namespace Exercise2_BackupAggregator
         }
 
         /// <summary>
-        /// Create Kafka producer configuration (Baeldung Section 5)
+        /// Create Kafka producer configuration
         /// </summary>
         public static ProducerConfig CreateProducerConfig(string kafkaAddress)
         {
@@ -467,15 +441,13 @@ namespace Exercise2_BackupAggregator
         }
 
         /// <summary>
-        /// Try to deserialize and display backup message
-        /// Returns: message count in backup, or 0 if failed
+        /// Deserialize and display backup message, returning message count
         /// </summary>
         private static int TryDeserializeBackup(string messageValue, int messageNumber, out bool errorOccurred)
         {
             errorOccurred = false;
             try
             {
-                // Section 8: Custom deserialization
                 var backup = BackupDeserializer.Deserialize(messageValue);
                 
                 Console.WriteLine($"   [{messageNumber:D2}] Backup Deserialized:");
@@ -700,8 +672,7 @@ namespace Exercise2_BackupAggregator
     #region Custom Objects (Baeldung Section 7 & 8)
 
     /// <summary>
-    /// InputMessage class (Baeldung Section 7)
-    /// Represents a message with sender, recipient, timestamp, and content
+    /// Input message with sender, recipient, timestamp, and content
     /// </summary>
     public class InputMessage
     {
@@ -719,8 +690,7 @@ namespace Exercise2_BackupAggregator
     }
 
     /// <summary>
-    /// Backup class (Baeldung Section 8)
-    /// Contains aggregated InputMessages with UUID and backup timestamp
+    /// Backup aggregation containing multiple input messages
     /// </summary>
     public class Backup
     {
@@ -748,7 +718,7 @@ namespace Exercise2_BackupAggregator
     }
 
     /// <summary>
-    /// InputMessage deserializer (Baeldung Section 7)
+    /// Deserializes JSON to InputMessage objects
     /// </summary>
     public static class InputMessageDeserializer
     {
@@ -786,7 +756,7 @@ namespace Exercise2_BackupAggregator
     }
 
     /// <summary>
-    /// Backup serializer (Baeldung Section 8)
+    /// Serializes Backup objects to JSON
     /// </summary>
     public static class BackupSerializer
     {

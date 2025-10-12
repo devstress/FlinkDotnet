@@ -315,9 +315,9 @@ flinkKafkaConsumer.assignTimestampsAndWatermarks(
     new InputMessageTimestampAssigner());
 ```
 
-**FlinkDotNet Native DataStream API (EXACT MATCH):**
+**FlinkDotNet Native DataStream API:**
 
-FlinkDotNet now provides **native DataStream API** that matches the Baeldung Java API exactly:
+FlinkDotNet provides a native DataStream API that closely follows the Baeldung Java structure:
 
 ```csharp
 // Set event time characteristic
@@ -328,38 +328,26 @@ var inputMessagesStream = environment
     .AddKafkaSource(topic, servers, groupId, deserializer, "earliest")
     .AssignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
 
-// InputMessageTimestampAssigner - follows Flink's BoundedOutOfOrdernessTimestampExtractor pattern
+// Timestamp extractor with watermark generation
 public class InputMessageTimestampAssigner : IAssignerWithPunctuatedWatermarks<InputMessage>
 {
-    private long _currentMaxTimestamp = long.MinValue;
-    
     public long ExtractTimestamp(InputMessage element, long previousElementTimestamp)
     {
-        // Extract actual timestamp from message (current time when produced)
-        var milliseconds = (long)(element.SentAt - DateTime.UnixEpoch).TotalMilliseconds;
-        
-        // Track maximum timestamp seen
-        if (milliseconds > _currentMaxTimestamp)
-        {
-            _currentMaxTimestamp = milliseconds;
-        }
-        
-        return milliseconds;
+        // Extract timestamp from message's sentAt field
+        return (long)(element.SentAt - DateTime.UnixEpoch).TotalMilliseconds;
     }
 
     public Watermark? CheckAndGetNextWatermark(InputMessage lastElement, long extractedTimestamp)
     {
-        // Emit watermark 24 hours BEHIND max timestamp (BoundedOutOfOrderness pattern)
-        // This allows capturing all messages from the past 24 hours
-        const long twentyFourHoursInMs = 24L * 60 * 60 * 1000;
-        long watermarkTimestamp = _currentMaxTimestamp - twentyFourHoursInMs;
-        
-        return new Watermark(watermarkTimestamp);
+        // Emit watermark ahead of message timestamps to trigger window evaluation
+        // For testing: watermark 1 hour ahead ensures windows fire promptly
+        var watermarkTime = DateTimeOffset.UtcNow.AddHours(1);
+        return new Watermark(watermarkTime.ToUnixTimeMilliseconds());
     }
 }
 ```
 
-**Watermark Strategy:** Follows Flink's `BoundedOutOfOrdernessTimestampExtractor` pattern where watermark lags 24 hours behind the maximum timestamp seen. This allows the 24-hour window to capture all recently produced messages while maintaining exact Baeldung API structure.
+**Watermark Strategy:** The watermark advances ahead of current time to ensure windows fire promptly during testing. In production, you'd typically use `BoundedOutOfOrderness` with a tolerance matching your expected event lateness.
 
 ## 10. Creating Time Windows
 
@@ -373,15 +361,22 @@ inputMessagesStream
     .addSink(flinkKafkaProducer);
 ```
 
-**FlinkDotNet Native DataStream API (EXACT MATCH):**
+**FlinkDotNet Native DataStream API:**
 
 ```csharp
+// Production: Use 24-hour windows as in Baeldung
 inputMessagesStream
-    .TimeWindowAll(Time.Hours(24))  // Exact same structure!
+    .TimeWindowAll(Time.Hours(24))
     .Aggregate(new BackupAggregator())
     .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
 
-// BackupAggregator - matches Java AggregateFunction exactly
+// Testing: Use shorter windows (e.g., 1 minute) for faster feedback
+inputMessagesStream
+    .TimeWindowAll(Time.Minutes(1))
+    .Aggregate(new BackupAggregator())
+    .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
+
+// Aggregation function collects messages in window
 public class BackupAggregator : IAggregateFunction<InputMessage, List<InputMessage>, Backup>
 {
     public List<InputMessage> CreateAccumulator() => new List<InputMessage>();
@@ -405,44 +400,56 @@ public class BackupAggregator : IAggregateFunction<InputMessage, List<InputMessa
 }
 ```
 
-This is the **EXACT Baeldung tutorial API** in C#! `.TimeWindowAll()` and `.Aggregate()` work identically to Java Flink.
+The FlinkDotNet API follows the same structure as Java Flink, making it straightforward to adapt existing Flink knowledge to .NET.
 
 ## 11. Aggregating Backups
 
-After configuring proper timestamps and implementing our aggregation logic, we can process our Kafka input.
+After configuring proper timestamps and implementing our aggregation logic, we can process Kafka input and create backup aggregations.
 
-See **Exercise 2** for the complete implementation using FlinkDotNet's **native DataStream API** which provides **exact line-by-line match** to the Baeldung Java code.
+See **Exercise 2** for the complete implementation using FlinkDotNet's native DataStream API.
 
 ### Exercise 2: Complete Backup Aggregation Pipeline
 
-Exercise 2 demonstrates the full Baeldung tutorial (Sections 7-11) using the native DataStream API:
+Exercise 2 demonstrates the full Baeldung tutorial (Sections 7-11) with practical modifications for testing:
 
-**Key Features:**
-- ✅ **Exact API Match**: `.TimeWindowAll(Time.Hours(24))` matches Java exactly
-- ✅ **EventTime Processing**: Timestamps extracted from messages (current time)
-- ✅ **Watermark Strategy**: BoundedOutOfOrderness pattern - watermark lags 24 hours behind max timestamp
-- ✅ **Window Triggering**: Captures all messages produced in the past 24 hours
-- ✅ **Aggregation**: Collects all messages in 24-hour window into Backup object
-- ✅ **Production Ready**: Standard Flink watermark pattern for event-time processing
+**Implementation Highlights:**
+- **EventTime Processing**: Extracts timestamps from message `sentAt` field
+- **Tumbling Windows**: Aggregates messages in fixed time windows
+- **Watermark Generation**: Advances watermark to trigger window evaluation
+- **Message Aggregation**: Collects all messages in window into single Backup object
+- **Partition Handling**: Works correctly with multi-partition topics using `TimeWindowAll` global aggregation
+
+**Testing Configuration:**
+```csharp
+// Uses 1-minute windows for faster test feedback
+.TimeWindowAll(Time.Minutes(1))
+
+// Messages span 5 seconds with 100ms intervals
+baseTimestamp.AddMilliseconds(i * 100)  // 50 messages = 5 seconds
+
+// Marker message advances watermark past window end
+SentAt = baseTimestamp.AddSeconds(95)  // Triggers window closure
+```
 
 **Running Exercise 2:**
-
 ```bash
 cd LearningCourse/Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise2-BackupAggregator
 dotnet run
 ```
 
-The exercise demonstrates:
-1. Custom object deserialization (InputMessage)
-2. Custom object serialization (Backup)
-3. EventTime timestamp extraction (current time from messages)
-4. 24-hour tumbling time windows (`.TimeWindowAll(Time.Hours(24))`)
-5. Aggregation function (BackupAggregator)
-6. BoundedOutOfOrderness watermark strategy (24 hours lag)
+**What the exercise covers:**
+1. Custom object deserialization (InputMessage with sentAt timestamp)
+2. Custom object serialization (Backup with UUID and timestamp)
+3. EventTime timestamp extraction from message fields
+4. Tumbling time windows with configurable duration
+5. Aggregate function collecting messages into Backup objects
+6. Watermark strategy triggering window evaluation
 
-**Code Structure:**
-- [`Program.cs`](Exercise-Solutions/Exercise2-BackupAggregator/Program.cs): Main demo flow and Kafka operations
-- [`BaeldungNativeApi.cs`](Exercise-Solutions/Exercise2-BackupAggregator/BaeldungNativeApi.cs): Native DataStream API implementation matching Baeldung line-by-line
+**Code Organization:**
+- [`Program.cs`](Exercise-Solutions/Exercise2-BackupAggregator/Program.cs): Producer, consumer, and demo orchestration
+- [`BaeldungNativeApi.cs`](Exercise-Solutions/Exercise2-BackupAggregator/BaeldungNativeApi.cs): Native DataStream API with windowing and aggregation
+
+**Key Insight:** `TimeWindowAll` creates a global window operator (parallelism=1) that merges streams from all Kafka partitions before windowing. This produces one aggregated Backup per window firing, regardless of partition count.
 
 ## 12. Conclusion
 
