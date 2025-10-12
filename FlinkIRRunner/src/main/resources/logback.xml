@@ -27,7 +27,7 @@
     </appender>
 
     <!-- Kafka configuration logging -->
-    <logger name="com.flink.jobgateway" level="INFO" additivity="false">
+    <logger name="com.flink.jobgateway" level="DEBUG" additivity="false">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </logger>

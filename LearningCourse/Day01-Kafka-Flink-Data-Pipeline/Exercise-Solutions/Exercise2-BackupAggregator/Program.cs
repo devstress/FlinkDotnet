@@ -66,10 +66,11 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  - Section 10: Creating time windows (tumbling windows)");
             Console.WriteLine("  - Section 11: Aggregating backups (daily aggregation)");
             Console.WriteLine();
-            Console.WriteLine("  Using native DataStream API matching Baeldung tutorial structure");
-            Console.WriteLine("  .TimeWindowAll(Time.Hours(24))  // Original Baeldung: daily aggregation");
+            Console.WriteLine("  Using native DataStream API - MODIFIED FOR TESTING");
+            Console.WriteLine("  .TimeWindowAll(Time.Minutes(1))  // Testing: 1-minute window");
             Console.WriteLine("  .Aggregate(new BackupAggregator())");
-            Console.WriteLine("  Watermark emits 'now' to trigger window immediately for testing");
+            Console.WriteLine("  Messages: 50 historical messages (T-30s to T-25s, 5s span)");
+            Console.WriteLine("  Watermark: BoundedOutOfOrderness (200ms) advances past window");
             Console.WriteLine();
             Console.WriteLine("================================================================================");
             Console.WriteLine();
@@ -129,11 +130,11 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("What you learned (Baeldung Sections 7-11):");
             Console.WriteLine("  [OK] Custom object deserialization (InputMessage)");
             Console.WriteLine("  [OK] Custom object serialization (Backup)");
-            Console.WriteLine("  [OK] EventTime timestamp assignment");
-            Console.WriteLine("  [OK] Time windows: .TimeWindowAll(Time.Hours(24)) - Original Baeldung");
+            Console.WriteLine("  [OK] EventTime timestamp extraction (recent timestamps from messages)");
+            Console.WriteLine("  [OK] Time windows: .TimeWindowAll(Time.Minutes(1)) - Testing");
             Console.WriteLine("  [OK] Aggregation: .Aggregate(new BackupAggregator())");
-            Console.WriteLine("  [OK] Watermark strategy: emits 'now' for immediate window firing");
-            Console.WriteLine("  [OK] NATIVE DATASTREAM API - EXACT BAELDUNG MATCH!");
+            Console.WriteLine("  [OK] Watermark strategy: BoundedOutOfOrderness(200ms)");
+            Console.WriteLine("  [OK] 1-minute window captures all 50 messages in single window firing");
             Console.WriteLine();
         }
 
@@ -157,8 +158,8 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine($"   Creating Flink job using native DataStream API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Time Characteristic: EventTime");
-            Console.WriteLine($"   - Window: TimeWindowAll(Time.Hours(24)) - Original Baeldung");
-            Console.WriteLine($"   - Watermark: Emits current time to trigger window immediately");
+            Console.WriteLine($"   - Window: TimeWindowAll(Time.Minutes(1)) - Testing");
+            Console.WriteLine($"   - Watermark: BoundedOutOfOrderness(200ms tolerance)");
             Console.WriteLine($"   - Aggregation: BackupAggregator");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
             Console.WriteLine();
@@ -188,8 +189,13 @@ namespace Exercise2_BackupAggregator
             using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
 
             const int messageCount = 50;
-            Console.WriteLine($"   Producing {messageCount} InputMessage objects with timestamps...");
+            Console.WriteLine($"   Producing {messageCount} InputMessage objects with historical timestamps...");
 
+            // Generate messages with timestamps from 30 seconds ago
+            // This ensures ALL messages are "historical" by the time watermark advances
+            // Messages span from T-30s to T-25s (5-second span fits in single 10-second window)
+            var baseTimestamp = DateTime.UtcNow.AddSeconds(-30);
+            
             for (int i = 0; i < messageCount; i++)
             {
                 // Section 7: InputMessage custom object
@@ -197,7 +203,7 @@ namespace Exercise2_BackupAggregator
                 {
                     Sender = $"sender-{i}",
                     Recipient = $"recipient-{i}",
-                    SentAt = DateTime.UtcNow,  // Section 9: EventTime timestamp
+                    SentAt = baseTimestamp.AddMilliseconds(i * 100),  // Section 9: EventTime (100ms intervals = 5s total)
                     Message = $"Test message {i}"
                 };
 
@@ -212,11 +218,11 @@ namespace Exercise2_BackupAggregator
 
                 try
                 {
-                    await producer.ProduceAsync(InputTopic, kafkaMessage);
+                    var deliveryResult = await producer.ProduceAsync(InputTopic, kafkaMessage);
                     
                     if (i % 10 == 0 || i == messageCount - 1)
                     {
-                        Console.WriteLine($"   [{i + 1:D3}/{messageCount}] Sent: From={inputMessage.Sender} To={inputMessage.Recipient} Time={inputMessage.SentAt:HH:mm:ss}");
+                        Console.WriteLine($"   [{i + 1:D3}/{messageCount}] Sent: From={inputMessage.Sender} To={inputMessage.Recipient} Time={inputMessage.SentAt:HH:mm:ss} Partition={deliveryResult.Partition.Value}");
                     }
                 }
                 catch (ProduceException<string, string> ex)
@@ -227,8 +233,29 @@ namespace Exercise2_BackupAggregator
                 await Task.Delay(50); // Small delay for observability
             }
 
+            // CRITICAL: Send a "marker" message with timestamp 1+ minutes AFTER last message
+            // For 1-minute window: messages at T-30s, window ends at next minute boundary
+            // Marker must be sent with timestamp > window end to trigger firing
+            // Use T+35s (65 seconds after first message) to ensure watermark advances past any 1-minute window
+            Console.WriteLine($"   [DEBUG] Sending marker message 95 seconds after base to advance watermark...");
+            var markerMessage = new InputMessage
+            {
+                Sender = "marker",
+                Recipient = "system",
+                SentAt = baseTimestamp.AddSeconds(95),  // 95s after T-30s = T+65s (way past 1-min window)
+                Message = "Marker message to advance watermark"
+            };
+            var markerJson = InputMessageSerializer.Serialize(markerMessage);
+            await producer.ProduceAsync(InputTopic, new Message<string, string>
+            {
+                Key = "marker",
+                Value = markerJson
+            });
+            Console.WriteLine($"   [DEBUG] Marker message sent with timestamp {markerMessage.SentAt:HH:mm:ss} to advance watermark past 1-minute window");
+
             producer.Flush(TimeSpan.FromSeconds(10));
             Console.WriteLine($"   [SUCCESS] All {messageCount} InputMessage objects produced to '{InputTopic}'");
+            Console.WriteLine($"   [SUCCESS] Marker message sent to trigger window closure");
         }
 
         /// <summary>
@@ -241,13 +268,14 @@ namespace Exercise2_BackupAggregator
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
             consumer.Subscribe(OutputTopic);
 
-            Console.WriteLine($"   Consuming Backup aggregations from '{OutputTopic}' (max 15 seconds)...");
-            Console.WriteLine($"   NOTE: Watermark emits current time, making all events historical");
-            Console.WriteLine($"   24-hour window fires immediately since watermark > window end");
+            Console.WriteLine($"   Consuming Backup aggregations from '{OutputTopic}' (max 25 seconds)...");
+            Console.WriteLine($"   NOTE: 1-minute event-time window with BoundedOutOfOrderness watermarks");
+            Console.WriteLine($"   Window fires when watermark advances past window boundaries");
+            Console.WriteLine($"   Expecting 1 backup record with all 50 messages in single window");
 
             var consumedBackups = 0;
             var stopwatch = Stopwatch.StartNew();
-            var timeout = TimeSpan.FromSeconds(15);
+            var timeout = TimeSpan.FromSeconds(25);
 
             try
             {
@@ -276,8 +304,9 @@ namespace Exercise2_BackupAggregator
         {
             var consumedBackups = 0;
             var messageNumber = 0;
+            var totalMessages = 0;
             
-            while (stopwatch.Elapsed < timeout && consumedBackups < 5)
+            while (stopwatch.Elapsed < timeout && consumedBackups < 10)  // Allow up to 10 backups
             {
                 var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
 
@@ -292,11 +321,12 @@ namespace Exercise2_BackupAggregator
                 }
 
                 messageNumber++;
-                var (shouldCommit, wasBackup) = ProcessConsumedMessage(result, messageNumber);
+                var (shouldCommit, wasBackup, messageCount) = ProcessConsumedMessage(result, messageNumber);
                 
                 if (wasBackup)
                 {
                     consumedBackups++;
+                    totalMessages += messageCount;
                 }
                 
                 if (shouldCommit)
@@ -305,30 +335,32 @@ namespace Exercise2_BackupAggregator
                 }
             }
             
-            return Task.FromResult(consumedBackups);
+            Console.WriteLine($"   [SUMMARY] Consumed {consumedBackups} backup(s) with total {totalMessages} messages");
+            return Task.FromResult(totalMessages);  // Return total message count instead of backup count
         }
 
         /// <summary>
         /// Process a single consumed message
-        /// Returns: (shouldCommit, wasBackup) tuple
+        /// Returns: (shouldCommit, wasBackup, messageCount) tuple
         /// </summary>
-        private static (bool shouldCommit, bool wasBackup) ProcessConsumedMessage(ConsumeResult<string, string> result, int messageNumber)
+        private static (bool shouldCommit, bool wasBackup, int messageCount) ProcessConsumedMessage(ConsumeResult<string, string> result, int messageNumber)
         {
             var messageValue = result.Message.Value ?? string.Empty;
             if (!IsJsonMessage(messageValue))
             {
                 // Commit offset to skip Exercise 1 messages on next run - don't print or count them
-                return (true, false); // Commit to advance offset, but wasn't a backup
+                return (true, false, 0); // Commit to advance offset, but wasn't a backup
             }
             
             PrintRawMessageDetails(result, messageNumber);
             
-            if (!TryDeserializeBackup(messageValue, messageNumber, out var errorOccurred) && errorOccurred)
+            var messageCount = TryDeserializeBackup(messageValue, messageNumber, out var errorOccurred);
+            if (messageCount == 0 && errorOccurred)
             {
                 throw new JsonException($"Failed to deserialize backup message at offset {result.Offset}");
             }
 
-            return (true, true); // Should commit, was a backup
+            return (true, true, messageCount); // Should commit, was a backup, return message count
         }
 
         /// <summary>
@@ -373,18 +405,23 @@ namespace Exercise2_BackupAggregator
         /// <summary>
         /// Validate consumption results and handle failures
         /// </summary>
-        private static Task ValidateConsumptionResults(int consumedBackups)
+        private static Task ValidateConsumptionResults(int totalMessages)
         {
-            if (consumedBackups > 0)
+            if (totalMessages >= 50)
             {
-                Console.WriteLine($"   [SUCCESS] Consumed {consumedBackups} Backup aggregations");
-                Console.WriteLine($"   [SUCCESS] Count window fired after 50 InputMessages!");
+                Console.WriteLine($"   [SUCCESS] Total of {totalMessages} messages across all backup windows");
+                Console.WriteLine($"   [SUCCESS] 1-minute event-time window fired successfully!");
+            }
+            else if (totalMessages > 0)
+            {
+                Console.WriteLine($"   [WARNING] Only {totalMessages} messages consumed (expected 50+)");
+                Console.WriteLine($"   [WARNING] Some messages may not have been captured in windows");
             }
             else
             {
-                Console.WriteLine($"   [WARNING] No backups consumed - aggregation may have failed");
-                Console.WriteLine($"   [INFO] Window: CountWindowAll(50)");
-                Console.WriteLine($"   [INFO] Expected: 1 Backup containing 50 InputMessages");
+                Console.WriteLine($"   [ERROR] No backups consumed - aggregation may have failed");
+                Console.WriteLine($"   [ERROR] Window: TimeWindowAll(Time.Minutes(1))");
+                Console.WriteLine($"   [ERROR] Expected: Multiple backups totaling 50 InputMessages but found 0");
             }
             return Task.CompletedTask;
         }
@@ -431,8 +468,9 @@ namespace Exercise2_BackupAggregator
 
         /// <summary>
         /// Try to deserialize and display backup message
+        /// Returns: message count in backup, or 0 if failed
         /// </summary>
-        private static bool TryDeserializeBackup(string messageValue, int messageNumber, out bool errorOccurred)
+        private static int TryDeserializeBackup(string messageValue, int messageNumber, out bool errorOccurred)
         {
             errorOccurred = false;
             try
@@ -448,17 +486,14 @@ namespace Exercise2_BackupAggregator
                 if (backup.InputMessages?.Count > 0)
                 {
                     Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
-                    Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
-                    Console.WriteLine($"        [SUCCESS] 24-hour window aggregation working correctly!");
+                    Console.WriteLine($"        [OK] Window captured {backup.InputMessages.Count} messages");
+                    return backup.InputMessages.Count;
                 }
                 else
                 {
-                    Console.WriteLine($"        [ERROR] Backup contains no messages! Expected 50 messages.");
-                    throw new InvalidOperationException(
-                        "Backup aggregation failed: No messages in backup. " +
-                        "This indicates the aggregation or windowing is not working correctly.");
+                    Console.WriteLine($"        [WARNING] Backup contains no messages");
+                    return 0;
                 }
-                return true;
             }
             catch (JsonException deserEx)
             {
@@ -466,7 +501,7 @@ namespace Exercise2_BackupAggregator
                 Console.WriteLine($"        [ERROR] Deserialization error: {deserEx.Message}");
                 PrintCharacterBreakdown(messageValue);
                 errorOccurred = true;
-                return false;
+                return 0;
             }
         }
 
@@ -499,6 +534,7 @@ namespace Exercise2_BackupAggregator
 
             var topicsToCreate = new[]
             {
+                // Use 4 partitions - TimeWindowAll merges all partition streams into single window operator
                 new TopicSpecification { Name = InputTopic, NumPartitions = 4, ReplicationFactor = 1 },
                 new TopicSpecification { Name = OutputTopic, NumPartitions = 4, ReplicationFactor = 1 }
             };

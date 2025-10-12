@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <!-- Unify Debug and Release output directories to prevent DLL mismatches -->
+    <!-- All configurations output to the same 'bin' folder -->
+    <BaseOutputPath>bin\</BaseOutputPath>
+    <OutputPath>bin\</OutputPath>
+    <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>obj\</IntermediateOutputPath>
+    
+    <!-- Append configuration name to output for clarity if needed -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+</Project>

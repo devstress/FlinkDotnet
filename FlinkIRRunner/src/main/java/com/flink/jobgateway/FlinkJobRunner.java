@@ -161,37 +161,17 @@ public class FlinkJobRunner {
             logger.info("[KAFKA SOURCE] ✓ Source created successfully");
             logger.info("[KAFKA SOURCE] ✓ Stream type: DataStream<String>");
             
-            // Apply EventTime watermark strategy if configured (Baeldung pattern)
+            // Apply EventTime watermark strategy if configured (Standard Flink pattern)
             if (useEventTime) {
-                logger.info("[WATERMARK STRATEGY] Applying EventTime watermark strategy for TESTING");
-                logger.info("[WATERMARK STRATEGY] Custom watermark generator emits current time (System.currentTimeMillis())");
-                logger.info("[WATERMARK STRATEGY] This triggers 24h windows immediately since all events become historical");
-                logger.info("[WATERMARK STRATEGY] Pattern: Extract event timestamps, but emit watermarks at 'now'");
+                logger.info("[WATERMARK STRATEGY] Applying standard Flink EventTime watermark strategy");
+                logger.info("[WATERMARK STRATEGY] Using forBoundedOutOfOrderness with 200ms tolerance");
+                logger.info("[WATERMARK STRATEGY] Watermarks will lag 200ms behind max observed event timestamp");
+                logger.info("[WATERMARK STRATEGY] Pattern: WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofMillis(200))");
                 
                 stream = stream.assignTimestampsAndWatermarks(
                     WatermarkStrategy
-                        .<String>forGenerator((ctx) -> new org.apache.flink.api.common.eventtime.WatermarkGenerator<String>() {
-                            private long maxTimestamp = Long.MIN_VALUE;
-                            
-                            @Override
-                            public void onEvent(String event, long eventTimestamp, org.apache.flink.api.common.eventtime.WatermarkOutput output) {
-                                // Track max event timestamp for logging
-                                maxTimestamp = Math.max(maxTimestamp, eventTimestamp);
-                                // Emit watermark at current system time instead of event time
-                                // This makes all past events fall into completed windows
-                                long now = System.currentTimeMillis();
-                                logger.debug("[WATERMARK.EMIT] Event timestamp={}, Emitting watermark={} (now)", eventTimestamp, now);
-                                output.emitWatermark(new org.apache.flink.api.common.eventtime.Watermark(now));
-                            }
-                            
-                            @Override
-                            public void onPeriodicEmit(org.apache.flink.api.common.eventtime.WatermarkOutput output) {
-                                // Also emit current time periodically
-                                long now = System.currentTimeMillis();
-                                logger.debug("[WATERMARK.PERIODIC] Emitting watermark={} (now)", now);
-                                output.emitWatermark(new org.apache.flink.api.common.eventtime.Watermark(now));
-                            }
-                        })
+                        .<String>forBoundedOutOfOrderness(Duration.ofMillis(200))
+                        .withIdleness(Duration.ofSeconds(1))
                         .withTimestampAssigner(new SerializableTimestampAssigner<String>() {
                             @Override
                             public long extractTimestamp(String element, long recordTimestamp) {
@@ -209,7 +189,8 @@ public class FlinkJobRunner {
                                         // Parse ISO 8601 timestamp
                                         java.time.Instant instant = java.time.Instant.parse(sentAt);
                                         long timestamp = instant.toEpochMilli();
-                                        logger.debug("[WATERMARK] Extracted event timestamp={} from {}: {}", timestamp, sentAtField, sentAt);
+                                        logger.info("[WATERMARK] Extracted event timestamp={} ({}) from {}: {}",
+                                            timestamp, java.time.Instant.ofEpochMilli(timestamp), sentAtField, sentAt);
                                         return timestamp;
                                     } else {
                                         logger.warn("[WATERMARK] No timestamp field found in message (tried sentAt, SENTAT, SentAt)");
@@ -217,13 +198,15 @@ public class FlinkJobRunner {
                                 } catch (Exception e) {
                                     logger.warn("[WATERMARK] Failed to extract timestamp from message: {}", e.getMessage());
                                 }
-                                // Fallback to current processing time
-                                return System.currentTimeMillis();
+                                // Fallback to Kafka record timestamp
+                                logger.info("[WATERMARK] Using Kafka record timestamp: {} ({})",
+                                    recordTimestamp, java.time.Instant.ofEpochMilli(recordTimestamp));
+                                return recordTimestamp;
                             }
                         })
                 );
-                logger.info("[WATERMARK STRATEGY] ✓ Custom 'now' watermark strategy applied");
-                logger.info("[WATERMARK STRATEGY] ✓ Windows will fire immediately since watermark > event_time + 24h");
+                logger.info("[WATERMARK STRATEGY] ✓ Standard bounded out-of-orderness watermark strategy applied");
+                logger.info("[WATERMARK STRATEGY] ✓ Watermarks will progress naturally with event time");
             }
         } else {
             // Fallback source

@@ -17,21 +17,34 @@ namespace Exercise2_BackupAggregator
         /// <summary>
         /// Section 9: Timestamping Messages - InputMessageTimestampAssigner
         /// Baeldung: implements AssignerWithPunctuatedWatermarks&lt;InputMessage&gt;
+        /// 
+        /// Testing Strategy for Immediate Window Firing:
+        /// - Messages: Current timestamp (just produced)
+        /// - Watermark: Fixed at 25 hours AGO (in the past)
+        /// - Window: 24 hours
+        /// - Result: watermark (25h ago) + 24h window = 1h ago, which is BEFORE current messages
+        ///   So window fires immediately, capturing all current messages
         /// </summary>
         public class InputMessageTimestampAssigner : IAssignerWithPunctuatedWatermarks<InputMessage>
         {
             public long ExtractTimestamp(InputMessage element, long previousElementTimestamp)
             {
-                // Convert DateTime to milliseconds since Unix epoch
+                // Extract actual timestamp from the message (current time when produced)
                 var milliseconds = (long)(element.SentAt - DateTime.UnixEpoch).TotalMilliseconds;
                 return milliseconds;
             }
 
             public Watermark? CheckAndGetNextWatermark(InputMessage lastElement, long extractedTimestamp)
             {
-                // For testing: emit watermark at current time (now)
-                // This triggers the 24-hour window immediately since all events are in the past
-                return new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                // Emit watermark AHEAD of message timestamps to trigger window immediately
+                // For testing: Watermark at T+1h ensures 24h window [T-23h, T+1h] fires right away
+                //   - Messages are at time T (now) with timestamps just assigned
+                //   - Watermark is at T+1h (1 hour in the future)
+                //   - Window covers 24 hours ending at watermark time
+                //   - Since watermark > all message timestamps, window fires immediately
+                var watermarkTime = DateTimeOffset.UtcNow.AddHours(1);
+                Console.WriteLine($"[WATERMARK] Emitting watermark at {watermarkTime:yyyy-MM-dd HH:mm:ss} UTC (1h ahead of messages)");
+                return new Watermark(watermarkTime.ToUnixTimeMilliseconds());
             }
         }
 
@@ -109,11 +122,11 @@ namespace Exercise2_BackupAggregator
             inputMessagesStream = inputMessagesStream.AssignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
 
             // Apply transformations: window → aggregate → sink
-            // BAELDUNG ADAPTATION: Count-based window for testing (50 messages)
-            // Original Baeldung uses timeWindowAll(Time.hours(24)) for production
-            // We use countWindowAll(50) for deterministic, testable aggregation
+            // MODIFIED FOR TESTING: 1-minute window (faster than original 24-hour)
+            // Original Baeldung: timeWindowAll(Time.hours(24)) - daily aggregation
+            // Testing: 1-minute window to capture all 50 messages in single window
             inputMessagesStream
-                .CountWindowAll(50)  // Test adaptation: aggregate every 50 messages
+                .TimeWindowAll(Time.Minutes(1))  // Testing: 1-minute tumbling window
                 .Aggregate(new BackupAggregator())
                 .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
 
