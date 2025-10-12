@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobGateway", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Day02.IntegrationTests", "..\LearningCourse\Day02-Flink21-Fundamentals\Day02.IntegrationTests\Day02.IntegrationTests.csproj", "{D2A086C1-38AA-42F3-81EB-4176D6DEB3A1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Day01.IntegrationTests", "..\LearningCourse\Day01-Kafka-Flink-Data-Pipeline\Day01.IntegrationTests\Day01.IntegrationTests.csproj", "{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{D2A086C1-38AA-42F3-81EB-4176D6DEB3A1}.Release|x64.Build.0 = Release|Any CPU
 		{D2A086C1-38AA-42F3-81EB-4176D6DEB3A1}.Release|x86.ActiveCfg = Release|Any CPU
 		{D2A086C1-38AA-42F3-81EB-4176D6DEB3A1}.Release|x86.Build.0 = Release|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Debug|x64.Build.0 = Debug|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Debug|x86.Build.0 = Debug|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Release|x64.ActiveCfg = Release|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Release|x64.Build.0 = Release|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Release|x86.ActiveCfg = Release|Any CPU
+		{A7F65E58-AF88-4785-A3F0-65A1F5D7C16F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
