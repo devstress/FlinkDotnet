@@ -188,7 +188,7 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateAggregateOperation(AggregateOperationDefinition aggregate, int index, List<string> errors)
         {
-            var allowedAgg = new[] { "SUM", "COUNT", "AVG", "MIN", "MAX" };
+            var allowedAgg = new[] { "SUM", "COUNT", "AVG", "MIN", "MAX", "COLLECT" };
             if (string.IsNullOrWhiteSpace(aggregate.AggregationType) || !allowedAgg.Contains(aggregate.AggregationType))
                 errors.Add($"operations[{index}].aggregate.aggregationType must be one of {string.Join(", ", allowedAgg)}");
             if (string.IsNullOrWhiteSpace(aggregate.Field))

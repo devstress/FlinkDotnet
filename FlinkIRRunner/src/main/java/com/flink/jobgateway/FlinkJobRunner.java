@@ -1,5 +1,7 @@
 package com.flink.jobgateway;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -11,6 +13,9 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import java.time.Duration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -32,7 +37,24 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class FlinkJobRunner {
+    private static final Logger logger = LoggerFactory.getLogger(FlinkJobRunner.class);
+    
     public static void main(String[] args) throws Exception {
+        // DEBUG: Log environment variable for debugging log file location
+        String logFilePath = System.getenv("LOG_FILE_PATH");
+        System.out.println("========================================");
+        System.out.println("FlinkJobRunner Starting");
+        System.out.println("[DEBUG] LOG_FILE_PATH environment variable: " + logFilePath);
+        System.out.println("[DEBUG] Current working directory: " + System.getProperty("user.dir"));
+        System.out.println("[DEBUG] Java temp directory: " + System.getProperty("java.io.tmpdir"));
+        System.out.println("========================================");
+        
+        logger.info("========================================");
+        logger.info("FlinkJobRunner Starting");
+        logger.info("[DEBUG] LOG_FILE_PATH environment variable: {}", logFilePath);
+        logger.info("[DEBUG] Current working directory: {}", System.getProperty("user.dir"));
+        logger.info("========================================");
+        
         Map<String, String> argMap = parseArgs(args);
         String base64 = argMap.getOrDefault("--irBase64", argMap.get("-ir"));
         if (base64 == null || base64.isEmpty()) {
@@ -44,8 +66,17 @@ public class FlinkJobRunner {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         JobDefinition ir = mapper.readValue(json, JobDefinition.class);
 
+        logger.info("============================================================");
+        logger.info("[FLINK ENVIRONMENT] Creating StreamExecutionEnvironment");
+        logger.info("============================================================");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.getConfig().setParallelism(ir.metadata != null && ir.metadata.parallelism != null ? ir.metadata.parallelism : 1);
+        int parallelism = ir.metadata != null && ir.metadata.parallelism != null ? ir.metadata.parallelism : 1;
+        env.getConfig().setParallelism(parallelism);
+        logger.info("[FLINK ENVIRONMENT] ✓ Environment created");
+        logger.info("[FLINK ENVIRONMENT] ✓ Parallelism set to: {}", parallelism);
+        logger.info("[FLINK ENVIRONMENT] Java equivalent: StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();");
+        logger.info("[FLINK ENVIRONMENT] Java equivalent: env.getConfig().setParallelism({});", parallelism);
+        
         DataStream<String> stream;
 
         if (ir.source instanceof SqlSourceDefinition) {
@@ -90,31 +121,93 @@ public class FlinkJobRunner {
             return; // No further DataStream processing for pure SQL jobs
         } else if (ir.source instanceof KafkaSourceDefinition) {
             KafkaSourceDefinition k = (KafkaSourceDefinition) ir.source;
-            String bootstrap = orElse(k.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+            
+            if (k.bootstrapServers == null || k.bootstrapServers.isEmpty()) {
+                throw new RuntimeException("Kafka source bootstrapServers is required but was not provided");
+            }
+            
+            String bootstrap = k.bootstrapServers;
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
+            
+            // Check if EventTime is configured
+            boolean useEventTime = ir.metadata != null && ir.metadata.properties != null &&
+                                 "EventTime".equals(ir.metadata.properties.get("timeCharacteristic"));
 
-            System.out.println("============================================================");
-            System.out.println("[KAFKA SOURCE] Configuration:");
-            System.out.println("  - bootstrapServers field from JSON: " + k.bootstrapServers);
-            System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
-            System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
-            System.out.println("  - Topic: " + k.topic);
-            System.out.println("  - GroupId: " + groupId);
-            System.out.println("  - Starting offsets: " + orElse(k.startingOffsets, "latest"));
-            System.out.println("============================================================");
+            logger.info("============================================================");
+            logger.info("[KAFKA SOURCE] Configuration:");
+            logger.info("  - bootstrapServers field from JSON: {}", k.bootstrapServers);
+            logger.info("  - FINAL bootstrap.servers: {}", bootstrap);
+            logger.info("  - Topic: {}", k.topic);
+            logger.info("  - GroupId: {}", groupId);
+            logger.info("  - Starting offsets: {}", orElse(k.startingOffsets, "latest"));
+            logger.info("  - Time Characteristic: {}", useEventTime ? "EventTime" : "ProcessingTime");
+            logger.info("  - KAFKA_BOOTSTRAP_SERVERS env var: {}", System.getenv("KAFKA_BOOTSTRAP_SERVERS"));
+            logger.info("  - bootstrap.servers system property: {}", System.getProperty("bootstrap.servers"));
+            logger.info("============================================================");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
             props.put("group.id", groupId);
             props.put("auto.offset.reset", orElse(k.startingOffsets, "latest"));
             
-            System.out.println("[KAFKA SOURCE] Creating Kafka consumer with properties:");
-            System.out.println("  - bootstrap.servers: " + props.getProperty("bootstrap.servers"));
-            System.out.println("  - group.id: " + props.getProperty("group.id"));
-            System.out.println("  - auto.offset.reset: " + props.getProperty("auto.offset.reset"));
+            logger.info("[KAFKA SOURCE] Creating Kafka consumer with properties:");
+            logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
+            logger.info("  - group.id: {}", props.getProperty("group.id"));
+            logger.info("  - auto.offset.reset: {}", props.getProperty("auto.offset.reset"));
 
+            logger.info("[KAFKA SOURCE] Adding source to Flink environment...");
+            logger.info("[KAFKA SOURCE] Java equivalent: DataStream<String> stream = env.addSource(new KafkaStringSource(\"{}\", props)).name(\"KafkaSource\");", k.topic);
             stream = env.addSource(new KafkaStringSource(k.topic, props)).name("KafkaSource");
-            System.out.println("[KAFKA SOURCE] Source created successfully");
+            logger.info("[KAFKA SOURCE] ✓ Source created successfully");
+            logger.info("[KAFKA SOURCE] ✓ Stream type: DataStream<String>");
+            
+            // Apply EventTime watermark strategy if configured (Standard Flink pattern)
+            if (useEventTime) {
+                logger.info("[WATERMARK STRATEGY] Applying standard Flink EventTime watermark strategy");
+                logger.info("[WATERMARK STRATEGY] Using forBoundedOutOfOrderness with 200ms tolerance");
+                logger.info("[WATERMARK STRATEGY] Watermarks will lag 200ms behind max observed event timestamp");
+                logger.info("[WATERMARK STRATEGY] Pattern: WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofMillis(200))");
+                
+                stream = stream.assignTimestampsAndWatermarks(
+                    WatermarkStrategy
+                        .<String>forBoundedOutOfOrderness(Duration.ofMillis(200))
+                        .withIdleness(Duration.ofSeconds(1))
+                        .withTimestampAssigner(new SerializableTimestampAssigner<String>() {
+                            @Override
+                            public long extractTimestamp(String element, long recordTimestamp) {
+                                try {
+                                    // Parse JSON to extract sentAt timestamp (Baeldung InputMessage pattern)
+                                    // Support both lowercase "sentAt" and uppercase "SENTAT"
+                                    ObjectMapper mapper = new ObjectMapper();
+                                    var node = mapper.readTree(element);
+                                    String sentAtField = node.has("sentAt") ? "sentAt" :
+                                                        node.has("SENTAT") ? "SENTAT" :
+                                                        node.has("SentAt") ? "SentAt" : null;
+                                    
+                                    if (sentAtField != null) {
+                                        String sentAt = node.get(sentAtField).asText();
+                                        // Parse ISO 8601 timestamp
+                                        java.time.Instant instant = java.time.Instant.parse(sentAt);
+                                        long timestamp = instant.toEpochMilli();
+                                        logger.info("[WATERMARK] Extracted event timestamp={} ({}) from {}: {}",
+                                            timestamp, java.time.Instant.ofEpochMilli(timestamp), sentAtField, sentAt);
+                                        return timestamp;
+                                    } else {
+                                        logger.warn("[WATERMARK] No timestamp field found in message (tried sentAt, SENTAT, SentAt)");
+                                    }
+                                } catch (Exception e) {
+                                    logger.warn("[WATERMARK] Failed to extract timestamp from message: {}", e.getMessage());
+                                }
+                                // Fallback to Kafka record timestamp
+                                logger.info("[WATERMARK] Using Kafka record timestamp: {} ({})",
+                                    recordTimestamp, java.time.Instant.ofEpochMilli(recordTimestamp));
+                                return recordTimestamp;
+                            }
+                        })
+                );
+                logger.info("[WATERMARK STRATEGY] ✓ Standard bounded out-of-orderness watermark strategy applied");
+                logger.info("[WATERMARK STRATEGY] ✓ Watermarks will progress naturally with event time");
+            }
         } else {
             // Fallback source
             stream = env.fromElements("sample");
@@ -127,27 +220,29 @@ public class FlinkJobRunner {
                 if (op instanceof MapOperationDefinition) {
                     MapOperationDefinition m = (MapOperationDefinition) op;
                     String expr = orElse(m.expression, m.function, "identity");
-                    System.out.println("============================================================");
-                    System.out.println("[MAP OPERATION] Processing:");
-                    System.out.println("  - expression field from JSON: " + m.expression);
-                    System.out.println("  - function field from JSON: " + m.function);
-                    System.out.println("  - Resolved expression: " + expr);
-                    System.out.println("  - Normalized (lowercase): " + expr.toLowerCase(Locale.ROOT));
-                    System.out.println("============================================================");
+                    logger.info("============================================================");
+                    logger.info("[MAP OPERATION] Processing:");
+                    logger.info("  - expression field from JSON: {}", m.expression);
+                    logger.info("  - function field from JSON: {}", m.function);
+                    logger.info("  - Resolved expression: {}", expr);
+                    logger.info("  - Normalized (lowercase): {}", expr.toLowerCase(Locale.ROOT));
+                    logger.info("============================================================");
                     
                     switch (expr.toLowerCase(Locale.ROOT)) {
                         case "upper":
                         case "toupper":
-                            System.out.println("[MAP OPERATION] ✓ Applying toUpperCase transformation");
+                            logger.info("[MAP OPERATION] ✓ Applying toUpperCase transformation");
+                            logger.info("[MAP OPERATION] Java equivalent: stream = stream.map(String::toUpperCase);");
                             stream = stream.map(String::toUpperCase);
                             break;
                         case "lower":
                         case "tolower":
-                            System.out.println("[MAP OPERATION] ✓ Applying toLowerCase transformation");
+                            logger.info("[MAP OPERATION] ✓ Applying toLowerCase transformation");
+                            logger.info("[MAP OPERATION] Java equivalent: stream = stream.map(String::toLowerCase);");
                             stream = stream.map(String::toLowerCase);
                             break;
                         default:
-                            System.out.println("[MAP OPERATION] ⚠ Using identity transformation (pass-through) for: " + expr);
+                            logger.info("[MAP OPERATION] ⚠ Using identity transformation (pass-through) for: {}", expr);
                             // identity or unrecognized: pass through
                             break;
                     }
@@ -224,45 +319,192 @@ public class FlinkJobRunner {
                     // attach sink to side output (Kafka-only supported here)
                     DataStream<String> side = main.getSideOutput(tag);
                     if (so.sideOutputSink != null && so.sideOutputSink.type != null && so.sideOutputSink.type.equals("kafka")) {
-                        String bootstrap = orElse(so.sideOutputSink.bootstrapServers, System.getenv("KAFKA_BOOTSTRAP"), "kafka:9093");
+                        if (so.sideOutputSink.bootstrapServers == null || so.sideOutputSink.bootstrapServers.isEmpty()) {
+                            throw new RuntimeException("Side output Kafka sink bootstrapServers is required but was not provided");
+                        }
+                        String bootstrap = so.sideOutputSink.bootstrapServers;
                         Properties props = new Properties();
                         props.put("bootstrap.servers", bootstrap);
                         side.addSink(new KafkaStringSink(so.sideOutputSink.topic, props)).name("SideKafkaSink:"+so.outputTag);
                     }
                     stream = main;
+                } else if (op instanceof AggregateOperationDefinition) {
+                    AggregateOperationDefinition agg = (AggregateOperationDefinition) op;
+                    String aggType = orElse(agg.aggregationType, "COLLECT").toUpperCase(Locale.ROOT);
+                    
+                    logger.info("============================================================");
+                    logger.info("[AGGREGATE OPERATION] Processing:");
+                    logger.info("  - aggregationType: {}", aggType);
+                    logger.info("  - field: {}", orElse(agg.field, "*"));
+                    logger.info("  - windowSeconds: {}", agg.windowSeconds);
+                    logger.info("  - windowCount: {}", agg.windowCount);
+                    logger.info("============================================================");
+                    
+                    // For COLLECT aggregation, collect all strings in window into a JSON array
+                    if ("COLLECT".equals(aggType)) {
+                        // Use Jackson ObjectMapper for proper JSON handling
+                        final ObjectMapper jsonMapper = new ObjectMapper();
+                        
+                        logger.info("[AGGREGATE] Baeldung pattern: Using timeWindowAll() for global aggregation across all parallel instances");
+                        logger.info("[AGGREGATE] Java equivalent: stream.timeWindowAll(Time.hours(24)).aggregate(new BackupAggregator())");
+                        
+                        // Create the aggregate function once to reuse
+                        org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String> aggregateFunction =
+                                new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String>() {
+                                    @Override
+                                    public java.util.List<com.fasterxml.jackson.databind.JsonNode> createAccumulator() {
+                                        logger.info("[AGGREGATE] Creating new accumulator for COLLECT aggregation");
+                                        return new java.util.ArrayList<>();
+                                    }
+                                    
+                                    @Override
+                                    public java.util.List<com.fasterxml.jackson.databind.JsonNode> add(String value, java.util.List<com.fasterxml.jackson.databind.JsonNode> accumulator) {
+                                        try {
+                                            logger.info("[AGGREGATE.ADD] *** CALLED *** Receiving message to add to accumulator");
+                                            logger.info("[AGGREGATE.ADD] Current accumulator size: {}", accumulator.size());
+                                            logger.info("[AGGREGATE.ADD] Message value: {}", value);
+                                            
+                                            // Parse JSON string to JsonNode to ensure valid JSON
+                                            com.fasterxml.jackson.databind.JsonNode node = jsonMapper.readTree(value);
+                                            accumulator.add(node);
+                                            
+                                            logger.info("[AGGREGATE.ADD] *** SUCCESS *** Message added! New accumulator size: {}", accumulator.size());
+                                            return accumulator;
+                                        } catch (Exception e) {
+                                            logger.error("[AGGREGATE.ADD] *** FAILED *** Error parsing JSON message: {}", value, e);
+                                            logger.error("[AGGREGATE.ADD] Exception: {}", e.getMessage());
+                                            // Skip invalid JSON messages but log it
+                                            return accumulator;
+                                        }
+                                    }
+                                    
+                                    @Override
+                                    public String getResult(java.util.List<com.fasterxml.jackson.databind.JsonNode> accumulator) {
+                                        try {
+                                            logger.info("[AGGREGATE] Finalizing Backup with {} messages", accumulator.size());
+                                            
+                                            // Build Backup object using Jackson
+                                            java.util.Map<String, Object> backup = new java.util.LinkedHashMap<>();
+                                            backup.put("inputMessages", accumulator);
+                                            backup.put("backupTimestamp", java.time.Instant.now().toString());
+                                            backup.put("uuid", java.util.UUID.randomUUID().toString());
+                                            
+                                            String json = jsonMapper.writeValueAsString(backup);
+                                            logger.info("[AGGREGATE] Generated Backup JSON: {}", json);
+                                            return json;
+                                        } catch (Exception e) {
+                                            logger.error("[AGGREGATE] Failed to serialize Backup", e);
+                                            return "{\"inputMessages\":[],\"backupTimestamp\":\"" +
+                                                   java.time.Instant.now().toString() +
+                                                   "\",\"uuid\":\"" + java.util.UUID.randomUUID().toString() + "\"}";
+                                        }
+                                    }
+                                    
+                                    @Override
+                                    public java.util.List<com.fasterxml.jackson.databind.JsonNode> merge(java.util.List<com.fasterxml.jackson.databind.JsonNode> a,
+                                                                                                        java.util.List<com.fasterxml.jackson.databind.JsonNode> b) {
+                                        a.addAll(b);
+                                        logger.debug("[AGGREGATE] Merged accumulators, total count: {}", a.size());
+                                        return a;
+                                    }
+                                };
+                        
+                        // Choose window type: count-based or time-based
+                        if (agg.windowCount != null && agg.windowCount > 0) {
+                            // COUNT-BASED WINDOW (Exercise 2: aggregate 50 messages)
+                            logger.info("[AGGREGATE] Using COUNT-based global window: {} messages", agg.windowCount);
+                            logger.info("[AGGREGATE] Java equivalent: stream = stream.countWindowAll({}).aggregate(aggregateFunction);", agg.windowCount);
+                            stream = stream.countWindowAll(agg.windowCount)
+                                    .aggregate(aggregateFunction);
+                            logger.info("[AGGREGATE OPERATION] ✓ COUNT-based COLLECT aggregation configured (Baeldung countWindowAll pattern)");
+                        } else if (agg.windowSeconds != null && agg.windowSeconds > 0) {
+                            // TIME-BASED WINDOW - Baeldung equivalent for Flink 2.x
+                            // Baeldung (Flink 1.x): stream.timeWindowAll(Time.hours(24)).aggregate(aggregator)
+                            // Flink 2.x equivalent: stream.windowAll(TumblingEventTimeWindows.of(Duration.ofHours(24))).aggregate(aggregator)
+                            // Note: timeWindowAll() was removed in Flink 2.x, windowAll() is the replacement
+                            // Both create identical 24-hour tumbling event-time windows
+                            
+                            // Check if EventTime is configured
+                            boolean useEventTime = ir.metadata != null && ir.metadata.properties != null &&
+                                                 "EventTime".equals(ir.metadata.properties.get("timeCharacteristic"));
+                            
+                            Duration windowDuration = Duration.ofSeconds(agg.windowSeconds);
+                            long hours = agg.windowSeconds / 3600;
+                            
+                            logger.info("[AGGREGATE] Using TIME-based global window: {} seconds ({} hours)", agg.windowSeconds, hours);
+                            logger.info("[AGGREGATE] Baeldung Flink 1.x code: inputMessagesStream.timeWindowAll(Time.hours({})).aggregate(new BackupAggregator())", hours);
+                            logger.info("[AGGREGATE] Our Flink 2.x equivalent: inputMessagesStream.windowAll(TumblingEventTimeWindows.of(Duration.ofHours({}))).aggregate(aggregateFunction)", hours);
+                            
+                            if (useEventTime) {
+                                // EventTime windows - Baeldung's actual behavior
+                                logger.info("[AGGREGATE] Using EventTime windows - BAELDUNG BEHAVIOR (fires based on event timestamps and watermarks)");
+                                stream = stream.windowAll(TumblingEventTimeWindows.of(windowDuration))
+                                        .aggregate(aggregateFunction);
+                                logger.info("[AGGREGATE OPERATION] ✓ Global EventTime window configured (Baeldung timeWindowAll equivalent)");
+                            } else {
+                                // ProcessingTime windows - for testing only
+                                logger.info("[AGGREGATE] Using ProcessingTime windows - TESTING MODE (fires based on wall clock)");
+                                stream = stream.windowAll(TumblingProcessingTimeWindows.of(windowDuration))
+                                        .aggregate(aggregateFunction);
+                                logger.info("[AGGREGATE OPERATION] ✓ Global ProcessingTime window configured (testing mode)");
+                            }
+                        } else {
+                            // DEFAULT: 60-second (1 minute) global time window (ProcessingTime)
+                            logger.warn("[AGGREGATE] No window specified, using default 60-second (1 minute) global time window");
+                            stream = stream.windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(60)))
+                                    .aggregate(aggregateFunction);
+                            logger.info("[AGGREGATE OPERATION] ✓ Default global ProcessingTime window configured (60 seconds)");
+                        }
+                    }
                 }
             }
         }
 
         if (ir.sink instanceof KafkaSinkDefinition) {
             KafkaSinkDefinition s = (KafkaSinkDefinition) ir.sink;
+            // Priority: Sink JSON field → Source JSON field
             String bootstrap = orElse(s.bootstrapServers,
-                    (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null,
-                    System.getenv("KAFKA_BOOTSTRAP"), "kafka:9092");
+                    (ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : null);
+            
+            if (bootstrap == null || bootstrap.isEmpty()) {
+                throw new RuntimeException("Kafka sink bootstrapServers is required but was not provided");
+            }
 
-            System.out.println("============================================================");
-            System.out.println("[KAFKA SINK] Configuration:");
-            System.out.println("  - bootstrapServers field from JSON: " + s.bootstrapServers);
-            System.out.println("  - Source bootstrapServers: " + ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
-            System.out.println("  - KAFKA_BOOTSTRAP environment: " + System.getenv("KAFKA_BOOTSTRAP"));
-            System.out.println("  - FINAL bootstrap.servers: " + bootstrap);
-            System.out.println("  - Topic: " + s.topic);
-            System.out.println("============================================================");
+            logger.info("============================================================");
+            logger.info("[KAFKA SINK] Configuration:");
+            logger.info("  - bootstrapServers field from JSON: {}", s.bootstrapServers);
+            logger.info("  - Source bootstrapServers: {}", ((ir.source instanceof KafkaSourceDefinition) ? ((KafkaSourceDefinition) ir.source).bootstrapServers : "N/A"));
+            logger.info("  - FINAL bootstrap.servers: {}", bootstrap);
+            logger.info("  - Topic: {}", s.topic);
+            logger.info("============================================================");
 
             Properties props = new Properties();
             props.put("bootstrap.servers", bootstrap);
             
-            System.out.println("[KAFKA SINK] Creating Kafka producer with properties:");
-            System.out.println("  - bootstrap.servers: " + props.getProperty("bootstrap.servers"));
-            System.out.println("  - Target topic: " + s.topic);
+            logger.info("[KAFKA SINK] Creating Kafka producer with properties:");
+            logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
+            logger.info("  - Target topic: {}", s.topic);
             
+            logger.info("[KAFKA SINK] Adding sink to stream...");
+            logger.info("[KAFKA SINK] Java equivalent: stream.addSink(new KafkaStringSink(\"{}\", props)).name(\"KafkaSink\");", s.topic);
             stream.addSink(new KafkaStringSink(s.topic, props)).name("KafkaSink");
-            System.out.println("[KAFKA SINK] Sink created successfully");
+            logger.info("[KAFKA SINK] ✓ Sink created successfully");
         } else {
             stream.print();
         }
 
         String jobName = ir.metadata != null && ir.metadata.jobName != null ? ir.metadata.jobName : "flinkdotnet-ir-job";
+        logger.info("============================================================");
+        logger.info("[FLINK EXECUTION] Starting job execution");
+        logger.info("[FLINK EXECUTION] Job name: {}", jobName);
+        logger.info("[FLINK EXECUTION] Java equivalent: env.execute(\"{}\");", jobName);
+        logger.info("============================================================");
+        logger.info("[PIPELINE SUMMARY] Complete Flink DataStream pipeline built:");
+        logger.info("  1. Source: env.addSource(KafkaStringSource)");
+        logger.info("  2. Operations: {} transformation(s) applied", ir.operations != null ? ir.operations.size() : 0);
+        logger.info("  3. Sink: stream.addSink(KafkaStringSink)");
+        logger.info("  4. Execute: env.execute(\"{}\");", jobName);
+        logger.info("============================================================");
         env.execute(jobName);
     }
 
@@ -312,6 +554,7 @@ public class FlinkJobRunner {
         public String jobId;
         public String jobName;
         public Integer parallelism;
+        public Map<String, String> properties;
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -334,7 +577,8 @@ public interface Sink {}
         @JsonSubTypes.Type(value = RetryOperationDefinition.class, name = "retry"),
         @JsonSubTypes.Type(value = AsyncFunctionOperationDefinition.class, name = "async"),
         @JsonSubTypes.Type(value = StateOperationDefinition.class, name = "state"),
-        @JsonSubTypes.Type(value = SideOutputOperationDefinition.class, name = "side-output")
+        @JsonSubTypes.Type(value = SideOutputOperationDefinition.class, name = "side-output"),
+        @JsonSubTypes.Type(value = AggregateOperationDefinition.class, name = "aggregate")
 })
 public interface Operation {}
 
@@ -429,6 +673,15 @@ public interface Operation {}
         public KafkaSinkDefinition sideOutputSink;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class AggregateOperationDefinition implements Operation {
+        public String type;
+        public String aggregationType;  // COLLECT, SUM, COUNT, etc.
+        public String field;             // Field to aggregate, or "*" for all
+        public Long windowSeconds;       // Window duration in seconds (default: 10 for testing, 86400 for production)
+        public Integer windowCount;      // Window count for count-based windows (e.g., 50 messages)
+    }
+
     // Simple Kafka Source using Kafka client
     public static class KafkaStringSource implements org.apache.flink.streaming.api.functions.source.legacy.SourceFunction<String> {
         private final String topic;
@@ -442,18 +695,18 @@ public interface Operation {}
 
         @Override
         public void run(org.apache.flink.streaming.api.functions.source.legacy.SourceFunction.SourceContext<String> ctx) throws Exception {
-            System.out.println("============================================================");
-            System.out.println("[KAFKA SOURCE] Starting consumer...");
-            System.out.println("  - Topic: " + topic);
-            System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
-            System.out.println("  - Group ID: " + props.getProperty("group.id"));
-            System.out.println("  - Auto offset reset: " + props.getProperty("auto.offset.reset"));
-            System.out.println("============================================================");
+            logger.info("============================================================");
+            logger.info("[KAFKA SOURCE] Starting consumer...");
+            logger.info("  - Topic: {}", topic);
+            logger.info("  - Bootstrap servers: {}", props.getProperty("bootstrap.servers"));
+            logger.info("  - Group ID: {}", props.getProperty("group.id"));
+            logger.info("  - Auto offset reset: {}", props.getProperty("auto.offset.reset"));
+            logger.info("============================================================");
             
             try (org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(props, new org.apache.kafka.common.serialization.StringDeserializer(), new org.apache.kafka.common.serialization.StringDeserializer())) {
-                System.out.println("[KAFKA SOURCE] ✓ Consumer created, subscribing to topic: " + topic);
+                logger.info("[KAFKA SOURCE] ✓ Consumer created, subscribing to topic: {}", topic);
                 consumer.subscribe(Collections.singletonList(topic));
-                System.out.println("[KAFKA SOURCE] ✓ Subscribed successfully, starting poll loop...");
+                logger.info("[KAFKA SOURCE] ✓ Subscribed successfully, starting poll loop...");
                 
                 int pollCount = 0;
                 int totalRecords = 0;
@@ -463,25 +716,24 @@ public interface Operation {}
                     pollCount++;
                     
                     if (records.count() > 0) {
-                        System.out.println("[KAFKA SOURCE] Poll #" + pollCount + ": Received " + records.count() + " records");
+                        logger.info("[KAFKA SOURCE] Poll #{}: Received {} records", pollCount, records.count());
                         totalRecords += records.count();
                     } else if (pollCount % 20 == 0) {
                         // Log every 10 seconds (20 polls * 500ms) to show we're still polling
-                        System.out.println("[KAFKA SOURCE] Poll #" + pollCount + ": Still polling, total records so far: " + totalRecords);
+                        logger.info("[KAFKA SOURCE] Poll #{}: Still polling, total records so far: {}", pollCount, totalRecords);
                     }
                     
                     for (var rec : records) {
                         synchronized (ctx.getCheckpointLock()) {
-                            System.out.println("[KAFKA SOURCE] Collecting record: " + rec.value());
+                            logger.debug("[KAFKA SOURCE] Collecting record: {}", rec.value());
                             ctx.collect(rec.value());
                         }
                     }
                 }
                 
-                System.out.println("[KAFKA SOURCE] Stopped. Total records processed: " + totalRecords);
+                logger.info("[KAFKA SOURCE] Stopped. Total records processed: {}", totalRecords);
             } catch (Exception e) {
-                System.err.println("[KAFKA SOURCE] ✗ ERROR: " + e.getClass().getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("[KAFKA SOURCE] ✗ ERROR: {}: {}", e.getClass().getName(), e.getMessage(), e);
                 throw e;
             }
         }
@@ -506,29 +758,27 @@ public interface Operation {}
         @Override
         public void invoke(String value, org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction.Context context) {
             if (producer == null) {
-                System.out.println("============================================================");
-                System.out.println("[KAFKA SINK] Initializing producer...");
-                System.out.println("  - Topic: " + topic);
-                System.out.println("  - Bootstrap servers: " + props.getProperty("bootstrap.servers"));
-                System.out.println("============================================================");
+                logger.info("============================================================");
+                logger.info("[KAFKA SINK] Initializing producer...");
+                logger.info("  - Topic: {}", topic);
+                logger.info("  - Bootstrap servers: {}", props.getProperty("bootstrap.servers"));
+                logger.info("============================================================");
                 
                 try {
                     producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props, new org.apache.kafka.common.serialization.StringSerializer(), new org.apache.kafka.common.serialization.StringSerializer());
-                    System.out.println("[KAFKA SINK] ✓ Producer created successfully");
+                    logger.info("[KAFKA SINK] ✓ Producer created successfully");
                 } catch (Exception e) {
-                    System.err.println("[KAFKA SINK] ✗ ERROR creating producer: " + e.getClass().getName() + ": " + e.getMessage());
-                    e.printStackTrace();
+                    logger.error("[KAFKA SINK] ✗ ERROR creating producer: {}: {}", e.getClass().getName(), e.getMessage(), e);
                     throw e;
                 }
             }
             
             try {
-                System.out.println("[KAFKA SINK] Sending message to topic '" + topic + "': " + value);
+                logger.debug("[KAFKA SINK] Sending message to topic '{}': {}", topic, value);
                 producer.send(new org.apache.kafka.clients.producer.ProducerRecord<>(topic, value));
-                System.out.println("[KAFKA SINK] ✓ Message sent successfully");
+                logger.debug("[KAFKA SINK] ✓ Message sent successfully");
             } catch (Exception e) {
-                System.err.println("[KAFKA SINK] ✗ ERROR sending message: " + e.getClass().getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("[KAFKA SINK] ✗ ERROR sending message: {}: {}", e.getClass().getName(), e.getMessage(), e);
                 throw e;
             }
         }

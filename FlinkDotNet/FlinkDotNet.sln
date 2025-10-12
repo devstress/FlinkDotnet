@@ -10,7 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\Directory.Build.props = ..\Directory.Build.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flink.JobGateway", "Flink.JobGateway\Flink.JobGateway.csproj", "{232A02B1-5F2E-40B4-8A9D-D9F22F91262A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobGateway", "FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj", "{232A02B1-5F2E-40B4-8A9D-D9F22F91262A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Common", "FlinkDotNet.Common\FlinkDotNet.Common.csproj", "{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D}"
 EndProject
@@ -32,7 +32,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.ClusterManager"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flink.JobBuilder.Tests", "Flink.JobBuilder.Tests\Flink.JobBuilder.Tests.csproj", "{11111111-2222-3333-4444-555555555555}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flink.JobGateway.Tests", "Flink.JobGateway.Tests\Flink.JobGateway.Tests.csproj", "{A5F8A6B6-3BB1-4EDE-BC4A-3FC1C80E5074}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobGateway.Tests", "FlinkDotNet.JobGateway.Tests\FlinkDotNet.JobGateway.Tests.csproj", "{A5F8A6B6-3BB1-4EDE-BC4A-3FC1C80E5074}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

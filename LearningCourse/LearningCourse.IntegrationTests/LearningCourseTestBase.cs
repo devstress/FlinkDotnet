@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LearningCourse.Common;
 using NUnit.Framework;
 
 namespace LearningCourse.IntegrationTests;
@@ -15,6 +16,18 @@ public abstract class LearningCourseTestBase
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
+    
+    /// <summary>
+    /// Kafka container IP for Flink jobs (e.g., "172.17.0.2:9093").
+    /// Docker bridge network doesn't support DNS, so we use actual IP address.
+    /// </summary>
+    public static string? KafkaFlinkBootstrapServers { get; private set; }
+    
+    /// <summary>
+    /// Kafka host endpoint for exercise producers/consumers (e.g., "localhost:43175").
+    /// Dynamically allocated host port mapped to Kafka's container port.
+    /// </summary>
+    public static string? KafkaHostBootstrapServers { get; private set; }
 
     /// <summary>
     /// Start LocalTesting AppHost once for all tests
@@ -24,7 +37,52 @@ public abstract class LearningCourseTestBase
     {
         TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
+        
+        // Clean up test-logs directory from previous runs
+        var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
+        var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+        
+        if (Directory.Exists(testLogsDir))
+        {
+            TestContext.WriteLine($"🧹 Cleaning up test logs directory: {testLogsDir}");
+            try
+            {
+                Directory.Delete(testLogsDir, recursive: true);
+                TestContext.WriteLine("✅ Test logs directory cleaned");
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️ Warning: Could not clean test logs directory: {ex.Message}");
+            }
+        }
+        
+        // Recreate the directory
+        Directory.CreateDirectory(testLogsDir);
+        TestContext.WriteLine($"📁 Test logs directory ready: {testLogsDir}");
+        
+        // DO NOT set KAFKA_BOOTSTRAP_SERVERS here!
+        // REASON: Environment variables set here are inherited by AppHost process,
+        // which then passes them to all Docker containers including Flink containers.
+        // This causes Kafka client inside Flink TaskManager to use localhost:9093 instead of kafka:9092.
+        //
+        // SOLUTION: Set KAFKA_BOOTSTRAP_SERVERS only in ExecuteExerciseAsync() so it's ONLY
+        // available to exercise processes, NOT to AppHost or Flink containers.
+        TestContext.WriteLine($"✅ NOT setting KAFKA_BOOTSTRAP_SERVERS globally to prevent Docker inheritance");
 
+        _appHostProcess = StartAppHostProcess();
+        
+        TestContext.WriteLine("✅ AppHost process started, polling for infrastructure readiness...");
+        
+        await WaitForInfrastructureReadyAsync();
+        
+        TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+    }
+    
+    /// <summary>
+    /// Start AppHost process with output capture
+    /// </summary>
+    private static Process StartAppHostProcess()
+    {
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -36,22 +94,22 @@ public abstract class LearningCourseTestBase
             CreateNoWindow = true
         };
 
-        _appHostProcess = Process.Start(psi);
+        var process = Process.Start(psi);
         
-        if (_appHostProcess == null)
+        if (process == null)
         {
             throw new InvalidOperationException("Failed to start AppHost process");
         }
 
         // Capture output for diagnostics
-        _appHostProcess.OutputDataReceived += (sender, e) =>
+        process.OutputDataReceived += (sender, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 TestContext.WriteLine($"[AppHost] {e.Data}");
             }
         };
-        _appHostProcess.ErrorDataReceived += (sender, e) =>
+        process.ErrorDataReceived += (sender, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
@@ -59,16 +117,115 @@ public abstract class LearningCourseTestBase
             }
         };
         
-        _appHostProcess.BeginOutputReadLine();
-        _appHostProcess.BeginErrorReadLine();
-
-        TestContext.WriteLine("✅ AppHost process started, waiting for infrastructure to be ready...");
-        TestContext.WriteLine($"⏱️ Waiting {AppHostStartupTimeout.TotalSeconds} seconds for infrastructure startup...");
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         
-        // Wait for infrastructure to be ready
-        await Task.Delay(AppHostStartupTimeout);
+        return process;
+    }
+    
+    /// <summary>
+    /// Smart polling: Check if containers are actually ready instead of blind wait
+    /// Ensures BOTH Kafka and Flink are ready before proceeding
+    /// </summary>
+    private static async Task WaitForInfrastructureReadyAsync()
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var maxWait = AppHostStartupTimeout;
+        var pollInterval = TimeSpan.FromMilliseconds(500);
         
-        TestContext.WriteLine("✅ Infrastructure startup time elapsed, tests can proceed");
+        string? kafkaFlinkIp = null;
+        string? kafkaHostEndpoint = null;
+        bool flinkReady = false;
+        
+        while (stopwatch.Elapsed < maxWait)
+        {
+            var discovered = await TryDiscoverEndpointsAsync(kafkaFlinkIp, kafkaHostEndpoint, stopwatch);
+            kafkaFlinkIp = discovered.flinkIp ?? kafkaFlinkIp;
+            kafkaHostEndpoint = discovered.hostEndpoint ?? kafkaHostEndpoint;
+            
+            // Also check if Flink is ready (not just Kafka)
+            if (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
+            {
+                flinkReady = await IsFlinkHealthyAsync();
+                if (flinkReady)
+                {
+                    TestContext.WriteLine($"✅ Flink cluster is healthy (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            // All infrastructure must be ready: Kafka AND Flink
+            if (kafkaFlinkIp != null && kafkaHostEndpoint != null && flinkReady)
+            {
+                KafkaFlinkBootstrapServers = kafkaFlinkIp;
+                KafkaHostBootstrapServers = kafkaHostEndpoint;
+                TestContext.WriteLine($"✅ All infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {(maxWait - stopwatch.Elapsed).TotalSeconds:F1}s)");
+                return;
+            }
+            
+            await Task.Delay(pollInterval);
+        }
+        
+        throw new TimeoutException(
+            $"Infrastructure not ready within {maxWait.TotalSeconds}s. " +
+            $"KafkaFlinkIp: {KafkaFlinkBootstrapServers ?? "null"}, " +
+            $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
+            $"FlinkReady: {flinkReady}");
+    }
+    
+    /// <summary>
+    /// Check if Flink JobManager is healthy and ready to accept jobs
+    /// </summary>
+    private static async Task<bool> IsFlinkHealthyAsync()
+    {
+        try
+        {
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Try to discover Kafka endpoints with logging
+    /// </summary>
+    private static async Task<(string? flinkIp, string? hostEndpoint)> TryDiscoverEndpointsAsync(
+        string? currentFlinkIp,
+        string? currentHostEndpoint,
+        Stopwatch stopwatch)
+    {
+        try
+        {
+            string? flinkIp = currentFlinkIp;
+            string? hostEndpoint = currentHostEndpoint;
+            
+            if (flinkIp == null)
+            {
+                flinkIp = await DockerInfrastructure.GetKafkaContainerIpAsync();
+                if (flinkIp != null)
+                {
+                    TestContext.WriteLine($"✅ Kafka container IP discovered: {flinkIp} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            if (hostEndpoint == null)
+            {
+                hostEndpoint = await DockerInfrastructure.GetKafkaHostEndpointAsync();
+                if (hostEndpoint != null)
+                {
+                    TestContext.WriteLine($"✅ Kafka host endpoint discovered: {hostEndpoint} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            return (flinkIp, hostEndpoint);
+        }
+        catch
+        {
+            return (null, null);
+        }
     }
 
     /// <summary>
@@ -79,6 +236,11 @@ public abstract class LearningCourseTestBase
     public static void GlobalTearDown()
     {
         TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
+        
+        // Copy Flink logs from Flink containers BEFORE stopping them
+        // Note: FlinkJobRunner logs are embedded within Flink's logging system
+        TestContext.WriteLine("📋 Copying Flink logs from Flink containers...");
+        CopyFlinkLogs();
         
         if (_appHostProcess != null && !_appHostProcess.HasExited)
         {
@@ -113,6 +275,185 @@ public abstract class LearningCourseTestBase
         CleanupContainers();
         
         TestContext.WriteLine("✅ Teardown complete");
+    }
+    
+    /// <summary>
+    /// Copy Flink logs from Flink containers to host filesystem before containers are stopped.
+    /// This includes Apache Flink logs (JobManager, TaskManager, SQL Gateway) which contain
+    /// embedded FlinkJobRunner application logs since FlinkJobRunner runs as a job within Flink.
+    /// </summary>
+    private static void CopyFlinkLogs()
+    {
+        try
+        {
+            var repoRoot = FindRepositoryRoot();
+            if (repoRoot == null)
+            {
+                TestContext.WriteLine("⚠️ Could not find repository root, skipping log copy");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            
+            // Get all Flink container IDs (JobManager and TaskManager)
+            var getContainersPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=flink",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var getContainersProcess = Process.Start(getContainersPsi);
+            if (getContainersProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to get Flink container list");
+                return;
+            }
+            
+            var containerIds = getContainersProcess.StandardOutput.ReadToEnd().Trim();
+            getContainersProcess.WaitForExit();
+            
+            if (string.IsNullOrWhiteSpace(containerIds))
+            {
+                TestContext.WriteLine("⚠️ No Flink containers found");
+                return;
+            }
+            
+            var containerIdList = containerIds.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            TestContext.WriteLine($"📦 Found {containerIdList.Length} Flink containers");
+            
+            // Copy logs from each Flink container
+            foreach (var containerId in containerIdList)
+            {
+                CopyLogsFromContainer(containerId, testLogsDir);
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error copying Flink logs: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Copy all logs from /opt/flink/log/ in a specific container.
+    /// This includes both Apache Flink logs and FlinkJobRunner logs (both write to same directory).
+    /// Renames Apache Flink logs to Flink.{component}.log.YYYYMMDD format.
+    /// FlinkJobRunner logs already follow the correct naming convention.
+    /// </summary>
+    private static void CopyLogsFromContainer(string containerId, string testLogsDir)
+    {
+        try
+        {
+            var logFiles = GetLogFilesFromContainer(containerId);
+            if (logFiles == null || logFiles.Length == 0)
+            {
+                TestContext.WriteLine($"   No Flink logs found in container {containerId.Substring(0, 12)}");
+                return;
+            }
+            
+            TestContext.WriteLine($"   Found {logFiles.Length} Flink log files in container {containerId.Substring(0, 12)}");
+            
+            var componentType = GetContainerComponentType(containerId);
+            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            
+            foreach (var logFile in logFiles)
+            {
+                CopyIndividualLogFile(containerId, logFile, testLogsDir, componentType, dateStamp);
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️ Error copying logs from container {containerId.Substring(0, 12)}: {ex.Message}");
+        }
+    }
+    
+    private static string[]? GetLogFilesFromContainer(string containerId)
+    {
+        var checkLogsPsi = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = $"exec {containerId} sh -c \"ls /opt/flink/log/*.log* 2>/dev/null || echo ''\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        
+        using var checkProcess = Process.Start(checkLogsPsi);
+        if (checkProcess == null) return null;
+        
+        var logFiles = checkProcess.StandardOutput.ReadToEnd().Trim();
+        checkProcess.WaitForExit();
+        
+        return string.IsNullOrWhiteSpace(logFiles)
+            ? null
+            : logFiles.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+    }
+    
+    private static string GetContainerComponentType(string containerId)
+    {
+        var getNamePsi = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = $"inspect --format={{{{.Name}}}} {containerId}",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            CreateNoWindow = true
+        };
+        
+        using var getNameProcess = Process.Start(getNamePsi);
+        var containerName = getNameProcess?.StandardOutput.ReadToEnd().Trim().TrimStart('/') ?? "unknown";
+        getNameProcess?.WaitForExit();
+        
+        if (containerName.Contains("jobmanager", StringComparison.OrdinalIgnoreCase))
+            return "jobmanager";
+        if (containerName.Contains("taskmanager", StringComparison.OrdinalIgnoreCase) ||
+            containerName.Contains("taskexecutor", StringComparison.OrdinalIgnoreCase))
+            return "taskmanager";
+        if (containerName.Contains("sql-gateway", StringComparison.OrdinalIgnoreCase))
+            return "sql-gateway";
+        
+        return "unknown";
+    }
+    
+    private static void CopyIndividualLogFile(string containerId, string logFile, string testLogsDir,
+        string componentType, string dateStamp)
+    {
+        var fileName = Path.GetFileName(logFile);
+        var destName = fileName.StartsWith("FlinkIRRunner.", StringComparison.OrdinalIgnoreCase)
+            ? fileName
+            : $"Flink.{componentType}.log.{dateStamp}";
+        
+        var destPath = Path.Combine(testLogsDir, destName);
+        
+        var copyPsi = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = $"cp {containerId}:{logFile} \"{destPath}\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        
+        using var copyProcess = Process.Start(copyPsi);
+        if (copyProcess == null) return;
+        
+        copyProcess.WaitForExit(TimeSpan.FromSeconds(5));
+        
+        if (copyProcess.ExitCode == 0 && File.Exists(destPath))
+        {
+            var fileInfo = new FileInfo(destPath);
+            TestContext.WriteLine($"   ✅ Copied {fileName} as {destName} ({fileInfo.Length} bytes)");
+        }
+        else
+        {
+            var error = copyProcess.StandardError.ReadToEnd();
+            TestContext.WriteLine($"   ⚠️ Failed to copy {fileName}: {error}");
+        }
     }
     
     /// <summary>
@@ -243,6 +584,29 @@ public abstract class LearningCourseTestBase
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        
+        // Set Kafka environment variables for exercise process
+        // Two different addresses needed because of Docker networking:
+        // 1. KAFKA_BOOTSTRAP_SERVERS: For exercise's own Kafka operations (producer/consumer on host)
+        // 2. KAFKA_FLINK_BOOTSTRAP_SERVERS: For Flink job configurations (container-to-container)
+        //
+        // Docker bridge network doesn't support DNS between containers, so Flink needs actual container IP
+        if (string.IsNullOrEmpty(KafkaHostBootstrapServers) || string.IsNullOrEmpty(KafkaFlinkBootstrapServers))
+        {
+            throw new InvalidOperationException("Kafka bootstrap servers not discovered. Ensure GlobalSetUp ran successfully.");
+        }
+        
+        psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
+        psi.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
+        
+        // Set LOG_FILE_PATH to ensure all logs go to LocalTesting/test-logs/
+        // Use absolute path to ensure logs are written to the correct location
+        var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
+        psi.Environment["LOG_FILE_PATH"] = testLogsDir;
+        
+        TestContext.WriteLine($"🔧 Setting KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers} for exercise (host access)");
+        TestContext.WriteLine($"🔧 Setting KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers} for Flink jobs (container access)");
+        TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 
         using var process = Process.Start(psi);
         if (process == null)
@@ -275,4 +639,5 @@ public abstract class LearningCourseTestBase
 
         return (process.ExitCode, output, error);
     }
+    
 }

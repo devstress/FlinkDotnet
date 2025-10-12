@@ -1,0 +1,365 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Allow disabling the Java runner build with /p:BuildFlinkRunner=false -->
+    <BuildFlinkRunner>true</BuildFlinkRunner>
+    <!-- Define the FlinkIRRunner directory relative to this project -->
+    <FlinkIRRunnerDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\FlinkIRRunner'))</FlinkIRRunnerDir>
+    <!-- Define the output JAR path (Java 17 only) -->
+    <FlinkIRRunnerJarPath17>$(FlinkIRRunnerDir)\target\flink-ir-runner-java17.jar</FlinkIRRunnerJarPath17>
+    <!-- Define the local JAR copy path -->
+    <LocalJarPath>$(MSBuildProjectDirectory)\flink-ir-runner-java17.jar</LocalJarPath>
+  </PropertyGroup>
+
+  <!-- Maven and JDK auto-installation configuration -->
+  <PropertyGroup>
+    <MavenVersion>3.9.11</MavenVersion>
+    <MavenDownloadUrl>https://dlcdn.apache.org/maven/maven-3/$(MavenVersion)/binaries/apache-maven-$(MavenVersion)-bin.zip</MavenDownloadUrl>
+    <ToolsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\tools'))</ToolsDir>
+    <MavenInstallDir>$(ToolsDir)\apache-maven-$(MavenVersion)</MavenInstallDir>
+    <MavenBinPath>$(MavenInstallDir)\bin</MavenBinPath>
+    <MavenZipPath>$(ToolsDir)\maven-$(MavenVersion).zip</MavenZipPath>
+    
+    <!-- JDK 17 auto-installation (Adoptium Temurin) -->
+    <JdkVersion>17.0.13</JdkVersion>
+    <JdkBuildVersion>11</JdkBuildVersion>
+    <!-- Windows x64 -->
+    <JdkDownloadUrl Condition="'$(OS)' == 'Windows_NT'">https://github.com/adoptium/temurin17-binaries/releases/download/jdk-$(JdkVersion)%2B$(JdkBuildVersion)/OpenJDK17U-jdk_x64_windows_hotspot_$(JdkVersion)_$(JdkBuildVersion).zip</JdkDownloadUrl>
+    <!-- Linux x64 -->
+    <JdkDownloadUrl Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">https://github.com/adoptium/temurin17-binaries/releases/download/jdk-$(JdkVersion)%2B$(JdkBuildVersion)/OpenJDK17U-jdk_x64_linux_hotspot_$(JdkVersion)_$(JdkBuildVersion).tar.gz</JdkDownloadUrl>
+    <!-- macOS x64 -->
+    <JdkDownloadUrl Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">https://github.com/adoptium/temurin17-binaries/releases/download/jdk-$(JdkVersion)%2B$(JdkBuildVersion)/OpenJDK17U-jdk_x64_mac_hotspot_$(JdkVersion)_$(JdkBuildVersion).tar.gz</JdkDownloadUrl>
+    
+    <JdkInstallDir>$(ToolsDir)\jdk-$(JdkVersion)+$(JdkBuildVersion)</JdkInstallDir>
+    <JdkZipPath>$(ToolsDir)\jdk-$(JdkVersion).zip</JdkZipPath>
+    <JdkTarPath>$(ToolsDir)\jdk-$(JdkVersion).tar.gz</JdkTarPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" />
+  </ItemGroup>
+
+  <!--
+    Ensure Maven and Java are available before building.
+    This target automatically downloads and installs Maven and JDK 17 if not found.
+  -->
+  <Target Name="EnsureBuildTools" BeforeTargets="BuildFlinkRunner" Condition="'$(BuildFlinkRunner)' != 'false'">
+    <Message Text="(FlinkDotNet.JobGateway) Checking for build tools..." Importance="High" />
+
+    <!-- Detect OS for cross-platform detection -->
+    <PropertyGroup>
+      <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+      <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+      <IsMacOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsMacOS>
+    </PropertyGroup>
+
+    <!-- ==================== JDK AUTO-INSTALLATION ==================== -->
+    <Message Text="(FlinkDotNet.JobGateway) Checking for Java JDK..." Importance="High" />
+    
+    <!-- Check if JAVA_HOME is set and valid for Java 17+ -->
+    <PropertyGroup>
+      <!-- Check if current JAVA_HOME exists (Windows: java.exe, Linux/macOS: java) -->
+      <JavaHomeExists Condition="'$(JAVA_HOME)' != '' AND (('$(IsWindows)' == 'true' AND Exists('$(JAVA_HOME)\bin\java.exe')) OR (('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(JAVA_HOME)/bin/java')))">true</JavaHomeExists>
+      
+      <!-- Check if JAVA_HOME version is old (JDK 1.8 or older) - these are incompatible -->
+      <JavaHomeIsOldVersion Condition="'$(JavaHomeExists)' == 'true' AND ($([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('/8/')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('\8\')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jre-1.8')))">true</JavaHomeIsOldVersion>
+      
+      <!-- JAVA_HOME is valid only if it exists AND is not an old version -->
+      <JavaHomeIsValid Condition="'$(JavaHomeExists)' == 'true' AND '$(JavaHomeIsOldVersion)' != 'true'">true</JavaHomeIsValid>
+      
+      <!-- Try to detect existing Java installations (Windows priority: JDK 17 > JDK 21 > JDK 25) -->
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND Exists('C:\Program Files\Java\jdk-17\bin\java.exe')">C:\Program Files\Java\jdk-17</DetectedJavaHome>
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-21\bin\java.exe')">C:\Program Files\Java\jdk-21</DetectedJavaHome>
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-25\bin\java.exe')">C:\Program Files\Java\jdk-25</DetectedJavaHome>
+      
+      <!-- Check if auto-installed JDK exists in tools/ directory -->
+      <AutoInstalledJdkExists Condition="Exists('$(JdkInstallDir)\bin\java.exe') OR Exists('$(JdkInstallDir)/bin/java')">true</AutoInstalledJdkExists>
+    </PropertyGroup>
+
+    <!-- Download and install JDK 17 if no compatible Java found (Windows only) -->
+    <Message Text="(FlinkDotNet.JobGateway) No compatible Java found. Installing JDK $(JdkVersion) to $(JdkInstallDir)..."
+             Importance="High"
+             Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true'" />
+
+    <!-- Create tools directory if it doesn't exist -->
+    <MakeDir Directories="$(ToolsDir)"
+             Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true'" />
+
+    <!-- Download JDK ZIP (Windows only - use powershell for Windows PowerShell 5.1 compatibility) -->
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading JDK $(JdkVersion) from $(JdkDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(JdkDownloadUrl)' -OutFile '$(JdkZipPath)' -UseBasicParsing&quot;"
+          Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkZipPath)')"
+          StandardOutputImportance="High" />
+
+    <!-- Extract JDK ZIP (Windows only) -->
+    <Message Text="(FlinkDotNet.JobGateway) Extracting JDK to $(ToolsDir)..."
+             Importance="High"
+             Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkZipPath)')" />
+    
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(JdkZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
+          Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkZipPath)')"
+          StandardOutputImportance="High" />
+
+    <!-- Verify JDK was extracted successfully (Windows) -->
+    <Error Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkInstallDir)\bin\java.exe')"
+           Text="JDK installation failed. java.exe not found at $(JdkInstallDir)\bin\java.exe" />
+
+    <Message Text="(FlinkDotNet.JobGateway) JDK $(JdkVersion) successfully installed to $(JdkInstallDir)"
+             Importance="High"
+             Condition="'$(IsWindows)' == 'true' AND Exists('$(JdkInstallDir)\bin\java.exe')" />
+
+    <!-- Error if Java not found on Linux/macOS (should be pre-installed in CI) -->
+    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JavaHomeIsValid)' != 'true' AND '$(JAVA_HOME)' == ''"
+           Text="Java not found on Linux/macOS. Please install JDK 17+ or ensure JAVA_HOME is set. On GitHub Actions, Java is installed via actions/setup-java@v4." />
+
+    <!-- Re-check if auto-installed JDK exists after installation attempt -->
+    <PropertyGroup>
+      <AutoInstalledJdkExists Condition="Exists('$(JdkInstallDir)\bin\java.exe') OR Exists('$(JdkInstallDir)/bin/java')">true</AutoInstalledJdkExists>
+    </PropertyGroup>
+
+    <!-- Determine effective JAVA_HOME for build -->
+    <PropertyGroup>
+      <!-- Priority 1: Use valid existing JAVA_HOME -->
+      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
+      <!-- Priority 2: Use detected Java installation -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
+      <!-- Priority 3: Use auto-installed JDK (re-check after installation) -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(AutoInstalledJdkExists)' == 'true'">$(JdkInstallDir)</EffectiveJavaHome>
+      <!-- Priority 4: On Linux/macOS, use JAVA_HOME even if validation failed (GitHub Actions sets valid paths) -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JAVA_HOME)' != ''">$(JAVA_HOME)</EffectiveJavaHome>
+    </PropertyGroup>
+
+    <Message Text="(FlinkDotNet.JobGateway) Using JAVA_HOME: $(EffectiveJavaHome)" Importance="High" Condition="'$(EffectiveJavaHome)' != ''" />
+    <Message Text="(FlinkDotNet.JobGateway) INFO: Using auto-installed/detected Java instead of JAVA_HOME '$(JAVA_HOME)'"
+             Importance="Low"
+             Condition="'$(JavaHomeIsValid)' != 'true' AND '$(EffectiveJavaHome)' != ''" />
+    
+    <Error Condition="'$(EffectiveJavaHome)' == ''"
+           Text="JAVA_HOME could not be determined. Current JAVA_HOME: '$(JAVA_HOME)'. Please install JDK 17+ manually or ensure JAVA_HOME is set correctly." />
+
+    <!-- ==================== MAVEN AUTO-INSTALLATION ==================== -->
+    <Message Text="(FlinkDotNet.JobGateway) Checking for Maven..." Importance="High" />
+
+    <!-- Check if Maven exists in PATH and get full path (Windows) -->
+    <Exec Command="where mvn"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(IsWindows)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="MavenFullPathRaw" />
+    </Exec>
+
+    <!-- Check if Maven exists in PATH and get full path (Linux/macOS) -->
+    <Exec Command="which mvn"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="MavenFoundExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="MavenFullPathRaw" />
+    </Exec>
+
+    <PropertyGroup>
+      <MavenNotFound Condition="'$(MavenFoundExitCode)' != '0'">true</MavenNotFound>
+      <MavenAlreadyInstalled Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd') OR Exists('$(MavenInstallDir)/bin/mvn')">true</MavenAlreadyInstalled>
+    </PropertyGroup>
+
+    <!-- Skip Maven download if already in PATH (e.g., from GitHub Actions) -->
+    <Message Text="(FlinkDotNet.JobGateway) Maven found in PATH, skipping download."
+             Importance="High"
+             Condition="'$(MavenNotFound)' != 'true'" />
+
+    <!-- Download and install Maven if not found in PATH and not already in tools/ (Windows only) -->
+    <Message Text="(FlinkDotNet.JobGateway) Maven not found in PATH. Installing Maven $(MavenVersion) to $(MavenInstallDir)..."
+             Importance="High"
+             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+
+    <!-- Create tools directory if it doesn't exist -->
+    <MakeDir Directories="$(ToolsDir)" Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+
+    <!-- Download Maven ZIP (Windows only - use powershell for Windows PowerShell 5.1 compatibility) -->
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading Maven from $(MavenDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(MavenDownloadUrl)' -OutFile '$(MavenZipPath)' -UseBasicParsing&quot;"
+          Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
+          StandardOutputImportance="High" />
+
+    <!-- Extract Maven ZIP (Windows only) -->
+    <Message Text="(FlinkDotNet.JobGateway) Extracting Maven to $(ToolsDir)..."
+             Importance="High"
+             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
+    
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(MavenZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
+          Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
+          StandardOutputImportance="High" />
+
+    <!-- Verify Maven was extracted successfully (Windows) -->
+    <Error Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenInstallDir)\bin\mvn.cmd')"
+           Text="Maven installation failed. mvn.cmd not found at $(MavenInstallDir)\bin\mvn.cmd" />
+
+    <Message Text="(FlinkDotNet.JobGateway) Maven successfully installed to $(MavenInstallDir)"
+             Importance="High"
+             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')" />
+
+    <!-- Error if Maven not found on Linux/macOS (should be pre-installed in CI) -->
+    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'"
+           Text="Maven not found in PATH on Linux/macOS. Please install Maven 3.9.6+ or ensure it's available in PATH. On GitHub Actions, Maven is installed via stCarolas/setup-maven@v4." />
+
+    <!-- Determine which Maven command to use (cross-platform) -->
+    <PropertyGroup>
+      <!-- Windows 'where' command returns multiple matches separated by newlines -->
+      <!-- Just skip parsing 'where' output and use simple approach: mvn.cmd on Windows, mvn on Linux -->
+      <!-- Priority 1: Use mvn.cmd if found in PATH on Windows -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
+      <!-- Priority 2: Use mvn if found in PATH on Linux/macOS -->
+      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
+      <!-- Priority 3: Use locally installed Maven if it exists (Windows) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
+      <!-- Priority 4: Use locally installed Maven if it exists (Linux/macOS) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenInstallDir)/bin/mvn')">$(MavenInstallDir)/bin/mvn</MavenCommand>
+      <!-- Fallback: Use mvn.cmd on Windows, mvn on Linux/macOS -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
+    </PropertyGroup>
+
+    <!-- Ensure JAVA_HOME is set and valid for Maven (cross-platform) -->
+    <PropertyGroup>
+      <!-- Check if current JAVA_HOME exists (Windows: java.exe, Linux/macOS: java) -->
+      <JavaHomeExists Condition="'$(JAVA_HOME)' != '' AND (('$(IsWindows)' == 'true' AND Exists('$(JAVA_HOME)\bin\java.exe')) OR (('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(JAVA_HOME)/bin/java')))">true</JavaHomeExists>
+      
+      <!-- Check if JAVA_HOME version is compatible (JDK 17+, not JDK 1.8 or older) -->
+      <!-- We check by looking for version indicators in the path or by exclusion of old versions -->
+      <JavaHomeIsOldVersion Condition="'$(JavaHomeExists)' == 'true' AND ($([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('/8/')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('\8\')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jre-1.8')))">true</JavaHomeIsOldVersion>
+      
+      <!-- JAVA_HOME is valid only if it exists AND is not an old version -->
+      <JavaHomeIsValid Condition="'$(JavaHomeExists)' == 'true' AND '$(JavaHomeIsOldVersion)' != 'true'">true</JavaHomeIsValid>
+      
+      <!-- If JAVA_HOME is invalid or not set, try to detect Java installation (Windows only) -->
+      <!-- Prioritize JDK 17 for compatibility and stability -->
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND Exists('C:\Program Files\Java\jdk-17\bin\java.exe')">C:\Program Files\Java\jdk-17</DetectedJavaHome>
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-21\bin\java.exe')">C:\Program Files\Java\jdk-21</DetectedJavaHome>
+      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-25\bin\java.exe')">C:\Program Files\Java\jdk-25</DetectedJavaHome>
+      
+      <!-- Use detected Java if current JAVA_HOME is invalid, otherwise use JAVA_HOME as-is -->
+      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
+      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
+      <!-- On Linux/macOS, if JAVA_HOME is set but invalid detection failed, still use it (GitHub Actions sets valid paths) -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JAVA_HOME)' != ''">$(JAVA_HOME)</EffectiveJavaHome>
+    </PropertyGroup>
+
+    <Message Text="(FlinkDotNet.JobGateway) Using JAVA_HOME: $(EffectiveJavaHome)" Importance="High" Condition="'$(EffectiveJavaHome)' != ''" />
+    <Message Text="(FlinkDotNet.JobGateway) INFO: Using detected Java instead of JAVA_HOME '$(JAVA_HOME)'"
+             Importance="Low"
+             Condition="'$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' != ''" />
+    
+    <Error Condition="'$(EffectiveJavaHome)' == ''"
+           Text="JAVA_HOME is not set correctly and Java could not be auto-detected. Current JAVA_HOME: '$(JAVA_HOME)'. Please set JAVA_HOME to a valid JDK installation or install Java 17+." />
+
+    <!-- Verify Maven works with the effective JAVA_HOME -->
+    <Message Text="(FlinkDotNet.JobGateway) Verifying Maven installation with Java..." Importance="High" />
+    <Exec Command="&quot;$(MavenCommand)&quot; -version"
+          StandardOutputImportance="High"
+          EnvironmentVariables="JAVA_HOME=$(EffectiveJavaHome)"
+          ContinueOnError="true"
+          IgnoreExitCode="true" />
+    
+    <!-- Log success/failure but don't fail build - Maven will be tested during actual JAR build -->
+    <Message Text="(FlinkDotNet.JobGateway) Maven verification completed." Importance="High" />
+
+    <Message Text="(FlinkDotNet.JobGateway) Build tools verification complete. Maven: $(MavenCommand)" Importance="High" />
+  </Target>
+
+  <!--
+    Integrate the IR Java runner build directly into the Gateway build.
+    This directly uses Maven to build the FlinkIRRunner project.
+    
+    Override:
+      dotnet build -p:BuildFlinkRunner=false   - skip Java step
+  -->
+  <Target Name="BuildFlinkRunner"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(BuildFlinkRunner)' != 'false'">
+
+    <!-- Ensure FlinkIRRunner project exists -->
+    <Error Condition="!Exists('$(FlinkIRRunnerDir)\pom.xml')"
+           Text="FlinkIRRunner project missing. Expected pom.xml at $(FlinkIRRunnerDir)." />
+
+    <!-- Maven is now ensured by EnsureBuildTools target -->
+
+    <!-- Build Java 17 jar for Flink 2.1.0 compatibility -->
+    <Message Text="(FlinkDotNet.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" />
+    <!-- Set JAVA_HOME environment variable for Maven to use correct JDK -->
+    <PropertyGroup>
+      <MavenJava17Command Condition="'$(IsWindows)' == 'true'">powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$env:JAVA_HOME='$(EffectiveJavaHome)'; $env:PATH='$(EffectiveJavaHome)\bin;' + $env:PATH; $env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B package -DskipTests -Pjava17&quot;</MavenJava17Command>
+      <MavenJava17Command Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">/bin/bash -c "JAVA_HOME='$(EffectiveJavaHome)' PATH='$(EffectiveJavaHome)/bin:$PATH' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17"</MavenJava17Command>
+    </PropertyGroup>
+    <Exec Command="$(MavenJava17Command)"
+          WorkingDirectory="$(FlinkIRRunnerDir)"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High">
+      <Output TaskParameter="ExitCode" PropertyName="Java17BuildExitCode" />
+    </Exec>
+
+    <!-- Validate JAR output -->
+    <Error Condition="!Exists('$(FlinkIRRunnerJarPath17)')"
+           Text="FlinkIRRunner JAR missing after Maven build. Check Maven output above for errors." />
+
+    <!-- Copy JAR next to the Gateway project for inclusion -->
+    <Copy SourceFiles="$(FlinkIRRunnerJarPath17)"
+          DestinationFiles="$(LocalJarPath)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(FlinkIRRunnerJarPath17)')" />
+    
+    <!-- Log JAR outcome -->
+    <Message Text="(FlinkDotNet.JobGateway) Java 17 JAR ready at $(LocalJarPath)" Importance="High" Condition="Exists('$(LocalJarPath)')" />
+  </Target>
+
+  <!-- Ensure the JAR is copied to the build output folder deterministically after build -->
+  <Target Name="CopyRunnerJarToOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <_OutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_OutDir>
+    </PropertyGroup>
+
+    <!-- Copy Java 17 JAR -->
+    <Copy SourceFiles="$(LocalJarPath)"
+          DestinationFiles="$(_OutDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(LocalJarPath)')" />
+  </Target>
+
+  <!-- Copy runner JAR into the publish directory so CI artifacts from publish include the jar -->
+  <Target Name="CopyRunnerJarToPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_PublishDir>$([MSBuild]::EnsureTrailingSlash('$(PublishDir)'))</_PublishDir>
+    </PropertyGroup>
+
+    <!-- Copy Java 17 JAR -->
+    <Copy SourceFiles="$(LocalJarPath)"
+          DestinationFiles="$(_PublishDir)flink-ir-runner-java17.jar"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(LocalJarPath)')" />
+  </Target>
+
+  <!-- Keep item for IDE visibility; do not rely on evaluation-time Exists for copying to output -->
+  <ItemGroup>
+    <None Include="flink-ir-runner-java17.jar" Condition="Exists('$(LocalJarPath)')" />
+  </ItemGroup>
+
+</Project>

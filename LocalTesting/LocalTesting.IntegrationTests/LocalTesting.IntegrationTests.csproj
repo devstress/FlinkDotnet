@@ -42,14 +42,14 @@
              Targets="Build" />
     
     <!-- Build Flink.JobGateway in Release (required dependency) -->
-    <MSBuild Projects="..\..\FlinkDotNet\Flink.JobGateway\Flink.JobGateway.csproj"
+    <MSBuild Projects="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj"
              Properties="Configuration=Release"
              Targets="Build" />
     
     <Message Text="[LocalTesting.IntegrationTests] FlinkDotNet projects built in Release configuration successfully" Importance="high" />
   </Target>
 
-  <!-- Import Maven configuration from Flink.JobGateway (reuse auto-download logic) -->
+  <!-- Import Maven configuration from FlinkDotNet.JobGateway (reuse auto-download logic) -->
   <PropertyGroup>
     <MavenVersion>3.9.11</MavenVersion>
     <ToolsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\tools'))</ToolsDir>
@@ -58,7 +58,7 @@
     <JavaHome>$(JAVA_HOME)</JavaHome>
   </PropertyGroup>
 
-  <!-- MSBuild Target: Ensure Maven and Java are available (reuse logic from Flink.JobGateway) -->
+  <!-- MSBuild Target: Ensure Maven and Java are available (reuse logic from FlinkDotNet.JobGateway) -->
   <Target Name="EnsureMavenForTests" BeforeTargets="BuildNativeFlinkJob">
     <Message Text="[LocalTesting.IntegrationTests] Checking for Maven and Java..." Importance="High" />
 
@@ -107,7 +107,7 @@
 
     <!-- Error if Maven not found anywhere (system PATH or tools directory) -->
     <Error Condition="'$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'"
-           Text="Maven not available. Please build Flink.JobGateway first (which will auto-install Maven), or install Maven 3.9.11+ manually and add to PATH." />
+           Text="Maven not available. Please build FlinkDotNet.JobGateway first (which will auto-install Maven), or install Maven 3.9.11+ manually and add to PATH." />
 
     <!-- Determine which Maven command to use -->
     <PropertyGroup>
@@ -196,7 +196,7 @@
   <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->
   <Target Name="CopyFlinkRunnerJarsToTestOutput" AfterTargets="Build">
     <PropertyGroup>
-      <_GatewayOutputDir>..\..\FlinkDotNet\Flink.JobGateway\bin\$(Configuration)\net9.0</_GatewayOutputDir>
+      <_GatewayOutputDir>..\..\FlinkDotNet\FlinkDotNet.JobGateway\bin\$(Configuration)\net9.0</_GatewayOutputDir>
       <_TestOutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_TestOutDir>
     </PropertyGroup>
 

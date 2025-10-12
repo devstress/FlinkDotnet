@@ -3,10 +3,10 @@
 Common issues and fixes:
 
 - Runner jar not found
-  - Build `Flink.JobGateway` which prebuilds and copies the runner jar.
-    - `dotnet build FlinkDotNet/Flink.JobGateway/Flink.JobGateway.csproj -c Release`
+  - Build `FlinkDotNet.JobGateway` which prebuilds and copies the runner jar.
+    - `dotnet build FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj -c Release`
   - Ensure Java and Maven are installed and available on PATH (required by the prebuild).
-  - Optional: disable prebuild with `/p:BuildFlinkRunner=false` and either place a jar at `FlinkDotNet/Flink.JobGateway/flink-ir-runner.jar` or set `FLINK_RUNNER_JAR_PATH`.
+  - Optional: disable prebuild with `/p:BuildFlinkRunner=false` and either place a jar at `FlinkDotNet/FlinkDotNet.JobGateway/flink-ir-runner.jar` or set `FLINK_RUNNER_JAR_PATH`.
 
 - Gateway cannot reach Flink
   - Set `FLINK_CLUSTER_HOST=localhost` when exposing JM port to host (LocalTesting).

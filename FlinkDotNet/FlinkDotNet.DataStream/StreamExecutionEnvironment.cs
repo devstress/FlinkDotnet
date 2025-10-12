@@ -23,6 +23,8 @@ using FlinkDotNet.Common;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace FlinkDotNet.DataStream
 {
@@ -35,6 +37,48 @@ namespace FlinkDotNet.DataStream
     {
         private readonly ExecutionConfig _executionConfig;
         private readonly ILogger? _logger;
+        private static readonly Serilog.ILogger _serilogLogger = CreateLogger();
+        
+        private static Serilog.ILogger CreateLogger()
+        {
+            var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
+            var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
+            var logFile = System.IO.Path.Combine(logFilePath, $"FlinkDotnet.log.{today}");
+            
+            // Clean up old log files (older than 1 day)
+            try
+            {
+                if (System.IO.Directory.Exists(logFilePath))
+                {
+                    var logFiles = System.IO.Directory.GetFiles(logFilePath, "FlinkDotnet.log.*");
+                    foreach (var file in logFiles)
+                    {
+                        var fileInfo = new System.IO.FileInfo(file);
+                        if (fileInfo.LastWriteTimeUtc < System.DateTime.UtcNow.AddDays(-1))
+                        {
+                            System.IO.File.Delete(file);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore cleanup errors
+            }
+            
+            return new LoggerConfiguration()
+                .WriteTo.File(
+                    path: logFile,
+                    rollingInterval: RollingInterval.Infinite,
+                    rollOnFileSizeLimit: false,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                    fileSizeLimitBytes: 100_000_000,
+                    shared: true)
+                .WriteTo.Console()
+                .MinimumLevel.Debug()
+                .CreateLogger();
+        }
+        
         private int _bufferTimeoutMillis = 100;
         private bool _operatorChainingEnabled = true;
         private long _checkpointInterval = -1;
@@ -42,6 +86,7 @@ namespace FlinkDotNet.DataStream
         private bool _reactiveModeEnabled = false;
         private string? _savepointPath;
         private JobDefinition? _activeJob;
+        private OperationCapture? _operationCapture;
 
         /// <summary>
         /// Creates a new StreamExecutionEnvironment.
@@ -52,6 +97,7 @@ namespace FlinkDotNet.DataStream
         {
             _executionConfig = new ExecutionConfig(configuration ?? new Configuration());
             _logger = logger;
+            _serilogLogger.Information("[StreamExecutionEnvironment] Created new environment instance");
         }
 
         internal void SetActiveJob(JobDefinition job)
@@ -70,10 +116,27 @@ namespace FlinkDotNet.DataStream
 
         /// <summary>
         /// Creates a Kafka string source compatible with Apache Flink via the IR Runner.
-        /// Use with expression-based Map/Filter and SinkToKafka methods on DataStream.
+        /// Supports both expression-based Map/Filter/SinkToKafka AND native DataStream API with IMapFunction.
         /// </summary>
         public DataStream<string> FromKafka(string topic, string? bootstrapServers = null, string? groupId = null, string startingOffsets = "latest")
         {
+            _serilogLogger.Information("[FromKafka] Called with topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
+                topic, bootstrapServers, groupId, startingOffsets);
+            
+            if (string.IsNullOrWhiteSpace(bootstrapServers))
+            {
+                _serilogLogger.Error("[FromKafka] Bootstrap servers is null or whitespace!");
+                throw new ArgumentException(
+                    "Kafka bootstrap servers must be provided via bootstrapServers parameter.",
+                    nameof(bootstrapServers));
+            }
+            
+            // Initialize operation capture for native API usage
+            _operationCapture = new OperationCapture();
+            _serilogLogger.Debug("[FromKafka] Calling OperationCapture.CaptureKafkaSource with bootstrapServers={BootstrapServers}", bootstrapServers);
+            _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
+            
+            _serilogLogger.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
             var jd = new JobDefinition
             {
                 Source = new KafkaSourceDefinition
@@ -91,8 +154,49 @@ namespace FlinkDotNet.DataStream
                     Version = "1.0"
                 }
             };
+            _serilogLogger.Information("[FromKafka] JobDefinition created with Source.BootstrapServers={BootstrapServers}", (jd.Source as KafkaSourceDefinition)?.BootstrapServers);
             SetActiveJob(jd);
-            return new DataStream<string>(jd, this);
+            
+            var dataStream = new DataStream<string>(jd, this);
+            
+            // Attach operation capture to enable native API (Map with IMapFunction)
+            dataStream.AttachOperationCapture(_operationCapture);
+            
+            _serilogLogger.Information("[FromKafka] Returning DataStream with bootstrap servers={BootstrapServers}", bootstrapServers);
+            return dataStream;
+        }
+
+        /// <summary>
+        /// Creates a Kafka source with custom deserialization function.
+        /// This enables reading custom objects (like InputMessage) from Kafka.
+        /// Corresponds to Baeldung tutorial sections 7-11.
+        /// </summary>
+        /// <typeparam name="T">The type of elements to deserialize</typeparam>
+        /// <param name="topic">Kafka topic name</param>
+        /// <param name="bootstrapServers">Kafka bootstrap servers</param>
+        /// <param name="groupId">Consumer group ID</param>
+        /// <param name="deserializer">Deserialization function (byte[] -> T or string -> T)</param>
+        /// <param name="startingOffsets">Starting offset strategy (earliest/latest)</param>
+        /// <returns>DataStream of deserialized elements</returns>
+        public DataStream<T> AddKafkaSource<T>(
+            string topic,
+            string bootstrapServers,
+            string groupId,
+            System.Func<string, T> deserializer,
+            string startingOffsets = "earliest")
+        {
+            // Initialize operation capture for native API usage
+            _operationCapture = new OperationCapture();
+            _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId, startingOffsets, deserializer);
+
+            // Create a source function that uses the deserializer
+            var sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
+            var dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
+            
+            // Attach operation capture to the stream
+            dataStream.AttachOperationCapture(_operationCapture);
+            
+            return dataStream;
         }
 
         /// <summary>
@@ -303,20 +407,58 @@ namespace FlinkDotNet.DataStream
         {
             var name = jobName ?? _activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
             _logger?.LogInformation("Starting execution of job: {JobName}", name);
+            _serilogLogger.Information("[ExecuteAsync] Starting execution of job: {JobName}", name);
 
-            if (_activeJob == null)
+            JobDefinition jobToSubmit;
+
+            // Check if we have captured operations from native API usage
+            if (_operationCapture != null && _operationCapture.HasOperations())
             {
-                throw new InvalidOperationException("No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before Execute().");
+                // Translate captured operations to JobDefinition
+                var jobId = System.Guid.NewGuid().ToString();
+                _serilogLogger.Information("[ExecuteAsync] Translating native DataStream API operations to JobDefinition with jobId={JobId}", jobId);
+                jobToSubmit = _operationCapture.ToJobDefinition(jobId, name);
+                _serilogLogger.Information("[ExecuteAsync] After translation: Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
+                _logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
+            }
+            else if (_activeJob != null)
+            {
+                // Use existing JobDefinition (IR-backed stream)
+                _serilogLogger.Information("[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}", (_activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
+                jobToSubmit = _activeJob;
+                jobToSubmit.Metadata.JobName = name;
+            }
+            else
+            {
+                _serilogLogger.Error("[ExecuteAsync] No Flink-compatible job defined!");
+                throw new InvalidOperationException("No Flink-compatible job is defined. Use AddKafkaSource(...) or FromKafka(...) before Execute().");
             }
 
-            _activeJob.Metadata.JobName = name;
-
+            _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
             var gateway = new FlinkJobGatewayService();
-            var submit = await gateway.SubmitJobAsync(_activeJob, cancellationToken).ConfigureAwait(false);
+            
+            JobSubmissionResult submit;
+            try
+            {
+                submit = await gateway.SubmitJobAsync(jobToSubmit, cancellationToken).ConfigureAwait(false);
+                _serilogLogger.Information("[ExecuteAsync] Job submission completed: Success={Success}, FlinkJobId={FlinkJobId}, Error={Error}",
+                    submit.Success, submit.FlinkJobId, submit.ErrorMessage);
+            }
+            catch (Exception ex)
+            {
+                _serilogLogger.Error(ex, "[ExecuteAsync] Exception during job submission to gateway for job {JobId}", jobToSubmit.Metadata.JobId);
+                _logger?.LogError(ex, "Failed to submit job {JobId} to gateway", jobToSubmit.Metadata.JobId);
+                throw new InvalidOperationException($"Failed to submit job {jobToSubmit.Metadata.JobId} to Flink Job Gateway", ex);
+            }
+
+            if (!submit.Success)
+            {
+                _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
+            }
 
             return new JobExecutionResult
             {
-                JobId = submit.FlinkJobId ?? _activeJob.Metadata.JobId,
+                JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId,
                 JobName = name,
                 Success = submit.Success,
                 StartTime = DateTime.UtcNow,

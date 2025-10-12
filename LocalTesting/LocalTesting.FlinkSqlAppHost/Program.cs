@@ -23,6 +23,12 @@ const string JavaOpenOptions = "--add-opens=java.base/java.lang=ALL-UNNAMED --ad
 
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
+var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
+
+// Ensure test-logs directory exists and set LOG_FILE_PATH for all components
+Directory.CreateDirectory(testLogsDir);
+Environment.SetEnvironmentVariable("LOG_FILE_PATH", testLogsDir);
+Console.WriteLine($"📁 Log files will be written to: {testLogsDir}");
 
 var gatewayJarPath = FindGatewayJarPath(repoRoot);
 if (diagnosticsVerbose && File.Exists(gatewayJarPath))
@@ -35,7 +41,10 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Configure Kafka with FIXED external port 9093
-// Both tests and Flink jobs connect to localhost:9093 (mapped to container port 9092)
+// CRITICAL: Use WithEndpoint to ensure external port is FIXED at 9093
+// - Internal listener (PLAINTEXT): kafka:9092 (container-to-container)
+// - External listener (PLAINTEXT_HOST): localhost:9093 (host machine access)
+// Tests and external clients MUST use localhost:9093
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
 var kafka = builder.AddKafka("kafka");
 #pragma warning restore S1481
@@ -54,6 +63,7 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
     // REMOVED: .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     // REASON: FlinkJobRunner.java prioritizes environment variable over job definition
     // This caused jobs to use wrong Kafka address (localhost:17901 instead of kafka:9092)
@@ -75,13 +85,17 @@ var jobManager = jobManagerBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
     .WithArgs("jobmanager");
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
-// All ports are hardcoded - no WaitFor dependencies needed for parallel startup
+// CRITICAL: TaskManager must wait for both JobManager and Kafka to be ready
+// - WaitFor(jobManager): Ensures TaskManager can register with JobManager
+// - WaitFor(kafka): Ensures Kafka is ready before TaskManager starts processing jobs
 builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: 0.0.0.0\n" +
@@ -98,6 +112,7 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
     .WithReference(kafka)
     .WithArgs("taskmanager");
 
@@ -118,6 +133,7 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
 
 var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
     .WithEnvironment("FLINK_PROPERTIES",
         "jobmanager.rpc.address: flink-jobmanager\n" +
         "rest.address: flink-jobmanager\n" +
@@ -134,6 +150,7 @@ var sqlGateway = sqlGatewayBuilder
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
@@ -154,12 +171,13 @@ var sqlGateway = sqlGatewayBuilder
 // 4. This prevents any confusion about which Kafka address to use
 // Gateway with service reference for Flink discovery
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
-builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
+builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", $"http://localhost:{Ports.GatewayHostPort.ToString()}")  // Override launchSettings.json
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
+    .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Set log file path for Gateway
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager for standard job submission
     .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway for direct SQL execution
 
@@ -169,7 +187,7 @@ builder.AddProject<Projects.Flink_JobGateway>("flink-job-gateway")
 var temporalDbServer = builder.AddPostgres("temporal-postgres")
     .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")  // Allow trust authentication (no password)
     .WithEnvironment("POSTGRES_DB", "temporal");  // Create temporal database on startup
-    // PostgreSQL will use default "postgres" user with trust authentication
+                                                  // PostgreSQL will use default "postgres" user with trust authentication
 
 // Note: Temporal auto-setup will also create "temporal_visibility" database
 
@@ -195,7 +213,7 @@ builder.AddContainer("temporal-server", "temporalio/auto-setup", "1.22.4")
     .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")  // Specify visibility database name
     .WithEnvironment("SKIP_DB_CREATE", "false")  // Let Temporal create databases
     .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false")  // Create default namespace
-    .WaitFor(temporalDbServer);  // Wait for PostgreSQL server to be ready
+    .WaitFor(temporalDbServer);  // Wait for PostgreSQL to be ready
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();

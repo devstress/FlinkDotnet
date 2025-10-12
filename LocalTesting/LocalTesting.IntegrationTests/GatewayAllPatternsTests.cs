@@ -129,12 +129,6 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         var outputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
 
         TestPrerequisites.EnsureDockerAvailable();
-        var gatewayBuildable = TestPrerequisites.ProbeFlinkGatewayBuildable();
-        if (!gatewayBuildable)
-        {
-            Assert.Ignore("Flink.JobGateway not available - skipping Gateway-dependent test");
-            return;
-        }
 
         var baseToken = TestContext.CurrentContext.CancellationToken;
         using var testTimeout = new CancellationTokenSource(TestTimeout);

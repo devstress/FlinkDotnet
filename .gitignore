@@ -23,6 +23,7 @@ bld/
 [Ll]og/
 [Ll]ogs/
 **/.vs/
+**/test-logs/
 tools/
 
 # .NET Core

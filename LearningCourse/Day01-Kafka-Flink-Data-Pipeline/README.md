@@ -134,54 +134,44 @@ When we have a fully working consumer and producer, we can try to process data f
 
 In this example, we're going to capitalize words in each Kafka entry and then write it back to Kafka using a Flink transformation.
 
-Our Flink job definition (C# equivalent of Baeldung's Java Flink application):
+**Baeldung Java API:**
+```java
+public static void capitalize() {
+    String inputTopic = "flink_input";
+    String outputTopic = "flink_output";
+    String consumerGroup = "baeldung";
+    String address = "localhost:9092";
+    
+    StreamExecutionEnvironment environment = StreamExecutionEnvironment
+      .getExecutionEnvironment();
+    FlinkKafkaConsumer011<String> flinkKafkaConsumer = createStringConsumerForTopic(
+      inputTopic, address, consumerGroup);
+    DataStream<String> stringInputStream = environment
+      .addSource(flinkKafkaConsumer);
 
-```csharp
-var flinkJobDefinition = new
-{
-    jobName = "string-capitalize-pipeline",
-    sources = new[]
-    {
-        new {
-            type = "kafka",
-            name = "input-source",
-            properties = new {
-                topic = "flink_input",
-                bootstrapServers = "localhost:29092",
-                groupId = "baeldung",
-                autoOffsetReset = "earliest"
-            }
-        }
-    },
-    transforms = new[]
-    {
-        new {
-            type = "map",
-            name = "capitalize-transform",
-            function = "upper",  // Uppercase transformation
-            from = "input-source"
-        }
-    },
-    sinks = new[]
-    {
-        new {
-            type = "kafka",
-            name = "output-sink",
-            properties = new {
-                topic = "flink_output",
-                bootstrapServers = "localhost:29092"
-            },
-            from = "capitalize-transform"
-        }
-    }
-};
+    FlinkKafkaProducer011<String> flinkKafkaProducer = createStringProducer(
+      outputTopic, address);
+
+    stringInputStream
+      .map(new WordsCapitalizer())
+      .addSink(flinkKafkaProducer);
+}
 ```
 
-The application will read data from the `flink_input` topic, perform operations on the stream (uppercase transformation) and then save the results to the `flink_output` topic in Kafka.
-
-### Complete Processing Pipeline
+**FlinkDotNet C# API (Exact Translation with MapFunction):**
 
 ```csharp
+using FlinkDotNet.DataStream;
+
+// WordsCapitalizer MapFunction - exact match to Java
+public class WordsCapitalizer : IMapFunction<string, string>
+{
+    public string Map(string s)
+    {
+        return s.ToUpperInvariant();
+    }
+}
+
 public static async Task Capitalize()
 {
     string inputTopic = "flink_input";
@@ -189,34 +179,39 @@ public static async Task Capitalize()
     string consumerGroup = "baeldung";
     string address = "localhost:29092";
 
-    // Submit Flink job
-    var jobJson = JsonSerializer.Serialize(flinkJobDefinition);
-    using var httpClient = new HttpClient();
-    var content = new StringContent(jobJson, Encoding.UTF8, "application/json");
-    await httpClient.PostAsync("http://localhost:8080/api/v1/jobs/submit", content);
+    // StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
+    var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-    // Produce messages
-    var producerConfig = CreateProducerConfig(address);
-    using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
-    
-    for (int i = 0; i < 100; i++)
-    {
-        await producer.ProduceAsync(inputTopic, 
-            new Message<string, string> { 
-                Key = $"key-{i}", 
-                Value = $"message {i}" 
-            });
-    }
+    // DataStream<String> stringInputStream = environment.addSource(flinkKafkaConsumer);
+    var stringInputStream = environment.FromKafka(
+        topic: inputTopic,
+        bootstrapServers: address,
+        groupId: consumerGroup,
+        startingOffsets: "earliest"
+    );
 
-    // Consume processed messages
-    var consumerConfig = CreateConsumerConfig(address, consumerGroup);
-    using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
-    consumer.Subscribe(outputTopic);
+    // stringInputStream.map(new WordsCapitalizer()).addSink(flinkKafkaProducer);
+    stringInputStream
+        .Map(new WordsCapitalizer())  // Exact same as Java: new WordsCapitalizer()
+        .SinkToKafka(outputTopic, address);
 
-    var result = consumer.Consume(TimeSpan.FromSeconds(30));
-    Console.WriteLine($"Received: {result.Message.Value}");  // Will be uppercase
+    // Execute the job
+    await environment.ExecuteAsync("string-capitalize-pipeline");
 }
 ```
+
+The application will read data from the `flink_input` topic, perform operations on the stream (uppercase transformation) and then save the results to the `flink_output` topic in Kafka.
+
+### Key API Mappings
+
+| Baeldung Java | FlinkDotNet C# |
+|---------------|----------------|
+| `StreamExecutionEnvironment.getExecutionEnvironment()` | `StreamExecutionEnvironment.GetExecutionEnvironment()` |
+| `environment.addSource(flinkKafkaConsumer)` | `environment.FromKafka(topic, servers, groupId)` |
+| `implements MapFunction<In, Out>` | `: IMapFunction<TIn, TOut>` |
+| `.map(new WordsCapitalizer())` | `.Map(new WordsCapitalizer())` ✅ Exact match |
+| `.addSink(flinkKafkaProducer)` | `.SinkToKafka(outputTopic, servers)` |
+| `environment.execute()` | `await environment.ExecuteAsync(jobName)` |
 
 We've seen how to deal with Strings using Flink and Kafka. But often it's required to perform operations on custom objects. We'll see how to do this in the next chapters.
 
@@ -313,147 +308,148 @@ Flink provides three different time characteristics: EventTime, ProcessingTime, 
 
 In our case, we need to use the time at which the message has been sent, so we'll use EventTime.
 
-In FlinkDotNet, we handle timestamps through the IR (Intermediate Representation) by configuring time characteristics:
-
-```csharp
-var flinkJobDefinition = new
-{
-    jobName = "backup-aggregator",
-    timeCharacteristic = "EventTime",  // Use event time
-    sources = new[]
-    {
-        new {
-            type = "kafka",
-            name = "input-source",
-            properties = new {
-                topic = "flink_input",
-                bootstrapServers = "localhost:29092",
-                groupId = "baeldung"
-            },
-            timestampField = "sentAt"  // Extract timestamps from this field
-        }
-    }
-};
+**Baeldung Java API:**
+```java
+environment.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+flinkKafkaConsumer.assignTimestampsAndWatermarks(
+    new InputMessageTimestampAssigner());
 ```
 
-We need to ensure our InputMessage has the proper timestamp field that Flink can use for time-based operations.
+**FlinkDotNet Native DataStream API:**
+
+FlinkDotNet provides a native DataStream API that closely follows the Baeldung Java structure:
+
+```csharp
+// Set event time characteristic
+environment.SetStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+
+// Assign timestamps and watermarks
+var inputMessagesStream = environment
+    .AddKafkaSource(topic, servers, groupId, deserializer, "earliest")
+    .AssignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
+
+// Timestamp extractor with watermark generation
+public class InputMessageTimestampAssigner : IAssignerWithPunctuatedWatermarks<InputMessage>
+{
+    public long ExtractTimestamp(InputMessage element, long previousElementTimestamp)
+    {
+        // Extract timestamp from message's sentAt field
+        return (long)(element.SentAt - DateTime.UnixEpoch).TotalMilliseconds;
+    }
+
+    public Watermark? CheckAndGetNextWatermark(InputMessage lastElement, long extractedTimestamp)
+    {
+        // Emit watermark ahead of message timestamps to trigger window evaluation
+        // For testing: watermark 1 hour ahead ensures windows fire promptly
+        var watermarkTime = DateTimeOffset.UtcNow.AddHours(1);
+        return new Watermark(watermarkTime.ToUnixTimeMilliseconds());
+    }
+}
+```
+
+**Watermark Strategy:** The watermark advances ahead of current time to ensure windows fire promptly during testing. In production, you'd typically use `BoundedOutOfOrderness` with a tolerance matching your expected event lateness.
 
 ## 10. Creating Time Windows
 
 To assure that our backup gathers only messages sent during one day, we can use time windows in Flink.
 
-In FlinkDotNet, we define windowing through the job configuration:
-
-```csharp
-var flinkJobDefinition = new
-{
-    jobName = "backup-aggregator",
-    timeCharacteristic = "EventTime",
-    sources = new[]
-    {
-        new {
-            type = "kafka",
-            name = "input-source",
-            properties = new {
-                topic = "flink_input",
-                bootstrapServers = "localhost:29092",
-                groupId = "baeldung"
-            },
-            timestampField = "sentAt"
-        }
-    },
-    transforms = new[]
-    {
-        new {
-            type = "timeWindow",
-            name = "daily-window",
-            from = "input-source",
-            window = new {
-                type = "tumbling",
-                size = "24 hours"
-            }
-        },
-        new {
-            type = "aggregate",
-            name = "backup-aggregator",
-            from = "daily-window",
-            aggregateFunction = "collectToBackup"
-        }
-    },
-    sinks = new[]
-    {
-        new {
-            type = "kafka",
-            name = "backup-sink",
-            properties = new {
-                topic = "flink_output",
-                bootstrapServers = "localhost:29092"
-            },
-            from = "backup-aggregator"
-        }
-    }
-};
+**Baeldung Java API:**
+```java
+inputMessagesStream
+    .timeWindowAll(Time.hours(24))
+    .aggregate(new BackupAggregator())
+    .addSink(flinkKafkaProducer);
 ```
 
-## 11. Aggregating Backups
-
-After configuring proper timestamps and implementing our aggregation logic, we can process our Kafka input:
+**FlinkDotNet Native DataStream API:**
 
 ```csharp
-public static async Task CreateBackup()
+// Production: Use 24-hour windows as in Baeldung
+inputMessagesStream
+    .TimeWindowAll(Time.Hours(24))
+    .Aggregate(new BackupAggregator())
+    .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
+
+// Testing: Use shorter windows (e.g., 1 minute) for faster feedback
+inputMessagesStream
+    .TimeWindowAll(Time.Minutes(1))
+    .Aggregate(new BackupAggregator())
+    .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
+
+// Aggregation function collects messages in window
+public class BackupAggregator : IAggregateFunction<InputMessage, List<InputMessage>, Backup>
 {
-    string inputTopic = "flink_input";
-    string outputTopic = "flink_output";
-    string consumerGroup = "baeldung";
-    string kafkaAddress = "localhost:29092";
-
-    // Submit the aggregation job
-    var jobJson = JsonSerializer.Serialize(flinkJobDefinition);
-    using var httpClient = new HttpClient();
-    var content = new StringContent(jobJson, Encoding.UTF8, "application/json");
-    var response = await httpClient.PostAsync(
-        "http://localhost:8080/api/v1/jobs/submit", 
-        content);
-
-    if (response.IsSuccessStatusCode)
+    public List<InputMessage> CreateAccumulator() => new List<InputMessage>();
+    
+    public List<InputMessage> Add(InputMessage value, List<InputMessage> accumulator)
     {
-        Console.WriteLine("Backup aggregation job submitted successfully");
+        accumulator.Add(value);
+        return accumulator;
     }
-
-    // Produce test messages with timestamps
-    var producerConfig = CreateProducerConfig(kafkaAddress);
-    using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
-
-    for (int i = 0; i < 100; i++)
+    
+    public Backup GetResult(List<InputMessage> accumulator)
     {
-        var inputMessage = new InputMessage
-        {
-            Sender = $"sender-{i}",
-            Recipient = $"recipient-{i}",
-            SentAt = DateTime.UtcNow,
-            Message = $"Test message {i}"
-        };
-
-        var json = JsonSerializer.Serialize(inputMessage);
-        await producer.ProduceAsync(inputTopic,
-            new Message<string, string> { Key = $"key-{i}", Value = json });
+        return new Backup(accumulator, DateTime.UtcNow);
     }
-
-    // Consume backup results
-    var consumerConfig = CreateConsumerConfig(kafkaAddress, consumerGroup);
-    using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
-    consumer.Subscribe(outputTopic);
-
-    var result = consumer.Consume(TimeSpan.FromSeconds(30));
-    if (result != null)
+    
+    public List<InputMessage> Merge(List<InputMessage> a, List<InputMessage> b)
     {
-        var backup = JsonSerializer.Deserialize<Backup>(result.Message.Value);
-        Console.WriteLine($"Received backup with {backup.InputMessages.Count} messages");
-        Console.WriteLine($"Backup ID: {backup.Uuid}");
-        Console.WriteLine($"Backup timestamp: {backup.BackupTimestamp}");
+        a.AddRange(b);
+        return a;
     }
 }
 ```
+
+The FlinkDotNet API follows the same structure as Java Flink, making it straightforward to adapt existing Flink knowledge to .NET.
+
+## 11. Aggregating Backups
+
+After configuring proper timestamps and implementing our aggregation logic, we can process Kafka input and create backup aggregations.
+
+See **Exercise 2** for the complete implementation using FlinkDotNet's native DataStream API.
+
+### Exercise 2: Complete Backup Aggregation Pipeline
+
+Exercise 2 demonstrates the full Baeldung tutorial (Sections 7-11) with practical modifications for testing:
+
+**Implementation Highlights:**
+- **EventTime Processing**: Extracts timestamps from message `sentAt` field
+- **Tumbling Windows**: Aggregates messages in fixed time windows
+- **Watermark Generation**: Advances watermark to trigger window evaluation
+- **Message Aggregation**: Collects all messages in window into single Backup object
+- **Partition Handling**: Works correctly with multi-partition topics using `TimeWindowAll` global aggregation
+
+**Testing Configuration:**
+```csharp
+// Uses 1-minute windows for faster test feedback
+.TimeWindowAll(Time.Minutes(1))
+
+// Messages span 5 seconds with 100ms intervals
+baseTimestamp.AddMilliseconds(i * 100)  // 50 messages = 5 seconds
+
+// Marker message advances watermark past window end
+SentAt = baseTimestamp.AddSeconds(95)  // Triggers window closure
+```
+
+**Running Exercise 2:**
+```bash
+cd LearningCourse/Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise2-BackupAggregator
+dotnet run
+```
+
+**What the exercise covers:**
+1. Custom object deserialization (InputMessage with sentAt timestamp)
+2. Custom object serialization (Backup with UUID and timestamp)
+3. EventTime timestamp extraction from message fields
+4. Tumbling time windows with configurable duration
+5. Aggregate function collecting messages into Backup objects
+6. Watermark strategy triggering window evaluation
+
+**Code Organization:**
+- [`Program.cs`](Exercise-Solutions/Exercise2-BackupAggregator/Program.cs): Producer, consumer, and demo orchestration
+- [`BaeldungNativeApi.cs`](Exercise-Solutions/Exercise2-BackupAggregator/BaeldungNativeApi.cs): Native DataStream API with windowing and aggregation
+
+**Key Insight:** `TimeWindowAll` creates a global window operator (parallelism=1) that merges streams from all Kafka partitions before windowing. This produces one aggregated Backup per window firing, regardless of partition count.
 
 ## 12. Conclusion
 
