@@ -37,19 +37,19 @@ jobs:
     - name: Restore FlinkDotNet dependencies
       run: dotnet restore FlinkDotNet/FlinkDotNet.sln
       
-    - name: Build FlinkDotNet solution (Required for LocalTesting)
+    - name: Build FlinkDotNet solution (Required for LearningCourse)
       run: dotnet build FlinkDotNet/FlinkDotNet.sln --no-restore --configuration Release
       
-    - name: Restore LocalTesting dependencies
-      run: dotnet restore LocalTesting/LocalTesting.sln
+    - name: Restore LearningCourse dependencies
+      run: dotnet restore LearningCourse/IntegrationTests.sln
       
-    - name: Build LocalTesting solution
-      run: dotnet build LocalTesting/LocalTesting.sln --no-restore --configuration Release
+    - name: Build LearningCourse solution
+      run: dotnet build LearningCourse/IntegrationTests.sln --no-restore --configuration Release
       
     - name: Run LearningCourse Integration Tests
       run: |
         echo "=== Starting LearningCourse Integration Tests ==="
-        dotnet test LocalTesting/LocalTesting.sln --no-build --configuration Release --filter "FullyQualifiedName~Day" --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
+        dotnet test LearningCourse/IntegrationTests.sln --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
       env:
         DOTNET_ENVIRONMENT: Testing
 

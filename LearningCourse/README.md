@@ -9,69 +9,51 @@ This directory contains integration tests for the FlinkDotNet Learning Course tu
 ### Quick Start
 
 ```bash
-# Run ALL integration tests (LocalTesting + LearningCourse)
-dotnet test LocalTesting/LocalTesting.sln --configuration Release
+# Run ALL integration tests (LearningCourse)
+dotnet test LearningCourse/IntegrationTests.sln --configuration Release
 
 # Run ONLY Day01 tests
-dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day01"
+dotnet test LearningCourse/IntegrationTests.sln --configuration Release --filter "FullyQualifiedName~Day01"
 
 # Run ONLY Day02 tests
-dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day02"
-
-# Run ONLY LocalTesting tests  
-dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~LocalTesting"
+dotnet test LearningCourse/IntegrationTests.sln --configuration Release --filter "FullyQualifiedName~Day02"
 
 # Run specific test
-dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~UppercaseTransform"
+dotnet test LearningCourse/IntegrationTests.sln --configuration Release --filter "FullyQualifiedName~UppercaseTransform"
 ```
 
-## Why Use LocalTesting.sln?
+## Why Use LearningCourse/IntegrationTests.sln?
 
 ### Architecture Explanation
 
-LearningCourse tests are integrated into `LocalTesting.sln` because:
+LearningCourse has its own dedicated solution file for integration tests:
 
-1. **Shared Infrastructure**: Both LocalTesting and LearningCourse tests use the same .NET Aspire application host
-2. **Single Aspire Instance**: Only ONE Aspire instance can manage containers (Flink, Kafka, etc.) at a time
-3. **No Container Conflicts**: Multiple Aspire instances cause containers to get stuck in "Created" state
-
-### What Doesn't Work ❌
-
-**Separate solution approach (broken)**:
-```bash
-# ❌ This creates a SECOND Aspire instance
-dotnet test LearningCourse/IntegrationTests.sln
-```
-
-**Problem**: 
-- Day01 tests try to create their own `GlobalTestInfrastructure`
-- Results in TWO Aspire instances competing for the same containers
-- Flink containers stuck in "Created" status, never reaching "Up"
-- Tests fail with "Global test infrastructure is not initialized"
+1. **Dedicated Infrastructure**: LearningCourse tests use their own infrastructure setup via `LearningCourseTestBase`
+2. **Independent Testing**: Each Day can be tested independently without LocalTesting infrastructure
+3. **Simpler Setup**: No dependency on LocalTesting.sln, cleaner separation of concerns
 
 ### What Works ✅
 
-**Unified solution approach (correct)**:
+**Using LearningCourse solution (correct)**:
 ```bash
-# ✅ This uses ONE shared Aspire instance
-dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~Day01"
+# ✅ This uses the dedicated LearningCourse solution
+dotnet test LearningCourse/IntegrationTests.sln
 ```
 
 **Benefits**:
-- Single `GlobalTestInfrastructure` instance shared across all tests
-- Clean container lifecycle management
+- Clean separation between LearningCourse and LocalTesting tests
+- Each solution manages its own infrastructure
 - All tests work reliably
-- No container conflicts
+- No cross-solution dependencies
 
 ## Solution Structure
 
-The `LocalTesting/LocalTesting.sln` includes:
-- **LocalTesting.IntegrationTests** - Core LocalTesting integration tests
+The `LearningCourse/IntegrationTests.sln` includes:
+- **LearningCourse.IntegrationTests** - Base test infrastructure with `LearningCourseTestBase`
+- **LearningCourse.Common** - Common utilities for learning course
 - **Day01.IntegrationTests** - Kafka-Flink pipeline learning course tests
 - **Day02.IntegrationTests** - Flink 2.1.0 fundamentals learning course tests
-- **LocalTesting.FlinkSqlAppHost** - Shared Aspire application host
-- **FlinkDotNet** - Core FlinkDotNet library  
-- **Flink.JobBuilder** - Job definition and building utilities
+- **Exercise Solutions** - All exercise solution projects for each day
 
 ## Test Projects
 
@@ -129,11 +111,11 @@ docker ps
 ```
 
 ### Tests fail with "Global test infrastructure is not initialized"
-This occurs when trying to run Day01 tests standalone through `LearningCourse/IntegrationTests.sln`.
+This occurs when infrastructure is not properly initialized.
 
-**Solution**: Always run through `LocalTesting.sln`:
+**Solution**: Ensure you're running through the correct solution:
 ```bash
-dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~Day01"
+dotnet test LearningCourse/IntegrationTests.sln --filter "FullyQualifiedName~Day01"
 ```
 
 ### Flink Container Issues
@@ -141,7 +123,6 @@ If tests fail with "Flink JobManager endpoint not found" or containers show "Cre
 - Check Docker Desktop is running and has sufficient resources
 - Verify no port conflicts (Flink uses 8081, Kafka uses 9092/9093)
 - Check Docker logs: `docker logs <container-name>`
-- **Most common cause**: Multiple Aspire instances - use LocalTesting.sln!
 
 ### Tests timeout or fail to start
 Check Docker Desktop has sufficient resources allocated (Settings → Resources).
@@ -152,20 +133,23 @@ Stop any services using conflicting ports or configure alternative ports in the 
 ### Build errors
 Run a clean build before testing:
 ```bash
-dotnet clean LocalTesting/LocalTesting.sln
-dotnet build LocalTesting/LocalTesting.sln --configuration Release
+dotnet clean LearningCourse/IntegrationTests.sln
+dotnet build LearningCourse/IntegrationTests.sln --configuration Release
 ```
 
 ## CI/CD Integration
 
-The unified solution file can be easily integrated into CI/CD workflows:
+The LearningCourse solution can be easily integrated into CI/CD workflows:
 
 ```yaml
 - name: Run All Integration Tests
-  run: dotnet test LocalTesting/LocalTesting.sln --configuration Release --logger "trx;LogFileName=integration-test-results.trx"
+  run: dotnet test LearningCourse/IntegrationTests.sln --configuration Release --logger "trx;LogFileName=integration-test-results.trx"
 
-- name: Run Only LearningCourse Tests
-  run: dotnet test LocalTesting/LocalTesting.sln --configuration Release --filter "FullyQualifiedName~Day" --logger "trx;LogFileName=learningcourse-test-results.trx"
+- name: Run Only Day01 Tests
+  run: dotnet test LearningCourse/IntegrationTests.sln --configuration Release --filter "FullyQualifiedName~Day01" --logger "trx;LogFileName=day01-test-results.trx"
+
+- name: Run Only Day02 Tests
+  run: dotnet test LearningCourse/IntegrationTests.sln --configuration Release --filter "FullyQualifiedName~Day02" --logger "trx;LogFileName=day02-test-results.trx"
 ```
 
 ## Adding New Integration Tests
@@ -177,41 +161,30 @@ To add a new day's integration tests:
    dotnet new nunit -n DayXX.IntegrationTests -o LearningCourse/DayXX-Topic/DayXX.IntegrationTests
    ```
 
-2. Add project reference to `LocalTesting.sln` (NOT a separate solution):
+2. Add project reference to `LearningCourse/IntegrationTests.sln`:
    ```bash
-   dotnet sln LocalTesting/LocalTesting.sln add LearningCourse/DayXX-Topic/DayXX.IntegrationTests/DayXX.IntegrationTests.csproj
+   cd LearningCourse
+   dotnet sln IntegrationTests.sln add DayXX-Topic/DayXX.IntegrationTests/DayXX.IntegrationTests.csproj
    ```
 
-3. Make test class inherit from `LocalTestingTestBase`:
+3. Add exercise solution projects to the solution:
+   ```bash
+   dotnet sln IntegrationTests.sln add DayXX-Topic/Exercise-Solutions/Exercise1/Exercise1.csproj
+   ```
+
+4. Make test class inherit from `LearningCourseTestBase`:
    ```csharp
-   using LocalTesting.IntegrationTests;
+   using LearningCourse.IntegrationTests;
    
-   public class DayXXTests : LocalTestingTestBase
+   public class DayXXTests : LearningCourseTestBase
    {
        // Tests here
    }
    ```
 
-4. Create minimal `GlobalSetup.cs` (DO NOT create infrastructure):
-   ```csharp
-   using NUnit.Framework;
-   
-   namespace DayXX.IntegrationTests;
-   
-   [SetUpFixture]
-   public class GlobalSetup
-   {
-       [OneTimeSetUp]
-       public void AssemblySetUp()
-       {
-           // NO infrastructure setup - relies on LocalTesting
-       }
-   }
-   ```
-
 5. Run tests to verify:
    ```bash
-   dotnet test LocalTesting/LocalTesting.sln --filter "FullyQualifiedName~DayXX"
+   dotnet test LearningCourse/IntegrationTests.sln --filter "FullyQualifiedName~DayXX"
    ```
 
 ## Migration from PowerShell Script
