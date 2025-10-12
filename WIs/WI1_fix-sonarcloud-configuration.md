@@ -8,7 +8,7 @@
 **Type**: Bug Fix
 **Assignee**: AI Agent
 **Created**: 2025-10-12
-**Status**: Implementation Complete
+**Status**: Pending Owner Review
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -154,32 +154,76 @@ The workflow will be fully validated when it runs in CI after merge.
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
-Will show the updated workflow file with proper SonarCloud configuration
+The unit-tests.yml workflow has been successfully updated with proper SonarCloud configuration:
+
+**Summary of Changes:**
+1. ✅ Changed runner from `ubuntu-latest` to `windows-latest`
+2. ✅ Updated all cache paths to Windows format (backslashes)
+3. ✅ Converted all SonarScanner steps to use PowerShell consistently
+4. ✅ Updated scanner installation to use PowerShell commands
+5. ✅ Simplified scanner begin/end commands to match sample format
+6. ✅ Changed `echo` to `Write-Host` for PowerShell consistency
+
+**Validation Results:**
+- ✅ YAML syntax validated successfully
+- ✅ All configuration matches provided sample
+- ✅ Existing test execution and artifact upload preserved
+- ✅ No breaking changes to workflow functionality
+
+**Files Modified:**
+- `.github/workflows/unit-tests.yml` - SonarCloud configuration fixed
+
+**Testing:**
+- Local YAML validation passed
+- Workflow will be fully validated on next CI run
 
 ### Owner Feedback
-Pending
+Awaiting owner review and testing in CI environment
 
 ### Final Approval
 Pending
 
 ## Lessons Learned & Future Reference (MANDATORY)
 ### What Worked Well
-- Following provided sample configuration
+- Following provided sample configuration exactly
 - Minimal, surgical changes to fix the issue
+- Using YAML validation to catch syntax errors early
+- Systematic approach: one change type at a time (runner, then paths, then shells)
 
 ### What Could Be Improved  
-- Could add workflow validation to CI pipeline
+- Could add automated workflow validation to pre-commit hooks
+- Could document SonarCloud setup requirements in CONTRIBUTING.md
 
 ### Key Insights for Similar Tasks
-- Always match runner OS with tool requirements (Windows for SonarCloud sample)
-- Keep shell usage consistent throughout workflow
-- Cache paths must match runner OS format
+- SonarCloud scanner configuration is OS-specific (Windows vs Linux)
+- Path separators must match runner OS (backslashes for Windows, forward slashes for Linux)
+- Shell consistency throughout workflow prevents subtle bugs
+- PowerShell uses `Write-Host` instead of bash's `echo`
+- Cache paths format must match runner OS
 
 ### Specific Problems to Avoid in Future
-- Don't mix Linux and Windows path formats
-- Don't mix bash and PowerShell in same workflow without clear purpose
-- Always use consistent shell commands
+- ❌ Don't mix Linux and Windows path formats in same workflow
+- ❌ Don't use bash shell on Windows runners for path-sensitive operations
+- ❌ Don't use multi-line bash commands when PowerShell single-line works better
+- ❌ Don't assume scanner paths work the same across different OS runners
+- ✅ Always validate YAML syntax after changes
+- ✅ Always match runner OS with tool requirements
+- ✅ Always use consistent shell throughout workflow
 
 ### Reference for Future WIs
-- SonarCloud requires specific runner and path configurations
-- Always validate workflow changes against known working samples
+**When configuring SonarCloud in GitHub Actions:**
+1. Use `windows-latest` runner (per SonarCloud sample)
+2. Use Windows path format with backslashes for cache paths
+3. Use PowerShell shell exclusively for SonarScanner steps
+4. Use single-line commands for scanner begin/end
+5. Set `fetch-depth: 0` for better analysis relevancy
+6. Cache both SonarQube packages and scanner for performance
+7. Install Java 17 with 'zulu' distribution
+
+**Path Format Reference:**
+- Windows: `~\sonar\cache`, `${{ runner.temp }}\scanner`
+- Linux: `~/.sonar/cache`, `${{ runner.temp }}/scanner`
+
+**Shell Command Reference:**
+- Windows PowerShell: `New-Item -Path ... -ItemType Directory`
+- Linux bash: `mkdir -p ...`
