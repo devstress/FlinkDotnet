@@ -29,9 +29,9 @@ namespace Exercise2_BackupAggregator
 
             public Watermark? CheckAndGetNextWatermark(InputMessage lastElement, long extractedTimestamp)
             {
-                // For testing: advance watermark 25 hours into the future
-                // This triggers the 24-hour window immediately after all messages arrive
-                return new Watermark(extractedTimestamp + (25L * 60 * 60 * 1000)); // +25 hours in milliseconds
+                // For testing: emit watermark at current time (now)
+                // This triggers the 24-hour window immediately since all events are in the past
+                return new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             }
         }
 
@@ -109,9 +109,11 @@ namespace Exercise2_BackupAggregator
             inputMessagesStream = inputMessagesStream.AssignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
 
             // Apply transformations: window → aggregate → sink
-            // COUNT-BASED WINDOW: Aggregate every 50 messages for testing
+            // BAELDUNG ADAPTATION: Count-based window for testing (50 messages)
+            // Original Baeldung uses timeWindowAll(Time.hours(24)) for production
+            // We use countWindowAll(50) for deterministic, testable aggregation
             inputMessagesStream
-                .CountWindowAll(50)  // Testing: aggregate 50 messages
+                .CountWindowAll(50)  // Test adaptation: aggregate every 50 messages
                 .Aggregate(new BackupAggregator())
                 .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
 

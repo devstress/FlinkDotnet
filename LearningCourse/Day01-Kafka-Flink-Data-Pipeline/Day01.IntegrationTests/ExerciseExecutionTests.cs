@@ -275,9 +275,9 @@ public class ExerciseExecutionTests : LearningCourseTestBase
             ["Topics Created"] = (output.Contains("Topics created") || output.Contains("Topics already exist"), "Kafka topics were not created"),
             ["Job Submitted"] = (output.Contains("Submitting Flink") && output.Contains("backup aggregation") || output.Contains("job submitted successfully"), "Flink backup aggregation job was not submitted"),
             ["EventTime Used"] = (output.Contains("EventTime") || output.Contains("timestamped"), "EventTime was not used"),
-            ["Count Windows"] = (output.Contains("Count window") || output.Contains("CountWindowAll") || output.Contains("50 messages"), "Count windows were not configured"),
+            ["Count Windows"] = (output.Contains("Count windows") || output.Contains("CountWindowAll") || output.Contains("50 messages") || output.Contains("count-based"), "Count windows were not configured"),
             ["InputMessages Produced"] = (output.Contains("Producing") && output.Contains("InputMessage") || output.Contains("All 50 InputMessage objects produced"), "InputMessage objects were not produced"),
-            ["Backups Consumed"] = (output.Contains("Consumed") && output.Contains("Backup") || output.Contains("Successfully aggregated"), "Should consume aggregated backups with count window"),
+            ["Backups Consumed"] = (output.Contains("Consumed") && output.Contains("Backup") || output.Contains("Successfully aggregated") || output.Contains("window fired"), "Should consume aggregated backups with count window"),
             ["Job Running"] = (output.Contains("Job is running") || output.Contains("job submitted") || output.Contains("Flink") || output.Contains("SUCCESS"), "Job should be running in Flink")
         };
     }

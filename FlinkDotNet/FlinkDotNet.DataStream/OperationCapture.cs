@@ -335,19 +335,9 @@ namespace FlinkDotNet.DataStream
             }
         }
 
-        private void TranslateWindowOperation(JobDefinition jobDef)
-        {
-            if (_windowDefinition != null)
-            {
-                jobDef.Operations.Add(new WindowOperationDefinition
-                {
-                    WindowType = _windowDefinition.WindowType,
-                    Size = (int)(_windowDefinition.Size / 3600000), // Convert milliseconds to hours
-                    TimeUnit = "HOURS",
-                    TimeField = "sentAt" // This should be extracted from TimestampAssigner
-                });
-            }
-        }
+        // NOTE: TranslateWindowOperation was removed as dead code.
+        // Window information is now incorporated directly into AggregateOperationDefinition
+        // in TranslateAggregateOperation() method. See line 271-276 for explanation.
 
         private void TranslateAggregateOperation(JobDefinition jobDef, CapturedOperation operation)
         {
