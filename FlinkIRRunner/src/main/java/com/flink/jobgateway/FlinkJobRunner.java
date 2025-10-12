@@ -13,6 +13,9 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
 import java.time.Duration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -125,6 +128,10 @@ public class FlinkJobRunner {
             
             String bootstrap = k.bootstrapServers;
             String groupId = orElse(k.groupId, "flinkdotnet-ir-runner");
+            
+            // Check if EventTime is configured
+            boolean useEventTime = ir.metadata != null && ir.metadata.properties != null &&
+                                 "EventTime".equals(ir.metadata.properties.get("timeCharacteristic"));
 
             logger.info("============================================================");
             logger.info("[KAFKA SOURCE] Configuration:");
@@ -133,6 +140,7 @@ public class FlinkJobRunner {
             logger.info("  - Topic: {}", k.topic);
             logger.info("  - GroupId: {}", groupId);
             logger.info("  - Starting offsets: {}", orElse(k.startingOffsets, "latest"));
+            logger.info("  - Time Characteristic: {}", useEventTime ? "EventTime" : "ProcessingTime");
             logger.info("  - KAFKA_BOOTSTRAP_SERVERS env var: {}", System.getenv("KAFKA_BOOTSTRAP_SERVERS"));
             logger.info("  - bootstrap.servers system property: {}", System.getProperty("bootstrap.servers"));
             logger.info("============================================================");
@@ -152,6 +160,53 @@ public class FlinkJobRunner {
             stream = env.addSource(new KafkaStringSource(k.topic, props)).name("KafkaSource");
             logger.info("[KAFKA SOURCE] ✓ Source created successfully");
             logger.info("[KAFKA SOURCE] ✓ Stream type: DataStream<String>");
+            
+            // Apply EventTime watermark strategy if configured (Baeldung pattern)
+            if (useEventTime) {
+                logger.info("[WATERMARK STRATEGY] Applying EventTime watermark strategy for TESTING");
+                logger.info("[WATERMARK STRATEGY] Using forMonotonousTimestamps() with manual watermark advancement");
+                logger.info("[WATERMARK STRATEGY] Watermark will be 25 hours ahead of event time to trigger 24h window immediately");
+                logger.info("[WATERMARK STRATEGY] Java equivalent: stream.assignTimestampsAndWatermarks(WatermarkStrategy.forMonotonousTimestamps().withTimestampAssigner(...))");
+                
+                stream = stream.assignTimestampsAndWatermarks(
+                    WatermarkStrategy
+                        .<String>forMonotonousTimestamps()
+                        .withTimestampAssigner(new SerializableTimestampAssigner<String>() {
+                            @Override
+                            public long extractTimestamp(String element, long recordTimestamp) {
+                                try {
+                                    // Parse JSON to extract sentAt timestamp (Baeldung InputMessage pattern)
+                                    // Support both lowercase "sentAt" and uppercase "SENTAT"
+                                    ObjectMapper mapper = new ObjectMapper();
+                                    var node = mapper.readTree(element);
+                                    String sentAtField = node.has("sentAt") ? "sentAt" :
+                                                        node.has("SENTAT") ? "SENTAT" :
+                                                        node.has("SentAt") ? "SentAt" : null;
+                                    
+                                    if (sentAtField != null) {
+                                        String sentAt = node.get(sentAtField).asText();
+                                        // Parse ISO 8601 timestamp
+                                        java.time.Instant instant = java.time.Instant.parse(sentAt);
+                                        long timestamp = instant.toEpochMilli();
+                                        
+                                        // FOR TESTING: Advance watermark 25 hours ahead to trigger 24h window immediately
+                                        // This matches the C# watermark strategy for immediate testing
+                                        long advancedTimestamp = timestamp + (25L * 60 * 60 * 1000); // +25 hours
+                                        logger.debug("[WATERMARK] Extracted timestamp {} from {}: {}, advanced to {}", timestamp, sentAtField, sentAt, advancedTimestamp);
+                                        return advancedTimestamp;
+                                    } else {
+                                        logger.warn("[WATERMARK] No timestamp field found in message (tried sentAt, SENTAT, SentAt)");
+                                    }
+                                } catch (Exception e) {
+                                    logger.warn("[WATERMARK] Failed to extract timestamp from message: {}", e.getMessage());
+                                }
+                                // Fallback to current processing time + 25 hours
+                                return System.currentTimeMillis() + (25L * 60 * 60 * 1000);
+                            }
+                        })
+                );
+                logger.info("[WATERMARK STRATEGY] ✓ EventTime watermark strategy applied");
+            }
         } else {
             // Fallback source
             stream = env.fromElements("sample");
@@ -281,6 +336,7 @@ public class FlinkJobRunner {
                     logger.info("  - aggregationType: {}", aggType);
                     logger.info("  - field: {}", orElse(agg.field, "*"));
                     logger.info("  - windowSeconds: {}", agg.windowSeconds);
+                    logger.info("  - windowCount: {}", agg.windowCount);
                     logger.info("============================================================");
                     
                     // For COLLECT aggregation, collect all strings in window into a JSON array
@@ -288,19 +344,12 @@ public class FlinkJobRunner {
                         // Use Jackson ObjectMapper for proper JSON handling
                         final ObjectMapper jsonMapper = new ObjectMapper();
                         
-                        // Get window duration from metadata or default to 10 seconds for testing
-                        long windowSeconds = agg.windowSeconds != null && agg.windowSeconds > 0 ? agg.windowSeconds : 10;
-                        Duration windowDuration = Duration.ofSeconds(windowSeconds);
+                        logger.info("[AGGREGATE] Baeldung pattern: Using timeWindowAll() for global aggregation across all parallel instances");
+                        logger.info("[AGGREGATE] Java equivalent: stream.timeWindowAll(Time.hours(24)).aggregate(new BackupAggregator())");
                         
-                        logger.info("[AGGREGATE] Using window duration: {} seconds", windowSeconds);
-                        logger.info("[AGGREGATE] Java equivalent: KeyedStream<String, String> keyed = stream.keyBy(v -> \"all\");");
-                        
-                        KeyedStream<String, String> keyed = stream.keyBy(v -> "all"); // Global window key
-                        logger.info("[AGGREGATE] ✓ Keyed stream created with global key");
-                        logger.info("[AGGREGATE] Java equivalent: stream = keyed.window(TumblingProcessingTimeWindows.of(Duration.ofSeconds({})))", windowSeconds);
-                        
-                        stream = keyed.window(TumblingProcessingTimeWindows.of(windowDuration))
-                                .aggregate(new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String>() {
+                        // Create the aggregate function once to reuse
+                        org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String> aggregateFunction =
+                                new org.apache.flink.api.common.functions.AggregateFunction<String, java.util.List<com.fasterxml.jackson.databind.JsonNode>, String>() {
                                     @Override
                                     public java.util.List<com.fasterxml.jackson.databind.JsonNode> createAccumulator() {
                                         logger.info("[AGGREGATE] Creating new accumulator for COLLECT aggregation");
@@ -310,14 +359,20 @@ public class FlinkJobRunner {
                                     @Override
                                     public java.util.List<com.fasterxml.jackson.databind.JsonNode> add(String value, java.util.List<com.fasterxml.jackson.databind.JsonNode> accumulator) {
                                         try {
+                                            logger.info("[AGGREGATE.ADD] *** CALLED *** Receiving message to add to accumulator");
+                                            logger.info("[AGGREGATE.ADD] Current accumulator size: {}", accumulator.size());
+                                            logger.info("[AGGREGATE.ADD] Message value: {}", value);
+                                            
                                             // Parse JSON string to JsonNode to ensure valid JSON
                                             com.fasterxml.jackson.databind.JsonNode node = jsonMapper.readTree(value);
                                             accumulator.add(node);
-                                            logger.debug("[AGGREGATE] Added message to accumulator, total count: {}", accumulator.size());
+                                            
+                                            logger.info("[AGGREGATE.ADD] *** SUCCESS *** Message added! New accumulator size: {}", accumulator.size());
                                             return accumulator;
                                         } catch (Exception e) {
-                                            logger.error("[AGGREGATE] Failed to parse JSON message: {}", value, e);
-                                            // Skip invalid JSON messages
+                                            logger.error("[AGGREGATE.ADD] *** FAILED *** Error parsing JSON message: {}", value, e);
+                                            logger.error("[AGGREGATE.ADD] Exception: {}", e.getMessage());
+                                            // Skip invalid JSON messages but log it
                                             return accumulator;
                                         }
                                     }
@@ -351,10 +406,54 @@ public class FlinkJobRunner {
                                         logger.debug("[AGGREGATE] Merged accumulators, total count: {}", a.size());
                                         return a;
                                     }
-                                });
-                       logger.info("[AGGREGATE OPERATION] ✓ COLLECT aggregation configured with Jackson JSON handling");
-                       logger.info("[AGGREGATE OPERATION] Java equivalent: stream = keyed.window(TumblingProcessingTimeWindows.of(windowDuration)).aggregate(new BackupAggregator());");
-                       logger.info("[AGGREGATE OPERATION] Complete pipeline: stream.keyBy(v -> \"all\").window(TumblingProcessingTimeWindows.of(Duration.ofSeconds({}))).aggregate(aggregateFunction)", windowSeconds);
+                                };
+                        
+                        // Choose window type: count-based or time-based
+                        if (agg.windowCount != null && agg.windowCount > 0) {
+                            // COUNT-BASED WINDOW (Exercise 2: aggregate 50 messages)
+                            logger.info("[AGGREGATE] Using COUNT-based global window: {} messages", agg.windowCount);
+                            logger.info("[AGGREGATE] Java equivalent: stream = stream.countWindowAll({}).aggregate(aggregateFunction);", agg.windowCount);
+                            stream = stream.countWindowAll(agg.windowCount)
+                                    .aggregate(aggregateFunction);
+                            logger.info("[AGGREGATE OPERATION] ✓ COUNT-based COLLECT aggregation configured (Baeldung countWindowAll pattern)");
+                        } else if (agg.windowSeconds != null && agg.windowSeconds > 0) {
+                            // TIME-BASED WINDOW - Baeldung equivalent for Flink 2.x
+                            // Baeldung (Flink 1.x): stream.timeWindowAll(Time.hours(24)).aggregate(aggregator)
+                            // Flink 2.x equivalent: stream.windowAll(TumblingEventTimeWindows.of(Duration.ofHours(24))).aggregate(aggregator)
+                            // Note: timeWindowAll() was removed in Flink 2.x, windowAll() is the replacement
+                            // Both create identical 24-hour tumbling event-time windows
+                            
+                            // Check if EventTime is configured
+                            boolean useEventTime = ir.metadata != null && ir.metadata.properties != null &&
+                                                 "EventTime".equals(ir.metadata.properties.get("timeCharacteristic"));
+                            
+                            Duration windowDuration = Duration.ofSeconds(agg.windowSeconds);
+                            long hours = agg.windowSeconds / 3600;
+                            
+                            logger.info("[AGGREGATE] Using TIME-based global window: {} seconds ({} hours)", agg.windowSeconds, hours);
+                            logger.info("[AGGREGATE] Baeldung Flink 1.x code: inputMessagesStream.timeWindowAll(Time.hours({})).aggregate(new BackupAggregator())", hours);
+                            logger.info("[AGGREGATE] Our Flink 2.x equivalent: inputMessagesStream.windowAll(TumblingEventTimeWindows.of(Duration.ofHours({}))).aggregate(aggregateFunction)", hours);
+                            
+                            if (useEventTime) {
+                                // EventTime windows - Baeldung's actual behavior
+                                logger.info("[AGGREGATE] Using EventTime windows - BAELDUNG BEHAVIOR (fires based on event timestamps and watermarks)");
+                                stream = stream.windowAll(TumblingEventTimeWindows.of(windowDuration))
+                                        .aggregate(aggregateFunction);
+                                logger.info("[AGGREGATE OPERATION] ✓ Global EventTime window configured (Baeldung timeWindowAll equivalent)");
+                            } else {
+                                // ProcessingTime windows - for testing only
+                                logger.info("[AGGREGATE] Using ProcessingTime windows - TESTING MODE (fires based on wall clock)");
+                                stream = stream.windowAll(TumblingProcessingTimeWindows.of(windowDuration))
+                                        .aggregate(aggregateFunction);
+                                logger.info("[AGGREGATE OPERATION] ✓ Global ProcessingTime window configured (testing mode)");
+                            }
+                        } else {
+                            // DEFAULT: 60-second (1 minute) global time window (ProcessingTime)
+                            logger.warn("[AGGREGATE] No window specified, using default 60-second (1 minute) global time window");
+                            stream = stream.windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(60)))
+                                    .aggregate(aggregateFunction);
+                            logger.info("[AGGREGATE OPERATION] ✓ Default global ProcessingTime window configured (60 seconds)");
+                        }
                     }
                 }
             }
@@ -454,6 +553,7 @@ public class FlinkJobRunner {
         public String jobId;
         public String jobName;
         public Integer parallelism;
+        public Map<String, String> properties;
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -578,6 +678,7 @@ public interface Operation {}
         public String aggregationType;  // COLLECT, SUM, COUNT, etc.
         public String field;             // Field to aggregate, or "*" for all
         public Long windowSeconds;       // Window duration in seconds (default: 10 for testing, 86400 for production)
+        public Integer windowCount;      // Window count for count-based windows (e.g., 50 messages)
     }
 
     // Simple Kafka Source using Kafka client

@@ -176,9 +176,24 @@ namespace Flink.JobBuilder.Models
     {
         [JsonIgnore]
         public string Type => "aggregate";
-        public string AggregationType { get; set; } = string.Empty; // SUM, COUNT, AVG, MIN, MAX
+        public string AggregationType { get; set; } = string.Empty; // SUM, COUNT, AVG, MIN, MAX, COLLECT
         public string Field { get; set; } = string.Empty;
         public string? Alias { get; set; }
+        
+        /// <summary>
+        /// Window duration in seconds for time-based windowed aggregation.
+        /// Used by FlinkJobRunner to configure TumblingProcessingTimeWindows.
+        /// For testing: 10 seconds
+        /// For production: 86400 seconds (24 hours)
+        /// </summary>
+        public long? WindowSeconds { get; set; }
+        
+        /// <summary>
+        /// Window count for count-based windowed aggregation (Baeldung Exercise 2 pattern).
+        /// Used by FlinkJobRunner to configure countWindow.
+        /// Example: 50 messages aggregate into 1 Backup object
+        /// </summary>
+        public int? WindowCount { get; set; }
     }
 
     /// <summary>

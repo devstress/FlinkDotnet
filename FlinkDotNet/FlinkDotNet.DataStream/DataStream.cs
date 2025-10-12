@@ -329,6 +329,34 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> AddSink(ISinkFunction<T> sinkFunction)
         {
+            // Capture sink operation if using native API
+            if (_operationCapture != null && sinkFunction != null)
+            {
+                // Try to extract Kafka sink information from the sink function
+                var sinkType = sinkFunction.GetType();
+                #pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields - safe for internal framework use
+                var topicField = sinkType.GetField("_topic", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var serversField = sinkType.GetField("_bootstrapServers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (topicField == null)
+                {
+                    topicField = sinkType.GetField("topic", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                }
+                if (serversField == null)
+                {
+                    serversField = sinkType.GetField("bootstrapServers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                }
+                #pragma warning restore S3011
+                
+                var topic = topicField?.GetValue(sinkFunction) as string;
+                var servers = serversField?.GetValue(sinkFunction) as string;
+                
+                if (!string.IsNullOrEmpty(topic) && !string.IsNullOrEmpty(servers))
+                {
+                    _operationCapture.CaptureKafkaSink(topic, servers, null);
+                }
+            }
+            
             // Sink function registered for execution
             return this;
         }
@@ -495,6 +523,33 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
+        /// Creates count-based windows over all elements in the stream.
+        /// Window fires when the specified number of elements have been collected.
+        /// Corresponds to org.apache.flink.streaming.api.datastream.DataStream.countWindowAll in Java Flink.
+        /// </summary>
+        /// <param name="size">The number of elements per window</param>
+        /// <returns>An AllWindowedStream that can be aggregated</returns>
+        public AllWindowedStream<T> CountWindowAll(int size)
+        {
+            if (size <= 0)
+                throw new ArgumentException("Window size must be greater than 0", nameof(size));
+            
+            // Capture operation if using native API
+            _operationCapture?.CaptureCountWindow(size);
+            
+            // Create a windowed stream with count-based windowing
+            var windowedStream = new AllWindowedStream<T>(this, size);
+            
+            // Propagate operation capture
+            if (_operationCapture != null)
+            {
+                windowedStream.AttachOperationCapture(_operationCapture);
+            }
+            
+            return windowedStream;
+        }
+
+        /// <summary>
         /// Gets the execution environment.
         /// </summary>
         /// <returns>The StreamExecutionEnvironment</returns>
@@ -572,13 +627,22 @@ namespace FlinkDotNet.DataStream
     public class AllWindowedStream<T>
     {
         private readonly DataStream<T> _dataStream;
-        private readonly Time _windowSize;
+        private readonly Time? _windowSize;
+        private readonly int? _windowCount;
         private OperationCapture? _operationCapture;
 
         internal AllWindowedStream(DataStream<T> dataStream, Time windowSize)
         {
             _dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
             _windowSize = windowSize ?? throw new ArgumentNullException(nameof(windowSize));
+            _windowCount = null;
+        }
+
+        internal AllWindowedStream(DataStream<T> dataStream, int windowCount)
+        {
+            _dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
+            _windowSize = null;
+            _windowCount = windowCount;
         }
 
         /// <summary>
@@ -627,9 +691,14 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
-        /// Gets the window size.
+        /// Gets the window size (for time-based windows).
         /// </summary>
-        public Time GetWindowSize() => _windowSize;
+        public Time? GetWindowSize() => _windowSize;
+
+        /// <summary>
+        /// Gets the window count (for count-based windows).
+        /// </summary>
+        public int? GetWindowCount() => _windowCount;
     }
 
     #region Function Interfaces - Core Flink API

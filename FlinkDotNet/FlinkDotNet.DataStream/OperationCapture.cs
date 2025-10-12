@@ -137,12 +137,30 @@ namespace FlinkDotNet.DataStream
             {
                 WindowType = "TUMBLING",
                 Size = windowSize.ToMilliseconds(),
-                TimeUnit = "MILLISECONDS"
+                TimeUnit = "MILLISECONDS",
+                IsCountBased = false
             };
             
             _operations.Add(new CapturedOperation
             {
                 Type = "TimeWindowAll",
+                Function = windowSize
+            });
+        }
+
+        public void CaptureCountWindow(int windowSize)
+        {
+            _windowDefinition = new WindowDefinition
+            {
+                WindowType = "TUMBLING",
+                Size = windowSize,
+                TimeUnit = "COUNT",
+                IsCountBased = true
+            };
+            
+            _operations.Add(new CapturedOperation
+            {
+                Type = "CountWindowAll",
                 Function = windowSize
             });
         }
@@ -251,7 +269,10 @@ namespace FlinkDotNet.DataStream
                         TranslateFilterOperation(jobDef, operation);
                         break;
                     case "TimeWindowAll":
-                        TranslateWindowOperation(jobDef);
+                    case "CountWindowAll":
+                        // Window information is captured but NOT added as a separate operation
+                        // It will be incorporated into the AggregateOperationDefinition
+                        // DO NOT call TranslateWindowOperation() here!
                         break;
                     case "Aggregate":
                         TranslateAggregateOperation(jobDef, operation);
@@ -335,11 +356,42 @@ namespace FlinkDotNet.DataStream
                 jobDef.Metadata.Properties["aggregateFunction"] = operation.Function.GetType().FullName ?? "Unknown";
             }
             
-            jobDef.Operations.Add(new AggregateOperationDefinition
+            long? windowSeconds = null;
+            int? windowCount = null;
+            
+            if (_windowDefinition != null)
+            {
+                if (_windowDefinition.IsCountBased)
+                {
+                    // COUNT-BASED WINDOW
+                    windowCount = (int)_windowDefinition.Size;
+                    _logger.Information("[OperationCapture.TranslateAggregateOperation] Using COUNT-based window: {WindowCount} messages",
+                        windowCount);
+                }
+                else
+                {
+                    // TIME-BASED WINDOW - Convert window size from milliseconds to seconds
+                    windowSeconds = _windowDefinition.Size / 1000;
+                    _logger.Information("[OperationCapture.TranslateAggregateOperation] Using TIME-based window: {WindowSeconds} seconds (from {WindowSize} ms)",
+                        windowSeconds, _windowDefinition.Size);
+                }
+            }
+            else
+            {
+                _logger.Warning("[OperationCapture.TranslateAggregateOperation] No window defined");
+            }
+            
+            var aggDef = new AggregateOperationDefinition
             {
                 AggregationType = "COLLECT",
-                Field = "*"
-            });
+                Field = "*",
+                WindowSeconds = windowSeconds,
+                WindowCount = windowCount
+            };
+            
+            jobDef.Operations.Add(aggDef);
+            _logger.Information("[OperationCapture.TranslateAggregateOperation] Created AggregateOperationDefinition with WindowSeconds={WindowSeconds}, WindowCount={WindowCount}",
+                windowSeconds, windowCount);
         }
 
         public bool HasOperations() => _operations.Count > 0 || _kafkaSource != null;
@@ -357,5 +409,6 @@ namespace FlinkDotNet.DataStream
         public string WindowType { get; set; } = string.Empty;
         public long Size { get; set; }
         public string TimeUnit { get; set; } = string.Empty;
+        public bool IsCountBased { get; set; }
     }
 }

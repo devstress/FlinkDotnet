@@ -436,7 +436,25 @@ namespace FlinkDotNet.DataStream
 
             _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
             var gateway = new FlinkJobGatewayService();
-            var submit = await gateway.SubmitJobAsync(jobToSubmit, cancellationToken).ConfigureAwait(false);
+            
+            JobSubmissionResult submit;
+            try
+            {
+                submit = await gateway.SubmitJobAsync(jobToSubmit, cancellationToken).ConfigureAwait(false);
+                _serilogLogger.Information("[ExecuteAsync] Job submission completed: Success={Success}, FlinkJobId={FlinkJobId}, Error={Error}",
+                    submit.Success, submit.FlinkJobId, submit.ErrorMessage);
+            }
+            catch (Exception ex)
+            {
+                _serilogLogger.Error(ex, "[ExecuteAsync] Exception during job submission to gateway for job {JobId}", jobToSubmit.Metadata.JobId);
+                _logger?.LogError(ex, "Failed to submit job {JobId} to gateway", jobToSubmit.Metadata.JobId);
+                throw new InvalidOperationException($"Failed to submit job {jobToSubmit.Metadata.JobId} to Flink Job Gateway", ex);
+            }
+
+            if (!submit.Success)
+            {
+                _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
+            }
 
             return new JobExecutionResult
             {

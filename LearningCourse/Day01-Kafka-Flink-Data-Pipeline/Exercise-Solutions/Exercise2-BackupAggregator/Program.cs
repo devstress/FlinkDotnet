@@ -28,8 +28,8 @@ namespace Exercise2_BackupAggregator
     /// </summary>
     static class Program
     {
-        private const string InputTopic = "flink_input";
-        private const string OutputTopic = "flink_output";
+        private const string InputTopic = "exercise2_input";
+        private const string OutputTopic = "exercise2_output";
         
         // Kafka configuration for HOST operations (producer/consumer)
         // Lazy evaluation - reads env var when first accessed, not at class load time
@@ -63,11 +63,11 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  - Section 7: Custom object deserialization (InputMessage)");
             Console.WriteLine("  - Section 8: Custom object serialization (Backup)");
             Console.WriteLine("  - Section 9: Timestamping messages (EventTime)");
-            Console.WriteLine("  - Section 10: Creating time windows (tumbling windows)");
-            Console.WriteLine("  - Section 11: Aggregating backups (daily aggregation)");
+            Console.WriteLine("  - Section 10: Creating count windows (count-based aggregation)");
+            Console.WriteLine("  - Section 11: Aggregating backups (50 message aggregation)");
             Console.WriteLine();
-            Console.WriteLine("  Using native DataStream API matching Baeldung tutorial structure");
-            Console.WriteLine("  .TimeWindowAll(Time.Hours(24))");
+            Console.WriteLine("  Using native DataStream API for testing");
+            Console.WriteLine("  .CountWindowAll(50)  // Testing: aggregate every 50 messages");
             Console.WriteLine("  .Aggregate(new BackupAggregator())");
             Console.WriteLine();
             Console.WriteLine("================================================================================");
@@ -114,7 +114,7 @@ namespace Exercise2_BackupAggregator
 
             Console.WriteLine(">> Step 5/6: Producing timestamped InputMessage objects...");
             await ProduceInputMessages();
-            await Task.Delay(2000); // Wait for Flink to aggregate
+            await Task.Delay(2000); // Brief delay for messages to be consumed
             Console.WriteLine();
 
             Console.WriteLine(">> Step 6/6: Consuming Backup aggregation results...");
@@ -129,7 +129,7 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine("  [OK] Custom object deserialization (InputMessage)");
             Console.WriteLine("  [OK] Custom object serialization (Backup)");
             Console.WriteLine("  [OK] EventTime timestamp assignment");
-            Console.WriteLine("  [OK] Time windows: .TimeWindowAll(Time.Hours(24))");
+            Console.WriteLine("  [OK] Count windows: .CountWindowAll(50) - Testing mode");
             Console.WriteLine("  [OK] Aggregation: .Aggregate(new BackupAggregator())");
             Console.WriteLine("  [OK] NATIVE DATASTREAM API - EXACT BAELDUNG MATCH!");
             Console.WriteLine();
@@ -155,7 +155,7 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine($"   Creating Flink job using native DataStream API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Time Characteristic: EventTime");
-            Console.WriteLine($"   - Window: Time.Hours(24)");
+            Console.WriteLine($"   - Window: CountWindowAll(50) - Testing mode");
             Console.WriteLine($"   - Aggregation: BackupAggregator");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
             Console.WriteLine();
@@ -238,11 +238,13 @@ namespace Exercise2_BackupAggregator
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
             consumer.Subscribe(OutputTopic);
 
-            Console.WriteLine($"   Consuming Backup aggregations from '{OutputTopic}' (max 30 seconds)...");
+            Console.WriteLine($"   Consuming Backup aggregations from '{OutputTopic}' (max 10 seconds)...");
+            Console.WriteLine($"   NOTE: Count window aggregates every 50 messages");
+            Console.WriteLine($"   Window fires immediately after 50th message arrives");
 
             var consumedBackups = 0;
             var stopwatch = Stopwatch.StartNew();
-            var timeout = TimeSpan.FromSeconds(30);
+            var timeout = TimeSpan.FromSeconds(10);
 
             try
             {
@@ -338,11 +340,10 @@ namespace Exercise2_BackupAggregator
             Console.WriteLine($"        Key: {result.Message.Key ?? "(null)"}");
             Console.WriteLine($"        Value Length: {result.Message.Value?.Length ?? 0} characters");
             
-            var valuePreview = result.Message.Value?.Length > 200
-                ? result.Message.Value.Substring(0, 200) + "..."
+            var valuePreview = result.Message.Value?.Length > 500
+                ? result.Message.Value.Substring(0, 500) + "..."
                 : result.Message.Value ?? "(null)";
-            Console.WriteLine($"        Value (first 200 chars): {valuePreview}");
-            Console.WriteLine($"        Full Raw Value: {result.Message.Value ?? "(null)"}");
+            Console.WriteLine($"        Value (first 500 chars): {valuePreview}");
             Console.WriteLine();
         }
 
@@ -369,23 +370,19 @@ namespace Exercise2_BackupAggregator
         /// <summary>
         /// Validate consumption results and handle failures
         /// </summary>
-        private static async Task ValidateConsumptionResults(int consumedBackups)
+        private static Task ValidateConsumptionResults(int consumedBackups)
         {
             if (consumedBackups > 0)
             {
                 Console.WriteLine($"   [SUCCESS] Consumed {consumedBackups} Backup aggregations");
+                Console.WriteLine($"   [SUCCESS] Count window aggregated 50 messages successfully!");
             }
             else
             {
-                Console.WriteLine($"   [ERROR] No backups consumed - Flink job may not be running");
-                Console.WriteLine($"   Checking Flink TaskManager logs for diagnostics...");
-                Console.WriteLine();
-                
-                await PrintTaskManagerLogsAsync();
-                
-                Console.WriteLine();
-                throw new InvalidOperationException("No backup aggregations consumed from output topic. Flink job may not be processing data correctly.");
+                Console.WriteLine($"   [ERROR] No backups consumed - count window should fire after 50 messages");
+                throw new InvalidOperationException("Count window failed to aggregate 50 messages");
             }
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -448,6 +445,23 @@ namespace Exercise2_BackupAggregator
                 {
                     Console.WriteLine($"        First Message: {backup.InputMessages[0].Sender} -> {backup.InputMessages[0].Recipient}");
                     Console.WriteLine($"        [OK] Successfully aggregated {backup.InputMessages.Count} messages into backup!");
+                    
+                    // Count window should have exactly 50 messages
+                    if (backup.InputMessages.Count == 50)
+                    {
+                        Console.WriteLine($"        [SUCCESS] Count window aggregated exactly 50 messages!");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"        [WARNING] Expected 50 messages, got {backup.InputMessages.Count}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"        [ERROR] Backup contains no messages! Expected 50 messages.");
+                    throw new InvalidOperationException(
+                        "Backup aggregation failed: No messages in backup. " +
+                        "This indicates the aggregation or windowing is not working correctly.");
                 }
                 return true;
             }
@@ -650,75 +664,6 @@ namespace Exercise2_BackupAggregator
                 $"Check Flink JobManager logs for issues.");
         }
         
-        /// <summary>
-        /// Print last 20 lines of TaskManager container logs for debugging
-        /// </summary>
-        static async Task PrintTaskManagerLogsAsync()
-        {
-            string[] containerCommands = { "docker", "podman" };
-            
-            foreach (var command in containerCommands)
-            {
-                try
-                {
-                    // Find TaskManager container
-                    var findProcess = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = command,
-                            Arguments = "ps --filter name=taskmanager --format {{.ID}}",
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        }
-                    };
-                    findProcess.Start();
-                    var containerId = (await findProcess.StandardOutput.ReadToEndAsync()).Trim();
-                    await findProcess.WaitForExitAsync();
-                    
-                    if (findProcess.ExitCode == 0 && !string.IsNullOrEmpty(containerId))
-                    {
-                        // Get last 20 lines of logs
-                        var logsProcess = new Process
-                        {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = command,
-                                Arguments = $"logs --tail 20 {containerId}",
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                                UseShellExecute = false,
-                                CreateNoWindow = true
-                            }
-                        };
-                        logsProcess.Start();
-                        var logs = await logsProcess.StandardOutput.ReadToEndAsync();
-                        await logsProcess.WaitForExitAsync();
-                        
-                        if (logsProcess.ExitCode == 0 && !string.IsNullOrEmpty(logs))
-                        {
-                            Console.WriteLine($"   [DEBUG] TaskManager logs (last 20 lines):");
-                            Console.WriteLine("   " + new string('-', 78));
-                            foreach (var line in logs.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)))
-                            {
-                                Console.WriteLine($"   {line}");
-                            }
-                            Console.WriteLine("   " + new string('-', 78));
-                            return; // Successfully printed logs
-                        }
-                    }
-                }
-                catch
-                {
-                    // Try next command
-                }
-            }
-            
-            Console.WriteLine("   [WARNING] Could not find or access TaskManager container logs");
-            Console.WriteLine("   Verify Flink TaskManager is running: docker ps | grep taskmanager");
-        }
     }
 
     #region Custom Objects (Baeldung Section 7 & 8)

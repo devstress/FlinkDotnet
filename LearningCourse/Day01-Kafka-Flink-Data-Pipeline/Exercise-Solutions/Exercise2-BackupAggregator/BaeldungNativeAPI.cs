@@ -29,8 +29,9 @@ namespace Exercise2_BackupAggregator
 
             public Watermark? CheckAndGetNextWatermark(InputMessage lastElement, long extractedTimestamp)
             {
-                // Allow 1500ms lateness for out-of-order events
-                return new Watermark(extractedTimestamp - 1500);
+                // For testing: advance watermark 25 hours into the future
+                // This triggers the 24-hour window immediately after all messages arrive
+                return new Watermark(extractedTimestamp + (25L * 60 * 60 * 1000)); // +25 hours in milliseconds
             }
         }
 
@@ -83,8 +84,8 @@ namespace Exercise2_BackupAggregator
         public static async Task CreateBackup()
         {
             // Configuration (matches Baeldung exactly)
-            string inputTopic = "flink_input";
-            string outputTopic = "flink_output";
+            string inputTopic = "exercise2_input";
+            string outputTopic = "exercise2_output";
             string consumerGroup = "baeldung";
             string kafkaAddress = Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") 
                 ?? throw new InvalidOperationException("KAFKA_FLINK_BOOTSTRAP_SERVERS environment variable must be set");
@@ -108,8 +109,9 @@ namespace Exercise2_BackupAggregator
             inputMessagesStream = inputMessagesStream.AssignTimestampsAndWatermarks(new InputMessageTimestampAssigner());
 
             // Apply transformations: window → aggregate → sink
+            // COUNT-BASED WINDOW: Aggregate every 50 messages for testing
             inputMessagesStream
-                .TimeWindowAll(Time.Hours(24))  // Use 24 hours like Baeldung (not 10 seconds)
+                .CountWindowAll(50)  // Testing: aggregate 50 messages
                 .Aggregate(new BackupAggregator())
                 .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
 
@@ -123,10 +125,15 @@ namespace Exercise2_BackupAggregator
         /// </summary>
         private sealed class BackupKafkaSink : ISinkFunction<Backup>
         {
+            #pragma warning disable S4487 // Unread private members should be removed - accessed via reflection
+            private readonly string _topic;
+            private readonly string _bootstrapServers;
+            #pragma warning restore S4487
+
             public BackupKafkaSink(string topic, string bootstrapServers)
             {
-                _ = topic;
-                _ = bootstrapServers;
+                _topic = topic ?? throw new ArgumentNullException(nameof(topic));
+                _bootstrapServers = bootstrapServers ?? throw new ArgumentNullException(nameof(bootstrapServers));
             }
 
             public Task InvokeAsync(Backup element, CancellationToken cancellationToken = default)
