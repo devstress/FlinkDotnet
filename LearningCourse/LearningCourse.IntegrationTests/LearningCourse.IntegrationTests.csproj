@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LearningCourse.Common\LearningCourse.Common.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
   </ItemGroup>
 
 </Project>

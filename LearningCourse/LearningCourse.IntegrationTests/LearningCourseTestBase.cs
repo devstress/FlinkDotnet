@@ -8,6 +8,9 @@ namespace LearningCourse.IntegrationTests;
 /// Simple test base for LearningCourse integration tests.
 /// Starts LocalTesting AppHost as a standalone process and runs actual exercise code against it.
 /// Much simpler than creating duplicate AppHost infrastructure.
+///
+/// Exercises now self-manage their job lifecycle using IJobClient pattern.
+/// No test infrastructure job cleanup needed.
 /// </summary>
 public abstract class LearningCourseTestBase
 {
@@ -266,6 +269,10 @@ public abstract class LearningCourseTestBase
             _isSetupComplete = false;
             
             TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
+        
+        // Cancel all Flink jobs BEFORE copying logs and stopping containers
+        TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
+        CancelAllFlinkJobsSync();
         
         // Copy Flink logs from Flink containers BEFORE stopping them
         // Note: FlinkJobRunner logs are embedded within Flink's logging system
@@ -597,7 +604,79 @@ public abstract class LearningCourseTestBase
     }
 
     /// <summary>
-    /// Execute an exercise program and capture its output
+    /// Cancel all running Flink jobs synchronously (for use in GlobalTearDown)
+    /// </summary>
+    private static void CancelAllFlinkJobsSync()
+    {
+        try
+        {
+            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            
+            // Get all running jobs
+            var jobsResponse = httpClient.GetAsync($"{flinkGatewayUrl}/jobs").Result;
+            if (!jobsResponse.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"   ⚠️ Could not get job list (this is OK if no jobs are running): {jobsResponse.StatusCode}");
+                return;
+            }
+            
+            var jobsJson = jobsResponse.Content.ReadAsStringAsync().Result;
+            
+            // Parse job IDs using simple string parsing
+            var jobIds = new List<string>();
+            var matches = System.Text.RegularExpressions.Regex.Matches(jobsJson, @"""id""\s*:\s*""([a-f0-9]{32})""");
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                if (match.Groups.Count > 1)
+                {
+                    jobIds.Add(match.Groups[1].Value);
+                }
+            }
+            
+            if (jobIds.Count == 0)
+            {
+                TestContext.WriteLine("   ✅ No running Flink jobs to cancel");
+                return;
+            }
+            
+            TestContext.WriteLine($"   📋 Found {jobIds.Count} running job(s) to cancel");
+            
+            // Cancel each job
+            var successCount = 0;
+            foreach (var jobId in jobIds)
+            {
+                try
+                {
+                    var cancelResponse = httpClient.PatchAsync($"{flinkGatewayUrl}/jobs/{jobId}?mode=cancel", null).Result;
+                    
+                    if (cancelResponse.IsSuccessStatusCode)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        TestContext.WriteLine($"   ⚠️ Failed to cancel job {jobId}: {cancelResponse.StatusCode}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine($"   ⚠️ Error cancelling job {jobId}: {ex.Message}");
+                }
+            }
+            
+            TestContext.WriteLine($"   ✅ Cancelled {successCount}/{jobIds.Count} Flink jobs");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️ Error in job cancellation: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Execute an exercise program and capture its output.
+    /// Automatically parses and tracks Flink job IDs for cleanup.
     /// </summary>
     protected async Task<(int exitCode, string output, string error)> ExecuteExerciseAsync(
         string exercisePath,
@@ -674,5 +753,4 @@ public abstract class LearningCourseTestBase
 
         return (process.ExitCode, output, error);
     }
-    
 }

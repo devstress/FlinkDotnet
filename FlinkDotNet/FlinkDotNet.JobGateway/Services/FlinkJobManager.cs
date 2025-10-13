@@ -351,9 +351,27 @@ public class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            var response = await _httpClient.PostAsync($"/v1/jobs/{flinkJobId}/cancel", null);
-            if (response.IsSuccessStatusCode)
+            _logger.LogInformation("Attempting to cancel Flink job: {FlinkJobId}", flinkJobId);
+            
+            // Try Flink 2.x style first: PATCH /jobs/{jobId}?mode=cancel
+            var patchResponse = await _httpClient.PatchAsync($"/jobs/{flinkJobId}?mode=cancel", null);
+            if (patchResponse.IsSuccessStatusCode)
             {
+                _logger.LogInformation("Successfully canceled job {FlinkJobId} using PATCH /jobs/{{jobId}}?mode=cancel", flinkJobId);
+                if (_jobMapping.TryGetValue(flinkJobId, out var jobInfo))
+                {
+                    jobInfo.Status = "CANCELED";
+                }
+                return true;
+            }
+            
+            _logger.LogWarning("PATCH /jobs/{{jobId}}?mode=cancel returned {StatusCode}, trying POST endpoint", patchResponse.StatusCode);
+            
+            // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
+            var postResponse = await _httpClient.PostAsync($"/jobs/{flinkJobId}/cancel", null);
+            if (postResponse.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Successfully canceled job {FlinkJobId} using POST /jobs/{{jobId}}/cancel", flinkJobId);
                 if (_jobMapping.TryGetValue(flinkJobId, out var jobInfo))
                 {
                     jobInfo.Status = "CANCELED";
@@ -361,15 +379,20 @@ public class FlinkJobManager : IFlinkJobManager
                 return true;
             }
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            _logger.LogWarning("Both cancel attempts failed. PATCH: {PatchStatus}, POST: {PostStatus}",
+                patchResponse.StatusCode, postResponse.StatusCode);
+
+            if (postResponse.StatusCode == HttpStatusCode.NotFound || patchResponse.StatusCode == HttpStatusCode.NotFound)
             {
+                _logger.LogError("Job {FlinkJobId} not found in Flink cluster during cancellation", flinkJobId);
                 return false;
             }
 
-            throw new InvalidOperationException($"Unexpected status code canceling Flink job: {(int)response.StatusCode} {response.StatusCode}");
+            throw new InvalidOperationException($"Unexpected status code canceling Flink job: PATCH={patchResponse.StatusCode}, POST={postResponse.StatusCode}");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to cancel job {FlinkJobId} in Flink 2.1.0 cluster", flinkJobId);
             throw new InvalidOperationException($"Failed to cancel job in Flink 2.1.0 cluster: {flinkJobId}", ex);
         }
     }
