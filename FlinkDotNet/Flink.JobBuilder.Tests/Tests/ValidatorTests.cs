@@ -46,7 +46,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = null,
+            Metadata = null!,
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "test" }
         };
@@ -78,7 +78,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = null },
+            Metadata = new JobMetadata { JobId = "test", Version = null! },
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "test" }
         };
@@ -137,7 +137,7 @@ public class ValidatorTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = null,
+            Source = null!,
             Sink = new KafkaSinkDefinition { Topic = "test" }
         };
 
@@ -184,7 +184,7 @@ public class ValidatorTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new SqlSourceDefinition { Statements = null }
+            Source = new SqlSourceDefinition { Statements = null! }
         };
 
         var result = JobDefinitionValidator.Validate(job);
@@ -287,7 +287,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
-            Operations = null,
+            Operations = null!,
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
 
