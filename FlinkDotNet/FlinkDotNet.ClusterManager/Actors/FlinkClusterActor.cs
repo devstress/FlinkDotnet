@@ -386,6 +386,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
         {
             _healthMonitoringCts.Cancel();
             _healthMonitoringCts.Dispose();
+            _httpClient?.Dispose();
             _disposed = true;
         }
     }
