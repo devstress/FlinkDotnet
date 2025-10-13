@@ -10,7 +10,7 @@ using Flink.JobBuilder.Models;
 
 namespace FlinkDotNet.JobGateway.Services;
 
-[SuppressMessage("Reliability", "S2139", Justification = "Gateway converts exceptions into domain objects; selective rethrowing is intentional.")]
+// Note: This gateway intentionally converts exceptions into domain objects with selective rethrowing
 public class FlinkJobManager : IFlinkJobManager
 {
     private readonly ILogger<FlinkJobManager> _logger;

@@ -27,13 +27,31 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of elements to deserialize</typeparam>
     public class KafkaSourceFunction<T> : ISourceFunction<T>
     {
-#pragma warning disable S4487 // Unread private fields - These will be used when Kafka integration is implemented
         private readonly string _topic;
         private readonly string _bootstrapServers;
         private readonly string _groupId;
         private readonly System.Func<string, T> _deserializer;
         private readonly string _startingOffsets;
-#pragma warning restore S4487
+
+        /// <summary>
+        /// Gets the Kafka topic to consume from.
+        /// </summary>
+        public string Topic => _topic;
+
+        /// <summary>
+        /// Gets the Kafka bootstrap servers configuration.
+        /// </summary>
+        public string BootstrapServers => _bootstrapServers;
+
+        /// <summary>
+        /// Gets the Kafka consumer group ID.
+        /// </summary>
+        public string GroupId => _groupId;
+
+        /// <summary>
+        /// Gets the starting offsets strategy.
+        /// </summary>
+        public string StartingOffsets => _startingOffsets;
 
         public KafkaSourceFunction(
             string topic,

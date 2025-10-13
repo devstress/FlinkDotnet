@@ -117,7 +117,7 @@ public class MultiTierRateLimiter : IDisposable
         try
         {
             // Try to acquire from all tiers
-#pragma warning disable S3267 // Loop should be simplified by calling Select
+            // Note: Cannot use Select here due to early exit logic and rollback side effects
             foreach (var tier in applicableTiers)
             {
                 if (_rateLimiters.TryGetValue(tier.Name, out var rateLimiter))
@@ -133,7 +133,6 @@ public class MultiTierRateLimiter : IDisposable
                     }
                 }
             }
-#pragma warning restore S3267
 
             return true;
         }
@@ -251,15 +250,11 @@ public class MultiTierRateLimiter : IDisposable
     /// <summary>
     /// Validates integration with rebalancing operations.
     /// </summary>
-#pragma warning disable S3400 // Remove this method and declare a constant for this value
-#pragma warning disable S2325 // Make method a static method
-    public bool ValidateRebalancingIntegration()
+    public static bool ValidateRebalancingIntegration()
     {
         // Check if rate limits are recalculated during rebalancing
         return true; // Simplified for demonstration
     }
-#pragma warning restore S3400
-#pragma warning restore S2325
 
     /// <summary>
     /// Validates fair allocation across consumers.
@@ -495,13 +490,11 @@ public class MultiTierRateLimiter : IDisposable
     /// </summary>
     /// <param name="producerId">Producer identifier</param>
     /// <returns>True if producer throttling is properly configured</returns>
-#pragma warning disable S2325 // Make method a static method
-    public bool ValidateProducerThrottling(string producerId)
+    public static bool ValidateProducerThrottling(string producerId)
     {
         // Mock implementation for testing
         return !string.IsNullOrEmpty(producerId);
     }
-#pragma warning restore S2325
 
     /// <summary>
     /// Gets the current quota status for a specific tier.
