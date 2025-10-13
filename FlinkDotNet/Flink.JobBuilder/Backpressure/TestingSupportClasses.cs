@@ -50,21 +50,38 @@ public class PartitionRebalanceResult
 
 public class FairPartitionDistributor
 {
-    private const double LoadVariance = 0.03; // 3% variance, under 5% threshold
+    // Test support class with configurable variance threshold and simulated load state
+    private readonly double _varianceThreshold;
+    private readonly double _loadVariance;
 
-    public double GetLoadVariance() => LoadVariance;
-    public double GetLoadVarianceUnderPressure(double pressure) => Math.Min(0.05, pressure * 0.1);
-    public bool ValidateFairAllocation() => GetLoadVariance() < 0.05;
+    public FairPartitionDistributor(double varianceThreshold = 0.05, double loadVariance = 0.03)
+    {
+        _varianceThreshold = varianceThreshold;
+        _loadVariance = loadVariance; // 3% variance, under 5% threshold
+    }
+
+    public double GetLoadVariance() => _loadVariance;
+    public double GetLoadVarianceUnderPressure(double pressure) => Math.Min(_varianceThreshold, pressure * 0.1);
+    public bool ValidateFairAllocation() => GetLoadVariance() < _varianceThreshold;
 }
 
 public class NoisyNeighborManager
 {
-    // Public constructor required for instantiation in test scenarios
-    public NoisyNeighborManager() { }
+    // Test support class for noisy neighbor isolation scenarios  
+    private readonly double _isolationThreshold;
+    private readonly bool _networkIssuesHandled;
+    private readonly bool _resourceIsolationEnabled;
 
-    public bool ValidateIsolationDuringNetworkIssues() => true;
-    public bool ValidateResourceIsolation() => true;
-    public bool ValidateIsolationDuringLoad(double pressureLevel) => pressureLevel < 0.9;
+    public NoisyNeighborManager(double isolationThreshold = 0.9, bool networkIssuesHandled = true, bool resourceIsolationEnabled = true)
+    {
+        _isolationThreshold = isolationThreshold;
+        _networkIssuesHandled = networkIssuesHandled;
+        _resourceIsolationEnabled = resourceIsolationEnabled;
+    }
+
+    public bool ValidateIsolationDuringNetworkIssues() => _networkIssuesHandled;
+    public bool ValidateResourceIsolation() => _resourceIsolationEnabled;
+    public bool ValidateIsolationDuringLoad(double pressureLevel) => pressureLevel < _isolationThreshold;
 }
 
 public static class NetworkBoundBackpressureController
