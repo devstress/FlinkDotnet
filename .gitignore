@@ -47,6 +47,10 @@ ScaffoldingReadMe.txt
 *.log
 CodeCoverage/
 
+# SonarQube local analysis
+.sonarqube/
+.sonar/
+
 # Build and test output files
 *_warnings.txt
 *build*.txt
