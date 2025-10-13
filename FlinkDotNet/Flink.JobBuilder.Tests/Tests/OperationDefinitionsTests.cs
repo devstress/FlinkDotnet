@@ -426,6 +426,25 @@ public class OperationDefinitionsTests
     #region MapOperationDefinition Tests
 
     [Test]
+    public void MapOperationDefinition_TypeProperty_ReturnsMap()
+    {
+        var op = new MapOperationDefinition();
+        
+        Assert.That(op.Type, Is.EqualTo("map"));
+    }
+
+    [Test]
+    public void MapOperationDefinition_SetExpression_ReturnsValue()
+    {
+        var op = new MapOperationDefinition
+        {
+            Expression = "x => x.ToUpper()"
+        };
+        
+        Assert.That(op.Expression, Is.EqualTo("x => x.ToUpper()"));
+    }
+
+    [Test]
     public void MapOperationDefinition_OutputType_SupportsNull()
     {
         var op = new MapOperationDefinition
@@ -447,6 +466,37 @@ public class OperationDefinitionsTests
         };
         
         Assert.That(op.OutputType, Is.EqualTo("String"));
+    }
+
+    #endregion
+
+    #region FilterOperationDefinition Tests
+
+    [Test]
+    public void FilterOperationDefinition_TypeProperty_ReturnsFilter()
+    {
+        var op = new FilterOperationDefinition();
+        
+        Assert.That(op.Type, Is.EqualTo("filter"));
+    }
+
+    [Test]
+    public void FilterOperationDefinition_SetExpression_ReturnsValue()
+    {
+        var op = new FilterOperationDefinition
+        {
+            Expression = "x => x.Length > 5"
+        };
+        
+        Assert.That(op.Expression, Is.EqualTo("x => x.Length > 5"));
+    }
+
+    [Test]
+    public void FilterOperationDefinition_DefaultExpression_IsEmpty()
+    {
+        var op = new FilterOperationDefinition();
+        
+        Assert.That(op.Expression, Is.EqualTo(string.Empty));
     }
 
     #endregion
@@ -511,6 +561,33 @@ public class OperationDefinitionsTests
         var op = new WindowOperationDefinition();
         
         Assert.That(op.TimeUnit, Is.EqualTo("MINUTES"));
+    }
+
+    [Test]
+    public void WindowOperationDefinition_TypeProperty_ReturnsWindow()
+    {
+        var op = new WindowOperationDefinition();
+        
+        Assert.That(op.Type, Is.EqualTo("window"));
+    }
+
+    [Test]
+    public void WindowOperationDefinition_SetAllProperties_ReturnsValues()
+    {
+        var op = new WindowOperationDefinition
+        {
+            WindowType = "SLIDING",
+            Size = 60,
+            TimeUnit = "SECONDS",
+            Slide = 30,
+            TimeField = "eventTime"
+        };
+        
+        Assert.That(op.WindowType, Is.EqualTo("SLIDING"));
+        Assert.That(op.Size, Is.EqualTo(60));
+        Assert.That(op.TimeUnit, Is.EqualTo("SECONDS"));
+        Assert.That(op.Slide, Is.EqualTo(30));
+        Assert.That(op.TimeField, Is.EqualTo("eventTime"));
     }
 
     #endregion

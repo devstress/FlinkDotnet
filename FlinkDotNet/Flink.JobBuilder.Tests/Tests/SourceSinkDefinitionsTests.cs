@@ -211,6 +211,38 @@ public class SourceSinkDefinitionsTests
         Assert.That(source.Properties["max.poll.records"], Is.EqualTo("500"));
     }
 
+    [Test]
+    public void KafkaSourceDefinition_TypeProperty_ReturnsKafka()
+    {
+        var source = new KafkaSourceDefinition();
+        
+        Assert.That(source.Type, Is.EqualTo("kafka"));
+    }
+
+    [Test]
+    public void KafkaSourceDefinition_GroupId_SupportsNull()
+    {
+        var source = new KafkaSourceDefinition
+        {
+            Topic = "test-topic",
+            GroupId = null
+        };
+        
+        Assert.That(source.GroupId, Is.Null);
+    }
+
+    [Test]
+    public void KafkaSourceDefinition_BootstrapServers_SupportsNull()
+    {
+        var source = new KafkaSourceDefinition
+        {
+            Topic = "test-topic",
+            BootstrapServers = null
+        };
+        
+        Assert.That(source.BootstrapServers, Is.Null);
+    }
+
     #endregion
 
     #region Sink Definition Tests
@@ -347,6 +379,74 @@ public class SourceSinkDefinitionsTests
     }
 
     [Test]
+    public void HttpSinkDefinition_BodyTemplate_SupportsNull()
+    {
+        var sink = new HttpSinkDefinition
+        {
+            Url = "http://webhook.example.com",
+            BodyTemplate = null
+        };
+        
+        Assert.That(sink.BodyTemplate, Is.Null);
+    }
+
+    [Test]
+    public void HttpSinkDefinition_BodyTemplate_CanBeSet()
+    {
+        var sink = new HttpSinkDefinition
+        {
+            Url = "http://webhook.example.com",
+            BodyTemplate = "{\"data\": \"{value}\"}"
+        };
+        
+        Assert.That(sink.BodyTemplate, Is.EqualTo("{\"data\": \"{value}\"}"));
+    }
+
+    [Test]
+    public void HttpSinkDefinition_AuthTokenStateKey_SupportsNull()
+    {
+        var sink = new HttpSinkDefinition
+        {
+            Url = "http://webhook.example.com",
+            AuthTokenStateKey = null
+        };
+        
+        Assert.That(sink.AuthTokenStateKey, Is.Null);
+    }
+
+    [Test]
+    public void HttpSinkDefinition_AuthTokenStateKey_CanBeSet()
+    {
+        var sink = new HttpSinkDefinition
+        {
+            Url = "http://webhook.example.com",
+            AuthTokenStateKey = "auth_token"
+        };
+        
+        Assert.That(sink.AuthTokenStateKey, Is.EqualTo("auth_token"));
+    }
+
+    [Test]
+    public void HttpSinkDefinition_DefaultTimeoutMs_Is5000()
+    {
+        var sink = new HttpSinkDefinition();
+        
+        Assert.That(sink.TimeoutMs, Is.EqualTo(5000));
+    }
+
+    [Test]
+    public void HttpSinkDefinition_TimeoutMs_CanBeSet()
+    {
+        var sink = new HttpSinkDefinition
+        {
+            Url = "http://webhook.example.com",
+            TimeoutMs = 10000
+        };
+        
+        Assert.That(sink.TimeoutMs, Is.EqualTo(10000));
+    }
+
+    [Test]
     public void RedisSinkDefinition_TypeProperty_ReturnsRedis()
     {
         var sink = new RedisSinkDefinition();
@@ -410,6 +510,37 @@ public class SourceSinkDefinitionsTests
         var sink = new KafkaSinkDefinition();
         
         Assert.That(sink.Serializer, Is.EqualTo("json"));
+    }
+
+    [Test]
+    public void KafkaSinkDefinition_TypeProperty_ReturnsKafka()
+    {
+        var sink = new KafkaSinkDefinition();
+        
+        Assert.That(sink.Type, Is.EqualTo("kafka"));
+    }
+
+    [Test]
+    public void KafkaSinkDefinition_BootstrapServers_SupportsNull()
+    {
+        var sink = new KafkaSinkDefinition
+        {
+            Topic = "output-topic",
+            BootstrapServers = null
+        };
+        
+        Assert.That(sink.BootstrapServers, Is.Null);
+    }
+
+    [Test]
+    public void KafkaSinkDefinition_Properties_CanStoreMultipleValues()
+    {
+        var sink = new KafkaSinkDefinition();
+        sink.Properties["compression.type"] = "gzip";
+        sink.Properties["batch.size"] = "16384";
+        
+        Assert.That(sink.Properties["compression.type"], Is.EqualTo("gzip"));
+        Assert.That(sink.Properties["batch.size"], Is.EqualTo("16384"));
     }
 
     #endregion
