@@ -1,0 +1,80 @@
+name: LearningCourse Integration Tests
+
+on:
+  push:
+    paths: 
+      - 'LearningCourse/**'
+  workflow_dispatch:
+
+jobs:
+  learningcourse-integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Install Maven
+      uses: stCarolas/setup-maven@v4
+      with:
+        maven-version: '3.9.6'
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    
+    - name: Install .NET Aspire workload
+      run: |
+        echo "📦 Installing .NET Aspire workload..."
+        dotnet workload install aspire
+        echo "✅ Aspire workload installed successfully"
+        
+    - name: Ensure Docker is running
+      run: docker info
+
+    - name: Configure system for optimal performance
+      run: |
+        echo "=== Configuring system for optimal performance ==="
+        sudo sysctl -w vm.max_map_count=262144
+        sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+        sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+        echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+        echo "Current ulimit -n: $(ulimit -n)"
+        echo "Available memory: $(free -h)"
+        echo "CPU info: $(nproc) cores"
+        cat /proc/cpuinfo | grep "model name" | head -1
+
+    - name: Build LocalTesting solution
+      run: |
+        echo "🔨 Building LocalTesting solution (includes all LearningCourse projects)..."
+        dotnet restore LocalTesting/LocalTesting.sln
+        dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+      
+    - name: Run LearningCourse Integration Tests
+      run: |
+        echo "=== Starting LearningCourse Integration Tests ==="
+        dotnet test LearningCourse/IntegrationTests.sln --configuration Release --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
+      env:
+        DOTNET_ENVIRONMENT: Testing
+        ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+        DOCKER_HOST: "unix:///var/run/docker.sock"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: LearningCourseTestResults
+        path: TestResults/
+      if: always()
+ 
+    - name: Cleanup
+      if: always()
+      run: |
+        docker system prune -f || true
+        docker volume prune -f || true
