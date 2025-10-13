@@ -1,7 +1,6 @@
-using LearningCourse.IntegrationTests;
 using NUnit.Framework;
 
-namespace Day01.IntegrationTests;
+namespace LearningCourse.IntegrationTests;
 
 /// <summary>
 /// Integration tests for Day 1: Kafka-Flink Data Pipeline
@@ -17,7 +16,7 @@ namespace Day01.IntegrationTests;
 [TestFixture]
 [Category("day01-kafka-flink-pipeline")]
 [Category("integration")]
-public class ExerciseExecutionTests : LearningCourseTestBase
+public class Day01Tests : LearningCourseTestBase
 {
     private const string Exercise1Path = "Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise1-StringCapitalize";
     private const string Exercise2Path = "Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise2-BackupAggregator";

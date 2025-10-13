@@ -1,7 +1,6 @@
-using LearningCourse.IntegrationTests;
 using NUnit.Framework;
 
-namespace Day02.IntegrationTests;
+namespace LearningCourse.IntegrationTests;
 
 /// <summary>
 /// Integration tests for Day 2: Apache Flink 2.1.0 Fundamentals & Production Environment
@@ -19,12 +18,12 @@ namespace Day02.IntegrationTests;
 [TestFixture]
 [Category("day02-flink21-fundamentals")]
 [Category("integration")]
-public class ExerciseExecutionTests : LearningCourseTestBase
+public class Day02Tests : LearningCourseTestBase
 {
-    private const string Exercise1Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/InfrastructureValidation";
-    private const string Exercise2Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/ProductionApp";
-    private const string Exercise3Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/ObservabilityDashboard";
-    private const string Exercise4Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/LoadTesting";
+    private const string Exercise1Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise21";
+    private const string Exercise2Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise22";
+    private const string Exercise3Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise23";
+    private const string Exercise4Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise24";
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>

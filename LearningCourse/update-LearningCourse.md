@@ -690,21 +690,34 @@ Day04-Production-Backpressure/
 │   └── Exercise42/  ✅ Follows pattern
 ```
 
-#### 2. Missing global.json Files in Exercise Solutions
-**Problem**: Forgetting to include `global.json` file in exercise solution directories
+#### 2. ~~Missing global.json Files in Exercise Solutions~~ **OBSOLETE - DO NOT USE**
 
-**Impact**:
-- Exercises may build with wrong .NET SDK version
-- Inconsistent behavior between local and CI environments
-- Test failures due to version mismatches
+**CRITICAL UPDATE**: Do NOT create individual `global.json` files in exercise solution directories.
 
-**Solution**:
-- **MANDATORY**: Every exercise solution MUST have a `global.json` file
-- Copy from template or existing exercise
-- Specify .NET 9.0 SDK version explicitly
-- Validate presence before committing
+**Correct Approach**:
+- **USE ROOT global.json ONLY**: All exercises inherit from the root `/global.json` file
+- **Location**: `FlinkDotnet/global.json` (repository root)
+- **Reason**: Ensures consistent .NET SDK version across entire repository
+- **Impact of Wrong Approach**: Creates version conflicts and maintenance issues
 
-**Template:**
+**What NOT to Do**:
+```
+❌ WRONG - Do not create these:
+Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise21/global.json
+Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise22/global.json
+```
+
+**What to Do**:
+```
+✅ CORRECT - Use root global.json:
+FlinkDotnet/global.json (repository root - already exists)
+└── LearningCourse/
+    └── DayXX-Topic-Name/
+        └── Exercise-Solutions/
+            └── ExerciseXY/ (inherits from root global.json)
+```
+
+**Root global.json Content**:
 ```json
 {
   "sdk": {
@@ -713,6 +726,25 @@ Day04-Production-Backpressure/
   }
 }
 ```
+
+**Validation**:
+```bash
+# Verify exercises use root global.json
+cd LearningCourse/DayXX-Topic-Name/Exercise-Solutions/ExerciseXY
+dotnet --version  # Should use version from root global.json (9.0.x)
+
+# Check that NO local global.json exists
+ls global.json  # Should fail (file not found)
+```
+
+**Previous Incorrect Guidance**:
+- ~~"Every exercise solution MUST have a `global.json` file"~~ - **INCORRECT**
+- ~~"Copy from template or existing exercise"~~ - **INCORRECT**
+
+**Corrected Guidance**:
+- **NEVER create exercise-level global.json files**
+- **ALWAYS rely on root global.json**
+- **VERIFY no local global.json files exist in exercises**
 
 #### 3. Incorrect Project References in .csproj Files
 **Problem**: Using outdated or incorrect project references, especially for FlinkDotNet core libraries
@@ -825,6 +857,373 @@ private const string Exercise1Path = "Day05-Enterprise-Observability/Exercise-So
 **Solution**:
 - Add day-specific category: `[Category("dayXX-topic-name")]`
 - Add general category: `[Category("integration")]`
+
+#### 11. Shared Infrastructure Setup Pattern (CRITICAL)
+**Problem**: Each test assembly (Day01, Day02, etc.) launching its own separate Aspire infrastructure instance
+
+**Impact**:
+- Multiple Aspire instances running simultaneously (16+ containers instead of 8)
+- Excessive resource consumption (memory, CPU, ports)
+- Longer test execution time (each assembly waits for infrastructure startup)
+- Port conflicts when parallel test execution attempted
+- Kafka connectivity issues from infrastructure race conditions
+- Inconsistent test results between sequential vs parallel execution
+
+**Root Cause**:
+- NUnit `[SetUpFixture]` runs independently per test assembly
+- Each test assembly's SetUpFixture calls infrastructure setup
+- Without idempotency, multiple infrastructure instances spawn
+- Tests run against different infrastructure instances
+
+**Solution - MANDATORY Shared Setup Pattern**:
+
+1. **Create SetUpFixture in each test assembly** to call shared setup:
+   ```csharp
+   // In each DayXX.IntegrationTests/SetUpFixture.cs
+   using LearningCourse.IntegrationTests;
+   using NUnit.Framework;
+   
+   [SetUpFixture]
+   public class SetUpFixture
+   {
+       [OneTimeSetUp]
+       public void GlobalSetup()
+       {
+           LearningCourseTestBase.GlobalSetUp();
+       }
+   
+       [OneTimeTearDown]
+       public void GlobalTearDown()
+       {
+           LearningCourseTestBase.GlobalTearDown();
+       }
+   }
+   ```
+
+2. **Make GlobalSetUp/GlobalTearDown idempotent** in LearningCourseTestBase:
+   ```csharp
+   // In LearningCourse.IntegrationTests/LearningCourseTestBase.cs
+   private static bool _isSetupComplete = false;
+   private static readonly object _setupLock = new object();
+   
+   public static void GlobalSetUp()
+   {
+       lock (_setupLock)
+       {
+           if (_isSetupComplete)
+           {
+               return; // Already setup, skip
+           }
+           
+           // Start infrastructure once
+           StartInfrastructure();
+           _isSetupComplete = true;
+       }
+   }
+   
+   public static void GlobalTearDown()
+   {
+       lock (_setupLock)
+       {
+           if (!_isSetupComplete)
+           {
+               return; // Already torn down, skip
+           }
+           
+           // Stop infrastructure once
+           StopInfrastructure();
+           _isSetupComplete = false;
+       }
+   }
+   ```
+
+**Validation**:
+```bash
+# Run all LearningCourse tests
+dotnet test LearningCourse/IntegrationTests.sln --configuration Release
+
+# During test execution, verify only ONE Aspire instance (8 containers)
+docker ps --format "table {{.Names}}\t{{.Image}}"
+
+# Should see exactly 8 containers:
+# - kafka-1, kafka-2, kafka-3 (Kafka cluster)
+# - flink-jobmanager, flink-taskmanager-1, flink-taskmanager-2, flink-taskmanager-3
+# - temporal-server
+```
+
+**NUnit Parallel Execution Configuration**:
+NUnit runs test assemblies in parallel by default. To ensure only ONE infrastructure instance:
+
+Create `LearningCourse/runsettings.xml`:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!-- Run test assemblies sequentially -->
+    <MaxCpuCount>1</MaxCpuCount>
+    <DisableParallelization>true</DisableParallelization>
+  </RunConfiguration>
+  <NUnit>
+    <!-- Prevent parallel test execution within assemblies -->
+    <NumberOfTestWorkers>1</NumberOfTestWorkers>
+  </NUnit>
+</RunSettings>
+```
+
+Run tests with runsettings:
+```bash
+dotnet test LearningCourse/IntegrationTests.sln --settings LearningCourse/runsettings.xml --configuration Release
+```
+
+**Common Mistakes**:
+- ❌ Not creating SetUpFixture in each test assembly
+- ❌ Calling infrastructure setup directly from test constructor
+- ❌ Not using locks for thread safety
+- ❌ Not checking setup completion flag before starting infrastructure
+- ❌ Assuming NUnit automatically shares setup across assemblies
+
+**Reference Implementation**:
+- `LearningCourse/Day01-Kafka-Flink-Data-Pipeline/Day01.IntegrationTests/SetUpFixture.cs`
+- `LearningCourse/Day02-Flink21-Fundamentals/Day02.IntegrationTests/SetUpFixture.cs`
+- `LearningCourse/LearningCourse.IntegrationTests/LearningCourseTestBase.cs` (lines with `_isSetupComplete` and `_setupLock`)
+
+#### 12. Web Services vs Console Applications (CRITICAL)
+**Problem**: Creating ASP.NET Core web services with `await app.RunAsync()` for Learning Course exercises
+
+**Impact**:
+- Integration tests timeout after 3 minutes waiting for process to exit
+- Tests cannot validate exercise completion
+- ALL tests fail with `System.TimeoutException`
+- Blocks Learning Course progression
+- Fundamentally incompatible with test expectations
+
+**Root Cause**: 
+- Web services run indefinitely with `await app.RunAsync()`
+- Tests expect console applications that complete and exit with code 0
+- Tests look for completion markers ("COMPLETED", "SUCCESS", "✅") in output
+- Tests cannot validate functionality if exercise never terminates
+
+**Solution - MANDATORY Console Application Pattern**:
+- **NEVER use `await app.RunAsync()`** in Learning Course exercises
+- **ALWAYS create console applications** that execute work and exit
+- **ALWAYS print completion markers** so tests can validate
+- **ALWAYS exit with code 0** on success, code 1 on failure
+
+**Example - WRONG (Web Service)**:
+```csharp
+// ❌ BAD - Runs forever, tests timeout
+var app = builder.Build();
+app.MapGet("/health", () => "Healthy");
+await app.RunAsync();  // Never terminates
+```
+
+**Example - CORRECT (Console Application)**:
+```csharp
+// ✅ GOOD - Does work, prints results, exits
+Console.WriteLine(">> Step 1: Validating infrastructure...");
+await ValidateInfrastructure();
+
+Console.WriteLine(">> Step 2: Running tests...");
+await RunTests();
+
+Console.WriteLine("================================================================================");
+Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+Console.WriteLine("================================================================================");
+Console.WriteLine("✅ All validations passed");
+Environment.Exit(0);  // Terminates cleanly
+```
+
+**Reference Implementation**: 
+See `Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise1-StringCapitalize/Program.cs` for correct pattern.
+
+**Validation**:
+- Exercise must complete within 3 minutes
+- Output must contain "COMPLETED" or "SUCCESS" or "✅"
+- Process must exit with code 0
+- No `app.RunAsync()` or other indefinite loops
+
+**Testing Your Exercise**:
+```bash
+# Exercise should complete and exit
+cd LearningCourse/DayXX-Topic-Name/Exercise-Solutions/ExerciseXY
+dotnet run
+
+# Verify it exits (not stuck running)
+echo $?  # Should print 0 (success exit code)
+```
+
+
+#### 13. Multiple Test Assembly Anti-Pattern (CRITICAL - CONSOLIDATED STRUCTURE REQUIRED)
+**Problem**: Creating separate test assemblies per day (Day01.IntegrationTests, Day02.IntegrationTests) instead of using a single consolidated test project
+
+**Impact**:
+- Multiple Aspire infrastructure instances launch simultaneously (one per test assembly)
+- Excessive container proliferation (16+ containers instead of 8)
+- Race conditions during infrastructure setup causing test failures
+- Infrastructure torn down prematurely while other tests still running
+- Kafka connectivity failures from timing issues
+- Significantly longer test execution time
+- Resource exhaustion on CI/CD systems
+- Unpredictable test results between runs
+
+**Root Cause**:
+- NUnit runs test assemblies in parallel by default
+- Each test assembly's `[SetUpFixture]` executes independently
+- Even with idempotent setup patterns, timing issues persist
+- Infrastructure lifecycle tied to individual assembly execution
+
+**Solution - MANDATORY Single Test Assembly Pattern**:
+
+**NEW STRUCTURE (Required as of 2025-01-13):**
+```
+LearningCourse/
+├── LearningCourse.IntegrationTests/
+│   ├── LearningCourse.IntegrationTests.csproj
+│   ├── LearningCourseTestBase.cs (shared infrastructure)
+│   ├── Day01Tests.cs (all Day 01 tests)
+│   ├── Day02Tests.cs (all Day 02 tests)
+│   ├── Day03Tests.cs (all Day 03 tests)
+│   └── ... (one test file per day)
+├── Day01-Kafka-Flink-Data-Pipeline/
+│   └── Exercise-Solutions/ (NO test project)
+├── Day02-Flink21-Fundamentals/
+│   └── Exercise-Solutions/ (NO test project)
+└── IntegrationTests.sln
+```
+
+**OLD STRUCTURE (DEPRECATED - DO NOT USE):**
+```
+❌ WRONG - Creates multiple test assemblies:
+LearningCourse/
+├── Day01-Kafka-Flink-Data-Pipeline/
+│   ├── Day01.IntegrationTests/ ❌ Separate assembly
+│   └── Exercise-Solutions/
+├── Day02-Flink21-Fundamentals/
+│   ├── Day02.IntegrationTests/ ❌ Separate assembly
+│   └── Exercise-Solutions/
+```
+
+**Migration Steps for Existing Days**:
+
+1. **Create consolidated test files** in `LearningCourse.IntegrationTests/`:
+   ```bash
+   cd LearningCourse/LearningCourse.IntegrationTests
+   
+   # Move Day01 tests
+   # Copy content from Day01-Kafka-Flink-Data-Pipeline/Day01.IntegrationTests/ExerciseExecutionTests.cs
+   # to new file Day01Tests.cs
+   
+   # Move Day02 tests
+   # Copy content from Day02-Flink21-Fundamentals/Day02.IntegrationTests/ExerciseExecutionTests.cs
+   # to new file Day02Tests.cs
+   ```
+
+2. **Update namespace and class names**:
+   ```csharp
+   // In Day01Tests.cs
+   namespace LearningCourse.IntegrationTests;  // Changed from Day01.IntegrationTests
+   
+   public class Day01Tests : LearningCourseTestBase  // Changed from ExerciseExecutionTests
+   {
+       // Tests remain the same
+   }
+   ```
+
+3. **Remove per-day test project directories**:
+   ```bash
+   rm -rf LearningCourse/Day01-Kafka-Flink-Data-Pipeline/Day01.IntegrationTests
+   rm -rf LearningCourse/Day02-Flink21-Fundamentals/Day02.IntegrationTests
+   ```
+
+4. **Update solution file** to remove old test projects:
+   - Remove `Day01.IntegrationTests` project entry
+   - Remove `Day02.IntegrationTests` project entry
+   - Move exercise project dependencies to `LearningCourse.IntegrationTests`
+   - Update configuration platforms to remove old test projects
+
+5. **Update LearningCourse.IntegrationTests.csproj** with exercise dependencies:
+   ```xml
+   <ItemGroup>
+     <!-- Day01 exercise dependencies -->
+     <ProjectReference Include="..\Day01-Kafka-Flink-Data-Pipeline\Exercise-Solutions\Exercise1-StringCapitalize\Exercise1-StringCapitalize.csproj" />
+     <ProjectReference Include="..\Day01-Kafka-Flink-Data-Pipeline\Exercise-Solutions\Exercise2-BackupAggregator\Exercise2-BackupAggregator.csproj" />
+     
+     <!-- Day02 exercise dependencies -->
+     <ProjectReference Include="..\Day02-Flink21-Fundamentals\Exercise-Solutions\Exercise21\Exercise21.csproj" />
+     <ProjectReference Include="..\Day02-Flink21-Fundamentals\Exercise-Solutions\Exercise22\Exercise22.csproj" />
+     <ProjectReference Include="..\Day02-Flink21-Fundamentals\Exercise-Solutions\Exercise23\Exercise23.csproj" />
+     <ProjectReference Include="..\Day02-Flink21-Fundamentals\Exercise-Solutions\Exercise24\Exercise24.csproj" />
+   </ItemGroup>
+   ```
+
+**Benefits of Consolidated Structure**:
+- ✅ Single infrastructure instance for all tests
+- ✅ Exactly 8 containers during test execution
+- ✅ Faster test execution (no infrastructure startup per assembly)
+- ✅ Reliable test results (no race conditions)
+- ✅ Simpler maintenance (one test project to manage)
+- ✅ Natural test categorization by day
+- ✅ Easier CI/CD configuration
+
+**Test File Template for New Days**:
+```csharp
+using NUnit.Framework;
+
+namespace LearningCourse.IntegrationTests;
+
+/// <summary>
+/// Integration tests for Day [X]: [Topic Name]
+/// 
+/// Reference: [URL]
+/// </summary>
+[TestFixture]
+[Category("day[X]-topic-name")]
+[Category("integration")]
+public class Day[X]Tests : LearningCourseTestBase
+{
+    private const string Exercise1Path = "Day[X]-Topic-Name/Exercise-Solutions/Exercise[X]1";
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    
+    [Test]
+    [Description("Exercise [X].1: [Name]")]
+    public async Task Exercise1_Name_ShouldExecuteSuccessfully()
+    {
+        // Test implementation
+    }
+}
+```
+
+**Validation**:
+```bash
+# Build consolidated structure
+dotnet build LearningCourse/IntegrationTests.sln --configuration Release
+
+# Run all tests (should use single infrastructure)
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --configuration Release
+
+# Verify only 8 containers running during tests
+docker ps --format "table {{.Names}}\t{{.Image}}" | grep -E "kafka|flink|temporal"
+
+# Expected output: exactly 8 containers
+# kafka-1, kafka-2, kafka-3
+# flink-jobmanager, flink-taskmanager-1, flink-taskmanager-2, flink-taskmanager-3
+# temporal-server
+```
+
+**Common Mistakes**:
+- ❌ Creating new per-day test projects (Day03.IntegrationTests, etc.)
+- ❌ Not removing old per-day test project folders
+- ❌ Not updating solution file to remove old test projects
+- ❌ Not adding exercise dependencies to consolidated test project
+- ❌ Forgetting to update namespace from DayXX.IntegrationTests to LearningCourse.IntegrationTests
+
+**Reference Implementation**:
+- `LearningCourse/LearningCourse.IntegrationTests/Day01Tests.cs` - Day 01 consolidated tests
+- `LearningCourse/LearningCourse.IntegrationTests/Day02Tests.cs` - Day 02 consolidated tests
+- `LearningCourse/LearningCourse.IntegrationTests/LearningCourseTestBase.cs` - Shared infrastructure base class
+
+**MANDATORY for all new Learning Course days**: Use the consolidated test structure. DO NOT create per-day test assemblies.
+
 - Use lowercase, hyphenated naming
 - Enables selective test execution
 
@@ -834,9 +1233,12 @@ Before updating ANY Learning Course, verify:
 
 - [ ] **Reviewed this "Common Errors" section completely**
 - [ ] Checked exercise numbering follows sequential pattern (Day[N][1-4])
-- [ ] Verified all exercise solutions have `global.json` files
+- [ ] **Verified NO exercise-level global.json files exist** (use root global.json only)
 - [ ] Confirmed `.csproj` includes all required FlinkDotNet project references
 - [ ] Validated all projects target `net9.0` framework
+- [ ] **Verified exercises are console applications, NOT web services** (no `app.RunAsync()`)
+- [ ] **Planned completion markers** in exercise output ("COMPLETED", "SUCCESS", "✅")
+- [ ] **Planned to create SetUpFixture.cs** in new test assembly for shared infrastructure
 - [ ] Reviewed Day01 implementation as reference
 - [ ] Prepared to manually edit `.sln` file for ProjectDependencies
 - [ ] Ready to update test path constants after copy-paste
@@ -849,12 +1251,21 @@ After completing Learning Course update, verify:
 
 - [ ] Build succeeds: `dotnet build LearningCourse/IntegrationTests.sln --configuration Release`
 - [ ] Tests discovered: `dotnet test --list-tests --filter "FullyQualifiedName~DayXX"`
-- [ ] Tests execute successfully with expected output
+- [ ] **Tests execute successfully** with expected output (no timeouts)
+- [ ] **All exercises complete within 3 minutes** (no indefinite loops)
+- [ ] **Exercise output contains completion markers** ("COMPLETED", "SUCCESS", "✅")
+- [ ] **Exercises exit with code 0** (verified by running `dotnet run` manually)
+- [ ] **SetUpFixture.cs created** in DayXX.IntegrationTests calling shared setup
+- [ ] **Only ONE Aspire instance runs** when executing all LearningCourse tests (verify with `docker ps`)
+- [ ] **Container count is 8** (3 Kafka + 4 Flink + 1 Temporal) during full test run
 - [ ] Solution file includes ProjectDependencies section
 - [ ] All exercise paths in tests are correct
 - [ ] Test documentation is accurate and complete
 - [ ] Exercise numbering is sequential and consistent
 - [ ] All `.csproj` files reference correct FlinkDotNet projects
+- [ ] **NO exercise-level global.json files exist** (verified removed if present)
+- [ ] **Root global.json specifies correct .NET version** (9.0.303+)
+- [ ] **NO web services** (`app.RunAsync()`) in exercise code
 - [ ] LearningCourse/README.md updated with new day
 - [ ] Day-specific README.md includes test instructions
 
@@ -908,3 +1319,224 @@ Consider automating these repetitive tasks:
 - Tool to verify all exercises have required files (global.json, .csproj, Program.cs)
 - Script to update solution file with ProjectDependencies
 - Automated test to validate Learning Course structure compliance
+
+## LocalTesting Infrastructure Integration
+
+### ⚠️ CRITICAL: Extra Components for Learning Courses
+
+**When Learning Courses require additional infrastructure components beyond the base LocalTesting stack:**
+
+#### ExtraComponentsFromLearningCourse Flag
+
+**Purpose**: Some Learning Course days require additional observability or infrastructure components (Grafana, Prometheus, OpenTelemetry, etc.) that are not part of the base LocalTesting stack.
+
+**Implementation**:
+
+1. **Add Flag to LocalTesting AppHost**:
+   ```csharp
+   // In LocalTesting.FlinkSqlAppHost/Program.cs
+   var builder = DistributedApplication.CreateBuilder(args);
+   
+   // Check for extra components flag
+   var useExtraComponents = builder.Configuration.GetValue<bool>("ExtraComponentsFromLearningCourse", false);
+   
+   if (useExtraComponents)
+   {
+       // Add Grafana for observability
+       var grafana = builder.AddContainer("grafana", "grafana/grafana")
+           .WithHttpEndpoint(port: 3000, targetPort: 3000, name: "grafana-ui")
+           .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
+           .WithEnvironment("GF_SECURITY_ADMIN_USER", "admin");
+       
+       // Add Prometheus for metrics
+       var prometheus = builder.AddContainer("prometheus", "prom/prometheus")
+           .WithHttpEndpoint(port: 9090, targetPort: 9090, name: "prometheus-ui")
+           .WithBindMount("./prometheus.yml", "/etc/prometheus/prometheus.yml");
+       
+       // Add OpenTelemetry Collector
+       var otelCollector = builder.AddContainer("otel-collector", "otel/opentelemetry-collector")
+           .WithHttpEndpoint(port: 4317, targetPort: 4317, name: "otel-grpc")
+           .WithHttpEndpoint(port: 4318, targetPort: 4318, name: "otel-http");
+   }
+   ```
+
+2. **Enable in appsettings.json**:
+   ```json
+   {
+     "ExtraComponentsFromLearningCourse": true
+   }
+   ```
+
+3. **Enable via Command Line**:
+   ```bash
+   dotnet run --project LocalTesting.FlinkSqlAppHost --ExtraComponentsFromLearningCourse=true
+   ```
+
+#### When to Use Extra Components
+
+**Required for these Learning Course days:**
+- **Day02-Flink21-Fundamentals**: Requires Grafana, Prometheus for SRE observability exercises
+- **Day05-Enterprise-Observability**: Requires full observability stack (Grafana, Prometheus, OpenTelemetry)
+- **Day08-Stress-Testing**: Requires Grafana for performance monitoring during load tests
+- **Day14-Advanced-Testing-Chaos-Engineering**: Requires monitoring stack for chaos experiment observation
+
+**Base LocalTesting stack includes:**
+- Apache Flink cluster (JobManager + TaskManagers)
+- Apache Kafka cluster (3 brokers)
+- Temporal workflow engine
+- PostgreSQL database
+- Redis cache
+
+**Extra components add:**
+- Grafana dashboards for visualization
+- Prometheus for metrics collection
+- OpenTelemetry Collector for distributed tracing
+- Additional monitoring and observability tools
+
+#### Configuration Best Practices
+
+**1. Environment-Specific Configuration**:
+```json
+{
+  "Environments": {
+    "Development": {
+      "ExtraComponentsFromLearningCourse": false
+    },
+    "LearningCourse": {
+      "ExtraComponentsFromLearningCourse": true
+    },
+    "Production": {
+      "ExtraComponentsFromLearningCourse": false
+    }
+  }
+}
+```
+
+**2. Day-Specific Requirements**:
+Document in each day's README.md which extra components are needed:
+
+```markdown
+## Prerequisites
+
+### Infrastructure Requirements
+- Base LocalTesting stack (always required)
+- **Extra Components**: Grafana, Prometheus (required for this day)
+
+### Starting Infrastructure
+\`\`\`bash
+# Enable extra components for this Learning Course day
+dotnet run --project LocalTesting.FlinkSqlAppHost --ExtraComponentsFromLearningCourse=true
+\`\`\`
+```
+
+**3. Test Configuration**:
+Update integration tests to check for required components:
+
+```csharp
+[SetUp]
+public async Task Setup()
+{
+    // Verify base stack is running
+    await VerifyFlinkClusterAsync();
+    await VerifyKafkaClusterAsync();
+    
+    // Verify extra components if required by this day
+    if (RequiresExtraComponents)
+    {
+        await VerifyGrafanaAsync();
+        await VerifyPrometheusAsync();
+        await VerifyOpenTelemetryAsync();
+    }
+}
+```
+
+#### Documentation Requirements
+
+**MANDATORY: Update these files when adding extra components:**
+
+1. **Day README.md** - Document infrastructure requirements:
+   ```markdown
+   ## Infrastructure Setup
+   
+   This Learning Course day requires additional observability components.
+   
+   **Required Components**:
+   - ✅ Base LocalTesting stack (Flink, Kafka, Temporal)
+   - ✅ Grafana (visualization)
+   - ✅ Prometheus (metrics)
+   - ✅ OpenTelemetry (tracing)
+   
+   **Start with Extra Components**:
+   \`\`\`bash
+   dotnet run --project ../../LocalTesting/LocalTesting.FlinkSqlAppHost --ExtraComponentsFromLearningCourse=true
+   \`\`\`
+   ```
+
+2. **Exercise README.md** - Specify component access:
+   ```markdown
+   ## Accessing Observability Components
+   
+   - Grafana Dashboard: http://localhost:3000 (admin/admin)
+   - Prometheus UI: http://localhost:9090
+   - OpenTelemetry Endpoint: http://localhost:4318
+   ```
+
+3. **Integration Test Comments** - Document component dependencies:
+   ```csharp
+   /// <summary>
+   /// Exercise 2.3: Observability Dashboard
+   ///
+   /// REQUIRES: ExtraComponentsFromLearningCourse=true
+   /// - Grafana for dashboard visualization
+   /// - Prometheus for metrics collection
+   /// - OpenTelemetry for distributed tracing
+   /// </summary>
+   ```
+
+#### Troubleshooting Extra Components
+
+**Common Issues**:
+
+1. **Components Not Starting**:
+   ```bash
+   # Verify flag is enabled
+   dotnet run --project LocalTesting.FlinkSqlAppHost --ExtraComponentsFromLearningCourse=true
+   
+   # Check Docker containers
+   docker ps | grep -E "grafana|prometheus|otel"
+   ```
+
+2. **Port Conflicts**:
+   - Grafana default: 3000 (check with `netstat -an | findstr 3000`)
+   - Prometheus default: 9090
+   - OpenTelemetry: 4317 (gRPC), 4318 (HTTP)
+
+3. **Configuration Issues**:
+   ```bash
+   # Verify appsettings.json
+   cat LocalTesting.FlinkSqlAppHost/appsettings.json | grep ExtraComponents
+   
+   # Check environment variables
+   echo $ExtraComponentsFromLearningCourse
+   ```
+
+#### Pre-Update Checklist Addition
+
+Add to existing checklist when creating new Learning Course days:
+
+- [ ] **Determined if extra components are needed** for this day's exercises
+- [ ] **Documented component requirements** in day README.md
+- [ ] **Updated exercise READMEs** with component access URLs
+- [ ] **Added component verification** to integration test setup
+- [ ] **Tested with ExtraComponentsFromLearningCourse=true** flag enabled
+- [ ] **Verified all component health checks** pass before exercise execution
+
+#### Post-Update Validation Addition
+
+Add to existing validation when completing Learning Course days:
+
+- [ ] **Extra components start successfully** when flag is enabled
+- [ ] **Component health checks pass** (Grafana, Prometheus, OpenTelemetry)
+- [ ] **Exercise tests pass** with extra components running
+- [ ] **Documentation includes** component access instructions
+- [ ] **Troubleshooting guide updated** for component-specific issues

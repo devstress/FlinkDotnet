@@ -12,6 +12,8 @@ namespace LearningCourse.IntegrationTests;
 public abstract class LearningCourseTestBase
 {
     private static Process? _appHostProcess;
+    private static bool _isSetupComplete = false;
+    private static readonly SemaphoreSlim _setupSemaphore = new SemaphoreSlim(1, 1);
     private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(45);
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
@@ -30,12 +32,22 @@ public abstract class LearningCourseTestBase
     public static string? KafkaHostBootstrapServers { get; private set; }
 
     /// <summary>
-    /// Start LocalTesting AppHost once for all tests
+    /// Start LocalTesting AppHost once for all tests.
+    /// Called by each test assembly's SetUpFixture.
+    /// Idempotent - safe to call multiple times (will only setup once).
     /// </summary>
-    [OneTimeSetUp]
     public static async Task GlobalSetUp()
     {
-        TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
+        await _setupSemaphore.WaitAsync();
+        try
+        {
+            if (_isSetupComplete)
+            {
+                TestContext.WriteLine("✅ Infrastructure already set up, skipping...");
+                return;
+            }
+            
+            TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
         
         // Clean up test-logs directory from previous runs
@@ -73,9 +85,16 @@ public abstract class LearningCourseTestBase
         
         TestContext.WriteLine("✅ AppHost process started, polling for infrastructure readiness...");
         
-        await WaitForInfrastructureReadyAsync();
-        
-        TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+            await WaitForInfrastructureReadyAsync();
+            
+            _isSetupComplete = true;
+            
+            TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+        }
+        finally
+        {
+            _setupSemaphore.Release();
+        }
     }
     
     /// <summary>
@@ -231,11 +250,22 @@ public abstract class LearningCourseTestBase
     /// <summary>
     /// Stop LocalTesting AppHost after all tests complete.
     /// Force kills the process and manually cleans up containers.
+    /// Called by each test assembly's SetUpFixture.
+    /// Idempotent - safe to call multiple times (will only teardown once).
     /// </summary>
-    [OneTimeTearDown]
     public static void GlobalTearDown()
     {
-        TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
+        _setupSemaphore.Wait();
+        try
+        {
+            if (!_isSetupComplete)
+            {
+                TestContext.WriteLine("✅ Infrastructure already torn down, skipping...");
+                return;
+            }
+            _isSetupComplete = false;
+            
+            TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
         
         // Copy Flink logs from Flink containers BEFORE stopping them
         // Note: FlinkJobRunner logs are embedded within Flink's logging system
@@ -272,9 +302,14 @@ public abstract class LearningCourseTestBase
         
         // Manually clean up containers since force kill doesn't allow Aspire to clean them up
         TestContext.WriteLine("🧹 Manually cleaning up containers...");
-        CleanupContainers();
-        
-        TestContext.WriteLine("✅ Teardown complete");
+            CleanupContainers();
+            
+            TestContext.WriteLine("✅ Teardown complete");
+        }
+        finally
+        {
+            _setupSemaphore.Release();
+        }
     }
     
     /// <summary>
