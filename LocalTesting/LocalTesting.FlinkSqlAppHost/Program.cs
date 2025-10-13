@@ -1,4 +1,4 @@
-// Configure container runtime - supports both Docker Desktop and Podman
+// Configure container runtime - prefer Podman if available, fallback to Docker Desktop
 using System.Diagnostics;
 using LocalTesting.FlinkSqlAppHost;
 
@@ -221,10 +221,10 @@ builder.Build().Run();
 
 static bool ConfigureContainerRuntime()
 {
-    // Try Docker first (Docker Desktop or native Docker)
+    // Try Docker Desktop first (preferred)
     if (IsDockerAvailable())
     {
-        Console.WriteLine("✅ Using Docker as container runtime");
+        Console.WriteLine("✅ Using Docker Desktop as container runtime");
         // No need to set ASPIRE_CONTAINER_RUNTIME - Docker is the default
         return true;
     }
@@ -428,7 +428,7 @@ static bool IsDockerDaemonRunning()
     if (error.Contains("Cannot connect to the Docker daemon", StringComparison.OrdinalIgnoreCase) ||
         error.Contains("Is the docker daemon running", StringComparison.OrdinalIgnoreCase))
     {
-        Console.WriteLine("   ⚠️ Docker is installed but daemon is not running. Start Docker Desktop or Docker service.");
+        Console.WriteLine("   ⚠️ Docker is installed but daemon is not running. Start Docker Desktop.");
         return false;
     }
 

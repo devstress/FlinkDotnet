@@ -638,7 +638,7 @@ dotnet test LearningCourse/IntegrationTests.sln --configuration Release
 - Ensure .NET 9.0 SDK is installed
 
 ### Tests fail to execute
-- Check Docker Desktop or Podman is running
+- Check Docker Desktop is running
 - Ensure exercise solution projects exist and build
 - Verify paths in test constants are correct
 - Check logs for infrastructure issues

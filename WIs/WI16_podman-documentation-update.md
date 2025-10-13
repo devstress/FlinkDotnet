@@ -8,7 +8,7 @@
 **Type**: Enhancement
 **Assignee**: AI Agent
 **Created**: 2025-10-13
-**Updated**: 2025-10-13 (Rescan completed)
+**Updated**: 2025-10-13 (Rescan completed, LocalTesting and LearningCourse reverted per owner request)
 **Status**: Done (Pending Owner Review)
 
 ## Lessons Applied from Previous WIs
@@ -109,12 +109,12 @@
 3. ✅ docs/quickstart.md - Updated prerequisites
 4. ✅ docs/local-testing-setup.md - Updated installation notes
 5. ✅ docs/README.md - Updated prerequisites
-6. ✅ LearningCourse/README.md - Updated prerequisites and troubleshooting
-7. ✅ LearningCourse/IntegrationTests.sln.README.md - Updated prerequisites
-8. ✅ LearningCourse/update-LearningCourse.md - Updated troubleshooting
+6. ❌ ~~LearningCourse/README.md~~ - REVERTED per owner request
+7. ❌ ~~LearningCourse/IntegrationTests.sln.README.md~~ - REVERTED per owner request
+8. ❌ ~~LearningCourse/update-LearningCourse.md~~ - REVERTED per owner request
 9. ✅ scripts/setup-environment-linux-macos.sh - Updated Docker installation messages
 10. ✅ scripts/setup-environment-windows.ps1 - Updated Docker installation messages
-11. ✅ LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs - Updated comments
+11. ❌ ~~LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs~~ - REVERTED per owner request
 12. ✅ .github/copilot-instructions.md - Updated environment requirements
 13. ✅ .roo/rules/default-rules.md - Updated environment requirements
 
@@ -122,6 +122,12 @@
 14. ✅ docs/wiki/Getting-Started.md - Updated prerequisites
 15. ✅ docs/aspire-workflow-screenshots.md - Updated runtime requirement
 16. ✅ docs/performance-benchmarks.md - Updated environment description
+
+### Files Reverted (Per Owner Request)
+- LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs
+- LearningCourse/README.md
+- LearningCourse/IntegrationTests.sln.README.md
+- LearningCourse/update-LearningCourse.md
 
 ### Files Already Correct (No Changes Needed)
 - LearningCourse/Day02-Flink21-Fundamentals/README.md - Already mentions both
@@ -150,7 +156,7 @@
 - .github/copilot-instructions.md: 3 occurrences updated
 - .roo/rules/default-rules.md: 3 occurrences updated
 
-**Total**: 31 occurrences updated across 16 files (28 initial + 3 from rescan)
+**Total**: 23 occurrences updated across 12 files (31 initial - 8 reverted from LocalTesting/LearningCourse per owner request)
 
 ### Challenges Encountered
 None - straightforward documentation update task
@@ -212,6 +218,7 @@ Pending owner review
 3. **Documentation Templates**: Could create templates that include both container runtimes by default
 4. **CI Validation**: Could add automated checks to ensure Podman mentions alongside Docker
 5. **Broader Search Terms**: Initial grep could have been more comprehensive to catch all variations
+6. **Better Understanding of Scope**: Should have clarified which directories/files to update before making changes - owner preferred not updating LocalTesting and LearningCourse folders
 
 ### Key Insights for Similar Tasks
 - **Documentation Consistency is Critical**: Users read different files, all should say the same thing
@@ -227,6 +234,8 @@ Pending owner review
 - ❌ **Don't assume all files need updates** - some files may already be correct (Day02, Day05)
 - ❌ **Don't miss subdirectories** - docs/wiki and other nested directories need checking too
 - ⚠️ **Always verify completeness** - a rescan after initial work can catch missed files
+- ⚠️ **Clarify scope before making widespread changes** - owner may have preferences about which directories to update
+- ⚠️ **LocalTesting and LearningCourse may have different update policies** - check with owner before modifying these areas
 
 ### Reference for Future WIs
 **Problem Pattern**: Documentation doesn't reflect actual code capabilities
@@ -238,7 +247,7 @@ Pending owner review
 4. Preserve historical records (WI files) unchanged
 5. Validate builds still work
 
-**Files Modified**:
+**Files Modified** (Final List):
 - README.md
 - CONTRIBUTING.md
 - docs/quickstart.md
@@ -247,14 +256,16 @@ Pending owner review
 - docs/wiki/Getting-Started.md (rescan)
 - docs/aspire-workflow-screenshots.md (rescan)
 - docs/performance-benchmarks.md (rescan)
-- LearningCourse/README.md
-- LearningCourse/IntegrationTests.sln.README.md
-- LearningCourse/update-LearningCourse.md
 - scripts/setup-environment-linux-macos.sh
 - scripts/setup-environment-windows.ps1
-- LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs
 - .github/copilot-instructions.md
 - .roo/rules/default-rules.md
+
+**Files Reverted** (Per Owner Request):
+- ~~LearningCourse/README.md~~
+- ~~LearningCourse/IntegrationTests.sln.README.md~~
+- ~~LearningCourse/update-LearningCourse.md~~
+- ~~LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs~~
 
 **Testing Pattern**:
 1. Build FlinkDotNet solution (validates no syntax errors)

@@ -82,7 +82,7 @@ Tests:
 Before running tests, ensure:
 
 1. **.NET 9.0 SDK** is installed (`dotnet --version` shows 9.0.x)
-2. **Docker Desktop or Podman** is running (required for Aspire containers)
+2. **Docker Desktop** is running (required for Aspire containers)
 3. **Maven** is available in PATH (for Java component builds)
 4. **Java JDK 17** is available (automatically managed by the build)
 5. **Sufficient system resources**:
@@ -102,7 +102,7 @@ All infrastructure is ephemeral and cleaned up after tests complete.
 ## Troubleshooting
 
 ### Tests fail with "Docker daemon not running"
-Ensure Docker Desktop or Podman is running before executing tests:
+Ensure Docker Desktop is running before executing tests:
 ```bash
 # Windows
 docker ps
@@ -120,12 +120,12 @@ dotnet test LearningCourse/IntegrationTests.sln --filter "FullyQualifiedName~Day
 
 ### Flink Container Issues
 If tests fail with "Flink JobManager endpoint not found" or containers show "Created" status instead of "Up":
-- Check Docker Desktop or Podman is running and has sufficient resources
+- Check Docker Desktop is running and has sufficient resources
 - Verify no port conflicts (Flink uses 8081, Kafka uses 9092/9093)
 - Check Docker logs: `docker logs <container-name>`
 
 ### Tests timeout or fail to start
-Check Docker Desktop or Podman has sufficient resources allocated (Settings → Resources for Docker Desktop).
+Check Docker Desktop has sufficient resources allocated (Settings → Resources).
 
 ### Port conflict errors
 Stop any services using conflicting ports or configure alternative ports in the test configuration.
