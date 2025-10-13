@@ -60,7 +60,7 @@ jobs:
     - name: Run LearningCourse Integration Tests
       run: |
         echo "=== Starting LearningCourse Integration Tests ==="
-        dotnet test LearningCourse/IntegrationTests.sln --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
+        dotnet test LearningCourse/IntegrationTests.sln --configuration Release --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
       env:
         DOTNET_ENVIRONMENT: Testing
         ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
