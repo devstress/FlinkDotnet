@@ -9,7 +9,7 @@ Validated performance metrics from LocalTesting integration tests and production
 - 1 Flink JobManager + 3 TaskManagers
 - 8 task slots per TaskManager (24 total slots)
 - 20 Kafka partitions per topic
-- Docker containerized environment
+- Docker or Podman containerized environment
 
 **Configuration:**
 ```yaml

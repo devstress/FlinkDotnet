@@ -8,6 +8,7 @@
 **Type**: Enhancement
 **Assignee**: AI Agent
 **Created**: 2025-10-13
+**Updated**: 2025-10-13 (Rescan completed)
 **Status**: Done (Pending Owner Review)
 
 ## Lessons Applied from Previous WIs
@@ -102,7 +103,7 @@
 
 ## Phase 4: Implementation
 
-### Files Updated
+### Files Updated (Initial Pass)
 1. ✅ README.md - Updated prerequisites and requirements section
 2. ✅ CONTRIBUTING.md - Updated prerequisites section
 3. ✅ docs/quickstart.md - Updated prerequisites
@@ -116,6 +117,11 @@
 11. ✅ LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs - Updated comments
 12. ✅ .github/copilot-instructions.md - Updated environment requirements
 13. ✅ .roo/rules/default-rules.md - Updated environment requirements
+
+### Files Updated (Rescan - Additional Files Found)
+14. ✅ docs/wiki/Getting-Started.md - Updated prerequisites
+15. ✅ docs/aspire-workflow-screenshots.md - Updated runtime requirement
+16. ✅ docs/performance-benchmarks.md - Updated environment description
 
 ### Files Already Correct (No Changes Needed)
 - LearningCourse/Day02-Flink21-Fundamentals/README.md - Already mentions both
@@ -144,7 +150,7 @@
 - .github/copilot-instructions.md: 3 occurrences updated
 - .roo/rules/default-rules.md: 3 occurrences updated
 
-**Total**: 28 occurrences updated across 13 files
+**Total**: 31 occurrences updated across 16 files (28 initial + 3 from rescan)
 
 ### Challenges Encountered
 None - straightforward documentation update task
@@ -198,11 +204,14 @@ Pending owner review
 5. **Already-Correct Files**: Identified files that already had correct mentions (Day02, Day05, TestPrerequisites.cs)
 6. **Parallel Updates**: Multiple files updated efficiently using str_replace tool
 7. **Clear Documentation**: Work Item tracked all changes and reasoning
+8. **Rescan Effectiveness**: Owner-requested rescan found 3 additional files (docs/wiki, docs/aspire-workflow-screenshots.md, docs/performance-benchmarks.md) that were missed in initial scan
 
 ### What Could Be Improved  
-1. **Automated Consistency Check**: Could add a lint rule to detect Docker-only mentions
-2. **Documentation Templates**: Could create templates that include both container runtimes by default
-3. **CI Validation**: Could add automated checks to ensure Podman mentions alongside Docker
+1. **More Comprehensive Initial Scan**: Should have checked docs/wiki and all subdirectories more thoroughly
+2. **Automated Consistency Check**: Could add a lint rule to detect Docker-only mentions
+3. **Documentation Templates**: Could create templates that include both container runtimes by default
+4. **CI Validation**: Could add automated checks to ensure Podman mentions alongside Docker
+5. **Broader Search Terms**: Initial grep could have been more comprehensive to catch all variations
 
 ### Key Insights for Similar Tasks
 - **Documentation Consistency is Critical**: Users read different files, all should say the same thing
@@ -216,6 +225,8 @@ Pending owner review
 - ❌ **Don't use different patterns** - inconsistent phrasing ("Docker or Podman" vs "Podman or Docker") confuses readers
 - ❌ **Don't skip validation** - always build after documentation changes near code
 - ❌ **Don't assume all files need updates** - some files may already be correct (Day02, Day05)
+- ❌ **Don't miss subdirectories** - docs/wiki and other nested directories need checking too
+- ⚠️ **Always verify completeness** - a rescan after initial work can catch missed files
 
 ### Reference for Future WIs
 **Problem Pattern**: Documentation doesn't reflect actual code capabilities
@@ -233,6 +244,9 @@ Pending owner review
 - docs/quickstart.md
 - docs/local-testing-setup.md
 - docs/README.md
+- docs/wiki/Getting-Started.md (rescan)
+- docs/aspire-workflow-screenshots.md (rescan)
+- docs/performance-benchmarks.md (rescan)
 - LearningCourse/README.md
 - LearningCourse/IntegrationTests.sln.README.md
 - LearningCourse/update-LearningCourse.md
