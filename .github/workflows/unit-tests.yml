@@ -74,7 +74,11 @@ jobs:
             /k:"devstress_flinkdotnet" \
             /o:"devstress" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io"
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.projectBaseDir="FlinkDotNet" \
+            /d:sonar.cs.vscoveragexml.reportsPaths="FlinkDotNet/TestResults/**/coverage.cobertura.xml" \
+            /d:sonar.sources="." \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs"
 
       - name: Build FlinkDotNet solution
         shell: bash
@@ -137,6 +141,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
         run: |
+          cd FlinkDotNet
           ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Verify Test Results

@@ -5,6 +5,9 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
+          <!-- Include only FlinkDotNet assemblies -->
+          <Include>[FlinkDotNet.*]*,[Flink.JobBuilder]*</Include>
+          <!-- Exclude test assemblies, Program, and Startup classes -->
           <Exclude>[*.Tests]*,[*]*.Program,[*]*.Startup</Exclude>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
           <IncludeTestAssembly>false</IncludeTestAssembly>
