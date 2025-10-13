@@ -279,6 +279,8 @@ namespace Exercise2_BackupAggregator
             var consumedBackups = 0;
             var messageNumber = 0;
             var totalMessages = 0;
+            var consecutiveNullCount = 0;  // Track consecutive null results for retry logic
+            const int maxConsecutiveNulls = 3;  // Retry 3 times with 1 second intervals
             
             while (stopwatch.Elapsed < timeout && consumedBackups < 10)  // Allow up to 10 backups
             {
@@ -286,14 +288,27 @@ namespace Exercise2_BackupAggregator
 
                 if (result == null)
                 {
+                    consecutiveNullCount++;
+                    
                     if (consumedBackups > 0)
                     {
                         Console.WriteLine("   No new backups - consumption complete");
                         break;
                     }
+                    
+                    // If we haven't received any messages yet, retry up to 3 times
+                    if (consecutiveNullCount >= maxConsecutiveNulls)
+                    {
+                        Console.WriteLine($"   No messages after {maxConsecutiveNulls} retry attempts");
+                        break;
+                    }
+                    
+                    Console.WriteLine($"   No messages yet, retrying ({consecutiveNullCount}/{maxConsecutiveNulls})...");
                     continue;
                 }
 
+                // Reset consecutive null count when we receive a message
+                consecutiveNullCount = 0;
                 messageNumber++;
                 var (shouldCommit, wasBackup, messageCount) = ProcessConsumedMessage(result, messageNumber);
                 

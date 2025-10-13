@@ -597,6 +597,79 @@ public abstract class LearningCourseTestBase
     }
 
     /// <summary>
+    /// Cancel all running Flink jobs to prevent interference between tests
+    /// </summary>
+    protected static async Task CancelAllFlinkJobsAsync()
+    {
+        try
+        {
+            TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
+            
+            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            
+            // Get all running jobs
+            var jobsResponse = await httpClient.GetAsync($"{flinkGatewayUrl}/jobs");
+            if (!jobsResponse.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"⚠️ Failed to get job list: {jobsResponse.StatusCode}");
+                return;
+            }
+            
+            var jobsJson = await jobsResponse.Content.ReadAsStringAsync();
+            
+            // Parse job IDs using simple string parsing (avoid System.Text.Json dependency issues)
+            var jobIds = new List<string>();
+            var matches = System.Text.RegularExpressions.Regex.Matches(jobsJson, @"""id""\s*:\s*""([a-f0-9]{32})""");
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                if (match.Groups.Count > 1)
+                {
+                    jobIds.Add(match.Groups[1].Value);
+                }
+            }
+            
+            if (jobIds.Count == 0)
+            {
+                TestContext.WriteLine("✅ No running Flink jobs to cancel");
+                return;
+            }
+            
+            TestContext.WriteLine($"📋 Found {jobIds.Count} running job(s)");
+            
+            // Cancel each job
+            foreach (var jobId in jobIds)
+            {
+                try
+                {
+                    TestContext.WriteLine($"   Cancelling job {jobId}...");
+                    var cancelResponse = await httpClient.PatchAsync($"{flinkGatewayUrl}/jobs/{jobId}?mode=cancel", null);
+                    
+                    if (cancelResponse.IsSuccessStatusCode)
+                    {
+                        TestContext.WriteLine($"   ✅ Job {jobId} cancelled successfully");
+                    }
+                    else
+                    {
+                        TestContext.WriteLine($"   ⚠️ Failed to cancel job {jobId}: {cancelResponse.StatusCode}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TestContext.WriteLine($"   ⚠️ Error cancelling job {jobId}: {ex.Message}");
+                }
+            }
+            
+            TestContext.WriteLine("✅ All Flink jobs cancelled");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error in CancelAllFlinkJobsAsync: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Execute an exercise program and capture its output
     /// </summary>
     protected async Task<(int exitCode, string output, string error)> ExecuteExerciseAsync(
