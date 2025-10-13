@@ -72,14 +72,14 @@ To add a new LearningCourse test project:
 ## System Requirements
 
 - .NET 9.0 SDK
-- Docker Desktop (or Podman) running
+- Docker Desktop or Podman running
 - At least 8GB RAM available for containers
 - FlinkDotNet solution built in Release configuration (see Prerequisites above)
 
 ## Common Issues
 
 ### Containers Not Starting
-- Ensure Docker Desktop is running
+- Ensure Docker Desktop or Podman is running
 - Check available disk space and memory
 - Review container logs: `docker ps -a` and `docker logs <container-name>`
 
