@@ -122,23 +122,24 @@ function Install-DotNet {
 
 # Function to install Docker Desktop
 function Install-Docker {
-    Write-Host "🐳 Installing Docker Desktop..." -ForegroundColor Blue
+    Write-Host "🐳 Installing Docker Desktop or Podman..." -ForegroundColor Blue
     
     try {
         if (Test-Command choco) {
             choco install docker-desktop -y
         } else {
-            Write-Host "   Please download Docker Desktop manually from:" -ForegroundColor Yellow
-            Write-Host "   https://docs.docker.com/desktop/install/windows-install/" -ForegroundColor Yellow
+            Write-Host "   Please download Docker Desktop or Podman manually:" -ForegroundColor Yellow
+            Write-Host "   Docker Desktop: https://docs.docker.com/desktop/install/windows-install/" -ForegroundColor Yellow
+            Write-Host "   Podman: https://podman.io/getting-started/installation" -ForegroundColor Yellow
             Write-Host ""
-            $continue = Read-Host "   Press Enter after installing Docker Desktop, or 'skip' to continue without Docker"
+            $continue = Read-Host "   Press Enter after installing Docker Desktop or Podman, or 'skip' to continue without container runtime"
             if ($continue -eq "skip") {
                 return $false
             }
         }
         
-        Write-Host "   ✅ Docker installation completed" -ForegroundColor Green
-        Write-Host "   ⚠️  Please restart Docker Desktop and ensure it's running" -ForegroundColor Yellow
+        Write-Host "   ✅ Container runtime installation completed" -ForegroundColor Green
+        Write-Host "   ⚠️  Please restart Docker Desktop or Podman and ensure it's running" -ForegroundColor Yellow
         return $true
     } catch {
         Write-Host "   ❌ Docker installation failed: $_" -ForegroundColor Red
@@ -271,7 +272,7 @@ function Start-Setup {
                 Write-Host "   ✅ Docker is running" -ForegroundColor Green
             } catch {
                 Write-Host "   ⚠️  Docker is installed but not running" -ForegroundColor Yellow
-                Write-Host "      Please start Docker Desktop" -ForegroundColor Yellow
+                Write-Host "      Please start Docker Desktop or Podman" -ForegroundColor Yellow
             }
         } else {
             Install-Docker | Out-Null
@@ -359,7 +360,7 @@ function Start-Setup {
     Write-Host "   • All exercises are now compatible with .NET 9.0" -ForegroundColor White
     Write-Host ""
     Write-Host "🪟 Windows Notes:" -ForegroundColor Yellow
-    Write-Host "   • Make sure Docker Desktop is running before starting exercises" -ForegroundColor White
+    Write-Host "   • Make sure Docker Desktop or Podman is running before starting exercises" -ForegroundColor White
     Write-Host "   • You may need to restart PowerShell for PATH changes" -ForegroundColor White
     Write-Host "   • If you see permissions errors, try running as Administrator" -ForegroundColor White
     Write-Host ""

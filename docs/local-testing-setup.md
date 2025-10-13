@@ -92,7 +92,7 @@ Once .NET 9.0 is installed, run these workflows locally to ensure they pass:
 ## Notes
 
 - Linux may require installing the Aspire workload separately: `dotnet workload install aspire`.
-- Ensure Docker Desktop or a compatible container runtime is available for Aspire resources.
+- Ensure Docker Desktop, Podman, or a compatible container runtime is available for Aspire resources.
 - Place optional Flink connector JARs under `LocalTesting/connectors/flink/lib/` so the LocalTesting gateway bundles them; copy the same jars into `/opt/flink/lib` when targeting a real Flink cluster.
 - Java 17 and Maven 3.9.6 are auto-installed if not found; the Gateway build prebuilds `flink-ir-runner-java17.jar`.
 
