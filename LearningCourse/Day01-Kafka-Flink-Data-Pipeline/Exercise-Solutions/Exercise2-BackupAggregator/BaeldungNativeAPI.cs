@@ -68,8 +68,9 @@ namespace Exercise2_BackupAggregator
         /// Main pipeline creation method following Baeldung's createBackup() structure (Section 11)
         /// Creates streaming job with Kafka source, time windows, aggregation, and Kafka sink.
         /// Uses 1-minute windows for testing instead of 24-hour production windows.
+        /// Returns IJobClient for lifecycle management.
         /// </summary>
-        public static async Task CreateBackup()
+        public static async Task<FlinkDotNet.DataStream.IJobClient> CreateBackup()
         {
             // Configuration
             string inputTopic = "exercise2_input";
@@ -99,7 +100,12 @@ namespace Exercise2_BackupAggregator
                 .Aggregate(new BackupAggregator())
                 .AddSink(new BackupKafkaSink(outputTopic, kafkaAddress));
 
-            await environment.ExecuteAsync("backup-aggregator");
+            var jobClient = await environment.ExecuteAsync("backup-aggregator");
+            
+            Console.WriteLine($"   [SUCCESS] Flink job submitted successfully");
+            Console.WriteLine($"   JobId: {jobClient.GetJobId()}");
+            
+            return jobClient;
         }
 
         /// <summary>

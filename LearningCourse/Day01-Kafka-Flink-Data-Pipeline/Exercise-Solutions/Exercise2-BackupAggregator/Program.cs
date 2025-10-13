@@ -88,52 +88,74 @@ namespace Exercise2_BackupAggregator
         /// </summary>
         static async Task RunBackupAggregationDemo()
         {
-            Console.WriteLine(">> Step 1/6: Verifying Kafka is ready...");
-            await WaitForKafkaReadyAsync();
-            Console.WriteLine();
+            FlinkDotNet.DataStream.IJobClient? jobClient = null;
+            
+            try
+            {
+                Console.WriteLine(">> Step 1/6: Verifying Kafka is ready...");
+                await WaitForKafkaReadyAsync();
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 2/6: Verifying Flink cluster is ready...");
-            await WaitForFlinkHealthyAsync();
-            Console.WriteLine();
+                Console.WriteLine(">> Step 2/6: Verifying Flink cluster is ready...");
+                await WaitForFlinkHealthyAsync();
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 3/6: Creating Kafka topics...");
-            await CreateTopicsAsync();
-            Console.WriteLine();
+                Console.WriteLine(">> Step 3/6: Creating Kafka topics...");
+                await CreateTopicsAsync();
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 4/6: Submitting Flink backup aggregation job...");
-            await SubmitBackupAggregationJob();
-            await Task.Delay(3000); // Wait for job to start
-            Console.WriteLine();
+                Console.WriteLine(">> Step 4/6: Submitting Flink backup aggregation job...");
+                jobClient = await SubmitBackupAggregationJob();
+                await Task.Delay(3000); // Wait for job to start
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 5/6: Producing timestamped InputMessage objects...");
-            await ProduceInputMessages();
-            await Task.Delay(2000); // Brief delay for messages to be consumed
-            Console.WriteLine();
+                Console.WriteLine(">> Step 5/6: Producing timestamped InputMessage objects...");
+                await ProduceInputMessages();
+                await Task.Delay(10000); // Wait 10 seconds for window to fire (marker at T+95s triggers window)
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 6/6: Consuming Backup aggregation results...");
-            await ConsumeBackupResults();
-            Console.WriteLine();
+                Console.WriteLine(">> Step 6/6: Consuming Backup aggregation results...");
+                await ConsumeBackupResults();
+                Console.WriteLine();
 
-            Console.WriteLine("================================================================================");
-            Console.WriteLine("  EXERCISE 2 COMPLETED!");
-            Console.WriteLine("================================================================================");
-            Console.WriteLine();
-            Console.WriteLine("What you learned (Baeldung Sections 7-11):");
-            Console.WriteLine("  [OK] Custom object deserialization (InputMessage)");
-            Console.WriteLine("  [OK] Custom object serialization (Backup)");
-            Console.WriteLine("  [OK] EventTime timestamp extraction (recent timestamps from messages)");
-            Console.WriteLine("  [OK] Time windows: .TimeWindowAll(Time.Minutes(1)) - Testing");
-            Console.WriteLine("  [OK] Aggregation: .Aggregate(new BackupAggregator())");
-            Console.WriteLine("  [OK] Watermark strategy: BoundedOutOfOrderness(200ms)");
-            Console.WriteLine("  [OK] 1-minute window captures all 50 messages in single window firing");
-            Console.WriteLine();
+                Console.WriteLine("================================================================================");
+                Console.WriteLine("  EXERCISE 2 COMPLETED!");
+                Console.WriteLine("================================================================================");
+                Console.WriteLine();
+                Console.WriteLine("What you learned (Baeldung Sections 7-11):");
+                Console.WriteLine("  [OK] Custom object deserialization (InputMessage)");
+                Console.WriteLine("  [OK] Custom object serialization (Backup)");
+                Console.WriteLine("  [OK] EventTime timestamp extraction (recent timestamps from messages)");
+                Console.WriteLine("  [OK] Time windows: .TimeWindowAll(Time.Minutes(1)) - Testing");
+                Console.WriteLine("  [OK] Aggregation: .Aggregate(new BackupAggregator())");
+                Console.WriteLine("  [OK] Watermark strategy: BoundedOutOfOrderness(200ms)");
+                Console.WriteLine("  [OK] 1-minute window captures all 50 messages in single window firing");
+                Console.WriteLine();
+            }
+            finally
+            {
+                // Clean up: Cancel the Flink job
+                if (jobClient != null)
+                {
+                    Console.WriteLine(">> Cleaning up: Cancelling Flink job...");
+                    try
+                    {
+                        await jobClient.CancelAsync();
+                        Console.WriteLine("   [SUCCESS] Flink job cancelled successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"   [WARNING] Failed to cancel job: {ex.Message}");
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Submit Flink job with event-time windowing and aggregation.
         /// Creates pipeline: Kafka source → timestamp extraction → window aggregation → Kafka sink
         /// </summary>
-        static async Task SubmitBackupAggregationJob()
+        static async Task<FlinkDotNet.DataStream.IJobClient> SubmitBackupAggregationJob()
         {
             Console.WriteLine($"   Creating Flink job using native DataStream API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
@@ -146,8 +168,9 @@ namespace Exercise2_BackupAggregator
             
             try
             {
-                await BaeldungNativeApi.CreateBackup();
+                var jobClient = await BaeldungNativeApi.CreateBackup();
                 Console.WriteLine($"   [SUCCESS] Backup aggregation job submitted");
+                return jobClient;
             }
             catch (Exception ex)
             {
@@ -280,11 +303,11 @@ namespace Exercise2_BackupAggregator
             var messageNumber = 0;
             var totalMessages = 0;
             var consecutiveNullCount = 0;  // Track consecutive null results for retry logic
-            const int maxConsecutiveNulls = 3;  // Retry 3 times with 1 second intervals
+            const int maxConsecutiveNulls = 5;  // Retry 5 times with 2 second intervals
             
             while (stopwatch.Elapsed < timeout && consumedBackups < 10)  // Allow up to 10 backups
             {
-                var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
+                var result = consumer.Consume(TimeSpan.FromMilliseconds(2000));
 
                 if (result == null)
                 {

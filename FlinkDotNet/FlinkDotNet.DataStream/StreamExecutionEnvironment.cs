@@ -403,7 +403,7 @@ namespace FlinkDotNet.DataStream
             return new StreamExecutionEnvironment(configuration);
         }
 
-        public async Task<JobExecutionResult> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
+        public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
             var name = jobName ?? _activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
             _logger?.LogInformation("Starting execution of job: {JobName}", name);
@@ -454,17 +454,17 @@ namespace FlinkDotNet.DataStream
             if (!submit.Success)
             {
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
+                throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");
             }
 
-            return new JobExecutionResult
+            // Create and return JobClient for lifecycle management
+            var jobClient = new JobClient(name)
             {
-                JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId,
-                JobName = name,
-                Success = submit.Success,
-                StartTime = DateTime.UtcNow,
-                EndTime = DateTime.UtcNow,
-                Error = submit.Success ? null : submit.ErrorMessage
+                JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId
             };
+
+            _serilogLogger.Information("[ExecuteAsync] Returning JobClient with JobId={JobId}", jobClient.JobId);
+            return jobClient;
         }
 
         public Task<JobClient> ExecuteAsyncJob(string jobName = "Flink Streaming Job")
@@ -497,7 +497,34 @@ namespace FlinkDotNet.DataStream
         public string? Error { get; set; }
     }
 
-    public class JobClient
+    /// <summary>
+    /// Interface for managing Flink job lifecycle.
+    /// Follows Apache Flink's JobClient pattern for job submission and management.
+    /// </summary>
+    public interface IJobClient
+    {
+        /// <summary>
+        /// Gets the Flink job ID.
+        /// </summary>
+        /// <returns>The job ID as a string</returns>
+        string GetJobId();
+
+        /// <summary>
+        /// Cancels the Flink job.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Task representing the cancellation operation</returns>
+        Task CancelAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets the job execution result with status and metrics.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Job execution result</returns>
+        Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default);
+    }
+
+    public class JobClient : IJobClient
     {
         private readonly FlinkJobGatewayService _gateway = new();
         private readonly HttpClient _flinkHttp;
@@ -510,6 +537,43 @@ namespace FlinkDotNet.DataStream
             var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
             var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
             _flinkHttp = new HttpClient { BaseAddress = new Uri($"http://{host}:{port}"), Timeout = TimeSpan.FromMinutes(5) };
+        }
+
+        /// <summary>
+        /// Gets the Flink job ID.
+        /// Implementation of IJobClient.GetJobId().
+        /// </summary>
+        public string GetJobId() => JobId;
+
+        /// <summary>
+        /// Cancels the Flink job using the Flink REST API.
+        /// Implementation of IJobClient.CancelAsync().
+        /// </summary>
+        public async Task CancelAsync(CancellationToken cancellationToken = default)
+        {
+            var success = await _gateway.CancelJobAsync(JobId, cancellationToken);
+            if (!success)
+            {
+                throw new InvalidOperationException($"Failed to cancel job {JobId}");
+            }
+        }
+
+        /// <summary>
+        /// Gets the job execution result with current status and metrics.
+        /// Implementation of IJobClient.GetJobExecutionResultAsync().
+        /// </summary>
+        public async Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default)
+        {
+            var status = await GetJobStatusAsync(cancellationToken);
+            return new JobExecutionResult
+            {
+                JobId = JobId,
+                JobName = JobName,
+                Success = status.State == "FINISHED",
+                StartTime = status.StartTime,
+                EndTime = status.EndTime ?? DateTime.UtcNow,
+                Error = status.Error
+            };
         }
 
         public async Task<SavepointResult> TriggerSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)

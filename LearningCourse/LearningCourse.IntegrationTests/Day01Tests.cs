@@ -23,15 +23,6 @@ public class Day01Tests : LearningCourseTestBase
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
-    /// Clean up Flink jobs after each test to prevent interference between tests
-    /// </summary>
-    [TearDown]
-    public async Task TearDown()
-    {
-        await CancelAllFlinkJobsAsync();
-    }
-
-    /// <summary>
     /// Exercise 1: String Stream Processing (Baeldung Sections 1-6)
     ///
     /// This test validates:

@@ -88,42 +88,64 @@ namespace Exercise1_StringCapitalize
         /// </summary>
         static async Task RunCapitalizeDemo()
         {
-            Console.WriteLine(">> Step 1/6: Verifying Kafka is ready...");
-            await WaitForKafkaReadyAsync();
-            Console.WriteLine();
+            FlinkDotNet.DataStream.IJobClient? jobClient = null;
+            
+            try
+            {
+                Console.WriteLine(">> Step 1/6: Verifying Kafka is ready...");
+                await WaitForKafkaReadyAsync();
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 2/6: Verifying Flink cluster is ready...");
-            await WaitForFlinkHealthyAsync();
-            Console.WriteLine();
+                Console.WriteLine(">> Step 2/6: Verifying Flink cluster is ready...");
+                await WaitForFlinkHealthyAsync();
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 3/6: Creating Kafka topics...");
-            await CreateTopicsAsync();
-            Console.WriteLine();
+                Console.WriteLine(">> Step 3/6: Creating Kafka topics...");
+                await CreateTopicsAsync();
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 4/6: Submitting Flink capitalize job...");
-            await SubmitCapitalizeJob();
-            await Task.Delay(3000); // Wait for job to start
-            Console.WriteLine();
+                Console.WriteLine(">> Step 4/6: Submitting Flink capitalize job...");
+                jobClient = await SubmitCapitalizeJob();
+                await Task.Delay(3000); // Wait for job to start
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 5/6: Producing lowercase messages to input topic...");
-            await ProduceMessages();
-            await Task.Delay(2000); // Wait for Flink to process
-            Console.WriteLine();
+                Console.WriteLine(">> Step 5/6: Producing lowercase messages to input topic...");
+                await ProduceMessages();
+                await Task.Delay(2000); // Wait for Flink to process
+                Console.WriteLine();
 
-            Console.WriteLine(">> Step 6/6: Consuming capitalized results from output topic...");
-            await ConsumeResults();
-            Console.WriteLine();
+                Console.WriteLine(">> Step 6/6: Consuming capitalized results from output topic...");
+                await ConsumeResults();
+                Console.WriteLine();
 
-            Console.WriteLine("================================================================================");
-            Console.WriteLine("  EXERCISE 1 COMPLETED!");
-            Console.WriteLine("================================================================================");
-            Console.WriteLine();
-            Console.WriteLine("What you learned (Baeldung Section 6):");
-            Console.WriteLine("  [OK] Created Kafka consumer configuration (CreateConsumerConfig)");
-            Console.WriteLine("  [OK] Created Kafka producer configuration (CreateProducerConfig)");
-            Console.WriteLine("  [OK] Submitted Flink job with map transformation (uppercase)");
-            Console.WriteLine("  [OK] Verified end-to-end pipeline: Input -> Transform -> Output");
-            Console.WriteLine();
+                Console.WriteLine("================================================================================");
+                Console.WriteLine("  EXERCISE 1 COMPLETED!");
+                Console.WriteLine("================================================================================");
+                Console.WriteLine();
+                Console.WriteLine("What you learned (Baeldung Section 6):");
+                Console.WriteLine("  [OK] Created Kafka consumer configuration (CreateConsumerConfig)");
+                Console.WriteLine("  [OK] Created Kafka producer configuration (CreateProducerConfig)");
+                Console.WriteLine("  [OK] Submitted Flink job with map transformation (uppercase)");
+                Console.WriteLine("  [OK] Verified end-to-end pipeline: Input -> Transform -> Output");
+                Console.WriteLine();
+            }
+            finally
+            {
+                // Clean up: Cancel the Flink job
+                if (jobClient != null)
+                {
+                    Console.WriteLine(">> Cleaning up: Cancelling Flink job...");
+                    try
+                    {
+                        await jobClient.CancelAsync();
+                        Console.WriteLine("   [SUCCESS] Flink job cancelled successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"   [WARNING] Failed to cancel job: {ex.Message}");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -144,7 +166,7 @@ namespace Exercise1_StringCapitalize
         ///     .SinkToKafka(outputTopic, servers);
         ///   await environment.ExecuteAsync("string-capitalize-pipeline");
         /// </summary>
-        static async Task SubmitCapitalizeJob()
+        static async Task<FlinkDotNet.DataStream.IJobClient> SubmitCapitalizeJob()
         {
             Console.WriteLine($"   Creating Flink job using native FlinkDotNet API...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
@@ -170,21 +192,13 @@ namespace Exercise1_StringCapitalize
                 .Map(new WordsCapitalizer())
                 .SinkToKafka(OutputTopic, KafkaFlinkBootstrapServers);  // Use container IP discovered by test infrastructure
 
-            // Execute the job
-            var result = await environment.ExecuteAsync("string-capitalize-pipeline");
+            // Execute the job and get JobClient for lifecycle management
+            var jobClient = await environment.ExecuteAsync("string-capitalize-pipeline");
 
-            if (result.Success)
-            {
-                Console.WriteLine($"   [SUCCESS] Flink job submitted successfully");
-                Console.WriteLine($"   JobId: {result.JobId}");
-            }
-            else
-            {
-                Console.WriteLine($"   [ERROR] Job submission failed");
-                Console.WriteLine($"   Error: {result.Error}");
-                Console.WriteLine();
-                throw new InvalidOperationException($"DataStream has no valid source or sink. Error: {result.Error}");
-            }
+            Console.WriteLine($"   [SUCCESS] Flink job submitted successfully");
+            Console.WriteLine($"   JobId: {jobClient.GetJobId()}");
+            
+            return jobClient;
         }
 
         /// <summary>
