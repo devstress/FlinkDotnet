@@ -231,10 +231,18 @@ Build succeeded.
     0 Error(s)
 ```
 
+**✅ Fix 3: FlinkOrchestra HttpClient Error Handling**
+- File: `FlinkDotNet.Orchestration/Services/FlinkOrchestra.cs`
+- Change: Added try-catch to ensure HttpClient is disposed if actor creation fails
+- Impact: Prevents HttpClient leak when cluster provisioning fails
+- Tests: All unit tests pass (8 tests total)
+- Breaking Change: No - internal implementation detail
+
 ### Remaining Issues
-- [ ] FlinkOrchestra.cs line 81 - HttpClient creation needs review
 - [ ] FlinkJobGatewayService.CreateDefaultHttpClient - Document disposal requirements
-- [ ] Consider IHttpClientFactory pattern for better HttpClient management
+- [ ] Consider IHttpClientFactory pattern for better HttpClient management across all services
+- [ ] Review large file refactoring (FlinkJobManager.cs - 1618 lines)
+- [ ] Access SonarCloud dashboard for complete issue list
 
 ## Phase 6: Owner Acceptance
 [To be filled after testing]
