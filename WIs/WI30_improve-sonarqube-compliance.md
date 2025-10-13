@@ -8,7 +8,7 @@
 **Type**: Enhancement
 **Assignee**: @copilot
 **Created**: 2025-10-13
-**Status**: Investigation
+**Status**: In Development - Phase 2
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
@@ -316,3 +316,38 @@ Without access to SonarCloud dashboard, this work addressed:
 - WI32: Migrate to IHttpClientFactory pattern across all services
 - WI33: Add integration tests for HttpClient disposal and socket exhaustion prevention
 - WI34: Get SonarCloud dashboard access and address remaining quality gate failures
+
+## Phase 7: Additional Requirements (New Scope)
+### User Requirements (Comment 3398063937)
+1. **Remove all existing SonarQube suppressions** (14 pragma statements, 1 SuppressMessage)
+2. **Fix all SonarQube issues** from https://sonarcloud.io/project/issues?issueStatuses=OPEN
+3. **Add code coverage reporting** to unit test workflow
+4. **Achieve at least 80% code coverage**
+
+### Current Suppressions to Remove:
+1. S3011 - Reflection accessibility (DataStream.cs)
+2. S4487 - Unread private fields (KafkaSourceFunction.cs, FlinkAPIExtensions.cs)
+3. S6966 - Async over blocking calls (RateLimitingDemo.cs - 4 instances)
+4. S3400 - Constant instead of method (TestingSupportClasses.cs, MultiTierRateLimiter.cs - 2 instances)
+5. S1118 - Protected constructor or static (TestingSupportClasses.cs)
+6. S2325 - Make method static (TestingSupportClasses.cs, MultiTierRateLimiter.cs - 3 instances)
+7. S3267 - Loop simplification (MultiTierRateLimiter.cs)
+8. S2139 - Exception rethrowing (FlinkJobManager.cs)
+
+### Implementation Plan:
+**Phase 7.1: Add Code Coverage to Workflow**
+- Add coverlet.collector package references
+- Configure coverage collection in unit tests
+- Add coverage report generation and upload
+- Set minimum coverage threshold to 80%
+
+**Phase 7.2: Remove Suppressions and Fix Issues**
+- Remove each suppression one by one
+- Fix the underlying issue for each rule
+- Validate tests pass after each fix
+- Ensure coverage remains above 80%
+
+**Phase 7.3: Address SonarCloud Open Issues**
+- Access SonarCloud dashboard issues
+- Categorize and prioritize issues
+- Fix remaining issues systematically
