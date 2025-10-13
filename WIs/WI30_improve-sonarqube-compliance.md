@@ -244,8 +244,75 @@ Build succeeded.
 - [ ] Review large file refactoring (FlinkJobManager.cs - 1618 lines)
 - [ ] Access SonarCloud dashboard for complete issue list
 
+### Analysis of FlinkJobGatewayService
+**Finding**: Already properly implements IDisposable
+- Creates HttpClient internally via CreateDefaultHttpClient() if not provided
+- Properly disposes HttpClient in Dispose(bool) method
+- Takes ownership of externally provided HttpClient and disposes it
+- **No changes needed** - implementation follows .NET best practices
+
 ## Phase 6: Owner Acceptance
-[To be filled after testing]
+### Summary of Changes
+**Three critical HttpClient disposal issues fixed:**
+
+1. **FlinkClusterActor** - Added HttpClient disposal to Dispose method
+2. **JobClient** - Implemented full IDisposable pattern with HttpClient cleanup
+3. **FlinkOrchestra** - Added error handling to prevent HttpClient leaks on failure
+
+### Verification
+- ✅ All builds successful (0 warnings, 0 errors)
+- ✅ All unit tests passing (8/8 tests)
+- ✅ No regressions introduced
+- ✅ Follows .NET IDisposable best practices
+
+### Breaking Changes
+**Minor:** JobClient now implements IDisposable
+- **Impact**: Callers should use `using` statements when creating JobClient instances
+- **Mitigation**: Existing code will continue to work, but may leak sockets over time
+- **Recommendation**: Update call sites to use `using (var jobClient = new JobClient(...)) { }`
+
+### Limitations
+Without access to SonarCloud dashboard, this work addressed:
+- ✅ All found HttpClient disposal issues (S3881)
+- ⚠️ Could not access full list of SonarQube quality gate failures
+- ⚠️ Could not verify specific rule violations from SonarCloud analysis
+- ⚠️ Large file issue (FlinkJobManager.cs - 1618 lines) not addressed (requires separate refactoring WI)
 
 ## Lessons Learned & Future Reference (MANDATORY)
-[To be filled at completion]
+### What Worked Well
+- **Systematic Investigation**: Found real issues by searching for HttpClient instantiation patterns
+- **Test-First Validation**: Ensured changes didn't break existing functionality
+- **Incremental Fixes**: Made surgical, focused changes to specific issues
+- **Proper IDisposable Pattern**: Followed standard .NET disposal practices
+
+### What Could Be Improved
+- **SonarCloud Access**: Direct dashboard access would enable comprehensive issue resolution
+- **IHttpClientFactory**: Consider migrating to IHttpClientFactory pattern for better HttpClient lifecycle management
+- **Large File Refactoring**: FlinkJobManager.cs (1618 lines) should be split into smaller, focused classes
+
+### Key Insights for Similar Tasks
+- Search for `new HttpClient()` patterns to find disposal issues
+- Verify Dispose implementations actually clean up resources
+- Use try-catch blocks when transferring resource ownership
+- Always validate changes with existing tests
+- Document ownership and disposal responsibilities
+
+### Specific Problems to Avoid in Future
+- **Never create HttpClient without disposing it** - leads to socket exhaustion
+- **Always check Dispose methods dispose ALL IDisposable fields** - partial disposal is a bug
+- **When transferring ownership, ensure error paths clean up** - prevents leaks on failure
+- **Test disposal paths** - add tests specifically for resource cleanup scenarios
+
+### Reference for Future WIs
+**When addressing HttpClient issues:**
+1. Identify all HttpClient instantiation points
+2. Verify each instance is properly disposed
+3. Check error paths for cleanup
+4. Consider IHttpClientFactory for dependency injection scenarios
+5. Test socket exhaustion scenarios in integration tests
+
+**Recommended Follow-up Work:**
+- WI31: Refactor FlinkJobManager.cs into smaller classes
+- WI32: Migrate to IHttpClientFactory pattern across all services
+- WI33: Add integration tests for HttpClient disposal and socket exhaustion prevention
+- WI34: Get SonarCloud dashboard access and address remaining quality gate failures
