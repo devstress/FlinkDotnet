@@ -55,6 +55,7 @@ CodeCoverage/
 allure-results/
 allure-report/
 TestResults/
+CoverageReport/
 
 # Producer build artifacts
 scripts/producer/Producer
