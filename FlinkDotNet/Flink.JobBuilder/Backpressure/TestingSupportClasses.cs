@@ -1,9 +1,5 @@
 using System;
 
-#pragma warning disable S3400 // Remove this method and declare a constant for this value
-#pragma warning disable S1118 // Add a 'protected' constructor or the 'static' keyword to the class declaration
-#pragma warning disable S2325 // Make method a static method
-
 namespace Flink.JobBuilder.Backpressure;
 
 /// <summary>
@@ -54,16 +50,38 @@ public class PartitionRebalanceResult
 
 public class FairPartitionDistributor
 {
-    public double GetLoadVariance() => 0.03; // 3% variance, under 5% threshold
-    public double GetLoadVarianceUnderPressure(double pressure) => Math.Min(0.05, pressure * 0.1);
-    public bool ValidateFairAllocation() => GetLoadVariance() < 0.05;
+    // Test support class with configurable variance threshold and simulated load state
+    private readonly double _varianceThreshold;
+    private readonly double _loadVariance;
+
+    public FairPartitionDistributor(double varianceThreshold = 0.05, double loadVariance = 0.03)
+    {
+        _varianceThreshold = varianceThreshold;
+        _loadVariance = loadVariance; // 3% variance, under 5% threshold
+    }
+
+    public double GetLoadVariance() => _loadVariance;
+    public double GetLoadVarianceUnderPressure(double pressure) => Math.Min(_varianceThreshold, pressure * 0.1);
+    public bool ValidateFairAllocation() => GetLoadVariance() < _varianceThreshold;
 }
 
 public class NoisyNeighborManager
 {
-    public static bool ValidateIsolationDuringNetworkIssues() => true;
-    public static bool ValidateResourceIsolation() => true;
-    public static bool ValidateIsolationDuringLoad(double pressureLevel) => pressureLevel < 0.9;
+    // Test support class for noisy neighbor isolation scenarios  
+    private readonly double _isolationThreshold;
+    private readonly bool _networkIssuesHandled;
+    private readonly bool _resourceIsolationEnabled;
+
+    public NoisyNeighborManager(double isolationThreshold = 0.9, bool networkIssuesHandled = true, bool resourceIsolationEnabled = true)
+    {
+        _isolationThreshold = isolationThreshold;
+        _networkIssuesHandled = networkIssuesHandled;
+        _resourceIsolationEnabled = resourceIsolationEnabled;
+    }
+
+    public bool ValidateIsolationDuringNetworkIssues() => _networkIssuesHandled;
+    public bool ValidateResourceIsolation() => _resourceIsolationEnabled;
+    public bool ValidateIsolationDuringLoad(double pressureLevel) => pressureLevel < _isolationThreshold;
 }
 
 public static class NetworkBoundBackpressureController
@@ -195,7 +213,7 @@ public static class ProductionReadinessValidator
 }
 
 // Additional classes referenced in test step definitions
-public class VariableSpeedProducer
+public static class VariableSpeedProducer
 {
     public static bool StartProduction(int messageCount, int baseRate, double[] variationPattern) => true;
 }

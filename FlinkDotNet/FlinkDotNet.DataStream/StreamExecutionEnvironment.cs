@@ -524,10 +524,11 @@ namespace FlinkDotNet.DataStream
         Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default);
     }
 
-    public class JobClient : IJobClient
+    public class JobClient : IJobClient, IDisposable
     {
         private readonly FlinkJobGatewayService _gateway = new();
         private readonly HttpClient _flinkHttp;
+        private bool _disposed;
         public string JobId { get; set; } = string.Empty;
         public string JobName { get; set; }
 
@@ -632,6 +633,21 @@ namespace FlinkDotNet.DataStream
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             return new StopWithSavepointResult { SavepointPath = savepointPath ?? string.Empty, Success = ok, TriggerId = string.Empty, Drained = drain, Error = ok ? null : text };
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _flinkHttp?.Dispose();
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 

@@ -101,16 +101,27 @@ public class FlinkOrchestra : IFlinkOrchestra
             HighAvailability = config.HighAvailability
         };
 
-        var clusterActor = new FlinkDotNet.ClusterManager.Actors.FlinkClusterActor(
-            clusterId, clusterConfig, httpClient, clusterLogger);
+        try
+        {
+            var clusterActor = new FlinkDotNet.ClusterManager.Actors.FlinkClusterActor(
+                clusterId, clusterConfig, httpClient, clusterLogger);
 
-        // Create a bridge to match the Orchestra interface
-        var actor = new ClusterActorBridge(clusterActor);
+            // Create a bridge to match the Orchestra interface
+            var actor = new ClusterActorBridge(clusterActor);
 
-        _clusters[clusterId] = actor;
-
-        _logger.LogInformation("Successfully provisioned cluster {ClusterId}", clusterId);
-        return actor;
+            _clusters[clusterId] = actor;
+            
+            _logger.LogInformation("Successfully provisioned cluster {ClusterId}", clusterId);
+            
+            // HttpClient ownership transferred to clusterActor, which will dispose it
+            return actor;
+        }
+        catch
+        {
+            // Actor creation failed, dispose HttpClient to prevent leak
+            httpClient?.Dispose();
+            throw;
+        }
     }
 
     public async Task<HealthReport> GetClusterHealthAsync(CancellationToken cancellationToken = default)

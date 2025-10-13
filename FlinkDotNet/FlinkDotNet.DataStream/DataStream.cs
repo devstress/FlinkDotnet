@@ -332,24 +332,20 @@ namespace FlinkDotNet.DataStream
             // Capture sink operation if using native API
             if (_operationCapture != null && sinkFunction != null)
             {
-                // Try to extract Kafka sink information from the sink function
-                var sinkType = sinkFunction.GetType();
-                #pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields - safe for internal framework use
-                var topicField = sinkType.GetField("_topic", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var serversField = sinkType.GetField("_bootstrapServers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                // Try to extract Kafka sink information from the sink function using public properties
+                string? topic = null;
+                string? servers = null;
+
+                // Check if it's a KafkaSinkFunction with public properties
+                var kafkaSinkType = sinkFunction.GetType();
+                var topicProp = kafkaSinkType.GetProperty("Topic");
+                var serversProp = kafkaSinkType.GetProperty("BootstrapServers");
                 
-                if (topicField == null)
+                if (topicProp != null && serversProp != null)
                 {
-                    topicField = sinkType.GetField("topic", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    topic = topicProp.GetValue(sinkFunction) as string;
+                    servers = serversProp.GetValue(sinkFunction) as string;
                 }
-                if (serversField == null)
-                {
-                    serversField = sinkType.GetField("bootstrapServers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                }
-                #pragma warning restore S3011
-                
-                var topic = topicField?.GetValue(sinkFunction) as string;
-                var servers = serversField?.GetValue(sinkFunction) as string;
                 
                 if (!string.IsNullOrEmpty(topic) && !string.IsNullOrEmpty(servers))
                 {

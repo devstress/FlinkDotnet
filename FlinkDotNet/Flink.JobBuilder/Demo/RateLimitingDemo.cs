@@ -46,9 +46,7 @@ public static class RateLimitingDemo
             var start = DateTime.UtcNow;
             // FLINK JOBMANAGER COMPATIBLE: Use synchronous TryAcquire instead of async
             // When jobs are submitted to Flink JobManager, async patterns may not work correctly
-#pragma warning disable S6966 // Prefer async methods over blocking calls - This is intentional for Flink JobManager compatibility
             var allowed = rateLimiter.TryAcquire();
-#pragma warning restore S6966
             var elapsed = DateTime.UtcNow - start;
             
             Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Tokens: {rateLimiter.CurrentTokens:F1}");
@@ -61,9 +59,7 @@ public static class RateLimitingDemo
             var start = DateTime.UtcNow;
             // FLINK JOBMANAGER COMPATIBLE: Use synchronous TryAcquire instead of async
             // When jobs are submitted to Flink JobManager, async patterns may not work correctly
-#pragma warning disable S6966 // Prefer async methods over blocking calls - This is intentional for Flink JobManager compatibility
             var allowed = rateLimiter.TryAcquire();
-#pragma warning restore S6966
             var elapsed = DateTime.UtcNow - start;
             
             Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Tokens: {rateLimiter.CurrentTokens:F1}");
@@ -91,9 +87,7 @@ public static class RateLimitingDemo
             var start = DateTime.UtcNow;
             // FLINK JOBMANAGER COMPATIBLE: Use synchronous TryAcquire instead of async
             // When jobs are submitted to Flink JobManager, async patterns may not work correctly
-#pragma warning disable S6966 // Prefer async methods over blocking calls - This is intentional for Flink JobManager compatibility
             var allowed = rateLimiter.TryAcquire();
-#pragma warning restore S6966
             var elapsed = DateTime.UtcNow - start;
             
             Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Count: {rateLimiter.CurrentRequestCount}, Rate: {rateLimiter.ActualRate:F1}/s");
@@ -197,9 +191,7 @@ public static class RateLimitingDemo
             var start = DateTime.UtcNow;
             // FLINK JOBMANAGER COMPATIBLE: Use synchronous TryAcquire instead of async
             // When jobs are submitted to Flink JobManager, async patterns may not work correctly
-#pragma warning disable S6966 // Prefer async methods over blocking calls - This is intentional for Flink JobManager compatibility
             var allowed = multiTierLimiter.TryAcquire(context);
-#pragma warning restore S6966
             var elapsed = DateTime.UtcNow - start;
             
             var utilization = multiTierLimiter.GetUtilizationMetrics();
