@@ -24,6 +24,12 @@ namespace Exercise35;
 /// </summary>
 class Program
 {
+    // Kafka address - read from environment variable set by test infrastructure
+    // KAFKA_BOOTSTRAP_SERVERS: For host-to-container communication (exercise Kafka operations)
+    // Lazy evaluation - reads env var when first accessed, not at class load time
+    private static string KafkaBootstrapServers =>
+        Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+
     static async Task Main(string[] args)
     {
         // Configure logging
@@ -150,7 +156,7 @@ class Program
             scenario.Name, scaledMessages);
 
         using var orchestrator = new ScenarioOrchestrator(
-            bootstrapServers: "localhost:9092", // Would be configured for real Kafka
+            bootstrapServers: KafkaBootstrapServers, // Use environment variable for dynamic Kafka endpoint
             topicName: $"backpressure-exercise-{scenario.TopicPartitionCount}p",
             scenario: scenario,
             logger: logger);

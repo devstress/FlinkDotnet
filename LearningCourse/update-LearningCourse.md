@@ -1782,3 +1782,292 @@ Add to existing validation when completing Learning Course days:
 - [ ] **Exercise tests pass** with extra components running
 - [ ] **Documentation includes** component access instructions
 - [ ] **Troubleshooting guide updated** for component-specific issues
+
+## Aspire Service Discovery and Dynamic Port Mapping
+
+### 🚨 CRITICAL: Never Hardcode localhost Addresses
+
+**Problem**: Exercises hardcode `localhost:9092`, `localhost:8080`, etc., instead of using Aspire service discovery
+
+**Impact**:
+- Exercises fail when Aspire assigns dynamic ports
+- Tests cannot control infrastructure connectivity
+- Kafka connection errors in logs (Exercise35 example)
+- Unpredictable behavior between local and CI environments
+- Port conflicts when multiple instances run
+
+**Root Cause**:
+- Aspire dynamically allocates host ports for containers
+- Each container gets a random high port (e.g., `localhost:43175` for Kafka)
+- Hardcoded addresses assume static port mapping
+- Exercises don't leverage environment variables set by test infrastructure
+
+### Solution: Environment Variable Pattern
+
+**MANDATORY for ALL exercises:**
+
+```csharp
+// ❌ WRONG - Hardcoded addresses
+private const string KafkaBootstrapServers = "localhost:9092";
+private const string FlinkGatewayUrl = "http://localhost:8080";
+
+// ✅ CORRECT - Environment variables with fallbacks
+private static string KafkaBootstrapServers =>
+    Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+    
+private static string KafkaFlinkBootstrapServers =>
+    Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
+    
+private static string FlinkGatewayUrl =>
+    Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+```
+
+### Understanding Kafka Port Mapping
+
+**Two Different Kafka Endpoints:**
+
+1. **Host-to-Container** (`KAFKA_BOOTSTRAP_SERVERS`):
+   - Used by producers/consumers running on HOST machine
+   - Example: `localhost:43175` (dynamic port mapped to container's 9093)
+   - Set by test infrastructure via [`DockerInfrastructure.GetKafkaHostEndpointAsync()`](LearningCourse.Common/DockerInfrastructure.cs:106)
+
+2. **Container-to-Container** (`KAFKA_FLINK_BOOTSTRAP_SERVERS`):
+   - Used by Flink jobs running INSIDE containers
+   - Example: `172.17.0.2:9093` (container IP address)
+   - Set by test infrastructure via [`DockerInfrastructure.GetKafkaContainerIpAsync()`](LearningCourse.Common/DockerInfrastructure.cs:17)
+
+### Exercise Code Pattern
+
+**Complete Example from [`Exercise1-StringCapitalize`](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise1-StringCapitalize/Program.cs:32-42):**
+
+```csharp
+// KAFKA ADDRESSES - Read from environment variables set by test infrastructure
+// KAFKA_BOOTSTRAP_SERVERS: For host-to-container communication (producer/consumer from exercise)
+// KAFKA_FLINK_BOOTSTRAP_SERVERS: For container-to-container communication (Flink job connectivity)
+
+private static string KafkaBootstrapServers =>
+    Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+    
+private static string KafkaFlinkBootstrapServers =>
+    Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
+    
+private static string FlinkGatewayUrl =>
+    Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+
+// USAGE in Kafka producer/consumer (host machine):
+var producerConfig = new ProducerConfig
+{
+    BootstrapServers = KafkaBootstrapServers  // Uses host-mapped port
+};
+
+// USAGE in Flink job (inside container):
+var stringInputStream = environment.FromKafka(
+    topic: InputTopic,
+    bootstrapServers: KafkaFlinkBootstrapServers,  // Uses container IP
+    groupId: ConsumerGroup
+);
+```
+
+### Test Infrastructure Setup
+
+**How Tests Set Environment Variables:**
+
+```csharp
+// In LearningCourseTestBase.ExecuteExerciseAsync()
+var environmentVariables = new Dictionary<string, string>
+{
+    ["KAFKA_BOOTSTRAP_SERVERS"] = _kafkaHostEndpoint,        // "localhost:43175"
+    ["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = _kafkaContainerIp,   // "172.17.0.2:9093"
+    ["FLINK_GATEWAY_URL"] = "http://localhost:8080"
+};
+
+// Pass to exercise process
+process.StartInfo.Environment["KAFKA_BOOTSTRAP_SERVERS"] = _kafkaHostEndpoint;
+process.StartInfo.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = _kafkaContainerIp;
+process.StartInfo.Environment["FLINK_GATEWAY_URL"] = "http://localhost:8080";
+```
+
+### Common Hardcoded Address Issues
+
+**Issue 1: Direct localhost:9092 in Exercise35**
+```csharp
+// ❌ WRONG - Exercise35 line 153
+using var orchestrator = new ScenarioOrchestrator(
+    bootstrapServers: "localhost:9092",  // Hardcoded!
+    topicName: $"backpressure-exercise-{scenario.TopicPartitionCount}p",
+    scenario: scenario,
+    logger: logger);
+
+// ✅ CORRECT - Use environment variable
+private static string KafkaBootstrapServers =>
+    Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+    
+using var orchestrator = new ScenarioOrchestrator(
+    bootstrapServers: KafkaBootstrapServers,  // Dynamic from environment
+    topicName: $"backpressure-exercise-{scenario.TopicPartitionCount}p",
+    scenario: scenario,
+    logger: logger);
+```
+
+**Issue 2: Observability Endpoints (Day05)**
+```csharp
+// ❌ WRONG - Hardcoded observability ports
+Console.WriteLine("📊 Grafana Dashboard: http://localhost:18010");
+Console.WriteLine("🔍 Prometheus Metrics: http://localhost:18006");
+
+options.Endpoint = new Uri("http://localhost:18009");  // Hardcoded!
+
+// ✅ CORRECT - Use environment variables
+private static string GrafanaUrl =>
+    Environment.GetEnvironmentVariable("GRAFANA_URL") ?? "http://localhost:18010";
+    
+private static string PrometheusUrl =>
+    Environment.GetEnvironmentVariable("PROMETHEUS_URL") ?? "http://localhost:18006";
+    
+private static string OtelCollectorUrl =>
+    Environment.GetEnvironmentVariable("OTEL_COLLECTOR_URL") ?? "http://localhost:18009";
+
+Console.WriteLine($"📊 Grafana Dashboard: {GrafanaUrl}");
+Console.WriteLine($"🔍 Prometheus Metrics: {PrometheusUrl}");
+
+options.Endpoint = new Uri(OtelCollectorUrl);
+```
+
+### Environment Variables Reference
+
+**Standard Variables Set by Test Infrastructure:**
+
+| Variable | Purpose | Example Value | Used By |
+|----------|---------|---------------|---------|
+| `KAFKA_BOOTSTRAP_SERVERS` | Host-to-Kafka producer/consumer | `localhost:43175` | Exercise producers/consumers |
+| `KAFKA_FLINK_BOOTSTRAP_SERVERS` | Container-to-Kafka for Flink jobs | `172.17.0.2:9093` | Flink job configuration |
+| `FLINK_GATEWAY_URL` | Flink REST API endpoint | `http://localhost:8080` | Job submission, monitoring |
+| `TEMPORAL_HOST` | Temporal server address | `localhost:7233` | Temporal workflow clients |
+| `REDIS_CONNECTION_STRING` | Redis cache connection | `localhost:6379` | Redis operations |
+
+**Optional Variables for Extra Components:**
+
+| Variable | Purpose | Example Value | Required By |
+|----------|---------|---------------|-------------|
+| `GRAFANA_URL` | Grafana dashboard | `http://localhost:18010` | Day05, Day08 observability |
+| `PROMETHEUS_URL` | Prometheus metrics | `http://localhost:18006` | Day05, Day08 monitoring |
+| `OTEL_COLLECTOR_URL` | OpenTelemetry collector | `http://localhost:18009` | Day05 tracing |
+
+### Fixing Existing Exercises
+
+**Audit Command:**
+```bash
+# Find all hardcoded localhost addresses
+cd LearningCourse
+grep -r "localhost:[0-9]" --include="*.cs" Exercise-Solutions/
+
+# Check for hardcoded Kafka addresses
+grep -r "\"localhost:9092\"" --include="*.cs" Exercise-Solutions/
+grep -r "\"kafka:9092\"" --include="*.cs" Exercise-Solutions/
+```
+
+**Fix Pattern:**
+1. Identify hardcoded address
+2. Create static property with environment variable lookup
+3. Add fallback value for manual testing
+4. Update all usages to use the property
+5. Add comment explaining the dual-address pattern (host vs container)
+
+**Example Fix for Exercise35:**
+```csharp
+// ADD at class level:
+private static string KafkaBootstrapServers =>
+    Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+
+// REPLACE hardcoded value on line 153:
+using var orchestrator = new ScenarioOrchestrator(
+    bootstrapServers: KafkaBootstrapServers,  // Changed from "localhost:9092"
+    topicName: $"backpressure-exercise-{scenario.TopicPartitionCount}p",
+    scenario: scenario,
+    logger: logger);
+```
+
+### Pre-Update Checklist Addition
+
+Add to existing checklist when creating new Learning Course exercises:
+
+- [ ] **No hardcoded localhost addresses** in exercise code
+- [ ] **Environment variables used** for all infrastructure endpoints
+- [ ] **Fallback values provided** for manual testing without test runner
+- [ ] **Comments explain** host-to-container vs container-to-container addressing
+- [ ] **Dual Kafka addresses** used correctly (host for producers, container for Flink)
+- [ ] **Tested with dynamic ports** using test infrastructure
+
+### Post-Update Validation Addition
+
+Add to existing validation when completing Learning Course exercises:
+
+- [ ] **Grep for hardcoded addresses** returns no results
+- [ ] **Exercise runs successfully** when test infrastructure sets environment variables
+- [ ] **Exercise runs manually** with fallback values when environment variables not set
+- [ ] **No Kafka connection errors** in logs (check for localhost:9092 attempts)
+- [ ] **Flink jobs connect successfully** using container-to-container addressing
+
+### Documentation Requirements
+
+**MANDATORY in Exercise README.md:**
+
+```markdown
+## Environment Variables
+
+This exercise uses environment variables for infrastructure connectivity:
+
+### Automatic (Test Infrastructure)
+When run via `dotnet test`, these variables are set automatically:
+- `KAFKA_BOOTSTRAP_SERVERS`: Dynamic host port for Kafka (e.g., `localhost:43175`)
+- `KAFKA_FLINK_BOOTSTRAP_SERVERS`: Container IP for Flink jobs (e.g., `172.17.0.2:9093`)
+- `FLINK_GATEWAY_URL`: Flink REST API endpoint
+
+### Manual Testing
+When run via `dotnet run` without test infrastructure:
+```bash
+# Use default fallback values (assumes LocalTesting Aspire is running)
+cd Exercise-Solutions/ExerciseXY
+dotnet run
+
+# Or explicitly set environment variables
+export KAFKA_BOOTSTRAP_SERVERS="localhost:9093"
+export KAFKA_FLINK_BOOTSTRAP_SERVERS="kafka:9092"
+export FLINK_GATEWAY_URL="http://localhost:8080"
+dotnet run
+```
+
+### Why Two Kafka Addresses?
+- **Host-to-Container** (`KAFKA_BOOTSTRAP_SERVERS`): Used by exercise producers/consumers
+- **Container-to-Container** (`KAFKA_FLINK_BOOTSTRAP_SERVERS`): Used by Flink jobs inside containers
+```
+
+### Reference Implementations
+
+**Best Practice Examples:**
+- [`Exercise1-StringCapitalize/Program.cs`](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise1-StringCapitalize/Program.cs:32-42) - Complete pattern
+- [`Exercise2-BackupAggregator/Program.cs`](Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise2-BackupAggregator/Program.cs:34-36) - Minimal pattern
+- [`LearningCourseTestBase.cs`](LearningCourse.IntegrationTests/LearningCourseTestBase.cs:31-42) - Test infrastructure setup
+- [`DockerInfrastructure.cs`](LearningCourse.Common/DockerInfrastructure.cs) - Port discovery implementation
+
+### Troubleshooting
+
+**Problem**: Exercise logs show "Failed to connect to localhost:9092"
+```
+Solution: Replace hardcoded "localhost:9092" with environment variable pattern
+```
+
+**Problem**: Flink job can't connect to Kafka
+```
+Solution: Use KAFKA_FLINK_BOOTSTRAP_SERVERS (container IP) not KAFKA_BOOTSTRAP_SERVERS (host port)
+```
+
+**Problem**: Exercise works manually but fails in tests
+```
+Solution: Check test infrastructure is setting environment variables correctly
+```
+
+**Problem**: Port already in use errors
+```
+Solution: Aspire dynamic port allocation should prevent this - check for hardcoded ports
+```
