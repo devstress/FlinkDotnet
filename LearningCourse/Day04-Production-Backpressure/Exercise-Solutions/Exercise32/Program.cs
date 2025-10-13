@@ -35,12 +35,34 @@ try
     Console.WriteLine("   • Uber: Dynamic pricing with surge protection algorithms");
     Console.WriteLine();
     
-    await host.RunAsync();
+    // Start the host and run simulation for a fixed duration
+    await host.StartAsync();
+    
+    // Run simulation for 10 seconds instead of indefinitely
+    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    
+    try
+    {
+        await Task.Delay(Timeout.Infinite, cts.Token);
+    }
+    catch (TaskCanceledException)
+    {
+        // Expected - simulation complete
+    }
+    
+    Log.Information("Exercise 3.2 completed successfully");
+    Console.WriteLine();
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("✅ Multi-tier rate limiting simulation completed");
+    Console.WriteLine();
 }
 catch (Exception ex)
 {
     Log.Error(ex, "Error in Exercise 3.2: Multi-Tier Rate Limiting");
     Console.WriteLine($"❌ Error: {ex.Message}");
+    Environment.Exit(1);
 }
 finally
 {

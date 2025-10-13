@@ -49,11 +49,19 @@ public class Program
             Console.WriteLine("   • Dynamic model selection based on data characteristics");
             Console.WriteLine("   • Advanced feature engineering within SQL queries");
             Console.WriteLine("   • Performance optimization and monitoring");
+            
+            Console.WriteLine();
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("✅ ML_PREDICT TVF Implementation completed");
+            Console.WriteLine();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error during ML_PREDICT TVF demonstration: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            Environment.Exit(1);
         }
     }
 

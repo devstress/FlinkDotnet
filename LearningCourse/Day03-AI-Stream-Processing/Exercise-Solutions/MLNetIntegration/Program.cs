@@ -46,11 +46,19 @@ public static class Program
             await inferenceEngine.StartStreamingInferenceAsync(fraudDetectionService);
             
             Console.WriteLine("🎉 Streaming inference completed successfully!");
+            
+            Console.WriteLine();
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("✅ ML.NET Integration completed");
+            Console.WriteLine();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error in ML.NET integration");
             Console.WriteLine($"❌ Error: {ex.Message}");
+            Environment.Exit(1);
         }
         finally
         {

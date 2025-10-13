@@ -70,18 +70,23 @@ namespace StressTesting
                 await performanceMonitor.StopMonitoringAsync();
                 await performanceMonitor.GenerateReportAsync();
                 
+                Console.WriteLine("\n================================================================================");
+                Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+                Console.WriteLine("================================================================================");
                 Console.WriteLine("🎉 Stress testing completed successfully!");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error in stress testing");
                 Console.WriteLine($"❌ Error: {ex.Message}");
+                Environment.Exit(1);
             }
             finally
             {
-                await host.StopAsync();
                 await Log.CloseAndFlushAsync();
             }
+            
+            Environment.Exit(0);
         }
 
         private static async Task ExecuteStressTestScenario(

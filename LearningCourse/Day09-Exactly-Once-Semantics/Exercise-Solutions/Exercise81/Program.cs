@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Hosting;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -7,14 +6,6 @@ Log.Logger = new LoggerConfiguration()
 
 Console.WriteLine("🚀 Day 8 Exercise 8.1: Idempotent Processing");
 Console.WriteLine("".PadRight(50, '='));
-
-var host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
-    {
-        // Add your services here
-    })
-    .UseSerilog()
-    .Build();
 
 try
 {
@@ -27,14 +18,20 @@ try
     await Task.Delay(1000); // Simulate work
     
     Log.Information("Exercise 8.1: Idempotent Processing completed successfully");
+    
+    Console.WriteLine("\n================================================================================");
+    Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+    Console.WriteLine("================================================================================");
 }
 catch (Exception ex)
 {
     Log.Error(ex, "Error in Exercise 8.1: Idempotent Processing");
     Console.WriteLine($"❌ Error: {ex.Message}");
+    Environment.Exit(1);
 }
 finally
 {
-    await host.StopAsync();
     await Log.CloseAndFlushAsync();
 }
+
+Environment.Exit(0);

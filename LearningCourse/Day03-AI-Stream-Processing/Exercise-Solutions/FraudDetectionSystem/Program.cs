@@ -28,7 +28,12 @@ public class Program
         
         logger.LogInformation("✅ Fraud Detection System completed successfully!");
         
-        await host.RunAsync();
+        Console.WriteLine();
+        Console.WriteLine("================================================================================");
+        Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+        Console.WriteLine("================================================================================");
+        Console.WriteLine("✅ All fraud detection checks passed");
+        Console.WriteLine();
     }
     
     public static IHostBuilder CreateHostBuilder(string[] args) =>

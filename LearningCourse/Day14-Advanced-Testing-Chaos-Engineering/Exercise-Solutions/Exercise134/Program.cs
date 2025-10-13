@@ -27,11 +27,19 @@ try
     await Task.Delay(1000); // Simulate work
     
     Log.Information("Exercise 13.4: Resilience Testing completed successfully");
+    
+    Console.WriteLine();
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("✅ Resilience Testing completed");
+    Console.WriteLine();
 }
 catch (Exception ex)
 {
     Log.Error(ex, "Error in Exercise 13.4: Resilience Testing");
     Console.WriteLine($"❌ Error: {ex.Message}");
+    Environment.Exit(1);
 }
 finally
 {

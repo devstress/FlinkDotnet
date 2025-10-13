@@ -1,0 +1,297 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Exercise61 -> c:\GitHub\FlinkDotnet\LearningCourse\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise61\bin\Exercise61.dll
+  Exercise52 -> c:\GitHub\FlinkDotnet\LearningCourse\Day06-Temporal-Workflows\Exercise-Solutions\Exercise52\bin\Exercise52.dll
+  Exercise41 -> c:\GitHub\FlinkDotnet\LearningCourse\Day05-Enterprise-Observability\Exercise-Solutions\Exercise41\bin\Exercise41.dll
+  Exercise43 -> c:\GitHub\FlinkDotnet\LearningCourse\Day05-Enterprise-Observability\Exercise-Solutions\Exercise43\bin\Exercise43.dll
+  Exercise54 -> c:\GitHub\FlinkDotnet\LearningCourse\Day06-Temporal-Workflows\Exercise-Solutions\Exercise54\bin\Exercise54.dll
+  Flink.JobBuilder -> c:\GitHub\FlinkDotnet\FlinkDotNet\Flink.JobBuilder\bin\Debug\net9.0\Flink.JobBuilder.dll
+  Exercise44 -> c:\GitHub\FlinkDotnet\LearningCourse\Day05-Enterprise-Observability\Exercise-Solutions\Exercise44\bin\Exercise44.dll
+  LearningCourse.Common -> c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.Common\bin\LearningCourse.Common.dll
+  Exercise51 -> c:\GitHub\FlinkDotnet\LearningCourse\Day06-Temporal-Workflows\Exercise-Solutions\Exercise51\bin\Exercise51.dll
+  Exercise53 -> c:\GitHub\FlinkDotnet\LearningCourse\Day06-Temporal-Workflows\Exercise-Solutions\Exercise53\bin\Exercise53.dll
+  Exercise34 -> c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise34\bin\Exercise34.dll
+  MLPredictTVFImplementation -> c:\GitHub\FlinkDotnet\LearningCourse\Day03-AI-Stream-Processing\Exercise-Solutions\MLPredictTVFImplementation\bin\MLPredictTVFImplementation.dll
+  Exercise42 -> c:\GitHub\FlinkDotnet\LearningCourse\Day05-Enterprise-Observability\Exercise-Solutions\Exercise42\bin\Exercise42.dll
+  Exercise32 -> c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise32\bin\Exercise32.dll
+  AIModelDDLMastery -> c:\GitHub\FlinkDotnet\LearningCourse\Day03-AI-Stream-Processing\Exercise-Solutions\AIModelDDLMastery\bin\AIModelDDLMastery.dll
+  Exercise31 -> c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\bin\Exercise31.dll
+  Exercise33 -> c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise33\bin\Exercise33.dll
+  FraudDetectionSystem -> c:\GitHub\FlinkDotnet\LearningCourse\Day03-AI-Stream-Processing\Exercise-Solutions\FraudDetectionSystem\bin\FraudDetectionSystem.dll
+  MLNetIntegration -> c:\GitHub\FlinkDotnet\LearningCourse\Day03-AI-Stream-Processing\Exercise-Solutions\MLNetIntegration\bin\MLNetIntegration.dll
+  Exercise102 -> c:\GitHub\FlinkDotnet\LearningCourse\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise102\bin\Exercise102.dll
+  Exercise82 -> c:\GitHub\FlinkDotnet\LearningCourse\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise82\bin\Exercise82.dll
+  Exercise81 -> c:\GitHub\FlinkDotnet\LearningCourse\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise81\bin\Exercise81.dll
+  Exercise101 -> c:\GitHub\FlinkDotnet\LearningCourse\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise101\bin\Exercise101.dll
+  Exercise83 -> c:\GitHub\FlinkDotnet\LearningCourse\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise83\bin\Exercise83.dll
+  Exercise74 -> c:\GitHub\FlinkDotnet\LearningCourse\Day08-Stress-Testing\Exercise-Solutions\Exercise74\bin\Exercise74.dll
+  Exercise94 -> c:\GitHub\FlinkDotnet\LearningCourse\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise94\bin\Exercise94.dll
+  Exercise103 -> c:\GitHub\FlinkDotnet\LearningCourse\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise103\bin\Exercise103.dll
+  Exercise71 -> c:\GitHub\FlinkDotnet\LearningCourse\Day08-Stress-Testing\Exercise-Solutions\Exercise71\bin\Exercise71.dll
+  Exercise62 -> c:\GitHub\FlinkDotnet\LearningCourse\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise62\bin\Exercise62.dll
+  Exercise104 -> c:\GitHub\FlinkDotnet\LearningCourse\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise104\bin\Exercise104.dll
+  Exercise92 -> c:\GitHub\FlinkDotnet\LearningCourse\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise92\bin\Exercise92.dll
+  Exercise84 -> c:\GitHub\FlinkDotnet\LearningCourse\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise84\bin\Exercise84.dll
+  Exercise64 -> c:\GitHub\FlinkDotnet\LearningCourse\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise64\bin\Exercise64.dll
+  Exercise91 -> c:\GitHub\FlinkDotnet\LearningCourse\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise91\bin\Exercise91.dll
+  Exercise93 -> c:\GitHub\FlinkDotnet\LearningCourse\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise93\bin\Exercise93.dll
+  Exercise73 -> c:\GitHub\FlinkDotnet\LearningCourse\Day08-Stress-Testing\Exercise-Solutions\Exercise73\bin\Exercise73.dll
+  Exercise63 -> c:\GitHub\FlinkDotnet\LearningCourse\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise63\bin\Exercise63.dll
+  Exercise72 -> c:\GitHub\FlinkDotnet\LearningCourse\Day08-Stress-Testing\Exercise-Solutions\Exercise72\bin\Exercise72.dll
+  Exercise123 -> c:\GitHub\FlinkDotnet\LearningCourse\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise123\bin\Exercise123.dll
+  Exercise134 -> c:\GitHub\FlinkDotnet\LearningCourse\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise134\bin\Exercise134.dll
+  Exercise132 -> c:\GitHub\FlinkDotnet\LearningCourse\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise132\bin\Exercise132.dll
+  Exercise141 -> c:\GitHub\FlinkDotnet\LearningCourse\Day15-Capstone-Project\Exercise-Solutions\Exercise141\bin\Exercise141.dll
+  Exercise122 -> c:\GitHub\FlinkDotnet\LearningCourse\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise122\bin\Exercise122.dll
+  Exercise111 -> c:\GitHub\FlinkDotnet\LearningCourse\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise111\bin\Exercise111.dll
+  Exercise133 -> c:\GitHub\FlinkDotnet\LearningCourse\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise133\bin\Exercise133.dll
+  Exercise142 -> c:\GitHub\FlinkDotnet\LearningCourse\Day15-Capstone-Project\Exercise-Solutions\Exercise142\bin\Exercise142.dll
+  Exercise121 -> c:\GitHub\FlinkDotnet\LearningCourse\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise121\bin\Exercise121.dll
+  Exercise131 -> c:\GitHub\FlinkDotnet\LearningCourse\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise131\bin\Exercise131.dll
+  Exercise124 -> c:\GitHub\FlinkDotnet\LearningCourse\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise124\bin\Exercise124.dll
+  Exercise112 -> c:\GitHub\FlinkDotnet\LearningCourse\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise112\bin\Exercise112.dll
+  Exercise114 -> c:\GitHub\FlinkDotnet\LearningCourse\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise114\bin\Exercise114.dll
+  Exercise113 -> c:\GitHub\FlinkDotnet\LearningCourse\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise113\bin\Exercise113.dll
+  Exercise143 -> c:\GitHub\FlinkDotnet\LearningCourse\Day15-Capstone-Project\Exercise-Solutions\Exercise143\bin\Exercise143.dll
+  Exercise144 -> c:\GitHub\FlinkDotnet\LearningCourse\Day15-Capstone-Project\Exercise-Solutions\Exercise144\bin\Exercise144.dll
+  Exercise35 -> c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise35\bin\Exercise35.dll
+  LearningCourse.IntegrationTests -> c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\bin\LearningCourse.IntegrationTests.dll
+Test run for c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\bin\LearningCourse.IntegrationTests.dll (.NETCoreApp,Version=v9.0)
+VSTest version 17.14.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\bin\LearningCourse.IntegrationTests.dll
+NUnit Adapter 4.6.0.0: Test execution started
+Running selected tests in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\bin\LearningCourse.IntegrationTests.dll
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Non-Explicit run
+================================================================================
+  Exercise 1: Netflix Global Rate Limiting Controller
+================================================================================
+
+Reference: Netflix Zuul 2 Distributed Rate Limiting
+
+Testing concepts:
+  - Epoch-based budget minting (250ms intervals)
+  - Cross-region coordination prevention
+  - Policy distribution to regional banks
+  - Pre-mint budget futures
+  - Global quota management
+
+🏃 Executing exercise: Day04-Production-Backpressure/Exercise-Solutions/Exercise31
+🔧 Setting KAFKA_BOOTSTRAP_SERVERS=localhost:40201 for exercise (host access)
+🔧 Setting KAFKA_FLINK_BOOTSTRAP_SERVERS=10.90.38.3:9093 for Flink jobs (container access)
+🔧 Setting LOG_FILE_PATH=c:\GitHub\FlinkDotnet\LocalTesting\test-logs for centralized logging
+✅ Exercise completed with exit code 0
+📝 Output:
+≡ƒÜÇ Day 3 Exercise 3.1: Netflix-Style Adaptive Backpressure Implementation
+======================================================================
+[03:53:46 INF] Starting Exercise 3.1: Netflix-Style Adaptive Backpressure
+≡ƒôè Simulating Netflix-scale streaming workload:
+   ΓÇó Peak capacity: 15 Petabits/second (200M concurrent users)
+   ΓÇó Backpressure threshold: 80% capacity (12 Petabits/second)
+   ΓÇó Adaptive quality degradation to maintain service availability
+
+[03:53:46 INF] Application started. Press Ctrl+C to shut down.
+[03:53:46 INF] Hosting environment: Production
+[03:53:46 INF] Content root path: c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31
+[03:53:47 ERR] Error in workload simulation
+System.IO.IOException: The handle is invalid.
+   at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+   at System.ConsolePal.Clear()
+   at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+   at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+[03:53:52 ERR] Error in workload simulation
+System.IO.IOException: The handle is invalid.
+   at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+   at System.ConsolePal.Clear()
+   at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+   at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+[03:53:56 INF] Exercise 3.1 completed successfully
+
+================================================================================
+  EXERCISE COMPLETED SUCCESSFULLY!
+================================================================================
+Γ£à Netflix-style adaptive backpressure simulation completed
+
+[03:53:56 INF] Application is shutting down...
+
+
+--------------------------------------------------------------------------------
+Test Validation
+--------------------------------------------------------------------------------
+[CHECK] Exercise Started: True
+[CHECK] Backpressure Implementation: True
+[CHECK] Integration Patterns: False
+[CHECK] Execution Completed: True
+
+❌ Validation failures detected:
+   - Integration Patterns: Integration patterns not found
+
+
+Full Output:
+--------------------------------------------------------------------------------
+≡ƒÜÇ Day 3 Exercise 3.1: Netflix-Style Adaptive Backpressure Implementation
+======================================================================
+[03:53:46 INF] Starting Exercise 3.1: Netflix-Style Adaptive Backpressure
+≡ƒôè Simulating Netflix-scale streaming workload:
+   ΓÇó Peak capacity: 15 Petabits/second (200M concurrent users)
+   ΓÇó Backpressure threshold: 80% capacity (12 Petabits/second)
+   ΓÇó Adaptive quality degradation to maintain service availability
+
+[03:53:46 INF] Application started. Press Ctrl+C to shut down.
+[03:53:46 INF] Hosting environment: Production
+[03:53:46 INF] Content root path: c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31
+[03:53:47 ERR] Error in workload simulation
+System.IO.IOException: The handle is invalid.
+   at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+   at System.ConsolePal.Clear()
+   at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+   at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+[03:53:52 ERR] Error in workload simulation
+System.IO.IOException: The handle is invalid.
+   at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+   at System.ConsolePal.Clear()
+   at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+   at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+[03:53:56 INF] Exercise 3.1 completed successfully
+
+================================================================================
+  EXERCISE COMPLETED SUCCESSFULLY!
+================================================================================
+Γ£à Netflix-style adaptive backpressure simulation completed
+
+[03:53:56 INF] Application is shutting down...
+
+--------------------------------------------------------------------------------
+
+  Failed Exercise1_NetflixGlobalQuotaController_ShouldExecuteSuccessfully [11 s]
+  Error Message:
+   Exercise 1 validation failed. See output above for details.
+  Stack Trace:
+     at LearningCourse.IntegrationTests.Day04Tests.ReportValidationFailures(List`1 validationFailures, String output, String error, String exerciseName) in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\Day04Tests.cs:line 398
+   at LearningCourse.IntegrationTests.Day04Tests.ValidateExerciseResults(Dictionary`2 validationChecks, String output, String error, String exerciseName) in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\Day04Tests.cs:line 378
+   at LearningCourse.IntegrationTests.Day04Tests.Exercise1_NetflixGlobalQuotaController_ShouldExecuteSuccessfully() in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\Day04Tests.cs:line 72
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await[TResult](TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(TestExecutionContext context, Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.RunTestMethod(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
+   at NUnit.Framework.Internal.Execution.SimpleWorkItem.<>c__DisplayClass3_0.<PerformWork>b__0()
+   at NUnit.Framework.Internal.ContextUtils.<>c__DisplayClass1_0`1.<DoIsolated>b__0(Object _)
+
+1)    at LearningCourse.IntegrationTests.Day04Tests.ReportValidationFailures(List`1 validationFailures, String output, String error, String exerciseName) in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\Day04Tests.cs:line 398
+   at LearningCourse.IntegrationTests.Day04Tests.ValidateExerciseResults(Dictionary`2 validationChecks, String output, String error, String exerciseName) in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\Day04Tests.cs:line 378
+   at LearningCourse.IntegrationTests.Day04Tests.Exercise1_NetflixGlobalQuotaController_ShouldExecuteSuccessfully() in c:\GitHub\FlinkDotnet\LearningCourse\LearningCourse.IntegrationTests\Day04Tests.cs:line 72
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at LearningCourse.IntegrationTests.Day04Tests.Exercise1_NetflixGlobalQuotaController_ShouldExecuteSuccessfully()
+
+
+  Standard Output Messages:
+ ================================================================================
+   Exercise 1: Netflix Global Rate Limiting Controller
+ ================================================================================
+ 
+ Reference: Netflix Zuul 2 Distributed Rate Limiting
+ 
+ Testing concepts:
+   - Epoch-based budget minting (250ms intervals)
+   - Cross-region coordination prevention
+   - Policy distribution to regional banks
+   - Pre-mint budget futures
+   - Global quota management
+ 
+ 🏃 Executing exercise: Day04-Production-Backpressure/Exercise-Solutions/Exercise31
+ 🔧 Setting KAFKA_BOOTSTRAP_SERVERS=localhost:40201 for exercise (host access)
+ 🔧 Setting KAFKA_FLINK_BOOTSTRAP_SERVERS=10.90.38.3:9093 for Flink jobs (container access)
+ 🔧 Setting LOG_FILE_PATH=c:\GitHub\FlinkDotnet\LocalTesting\test-logs for centralized logging
+ ✅ Exercise completed with exit code 0
+ 📝 Output:
+ ≡ƒÜÇ Day 3 Exercise 3.1: Netflix-Style Adaptive Backpressure Implementation
+ ======================================================================
+ [03:53:46 INF] Starting Exercise 3.1: Netflix-Style Adaptive Backpressure
+ ≡ƒôè Simulating Netflix-scale streaming workload:
+    ΓÇó Peak capacity: 15 Petabits/second (200M concurrent users)
+    ΓÇó Backpressure threshold: 80% capacity (12 Petabits/second)
+    ΓÇó Adaptive quality degradation to maintain service availability
+ 
+ [03:53:46 INF] Application started. Press Ctrl+C to shut down.
+ [03:53:46 INF] Hosting environment: Production
+ [03:53:46 INF] Content root path: c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31
+ [03:53:47 ERR] Error in workload simulation
+ System.IO.IOException: The handle is invalid.
+    at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+    at System.ConsolePal.Clear()
+    at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+    at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+ [03:53:52 ERR] Error in workload simulation
+ System.IO.IOException: The handle is invalid.
+    at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+    at System.ConsolePal.Clear()
+    at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+    at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+ [03:53:56 INF] Exercise 3.1 completed successfully
+ 
+ ================================================================================
+   EXERCISE COMPLETED SUCCESSFULLY!
+ ================================================================================
+ Γ£à Netflix-style adaptive backpressure simulation completed
+ 
+ [03:53:56 INF] Application is shutting down...
+ 
+ 
+ --------------------------------------------------------------------------------
+ Test Validation
+ --------------------------------------------------------------------------------
+ [CHECK] Exercise Started: True
+ [CHECK] Backpressure Implementation: True
+ [CHECK] Integration Patterns: False
+ [CHECK] Execution Completed: True
+ 
+ ❌ Validation failures detected:
+    - Integration Patterns: Integration patterns not found
+ 
+ 
+ Full Output:
+ --------------------------------------------------------------------------------
+ ≡ƒÜÇ Day 3 Exercise 3.1: Netflix-Style Adaptive Backpressure Implementation
+ ======================================================================
+ [03:53:46 INF] Starting Exercise 3.1: Netflix-Style Adaptive Backpressure
+ ≡ƒôè Simulating Netflix-scale streaming workload:
+    ΓÇó Peak capacity: 15 Petabits/second (200M concurrent users)
+    ΓÇó Backpressure threshold: 80% capacity (12 Petabits/second)
+    ΓÇó Adaptive quality degradation to maintain service availability
+ 
+ [03:53:46 INF] Application started. Press Ctrl+C to shut down.
+ [03:53:46 INF] Hosting environment: Production
+ [03:53:46 INF] Content root path: c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31
+ [03:53:47 ERR] Error in workload simulation
+ System.IO.IOException: The handle is invalid.
+    at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+    at System.ConsolePal.Clear()
+    at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+    at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+ [03:53:52 ERR] Error in workload simulation
+ System.IO.IOException: The handle is invalid.
+    at System.ConsolePal.GetBufferInfo(Boolean throwOnNoConsole, Boolean& succeeded)
+    at System.ConsolePal.Clear()
+    at StreamingWorkloadSimulator.DisplayMetrics() in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 379
+    at StreamingWorkloadSimulator.ExecuteAsync(CancellationToken stoppingToken) in c:\GitHub\FlinkDotnet\LearningCourse\Day04-Production-Backpressure\Exercise-Solutions\Exercise31\Program.cs:line 333
+ [03:53:56 INF] Exercise 3.1 completed successfully
+ 
+ ================================================================================
+   EXERCISE COMPLETED SUCCESSFULLY!
+ ================================================================================
+ Γ£à Netflix-style adaptive backpressure simulation completed
+ 
+ [03:53:56 INF] Application is shutting down...
+ 
+ --------------------------------------------------------------------------------
+
+
+NUnit Adapter 4.6.0.0: Test execution complete
+
+Test Run Failed.
+Total tests: 1
+     Failed: 1
+ Total time: 33.9292 Seconds

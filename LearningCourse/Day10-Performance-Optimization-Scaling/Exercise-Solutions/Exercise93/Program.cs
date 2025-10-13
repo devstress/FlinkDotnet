@@ -27,11 +27,19 @@ try
     await Task.Delay(1000); // Simulate work
     
     Log.Information("Exercise 9.3: Memory Management completed successfully");
+    
+    Console.WriteLine();
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("✅ Memory Management completed");
+    Console.WriteLine();
 }
 catch (Exception ex)
 {
     Log.Error(ex, "Error in Exercise 9.3: Memory Management");
     Console.WriteLine($"❌ Error: {ex.Message}");
+    Environment.Exit(1);
 }
 finally
 {

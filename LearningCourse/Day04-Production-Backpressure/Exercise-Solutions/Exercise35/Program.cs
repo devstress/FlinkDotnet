@@ -58,11 +58,19 @@ class Program
             await RunTestScenariosAsync(logger);
 
             logger.LogInformation("Exercise 3.5 completed successfully");
+            
+            Console.WriteLine();
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("✅ Simple BackpressureQueue Implementation completed");
+            Console.WriteLine();
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error in Exercise 3.5");
             Console.WriteLine($"❌ Error: {ex.Message}");
+            Environment.Exit(1);
         }
         finally
         {

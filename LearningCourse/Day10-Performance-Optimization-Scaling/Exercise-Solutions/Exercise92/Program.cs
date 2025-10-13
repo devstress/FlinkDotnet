@@ -27,11 +27,19 @@ try
     await Task.Delay(1000); // Simulate work
     
     Log.Information("Exercise 9.2: Horizontal Scaling completed successfully");
+    
+    Console.WriteLine();
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("✅ Horizontal Scaling completed");
+    Console.WriteLine();
 }
 catch (Exception ex)
 {
     Log.Error(ex, "Error in Exercise 9.2: Horizontal Scaling");
     Console.WriteLine($"❌ Error: {ex.Message}");
+    Environment.Exit(1);
 }
 finally
 {

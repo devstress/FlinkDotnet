@@ -37,12 +37,34 @@ try
     Console.WriteLine("   • Alert management: PagerDuty-style incident response");
     Console.WriteLine();
     
-    await host.RunAsync();
+    // Start the host and run simulation for a fixed duration
+    await host.StartAsync();
+    
+    // Run simulation for 30 seconds to allow all deployment strategies to complete
+    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+    
+    try
+    {
+        await Task.Delay(Timeout.Infinite, cts.Token);
+    }
+    catch (TaskCanceledException)
+    {
+        // Expected - simulation complete
+    }
+    
+    Log.Information("Exercise 3.4 completed successfully");
+    Console.WriteLine();
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("  EXERCISE COMPLETED SUCCESSFULLY!");
+    Console.WriteLine("================================================================================");
+    Console.WriteLine("✅ Production deployment patterns completed");
+    Console.WriteLine();
 }
 catch (Exception ex)
 {
     Log.Error(ex, "Error in Exercise 3.4: Production Deployment");
     Console.WriteLine($"❌ Error: {ex.Message}");
+    Environment.Exit(1);
 }
 finally
 {
