@@ -145,20 +145,71 @@ Tests to add:
 
 ## Phase 4: Implementation
 ### Code Changes
-(To be filled during implementation)
+Created comprehensive unit tests across multiple test files:
+
+1. **FlinkDotNetCommonTests.cs** (70 tests):
+   - 43 tests for Configuration class (100% coverage)
+   - 27 tests for ExecutionConfig class (100% coverage)
+   - Tests cover all methods, properties, edge cases, and error conditions
+
+2. **FlinkEntryPointTests.cs** (13 tests):
+   - Tests for Flink.GetExecutionEnvironment() (100% coverage)
+   - Tests for Flink.CreateConfiguration() (100% coverage)
+   - Tests for Flink.JobBuilder static methods (backward compatibility)
+
+3. **JobResultsModelTests.cs** (30 tests):
+   - Tests for JobSubmissionResult (CreateSuccess, CreateFailure, properties)
+   - Tests for JobExecutionResult
+   - Tests for JobStatus (including Duration calculation)
+   - Tests for JobMetrics
+   - Tests for FlinkJobGatewayConfiguration
+
+4. **ExtensionsTests.cs** (26 tests):
+   - Tests for ServiceCollectionExtensions (100% coverage)
+   - Tests for JobDefinitionExtensions validation (98.4% coverage)
+   - Tests for JobValidationResult (100% coverage)
+   - Comprehensive validation testing for all source, sink, and operation types
 
 ### Challenges Encountered
-(To be filled during implementation)
+1. **Namespace Conflicts**: Using `using FlinkDotNet;` in test files caused conflicts with `Flink.JobBuilder.Flink` namespace. Resolved by using fully qualified names (`FlinkDotNet.Flink`).
+
+2. **ImplicitUsings**: Test project has ImplicitUsings enabled, so System.Linq was already included. Removed explicit using to avoid IDE0005 warnings.
+
+3. **Code Style Enforcement**: EnforceCodeStyleInBuild is enabled, treating code style warnings as errors during build.
 
 ### Solutions Applied
-(To be filled during implementation)
+- Used fully qualified namespace references where needed
+- Followed existing test patterns (NUnit, AAA pattern)
+- Added comprehensive edge case testing
+- Ensured all tests are maintainable and clear
 
 ## Phase 5: Testing & Validation
 ### Test Results
-(To be filled during testing)
+- **Total Tests**: 214 (207 in Flink.JobBuilder.Tests + 7 in FlinkDotNet.JobGateway.Tests)
+- **Added Tests**: 139 new tests (from 75 baseline)
+- **Test Success Rate**: 100% - All tests passing
+- **Test Categories**: Unit tests only (no integration tests added)
 
 ### Performance Metrics
-(To be filled during testing)
+**Coverage Improvements**:
+- **Overall Coverage**: 7.2% → **10.9%** (+3.7 percentage points, +51% relative improvement)
+- **Lines Covered**: 260 → 491 (+231 lines, +89% improvement)
+- **Methods Covered**: 135 → 226 (+91 methods, +67% improvement)
+- **Branch Coverage**: 5.6% → 10% (+4.4 percentage points, +79% relative improvement)
+
+**Per-Assembly Coverage**:
+- **FlinkDotNet.Common**: 0% → **100%** ✓
+- **FlinkDotNet.Flink**: 0% → **100%** ✓
+- **Flink.JobBuilder**: 9.4% → 13.8% (+4.4 pp)
+- **Flink.JobBuilder.Extensions**: 0% → 99.3% (3 of 4 classes at 100%)
+
+**Specific Class Coverage Achievements**:
+- Configuration: **100%**
+- ExecutionConfig: **100%**
+- JobSubmissionResult: 19% → 80%+ (with factory methods)
+- JobValidationResult: **100%**
+- ServiceCollectionExtensions: **100%**
+- JobDefinitionExtensions: **98.4%**
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
@@ -172,16 +223,48 @@ Tests to add:
 
 ## Lessons Learned & Future Reference (MANDATORY)
 ### What Worked Well
-(To be filled after completion)
+1. **Focused on User-Facing APIs First**: Prioritizing Configuration, ExecutionConfig, and main entry points provided high-value coverage improvements
+2. **Comprehensive Test Coverage**: Testing all methods, properties, edge cases, and error conditions ensures robust validation
+3. **Followed Existing Patterns**: Using NUnit with AAA pattern maintained consistency with existing tests
+4. **Incremental Commits**: Committing after each test file allowed for easy progress tracking and rollback if needed
+5. **Factory Method Testing**: Testing static factory methods (CreateSuccess, CreateFailure) improved practical coverage
 
 ### What Could Be Improved  
-(To be filled after completion)
+1. **DataStream API Testing**: DataStream classes remain at 0% coverage - these require more complex setup with mocking
+2. **FlinkJobBuilderExtensions**: CreateJobBuilder() method at 0% coverage - requires ServiceProvider infrastructure
+3. **Integration Tests**: Focus was on unit tests; integration tests would provide additional confidence
+4. **Backpressure Classes**: Testing support infrastructure at 0% coverage (lower priority as they work in integration tests)
 
 ### Key Insights for Similar Tasks
-(To be filled after completion)
+1. **Start with Low-Hanging Fruit**: Simple POCOs and configuration classes are easiest to test and provide quick wins
+2. **Check ImplicitUsings**: Modern .NET projects may have implicit usings enabled, affecting namespace imports
+3. **Code Style Enforcement**: Be aware of EnforceCodeStyleInBuild settings that treat warnings as errors
+4. **Namespace Conflicts**: Be careful with namespace naming that conflicts with using directives
+5. **Coverage Tools**: reportgenerator provides excellent summaries for tracking progress
 
 ### Specific Problems to Avoid in Future
-(To be filled after completion)
+1. **Don't Mix Test Concerns**: Keep unit tests focused on one class/method at a time
+2. **Avoid Unnecessary Dependencies**: Mock external dependencies rather than requiring full infrastructure
+3. **Watch for Namespace Collisions**: Use fully qualified names when test namespaces conflict with production code
+4. **Test Edge Cases**: Don't just test happy paths - include null checks, empty collections, invalid inputs
+5. **Validate Test Quality**: Ensure tests actually verify behavior, not just call methods
 
 ### Reference for Future WIs
-(To be filled after completion)
+**When Adding Tests to FlinkDotNet**:
+1. Start with Configuration and Common classes (simple POCOs)
+2. Move to Entry Points (static facades)
+3. Add Model tests (DTOs, results, configurations)
+4. Test Extension methods (DI, validation)
+5. Finally tackle DataStream API (requires more complex setup)
+
+**Test Count Targets**:
+- Aim for 5-10 tests per class minimum
+- Cover all public methods and properties
+- Include at least one error case test per method
+- Test method chaining for fluent APIs
+
+**Coverage Improvement Strategy**:
+- Focus on 0% coverage classes first for maximum impact
+- Target 100% on simple classes before moving to complex ones
+- Don't worry about Backpressure testing infrastructure (used in integration tests)
+- Prioritize user-facing APIs over internal infrastructure
