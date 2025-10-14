@@ -14,6 +14,10 @@ namespace Flink.JobBuilder.Demo;
 /// </summary>
 public static class RateLimitingDemo
 {
+    // String constants to avoid S1192 warning
+    private const string AllowedStatus = "✅ ALLOWED";
+    private const string DeniedStatus = "❌ DENIED";
+
     public static async Task Main(string[] args)
     {
         Console.WriteLine("🚀 Flink.NET Enhanced Backpressure Rate Limiting Demo");
@@ -49,7 +53,7 @@ public static class RateLimitingDemo
             var allowed = rateLimiter.TryAcquire();
             var elapsed = DateTime.UtcNow - start;
 
-            Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Tokens: {rateLimiter.CurrentTokens:F1}");
+            Console.WriteLine($"   Request {i}: {(allowed ? AllowedStatus : DeniedStatus)} ({elapsed.TotalMilliseconds:F0}ms) - Tokens: {rateLimiter.CurrentTokens:F1}");
         }
 
         // Demonstrate rate limiting
@@ -62,7 +66,7 @@ public static class RateLimitingDemo
             var allowed = rateLimiter.TryAcquire();
             var elapsed = DateTime.UtcNow - start;
 
-            Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Tokens: {rateLimiter.CurrentTokens:F1}");
+            Console.WriteLine($"   Request {i}: {(allowed ? AllowedStatus : DeniedStatus)} ({elapsed.TotalMilliseconds:F0}ms) - Tokens: {rateLimiter.CurrentTokens:F1}");
 
             if (!allowed)
                 break;
@@ -91,7 +95,7 @@ public static class RateLimitingDemo
             var allowed = rateLimiter.TryAcquire();
             var elapsed = DateTime.UtcNow - start;
 
-            Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Count: {rateLimiter.CurrentRequestCount}, Rate: {rateLimiter.ActualRate:F1}/s");
+            Console.WriteLine($"   Request {i}: {(allowed ? AllowedStatus : DeniedStatus)} ({elapsed.TotalMilliseconds:F0}ms) - Count: {rateLimiter.CurrentRequestCount}, Rate: {rateLimiter.ActualRate:F1}/s");
 
             if (i == 3)
             {
@@ -199,7 +203,7 @@ public static class RateLimitingDemo
             var utilization = multiTierLimiter.GetUtilizationMetrics();
             var avgUtilization = utilization.Values.Average();
 
-            Console.WriteLine($"   Request {i}: {(allowed ? "✅ ALLOWED" : "❌ DENIED")} ({elapsed.TotalMilliseconds:F0}ms) - Avg utilization: {avgUtilization:P1}");
+            Console.WriteLine($"   Request {i}: {(allowed ? AllowedStatus : DeniedStatus)} ({elapsed.TotalMilliseconds:F0}ms) - Avg utilization: {avgUtilization:P1}");
 
             if (i == 4)
             {
