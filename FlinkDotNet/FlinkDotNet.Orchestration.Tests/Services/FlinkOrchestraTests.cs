@@ -18,6 +18,10 @@ public class FlinkOrchestraTests
     [SetUp]
     public void SetUp()
     {
+        // Set static delays to 1ms for fast test execution
+        FlinkOrchestra.ClusterProvisioningDelay = TimeSpan.FromMilliseconds(1);
+        FlinkOrchestra.WorkflowStartDelay = TimeSpan.FromMilliseconds(1);
+        
         _mockLogger = new Mock<ILogger<FlinkOrchestra>>();
         _orchestra = new FlinkOrchestra(_mockLogger.Object);
     }

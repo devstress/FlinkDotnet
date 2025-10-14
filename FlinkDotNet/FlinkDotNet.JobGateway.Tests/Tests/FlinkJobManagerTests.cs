@@ -18,6 +18,11 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void Setup()
         {
+            // Set static delays to 1ms for fast test execution
+            FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+            
             _mockLogger = new Mock<ILogger<FlinkJobManager>>();
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)

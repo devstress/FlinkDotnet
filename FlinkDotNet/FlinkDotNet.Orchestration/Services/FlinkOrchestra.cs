@@ -13,6 +13,10 @@ public class FlinkOrchestra : IFlinkOrchestra
 {
     private readonly ILogger<FlinkOrchestra> _logger;
     private readonly Dictionary<string, IFlinkClusterActor> _clusters = new();
+    
+    // Static delay fields for testability (can be set to 1ms in tests)
+    public static TimeSpan ClusterProvisioningDelay { get; set; } = TimeSpan.FromSeconds(5);
+    public static TimeSpan WorkflowStartDelay { get; set; } = TimeSpan.FromMilliseconds(100);
 
     public FlinkOrchestra(ILogger<FlinkOrchestra> logger)
     {
@@ -74,7 +78,7 @@ public class FlinkOrchestra : IFlinkOrchestra
     {
         _logger.LogInformation("Provisioning new cluster with name {Name}", config.Name);
 
-        await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+        await Task.Delay(ClusterProvisioningDelay, cancellationToken);
 
         var clusterId = $"cluster-{Guid.NewGuid():N}[..8]";
 
@@ -284,7 +288,7 @@ public class FlinkOrchestra : IFlinkOrchestra
 
         var workflowId = $"orchestra-{request.RequestId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
 
-        await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+        await Task.Delay(WorkflowStartDelay, cancellationToken);
 
         _logger.LogInformation("Started orchestration workflow {WorkflowId}", workflowId);
         return workflowId;
