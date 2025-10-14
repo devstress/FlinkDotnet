@@ -36,7 +36,10 @@ public interface IRateLimiterStateStorage : IDisposable
     /// <summary>
     /// Gets storage backend information.
     /// </summary>
-    StorageBackendInfo BackendInfo { get; }
+    StorageBackendInfo BackendInfo
+    {
+        get;
+    }
 }
 
 /// <summary>
@@ -45,12 +48,30 @@ public interface IRateLimiterStateStorage : IDisposable
 public class RateLimiterState
 {
     public string RateLimiterId { get; init; } = string.Empty;
-    public double CurrentTokens { get; init; }
-    public double MaxTokens { get; init; }
-    public double CurrentRateLimit { get; init; }
-    public DateTime LastRefill { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public DateTime UpdatedAt { get; init; }
+    public double CurrentTokens
+    {
+        get; init;
+    }
+    public double MaxTokens
+    {
+        get; init;
+    }
+    public double CurrentRateLimit
+    {
+        get; init;
+    }
+    public DateTime LastRefill
+    {
+        get; init;
+    }
+    public DateTime CreatedAt
+    {
+        get; init;
+    }
+    public DateTime UpdatedAt
+    {
+        get; init;
+    }
     public string RateLimiterType { get; init; } = string.Empty;
     public System.Collections.Generic.Dictionary<string, object> AdditionalProperties { get; init; } = new();
 }
@@ -62,9 +83,21 @@ public class StorageBackendInfo
 {
     public string BackendType { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
-    public bool SupportsDistribution { get; init; }
-    public bool SupportsPersistence { get; init; }
-    public bool SupportsReplication { get; init; }
-    public TimeSpan TypicalLatency { get; init; }
+    public bool SupportsDistribution
+    {
+        get; init;
+    }
+    public bool SupportsPersistence
+    {
+        get; init;
+    }
+    public bool SupportsReplication
+    {
+        get; init;
+    }
+    public TimeSpan TypicalLatency
+    {
+        get; init;
+    }
     public string ScalabilityCharacteristics { get; init; } = string.Empty;
 }

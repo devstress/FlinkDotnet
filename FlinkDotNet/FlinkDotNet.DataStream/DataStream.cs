@@ -125,15 +125,15 @@ namespace FlinkDotNet.DataStream
         {
             // Capture operation if using native API
             _operationCapture?.CaptureMapOperation("custom", mapFunction);
-            
+
             var result = Map(mapFunction.Map);
-            
+
             // Propagate operation capture to result stream
             if (_operationCapture != null)
             {
                 result.AttachOperationCapture(_operationCapture);
             }
-            
+
             return result;
         }
 
@@ -269,18 +269,18 @@ namespace FlinkDotNet.DataStream
                     "Kafka bootstrap servers must be provided via bootstrapServers parameter.",
                     nameof(bootstrapServers));
             }
-            
+
             // Support native API with operation capture
             if (_operationCapture != null)
             {
                 _operationCapture.CaptureKafkaSink(topic, bootstrapServers, serializer);
                 return this;
             }
-            
+
             // Support IR-backed streams
             if (_job == null)
                 throw new InvalidOperationException("SinkToKafka requires an IR-backed stream created via environment.FromKafka(...) or AddKafkaSource(...)");
-            
+
             _job.Sink = new Flink.JobBuilder.Models.KafkaSinkDefinition { Topic = topic, BootstrapServers = bootstrapServers };
             _environment.SetActiveJob(_job);
             return this;
@@ -340,19 +340,19 @@ namespace FlinkDotNet.DataStream
                 var kafkaSinkType = sinkFunction.GetType();
                 var topicProp = kafkaSinkType.GetProperty("Topic");
                 var serversProp = kafkaSinkType.GetProperty("BootstrapServers");
-                
+
                 if (topicProp != null && serversProp != null)
                 {
                     topic = topicProp.GetValue(sinkFunction) as string;
                     servers = serversProp.GetValue(sinkFunction) as string;
                 }
-                
+
                 if (!string.IsNullOrEmpty(topic) && !string.IsNullOrEmpty(servers))
                 {
                     _operationCapture.CaptureKafkaSink(topic, servers, null);
                 }
             }
-            
+
             // Sink function registered for execution
             return this;
         }
@@ -477,7 +477,7 @@ namespace FlinkDotNet.DataStream
         {
             // Capture operation if using native API
             _operationCapture?.CaptureTimestampAssigner(assigner);
-            
+
             // In a full implementation, this would configure the stream's time characteristic
             // For now, we return the stream to maintain API compatibility
             return this;
@@ -506,15 +506,15 @@ namespace FlinkDotNet.DataStream
         {
             // Capture operation if using native API
             _operationCapture?.CaptureTimeWindow(size);
-            
+
             var windowedStream = new AllWindowedStream<T>(this, size);
-            
+
             // Propagate operation capture
             if (_operationCapture != null)
             {
                 windowedStream.AttachOperationCapture(_operationCapture);
             }
-            
+
             return windowedStream;
         }
 
@@ -529,19 +529,19 @@ namespace FlinkDotNet.DataStream
         {
             if (size <= 0)
                 throw new ArgumentException("Window size must be greater than 0", nameof(size));
-            
+
             // Capture operation if using native API
             _operationCapture?.CaptureCountWindow(size);
-            
+
             // Create a windowed stream with count-based windowing
             var windowedStream = new AllWindowedStream<T>(this, size);
-            
+
             // Propagate operation capture
             if (_operationCapture != null)
             {
                 windowedStream.AttachOperationCapture(_operationCapture);
             }
-            
+
             return windowedStream;
         }
 
@@ -661,11 +661,11 @@ namespace FlinkDotNet.DataStream
         {
             // Capture operation if using native API
             _operationCapture?.CaptureAggregateOperation(aggregateFunction);
-            
+
             // In a full implementation, this would apply windowing and aggregation
             // For now, we create a transformed stream to maintain API compatibility
             var environment = _dataStream.GetExecutionEnvironment();
-            
+
             // This is a placeholder - in production, this would integrate with the Flink runtime
             // to perform actual windowed aggregation
             var result = new DataStream<TResult>(
@@ -676,13 +676,13 @@ namespace FlinkDotNet.DataStream
                 environment,
                 $"Windowed Aggregate({_windowSize})"
             );
-            
+
             // Propagate operation capture
             if (_operationCapture != null)
             {
                 result.AttachOperationCapture(_operationCapture);
             }
-            
+
             return result;
         }
 
@@ -919,12 +919,12 @@ namespace FlinkDotNet.DataStream
             // This is a simplified implementation that aggregates all elements
             // In production, this would be handled by Flink's windowing mechanism
             var accumulator = _aggregateFunction.CreateAccumulator();
-            
+
             await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
                 accumulator = _aggregateFunction.Add(item, accumulator);
             }
-            
+
             yield return _aggregateFunction.GetResult(accumulator);
         }
     }

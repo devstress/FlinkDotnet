@@ -40,7 +40,7 @@ namespace Flink.JobBuilder.Flink
             var options = ConfigurationOptions.Parse(_connectionString);
             SetDefaultOptions(options);
             ApplyCustomConfiguration(options);
-            
+
             _muxer = await ConnectionMultiplexer.ConnectAsync(options).ConfigureAwait(false);
             _db = _muxer.GetDatabase();
             _logger.LogInformation("FlinkRedisSink initialization completed");
@@ -56,7 +56,8 @@ namespace Flink.JobBuilder.Flink
 
         private void ApplyCustomConfiguration(ConfigurationOptions options)
         {
-            if (_redisConfig == null) return;
+            if (_redisConfig == null)
+                return;
 
             foreach (var config in _redisConfig)
             {
@@ -98,7 +99,8 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                if (_db == null)
+                    throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var newValue = await _db.StringIncrementAsync(key, increment).ConfigureAwait(false);
                 _logger.LogDebug("Atomic increment completed: key={Key}, newValue={NewValue}", key, newValue);
                 return newValue;
@@ -127,7 +129,8 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                if (_db == null)
+                    throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var added = await _db.SetAddAsync(setKey, member).ConfigureAwait(false);
                 _logger.LogDebug("Atomic set add completed: setKey={SetKey}, member={Member}, added={Added}", setKey, member, added);
                 return added;
@@ -154,7 +157,8 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                if (_db == null)
+                    throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var exists = await _db.SetContainsAsync(setKey, member).ConfigureAwait(false);
                 _logger.LogDebug("Set contains: setKey={SetKey}, member={Member}, exists={Exists}", setKey, member, exists);
                 return exists;
@@ -179,7 +183,8 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                if (_db == null)
+                    throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var value = await _db.StringGetAsync(key).ConfigureAwait(false);
                 long result = 0;
                 if (value.HasValue && long.TryParse(value.ToString(), out var parsed))
@@ -207,7 +212,8 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                if (_db == null)
+                    throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var size = await _db.SetLengthAsync(setKey).ConfigureAwait(false);
                 _logger.LogDebug("Get set size: setKey={SetKey}, size={Size}", setKey, size);
                 return size;
@@ -235,7 +241,8 @@ namespace Flink.JobBuilder.Flink
 
             try
             {
-                if (_db == null) throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                if (_db == null)
+                    throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
                 var tran = _db.CreateTransaction();
                 var pending = new List<Task>();
                 var results = new List<object>();
@@ -287,13 +294,19 @@ namespace Flink.JobBuilder.Flink
                 {
                     switch (r)
                     {
-                        case Task<long> tL: materialized.Add(await tL.ConfigureAwait(false)); break;
-                        case Task<bool> tB: materialized.Add(await tB.ConfigureAwait(false)); break;
+                        case Task<long> tL:
+                            materialized.Add(await tL.ConfigureAwait(false));
+                            break;
+                        case Task<bool> tB:
+                            materialized.Add(await tB.ConfigureAwait(false));
+                            break;
                         case Task<RedisValue> tV:
                             var v = await tV.ConfigureAwait(false);
                             materialized.Add(v.HasValue ? v.ToString()! : string.Empty);
                             break;
-                        default: materialized.Add(true); break;
+                        default:
+                            materialized.Add(true);
+                            break;
                     }
                 }
 
@@ -329,14 +342,20 @@ namespace Flink.JobBuilder.Flink
                 lock (_lockObject)
                 {
                     _logger.LogInformation("Disposing FlinkRedisSink");
-                    try { _muxer?.Close(); } 
-                    catch 
-                    { 
+                    try
+                    {
+                        _muxer?.Close();
+                    }
+                    catch
+                    {
                         // Close operation may fail if connection is already lost - this is non-fatal during disposal
                     }
-                    try { _muxer?.Dispose(); } 
-                    catch 
-                    { 
+                    try
+                    {
+                        _muxer?.Dispose();
+                    }
+                    catch
+                    {
                         // Dispose operation may fail if resources are already released - this is non-fatal during disposal
                     }
                     _db = null;
@@ -357,17 +376,35 @@ namespace Flink.JobBuilder.Flink
 
     public class RedisOperation
     {
-        public RedisOperationType Type { get; set; }
-        public string? Key { get; set; }
-        public string? Member { get; set; }
-        public object? Value { get; set; }
+        public RedisOperationType Type
+        {
+            get; set;
+        }
+        public string? Key
+        {
+            get; set;
+        }
+        public string? Member
+        {
+            get; set;
+        }
+        public object? Value
+        {
+            get; set;
+        }
         public long Increment { get; set; } = 1;
     }
 
     public class RedisTransactionResult
     {
-        public bool Success { get; set; }
+        public bool Success
+        {
+            get; set;
+        }
         public List<object> Results { get; set; } = new();
-        public string? ErrorMessage { get; set; }
+        public string? ErrorMessage
+        {
+            get; set;
+        }
     }
 }

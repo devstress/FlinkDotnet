@@ -57,7 +57,7 @@ public class FlinkClusterActorTests
     public void Constructor_WithNullClusterId_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new FlinkClusterActor(null!, _configuration, _httpClient, _mockLogger.Object));
     }
 
@@ -65,7 +65,7 @@ public class FlinkClusterActorTests
     public void Constructor_WithNullConfiguration_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new FlinkClusterActor(TestClusterId, null!, _httpClient, _mockLogger.Object));
     }
 
@@ -73,7 +73,7 @@ public class FlinkClusterActorTests
     public void Constructor_WithNullHttpClient_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new FlinkClusterActor(TestClusterId, _configuration, null!, _mockLogger.Object));
     }
 
@@ -81,7 +81,7 @@ public class FlinkClusterActorTests
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new FlinkClusterActor(TestClusterId, _configuration, _httpClient, null!));
     }
 
@@ -156,7 +156,7 @@ public class FlinkClusterActorTests
         // Arrange
         using var cts = new CancellationTokenSource();
         cts.Cancel();
-        
+
         _mockHttpMessageHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
@@ -205,7 +205,7 @@ public class FlinkClusterActorTests
     {
         // Arrange
         var sequence = new Queue<HttpResponseMessage>();
-        
+
         // First call for status check - success
         sequence.Enqueue(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -374,7 +374,7 @@ public class FlinkClusterActorTests
     {
         // Arrange
         var sequence = new Queue<HttpResponseMessage>();
-        
+
         // First call for status check
         sequence.Enqueue(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -538,7 +538,7 @@ public class FlinkClusterActorTests
         var actor = new FlinkClusterActor(TestClusterId, _configuration, _httpClient, _mockLogger.Object);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await actor.RestartAsync(cts.Token));
         Assert.That(ex!.Message, Does.Contain("Cluster restart failed"));
     }
@@ -585,7 +585,7 @@ public class FlinkClusterActorTests
 
         // Act & Assert - Should complete without throwing
         Assert.DoesNotThrowAsync(async () => await actor.ShutdownAsync());
-        
+
         // Verify shutdown was logged
         _mockLogger.Verify(
             x => x.Log(

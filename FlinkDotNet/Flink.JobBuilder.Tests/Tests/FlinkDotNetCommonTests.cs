@@ -25,7 +25,7 @@ public class FlinkDotNetCommonTests
             { "key2", 42 }
         };
         var config = new Configuration(dict);
-        
+
         Assert.That(config.GetString("key1"), Is.EqualTo("value1"));
         Assert.That(config.GetInteger("key2"), Is.EqualTo(42));
     }
@@ -35,7 +35,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetString("test.key", "test.value");
-        
+
         Assert.That(config.GetString("test.key"), Is.EqualTo("test.value"));
     }
 
@@ -44,7 +44,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         var result = config.SetString("key", "value");
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -53,7 +53,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetInteger("parallelism", 8);
-        
+
         Assert.That(config.GetInteger("parallelism"), Is.EqualTo(8));
     }
 
@@ -62,7 +62,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         var result = config.SetInteger("key", 42);
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -71,7 +71,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetBoolean("enabled", true);
-        
+
         Assert.That(config.GetBoolean("enabled"), Is.True);
     }
 
@@ -80,7 +80,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         var result = config.SetBoolean("key", true);
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -89,7 +89,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetLong("checkpoint.interval", 60000L);
-        
+
         Assert.That(config.GetLong("checkpoint.interval"), Is.EqualTo(60000L));
     }
 
@@ -98,7 +98,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         var result = config.SetLong("key", 123456L);
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -106,7 +106,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_GetString_ReturnsDefaultValueWhenKeyNotFound()
     {
         var config = new Configuration();
-        
+
         Assert.That(config.GetString("nonexistent", "default"), Is.EqualTo("default"));
     }
 
@@ -114,7 +114,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_GetString_ReturnsEmptyStringWhenNoDefault()
     {
         var config = new Configuration();
-        
+
         Assert.That(config.GetString("nonexistent"), Is.EqualTo(string.Empty));
     }
 
@@ -122,7 +122,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_GetInteger_ReturnsDefaultValueWhenKeyNotFound()
     {
         var config = new Configuration();
-        
+
         Assert.That(config.GetInteger("nonexistent", 42), Is.EqualTo(42));
     }
 
@@ -131,7 +131,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetString("number", "123");
-        
+
         Assert.That(config.GetInteger("number"), Is.EqualTo(123));
     }
 
@@ -139,7 +139,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_GetBoolean_ReturnsDefaultValueWhenKeyNotFound()
     {
         var config = new Configuration();
-        
+
         Assert.That(config.GetBoolean("nonexistent", true), Is.True);
     }
 
@@ -148,7 +148,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetString("flag", "true");
-        
+
         Assert.That(config.GetBoolean("flag"), Is.True);
     }
 
@@ -156,7 +156,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_GetLong_ReturnsDefaultValueWhenKeyNotFound()
     {
         var config = new Configuration();
-        
+
         Assert.That(config.GetLong("nonexistent", 999L), Is.EqualTo(999L));
     }
 
@@ -165,7 +165,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetString("timeout", "30000");
-        
+
         Assert.That(config.GetLong("timeout"), Is.EqualTo(30000L));
     }
 
@@ -174,7 +174,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetString("key", "value");
-        
+
         Assert.That(config.ContainsKey("key"), Is.True);
     }
 
@@ -182,7 +182,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_ContainsKey_ReturnsFalseForNonexistentKey()
     {
         var config = new Configuration();
-        
+
         Assert.That(config.ContainsKey("nonexistent"), Is.False);
     }
 
@@ -191,9 +191,9 @@ public class FlinkDotNetCommonTests
     {
         var config = new Configuration();
         config.SetString("key", "value");
-        
+
         var removed = config.RemoveKey("key");
-        
+
         Assert.That(removed, Is.True);
         Assert.That(config.ContainsKey("key"), Is.False);
     }
@@ -202,9 +202,9 @@ public class FlinkDotNetCommonTests
     public void Configuration_RemoveKey_ReturnsFalseForNonexistentKey()
     {
         var config = new Configuration();
-        
+
         var removed = config.RemoveKey("nonexistent");
-        
+
         Assert.That(removed, Is.False);
     }
 
@@ -215,9 +215,9 @@ public class FlinkDotNetCommonTests
         config.SetString("key1", "value1");
         config.SetInteger("key2", 42);
         config.SetBoolean("key3", true);
-        
+
         var keys = config.GetKeys().ToList();
-        
+
         Assert.That(keys, Has.Count.EqualTo(3));
         Assert.That(keys, Contains.Item("key1"));
         Assert.That(keys, Contains.Item("key2"));
@@ -229,11 +229,11 @@ public class FlinkDotNetCommonTests
     {
         var original = new Configuration();
         original.SetString("key", "value");
-        
+
         var clone = original.Clone();
         clone.SetString("key", "modified");
         clone.SetString("newkey", "newvalue");
-        
+
         Assert.That(original.GetString("key"), Is.EqualTo("value"));
         Assert.That(original.ContainsKey("newkey"), Is.False);
         Assert.That(clone.GetString("key"), Is.EqualTo("modified"));
@@ -245,13 +245,13 @@ public class FlinkDotNetCommonTests
     {
         var config1 = new Configuration();
         config1.SetString("key1", "value1");
-        
+
         var config2 = new Configuration();
         config2.SetString("key2", "value2");
         config2.SetInteger("key3", 42);
-        
+
         config1.AddAll(config2);
-        
+
         Assert.That(config1.GetString("key1"), Is.EqualTo("value1"));
         Assert.That(config1.GetString("key2"), Is.EqualTo("value2"));
         Assert.That(config1.GetInteger("key3"), Is.EqualTo(42));
@@ -262,12 +262,12 @@ public class FlinkDotNetCommonTests
     {
         var config1 = new Configuration();
         config1.SetString("key", "original");
-        
+
         var config2 = new Configuration();
         config2.SetString("key", "overwritten");
-        
+
         config1.AddAll(config2);
-        
+
         Assert.That(config1.GetString("key"), Is.EqualTo("overwritten"));
     }
 
@@ -276,9 +276,9 @@ public class FlinkDotNetCommonTests
     {
         var config1 = new Configuration();
         var config2 = new Configuration();
-        
+
         var result = config1.AddAll(config2);
-        
+
         Assert.That(result, Is.SameAs(config1));
     }
 
@@ -288,9 +288,9 @@ public class FlinkDotNetCommonTests
         var config = new Configuration();
         config.SetString("key1", "value1");
         config.SetInteger("key2", 42);
-        
+
         var map = config.ToMap();
-        
+
         Assert.That(map, Has.Count.EqualTo(2));
         Assert.That(map["key1"], Is.EqualTo("value1"));
         Assert.That(map["key2"], Is.EqualTo(42));
@@ -300,7 +300,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_ParseListValue_ParsesCommaSeparatedString()
     {
         var result = Configuration.ParseListValue("item1,item2,item3");
-        
+
         Assert.That(result, Has.Count.EqualTo(3));
         Assert.That(result[0], Is.EqualTo("item1"));
         Assert.That(result[1], Is.EqualTo("item2"));
@@ -311,7 +311,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_ParseListValue_TrimsWhitespace()
     {
         var result = Configuration.ParseListValue("item1 , item2 , item3");
-        
+
         Assert.That(result, Has.Count.EqualTo(3));
         Assert.That(result[0], Is.EqualTo("item1"));
         Assert.That(result[1], Is.EqualTo("item2"));
@@ -322,7 +322,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_ParseListValue_ReturnsEmptyListForNull()
     {
         var result = Configuration.ParseListValue(null);
-        
+
         Assert.That(result, Is.Empty);
     }
 
@@ -330,7 +330,7 @@ public class FlinkDotNetCommonTests
     public void Configuration_ParseListValue_ReturnsEmptyListForEmptyString()
     {
         var result = Configuration.ParseListValue("");
-        
+
         Assert.That(result, Is.Empty);
     }
 
@@ -342,7 +342,7 @@ public class FlinkDotNetCommonTests
     public void ExecutionConfig_DefaultConstructor_SetsDefaultValues()
     {
         var config = new ExecutionConfig();
-        
+
         Assert.That(config.Parallelism, Is.EqualTo(-1));
         Assert.That(config.MaxParallelism, Is.EqualTo(-1));
         Assert.That(config.AutoWatermarkInterval, Is.EqualTo(200L));
@@ -359,9 +359,9 @@ public class FlinkDotNetCommonTests
     {
         var configuration = new Configuration();
         configuration.SetString("test.key", "test.value");
-        
+
         var execConfig = new ExecutionConfig(configuration);
-        
+
         Assert.That(execConfig.GetConfiguration(), Is.SameAs(configuration));
         Assert.That(execConfig.GetProperty("test.key"), Is.EqualTo("test.value"));
     }
@@ -371,7 +371,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.SetParallelism(8);
-        
+
         Assert.That(config.Parallelism, Is.EqualTo(8));
     }
 
@@ -380,7 +380,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.SetParallelism(4);
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -389,7 +389,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.SetMaxParallelism(128);
-        
+
         Assert.That(config.MaxParallelism, Is.EqualTo(128));
     }
 
@@ -398,7 +398,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.SetMaxParallelism(64);
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -407,7 +407,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.SetAutoWatermarkInterval(5000L);
-        
+
         Assert.That(config.AutoWatermarkInterval, Is.EqualTo(5000L));
     }
 
@@ -416,7 +416,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.SetAutoWatermarkInterval(1000L);
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -425,7 +425,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableObjectReuse(true);
-        
+
         Assert.That(config.ObjectReuseEnabled, Is.True);
     }
 
@@ -435,7 +435,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableObjectReuse(true);
         config.EnableObjectReuse(false);
-        
+
         Assert.That(config.ObjectReuseEnabled, Is.False);
     }
 
@@ -444,7 +444,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableObjectReuse();
-        
+
         Assert.That(config.ObjectReuseEnabled, Is.True);
     }
 
@@ -453,7 +453,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.EnableObjectReuse();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -463,7 +463,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableObjectReuse(true);
         config.DisableObjectReuse();
-        
+
         Assert.That(config.ObjectReuseEnabled, Is.False);
     }
 
@@ -472,7 +472,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.DisableObjectReuse();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -482,7 +482,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableClosureCleaner(false);
         config.EnableClosureCleaner(true);
-        
+
         Assert.That(config.ClosureCleanerEnabled, Is.True);
     }
 
@@ -491,7 +491,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableClosureCleaner(false);
-        
+
         Assert.That(config.ClosureCleanerEnabled, Is.False);
     }
 
@@ -501,7 +501,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableClosureCleaner(false);
         config.EnableClosureCleaner();
-        
+
         Assert.That(config.ClosureCleanerEnabled, Is.True);
     }
 
@@ -510,7 +510,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.EnableClosureCleaner();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -519,7 +519,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.DisableClosureCleaner();
-        
+
         Assert.That(config.ClosureCleanerEnabled, Is.False);
     }
 
@@ -528,7 +528,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.DisableClosureCleaner();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -537,7 +537,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.SetRestartStrategy("fixed-delay");
-        
+
         Assert.That(config.RestartStrategy, Is.EqualTo("fixed-delay"));
     }
 
@@ -546,7 +546,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.SetRestartStrategy("failure-rate");
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -556,7 +556,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableSlotSharing(false);
         config.EnableSlotSharing(true);
-        
+
         Assert.That(config.SlotSharingEnabled, Is.True);
     }
 
@@ -565,7 +565,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableSlotSharing(false);
-        
+
         Assert.That(config.SlotSharingEnabled, Is.False);
     }
 
@@ -575,7 +575,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableSlotSharing(false);
         config.EnableSlotSharing();
-        
+
         Assert.That(config.SlotSharingEnabled, Is.True);
     }
 
@@ -584,7 +584,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.EnableSlotSharing();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -593,7 +593,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableAdaptiveScheduler(true);
-        
+
         Assert.That(config.AdaptiveSchedulerEnabled, Is.True);
     }
 
@@ -603,7 +603,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableAdaptiveScheduler(true);
         config.EnableAdaptiveScheduler(false);
-        
+
         Assert.That(config.AdaptiveSchedulerEnabled, Is.False);
     }
 
@@ -612,7 +612,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableAdaptiveScheduler();
-        
+
         Assert.That(config.AdaptiveSchedulerEnabled, Is.True);
     }
 
@@ -621,7 +621,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.EnableAdaptiveScheduler();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -630,7 +630,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableReactiveMode(true);
-        
+
         Assert.That(config.ReactiveModeEnabled, Is.True);
     }
 
@@ -640,7 +640,7 @@ public class FlinkDotNetCommonTests
         var config = new ExecutionConfig();
         config.EnableReactiveMode(true);
         config.EnableReactiveMode(false);
-        
+
         Assert.That(config.ReactiveModeEnabled, Is.False);
     }
 
@@ -649,7 +649,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.EnableReactiveMode();
-        
+
         Assert.That(config.ReactiveModeEnabled, Is.True);
     }
 
@@ -658,7 +658,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.EnableReactiveMode();
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -667,7 +667,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         config.SetProperty("custom.key", "custom.value");
-        
+
         Assert.That(config.GetProperty("custom.key"), Is.EqualTo("custom.value"));
     }
 
@@ -676,7 +676,7 @@ public class FlinkDotNetCommonTests
     {
         var config = new ExecutionConfig();
         var result = config.SetProperty("key", "value");
-        
+
         Assert.That(result, Is.SameAs(config));
     }
 
@@ -684,7 +684,7 @@ public class FlinkDotNetCommonTests
     public void ExecutionConfig_GetProperty_ReturnsDefaultWhenNotFound()
     {
         var config = new ExecutionConfig();
-        
+
         Assert.That(config.GetProperty("nonexistent", "default"), Is.EqualTo("default"));
     }
 
@@ -697,7 +697,7 @@ public class FlinkDotNetCommonTests
             .EnableObjectReuse()
             .EnableAdaptiveScheduler()
             .SetRestartStrategy("fixed-delay");
-        
+
         Assert.That(config.Parallelism, Is.EqualTo(8));
         Assert.That(config.MaxParallelism, Is.EqualTo(128));
         Assert.That(config.ObjectReuseEnabled, Is.True);

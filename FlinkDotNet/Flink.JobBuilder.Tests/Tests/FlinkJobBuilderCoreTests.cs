@@ -17,10 +17,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<FilterOperationDefinition>());
-        var filterOp = (FilterOperationDefinition)jobDef.Operations[0];
+        var filterOp = (FilterOperationDefinition) jobDef.Operations[0];
         Assert.That(filterOp.Expression, Is.EqualTo("Amount > 100"));
     }
 
@@ -32,7 +32,7 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<FilterOperationDefinition>());
     }
@@ -45,10 +45,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<GroupByOperationDefinition>());
-        var groupByOp = (GroupByOperationDefinition)jobDef.Operations[0];
+        var groupByOp = (GroupByOperationDefinition) jobDef.Operations[0];
         Assert.That(groupByOp.Key, Is.EqualTo("Region"));
     }
 
@@ -60,7 +60,7 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<GroupByOperationDefinition>());
     }
@@ -73,10 +73,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<AggregateOperationDefinition>());
-        var aggOp = (AggregateOperationDefinition)jobDef.Operations[0];
+        var aggOp = (AggregateOperationDefinition) jobDef.Operations[0];
         Assert.That(aggOp.AggregationType, Is.EqualTo("SUM"));
         Assert.That(aggOp.Field, Is.EqualTo("Amount"));
     }
@@ -89,7 +89,7 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<AggregateOperationDefinition>());
     }
@@ -102,10 +102,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<MapOperationDefinition>());
-        var mapOp = (MapOperationDefinition)jobDef.Operations[0];
+        var mapOp = (MapOperationDefinition) jobDef.Operations[0];
         Assert.That(mapOp.Expression, Is.EqualTo("x => x.ToUpper()"));
     }
 
@@ -117,10 +117,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<WindowOperationDefinition>());
-        var windowOp = (WindowOperationDefinition)jobDef.Operations[0];
+        var windowOp = (WindowOperationDefinition) jobDef.Operations[0];
         Assert.That(windowOp.WindowType, Is.EqualTo("TUMBLING"));
         Assert.That(windowOp.Size, Is.EqualTo(5));
         Assert.That(windowOp.TimeUnit, Is.EqualTo("MINUTES"));
@@ -134,8 +134,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var windowOp = (WindowOperationDefinition)jobDef.Operations[0];
+
+        var windowOp = (WindowOperationDefinition) jobDef.Operations[0];
         Assert.That(windowOp.TimeUnit, Is.EqualTo("MINUTES"));
     }
 
@@ -148,10 +148,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<AsyncFunctionOperationDefinition>());
-        var asyncOp = (AsyncFunctionOperationDefinition)jobDef.Operations[0];
+        var asyncOp = (AsyncFunctionOperationDefinition) jobDef.Operations[0];
         Assert.That(asyncOp.FunctionType, Is.EqualTo("http"));
         Assert.That(asyncOp.Url, Is.EqualTo("http://api.example.com/enrich"));
         Assert.That(asyncOp.Method, Is.EqualTo("POST"));
@@ -168,8 +168,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var asyncOp = (AsyncFunctionOperationDefinition)jobDef.Operations[0];
+
+        var asyncOp = (AsyncFunctionOperationDefinition) jobDef.Operations[0];
         Assert.That(asyncOp.Method, Is.EqualTo("GET"));
         Assert.That(asyncOp.TimeoutMs, Is.EqualTo(5000));
         Assert.That(asyncOp.Headers, Is.Not.Null);
@@ -183,10 +183,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<AsyncFunctionOperationDefinition>());
-        var asyncOp = (AsyncFunctionOperationDefinition)jobDef.Operations[0];
+        var asyncOp = (AsyncFunctionOperationDefinition) jobDef.Operations[0];
         Assert.That(asyncOp.FunctionType, Is.EqualTo("database"));
         Assert.That(asyncOp.ConnectionString, Is.EqualTo("Server=localhost;Database=test"));
         Assert.That(asyncOp.Query, Is.EqualTo("SELECT * FROM users WHERE id = @id"));
@@ -201,10 +201,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<StateOperationDefinition>());
-        var stateOp = (StateOperationDefinition)jobDef.Operations[0];
+        var stateOp = (StateOperationDefinition) jobDef.Operations[0];
         Assert.That(stateOp.StateKey, Is.EqualTo("user-cache"));
         Assert.That(stateOp.StateType, Is.EqualTo("map"));
         Assert.That(stateOp.TtlMs, Is.EqualTo(60000));
@@ -219,8 +219,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var stateOp = (StateOperationDefinition)jobDef.Operations[0];
+
+        var stateOp = (StateOperationDefinition) jobDef.Operations[0];
         Assert.That(stateOp.StateType, Is.EqualTo("value"));
         Assert.That(stateOp.TtlMs, Is.Null);
     }
@@ -233,10 +233,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<TimerOperationDefinition>());
-        var timerOp = (TimerOperationDefinition)jobDef.Operations[0];
+        var timerOp = (TimerOperationDefinition) jobDef.Operations[0];
         Assert.That(timerOp.DelayMs, Is.EqualTo(5000));
         Assert.That(timerOp.TimerName, Is.EqualTo("cleanup-timer"));
         Assert.That(timerOp.Action, Is.EqualTo("cleanup-expired"));
@@ -251,10 +251,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<RetryOperationDefinition>());
-        var retryOp = (RetryOperationDefinition)jobDef.Operations[0];
+        var retryOp = (RetryOperationDefinition) jobDef.Operations[0];
         Assert.That(retryOp.MaxRetries, Is.EqualTo(3));
         Assert.That(retryOp.DelayMs, Is.EqualTo(delayPattern));
         Assert.That(retryOp.RetryCondition, Is.EqualTo("error.type == 'transient'"));
@@ -269,8 +269,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var retryOp = (RetryOperationDefinition)jobDef.Operations[0];
+
+        var retryOp = (RetryOperationDefinition) jobDef.Operations[0];
         Assert.That(retryOp.MaxRetries, Is.EqualTo(5));
         Assert.That(retryOp.DelayMs, Has.Count.EqualTo(5));
     }
@@ -285,10 +285,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<ProcessFunctionOperationDefinition>());
-        var processOp = (ProcessFunctionOperationDefinition)jobDef.Operations[0];
+        var processOp = (ProcessFunctionOperationDefinition) jobDef.Operations[0];
         Assert.That(processOp.ProcessType, Is.EqualTo("deduplication"));
         Assert.That(processOp.Parameters, Contains.Key("threshold"));
         Assert.That(processOp.StateKeys, Has.Count.EqualTo(2));
@@ -302,8 +302,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var processOp = (ProcessFunctionOperationDefinition)jobDef.Operations[0];
+
+        var processOp = (ProcessFunctionOperationDefinition) jobDef.Operations[0];
         Assert.That(processOp.Parameters, Is.Not.Null);
         Assert.That(processOp.StateKeys, Is.Not.Null);
     }
@@ -317,10 +317,10 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
         Assert.That(jobDef.Operations[0], Is.TypeOf<SideOutputOperationDefinition>());
-        var sideOp = (SideOutputOperationDefinition)jobDef.Operations[0];
+        var sideOp = (SideOutputOperationDefinition) jobDef.Operations[0];
         Assert.That(sideOp.OutputTag, Is.EqualTo("errors"));
         Assert.That(sideOp.Condition, Is.EqualTo("error != null"));
         Assert.That(sideOp.SideOutputSink, Is.TypeOf<KafkaSinkDefinition>());
@@ -337,9 +337,9 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.TypeOf<KafkaSourceDefinition>());
-        var kafkaSource = (KafkaSourceDefinition)jobDef.Source;
+        var kafkaSource = (KafkaSourceDefinition) jobDef.Source;
         Assert.That(kafkaSource.Topic, Is.EqualTo("orders-topic"));
         Assert.That(kafkaSource.BootstrapServers, Is.EqualTo("localhost:9092"));
     }
@@ -351,8 +351,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var kafkaSource = (KafkaSourceDefinition)jobDef.Source;
+
+        var kafkaSource = (KafkaSourceDefinition) jobDef.Source;
         Assert.That(kafkaSource.Topic, Is.EqualTo("test-topic"));
         Assert.That(kafkaSource.BootstrapServers, Is.Null);
     }
@@ -364,9 +364,9 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.TypeOf<HttpSourceDefinition>());
-        var httpSource = (HttpSourceDefinition)jobDef.Source;
+        var httpSource = (HttpSourceDefinition) jobDef.Source;
         Assert.That(httpSource.Url, Is.EqualTo("http://api.example.com/data"));
         Assert.That(httpSource.Method, Is.EqualTo("POST"));
         Assert.That(httpSource.IntervalSeconds, Is.EqualTo(45));
@@ -379,8 +379,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var httpSource = (HttpSourceDefinition)jobDef.Source;
+
+        var httpSource = (HttpSourceDefinition) jobDef.Source;
         Assert.That(httpSource.Method, Is.EqualTo("GET"));
         Assert.That(httpSource.IntervalSeconds, Is.EqualTo(60));
     }
@@ -395,9 +395,9 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.TypeOf<DatabaseSourceDefinition>());
-        var dbSource = (DatabaseSourceDefinition)jobDef.Source;
+        var dbSource = (DatabaseSourceDefinition) jobDef.Source;
         Assert.That(dbSource.ConnectionString, Is.EqualTo("Server=localhost;Database=prod"));
         Assert.That(dbSource.Query, Is.EqualTo("SELECT * FROM events"));
         Assert.That(dbSource.PollingIntervalSeconds, Is.EqualTo(120));
@@ -412,8 +412,8 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var dbSource = (DatabaseSourceDefinition)jobDef.Source;
+
+        var dbSource = (DatabaseSourceDefinition) jobDef.Source;
         Assert.That(dbSource.PollingIntervalSeconds, Is.EqualTo(30));
     }
 
@@ -428,9 +428,9 @@ public class FlinkJobBuilderCoreTests
         var builder = FlinkJobBuilder.FromSql(statements);
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.TypeOf<SqlSourceDefinition>());
-        var sqlSource = (SqlSourceDefinition)jobDef.Source;
+        var sqlSource = (SqlSourceDefinition) jobDef.Source;
         Assert.That(sqlSource.Statements, Has.Count.EqualTo(2));
         Assert.That(sqlSource.Statements[0], Contains.Substring("CREATE TABLE"));
     }
@@ -441,8 +441,8 @@ public class FlinkJobBuilderCoreTests
         var builder = FlinkJobBuilder.FromSql(null);
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var sqlSource = (SqlSourceDefinition)jobDef.Source;
+
+        var sqlSource = (SqlSourceDefinition) jobDef.Source;
         Assert.That(sqlSource.Statements, Is.Not.Null);
         Assert.That(sqlSource.Statements, Is.Empty);
     }
@@ -458,9 +458,9 @@ public class FlinkJobBuilderCoreTests
             .ToKafka("output-topic", "localhost:9092");
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Sink, Is.TypeOf<KafkaSinkDefinition>());
-        var kafkaSink = (KafkaSinkDefinition)jobDef.Sink;
+        var kafkaSink = (KafkaSinkDefinition) jobDef.Sink;
         Assert.That(kafkaSink.Topic, Is.EqualTo("output-topic"));
         Assert.That(kafkaSink.BootstrapServers, Is.EqualTo("localhost:9092"));
     }
@@ -472,8 +472,8 @@ public class FlinkJobBuilderCoreTests
             .ToKafka("output-topic");
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var kafkaSink = (KafkaSinkDefinition)jobDef.Sink;
+
+        var kafkaSink = (KafkaSinkDefinition) jobDef.Sink;
         Assert.That(kafkaSink.Topic, Is.EqualTo("output-topic"));
         Assert.That(kafkaSink.BootstrapServers, Is.Null);
     }
@@ -485,7 +485,7 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Sink, Is.TypeOf<ConsoleSinkDefinition>());
     }
 
@@ -497,9 +497,9 @@ public class FlinkJobBuilderCoreTests
             .ToHttp("http://api.example.com/webhook", "PUT", headers, "{\"data\": \"@value\"}");
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Sink, Is.TypeOf<HttpSinkDefinition>());
-        var httpSink = (HttpSinkDefinition)jobDef.Sink;
+        var httpSink = (HttpSinkDefinition) jobDef.Sink;
         Assert.That(httpSink.Url, Is.EqualTo("http://api.example.com/webhook"));
         Assert.That(httpSink.Method, Is.EqualTo("PUT"));
         Assert.That(httpSink.Headers, Contains.Key("Content-Type"));
@@ -513,8 +513,8 @@ public class FlinkJobBuilderCoreTests
             .ToHttp("http://api.example.com/data");
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var httpSink = (HttpSinkDefinition)jobDef.Sink;
+
+        var httpSink = (HttpSinkDefinition) jobDef.Sink;
         Assert.That(httpSink.Method, Is.EqualTo("POST"));
         Assert.That(httpSink.Headers, Is.Not.Null);
     }
@@ -526,9 +526,9 @@ public class FlinkJobBuilderCoreTests
             .ToDatabase("Server=localhost;Database=output", "results", "mysql");
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Sink, Is.TypeOf<DatabaseSinkDefinition>());
-        var dbSink = (DatabaseSinkDefinition)jobDef.Sink;
+        var dbSink = (DatabaseSinkDefinition) jobDef.Sink;
         Assert.That(dbSink.ConnectionString, Is.EqualTo("Server=localhost;Database=output"));
         Assert.That(dbSink.Table, Is.EqualTo("results"));
         Assert.That(dbSink.DatabaseType, Is.EqualTo("mysql"));
@@ -541,8 +541,8 @@ public class FlinkJobBuilderCoreTests
             .ToDatabase("Server=localhost", "table1");
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var dbSink = (DatabaseSinkDefinition)jobDef.Sink;
+
+        var dbSink = (DatabaseSinkDefinition) jobDef.Sink;
         Assert.That(dbSink.DatabaseType, Is.EqualTo("postgresql"));
     }
 
@@ -553,9 +553,9 @@ public class FlinkJobBuilderCoreTests
             .ToRedis("counter:key", "localhost:6380", "set");
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Sink, Is.TypeOf<RedisSinkDefinition>());
-        var redisSink = (RedisSinkDefinition)jobDef.Sink;
+        var redisSink = (RedisSinkDefinition) jobDef.Sink;
         Assert.That(redisSink.Key, Is.EqualTo("counter:key"));
         Assert.That(redisSink.ConnectionString, Is.EqualTo("localhost:6380"));
         Assert.That(redisSink.OperationType, Is.EqualTo("set"));
@@ -569,8 +569,8 @@ public class FlinkJobBuilderCoreTests
             .ToRedis("mykey");
 
         var jobDef = builder.BuildJobDefinition();
-        
-        var redisSink = (RedisSinkDefinition)jobDef.Sink;
+
+        var redisSink = (RedisSinkDefinition) jobDef.Sink;
         Assert.That(redisSink.ConnectionString, Is.EqualTo("localhost:6379"));
         Assert.That(redisSink.OperationType, Is.EqualTo("increment"));
     }
@@ -603,7 +603,7 @@ public class FlinkJobBuilderCoreTests
         var builder = FlinkJobBuilder.FromSql(new[] { "SELECT * FROM table1" });
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.TypeOf<SqlSourceDefinition>());
         Assert.That(jobDef.Sink, Is.Null);
     }
@@ -617,7 +617,7 @@ public class FlinkJobBuilderCoreTests
             .ToKafka("output-topic");
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.Not.Null);
         Assert.That(jobDef.Operations, Has.Count.EqualTo(2));
         Assert.That(jobDef.Sink, Is.Not.Null);
@@ -634,7 +634,7 @@ public class FlinkJobBuilderCoreTests
 
         var jobDef1 = builder1.BuildJobDefinition();
         var jobDef2 = builder2.BuildJobDefinition();
-        
+
         Assert.That(jobDef1.Metadata.JobId, Is.Not.EqualTo(jobDef2.Metadata.JobId));
     }
 
@@ -659,7 +659,7 @@ public class FlinkJobBuilderCoreTests
             .ToKafka("output-topic");
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(10));
     }
 
@@ -674,7 +674,7 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(4));
     }
 
@@ -690,7 +690,7 @@ public class FlinkJobBuilderCoreTests
             .ToConsole();
 
         var json = builder.ToJson();
-        
+
         Assert.That(json, Is.Not.Null);
         Assert.That(json, Is.Not.Empty);
         Assert.That(json, Contains.Substring("source"));
@@ -704,7 +704,7 @@ public class FlinkJobBuilderCoreTests
         var builder = FlinkJobBuilder.FromKafka("test-topic").ToConsole();
 
         var json = builder.ToJson();
-        
+
         Assert.That(json, Contains.Substring("metadata"));
         Assert.That(json, Contains.Substring("jobId"));
         Assert.That(json, Contains.Substring("version"));
@@ -741,8 +741,14 @@ public class FlinkJobBuilderCoreTests
 /// </summary>
 internal class TestMockFlinkJobGatewayService : IFlinkJobGatewayService
 {
-    public JobSubmissionResult? LastSubmittedResult { get; set; }
-    public JobStatus? StatusToReturn { get; set; }
+    public JobSubmissionResult? LastSubmittedResult
+    {
+        get; set;
+    }
+    public JobStatus? StatusToReturn
+    {
+        get; set;
+    }
     public bool HealthCheckResult { get; set; } = true;
 
     public System.Threading.Tasks.Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, System.Threading.CancellationToken cancellationToken = default)

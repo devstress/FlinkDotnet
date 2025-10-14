@@ -22,9 +22,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].asyncFunction.functionType is required"));
     }
@@ -38,17 +38,17 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 0
                 }
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].asyncFunction.timeoutMs must be between 1 and 1200000"));
     }
@@ -62,17 +62,17 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 1_300_000
                 }
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].asyncFunction.timeoutMs must be between 1 and 1200000"));
     }
@@ -86,17 +86,17 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     MaxRetries = -1
                 }
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].asyncFunction.maxRetries must be between 0 and 100"));
     }
@@ -110,17 +110,17 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     MaxRetries = 101
                 }
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].asyncFunction.maxRetries must be between 0 and 100"));
     }
@@ -134,8 +134,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 5000,
                     MaxRetries = 3
@@ -143,9 +143,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -166,9 +166,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].processFunction.processType is required"));
     }
@@ -186,9 +186,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -209,9 +209,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Any(e => e.Contains("stateType must be one of")), Is.True);
     }
@@ -229,9 +229,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].state.stateKey is required"));
     }
@@ -249,9 +249,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].state.ttlMs must be > 0 when provided"));
     }
@@ -269,9 +269,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].state.ttlMs must be > 0 when provided"));
     }
@@ -280,7 +280,7 @@ public class JobDefinitionValidatorAdvancedTests
     public void Validate_StateOperation_WithAllStateTypes_IsValid()
     {
         var stateTypes = new[] { "value", "list", "map", "reducing" };
-        
+
         foreach (var stateType in stateTypes)
         {
             var job = new JobDefinition
@@ -293,9 +293,9 @@ public class JobDefinitionValidatorAdvancedTests
                 },
                 Sink = new KafkaSinkDefinition { Topic = "output" }
             };
-            
+
             var result = JobDefinitionValidator.Validate(job);
-            
+
             Assert.That(result.IsValid, Is.True, $"State type '{stateType}' should be valid");
         }
     }
@@ -317,9 +317,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Any(e => e.Contains("timerType must be one of")), Is.True);
     }
@@ -337,9 +337,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].timer.delayMs must be between 1 and 86400000"));
     }
@@ -357,9 +357,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].timer.delayMs must be between 1 and 86400000"));
     }
@@ -368,7 +368,7 @@ public class JobDefinitionValidatorAdvancedTests
     public void Validate_TimerOperation_WithValidValues_IsValid()
     {
         var timerTypes = new[] { "processing", "event" };
-        
+
         foreach (var timerType in timerTypes)
         {
             var job = new JobDefinition
@@ -381,9 +381,9 @@ public class JobDefinitionValidatorAdvancedTests
                 },
                 Sink = new KafkaSinkDefinition { Topic = "output" }
             };
-            
+
             var result = JobDefinitionValidator.Validate(job);
-            
+
             Assert.That(result.IsValid, Is.True, $"Timer type '{timerType}' should be valid");
         }
     }
@@ -401,8 +401,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = -1,
                     DelayMs = new List<long> { 1000 },
                     StateKey = "retry_key"
@@ -410,9 +410,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].retry.maxRetries must be between 0 and 100"));
     }
@@ -426,8 +426,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 101,
                     DelayMs = new List<long> { 1000 },
                     StateKey = "retry_key"
@@ -435,9 +435,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].retry.maxRetries must be between 0 and 100"));
     }
@@ -451,8 +451,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = null!,
                     StateKey = "retry_key"
@@ -460,9 +460,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].retry.delayMs must contain at least 1 value"));
     }
@@ -476,8 +476,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long>(),
                     StateKey = "retry_key"
@@ -485,9 +485,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].retry.delayMs must contain at least 1 value"));
     }
@@ -501,8 +501,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long> { 1000, -500, 2000 },
                     StateKey = "retry_key"
@@ -510,9 +510,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].retry.delayMs values must be > 0"));
     }
@@ -526,8 +526,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long> { 1000 },
                     StateKey = ""
@@ -535,9 +535,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].retry.stateKey is required"));
     }
@@ -551,8 +551,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 5,
                     DelayMs = new List<long> { 1000, 2000, 3000 },
                     StateKey = "retry_key"
@@ -560,9 +560,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -579,8 +579,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "",
                     Condition = "x => x.Error",
                     SideOutputSink = new KafkaSinkDefinition { Topic = "errors" }
@@ -588,9 +588,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].sideOutput.outputTag is required"));
     }
@@ -604,8 +604,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "error-tag",
                     Condition = "",
                     SideOutputSink = new KafkaSinkDefinition { Topic = "errors" }
@@ -613,9 +613,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].sideOutput.condition is required"));
     }
@@ -629,8 +629,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "error-tag",
                     Condition = "x => x.Error",
                     SideOutputSink = null!
@@ -638,9 +638,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].sideOutput.sideOutputSink is required"));
     }
@@ -654,8 +654,8 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "error-tag",
                     Condition = "x => x.Error",
                     SideOutputSink = new KafkaSinkDefinition { Topic = "errors" }
@@ -663,9 +663,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -682,9 +682,9 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output", Serializer = "xml" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("sink.kafka.serializer must be 'json' or 'string' when provided"));
     }
@@ -693,7 +693,7 @@ public class JobDefinitionValidatorAdvancedTests
     public void Validate_KafkaSink_WithValidSerializers_IsValid()
     {
         var serializers = new[] { "json", "string" };
-        
+
         foreach (var serializer in serializers)
         {
             var job = new JobDefinition
@@ -702,9 +702,9 @@ public class JobDefinitionValidatorAdvancedTests
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new KafkaSinkDefinition { Topic = "output", Serializer = serializer }
             };
-            
+
             var result = JobDefinitionValidator.Validate(job);
-            
+
             Assert.That(result.IsValid, Is.True, $"Serializer '{serializer}' should be valid");
         }
     }
@@ -718,9 +718,9 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "", OperationType = "increment" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("sink.redis.connectionString is required"));
     }
@@ -734,9 +734,9 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("sink.redis.operationType is required"));
     }
@@ -750,9 +750,9 @@ public class JobDefinitionValidatorAdvancedTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "increment" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -775,9 +775,9 @@ public class JobDefinitionValidatorAdvancedTests
             },
             Sink = new KafkaSinkDefinition { Topic = "" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Count, Is.GreaterThanOrEqualTo(8)); // Multiple validation errors
         Assert.That(result.Errors, Contains.Item("metadata.jobId is required"));

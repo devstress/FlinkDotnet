@@ -15,11 +15,10 @@
 // limitations under the License.
 
 // Main entry point classes - expose the same API as Python Flink
-using FlinkDotNet.Common;
-using FlinkDotNet.DataStream;
-
 // Backward compatibility - re-export FlinkJobBuilder
 using Flink.JobBuilder;
+using FlinkDotNet.Common;
+using FlinkDotNet.DataStream;
 
 namespace FlinkDotNet
 {

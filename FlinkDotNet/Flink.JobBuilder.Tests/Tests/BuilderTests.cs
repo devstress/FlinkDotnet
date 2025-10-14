@@ -10,7 +10,7 @@ public class BuilderTests
     public void FromKafka_CreatesBuilderWithKafkaSource()
     {
         var builder = FlinkJobBuilder.FromKafka("test-topic", "localhost:9092");
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -18,7 +18,7 @@ public class BuilderTests
     public void FromKafka_WithoutBootstrapServers_CreatesBuilder()
     {
         var builder = FlinkJobBuilder.FromKafka("test-topic");
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -26,7 +26,7 @@ public class BuilderTests
     public void FromHttp_CreatesBuilderWithHttpSource()
     {
         var builder = FlinkJobBuilder.FromHttp("http://api.example.com", "GET", 30);
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -34,7 +34,7 @@ public class BuilderTests
     public void FromHttp_WithDefaults_CreatesBuilder()
     {
         var builder = FlinkJobBuilder.FromHttp("http://api.example.com");
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -42,10 +42,10 @@ public class BuilderTests
     public void FromDatabase_CreatesBuilderWithDatabaseSource()
     {
         var builder = FlinkJobBuilder.FromDatabase(
-            "Server=localhost;Database=test", 
+            "Server=localhost;Database=test",
             "SELECT * FROM orders",
             60);
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -53,9 +53,9 @@ public class BuilderTests
     public void FromDatabase_WithDefaultPollingInterval_CreatesBuilder()
     {
         var builder = FlinkJobBuilder.FromDatabase(
-            "Server=localhost;Database=test", 
+            "Server=localhost;Database=test",
             "SELECT * FROM orders");
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -63,7 +63,7 @@ public class BuilderTests
     public void Constructor_WithNullGatewayService_CreatesDefaultService()
     {
         var builder = new FlinkJobBuilder(null, null);
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
@@ -72,29 +72,29 @@ public class BuilderTests
     {
         var service = new Services.FlinkJobGatewayService();
         var builder = new FlinkJobBuilder(service);
-        
+
         Assert.That(builder, Is.Not.Null);
     }
 
     [Test]
     public void MapOperationDefinition_CanSetExpression()
     {
-        var op = new MapOperationDefinition 
-        { 
-            Expression = "x => x.ToUpper()" 
+        var op = new MapOperationDefinition
+        {
+            Expression = "x => x.ToUpper()"
         };
-        
+
         Assert.That(op.Expression, Is.EqualTo("x => x.ToUpper()"));
     }
 
     [Test]
     public void FilterOperationDefinition_CanSetExpression()
     {
-        var op = new FilterOperationDefinition 
-        { 
-            Expression = "x => x.Length > 5" 
+        var op = new FilterOperationDefinition
+        {
+            Expression = "x => x.Length > 5"
         };
-        
+
         Assert.That(op.Expression, Is.EqualTo("x => x.Length > 5"));
     }
 
@@ -107,7 +107,7 @@ public class BuilderTests
             Size = 30,
             TimeUnit = "SECONDS"
         };
-        
+
         Assert.That(op.WindowType, Is.EqualTo("TUMBLING"));
         Assert.That(op.Size, Is.EqualTo(30));
         Assert.That(op.TimeUnit, Is.EqualTo("SECONDS"));
@@ -123,7 +123,7 @@ public class BuilderTests
             IntervalSeconds = 45,
             Headers = new Dictionary<string, string> { { "Auth", "Bearer token" } }
         };
-        
+
         Assert.That(source.Url, Is.EqualTo("http://api.test.com"));
         Assert.That(source.Method, Is.EqualTo("POST"));
         Assert.That(source.IntervalSeconds, Is.EqualTo(45));
@@ -139,7 +139,7 @@ public class BuilderTests
             Query = "SELECT * FROM events",
             PollingIntervalSeconds = 120
         };
-        
+
         Assert.That(source.ConnectionString, Is.EqualTo("Server=db;Database=prod"));
         Assert.That(source.Query, Is.EqualTo("SELECT * FROM events"));
         Assert.That(source.PollingIntervalSeconds, Is.EqualTo(120));
@@ -153,7 +153,7 @@ public class BuilderTests
             Path = "/data/input.json",
             Format = "JSON"
         };
-        
+
         Assert.That(source.Path, Is.EqualTo("/data/input.json"));
         Assert.That(source.Format, Is.EqualTo("JSON"));
     }
@@ -166,7 +166,7 @@ public class BuilderTests
             Path = "/data/output.json",
             Format = "JSON"
         };
-        
+
         Assert.That(sink.Path, Is.EqualTo("/data/output.json"));
         Assert.That(sink.Format, Is.EqualTo("JSON"));
     }
@@ -179,7 +179,7 @@ public class BuilderTests
             Url = "http://api.example.com/events",
             Method = "POST"
         };
-        
+
         Assert.That(sink.Url, Is.EqualTo("http://api.example.com/events"));
         Assert.That(sink.Method, Is.EqualTo("POST"));
     }
@@ -191,7 +191,7 @@ public class BuilderTests
         {
             ConnectionString = "Server=db;Database=output"
         };
-        
+
         Assert.That(sink.ConnectionString, Is.EqualTo("Server=db;Database=output"));
     }
 
@@ -199,7 +199,7 @@ public class BuilderTests
     public void ConsoleSinkDefinition_CanBeCreated()
     {
         var sink = new ConsoleSinkDefinition();
-        
+
         Assert.That(sink, Is.Not.Null);
     }
 
@@ -208,13 +208,13 @@ public class BuilderTests
     {
         var source = new SqlSourceDefinition
         {
-            Statements = new List<string> 
-            { 
+            Statements = new List<string>
+            {
                 "CREATE TABLE orders (...)",
                 "SELECT * FROM orders"
             }
         };
-        
+
         Assert.That(source.Statements, Has.Count.EqualTo(2));
     }
 

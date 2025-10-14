@@ -12,7 +12,7 @@ public class SourceSinkDefinitionsTests
     public void HttpSourceDefinition_TypeProperty_ReturnsHttp()
     {
         var source = new HttpSourceDefinition();
-        
+
         Assert.That(source.Type, Is.EqualTo("http"));
     }
 
@@ -21,7 +21,7 @@ public class SourceSinkDefinitionsTests
     {
         var headers = new Dictionary<string, string> { { "Auth", "Bearer token" } };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var source = new HttpSourceDefinition
         {
             Url = "http://api.example.com/data",
@@ -32,7 +32,7 @@ public class SourceSinkDefinitionsTests
             AuthTokenStateKey = "auth_token",
             Properties = properties
         };
-        
+
         Assert.That(source.Url, Is.EqualTo("http://api.example.com/data"));
         Assert.That(source.Method, Is.EqualTo("POST"));
         Assert.That(source.Headers, Is.EqualTo(headers));
@@ -46,7 +46,7 @@ public class SourceSinkDefinitionsTests
     public void HttpSourceDefinition_DefaultMethod_IsGet()
     {
         var source = new HttpSourceDefinition();
-        
+
         Assert.That(source.Method, Is.EqualTo("GET"));
     }
 
@@ -54,7 +54,7 @@ public class SourceSinkDefinitionsTests
     public void HttpSourceDefinition_DefaultIntervalSeconds_Is60()
     {
         var source = new HttpSourceDefinition();
-        
+
         Assert.That(source.IntervalSeconds, Is.EqualTo(60));
     }
 
@@ -62,7 +62,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSourceDefinition_TypeProperty_ReturnsDatabase()
     {
         var source = new DatabaseSourceDefinition();
-        
+
         Assert.That(source.Type, Is.EqualTo("database"));
     }
 
@@ -70,7 +70,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSourceDefinition_SetAllProperties_ReturnsValues()
     {
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var source = new DatabaseSourceDefinition
         {
             ConnectionString = "Server=localhost;Database=test",
@@ -79,7 +79,7 @@ public class SourceSinkDefinitionsTests
             PollingIntervalSeconds = 45,
             Properties = properties
         };
-        
+
         Assert.That(source.ConnectionString, Is.EqualTo("Server=localhost;Database=test"));
         Assert.That(source.Query, Is.EqualTo("SELECT * FROM users WHERE active = true"));
         Assert.That(source.DatabaseType, Is.EqualTo("mysql"));
@@ -91,7 +91,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSourceDefinition_DefaultDatabaseType_IsPostgresql()
     {
         var source = new DatabaseSourceDefinition();
-        
+
         Assert.That(source.DatabaseType, Is.EqualTo("postgresql"));
     }
 
@@ -99,7 +99,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSourceDefinition_DefaultPollingInterval_Is30()
     {
         var source = new DatabaseSourceDefinition();
-        
+
         Assert.That(source.PollingIntervalSeconds, Is.EqualTo(30));
     }
 
@@ -107,7 +107,7 @@ public class SourceSinkDefinitionsTests
     public void FileSourceDefinition_TypeProperty_ReturnsFile()
     {
         var source = new FileSourceDefinition();
-        
+
         Assert.That(source.Type, Is.EqualTo("file"));
     }
 
@@ -115,14 +115,14 @@ public class SourceSinkDefinitionsTests
     public void FileSourceDefinition_SetAllProperties_ReturnsValues()
     {
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var source = new FileSourceDefinition
         {
             Path = "/data/input",
             Format = "json",
             Properties = properties
         };
-        
+
         Assert.That(source.Path, Is.EqualTo("/data/input"));
         Assert.That(source.Format, Is.EqualTo("json"));
         Assert.That(source.Properties, Is.EqualTo(properties));
@@ -132,7 +132,7 @@ public class SourceSinkDefinitionsTests
     public void FileSourceDefinition_DefaultFormat_IsText()
     {
         var source = new FileSourceDefinition();
-        
+
         Assert.That(source.Format, Is.EqualTo("text"));
     }
 
@@ -140,7 +140,7 @@ public class SourceSinkDefinitionsTests
     public void SqlSourceDefinition_TypeProperty_ReturnsSql()
     {
         var source = new SqlSourceDefinition();
-        
+
         Assert.That(source.Type, Is.EqualTo("sql"));
     }
 
@@ -149,7 +149,7 @@ public class SourceSinkDefinitionsTests
     {
         var statements = new List<string> { "CREATE TABLE", "INSERT INTO" };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var source = new SqlSourceDefinition
         {
             Statements = statements,
@@ -157,7 +157,7 @@ public class SourceSinkDefinitionsTests
             ExecutionMode = "gateway",
             Properties = properties
         };
-        
+
         Assert.That(source.Statements, Is.EqualTo(statements));
         Assert.That(source.Mode, Is.EqualTo("batch"));
         Assert.That(source.ExecutionMode, Is.EqualTo("gateway"));
@@ -168,7 +168,7 @@ public class SourceSinkDefinitionsTests
     public void SqlSourceDefinition_DefaultMode_IsStreaming()
     {
         var source = new SqlSourceDefinition();
-        
+
         Assert.That(source.Mode, Is.EqualTo("streaming"));
     }
 
@@ -176,7 +176,7 @@ public class SourceSinkDefinitionsTests
     public void SqlSourceDefinition_DefaultExecutionMode_IsTableenv()
     {
         var source = new SqlSourceDefinition();
-        
+
         Assert.That(source.ExecutionMode, Is.EqualTo("tableenv"));
     }
 
@@ -188,7 +188,7 @@ public class SourceSinkDefinitionsTests
             Topic = "test-topic",
             StartingOffsets = "latest"
         };
-        
+
         Assert.That(source.StartingOffsets, Is.EqualTo("latest"));
     }
 
@@ -196,7 +196,7 @@ public class SourceSinkDefinitionsTests
     public void KafkaSourceDefinition_DefaultStartingOffsets_IsEarliest()
     {
         var source = new KafkaSourceDefinition();
-        
+
         Assert.That(source.StartingOffsets, Is.EqualTo("earliest"));
     }
 
@@ -206,7 +206,7 @@ public class SourceSinkDefinitionsTests
         var source = new KafkaSourceDefinition();
         source.Properties["enable.auto.commit"] = "false";
         source.Properties["max.poll.records"] = "500";
-        
+
         Assert.That(source.Properties["enable.auto.commit"], Is.EqualTo("false"));
         Assert.That(source.Properties["max.poll.records"], Is.EqualTo("500"));
     }
@@ -215,7 +215,7 @@ public class SourceSinkDefinitionsTests
     public void KafkaSourceDefinition_TypeProperty_ReturnsKafka()
     {
         var source = new KafkaSourceDefinition();
-        
+
         Assert.That(source.Type, Is.EqualTo("kafka"));
     }
 
@@ -227,7 +227,7 @@ public class SourceSinkDefinitionsTests
             Topic = "test-topic",
             GroupId = null
         };
-        
+
         Assert.That(source.GroupId, Is.Null);
     }
 
@@ -239,7 +239,7 @@ public class SourceSinkDefinitionsTests
             Topic = "test-topic",
             BootstrapServers = null
         };
-        
+
         Assert.That(source.BootstrapServers, Is.Null);
     }
 
@@ -251,7 +251,7 @@ public class SourceSinkDefinitionsTests
     public void ConsoleSinkDefinition_TypeProperty_ReturnsConsole()
     {
         var sink = new ConsoleSinkDefinition();
-        
+
         Assert.That(sink.Type, Is.EqualTo("console"));
     }
 
@@ -262,7 +262,7 @@ public class SourceSinkDefinitionsTests
         {
             Format = "text"
         };
-        
+
         Assert.That(sink.Format, Is.EqualTo("text"));
     }
 
@@ -270,7 +270,7 @@ public class SourceSinkDefinitionsTests
     public void ConsoleSinkDefinition_DefaultFormat_IsJson()
     {
         var sink = new ConsoleSinkDefinition();
-        
+
         Assert.That(sink.Format, Is.EqualTo("json"));
     }
 
@@ -278,7 +278,7 @@ public class SourceSinkDefinitionsTests
     public void FileSinkDefinition_TypeProperty_ReturnsFile()
     {
         var sink = new FileSinkDefinition();
-        
+
         Assert.That(sink.Type, Is.EqualTo("file"));
     }
 
@@ -286,14 +286,14 @@ public class SourceSinkDefinitionsTests
     public void FileSinkDefinition_SetAllProperties_ReturnsValues()
     {
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var sink = new FileSinkDefinition
         {
             Path = "/data/output",
             Format = "csv",
             Properties = properties
         };
-        
+
         Assert.That(sink.Path, Is.EqualTo("/data/output"));
         Assert.That(sink.Format, Is.EqualTo("csv"));
         Assert.That(sink.Properties, Is.EqualTo(properties));
@@ -303,7 +303,7 @@ public class SourceSinkDefinitionsTests
     public void FileSinkDefinition_DefaultFormat_IsJson()
     {
         var sink = new FileSinkDefinition();
-        
+
         Assert.That(sink.Format, Is.EqualTo("json"));
     }
 
@@ -311,7 +311,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSinkDefinition_TypeProperty_ReturnsDatabase()
     {
         var sink = new DatabaseSinkDefinition();
-        
+
         Assert.That(sink.Type, Is.EqualTo("database"));
     }
 
@@ -319,7 +319,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSinkDefinition_SetAllProperties_ReturnsValues()
     {
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var sink = new DatabaseSinkDefinition
         {
             ConnectionString = "Server=localhost;Database=test",
@@ -327,7 +327,7 @@ public class SourceSinkDefinitionsTests
             DatabaseType = "sqlserver",
             Properties = properties
         };
-        
+
         Assert.That(sink.ConnectionString, Is.EqualTo("Server=localhost;Database=test"));
         Assert.That(sink.Table, Is.EqualTo("output_table"));
         Assert.That(sink.DatabaseType, Is.EqualTo("sqlserver"));
@@ -338,7 +338,7 @@ public class SourceSinkDefinitionsTests
     public void DatabaseSinkDefinition_DefaultDatabaseType_IsPostgresql()
     {
         var sink = new DatabaseSinkDefinition();
-        
+
         Assert.That(sink.DatabaseType, Is.EqualTo("postgresql"));
     }
 
@@ -346,7 +346,7 @@ public class SourceSinkDefinitionsTests
     public void HttpSinkDefinition_TypeProperty_ReturnsHttp()
     {
         var sink = new HttpSinkDefinition();
-        
+
         Assert.That(sink.Type, Is.EqualTo("http"));
     }
 
@@ -355,7 +355,7 @@ public class SourceSinkDefinitionsTests
     {
         var headers = new Dictionary<string, string> { { "Content-Type", "application/json" } };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var sink = new HttpSinkDefinition
         {
             Url = "http://webhook.example.com",
@@ -363,7 +363,7 @@ public class SourceSinkDefinitionsTests
             Headers = headers,
             Properties = properties
         };
-        
+
         Assert.That(sink.Url, Is.EqualTo("http://webhook.example.com"));
         Assert.That(sink.Method, Is.EqualTo("PUT"));
         Assert.That(sink.Headers, Is.EqualTo(headers));
@@ -374,7 +374,7 @@ public class SourceSinkDefinitionsTests
     public void HttpSinkDefinition_DefaultMethod_IsPost()
     {
         var sink = new HttpSinkDefinition();
-        
+
         Assert.That(sink.Method, Is.EqualTo("POST"));
     }
 
@@ -386,7 +386,7 @@ public class SourceSinkDefinitionsTests
             Url = "http://webhook.example.com",
             BodyTemplate = null
         };
-        
+
         Assert.That(sink.BodyTemplate, Is.Null);
     }
 
@@ -398,7 +398,7 @@ public class SourceSinkDefinitionsTests
             Url = "http://webhook.example.com",
             BodyTemplate = "{\"data\": \"{value}\"}"
         };
-        
+
         Assert.That(sink.BodyTemplate, Is.EqualTo("{\"data\": \"{value}\"}"));
     }
 
@@ -410,7 +410,7 @@ public class SourceSinkDefinitionsTests
             Url = "http://webhook.example.com",
             AuthTokenStateKey = null
         };
-        
+
         Assert.That(sink.AuthTokenStateKey, Is.Null);
     }
 
@@ -422,7 +422,7 @@ public class SourceSinkDefinitionsTests
             Url = "http://webhook.example.com",
             AuthTokenStateKey = "auth_token"
         };
-        
+
         Assert.That(sink.AuthTokenStateKey, Is.EqualTo("auth_token"));
     }
 
@@ -430,7 +430,7 @@ public class SourceSinkDefinitionsTests
     public void HttpSinkDefinition_DefaultTimeoutMs_Is5000()
     {
         var sink = new HttpSinkDefinition();
-        
+
         Assert.That(sink.TimeoutMs, Is.EqualTo(5000));
     }
 
@@ -442,7 +442,7 @@ public class SourceSinkDefinitionsTests
             Url = "http://webhook.example.com",
             TimeoutMs = 10000
         };
-        
+
         Assert.That(sink.TimeoutMs, Is.EqualTo(10000));
     }
 
@@ -450,7 +450,7 @@ public class SourceSinkDefinitionsTests
     public void RedisSinkDefinition_TypeProperty_ReturnsRedis()
     {
         var sink = new RedisSinkDefinition();
-        
+
         Assert.That(sink.Type, Is.EqualTo("redis"));
     }
 
@@ -458,7 +458,7 @@ public class SourceSinkDefinitionsTests
     public void RedisSinkDefinition_SetAllProperties_ReturnsValues()
     {
         var configuration = new Dictionary<string, object> { { "ttl", 3600 } };
-        
+
         var sink = new RedisSinkDefinition
         {
             ConnectionString = "redis://localhost:6379",
@@ -466,7 +466,7 @@ public class SourceSinkDefinitionsTests
             OperationType = "set",
             Configuration = configuration
         };
-        
+
         Assert.That(sink.ConnectionString, Is.EqualTo("redis://localhost:6379"));
         Assert.That(sink.Key, Is.EqualTo("flink:{id}"));
         Assert.That(sink.OperationType, Is.EqualTo("set"));
@@ -477,7 +477,7 @@ public class SourceSinkDefinitionsTests
     public void RedisSinkDefinition_DefaultOperationType_IsIncrement()
     {
         var sink = new RedisSinkDefinition();
-        
+
         Assert.That(sink.OperationType, Is.EqualTo("increment"));
     }
 
@@ -488,7 +488,7 @@ public class SourceSinkDefinitionsTests
         {
             Key = null
         };
-        
+
         Assert.That(sink.Key, Is.Null);
     }
 
@@ -500,7 +500,7 @@ public class SourceSinkDefinitionsTests
             Topic = "output-topic",
             Serializer = "avro"
         };
-        
+
         Assert.That(sink.Serializer, Is.EqualTo("avro"));
     }
 
@@ -508,7 +508,7 @@ public class SourceSinkDefinitionsTests
     public void KafkaSinkDefinition_DefaultSerializer_IsJson()
     {
         var sink = new KafkaSinkDefinition();
-        
+
         Assert.That(sink.Serializer, Is.EqualTo("json"));
     }
 
@@ -516,7 +516,7 @@ public class SourceSinkDefinitionsTests
     public void KafkaSinkDefinition_TypeProperty_ReturnsKafka()
     {
         var sink = new KafkaSinkDefinition();
-        
+
         Assert.That(sink.Type, Is.EqualTo("kafka"));
     }
 
@@ -528,7 +528,7 @@ public class SourceSinkDefinitionsTests
             Topic = "output-topic",
             BootstrapServers = null
         };
-        
+
         Assert.That(sink.BootstrapServers, Is.Null);
     }
 
@@ -538,7 +538,7 @@ public class SourceSinkDefinitionsTests
         var sink = new KafkaSinkDefinition();
         sink.Properties["compression.type"] = "gzip";
         sink.Properties["batch.size"] = "16384";
-        
+
         Assert.That(sink.Properties["compression.type"], Is.EqualTo("gzip"));
         Assert.That(sink.Properties["batch.size"], Is.EqualTo("16384"));
     }
@@ -555,7 +555,7 @@ public class SourceSinkDefinitionsTests
             JobId = "job-123",
             JobName = null
         };
-        
+
         Assert.That(metadata.JobName, Is.Null);
     }
 
@@ -567,7 +567,7 @@ public class SourceSinkDefinitionsTests
             JobId = "job-123",
             JobName = "My Flink Job"
         };
-        
+
         Assert.That(metadata.JobName, Is.EqualTo("My Flink Job"));
     }
 
@@ -578,7 +578,7 @@ public class SourceSinkDefinitionsTests
         {
             Parallelism = null
         };
-        
+
         Assert.That(metadata.Parallelism, Is.Null);
     }
 
@@ -589,7 +589,7 @@ public class SourceSinkDefinitionsTests
         {
             Parallelism = 4
         };
-        
+
         Assert.That(metadata.Parallelism, Is.EqualTo(4));
     }
 
@@ -601,7 +601,7 @@ public class SourceSinkDefinitionsTests
         {
             CreatedAt = timestamp
         };
-        
+
         Assert.That(metadata.CreatedAt, Is.EqualTo(timestamp));
     }
 
@@ -611,7 +611,7 @@ public class SourceSinkDefinitionsTests
         var metadata = new JobMetadata();
         metadata.Properties["environment"] = "production";
         metadata.Properties["owner"] = "team-data";
-        
+
         Assert.That(metadata.Properties["environment"], Is.EqualTo("production"));
         Assert.That(metadata.Properties["owner"], Is.EqualTo("team-data"));
     }

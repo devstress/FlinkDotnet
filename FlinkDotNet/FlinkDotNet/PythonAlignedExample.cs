@@ -38,21 +38,21 @@ namespace FlinkDotNet.Examples
         {
             // Get execution environment (matches Python pattern)
             var env = Flink.GetExecutionEnvironment();
-            
+
             // Configure environment (matches Python API)
             env.SetParallelism(4);
-            
+
             // Create data stream from collection (matches Python from_collection)
             var dataStream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
-            
+
             // Apply transformations (matches Python patterns)
             var transformedStream = dataStream
                 .Map(x => x * 2)
                 .Filter(x => x > 5);
-            
+
             // Print results (matches Python print())
             transformedStream.Print();
-            
+
             // Execute job (matches Python execute())
             await env.ExecuteAsync("Python-like Example");
         }
@@ -70,10 +70,10 @@ namespace FlinkDotNet.Examples
             var config = Flink.CreateConfiguration();
             config.SetString("parallelism.default", "8");
             config.SetInteger("buffer.timeout", 100);
-            
+
             // Get environment with configuration
             var env = Flink.GetExecutionEnvironment(config);
-            
+
             // The environment now has the configured settings
             await env.ExecuteAsync("Configuration Example");
         }
@@ -109,7 +109,7 @@ namespace FlinkDotNet.Examples
 
             // FlinkDotNet.DataStream usage - using factory method instead of constructor
             _ = Flink.GetExecutionEnvironment(config);
-            
+
             // Each module has its own namespace and functionality
             Console.WriteLine($"Parallelism: {execConfig.Parallelism}");
             Console.WriteLine("Environment configured successfully");

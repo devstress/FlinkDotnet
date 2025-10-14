@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Flink.JobBuilder
 {
@@ -222,7 +222,7 @@ namespace Flink.JobBuilder
         /// <param name="headers">HTTP headers</param>
         /// <param name="bodyTemplate">Request body template</param>
         /// <returns>FlinkJobBuilder for method chaining</returns>
-        public FlinkJobBuilder AsyncHttp(string url, string method = "GET", int timeoutMs = 5000, 
+        public FlinkJobBuilder AsyncHttp(string url, string method = "GET", int timeoutMs = 5000,
             Dictionary<string, string>? headers = null, string? bodyTemplate = null)
         {
             _operations.Add(new AsyncFunctionOperationDefinition
@@ -302,9 +302,9 @@ namespace Flink.JobBuilder
         /// <param name="retryCondition">Condition to determine if retry is needed</param>
         /// <param name="deadLetterTopic">Topic for permanent failures</param>
         /// <returns>FlinkJobBuilder for method chaining</returns>
-        public FlinkJobBuilder WithRetry(int maxRetries = 5, 
-            List<long>? delayPattern = null, 
-            string? retryCondition = null, 
+        public FlinkJobBuilder WithRetry(int maxRetries = 5,
+            List<long>? delayPattern = null,
+            string? retryCondition = null,
             string? deadLetterTopic = null)
         {
             _operations.Add(new RetryOperationDefinition
@@ -324,8 +324,8 @@ namespace Flink.JobBuilder
         /// <param name="parameters">Function parameters</param>
         /// <param name="stateKeys">State keys used by the function</param>
         /// <returns>FlinkJobBuilder for method chaining</returns>
-        public FlinkJobBuilder WithProcessFunction(string processType, 
-            Dictionary<string, object>? parameters = null, 
+        public FlinkJobBuilder WithProcessFunction(string processType,
+            Dictionary<string, object>? parameters = null,
             List<string>? stateKeys = null)
         {
             _operations.Add(new ProcessFunctionOperationDefinition
@@ -389,7 +389,7 @@ namespace Flink.JobBuilder
         /// <param name="headers">HTTP headers</param>
         /// <param name="bodyTemplate">Request body template</param>
         /// <returns>FlinkJobBuilder for method chaining</returns>
-        public FlinkJobBuilder ToHttp(string url, string method = "POST", 
+        public FlinkJobBuilder ToHttp(string url, string method = "POST",
             Dictionary<string, string>? headers = null, string? bodyTemplate = null)
         {
             _sink = new HttpSinkDefinition
@@ -437,7 +437,7 @@ namespace Flink.JobBuilder
                 Configuration = new Dictionary<string, object>
                 {
                     ["exactly_once"] = true,
-                ["atomic_operations"] = true
+                    ["atomic_operations"] = true
                 }
             };
             return this;
@@ -503,13 +503,13 @@ namespace Flink.JobBuilder
             try
             {
                 var result = await _gatewayService.SubmitJobAsync(jobDefinition, cancellationToken);
-                _logger?.LogInformation("Job submitted successfully. Job ID: {JobId}, Flink Job ID: {FlinkJobId}", 
+                _logger?.LogInformation("Job submitted successfully. Job ID: {JobId}, Flink Job ID: {FlinkJobId}",
                     jobDefinition.Metadata.JobId, result.FlinkJobId);
                 return result;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Failed to submit job {JobId} to gateway at {GatewayUrl}", 
+                _logger?.LogError(ex, "Failed to submit job {JobId} to gateway at {GatewayUrl}",
                     jobDefinition.Metadata.JobId, _gatewayService.GetType().Name);
                 throw new InvalidOperationException($"Job submission failed for JobId '{jobDefinition.Metadata.JobId}'. See inner exception for details.", ex);
             }
@@ -524,14 +524,14 @@ namespace Flink.JobBuilder
         public async Task<JobExecutionResult> SubmitAndWait(string? jobName = null, CancellationToken cancellationToken = default)
         {
             var submissionResult = await Submit(jobName, cancellationToken);
-            
+
             _logger?.LogInformation("Waiting for job completion: {FlinkJobId}", submissionResult.FlinkJobId);
 
             // Poll for job completion
             while (!cancellationToken.IsCancellationRequested)
             {
                 var status = await _gatewayService.GetJobStatusAsync(submissionResult.FlinkJobId, cancellationToken);
-                
+
                 if (status.State == "FINISHED")
                 {
                     return new JobExecutionResult

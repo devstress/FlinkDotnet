@@ -27,13 +27,13 @@ namespace FlinkDotNet.DataStream
     internal class OperationCapture
     {
         private static readonly ILogger _logger = CreateLogger();
-        
+
         private static ILogger CreateLogger()
         {
             var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
             var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
             var logFile = System.IO.Path.Combine(logFilePath, $"FlinkDotnet.log.{today}");
-            
+
             // Clean up old log files (older than 1 day)
             try
             {
@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream
             {
                 // Ignore cleanup errors
             }
-            
+
             return new LoggerConfiguration()
                 .WriteTo.File(
                     path: logFile,
@@ -67,7 +67,7 @@ namespace FlinkDotNet.DataStream
                 .MinimumLevel.Debug()
                 .CreateLogger();
         }
-        
+
         private readonly List<CapturedOperation> _operations = new();
         private KafkaSourceDefinition? _kafkaSource;
         private KafkaSinkDefinition? _kafkaSink;
@@ -80,7 +80,7 @@ namespace FlinkDotNet.DataStream
         {
             _logger.Information("[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
                 topic, bootstrapServers, groupId, startingOffsets);
-            
+
             _kafkaSource = new KafkaSourceDefinition
             {
                 Topic = topic,
@@ -89,7 +89,7 @@ namespace FlinkDotNet.DataStream
                 StartingOffsets = startingOffsets
             };
             _deserializationFunction = deserializer;
-            
+
             _logger.Information("[OperationCapture.CaptureKafkaSource] Created KafkaSourceDefinition with BootstrapServers={BootstrapServers}", _kafkaSource.BootstrapServers);
         }
 
@@ -140,7 +140,7 @@ namespace FlinkDotNet.DataStream
                 TimeUnit = "MILLISECONDS",
                 IsCountBased = false
             };
-            
+
             _operations.Add(new CapturedOperation
             {
                 Type = "TimeWindowAll",
@@ -157,7 +157,7 @@ namespace FlinkDotNet.DataStream
                 TimeUnit = "COUNT",
                 IsCountBased = true
             };
-            
+
             _operations.Add(new CapturedOperation
             {
                 Type = "CountWindowAll",
@@ -178,14 +178,14 @@ namespace FlinkDotNet.DataStream
         {
             _logger.Information("[OperationCapture.CaptureKafkaSink] Capturing Kafka sink: topic={Topic}, bootstrapServers={BootstrapServers}",
                 topic, bootstrapServers);
-            
+
             _kafkaSink = new KafkaSinkDefinition
             {
                 Topic = topic,
                 BootstrapServers = bootstrapServers
             };
             _serializationFunction = serializer;
-            
+
             _logger.Information("[OperationCapture.CaptureKafkaSink] Created KafkaSinkDefinition with BootstrapServers={BootstrapServers}", _kafkaSink.BootstrapServers);
         }
 
@@ -193,7 +193,7 @@ namespace FlinkDotNet.DataStream
         {
             _logger.Information("[OperationCapture.ToJobDefinition] Starting translation to JobDefinition: jobId={JobId}, jobName={JobName}", jobId, jobName);
             _logger.Information("[OperationCapture.ToJobDefinition] Current _kafkaSource.BootstrapServers={BootstrapServers}", _kafkaSource?.BootstrapServers);
-            
+
             if (_kafkaSource == null)
             {
                 _logger.Error("[OperationCapture.ToJobDefinition] No Kafka source defined!");
@@ -202,13 +202,13 @@ namespace FlinkDotNet.DataStream
 
             var jobDef = CreateJobDefinition(jobId, jobName);
             _logger.Information("[OperationCapture.ToJobDefinition] After CreateJobDefinition: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
-            
+
             ConfigureJobMetadata(jobDef);
             _logger.Information("[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
-            
+
             TranslateOperations(jobDef);
             _logger.Information("[OperationCapture.ToJobDefinition] After TranslateOperations: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
-            
+
             _logger.Information("[OperationCapture.ToJobDefinition] Final JobDefinition: Source.BootstrapServers={BootstrapServers}, Sink.BootstrapServers={SinkBootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers, (jobDef.Sink as KafkaSinkDefinition)?.BootstrapServers);
 
@@ -218,7 +218,7 @@ namespace FlinkDotNet.DataStream
         private JobDefinition CreateJobDefinition(string jobId, string jobName)
         {
             _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", _kafkaSource?.BootstrapServers);
-            
+
             var jobDef = new JobDefinition
             {
                 Source = _kafkaSource!,
@@ -233,7 +233,7 @@ namespace FlinkDotNet.DataStream
                     Properties = new Dictionary<string, string>()
                 }
             };
-            
+
             _logger.Debug("[OperationCapture.CreateJobDefinition] Created JobDefinition.Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
             return jobDef;
         }
@@ -296,7 +296,7 @@ namespace FlinkDotNet.DataStream
                 // Check if the function is a known IMapFunction implementation
                 var functionTypeName = operation.Function.GetType().Name;
                 var functionFullName = operation.Function.GetType().FullName ?? "";
-                
+
                 // Map WordsCapitalizer and other uppercase functions to "upper"
                 if (functionTypeName.Contains("Capitalizer", System.StringComparison.OrdinalIgnoreCase) ||
                     functionTypeName.Contains("Upper", System.StringComparison.OrdinalIgnoreCase) ||
@@ -345,16 +345,16 @@ namespace FlinkDotNet.DataStream
             {
                 jobDef.Metadata.Properties["aggregateFunction"] = operation.Function.GetType().FullName ?? "Unknown";
             }
-            
+
             long? windowSeconds = null;
             int? windowCount = null;
-            
+
             if (_windowDefinition != null)
             {
                 if (_windowDefinition.IsCountBased)
                 {
                     // COUNT-BASED WINDOW
-                    windowCount = (int)_windowDefinition.Size;
+                    windowCount = (int) _windowDefinition.Size;
                     _logger.Information("[OperationCapture.TranslateAggregateOperation] Using COUNT-based window: {WindowCount} messages",
                         windowCount);
                 }
@@ -370,7 +370,7 @@ namespace FlinkDotNet.DataStream
             {
                 _logger.Warning("[OperationCapture.TranslateAggregateOperation] No window defined");
             }
-            
+
             var aggDef = new AggregateOperationDefinition
             {
                 AggregationType = "COLLECT",
@@ -378,7 +378,7 @@ namespace FlinkDotNet.DataStream
                 WindowSeconds = windowSeconds,
                 WindowCount = windowCount
             };
-            
+
             jobDef.Operations.Add(aggDef);
             _logger.Information("[OperationCapture.TranslateAggregateOperation] Created AggregateOperationDefinition with WindowSeconds={WindowSeconds}, WindowCount={WindowCount}",
                 windowSeconds, windowCount);
@@ -390,15 +390,27 @@ namespace FlinkDotNet.DataStream
     internal class CapturedOperation
     {
         public string Type { get; set; } = string.Empty;
-        public string? OperationType { get; set; }
-        public object? Function { get; set; }
+        public string? OperationType
+        {
+            get; set;
+        }
+        public object? Function
+        {
+            get; set;
+        }
     }
 
     internal class WindowDefinition
     {
         public string WindowType { get; set; } = string.Empty;
-        public long Size { get; set; }
+        public long Size
+        {
+            get; set;
+        }
         public string TimeUnit { get; set; } = string.Empty;
-        public bool IsCountBased { get; set; }
+        public bool IsCountBased
+        {
+            get; set;
+        }
     }
 }

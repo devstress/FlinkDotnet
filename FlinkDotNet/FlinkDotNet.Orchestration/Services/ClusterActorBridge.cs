@@ -1,7 +1,7 @@
 using FlinkDotNet.Orchestration.Interfaces;
 using FlinkDotNet.Orchestration.Models;
-using ClusterManagerModels = FlinkDotNet.ClusterManager.Models;
 using ClusterManagerInterfaces = FlinkDotNet.ClusterManager.Interfaces;
+using ClusterManagerModels = FlinkDotNet.ClusterManager.Models;
 
 namespace FlinkDotNet.Orchestration.Services;
 
@@ -25,7 +25,7 @@ internal class ClusterActorBridge : IFlinkClusterActor
         return new ClusterStatus
         {
             ClusterId = managerStatus.ClusterId,
-            Health = (ClusterHealthState)(int)managerStatus.Health,
+            Health = (ClusterHealthState) (int) managerStatus.Health,
             AvailableSlots = managerStatus.AvailableSlots,
             TotalSlots = managerStatus.TotalSlots,
             RunningJobs = managerStatus.RunningJobs,
@@ -44,7 +44,7 @@ internal class ClusterActorBridge : IFlinkClusterActor
             JobGraph = job.JobGraph,
             Parallelism = job.Parallelism,
             Configuration = job.Configuration,
-            Priority = (ClusterManagerModels.JobPriority)(int)job.Priority,
+            Priority = (ClusterManagerModels.JobPriority) (int) job.Priority,
             Timeout = job.Timeout,
             RequiredResources = job.RequiredResources,
             ResourceRequirements = new ClusterManagerModels.JobResourceRequirements
@@ -71,7 +71,7 @@ internal class ClusterActorBridge : IFlinkClusterActor
                 ClusterId = managerResult.PlacementInfo.ClusterId,
                 Reason = managerResult.PlacementInfo.Reason,
                 AssignedSlots = managerResult.PlacementInfo.AssignedSlots,
-                Strategy = (SubmissionStrategy)(int)managerResult.PlacementInfo.Strategy,
+                Strategy = (SubmissionStrategy) (int) managerResult.PlacementInfo.Strategy,
                 PlacementMetadata = managerResult.PlacementInfo.PlacementMetadata
             }
         };

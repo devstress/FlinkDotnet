@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace Flink.JobBuilder.Backpressure;
 
@@ -108,7 +108,7 @@ public static class RateLimiterFactory
     {
         var threshold = lagThreshold ?? TimeSpan.FromSeconds(5);
         var rateLimiter = CreateLagBasedBucket(rateLimit, burstCapacity, consumerGroup, threshold, logger: logger);
-        
+
         var config = $"""
             Production Rate Limiter Configuration (Lag-Based):
             - Approach: Simple lag-based backpressure (RECOMMENDED)
@@ -145,7 +145,7 @@ public static class RateLimiterFactory
     {
         var lagThreshold = TimeSpan.FromSeconds(2); // Shorter threshold for development
         var rateLimiter = CreateLagBasedBucket(rateLimit, burstCapacity, consumerGroup, lagThreshold, logger: logger);
-        
+
         var config = $"""
             Development Rate Limiter Configuration (Lag-Based):
             - Approach: Simple lag-based backpressure

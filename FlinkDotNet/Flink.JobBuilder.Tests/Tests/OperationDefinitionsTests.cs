@@ -12,7 +12,7 @@ public class OperationDefinitionsTests
     public void AggregateOperationDefinition_TypeProperty_ReturnsAggregate()
     {
         var op = new AggregateOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("aggregate"));
     }
 
@@ -27,7 +27,7 @@ public class OperationDefinitionsTests
             WindowSeconds = 60,
             WindowCount = 100
         };
-        
+
         Assert.That(op.AggregationType, Is.EqualTo("SUM"));
         Assert.That(op.Field, Is.EqualTo("amount"));
         Assert.That(op.Alias, Is.EqualTo("total"));
@@ -42,7 +42,7 @@ public class OperationDefinitionsTests
         {
             WindowSeconds = null
         };
-        
+
         Assert.That(op.WindowSeconds, Is.Null);
     }
 
@@ -53,7 +53,7 @@ public class OperationDefinitionsTests
         {
             WindowCount = null
         };
-        
+
         Assert.That(op.WindowCount, Is.Null);
     }
 
@@ -65,7 +65,7 @@ public class OperationDefinitionsTests
     public void GroupByOperationDefinition_TypeProperty_ReturnsGroupBy()
     {
         var op = new GroupByOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("groupBy"));
     }
 
@@ -76,7 +76,7 @@ public class OperationDefinitionsTests
         {
             Key = "userId"
         };
-        
+
         Assert.That(op.Key, Is.EqualTo("userId"));
     }
 
@@ -88,7 +88,7 @@ public class OperationDefinitionsTests
         {
             Keys = keys
         };
-        
+
         Assert.That(op.Keys, Is.EqualTo(keys));
         Assert.That(op.Keys, Has.Count.EqualTo(2));
     }
@@ -100,7 +100,7 @@ public class OperationDefinitionsTests
         {
             Keys = null
         };
-        
+
         Assert.That(op.Keys, Is.Null);
     }
 
@@ -112,7 +112,7 @@ public class OperationDefinitionsTests
     public void AsyncFunctionOperationDefinition_TypeProperty_ReturnsAsyncFunction()
     {
         var op = new AsyncFunctionOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("asyncFunction"));
     }
 
@@ -121,7 +121,7 @@ public class OperationDefinitionsTests
     {
         var headers = new Dictionary<string, string> { { "Auth", "Bearer token" } };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var op = new AsyncFunctionOperationDefinition
         {
             FunctionType = "http",
@@ -137,7 +137,7 @@ public class OperationDefinitionsTests
             CacheTtlMs = 60000,
             Properties = properties
         };
-        
+
         Assert.That(op.FunctionType, Is.EqualTo("http"));
         Assert.That(op.Url, Is.EqualTo("http://api.example.com"));
         Assert.That(op.Method, Is.EqualTo("POST"));
@@ -156,7 +156,7 @@ public class OperationDefinitionsTests
     public void AsyncFunctionOperationDefinition_DefaultValues_AreSet()
     {
         var op = new AsyncFunctionOperationDefinition();
-        
+
         Assert.That(op.Method, Is.EqualTo("GET"));
         Assert.That(op.TimeoutMs, Is.EqualTo(5000));
         Assert.That(op.MaxRetries, Is.EqualTo(3));
@@ -172,7 +172,7 @@ public class OperationDefinitionsTests
     public void JoinOperationDefinition_TypeProperty_ReturnsJoin()
     {
         var op = new JoinOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("join"));
     }
 
@@ -181,7 +181,7 @@ public class OperationDefinitionsTests
     {
         var rightSource = new KafkaSourceDefinition { Topic = "right-topic" };
         var window = new WindowOperationDefinition { WindowType = "TUMBLING", Size = 60 };
-        
+
         var op = new JoinOperationDefinition
         {
             JoinType = "LEFT",
@@ -190,7 +190,7 @@ public class OperationDefinitionsTests
             RightKey = "id",
             Window = window
         };
-        
+
         Assert.That(op.JoinType, Is.EqualTo("LEFT"));
         Assert.That(op.RightSource, Is.EqualTo(rightSource));
         Assert.That(op.LeftKey, Is.EqualTo("userId"));
@@ -202,7 +202,7 @@ public class OperationDefinitionsTests
     public void JoinOperationDefinition_DefaultJoinType_IsInner()
     {
         var op = new JoinOperationDefinition();
-        
+
         Assert.That(op.JoinType, Is.EqualTo("INNER"));
     }
 
@@ -214,7 +214,7 @@ public class OperationDefinitionsTests
     public void ProcessFunctionOperationDefinition_TypeProperty_ReturnsProcessFunction()
     {
         var op = new ProcessFunctionOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("processFunction"));
     }
 
@@ -225,7 +225,7 @@ public class OperationDefinitionsTests
         var stateKeys = new List<string> { "state1", "state2" };
         var timerNames = new List<string> { "timer1" };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var op = new ProcessFunctionOperationDefinition
         {
             ProcessType = "authTokenManager",
@@ -234,7 +234,7 @@ public class OperationDefinitionsTests
             TimerNames = timerNames,
             Properties = properties
         };
-        
+
         Assert.That(op.ProcessType, Is.EqualTo("authTokenManager"));
         Assert.That(op.Parameters, Is.EqualTo(parameters));
         Assert.That(op.StateKeys, Is.EqualTo(stateKeys));
@@ -250,7 +250,7 @@ public class OperationDefinitionsTests
     public void StateOperationDefinition_TypeProperty_ReturnsState()
     {
         var op = new StateOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("state"));
     }
 
@@ -258,7 +258,7 @@ public class OperationDefinitionsTests
     public void StateOperationDefinition_SetAllProperties_ReturnsValues()
     {
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var op = new StateOperationDefinition
         {
             StateType = "list",
@@ -268,7 +268,7 @@ public class OperationDefinitionsTests
             DefaultValue = "0",
             Properties = properties
         };
-        
+
         Assert.That(op.StateType, Is.EqualTo("list"));
         Assert.That(op.StateKey, Is.EqualTo("myState"));
         Assert.That(op.ValueType, Is.EqualTo("integer"));
@@ -281,7 +281,7 @@ public class OperationDefinitionsTests
     public void StateOperationDefinition_DefaultStateType_IsValue()
     {
         var op = new StateOperationDefinition();
-        
+
         Assert.That(op.StateType, Is.EqualTo("value"));
     }
 
@@ -293,7 +293,7 @@ public class OperationDefinitionsTests
     public void TimerOperationDefinition_TypeProperty_ReturnsTimer()
     {
         var op = new TimerOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("timer"));
     }
 
@@ -301,7 +301,7 @@ public class OperationDefinitionsTests
     public void TimerOperationDefinition_SetAllProperties_ReturnsValues()
     {
         var parameters = new Dictionary<string, object> { { "action", "cleanup" } };
-        
+
         var op = new TimerOperationDefinition
         {
             TimerType = "event",
@@ -310,7 +310,7 @@ public class OperationDefinitionsTests
             Action = "cleanup",
             Parameters = parameters
         };
-        
+
         Assert.That(op.TimerType, Is.EqualTo("event"));
         Assert.That(op.DelayMs, Is.EqualTo(30000));
         Assert.That(op.TimerName, Is.EqualTo("cleanupTimer"));
@@ -322,7 +322,7 @@ public class OperationDefinitionsTests
     public void TimerOperationDefinition_DefaultTimerType_IsProcessing()
     {
         var op = new TimerOperationDefinition();
-        
+
         Assert.That(op.TimerType, Is.EqualTo("processing"));
     }
 
@@ -334,7 +334,7 @@ public class OperationDefinitionsTests
     public void RetryOperationDefinition_TypeProperty_ReturnsRetry()
     {
         var op = new RetryOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("retry"));
     }
 
@@ -343,7 +343,7 @@ public class OperationDefinitionsTests
     {
         var delays = new List<long> { 1000, 2000, 4000 };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var op = new RetryOperationDefinition
         {
             MaxRetries = 3,
@@ -353,7 +353,7 @@ public class OperationDefinitionsTests
             StateKey = "custom_retry_state",
             Properties = properties
         };
-        
+
         Assert.That(op.MaxRetries, Is.EqualTo(3));
         Assert.That(op.DelayMs, Is.EqualTo(delays));
         Assert.That(op.RetryCondition, Is.EqualTo("status == 500"));
@@ -366,7 +366,7 @@ public class OperationDefinitionsTests
     public void RetryOperationDefinition_DefaultMaxRetries_Is5()
     {
         var op = new RetryOperationDefinition();
-        
+
         Assert.That(op.MaxRetries, Is.EqualTo(5));
     }
 
@@ -374,7 +374,7 @@ public class OperationDefinitionsTests
     public void RetryOperationDefinition_DefaultDelays_AreSet()
     {
         var op = new RetryOperationDefinition();
-        
+
         Assert.That(op.DelayMs, Is.Not.Null);
         Assert.That(op.DelayMs, Has.Count.EqualTo(5));
         Assert.That(op.DelayMs[0], Is.EqualTo(300000)); // 5min
@@ -385,7 +385,7 @@ public class OperationDefinitionsTests
     public void RetryOperationDefinition_DefaultStateKey_IsSet()
     {
         var op = new RetryOperationDefinition();
-        
+
         Assert.That(op.StateKey, Is.EqualTo("retry_state"));
     }
 
@@ -397,7 +397,7 @@ public class OperationDefinitionsTests
     public void SideOutputOperationDefinition_TypeProperty_ReturnsSideOutput()
     {
         var op = new SideOutputOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("sideOutput"));
     }
 
@@ -406,7 +406,7 @@ public class OperationDefinitionsTests
     {
         var sink = new KafkaSinkDefinition { Topic = "error-topic" };
         var properties = new Dictionary<string, string> { { "key", "value" } };
-        
+
         var op = new SideOutputOperationDefinition
         {
             OutputTag = "errors",
@@ -414,7 +414,7 @@ public class OperationDefinitionsTests
             SideOutputSink = sink,
             Properties = properties
         };
-        
+
         Assert.That(op.OutputTag, Is.EqualTo("errors"));
         Assert.That(op.Condition, Is.EqualTo("status == 'ERROR'"));
         Assert.That(op.SideOutputSink, Is.EqualTo(sink));
@@ -429,7 +429,7 @@ public class OperationDefinitionsTests
     public void MapOperationDefinition_TypeProperty_ReturnsMap()
     {
         var op = new MapOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("map"));
     }
 
@@ -440,7 +440,7 @@ public class OperationDefinitionsTests
         {
             Expression = "x => x.ToUpper()"
         };
-        
+
         Assert.That(op.Expression, Is.EqualTo("x => x.ToUpper()"));
     }
 
@@ -452,7 +452,7 @@ public class OperationDefinitionsTests
             Expression = "x => x.ToUpper()",
             OutputType = null
         };
-        
+
         Assert.That(op.OutputType, Is.Null);
     }
 
@@ -464,7 +464,7 @@ public class OperationDefinitionsTests
             Expression = "x => x.ToUpper()",
             OutputType = "String"
         };
-        
+
         Assert.That(op.OutputType, Is.EqualTo("String"));
     }
 
@@ -476,7 +476,7 @@ public class OperationDefinitionsTests
     public void FilterOperationDefinition_TypeProperty_ReturnsFilter()
     {
         var op = new FilterOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("filter"));
     }
 
@@ -487,7 +487,7 @@ public class OperationDefinitionsTests
         {
             Expression = "x => x.Length > 5"
         };
-        
+
         Assert.That(op.Expression, Is.EqualTo("x => x.Length > 5"));
     }
 
@@ -495,7 +495,7 @@ public class OperationDefinitionsTests
     public void FilterOperationDefinition_DefaultExpression_IsEmpty()
     {
         var op = new FilterOperationDefinition();
-        
+
         Assert.That(op.Expression, Is.EqualTo(string.Empty));
     }
 
@@ -512,7 +512,7 @@ public class OperationDefinitionsTests
             Size = 60,
             Slide = null
         };
-        
+
         Assert.That(op.Slide, Is.Null);
     }
 
@@ -525,7 +525,7 @@ public class OperationDefinitionsTests
             Size = 60,
             Slide = 30
         };
-        
+
         Assert.That(op.Slide, Is.EqualTo(30));
     }
 
@@ -538,7 +538,7 @@ public class OperationDefinitionsTests
             Size = 60,
             TimeField = null
         };
-        
+
         Assert.That(op.TimeField, Is.Null);
     }
 
@@ -551,7 +551,7 @@ public class OperationDefinitionsTests
             Size = 60,
             TimeField = "timestamp"
         };
-        
+
         Assert.That(op.TimeField, Is.EqualTo("timestamp"));
     }
 
@@ -559,7 +559,7 @@ public class OperationDefinitionsTests
     public void WindowOperationDefinition_DefaultTimeUnit_IsMinutes()
     {
         var op = new WindowOperationDefinition();
-        
+
         Assert.That(op.TimeUnit, Is.EqualTo("MINUTES"));
     }
 
@@ -567,7 +567,7 @@ public class OperationDefinitionsTests
     public void WindowOperationDefinition_TypeProperty_ReturnsWindow()
     {
         var op = new WindowOperationDefinition();
-        
+
         Assert.That(op.Type, Is.EqualTo("window"));
     }
 
@@ -582,7 +582,7 @@ public class OperationDefinitionsTests
             Slide = 30,
             TimeField = "eventTime"
         };
-        
+
         Assert.That(op.WindowType, Is.EqualTo("SLIDING"));
         Assert.That(op.Size, Is.EqualTo(60));
         Assert.That(op.TimeUnit, Is.EqualTo("SECONDS"));

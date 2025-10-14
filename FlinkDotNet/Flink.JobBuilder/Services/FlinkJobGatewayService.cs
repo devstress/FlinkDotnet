@@ -5,8 +5,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Flink.JobBuilder.Models;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -21,13 +21,13 @@ namespace Flink.JobBuilder.Services
         private readonly FlinkJobGatewayConfiguration _configuration;
         private readonly ILogger? _logger;
         private static readonly Serilog.ILogger _serilogLogger = CreateLogger();
-        
+
         private static Serilog.ILogger CreateLogger()
         {
             var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
             var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
             var logFile = System.IO.Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
-            
+
             // Clean up old log files (older than 1 day)
             try
             {
@@ -48,7 +48,7 @@ namespace Flink.JobBuilder.Services
             {
                 // Ignore cleanup errors
             }
-            
+
             return new LoggerConfiguration()
                 .WriteTo.File(
                     path: logFile,
@@ -61,7 +61,7 @@ namespace Flink.JobBuilder.Services
                 .MinimumLevel.Debug()
                 .CreateLogger();
         }
-        
+
         private readonly JsonSerializerOptions _jsonOptions;
 
         public FlinkJobGatewayService(FlinkJobGatewayConfiguration? configuration = null, HttpClient? httpClient = null, ILogger? logger = null)
@@ -85,7 +85,7 @@ namespace Flink.JobBuilder.Services
             };
 
             client.DefaultRequestHeaders.Add("User-Agent", "Flink.JobBuilder/1.0.0");
-            
+
             if (!string.IsNullOrEmpty(_configuration.ApiKey))
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", _configuration.ApiKey);
@@ -193,7 +193,7 @@ namespace Flink.JobBuilder.Services
             CancellationToken cancellationToken)
         {
             var rawResponse = await response.Content.ReadAsStringAsync(cancellationToken);
-            
+
             if (response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(rawResponse))
             {
                 var errorMsg = "Gateway returned empty response body - this indicates a serialization problem in the Gateway";
@@ -277,14 +277,14 @@ namespace Flink.JobBuilder.Services
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 var status = JsonSerializer.Deserialize<JobStatus>(responseContent, _jsonOptions);
-                
+
                 if (status != null)
                 {
                     return status;
                 }
             }
 
-            _logger?.LogWarning("Failed to get status for job {FlinkJobId}. Status: {StatusCode}", 
+            _logger?.LogWarning("Failed to get status for job {FlinkJobId}. Status: {StatusCode}",
                 flinkJobId, response.StatusCode);
 
             return new JobStatus
@@ -308,14 +308,14 @@ namespace Flink.JobBuilder.Services
             {
                 var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 var metrics = JsonSerializer.Deserialize<JobMetrics>(responseContent, _jsonOptions);
-                
+
                 if (metrics != null)
                 {
                     return metrics;
                 }
             }
 
-            _logger?.LogWarning("Failed to get metrics for job {FlinkJobId}. Status: {StatusCode}", 
+            _logger?.LogWarning("Failed to get metrics for job {FlinkJobId}. Status: {StatusCode}",
                 flinkJobId, response.StatusCode);
 
             return new JobMetrics();
@@ -331,14 +331,14 @@ namespace Flink.JobBuilder.Services
             });
 
             var success = response.IsSuccessStatusCode;
-            
+
             if (success)
             {
                 _logger?.LogInformation("Job {FlinkJobId} canceled successfully", flinkJobId);
             }
             else
             {
-                _logger?.LogError("Failed to cancel job {FlinkJobId}. Status: {StatusCode}", 
+                _logger?.LogError("Failed to cancel job {FlinkJobId}. Status: {StatusCode}",
                     flinkJobId, response.StatusCode);
             }
 
@@ -372,12 +372,12 @@ namespace Flink.JobBuilder.Services
                 try
                 {
                     var response = await operation();
-                    
+
                     if (response.IsSuccessStatusCode)
                     {
                         return response;
                     }
-                    
+
                     var shouldRetry = await ShouldRetryResponseAsync(response, retryCount);
                     if (!shouldRetry || retryCount == _configuration.MaxRetries)
                     {
@@ -396,24 +396,24 @@ namespace Flink.JobBuilder.Services
 
             throw new HttpRequestException($"Request failed after {_configuration.MaxRetries} retries");
         }
-        
+
         private async Task<bool> ShouldRetryResponseAsync(HttpResponseMessage response, int retryCount)
         {
             // Retry on server errors (5xx)
-            if ((int)response.StatusCode >= 500)
+            if ((int) response.StatusCode >= 500)
             {
                 return true;
             }
-            
+
             // For client errors (4xx), only retry on specific conditions
-            if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500)
+            if ((int) response.StatusCode >= 400 && (int) response.StatusCode < 500)
             {
                 return await ShouldRetryClientErrorAsync(response, retryCount);
             }
-            
+
             return false;
         }
-        
+
         private async Task<bool> ShouldRetryClientErrorAsync(HttpResponseMessage response, int retryCount)
         {
             // Always retry on 429 (Too Many Requests)
@@ -421,7 +421,7 @@ namespace Flink.JobBuilder.Services
             {
                 return true;
             }
-            
+
             // Retry on 400 (Bad Request) if Flink cluster is not ready
             var shouldRetryFlinkNotReady = await ShouldRetryFlinkClusterNotReadyAsync(response);
             if (shouldRetryFlinkNotReady)
@@ -429,10 +429,10 @@ namespace Flink.JobBuilder.Services
                 LogFlinkClusterNotReady(retryCount);
                 return true;
             }
-            
+
             return false;
         }
-        
+
         private void LogFlinkClusterNotReady(int retryCount)
         {
             if (retryCount < _configuration.MaxRetries)
@@ -443,12 +443,12 @@ namespace Flink.JobBuilder.Services
                     retryCount + 1, _configuration.MaxRetries);
             }
         }
-        
+
         private static async Task<bool> ShouldRetryFlinkClusterNotReadyAsync(HttpResponseMessage response)
         {
             if (response.StatusCode != HttpStatusCode.BadRequest)
                 return false;
-                
+
             try
             {
                 var content = await response.Content.ReadAsStringAsync();

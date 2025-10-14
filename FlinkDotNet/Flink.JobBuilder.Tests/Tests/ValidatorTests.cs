@@ -12,14 +12,14 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata 
-            { 
-                JobId = "test-job", 
+            Metadata = new JobMetadata
+            {
+                JobId = "test-job",
                 Version = "1.0.0",
                 Parallelism = 4
             },
-            Source = new KafkaSourceDefinition 
-            { 
+            Source = new KafkaSourceDefinition
+            {
                 Topic = "input-topic",
                 BootstrapServers = "localhost:9092",
                 GroupId = "test-group"
@@ -28,8 +28,8 @@ public class ValidatorTests
             {
                 new MapOperationDefinition { Expression = "x => x * 2" }
             },
-            Sink = new KafkaSinkDefinition 
-            { 
+            Sink = new KafkaSinkDefinition
+            {
                 Topic = "output-topic",
                 BootstrapServers = "localhost:9092"
             }
@@ -94,9 +94,9 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata 
-            { 
-                JobId = "test", 
+            Metadata = new JobMetadata
+            {
+                JobId = "test",
                 Version = "1.0",
                 Parallelism = 0
             },
@@ -115,9 +115,9 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata 
-            { 
-                JobId = "test", 
+            Metadata = new JobMetadata
+            {
+                JobId = "test",
                 Version = "1.0",
                 Parallelism = -5
             },
@@ -231,9 +231,9 @@ public class ValidatorTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "sql-job", Version = "1.0" },
-            Source = new SqlSourceDefinition 
-            { 
-                Statements = new List<string> { "SELECT * FROM table" } 
+            Source = new SqlSourceDefinition
+            {
+                Statements = new List<string> { "SELECT * FROM table" }
             },
             Sink = null
         };

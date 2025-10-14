@@ -13,7 +13,7 @@ public class JobDistributionResultTests
     public void JobDistributionResult_DefaultInitialization_SetsEmptyCollections()
     {
         var result = new JobDistributionResult();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(result.TotalJobs, Is.EqualTo(0));
@@ -74,7 +74,10 @@ public class JobDistributionResultTests
             FailedPlacements = 2
         };
 
-        var result2 = result1 with { FailedPlacements = 3 };
+        var result2 = result1 with
+        {
+            FailedPlacements = 3
+        };
 
         Assert.Multiple(() =>
         {
@@ -96,7 +99,7 @@ public class JobPlacementResultTests
     public void JobPlacementResult_DefaultInitialization_SetsEmptyStrings()
     {
         var result = new JobPlacementResult();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(result.JobId, Is.EqualTo(string.Empty));
@@ -163,7 +166,7 @@ public class AutoScalingConfigTests
     public void AutoScalingConfig_DefaultValues_AreReasonable()
     {
         var config = new AutoScalingConfig();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(config.MinClusters, Is.EqualTo(1));
@@ -245,7 +248,7 @@ public class AutoScalingMetricTests
     public void AutoScalingMetric_DefaultValues_AreSet()
     {
         var metric = new AutoScalingMetric();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(metric.Name, Is.EqualTo(string.Empty));
@@ -286,7 +289,7 @@ public class AutoScalingMetricTypeTests
     public void AutoScalingMetricType_AllValues_AreDefined()
     {
         var values = Enum.GetValues<AutoScalingMetricType>();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(values, Contains.Item(AutoScalingMetricType.CpuUtilization));
@@ -321,7 +324,7 @@ public class ClusterFailureInfoTests
     public void ClusterFailureInfo_DefaultValues_AreSet()
     {
         var info = new ClusterFailureInfo();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(info.ClusterId, Is.EqualTo(string.Empty));
@@ -404,7 +407,7 @@ public class ClusterFailureTypeTests
     public void ClusterFailureType_AllValues_AreDefined()
     {
         var values = Enum.GetValues<ClusterFailureType>();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(values, Contains.Item(ClusterFailureType.Unknown));
@@ -431,7 +434,7 @@ public class FailureSeverityTests
     public void FailureSeverity_AllLevels_AreDefined()
     {
         var values = Enum.GetValues<FailureSeverity>();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(values, Contains.Item(FailureSeverity.Low));
@@ -447,9 +450,9 @@ public class FailureSeverityTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That((int)FailureSeverity.Low, Is.LessThan((int)FailureSeverity.Medium));
-            Assert.That((int)FailureSeverity.Medium, Is.LessThan((int)FailureSeverity.High));
-            Assert.That((int)FailureSeverity.High, Is.LessThan((int)FailureSeverity.Critical));
+            Assert.That((int) FailureSeverity.Low, Is.LessThan((int) FailureSeverity.Medium));
+            Assert.That((int) FailureSeverity.Medium, Is.LessThan((int) FailureSeverity.High));
+            Assert.That((int) FailureSeverity.High, Is.LessThan((int) FailureSeverity.Critical));
         });
     }
 }
@@ -464,7 +467,7 @@ public class HealthMonitoringConfigTests
     public void HealthMonitoringConfig_DefaultValues_AreReasonable()
     {
         var config = new HealthMonitoringConfig();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(config.CheckInterval, Is.EqualTo(TimeSpan.FromMinutes(1)));
@@ -521,7 +524,7 @@ public class HealthCheckTypeTests
     public void HealthCheckType_AllValues_AreDefined()
     {
         var values = Enum.GetValues<HealthCheckType>();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(values, Contains.Item(HealthCheckType.RestApiHealthCheck));
@@ -546,7 +549,7 @@ public class ClusterProvisioningRequestTests
     public void ClusterProvisioningRequest_DefaultValues_AreSet()
     {
         var request = new ClusterProvisioningRequest();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(request.RequestId, Is.EqualTo(string.Empty));
@@ -607,7 +610,7 @@ public class ClusterProvisioningResultTests
     public void ClusterProvisioningResult_DefaultValues_AreSet()
     {
         var result = new ClusterProvisioningResult();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(result.ClusterId, Is.EqualTo(string.Empty));
@@ -678,7 +681,7 @@ public class PriorityTests
     public void Priority_AllLevels_AreDefined()
     {
         var values = Enum.GetValues<Priority>();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(values, Contains.Item(Priority.Low));
@@ -694,9 +697,9 @@ public class PriorityTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That((int)Priority.Low, Is.LessThan((int)Priority.Normal));
-            Assert.That((int)Priority.Normal, Is.LessThan((int)Priority.High));
-            Assert.That((int)Priority.High, Is.LessThan((int)Priority.Critical));
+            Assert.That((int) Priority.Low, Is.LessThan((int) Priority.Normal));
+            Assert.That((int) Priority.Normal, Is.LessThan((int) Priority.High));
+            Assert.That((int) Priority.High, Is.LessThan((int) Priority.Critical));
         });
     }
 }
