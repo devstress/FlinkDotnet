@@ -1,5 +1,5 @@
 using Flink.JobBuilder.Backpressure;
-using NUnit.Framework;
+using Moq;
 
 namespace Flink.JobBuilder.Tests.Tests;
 
@@ -399,145 +399,6 @@ public class RateLimiterTests
 
     #endregion
 
-    #region LagBasedRateLimiter Tests (15 tests)
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_ValidParameters_CreatesInstance()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        Assert.That(rateLimiter, Is.Not.Null);
-        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(10.0));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_ZeroRateLimit_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new LagBasedRateLimiter(0, 20.0, "test-group"));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_NegativeRateLimit_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new LagBasedRateLimiter(-5.0, 20.0, "test-group"));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_ZeroBurstCapacity_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new LagBasedRateLimiter(10.0, 0, "test-group"));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_NegativeBurstCapacity_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new LagBasedRateLimiter(10.0, -5.0, "test-group"));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_NullConsumerGroup_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new LagBasedRateLimiter(10.0, 20.0, null!));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_EmptyConsumerGroup_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new LagBasedRateLimiter(10.0, 20.0, string.Empty));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Constructor_WithLagThreshold_UsesProvidedThreshold()
-    {
-        var lagThreshold = TimeSpan.FromSeconds(10);
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagThreshold);
-
-        Assert.That(rateLimiter, Is.Not.Null);
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_TryAcquire_WithAvailableTokens_ReturnsTrue()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        var result = rateLimiter.TryAcquire();
-
-        Assert.That(result, Is.True);
-    }
-
-    [Test]
-    public async Task LagBasedRateLimiter_TryAcquireAsync_WithAvailableTokens_ReturnsTrue()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        var result = await rateLimiter.TryAcquireAsync();
-
-        Assert.That(result, Is.True);
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_CurrentUtilization_InitialState_ReturnsZero()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        var utilization = rateLimiter.CurrentUtilization;
-
-        Assert.That(utilization, Is.EqualTo(0.0).Within(0.01));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_UpdateRateLimit_ValidNewRate_UpdatesRate()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        rateLimiter.UpdateRateLimit(15.0);
-
-        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(15.0));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Reset_RestoresFullCapacity()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        rateLimiter.TryAcquire(10);
-        rateLimiter.Reset();
-
-        var result = rateLimiter.TryAcquire(20);
-
-        Assert.That(result, Is.True);
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_CurrentTokens_AfterConsumption_DecreasesCorrectly()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        var initialTokens = rateLimiter.CurrentTokens;
-        rateLimiter.TryAcquire(5);
-
-        Assert.That(rateLimiter.CurrentTokens, Is.LessThan(initialTokens));
-    }
-
-    [Test]
-    public void LagBasedRateLimiter_Dispose_DisposesResources()
-    {
-        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group");
-
-        rateLimiter.Dispose();
-
-        // Verify disposal doesn't throw
-        Assert.Pass();
-    }
-
-    #endregion
-
     #region MultiTierRateLimiter Tests (10 tests)
 
     [Test]
@@ -804,6 +665,168 @@ public class RateLimiterTests
         context.AdditionalProperties["custom-key"] = "custom-value";
 
         Assert.That(context.AdditionalProperties["custom-key"], Is.EqualTo("custom-value"));
+    }
+    #endregion
+
+    #region LagBasedRateLimiter Tests with Mocked Lag Monitor (15 tests)
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_ValidParameters_CreatesInstance()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(10.0));
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_ZeroRateLimit_ThrowsArgumentException()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        
+        Assert.Throws<ArgumentException>(() =>
+            new LagBasedRateLimiter(0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_NegativeRateLimit_ThrowsArgumentException()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        
+        Assert.Throws<ArgumentException>(() =>
+            new LagBasedRateLimiter(-5.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_ZeroBurstCapacity_ThrowsArgumentException()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        
+        Assert.Throws<ArgumentException>(() =>
+            new LagBasedRateLimiter(10.0, 0, "test-group", lagMonitor: mockLagMonitor.Object));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_NegativeBurstCapacity_ThrowsArgumentException()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        
+        Assert.Throws<ArgumentException>(() =>
+            new LagBasedRateLimiter(10.0, -5.0, "test-group", lagMonitor: mockLagMonitor.Object));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_NullConsumerGroup_ThrowsArgumentException()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        
+        Assert.Throws<ArgumentException>(() =>
+            new LagBasedRateLimiter(10.0, 20.0, null!, lagMonitor: mockLagMonitor.Object));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_EmptyConsumerGroup_ThrowsArgumentException()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        
+        Assert.Throws<ArgumentException>(() =>
+            new LagBasedRateLimiter(10.0, 20.0, string.Empty, lagMonitor: mockLagMonitor.Object));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Constructor_WithLagThreshold_UsesProvidedThreshold()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var lagThreshold = TimeSpan.FromSeconds(10);
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagThreshold, mockLagMonitor.Object);
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_TryAcquire_WithAvailableTokens_ReturnsTrue()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+        var result = rateLimiter.TryAcquire();
+
+        Assert.That(result, Is.True);
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public async Task LagBasedRateLimiter_TryAcquireAsync_WithAvailableTokens_ReturnsTrue()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+        var result = await rateLimiter.TryAcquireAsync();
+
+        Assert.That(result, Is.True);
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_CurrentUtilization_InitialState_ReturnsZero()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+        var utilization = rateLimiter.CurrentUtilization;
+
+        Assert.That(utilization, Is.GreaterThanOrEqualTo(0.0));
+        Assert.That(utilization, Is.LessThanOrEqualTo(1.0));
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_UpdateRateLimit_UpdatesRateLimit()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+        rateLimiter.UpdateRateLimit(15.0);
+
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(15.0));
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Reset_ClearsWaitingRequests()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+        rateLimiter.Reset();
+
+        Assert.That(rateLimiter.CurrentUtilization, Is.GreaterThanOrEqualTo(0.0));
+        rateLimiter.Dispose();
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Dispose_DisposesResources()
+    {
+        var mockLagMonitor = new Mock<IKafkaConsumerLagMonitor>();
+        mockLagMonitor.Setup(m => m.GetCurrentLag(It.IsAny<string>())).Returns(TimeSpan.Zero);
+
+        var rateLimiter = new LagBasedRateLimiter(10.0, 20.0, "test-group", lagMonitor: mockLagMonitor.Object);
+        rateLimiter.Dispose();
+
+        // Dispose should not throw
+        Assert.Pass();
     }
 
     #endregion

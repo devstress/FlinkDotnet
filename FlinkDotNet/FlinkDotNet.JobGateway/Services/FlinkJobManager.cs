@@ -15,6 +15,11 @@ public class FlinkJobManager : IFlinkJobManager
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
+    
+    // Static delay fields for testability (can be set to 1ms in tests)
+    public static TimeSpan SqlGatewayRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan JarRegistrationPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan JobRecoveryPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
 
     public FlinkJobManager(ILogger<FlinkJobManager> logger, HttpClient httpClient)
     {
@@ -123,7 +128,6 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
     {
         var maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
-        var retryDelay = TimeSpan.FromSeconds(1);
 
         _logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
 
@@ -152,7 +156,7 @@ public class FlinkJobManager : IFlinkJobManager
                 _logger.LogWarning(ex, "SQL Gateway request timed out (attempt {Attempt}/{Max})", i + 1, maxRetries);
             }
 
-            await Task.Delay(retryDelay);
+            await Task.Delay(SqlGatewayRetryDelay);
         }
 
         throw new InvalidOperationException($"SQL Gateway at {client.BaseAddress} did not become ready after {maxRetries} seconds");
@@ -846,7 +850,6 @@ public class FlinkJobManager : IFlinkJobManager
     {
         var waitFor = timeout ?? TimeSpan.FromSeconds(30);
         var deadline = DateTime.UtcNow + waitFor;
-        var delay = TimeSpan.FromMilliseconds(500);
         List<string> lastKnownJars = new();
 
         while (DateTime.UtcNow < deadline)
@@ -855,7 +858,7 @@ public class FlinkJobManager : IFlinkJobManager
             if (jarId != null)
                 return jarId;
 
-            await Task.Delay(delay);
+            await Task.Delay(JarRegistrationPollingDelay);
         }
 
         return ThrowJarNotFoundError(fileName, waitFor, lastKnownJars);
@@ -1160,7 +1163,7 @@ public class FlinkJobManager : IFlinkJobManager
             if (jobId != null)
                 return jobId;
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            await Task.Delay(JobRecoveryPollingDelay);
         }
 
         return null;

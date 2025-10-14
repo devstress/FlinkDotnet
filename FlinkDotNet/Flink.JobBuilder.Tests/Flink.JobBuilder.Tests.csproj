@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Flink.JobBuilder\Flink.JobBuilder.csproj" />
     <ProjectReference Include="..\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
     <ProjectReference Include="..\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />

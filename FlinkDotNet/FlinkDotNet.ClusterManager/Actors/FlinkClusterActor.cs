@@ -51,7 +51,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
             .Or<HttpRequestException>()
             .WaitAndRetryAsync(
                 retryCount: 3,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                sleepDurationProvider: retryAttempt => TimeSpan.FromMilliseconds(_configuration.RetryBaseDelayMs * Math.Pow(2, retryAttempt)),
                 onRetry: (outcome, timespan, retryCount, context) =>
                 {
                     _logger.LogWarning("Retry {RetryCount} for cluster {ClusterId} after {Delay}ms",
@@ -229,7 +229,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
 
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(_configuration.RetryBaseDelayMs * 5), cancellationToken);
 
             _logger.LogInformation("Successfully scaled cluster {ClusterId} to parallelism {Parallelism}", ClusterId, parallelism);
             return true;

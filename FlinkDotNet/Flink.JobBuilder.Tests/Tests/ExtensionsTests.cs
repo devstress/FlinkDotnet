@@ -1,7 +1,6 @@
 using Flink.JobBuilder.Extensions;
 using Flink.JobBuilder.Models;
 using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
 
 namespace Flink.JobBuilder.Tests.Tests;
 

@@ -184,6 +184,11 @@ public record ClusterConfiguration
     public string Region { get; init; } = "default";
     public string Zone { get; init; } = "default";
     public bool HighAvailability { get; init; } = true;
+    
+    /// <summary>
+    /// Base retry delay in milliseconds for HTTP operations (default: 1000ms for production, can be set to 0 for tests)
+    /// </summary>
+    public int RetryBaseDelayMs { get; init; } = 1000;
 }
 
 /// <summary>

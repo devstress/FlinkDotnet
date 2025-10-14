@@ -59,13 +59,16 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// <param name="kafkaConfig">Kafka producer/consumer configuration</param>
     /// <param name="topicName">Topic name for rate limiter state (default: rate-limiter-state)</param>
     /// <param name="logger">Logger instance</param>
+    /// <param name="kafkaClientFactory">Factory for creating Kafka clients (optional, defaults to real Kafka clients)</param>
     public KafkaRateLimiterStateStorage(
         KafkaConfig kafkaConfig,
         string topicName = "rate-limiter-state",
-        ILogger<KafkaRateLimiterStateStorage>? logger = null)
+        ILogger<KafkaRateLimiterStateStorage>? logger = null,
+        IKafkaClientFactory? kafkaClientFactory = null)
     {
         _topicName = topicName;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<KafkaRateLimiterStateStorage>.Instance;
+        var factory = kafkaClientFactory ?? new DefaultKafkaClientFactory();
 
         // Configure producer for state persistence
         var producerConfig = new ProducerConfig
@@ -94,13 +97,9 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
 
         try
         {
-            _producer = new ProducerBuilder<string, string>(producerConfig)
-                .SetErrorHandler((_, e) => _logger.LogError("Kafka producer error: {Error}", e.Reason))
-                .Build();
+            _producer = factory.CreateProducer<string, string>(producerConfig);
 
-            _consumer = new ConsumerBuilder<string, string>(consumerConfig)
-                .SetErrorHandler((_, e) => _logger.LogError("Kafka consumer error: {Error}", e.Reason))
-                .Build();
+            _consumer = factory.CreateConsumer<string, string>(consumerConfig);
 
             // Subscribe to the rate limiter state topic
             _consumer.Subscribe(_topicName);

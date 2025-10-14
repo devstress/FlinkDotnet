@@ -1,5 +1,3 @@
-using NUnit.Framework;
-
 namespace FlinkDotNet.JobGateway.Tests.Tests;
 
 public class FlinkRunnerJarBuildTests

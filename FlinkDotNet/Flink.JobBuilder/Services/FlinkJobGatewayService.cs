@@ -20,7 +20,7 @@ namespace Flink.JobBuilder.Services
         private readonly HttpClient _httpClient;
         private readonly FlinkJobGatewayConfiguration _configuration;
         private readonly ILogger? _logger;
-        private static readonly Serilog.ILogger _serilogLogger = CreateLogger();
+        private static readonly Serilog.ILogger _log = CreateLogger();
 
         private static Serilog.ILogger CreateLogger()
         {
@@ -97,7 +97,7 @@ namespace Flink.JobBuilder.Services
         public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, CancellationToken cancellationToken = default)
         {
             _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway", jobDefinition.Metadata.JobId);
-            _serilogLogger.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}",
+            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}",
                 jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             var validation = ValidateJobDefinition(jobDefinition);
@@ -146,10 +146,10 @@ namespace Flink.JobBuilder.Services
 
         private static void LogBootstrapServersInJson(string json)
         {
-            _serilogLogger.Information("[FlinkJobGatewayService.SubmitJobAsync] After JSON serialization, checking bootstrap servers in JSON");
+            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] After JSON serialization, checking bootstrap servers in JSON");
             var bootstrapServersInJson = json.Contains("bootstrapServers", StringComparison.OrdinalIgnoreCase) ||
                                          json.Contains("\"bootstrap", StringComparison.OrdinalIgnoreCase);
-            _serilogLogger.Information("[FlinkJobGatewayService.SubmitJobAsync] JSON contains bootstrap servers reference: {HasBootstrapServers}", bootstrapServersInJson);
+            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] JSON contains bootstrap servers reference: {HasBootstrapServers}", bootstrapServersInJson);
 
             ExtractBootstrapServersFromJson(json);
         }
@@ -162,13 +162,13 @@ namespace Flink.JobBuilder.Services
                 if (jsonDoc.RootElement.TryGetProperty("source", out var sourceElement) &&
                     sourceElement.TryGetProperty("bootstrapServers", out var bootstrapElement))
                 {
-                    _serilogLogger.Information("[FlinkJobGatewayService.SubmitJobAsync] Bootstrap servers in JSON: {BootstrapServers}",
+                    _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Bootstrap servers in JSON: {BootstrapServers}",
                         bootstrapElement.GetString());
                 }
             }
             catch (Exception ex)
             {
-                _serilogLogger.Warning(ex, "[FlinkJobGatewayService.SubmitJobAsync] Failed to parse bootstrap servers from JSON");
+                _log.Warning(ex, "[FlinkJobGatewayService.SubmitJobAsync] Failed to parse bootstrap servers from JSON");
             }
         }
 
@@ -437,10 +437,9 @@ namespace Flink.JobBuilder.Services
         {
             if (retryCount < _configuration.MaxRetries)
             {
-                _logger?.LogWarning("Flink cluster not ready, retrying ({RetryCount}/{MaxRetries}) after {Delay}ms",
-                    retryCount + 1, _configuration.MaxRetries, _configuration.RetryDelay * (retryCount + 1));
-                _serilogLogger.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] Flink cluster not ready, retry {RetryCount}/{MaxRetries}",
-                    retryCount + 1, _configuration.MaxRetries);
+                var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{_configuration.MaxRetries}) after {_configuration.RetryDelay * (retryCount + 1)}ms";
+                _logger?.LogWarning(message);
+                _log.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] {Message}", message);
             }
         }
 

@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj" />
   </ItemGroup>
 
