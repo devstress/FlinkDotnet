@@ -2449,4 +2449,362 @@ public class AdvancedDataStreamTests
     }
 
     #endregion
+
+    #region DataStream Coverage Enhancement Tests - Chunk E
+
+    [Test]
+    public void DataStream_Map_WithJobDefinitionBacking_ReturnsNewDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        var mapped = stream.Map(x => x.ToUpper());
+
+        Assert.That(mapped, Is.Not.Null);
+        Assert.That(mapped, Is.TypeOf<DataStream<string>>());
+    }
+
+    [Test]
+    public void DataStream_Filter_WithJobDefinitionBacking_ReturnsSameDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        var filtered = stream.Filter(x => x.Length > 5);
+
+        Assert.That(filtered, Is.Not.Null);
+        Assert.That(filtered, Is.TypeOf<DataStream<string>>());
+    }
+
+    [Test]
+    public void DataStream_FlatMap_WithJobDefinitionBacking_ReturnsNewDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        var flatMapped = stream.FlatMap<string>(x => x.Split(','));
+
+        Assert.That(flatMapped, Is.Not.Null);
+        Assert.That(flatMapped, Is.TypeOf<DataStream<string>>());
+    }
+
+    [Test]
+    public void DataStream_Where_WithFilterExpression_AddsFilterOperation()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        var filtered = stream.Where("value.length > 5");
+
+        Assert.That(filtered, Is.Not.Null);
+        Assert.That(filtered, Is.SameAs(stream));
+    }
+
+    [Test]
+    public void DataStream_SinkToKafka_WithBootstrapServers_SetsSink()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        var result = stream.SinkToKafka("output-topic", "localhost:9092");
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+
+    [Test]
+    public void DataStream_SinkToKafka_WithNullBootstrapServers_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", null));
+    }
+
+    [Test]
+    public void DataStream_SinkToKafka_WithEmptyBootstrapServers_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromKafka("input-topic", "localhost:9092", "test-group");
+
+        Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", ""));
+    }
+
+    #endregion
+
+    #region KeyedStream Coverage Tests - Chunk E
+
+    [Test]
+    public void KeyedStream_Reduce_WithFunction_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+        var keyed = stream.KeyBy(x => x % 2);
+
+        var reduced = keyed.Reduce((a, b) => a + b);
+
+        Assert.That(reduced, Is.Not.Null);
+        Assert.That(reduced, Is.TypeOf<DataStream<int>>());
+    }
+
+    [Test]
+    public void KeyedStream_Reduce_WithReduceFunction_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+        var keyed = stream.KeyBy(x => x % 2);
+        var reduceFunc = new TestReduceFunction();
+
+        var reduced = keyed.Reduce(reduceFunc);
+
+        Assert.That(reduced, Is.Not.Null);
+        Assert.That(reduced, Is.TypeOf<DataStream<int>>());
+    }
+
+    [Test]
+    public void KeyedStream_Aggregate_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+        var keyed = stream.KeyBy(x => x % 2);
+
+        var aggregated = keyed.Aggregate("sum", "value");
+
+        Assert.That(aggregated, Is.Not.Null);
+        Assert.That(aggregated, Is.TypeOf<DataStream<int>>());
+    }
+
+    private class TestReduceFunction : IReduceFunction<int>
+    {
+        public int Reduce(int value1, int value2)
+        {
+            return value1 + value2;
+        }
+    }
+
+    #endregion
+
+    #region OperationCapture Coverage Tests - Chunk E
+
+    [Test]
+    public void OperationCapture_CaptureFilterOperation_DoesNotThrow()
+    {
+        var capture = new OperationCapture();
+
+        Assert.DoesNotThrow(() => capture.CaptureFilterOperation((string x) => x.Length > 5));
+    }
+
+    [Test]
+    public void OperationCapture_CaptureFilterOperation_WithNullFunction_DoesNotThrow()
+    {
+        var capture = new OperationCapture();
+
+        Assert.DoesNotThrow(() => capture.CaptureFilterOperation(null));
+    }
+
+    [Test]
+    public void OperationCapture_CaptureFlatMapOperation_DoesNotThrow()
+    {
+        var capture = new OperationCapture();
+
+        Assert.DoesNotThrow(() => capture.CaptureFlatMapOperation((string x) => x.Split(',')));
+    }
+
+    [Test]
+    public void OperationCapture_CaptureFlatMapOperation_WithNullFunction_DoesNotThrow()
+    {
+        var capture = new OperationCapture();
+
+        Assert.DoesNotThrow(() => capture.CaptureFlatMapOperation(null));
+    }
+
+    [Test]
+    public void OperationCapture_CaptureTimestampAssigner_DoesNotThrow()
+    {
+        var capture = new OperationCapture();
+        var assigner = new TestTimestampAssigner();
+
+        Assert.DoesNotThrow(() => capture.CaptureTimestampAssigner(assigner));
+    }
+
+    [Test]
+    public void OperationCapture_ToJobDefinition_WithoutKafkaSource_ThrowsInvalidOperationException()
+    {
+        var capture = new OperationCapture();
+
+        Assert.Throws<InvalidOperationException>(() => 
+            capture.ToJobDefinition("test-job-id", "test-job-name"));
+    }
+
+    private class TestTimestampAssigner : IAssignerWithPunctuatedWatermarks<string>
+    {
+        public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp)
+        {
+            return null;
+        }
+
+        public long ExtractTimestamp(string element, long previousElementTimestamp)
+        {
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+    }
+
+    #endregion
+
+    #region StreamExecutionEnvironment Coverage Tests - Chunk F
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithValidValue_SetsMaxParallelism()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.SetMaxParallelism(1000);
+
+        Assert.That(env.GetMaxParallelism(), Is.EqualTo(1000));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithZero_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithNegative_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithTooLarge_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetBufferTimeout_SetsValue()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.SetBufferTimeout(500);
+
+        Assert.That(env.GetBufferTimeout(), Is.EqualTo(500));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_DisableOperatorChaining_DisablesChaining()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.DisableOperatorChaining();
+
+        Assert.That(env.IsChainingEnabled(), Is.False);
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_IsChainingEnabled_DefaultIsTrue()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.That(env.IsChainingEnabled(), Is.True);
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_EnableCheckpointing_SetsInterval()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.EnableCheckpointing(5000);
+
+        Assert.That(env.GetCheckpointInterval(), Is.EqualTo(5000));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_GetCheckpointInterval_DefaultIsNegativeOne()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.That(env.GetCheckpointInterval(), Is.EqualTo(-1));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_EnableAdaptiveScheduler_EnablesScheduler()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.EnableAdaptiveScheduler(true);
+
+        Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_EnableAdaptiveScheduler_WithFalse_DisablesScheduler()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        env.EnableAdaptiveScheduler(true);
+
+        env.EnableAdaptiveScheduler(false);
+
+        Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.False);
+    }
+
+    #endregion
+
+    #region Source Function Wrapper Tests - Chunk F
+
+    [Test]
+    public void MappedSourceFunction_Constructor_WithNullSource_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => 
+            new MappedSourceFunction<int, int>(null!, s => s * 2));
+    }
+
+    [Test]
+    public void MappedSourceFunction_Constructor_WithNullMapFunction_ThrowsArgumentNullException()
+    {
+        var source = new TestSourceFunction();
+
+        Assert.Throws<ArgumentNullException>(() => 
+            new MappedSourceFunction<int, int>(source, null!));
+    }
+
+    [Test]
+    public void FlatMappedSourceFunction_Constructor_WithNullSource_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => 
+            new FlatMappedSourceFunction<int, int>(null!, s => new[] { s, s * 2 }));
+    }
+
+    [Test]
+    public void FlatMappedSourceFunction_Constructor_WithNullFlatMapFunction_ThrowsArgumentNullException()
+    {
+        var source = new TestSourceFunction();
+
+        Assert.Throws<ArgumentNullException>(() => 
+            new FlatMappedSourceFunction<int, int>(source, null!));
+    }
+
+    [Test]
+    public void FilteredSourceFunction_Constructor_WithNullSource_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => 
+            new FilteredSourceFunction<int>(null!, s => s > 0));
+    }
+
+    [Test]
+    public void FilteredSourceFunction_Constructor_WithNullFilterFunction_ThrowsArgumentNullException()
+    {
+        var source = new TestSourceFunction();
+
+        Assert.Throws<ArgumentNullException>(() => 
+            new FilteredSourceFunction<int>(source, null!));
+    }
+
+    #endregion
 }
