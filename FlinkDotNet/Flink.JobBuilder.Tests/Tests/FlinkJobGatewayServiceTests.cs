@@ -204,7 +204,7 @@ public class FlinkJobGatewayServiceTests
         var errorResponse = "Gateway error occurred";
         var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.InternalServerError, errorResponse);
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        
+
         _configuration!.MaxRetries = 0; // Disable retries for faster test
         using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
 
@@ -279,7 +279,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "Job not found");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        
+
         _configuration!.MaxRetries = 0;
         using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
 
@@ -341,7 +341,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.InternalServerError, "Server error");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        
+
         _configuration!.MaxRetries = 0;
         using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
 
@@ -391,7 +391,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "Job not found");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        
+
         _configuration!.MaxRetries = 0;
         using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
 

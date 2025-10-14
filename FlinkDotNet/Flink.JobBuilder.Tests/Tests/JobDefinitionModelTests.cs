@@ -12,7 +12,7 @@ public class JobDefinitionModelTests
     public void JobDefinition_DefaultConstructor_InitializesProperties()
     {
         var jobDef = new JobDefinition();
-        
+
         Assert.That(jobDef.Source, Is.Null);
         Assert.That(jobDef.Operations, Is.Not.Null);
         Assert.That(jobDef.Operations, Is.Empty);
@@ -30,7 +30,7 @@ public class JobDefinitionModelTests
         };
         var sink = new KafkaSinkDefinition { Topic = "output-topic" };
         var metadata = new JobMetadata { JobId = "test-job" };
-        
+
         var jobDef = new JobDefinition
         {
             Source = source,
@@ -38,7 +38,7 @@ public class JobDefinitionModelTests
             Sink = sink,
             Metadata = metadata
         };
-        
+
         Assert.That(jobDef.Source, Is.EqualTo(source));
         Assert.That(jobDef.Operations, Is.EqualTo(operations));
         Assert.That(jobDef.Sink, Is.EqualTo(sink));
@@ -58,7 +58,7 @@ public class JobDefinitionModelTests
                 new AggregateOperationDefinition { AggregationType = "SUM", Field = "value" }
             }
         };
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(3));
         Assert.That(jobDef.Operations[0], Is.InstanceOf<FilterOperationDefinition>());
         Assert.That(jobDef.Operations[1], Is.InstanceOf<MapOperationDefinition>());
@@ -73,7 +73,7 @@ public class JobDefinitionModelTests
             Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT * FROM table" } },
             Sink = null
         };
-        
+
         Assert.That(jobDef.Sink, Is.Null);
         Assert.That(jobDef.Source, Is.InstanceOf<SqlSourceDefinition>());
     }
@@ -86,7 +86,7 @@ public class JobDefinitionModelTests
     public void JobMetadata_DefaultConstructor_InitializesEmptyStrings()
     {
         var metadata = new JobMetadata();
-        
+
         Assert.That(metadata.JobId, Is.EqualTo(string.Empty));
         Assert.That(metadata.Version, Is.EqualTo(string.Empty));
         Assert.That(metadata.CreatedAt, Is.EqualTo(default(DateTime)));
@@ -101,7 +101,7 @@ public class JobDefinitionModelTests
             { "env", "prod" },
             { "team", "data-team" }
         };
-        
+
         var metadata = new JobMetadata
         {
             JobId = "job-123",
@@ -111,7 +111,7 @@ public class JobDefinitionModelTests
             Parallelism = 8,
             Properties = properties
         };
-        
+
         Assert.That(metadata.JobId, Is.EqualTo("job-123"));
         Assert.That(metadata.JobName, Is.EqualTo("Test Job"));
         Assert.That(metadata.CreatedAt, Is.EqualTo(createdAt));
@@ -125,7 +125,7 @@ public class JobDefinitionModelTests
     public void JobMetadata_Properties_EmptyByDefault()
     {
         var metadata = new JobMetadata();
-        
+
         Assert.That(metadata.Properties, Is.Not.Null);
         Assert.That(metadata.Properties, Is.Empty);
     }
@@ -146,7 +146,7 @@ public class JobDefinitionModelTests
             StartingOffsets = "latest",
             Properties = props
         };
-        
+
         Assert.That(source.Type, Is.EqualTo("kafka"));
         Assert.That(source.Topic, Is.EqualTo("test-topic"));
         Assert.That(source.BootstrapServers, Is.EqualTo("localhost:9092"));
@@ -159,7 +159,7 @@ public class JobDefinitionModelTests
     public void FileSourceDefinition_DefaultConstructor_SetsDefaults()
     {
         var source = new FileSourceDefinition();
-        
+
         Assert.That(source.Type, Is.EqualTo("file"));
         Assert.That(source.Path, Is.EqualTo(string.Empty));
         Assert.That(source.Format, Is.EqualTo("text"));
@@ -172,7 +172,7 @@ public class JobDefinitionModelTests
     {
         var headers = new Dictionary<string, string> { { "Authorization", "Bearer token" } };
         var props = new Dictionary<string, string> { { "timeout", "30" } };
-        
+
         var source = new HttpSourceDefinition
         {
             Url = "https://api.example.com/data",
@@ -183,7 +183,7 @@ public class JobDefinitionModelTests
             AuthTokenStateKey = "auth_state",
             Properties = props
         };
-        
+
         Assert.That(source.Url, Is.EqualTo("https://api.example.com/data"));
         Assert.That(source.Method, Is.EqualTo("POST"));
         Assert.That(source.Headers, Has.Count.EqualTo(1));
@@ -197,7 +197,7 @@ public class JobDefinitionModelTests
     public void DatabaseSourceDefinition_AllProperties_Functional()
     {
         var props = new Dictionary<string, string> { { "batch_size", "1000" } };
-        
+
         var source = new DatabaseSourceDefinition
         {
             ConnectionString = "Server=localhost;Database=testdb;",
@@ -206,7 +206,7 @@ public class JobDefinitionModelTests
             PollingIntervalSeconds = 60,
             Properties = props
         };
-        
+
         Assert.That(source.ConnectionString, Contains.Substring("testdb"));
         Assert.That(source.Query, Contains.Substring("active = 1"));
         Assert.That(source.DatabaseType, Is.EqualTo("mysql"));
@@ -217,7 +217,7 @@ public class JobDefinitionModelTests
     public void SqlSourceDefinition_EmptyStatements_InitializedCorrectly()
     {
         var source = new SqlSourceDefinition();
-        
+
         Assert.That(source.Statements, Is.Not.Null);
         Assert.That(source.Statements, Is.Empty);
         Assert.That(source.Mode, Is.EqualTo("streaming"));
@@ -232,14 +232,14 @@ public class JobDefinitionModelTests
             "CREATE TABLE source_table (id INT, name STRING)",
             "INSERT INTO sink_table SELECT * FROM source_table"
         };
-        
+
         var source = new SqlSourceDefinition
         {
             Statements = statements,
             Mode = "batch",
             ExecutionMode = "gateway"
         };
-        
+
         Assert.That(source.Statements, Has.Count.EqualTo(2));
         Assert.That(source.Mode, Is.EqualTo("batch"));
         Assert.That(source.ExecutionMode, Is.EqualTo("gateway"));
@@ -259,7 +259,7 @@ public class JobDefinitionModelTests
             WindowSeconds = 86400,
             WindowCount = 100
         };
-        
+
         Assert.That(op.WindowSeconds, Is.EqualTo(86400));
         Assert.That(op.WindowCount, Is.EqualTo(100));
     }
@@ -273,13 +273,13 @@ public class JobDefinitionModelTests
             Field = "score",
             Alias = "average_score"
         };
-        
+
         var opWithoutAlias = new AggregateOperationDefinition
         {
             AggregationType = "MAX",
             Field = "value"
         };
-        
+
         Assert.That(opWithAlias.Alias, Is.EqualTo("average_score"));
         Assert.That(opWithoutAlias.Alias, Is.Null);
     }
@@ -293,7 +293,7 @@ public class JobDefinitionModelTests
             Size = 300,
             TimeUnit = "SECONDS"
         };
-        
+
         var op = new JoinOperationDefinition
         {
             JoinType = "LEFT",
@@ -302,7 +302,7 @@ public class JobDefinitionModelTests
             RightKey = "id",
             Window = window
         };
-        
+
         Assert.That(op.Window, Is.Not.Null);
         Assert.That(op.Window!.WindowType, Is.EqualTo("TUMBLING"));
         Assert.That(op.Window.Size, Is.EqualTo(300));
@@ -317,12 +317,12 @@ public class JobDefinitionModelTests
             StateKey = "cache",
             CacheTtlMs = 300000
         };
-        
+
         var opWithoutCache = new AsyncFunctionOperationDefinition
         {
             FunctionType = "database"
         };
-        
+
         Assert.That(opWithCache.CacheTtlMs, Is.EqualTo(300000));
         Assert.That(opWithoutCache.CacheTtlMs, Is.Null);
     }
@@ -336,7 +336,7 @@ public class JobDefinitionModelTests
             { "retries", 3 },
             { "enabled", true }
         };
-        
+
         var op = new ProcessFunctionOperationDefinition
         {
             ProcessType = "complex",
@@ -344,7 +344,7 @@ public class JobDefinitionModelTests
             StateKeys = new List<string> { "state1", "state2" },
             TimerNames = new List<string> { "timer1" }
         };
-        
+
         Assert.That(op.Parameters, Has.Count.EqualTo(3));
         Assert.That(op.Parameters["timeout"], Is.EqualTo(5000));
         Assert.That(op.StateKeys, Has.Count.EqualTo(2));
@@ -358,7 +358,7 @@ public class JobDefinitionModelTests
         var listState = new StateOperationDefinition { StateType = "list" };
         var mapState = new StateOperationDefinition { StateType = "map" };
         var reducingState = new StateOperationDefinition { StateType = "reducing" };
-        
+
         Assert.That(valueState.StateType, Is.EqualTo("value"));
         Assert.That(listState.StateType, Is.EqualTo("list"));
         Assert.That(mapState.StateType, Is.EqualTo("map"));
@@ -375,7 +375,7 @@ public class JobDefinitionModelTests
             TtlMs = 3600000,
             DefaultValue = "{}"
         };
-        
+
         Assert.That(op.TtlMs, Is.EqualTo(3600000));
         Assert.That(op.DefaultValue, Is.EqualTo("{}"));
     }
@@ -388,13 +388,13 @@ public class JobDefinitionModelTests
             TimerType = "processing",
             DelayMs = 60000
         };
-        
+
         var eventTimer = new TimerOperationDefinition
         {
             TimerType = "event",
             DelayMs = 120000
         };
-        
+
         Assert.That(processingTimer.TimerType, Is.EqualTo("processing"));
         Assert.That(eventTimer.TimerType, Is.EqualTo("event"));
     }
@@ -403,7 +403,7 @@ public class JobDefinitionModelTests
     public void RetryOperationDefinition_CustomDelays_StoresCorrectly()
     {
         var customDelays = new List<long> { 1000, 5000, 15000, 60000 };
-        
+
         var op = new RetryOperationDefinition
         {
             MaxRetries = 4,
@@ -411,7 +411,7 @@ public class JobDefinitionModelTests
             RetryCondition = "statusCode >= 500",
             DeadLetterTopic = "dlq"
         };
-        
+
         Assert.That(op.DelayMs, Has.Count.EqualTo(4));
         Assert.That(op.DelayMs[0], Is.EqualTo(1000));
         Assert.That(op.DelayMs[3], Is.EqualTo(60000));
@@ -426,7 +426,7 @@ public class JobDefinitionModelTests
             Condition = "errorCode != null",
             SideOutputSink = new KafkaSinkDefinition { Topic = "errors" }
         };
-        
+
         Assert.That(op.OutputTag, Is.EqualTo("errors"));
         Assert.That(op.Condition, Is.EqualTo("errorCode != null"));
         Assert.That(op.SideOutputSink, Is.InstanceOf<KafkaSinkDefinition>());
@@ -445,7 +445,7 @@ public class JobDefinitionModelTests
             { "db", 0 },
             { "async", true }
         };
-        
+
         var sink = new RedisSinkDefinition
         {
             ConnectionString = "redis://localhost:6379",
@@ -453,7 +453,7 @@ public class JobDefinitionModelTests
             OperationType = "increment",
             Configuration = config
         };
-        
+
         Assert.That(sink.Configuration, Has.Count.EqualTo(3));
         Assert.That(sink.Configuration["ttl"], Is.EqualTo(3600));
         Assert.That(sink.Configuration["async"], Is.EqualTo(true));
@@ -464,7 +464,7 @@ public class JobDefinitionModelTests
     {
         var headers = new Dictionary<string, string> { { "Content-Type", "application/json" } };
         var props = new Dictionary<string, string> { { "retry", "3" } };
-        
+
         var sink = new HttpSinkDefinition
         {
             Url = "https://webhook.example.com/data",
@@ -475,7 +475,7 @@ public class JobDefinitionModelTests
             TimeoutMs = 10000,
             Properties = props
         };
-        
+
         Assert.That(sink.Url, Contains.Substring("webhook"));
         Assert.That(sink.Method, Is.EqualTo("PUT"));
         Assert.That(sink.TimeoutMs, Is.EqualTo(10000));
@@ -496,7 +496,7 @@ public class JobDefinitionModelTests
             Slide = 30,
             TimeUnit = "MINUTES"
         };
-        
+
         Assert.That(op.WindowType, Is.EqualTo("SLIDING"));
         Assert.That(op.Size, Is.EqualTo(60));
         Assert.That(op.Slide, Is.EqualTo(30));
@@ -512,7 +512,7 @@ public class JobDefinitionModelTests
             TimeUnit = "SECONDS",
             TimeField = "eventTimestamp"
         };
-        
+
         Assert.That(op.TimeField, Is.EqualTo("eventTimestamp"));
     }
 
@@ -522,7 +522,7 @@ public class JobDefinitionModelTests
         var seconds = new WindowOperationDefinition { TimeUnit = "SECONDS" };
         var minutes = new WindowOperationDefinition { TimeUnit = "MINUTES" };
         var hours = new WindowOperationDefinition { TimeUnit = "HOURS" };
-        
+
         Assert.That(seconds.TimeUnit, Is.EqualTo("SECONDS"));
         Assert.That(minutes.TimeUnit, Is.EqualTo("MINUTES"));
         Assert.That(hours.TimeUnit, Is.EqualTo("HOURS"));

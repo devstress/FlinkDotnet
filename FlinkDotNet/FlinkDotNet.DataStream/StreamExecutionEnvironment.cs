@@ -16,12 +16,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
-using FlinkDotNet.Common;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
+using FlinkDotNet.Common;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -38,13 +38,13 @@ namespace FlinkDotNet.DataStream
         private readonly ExecutionConfig _executionConfig;
         private readonly ILogger? _logger;
         private static readonly Serilog.ILogger _serilogLogger = CreateLogger();
-        
+
         private static Serilog.ILogger CreateLogger()
         {
             var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
             var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
             var logFile = System.IO.Path.Combine(logFilePath, $"FlinkDotnet.log.{today}");
-            
+
             // Clean up old log files (older than 1 day)
             try
             {
@@ -65,7 +65,7 @@ namespace FlinkDotNet.DataStream
             {
                 // Ignore cleanup errors
             }
-            
+
             return new LoggerConfiguration()
                 .WriteTo.File(
                     path: logFile,
@@ -78,7 +78,7 @@ namespace FlinkDotNet.DataStream
                 .MinimumLevel.Debug()
                 .CreateLogger();
         }
-        
+
         private int _bufferTimeoutMillis = 100;
         private bool _operatorChainingEnabled = true;
         private long _checkpointInterval = -1;
@@ -122,7 +122,7 @@ namespace FlinkDotNet.DataStream
         {
             _serilogLogger.Information("[FromKafka] Called with topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
                 topic, bootstrapServers, groupId, startingOffsets);
-            
+
             if (string.IsNullOrWhiteSpace(bootstrapServers))
             {
                 _serilogLogger.Error("[FromKafka] Bootstrap servers is null or whitespace!");
@@ -130,12 +130,12 @@ namespace FlinkDotNet.DataStream
                     "Kafka bootstrap servers must be provided via bootstrapServers parameter.",
                     nameof(bootstrapServers));
             }
-            
+
             // Initialize operation capture for native API usage
             _operationCapture = new OperationCapture();
             _serilogLogger.Debug("[FromKafka] Calling OperationCapture.CaptureKafkaSource with bootstrapServers={BootstrapServers}", bootstrapServers);
             _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
-            
+
             _serilogLogger.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
             var jd = new JobDefinition
             {
@@ -156,12 +156,12 @@ namespace FlinkDotNet.DataStream
             };
             _serilogLogger.Information("[FromKafka] JobDefinition created with Source.BootstrapServers={BootstrapServers}", (jd.Source as KafkaSourceDefinition)?.BootstrapServers);
             SetActiveJob(jd);
-            
+
             var dataStream = new DataStream<string>(jd, this);
-            
+
             // Attach operation capture to enable native API (Map with IMapFunction)
             dataStream.AttachOperationCapture(_operationCapture);
-            
+
             _serilogLogger.Information("[FromKafka] Returning DataStream with bootstrap servers={BootstrapServers}", bootstrapServers);
             return dataStream;
         }
@@ -192,10 +192,10 @@ namespace FlinkDotNet.DataStream
             // Create a source function that uses the deserializer
             var sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
             var dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
-            
+
             // Attach operation capture to the stream
             dataStream.AttachOperationCapture(_operationCapture);
-            
+
             return dataStream;
         }
 
@@ -221,7 +221,7 @@ namespace FlinkDotNet.DataStream
         {
             if (maxParallelism <= 0 || maxParallelism > 32768)
                 throw new ArgumentException("Max parallelism must be between 1 and 32768");
-            
+
             _executionConfig.SetMaxParallelism(maxParallelism);
             return this;
         }
@@ -436,7 +436,7 @@ namespace FlinkDotNet.DataStream
 
             _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
             var gateway = new FlinkJobGatewayService();
-            
+
             JobSubmissionResult submit;
             try
             {
@@ -491,10 +491,22 @@ namespace FlinkDotNet.DataStream
     {
         public string JobId { get; set; } = string.Empty;
         public string JobName { get; set; } = string.Empty;
-        public bool Success { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
-        public string? Error { get; set; }
+        public bool Success
+        {
+            get; set;
+        }
+        public DateTime StartTime
+        {
+            get; set;
+        }
+        public DateTime EndTime
+        {
+            get; set;
+        }
+        public string? Error
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -530,7 +542,10 @@ namespace FlinkDotNet.DataStream
         private readonly HttpClient _flinkHttp;
         private bool _disposed;
         public string JobId { get; set; } = string.Empty;
-        public string JobName { get; set; }
+        public string JobName
+        {
+            get; set;
+        }
 
         public JobClient(string jobName)
         {
@@ -579,15 +594,23 @@ namespace FlinkDotNet.DataStream
 
         public async Task<SavepointResult> TriggerSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
         {
-            var payload = new { targetDirectory = savepointPath, cancelJob = false };
+            var payload = new
+            {
+                targetDirectory = savepointPath,
+                cancelJob = false
+            };
             var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             string triggerId = string.Empty;
-            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } 
-            catch 
-            { 
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(text);
+                triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty;
+            }
+            catch
+            {
                 // JSON parsing may fail if response is not valid JSON - use empty triggerId
             }
             return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
@@ -595,15 +618,23 @@ namespace FlinkDotNet.DataStream
 
         public async Task<SavepointResult> CancelWithSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
         {
-            var payload = new { targetDirectory = savepointPath, cancelJob = true };
+            var payload = new
+            {
+                targetDirectory = savepointPath,
+                cancelJob = true
+            };
             var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             string triggerId = string.Empty;
-            try { using var doc = System.Text.Json.JsonDocument.Parse(text); triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty; } 
-            catch 
-            { 
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(text);
+                triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty;
+            }
+            catch
+            {
                 // JSON parsing may fail if response is not valid JSON - use empty triggerId
             }
             return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
@@ -627,7 +658,11 @@ namespace FlinkDotNet.DataStream
 
         public async Task<StopWithSavepointResult> StopWithSavepointAsync(string? savepointPath = null, bool drain = true, CancellationToken cancellationToken = default)
         {
-            var payload = new { targetDirectory = savepointPath, drain = drain };
+            var payload = new
+            {
+                targetDirectory = savepointPath,
+                drain = drain
+            };
             var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/stop",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             var ok = resp.IsSuccessStatusCode;
@@ -671,9 +706,15 @@ namespace FlinkDotNet.DataStream
     public class SavepointResult
     {
         public string SavepointPath { get; set; } = string.Empty;
-        public bool Success { get; set; }
+        public bool Success
+        {
+            get; set;
+        }
         public string TriggerId { get; set; } = string.Empty;
-        public string? Error { get; set; }
+        public string? Error
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -682,10 +723,19 @@ namespace FlinkDotNet.DataStream
     public class StopWithSavepointResult
     {
         public string SavepointPath { get; set; } = string.Empty;
-        public bool Success { get; set; }
+        public bool Success
+        {
+            get; set;
+        }
         public string TriggerId { get; set; } = string.Empty;
-        public bool Drained { get; set; }
-        public string? Error { get; set; }
+        public bool Drained
+        {
+            get; set;
+        }
+        public string? Error
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -696,10 +746,25 @@ namespace FlinkDotNet.DataStream
         public string JobId { get; set; } = string.Empty;
         public string JobName { get; set; } = string.Empty;
         public string State { get; set; } = string.Empty;
-        public int Parallelism { get; set; }
-        public int MaxParallelism { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime? EndTime { get; set; }
-        public string? Error { get; set; }
+        public int Parallelism
+        {
+            get; set;
+        }
+        public int MaxParallelism
+        {
+            get; set;
+        }
+        public DateTime StartTime
+        {
+            get; set;
+        }
+        public DateTime? EndTime
+        {
+            get; set;
+        }
+        public string? Error
+        {
+            get; set;
+        }
     }
 }

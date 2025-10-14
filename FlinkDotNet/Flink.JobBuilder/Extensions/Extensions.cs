@@ -224,7 +224,10 @@ namespace Flink.JobBuilder.Extensions
     /// </summary>
     public class JobValidationResult
     {
-        public bool IsValid { get; set; }
+        public bool IsValid
+        {
+            get; set;
+        }
         public List<string> Errors { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
     }

@@ -1,11 +1,11 @@
-using NUnit.Framework;
-using Moq;
-using Moq.Protected;
-using Microsoft.Extensions.Logging;
-using FlinkDotNet.JobGateway.Services;
-using Flink.JobBuilder.Models;
 using System.Net;
 using System.Text.Json;
+using Flink.JobBuilder.Models;
+using FlinkDotNet.JobGateway.Services;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Moq.Protected;
+using NUnit.Framework;
 
 namespace FlinkDotNet.JobGateway.Tests
 {
@@ -222,7 +222,10 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-flink-job-123";
-            var statusResponse = new { state = "RUNNING" };
+            var statusResponse = new
+            {
+                state = "RUNNING"
+            };
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
 
             var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
@@ -270,7 +273,10 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "finished-job-123";
-            var statusResponse = new { state = "FINISHED" };
+            var statusResponse = new
+            {
+                state = "FINISHED"
+            };
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
 
             var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
@@ -288,7 +294,10 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "failed-job-123";
-            var statusResponse = new { state = "FAILED" };
+            var statusResponse = new
+            {
+                state = "FAILED"
+            };
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
 
             var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
@@ -306,7 +315,10 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "canceled-job-123";
-            var statusResponse = new { state = "CANCELED" };
+            var statusResponse = new
+            {
+                state = "CANCELED"
+            };
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
 
             var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
@@ -332,7 +344,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-123";
-            
+
             // Mock vertices endpoint to throw exception
             _mockHttpMessageHandler
                 .Protected()

@@ -11,7 +11,10 @@ public interface IFlinkClusterActor
     /// <summary>
     /// Gets the unique identifier for this cluster actor.
     /// </summary>
-    string ClusterId { get; }
+    string ClusterId
+    {
+        get;
+    }
 
     /// <summary>
     /// Gets the current status and health information of the cluster.

@@ -28,12 +28,12 @@ namespace FlinkDotNet.DataStream
         /// Processing time - the time when operators process elements
         /// </summary>
         ProcessingTime,
-        
+
         /// <summary>
         /// Event time - timestamps embedded in the events themselves
         /// </summary>
         EventTime,
-        
+
         /// <summary>
         /// Ingestion time - time when elements enter the Flink system
         /// </summary>

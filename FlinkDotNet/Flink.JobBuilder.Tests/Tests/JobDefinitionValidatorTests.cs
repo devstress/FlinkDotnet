@@ -13,7 +13,7 @@ public class JobDefinitionValidatorTests
     public void IrValidationResult_IsValid_ReturnsTrueWhenNoErrors()
     {
         var result = new IrValidationResult();
-        
+
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Errors, Is.Empty);
     }
@@ -23,7 +23,7 @@ public class JobDefinitionValidatorTests
     {
         var result = new IrValidationResult();
         result.Errors.Add("Error message");
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Has.Count.EqualTo(1));
     }
@@ -41,9 +41,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("metadata is required"));
     }
@@ -57,9 +57,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("metadata.jobId is required"));
     }
@@ -73,9 +73,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("metadata.version is required"));
     }
@@ -89,9 +89,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("metadata.parallelism must be >= 1 when provided"));
     }
@@ -105,9 +105,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("metadata.parallelism must be >= 1 when provided"));
     }
@@ -125,9 +125,9 @@ public class JobDefinitionValidatorTests
             Source = null!,
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source is required"));
     }
@@ -141,9 +141,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = null
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("sink is required"));
     }
@@ -157,9 +157,9 @@ public class JobDefinitionValidatorTests
             Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT * FROM table" } },
             Sink = null
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -176,9 +176,9 @@ public class JobDefinitionValidatorTests
             Source = new SqlSourceDefinition { Statements = new List<string>() },
             Sink = null
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.sql.statements must contain at least one statement"));
     }
@@ -192,9 +192,9 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.kafka.topic is required"));
     }
@@ -208,9 +208,9 @@ public class JobDefinitionValidatorTests
             Source = new FileSourceDefinition { Path = "", Format = "json" },
             Sink = new FileSinkDefinition { Path = "/output", Format = "json" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.file.path is required"));
     }
@@ -224,9 +224,9 @@ public class JobDefinitionValidatorTests
             Source = new FileSourceDefinition { Path = "/data", Format = "" },
             Sink = new FileSinkDefinition { Path = "/output", Format = "json" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.file.format is required"));
     }
@@ -240,9 +240,9 @@ public class JobDefinitionValidatorTests
             Source = new HttpSourceDefinition { Url = "" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.http.url is required"));
     }
@@ -256,9 +256,9 @@ public class JobDefinitionValidatorTests
             Source = new HttpSourceDefinition { Url = "http://api.example.com", IntervalSeconds = 0 },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.http.intervalSeconds must be > 0"));
     }
@@ -272,9 +272,9 @@ public class JobDefinitionValidatorTests
             Source = new DatabaseSourceDefinition { ConnectionString = "", Query = "SELECT *" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.database.connectionString is required"));
     }
@@ -288,9 +288,9 @@ public class JobDefinitionValidatorTests
             Source = new DatabaseSourceDefinition { ConnectionString = "Server=localhost", Query = "" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.database.query is required"));
     }
@@ -301,17 +301,17 @@ public class JobDefinitionValidatorTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
-                ConnectionString = "Server=localhost", 
+            Source = new DatabaseSourceDefinition
+            {
+                ConnectionString = "Server=localhost",
                 Query = "SELECT *",
                 PollingIntervalSeconds = 0
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("source.database.pollingIntervalSeconds must be > 0"));
     }
@@ -333,9 +333,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].filter.expression is required"));
     }
@@ -353,9 +353,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].map.expression is required"));
     }
@@ -373,9 +373,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].groupBy.key or keys is required"));
     }
@@ -393,9 +393,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Any(e => e.Contains("aggregationType must be one of")), Is.True);
     }
@@ -413,9 +413,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].aggregate.field is required"));
     }
@@ -433,9 +433,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Any(e => e.Contains("windowType must be one of")), Is.True);
     }
@@ -453,9 +453,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].window.size must be > 0"));
     }
@@ -473,9 +473,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Any(e => e.Contains("timeUnit must be one of")), Is.True);
     }
@@ -493,9 +493,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors.Any(e => e.Contains("slide is required") && e.Contains("SLIDING")), Is.True);
     }
@@ -513,9 +513,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].join.rightSource is required"));
     }
@@ -529,18 +529,18 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = new KafkaSourceDefinition { Topic = "right" },
                     LeftKey = "",
-                    RightKey = "id" 
+                    RightKey = "id"
                 }
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].join.leftKey is required"));
     }
@@ -554,18 +554,18 @@ public class JobDefinitionValidatorTests
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = new KafkaSourceDefinition { Topic = "right" },
                     LeftKey = "id",
-                    RightKey = "" 
+                    RightKey = ""
                 }
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("operations[0].join.rightKey is required"));
     }
@@ -584,9 +584,9 @@ public class JobDefinitionValidatorTests
             },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
-        
+
         var result = JobDefinitionValidator.Validate(job);
-        
+
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Errors, Is.Empty);
     }

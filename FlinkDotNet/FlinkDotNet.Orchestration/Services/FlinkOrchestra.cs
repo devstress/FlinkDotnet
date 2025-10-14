@@ -20,8 +20,8 @@ public class FlinkOrchestra : IFlinkOrchestra
     }
 
     public async Task<JobSubmissionResult> SubmitJobAsync(
-        FlinkJobDefinition job, 
-        SubmissionStrategy strategy, 
+        FlinkJobDefinition job,
+        SubmissionStrategy strategy,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Submitting job {JobId} using strategy {Strategy}", job.JobId, strategy);
@@ -44,7 +44,7 @@ public class FlinkOrchestra : IFlinkOrchestra
     public async Task<ClusterInfo[]> GetAvailableClustersAsync(CancellationToken cancellationToken = default)
     {
         var clusterInfos = new List<ClusterInfo>();
-        
+
         foreach (var kvp in _clusters)
         {
             try
@@ -69,7 +69,7 @@ public class FlinkOrchestra : IFlinkOrchestra
     }
 
     public async Task<IFlinkClusterActor> ProvisionClusterAsync(
-        ClusterConfiguration config, 
+        ClusterConfiguration config,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Provisioning new cluster with name {Name}", config.Name);
@@ -77,11 +77,11 @@ public class FlinkOrchestra : IFlinkOrchestra
         await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
 
         var clusterId = $"cluster-{Guid.NewGuid():N}[..8]";
-        
+
         var httpClient = new HttpClient();
         var loggerFactory = Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
         var clusterLogger = loggerFactory.CreateLogger<FlinkDotNet.ClusterManager.Actors.FlinkClusterActor>();
-        
+
         var clusterConfig = new ClusterManagerModels.ClusterConfiguration
         {
             Name = config.Name,
@@ -110,9 +110,9 @@ public class FlinkOrchestra : IFlinkOrchestra
             var actor = new ClusterActorBridge(clusterActor);
 
             _clusters[clusterId] = actor;
-            
+
             _logger.LogInformation("Successfully provisioned cluster {ClusterId}", clusterId);
-            
+
             // HttpClient ownership transferred to clusterActor, which will dispose it
             return actor;
         }
@@ -139,7 +139,7 @@ public class FlinkOrchestra : IFlinkOrchestra
             try
             {
                 var status = await kvp.Value.GetStatusAsync(cancellationToken);
-                
+
                 switch (status.Health)
                 {
                     case ClusterHealthState.Healthy:
@@ -181,8 +181,8 @@ public class FlinkOrchestra : IFlinkOrchestra
         }
 
         var totalClusters = _clusters.Count;
-        var overallHealthScore = totalClusters > 0 
-            ? (double)healthyClusters / totalClusters * 100.0 
+        var overallHealthScore = totalClusters > 0
+            ? (double) healthyClusters / totalClusters * 100.0
             : 0.0;
 
         return new HealthReport
@@ -201,7 +201,7 @@ public class FlinkOrchestra : IFlinkOrchestra
     }
 
     public async Task<ScalingResult> ScaleOrchestraAsync(
-        int targetCapacity, 
+        int targetCapacity,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Scaling orchestra to target capacity {TargetCapacity}", targetCapacity);
@@ -234,7 +234,7 @@ public class FlinkOrchestra : IFlinkOrchestra
                 // Scale down - remove clusters
                 var clustersToRemove = currentCapacity - targetCapacity;
                 var clustersToShutdown = _clusters.Keys.Take(clustersToRemove).ToList();
-                
+
                 foreach (var clusterId in clustersToShutdown)
                 {
                     if (_clusters.TryGetValue(clusterId, out var cluster))
@@ -263,7 +263,7 @@ public class FlinkOrchestra : IFlinkOrchestra
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to scale orchestra to capacity {TargetCapacity}", targetCapacity);
-            
+
             return new ScalingResult
             {
                 Success = false,
@@ -277,22 +277,22 @@ public class FlinkOrchestra : IFlinkOrchestra
     }
 
     public async Task<string> StartOrchestrationWorkflowAsync(
-        OrchestrationRequest request, 
+        OrchestrationRequest request,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting orchestration workflow for request {RequestId}", request.RequestId);
 
         var workflowId = $"orchestra-{request.RequestId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
-        
+
         await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
-        
+
         _logger.LogInformation("Started orchestration workflow {WorkflowId}", workflowId);
         return workflowId;
     }
 
     private async Task<IFlinkClusterActor?> SelectClusterAsync(
-        FlinkJobDefinition job, 
-        SubmissionStrategy strategy, 
+        FlinkJobDefinition job,
+        SubmissionStrategy strategy,
         CancellationToken cancellationToken)
     {
         var healthyClusters = new List<(IFlinkClusterActor Actor, ClusterStatus Status)>();
@@ -302,7 +302,7 @@ public class FlinkOrchestra : IFlinkOrchestra
             try
             {
                 var status = await cluster.GetStatusAsync(cancellationToken);
-                if (status.Health == ClusterHealthState.Healthy && 
+                if (status.Health == ClusterHealthState.Healthy &&
                     status.AvailableSlots >= job.Parallelism)
                 {
                     healthyClusters.Add((cluster, status));
@@ -324,18 +324,18 @@ public class FlinkOrchestra : IFlinkOrchestra
             SubmissionStrategy.BestFit => healthyClusters
                 .OrderBy(c => c.Status.AvailableSlots - job.Parallelism)
                 .First().Actor,
-            
+
             SubmissionStrategy.LeastLoaded => healthyClusters
-                .OrderBy(c => (double)c.Status.RunningJobs / c.Status.TotalSlots)
+                .OrderBy(c => (double) c.Status.RunningJobs / c.Status.TotalSlots)
                 .First().Actor,
-            
+
             SubmissionStrategy.RoundRobin => healthyClusters
                 [new Random().Next(healthyClusters.Count)].Actor,
-            
+
             SubmissionStrategy.LocalityFirst => healthyClusters[0].Actor,
-            
+
             SubmissionStrategy.HighAvailability => healthyClusters[0].Actor,
-            
+
             _ => healthyClusters[0].Actor
         };
     }

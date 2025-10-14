@@ -218,7 +218,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the name of the state.
         /// </summary>
-        public string Name { get; }
+        public string Name
+        {
+            get;
+        }
 
         protected StateDescriptor(string name)
         {
@@ -236,7 +239,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the type information for the state value.
         /// </summary>
-        public System.Type ValueType { get; }
+        public System.Type ValueType
+        {
+            get;
+        }
 
         public ValueStateDescriptor(string name) : base(name)
         {
@@ -254,7 +260,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the type information for list elements.
         /// </summary>
-        public System.Type ElementType { get; }
+        public System.Type ElementType
+        {
+            get;
+        }
 
         public ListStateDescriptor(string name) : base(name)
         {
@@ -273,12 +282,18 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the type information for map keys.
         /// </summary>
-        public System.Type KeyType { get; }
+        public System.Type KeyType
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the type information for map values.
         /// </summary>
-        public System.Type ValueType { get; }
+        public System.Type ValueType
+        {
+            get;
+        }
 
         public MapStateDescriptor(string name) : base(name)
         {
@@ -294,7 +309,10 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of elements</typeparam>
     public class ReducingStateDescriptor<T> : StateDescriptor
     {
-        public IReduceFunction<T> ReduceFunction { get; }
+        public IReduceFunction<T> ReduceFunction
+        {
+            get;
+        }
 
         public ReducingStateDescriptor(string name, IReduceFunction<T> reduceFunction) : base(name)
         {
@@ -311,7 +329,10 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TOut">The type of output</typeparam>
     public class AggregatingStateDescriptor<TIn, TAcc, TOut> : StateDescriptor
     {
-        public IAggregateFunction<TIn, TAcc, TOut> AggregateFunction { get; }
+        public IAggregateFunction<TIn, TAcc, TOut> AggregateFunction
+        {
+            get;
+        }
 
         public AggregatingStateDescriptor(string name, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction) : base(name)
         {

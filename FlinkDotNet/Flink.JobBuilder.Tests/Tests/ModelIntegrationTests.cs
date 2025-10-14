@@ -44,7 +44,7 @@ public class ModelIntegrationTests
                 Version = "1.0.0"
             }
         };
-        
+
         Assert.That(jobDef.Source, Is.InstanceOf<KafkaSourceDefinition>());
         Assert.That(jobDef.Operations, Has.Count.EqualTo(4));
         Assert.That(jobDef.Sink, Is.InstanceOf<KafkaSinkDefinition>());
@@ -73,10 +73,10 @@ public class ModelIntegrationTests
                 JobName = "Pure SQL Job"
             }
         };
-        
+
         Assert.That(jobDef.Source, Is.InstanceOf<SqlSourceDefinition>());
         Assert.That(jobDef.Sink, Is.Null);
-        var sqlSource = (SqlSourceDefinition)jobDef.Source;
+        var sqlSource = (SqlSourceDefinition) jobDef.Source;
         Assert.That(sqlSource.Statements, Has.Count.EqualTo(2));
     }
 
@@ -104,8 +104,8 @@ public class ModelIntegrationTests
             },
             Sink = new ConsoleSinkDefinition { Format = "json" }
         };
-        
-        var joinOp = (JoinOperationDefinition)jobDef.Operations[0];
+
+        var joinOp = (JoinOperationDefinition) jobDef.Operations[0];
         Assert.That(joinOp.RightSource, Is.InstanceOf<KafkaSourceDefinition>());
         Assert.That(joinOp.Window, Is.Not.Null);
         Assert.That(joinOp.Window!.Size, Is.EqualTo(60));
@@ -137,8 +137,8 @@ public class ModelIntegrationTests
                 Table = "processed_data"
             }
         };
-        
-        var sideOutput = (SideOutputOperationDefinition)jobDef.Operations[0];
+
+        var sideOutput = (SideOutputOperationDefinition) jobDef.Operations[0];
         Assert.That(sideOutput.SideOutputSink, Is.InstanceOf<KafkaSinkDefinition>());
         Assert.That(sideOutput.Condition, Contains.Substring("status"));
     }
@@ -175,9 +175,9 @@ public class ModelIntegrationTests
                 }
             }
         };
-        
+
         Assert.That(jobDef.Operations, Has.Count.EqualTo(3));
-        var processOp = (ProcessFunctionOperationDefinition)jobDef.Operations[2];
+        var processOp = (ProcessFunctionOperationDefinition) jobDef.Operations[2];
         Assert.That(processOp.StateKeys, Contains.Item("user_session"));
     }
 
@@ -202,8 +202,8 @@ public class ModelIntegrationTests
             },
             Sink = new KafkaSinkDefinition { Topic = "enriched-events" }
         };
-        
-        var asyncOp = (AsyncFunctionOperationDefinition)jobDef.Operations[0];
+
+        var asyncOp = (AsyncFunctionOperationDefinition) jobDef.Operations[0];
         Assert.That(asyncOp.CacheTtlMs, Is.EqualTo(600000));
         Assert.That(asyncOp.MaxRetries, Is.EqualTo(3));
     }
@@ -225,8 +225,8 @@ public class ModelIntegrationTests
                 }
             }
         };
-        
-        var retryOp = (RetryOperationDefinition)jobDef.Operations[0];
+
+        var retryOp = (RetryOperationDefinition) jobDef.Operations[0];
         Assert.That(retryOp.DelayMs, Has.Count.EqualTo(3));
         Assert.That(retryOp.DeadLetterTopic, Is.EqualTo("failed-events"));
     }
@@ -257,8 +257,8 @@ public class ModelIntegrationTests
                 Table = "processed_events"
             }
         };
-        
-        var dbSource = (DatabaseSourceDefinition)jobDef.Source;
+
+        var dbSource = (DatabaseSourceDefinition) jobDef.Source;
         Assert.That(dbSource.PollingIntervalSeconds, Is.EqualTo(30));
     }
 
@@ -282,10 +282,10 @@ public class ModelIntegrationTests
                 Format = "parquet"
             }
         };
-        
-        var fileSource = (FileSourceDefinition)jobDef.Source;
-        var fileSink = (FileSinkDefinition)jobDef.Sink!;
-        
+
+        var fileSource = (FileSourceDefinition) jobDef.Source;
+        var fileSink = (FileSinkDefinition) jobDef.Sink!;
+
         Assert.That(fileSource.Format, Is.EqualTo("json"));
         Assert.That(fileSink.Format, Is.EqualTo("parquet"));
     }
@@ -306,8 +306,8 @@ public class ModelIntegrationTests
                 IntervalSeconds = 120
             }
         };
-        
-        var httpSource = (HttpSourceDefinition)jobDef.Source;
+
+        var httpSource = (HttpSourceDefinition) jobDef.Source;
         Assert.That(httpSource.IntervalSeconds, Is.EqualTo(120));
         Assert.That(httpSource.Headers, Contains.Key("Authorization"));
     }
@@ -334,8 +334,8 @@ public class ModelIntegrationTests
                 }
             }
         };
-        
-        var aggOp = (AggregateOperationDefinition)jobDef.Operations[1];
+
+        var aggOp = (AggregateOperationDefinition) jobDef.Operations[1];
         Assert.That(aggOp.WindowSeconds, Is.EqualTo(300));
         Assert.That(aggOp.Alias, Is.EqualTo("avg_temp"));
     }
@@ -358,8 +358,8 @@ public class ModelIntegrationTests
                 }
             }
         };
-        
-        var aggOp = (AggregateOperationDefinition)jobDef.Operations[1];
+
+        var aggOp = (AggregateOperationDefinition) jobDef.Operations[1];
         Assert.That(aggOp.WindowCount, Is.EqualTo(50));
     }
 
@@ -380,8 +380,8 @@ public class ModelIntegrationTests
                 }
             }
         };
-        
-        var windowOp = (WindowOperationDefinition)jobDef.Operations[0];
+
+        var windowOp = (WindowOperationDefinition) jobDef.Operations[0];
         Assert.That(windowOp.Slide, Is.EqualTo(30));
         Assert.That(windowOp.Size, Is.EqualTo(60));
     }
@@ -409,7 +409,7 @@ public class ModelIntegrationTests
                 { "sla", "99.9" }
             }
         };
-        
+
         Assert.That(metadata.Properties, Has.Count.EqualTo(5));
         Assert.That(metadata.Properties["environment"], Is.EqualTo("production"));
         Assert.That(metadata.Properties["sla"], Is.EqualTo("99.9"));
@@ -423,7 +423,7 @@ public class ModelIntegrationTests
         {
             JobId = "minimal-job"
         };
-        
+
         Assert.That(metadata.JobId, Is.EqualTo("minimal-job"));
         Assert.That(metadata.JobName, Is.Null);
         Assert.That(metadata.Parallelism, Is.Null);
@@ -441,7 +441,7 @@ public class ModelIntegrationTests
             Key = "primary_key",
             Keys = new List<string> { "user_id", "region", "device_type" }
         };
-        
+
         Assert.That(groupBy.Keys, Has.Count.EqualTo(3));
         Assert.That(groupBy.Keys, Contains.Item("user_id"));
         Assert.That(groupBy.Keys, Contains.Item("region"));
@@ -454,7 +454,7 @@ public class ModelIntegrationTests
         {
             Key = "customer_id"
         };
-        
+
         Assert.That(groupBy.Key, Is.EqualTo("customer_id"));
         Assert.That(groupBy.Keys, Is.Null);
     }
@@ -468,7 +468,7 @@ public class ModelIntegrationTests
     {
         var startTime = DateTime.UtcNow.AddHours(-2);
         var endTime = DateTime.UtcNow;
-        
+
         var status = new JobStatus
         {
             JobId = "job-123",
@@ -482,7 +482,7 @@ public class ModelIntegrationTests
                 RecordsWritten = 950000
             }
         };
-        
+
         Assert.That(status.Duration, Is.Not.Null);
         Assert.That(status.Duration!.Value.TotalHours, Is.EqualTo(2).Within(0.1));
         Assert.That(status.Metrics!.RecordsRead, Is.EqualTo(1000000));
@@ -494,7 +494,7 @@ public class ModelIntegrationTests
         var result = JobSubmissionResult.CreateSuccess("job-123", "flink-456");
         result.Metadata["cluster"] = "prod-cluster-1";
         result.Metadata["namespace"] = "data-pipelines";
-        
+
         Assert.That(result.Success, Is.True);
         Assert.That(result.Metadata, Has.Count.EqualTo(2));
         Assert.That(result.Metadata["cluster"], Is.EqualTo("prod-cluster-1"));
@@ -519,7 +519,7 @@ public class ModelIntegrationTests
                 { "pipeline", true }
             }
         };
-        
+
         Assert.That(sink.Configuration["ttl"], Is.EqualTo(86400));
         Assert.That(sink.Configuration["pipeline"], Is.EqualTo(true));
     }
@@ -545,7 +545,7 @@ public class ModelIntegrationTests
                 { "retry_delay", "1000" }
             }
         };
-        
+
         Assert.That(sink.Headers, Has.Count.EqualTo(2));
         Assert.That(sink.BodyTemplate, Contains.Substring("{event}"));
         Assert.That(sink.Properties["retry_count"], Is.EqualTo("3"));

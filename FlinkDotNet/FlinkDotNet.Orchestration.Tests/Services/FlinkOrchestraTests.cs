@@ -1,10 +1,10 @@
-namespace FlinkDotNet.Orchestration.Tests.Services;
 
 using FlinkDotNet.Orchestration.Models;
 using FlinkDotNet.Orchestration.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+namespace FlinkDotNet.Orchestration.Tests.Services;
 /// <summary>
 /// Comprehensive tests for FlinkOrchestra service.
 /// Tests orchestration logic, cluster management, job submission, and error handling.

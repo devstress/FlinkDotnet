@@ -60,7 +60,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// <param name="topicName">Topic name for rate limiter state (default: rate-limiter-state)</param>
     /// <param name="logger">Logger instance</param>
     public KafkaRateLimiterStateStorage(
-        KafkaConfig kafkaConfig, 
+        KafkaConfig kafkaConfig,
         string topicName = "rate-limiter-state",
         ILogger<KafkaRateLimiterStateStorage>? logger = null)
     {
@@ -106,7 +106,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
             _consumer.Subscribe(_topicName);
 
             // Timer to periodically flush cached state to Kafka
-            _stateFlushTimer = new Timer(FlushCachedStateAsync, null, 
+            _stateFlushTimer = new Timer(FlushCachedStateAsync, null,
                 TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
 
             _logger.LogInformation("Kafka rate limiter state storage initialized with topic: {Topic}", _topicName);
@@ -124,7 +124,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
         BackendType = "Apache Kafka",
         Description = "Distributed, replicated, persistent rate limiter state storage using Kafka partitions",
         SupportsDistribution = true,
-        SupportsPersistence = true, 
+        SupportsPersistence = true,
         SupportsReplication = true,
         TypicalLatency = TimeSpan.FromMilliseconds(5), // Low latency with proper configuration
         ScalabilityCharacteristics = "Horizontally scalable through partitions, handles millions of operations/sec"
@@ -133,8 +133,9 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// <inheritdoc />
     public async Task SaveStateAsync(string rateLimiterId, RateLimiterState state, CancellationToken cancellationToken = default)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(KafkaRateLimiterStateStorage));
-        
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(KafkaRateLimiterStateStorage));
+
         await _operationSemaphore.WaitAsync(cancellationToken);
         try
         {
@@ -142,8 +143,8 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
             _cache.AddOrUpdate(rateLimiterId, state, (_, _) => state);
 
             // Serialize state for Kafka
-            var stateJson = JsonSerializer.Serialize(state, new JsonSerializerOptions 
-            { 
+            var stateJson = JsonSerializer.Serialize(state, new JsonSerializerOptions
+            {
                 WriteIndented = false,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
@@ -157,7 +158,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
             };
 
             var deliveryResult = await _producer.ProduceAsync(_topicName, message, cancellationToken);
-            
+
             _logger.LogDebug("Rate limiter state saved to Kafka: {RateLimiterId} -> Partition {Partition}, Offset {Offset}",
                 rateLimiterId, deliveryResult.Partition.Value, deliveryResult.Offset.Value);
         }
@@ -175,7 +176,8 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// <inheritdoc />
     public async Task<RateLimiterState?> LoadStateAsync(string rateLimiterId, CancellationToken cancellationToken = default)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(KafkaRateLimiterStateStorage));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(KafkaRateLimiterStateStorage));
 
         // Check cache first for performance
         if (_cache.TryGetValue(rateLimiterId, out var cachedState))
@@ -189,13 +191,13 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
         {
             // Load from Kafka if not in cache
             var state = await LoadStateFromKafkaAsync();
-            
+
             if (state != null)
             {
                 _cache.TryAdd(rateLimiterId, state);
                 _logger.LogDebug("Rate limiter state loaded from Kafka: {RateLimiterId}", rateLimiterId);
             }
-            
+
             return state;
         }
         catch (Exception ex)
@@ -212,14 +214,15 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// <inheritdoc />
     public Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed) return Task.FromResult(false);
+        if (_disposed)
+            return Task.FromResult(false);
 
         try
         {
             // Simplified health check - just verify producer is not disposed
             // In a real implementation, this would test Kafka connectivity
             var isHealthy = _producer != null && !_disposed;
-            
+
             _logger.LogDebug("Kafka rate limiter state storage health check: {IsHealthy}", isHealthy);
             return Task.FromResult(isHealthy);
         }
@@ -243,7 +246,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
 
         // For this implementation, we'll simulate the lookup
         await Task.Delay(10); // Simulate Kafka seek/consume
-        
+
         // Return null to indicate not found in Kafka
         return null;
     }
@@ -253,17 +256,18 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// </summary>
     private async void FlushCachedStateAsync(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
             var flushTasks = new List<Task>();
-            
+
             foreach (var kvp in _cache)
             {
                 var rateLimiterId = kvp.Key;
                 var rateLimiterState = kvp.Value;
-                
+
                 // Only flush if state has been updated recently
                 if (DateTime.UtcNow - rateLimiterState.UpdatedAt < TimeSpan.FromMinutes(1))
                 {
@@ -298,8 +302,9 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
     /// <param name="disposing">True if disposing managed resources</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             try
@@ -308,7 +313,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
                 _producer?.Dispose();
                 _consumer?.Dispose();
                 _operationSemaphore.Dispose();
-                
+
                 _logger.LogInformation("Kafka rate limiter state storage disposed");
             }
             catch (Exception ex)
@@ -318,7 +323,7 @@ public class KafkaRateLimiterStateStorage : IRateLimiterStateStorage
                 throw new InvalidOperationException("Error occurred while disposing Kafka rate limiter state storage. See inner exception for details.", ex);
             }
         }
-        
+
         _disposed = true;
     }
 }
@@ -336,7 +341,10 @@ public class KafkaConfig
     /// <summary>
     /// Security configuration for production environments.
     /// </summary>
-    public KafkaSecurityConfig? Security { get; init; }
+    public KafkaSecurityConfig? Security
+    {
+        get; init;
+    }
 
     /// <summary>
     /// Performance tuning configuration.
@@ -350,12 +358,30 @@ public class KafkaConfig
 public class KafkaSecurityConfig
 {
     public string SecurityProtocol { get; init; } = "PLAINTEXT";
-    public string? SaslMechanism { get; init; }
-    public string? SaslUsername { get; init; }
-    public string? SaslPassword { get; init; }
-    public string? SslCaLocation { get; init; }
-    public string? SslCertificateLocation { get; init; }
-    public string? SslKeyLocation { get; init; }
+    public string? SaslMechanism
+    {
+        get; init;
+    }
+    public string? SaslUsername
+    {
+        get; init;
+    }
+    public string? SaslPassword
+    {
+        get; init;
+    }
+    public string? SslCaLocation
+    {
+        get; init;
+    }
+    public string? SslCertificateLocation
+    {
+        get; init;
+    }
+    public string? SslKeyLocation
+    {
+        get; init;
+    }
 }
 
 /// <summary>

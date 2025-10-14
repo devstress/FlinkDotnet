@@ -27,7 +27,7 @@ public class IntegrationScenarioTests
                 PlacementTime = DateTime.UtcNow,
                 PlacementDuration = TimeSpan.FromSeconds(2 + i % 3)
             });
-            
+
             clusterDistribution[clusterId] = clusterDistribution.GetValueOrDefault(clusterId) + 1;
         }
 
@@ -50,7 +50,7 @@ public class IntegrationScenarioTests
             Assert.That(result.FailedPlacements, Is.EqualTo(0));
             Assert.That(result.Placements, Has.Count.EqualTo(10));
             Assert.That(result.ClusterDistribution, Has.Count.EqualTo(3));
-            
+
             // Verify balanced distribution (each cluster gets 3-4 jobs)
             foreach (var count in result.ClusterDistribution.Values)
             {
@@ -88,7 +88,7 @@ public class IntegrationScenarioTests
             Assert.That(result.TotalJobs, Is.EqualTo(5));
             Assert.That(result.SuccessfulPlacements, Is.EqualTo(3));
             Assert.That(result.FailedPlacements, Is.EqualTo(2));
-            
+
             var failures = placements.Where(p => !p.Success).ToList();
             Assert.That(failures, Has.Count.EqualTo(2));
             Assert.That(failures.All(f => !string.IsNullOrEmpty(f.ErrorMessage)), Is.True);
@@ -249,7 +249,10 @@ public class IntegrationScenarioTests
         };
 
         // Act: Use 'with' keyword to create modified copy
-        var modified = original with { MaxClusters = 100 };
+        var modified = original with
+        {
+            MaxClusters = 100
+        };
 
         // Assert: Original unchanged, modified has new value
         Assert.Multiple(() =>

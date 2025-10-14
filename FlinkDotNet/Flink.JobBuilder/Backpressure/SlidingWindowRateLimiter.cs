@@ -35,20 +35,21 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
     /// <param name="windowSizeSeconds">Size of sliding window in seconds</param>
     public SlidingWindowRateLimiter(double maxRequestsPerSecond, double windowSizeSeconds = 1.0)
     {
-        if (maxRequestsPerSecond <= 0) 
+        if (maxRequestsPerSecond <= 0)
             throw new ArgumentException("Rate limit must be positive", nameof(maxRequestsPerSecond));
-        if (windowSizeSeconds <= 0) 
+        if (windowSizeSeconds <= 0)
             throw new ArgumentException("Window size must be positive", nameof(windowSizeSeconds));
 
         _currentRateLimit = maxRequestsPerSecond;
         _windowSize = TimeSpan.FromSeconds(windowSizeSeconds);
-        _maxRequestsPerWindow = (int)Math.Ceiling(maxRequestsPerSecond * windowSizeSeconds);
+        _maxRequestsPerWindow = (int) Math.Ceiling(maxRequestsPerSecond * windowSizeSeconds);
     }
 
     /// <inheritdoc />
     public Task<bool> TryAcquireAsync(int permits = 1, CancellationToken cancellationToken = default)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         lock (_lock)
         {
@@ -73,7 +74,8 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
     /// <inheritdoc />
     public bool TryAcquire(int permits = 1)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         lock (_lock)
         {
@@ -98,7 +100,8 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
     /// <inheritdoc />
     public async Task AcquireAsync(int permits = 1, CancellationToken cancellationToken = default)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -109,10 +112,10 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
 
             // Calculate wait time until oldest request expires
             var waitTime = CalculateWaitTime(permits);
-            
+
             await Task.Delay(waitTime, cancellationToken);
         }
-        
+
         cancellationToken.ThrowIfCancellationRequested();
     }
 
@@ -127,7 +130,7 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
             lock (_lock)
             {
                 CleanupOldRequests(DateTime.UtcNow);
-                return (double)_requestTimestamps.Count / _maxRequestsPerWindow;
+                return (double) _requestTimestamps.Count / _maxRequestsPerWindow;
             }
         }
     }
@@ -135,7 +138,8 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
     /// <inheritdoc />
     public void UpdateRateLimit(double newRateLimit)
     {
-        if (newRateLimit <= 0) throw new ArgumentException("Rate limit must be positive", nameof(newRateLimit));
+        if (newRateLimit <= 0)
+            throw new ArgumentException("Rate limit must be positive", nameof(newRateLimit));
 
         lock (_lock)
         {
@@ -192,7 +196,7 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
     private void CleanupOldRequests(DateTime now)
     {
         var cutoffTime = now - _windowSize;
-        
+
         while (_requestTimestamps.Count > 0 && _requestTimestamps.Peek() < cutoffTime)
         {
             _requestTimestamps.Dequeue();
@@ -214,7 +218,7 @@ public class SlidingWindowRateLimiter : IRateLimitingStrategy
             // Find when enough requests will expire to allow new permits
             var requestsToExpire = (_requestTimestamps.Count + permits) - _maxRequestsPerWindow;
             var timestamps = _requestTimestamps.ToArray();
-            
+
             if (requestsToExpire > 0 && requestsToExpire <= timestamps.Length)
             {
                 var expirationTime = timestamps[requestsToExpire - 1] + _windowSize;

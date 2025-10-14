@@ -1,11 +1,11 @@
-namespace FlinkDotNet.Orchestration.Tests.Services;
 
 using FlinkDotNet.Orchestration.Models;
 using FlinkDotNet.Orchestration.Services;
 using Moq;
-using ClusterManagerModels = FlinkDotNet.ClusterManager.Models;
 using ClusterManagerInterfaces = FlinkDotNet.ClusterManager.Interfaces;
+using ClusterManagerModels = FlinkDotNet.ClusterManager.Models;
 
+namespace FlinkDotNet.Orchestration.Tests.Services;
 /// <summary>
 /// Comprehensive tests for ClusterActorBridge.
 /// Tests bridging between Orchestra and ClusterManager interfaces.

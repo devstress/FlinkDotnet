@@ -1,7 +1,7 @@
-namespace FlinkDotNet.Orchestration.Tests.Models;
 
 using FlinkDotNet.Orchestration.Models;
 
+namespace FlinkDotNet.Orchestration.Tests.Models;
 /// <summary>
 /// Comprehensive tests for Orchestra model types.
 /// Tests record initialization, properties, and enum validation.

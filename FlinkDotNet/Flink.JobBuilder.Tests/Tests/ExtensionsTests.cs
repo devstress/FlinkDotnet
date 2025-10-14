@@ -14,13 +14,13 @@ public class ExtensionsTests
     public void AddFlinkJobBuilder_WithoutConfiguration_RegistersServices()
     {
         var services = new ServiceCollection();
-        
+
         services.AddFlinkJobBuilder();
-        
+
         var serviceProvider = services.BuildServiceProvider();
         var config = serviceProvider.GetService<FlinkJobGatewayConfiguration>();
         var builder = serviceProvider.GetService<FlinkJobBuilder>();
-        
+
         Assert.That(config, Is.Not.Null);
         Assert.That(builder, Is.Not.Null);
     }
@@ -33,12 +33,12 @@ public class ExtensionsTests
         {
             BaseUrl = "http://custom:8080"
         };
-        
+
         services.AddFlinkJobBuilder(customConfig);
-        
+
         var serviceProvider = services.BuildServiceProvider();
         var config = serviceProvider.GetService<FlinkJobGatewayConfiguration>();
-        
+
         Assert.That(config, Is.Not.Null);
         Assert.That(config.BaseUrl, Is.EqualTo("http://custom:8080"));
     }
@@ -47,9 +47,9 @@ public class ExtensionsTests
     public void AddFlinkJobBuilder_ReturnsServiceCollectionForChaining()
     {
         var services = new ServiceCollection();
-        
+
         var result = services.AddFlinkJobBuilder();
-        
+
         Assert.That(result, Is.SameAs(services));
     }
 
@@ -57,16 +57,16 @@ public class ExtensionsTests
     public void AddFlinkJobBuilder_WithActionConfiguration_AppliesConfiguration()
     {
         var services = new ServiceCollection();
-        
+
         services.AddFlinkJobBuilder(config =>
         {
             config.BaseUrl = "http://action-configured:9090";
             config.MaxRetries = 5;
         });
-        
+
         var serviceProvider = services.BuildServiceProvider();
         var config = serviceProvider.GetService<FlinkJobGatewayConfiguration>();
-        
+
         Assert.That(config, Is.Not.Null);
         Assert.That(config.BaseUrl, Is.EqualTo("http://action-configured:9090"));
         Assert.That(config.MaxRetries, Is.EqualTo(5));
@@ -76,9 +76,9 @@ public class ExtensionsTests
     public void AddFlinkJobBuilder_WithActionConfiguration_ReturnsServiceCollectionForChaining()
     {
         var services = new ServiceCollection();
-        
+
         var result = services.AddFlinkJobBuilder(config => { });
-        
+
         Assert.That(result, Is.SameAs(services));
     }
 
@@ -92,9 +92,9 @@ public class ExtensionsTests
         var services = new ServiceCollection();
         services.AddFlinkJobBuilder();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var builder = serviceProvider.CreateJobBuilder();
-        
+
         Assert.That(builder, Is.Not.Null);
         Assert.That(builder, Is.InstanceOf<FlinkJobBuilder>());
     }
@@ -113,9 +113,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Errors, Is.Empty);
     }
@@ -130,9 +130,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Job must have a source"));
     }
@@ -147,9 +147,9 @@ public class ExtensionsTests
             Sink = null!,
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Job must have a sink"));
     }
@@ -164,9 +164,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Job must have a valid JobId"));
     }
@@ -181,9 +181,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Job must have a valid JobId"));
     }
@@ -198,9 +198,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Kafka source must specify a topic"));
     }
@@ -215,9 +215,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("File source must specify a path"));
     }
@@ -232,9 +232,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -248,9 +248,9 @@ public class ExtensionsTests
             Sink = new KafkaSinkDefinition { Topic = "" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Kafka sink must specify a topic"));
     }
@@ -265,9 +265,9 @@ public class ExtensionsTests
             Sink = new FileSinkDefinition { Path = "" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("File sink must specify a path"));
     }
@@ -282,9 +282,9 @@ public class ExtensionsTests
             Sink = new DatabaseSinkDefinition { ConnectionString = "", Table = "users" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Database sink must specify a connection string"));
     }
@@ -299,9 +299,9 @@ public class ExtensionsTests
             Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost", Table = "" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Database sink must specify a table"));
     }
@@ -316,9 +316,9 @@ public class ExtensionsTests
             Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost", Table = "users" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -332,9 +332,9 @@ public class ExtensionsTests
             Sink = new FileSinkDefinition { Path = "/data/output.csv" },
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -351,9 +351,9 @@ public class ExtensionsTests
                 new FilterOperationDefinition { Expression = "" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Filter operation must have an expression"));
     }
@@ -371,9 +371,9 @@ public class ExtensionsTests
                 new MapOperationDefinition { Expression = "" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Map operation must have an expression"));
     }
@@ -391,9 +391,9 @@ public class ExtensionsTests
                 new GroupByOperationDefinition { Key = "", Keys = null }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("GroupBy operation must specify at least one key"));
     }
@@ -411,9 +411,9 @@ public class ExtensionsTests
                 new GroupByOperationDefinition { Key = "", Keys = new List<string>() }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("GroupBy operation must specify at least one key"));
     }
@@ -431,9 +431,9 @@ public class ExtensionsTests
                 new GroupByOperationDefinition { Key = "userId" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -450,9 +450,9 @@ public class ExtensionsTests
                 new GroupByOperationDefinition { Keys = new List<string> { "userId", "eventType" } }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -469,9 +469,9 @@ public class ExtensionsTests
                 new AggregateOperationDefinition { AggregationType = "", Field = "count" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Aggregate operation must specify aggregation type"));
     }
@@ -489,9 +489,9 @@ public class ExtensionsTests
                 new AggregateOperationDefinition { AggregationType = "SUM", Field = "" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Aggregate operation must specify field"));
     }
@@ -509,9 +509,9 @@ public class ExtensionsTests
                 new WindowOperationDefinition { WindowType = "", Size = 60 }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Window operation must specify window type"));
     }
@@ -529,9 +529,9 @@ public class ExtensionsTests
                 new WindowOperationDefinition { WindowType = "TUMBLING", Size = 0 }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Window operation must have a positive size"));
     }
@@ -549,9 +549,9 @@ public class ExtensionsTests
                 new WindowOperationDefinition { WindowType = "TUMBLING", Size = -10 }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Window operation must have a positive size"));
     }
@@ -569,9 +569,9 @@ public class ExtensionsTests
                 new WindowOperationDefinition { WindowType = "TUMBLING", Size = 60 }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -588,9 +588,9 @@ public class ExtensionsTests
                 new FilterOperationDefinition { Expression = "value > 10" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -607,9 +607,9 @@ public class ExtensionsTests
                 new MapOperationDefinition { Expression = "value * 2" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -626,9 +626,9 @@ public class ExtensionsTests
                 new AggregateOperationDefinition { AggregationType = "SUM", Field = "amount" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -646,9 +646,9 @@ public class ExtensionsTests
                 new JoinOperationDefinition { JoinType = "INNER" }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -666,9 +666,9 @@ public class ExtensionsTests
                 new AsyncFunctionOperationDefinition { FunctionType = "http", TimeoutMs = 5000 }
             }
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.True);
     }
 
@@ -682,9 +682,9 @@ public class ExtensionsTests
             Sink = null!,
             Operations = new List<IOperationDefinition>()
         };
-        
+
         var result = jobDef.Validate();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Has.Count.GreaterThan(1));
     }
@@ -697,7 +697,7 @@ public class ExtensionsTests
     public void JobValidationResult_DefaultConstructor_InitializesCollections()
     {
         var result = new JobValidationResult();
-        
+
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Is.Not.Null);
         Assert.That(result.Errors, Is.Empty);
@@ -711,7 +711,7 @@ public class ExtensionsTests
         var result = new JobValidationResult();
         result.Errors.Add("Error 1");
         result.Errors.Add("Error 2");
-        
+
         Assert.That(result.Errors, Has.Count.EqualTo(2));
         Assert.That(result.Errors[0], Is.EqualTo("Error 1"));
         Assert.That(result.Errors[1], Is.EqualTo("Error 2"));
@@ -723,7 +723,7 @@ public class ExtensionsTests
         var result = new JobValidationResult();
         result.Warnings.Add("Warning 1");
         result.Warnings.Add("Warning 2");
-        
+
         Assert.That(result.Warnings, Has.Count.EqualTo(2));
         Assert.That(result.Warnings[0], Is.EqualTo("Warning 1"));
         Assert.That(result.Warnings[1], Is.EqualTo("Warning 2"));

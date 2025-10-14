@@ -30,7 +30,7 @@ namespace Flink.JobBuilder.Flink
 
             // Ensure Flink-optimal configuration
             ValidateFlinkConfiguration();
-            
+
             _logger.LogInformation("FlinkKafkaConsumerGroup initialized with Flink-optimal configuration");
         }
 
@@ -47,8 +47,8 @@ namespace Flink.JobBuilder.Flink
             // 2. Subscribe to topics
             // 3. Set up partition assignment handlers
             // 4. Initialize checkpoint state
-            
-            
+
+
             _logger.LogInformation("FlinkKafkaConsumerGroup initialization completed");
         }
 
@@ -63,16 +63,16 @@ namespace Flink.JobBuilder.Flink
         {
             var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
             logger.LogInformation("Waiting for Kafka setup at {BootstrapServers} with {Timeout} timeout", bootstrapServers, timeout);
-            
+
             var retryCount = 0;
-            var maxRetries = (int)(timeout.TotalSeconds / 5); // Retry every 5 seconds
-            
+            var maxRetries = (int) (timeout.TotalSeconds / 5); // Retry every 5 seconds
+
             while (retryCount < maxRetries && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
                     await Task.Delay(1000, cancellationToken);
-                    
+
                     logger.LogInformation("Kafka setup verified successfully after {RetryCount} retries", retryCount);
                     return;
                 }
@@ -80,12 +80,12 @@ namespace Flink.JobBuilder.Flink
                 {
                     retryCount++;
                     logger.LogWarning(ex, "Kafka setup check failed, retry {RetryCount}/{MaxRetries}", retryCount, maxRetries);
-                    
+
                     if (retryCount >= maxRetries)
                     {
                         throw new TimeoutException($"Kafka setup failed after {maxRetries} retries and {timeout} timeout");
                     }
-                    
+
                     await Task.Delay(5000, cancellationToken);
                 }
             }
@@ -106,9 +106,9 @@ namespace Flink.JobBuilder.Flink
                 // 1. Call consumer.Consume(timeout)
                 // 2. Track offset for checkpoint
                 // 3. Return structured result
-                
+
                 _logger.LogDebug("Consuming message with timeout: {Timeout}", timeout);
-                
+
                 return Task.FromResult<ConsumeResult?>(new ConsumeResult
                 {
                     Topic = "sample-topic",
@@ -131,11 +131,11 @@ namespace Flink.JobBuilder.Flink
             lock (_lockObject)
             {
                 _logger.LogDebug("Snapshotting state for checkpoint {CheckpointId} at {Timestamp}", checkpointId, checkpointTimestamp);
-                
+
                 // 1. Get current consumer assignment
                 // 2. Capture current offsets for each partition
                 // 3. Store state for recovery
-                
+
                 _checkpointOffsets[checkpointId.ToString()] = checkpointTimestamp;
             }
         }
@@ -149,12 +149,12 @@ namespace Flink.JobBuilder.Flink
             lock (_lockObject)
             {
                 _logger.LogInformation("Restoring state from checkpoint with {Count} partitions", checkpointState?.Count ?? 0);
-                
+
                 if (checkpointState != null)
                 {
                     // 1. Restore consumer offsets for each partition
                     // 2. Update internal state tracking
-                    
+
                     foreach (var kvp in checkpointState)
                     {
                         _checkpointOffsets[kvp.Key] = kvp.Value;
@@ -172,7 +172,7 @@ namespace Flink.JobBuilder.Flink
             lock (_lockObject)
             {
                 _logger.LogDebug("Committing offsets for completed checkpoint {CheckpointId}", checkpointId);
-                
+
                 // 1. Commit offsets to Kafka for the checkpoint
                 // 2. Clean up old checkpoint state
             }
@@ -216,7 +216,7 @@ namespace Flink.JobBuilder.Flink
                 }
                 else if (!_consumerConfig[setting.Key].Equals(setting.Value))
                 {
-                    _logger.LogWarning("Non-optimal Flink setting detected: {Key} = {Value}, recommended: {Recommended}", 
+                    _logger.LogWarning("Non-optimal Flink setting detected: {Key} = {Value}, recommended: {Recommended}",
                         setting.Key, _consumerConfig[setting.Key], setting.Value);
                 }
             }
@@ -242,11 +242,11 @@ namespace Flink.JobBuilder.Flink
                 lock (_lockObject)
                 {
                     _logger.LogInformation("Disposing FlinkKafkaConsumerGroup");
-                    
+
                     // 1. Close Kafka consumer
                     // 2. Clean up state
                     // 3. Release resources
-                    
+
                     _checkpointOffsets.Clear();
                     _isDisposed = true;
                 }
@@ -260,11 +260,26 @@ namespace Flink.JobBuilder.Flink
     public class ConsumeResult
     {
         public string Topic { get; set; } = string.Empty;
-        public int Partition { get; set; }
-        public long Offset { get; set; }
-        public string? Key { get; set; }
-        public string? Value { get; set; }
-        public DateTimeOffset Timestamp { get; set; }
+        public int Partition
+        {
+            get; set;
+        }
+        public long Offset
+        {
+            get; set;
+        }
+        public string? Key
+        {
+            get; set;
+        }
+        public string? Value
+        {
+            get; set;
+        }
+        public DateTimeOffset Timestamp
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -273,8 +288,11 @@ namespace Flink.JobBuilder.Flink
     public class TopicPartition
     {
         public string Topic { get; set; } = string.Empty;
-        public int Partition { get; set; }
-        
+        public int Partition
+        {
+            get; set;
+        }
+
         public override string ToString() => $"{Topic}[{Partition}]";
     }
 }

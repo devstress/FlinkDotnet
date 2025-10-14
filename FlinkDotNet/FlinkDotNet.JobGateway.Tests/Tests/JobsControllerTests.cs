@@ -1,10 +1,10 @@
-using NUnit.Framework;
-using Moq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Flink.JobBuilder.Models;
 using FlinkDotNet.JobGateway.Controllers;
 using FlinkDotNet.JobGateway.Services;
-using Flink.JobBuilder.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
+using NUnit.Framework;
 
 namespace FlinkDotNet.JobGateway.Tests
 {
@@ -18,7 +18,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var mockJobManager = new Mock<IFlinkJobManager>();
             var mockLogger = new Mock<ILogger<JobsController>>();
             var controller = new JobsController(mockLogger.Object, mockJobManager.Object);
-            
+
             var jobId = "test-job-1";
             var expectedStatus = new JobStatus
             {
@@ -35,8 +35,8 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = (OkObjectResult)result.Result!;
-            var actualStatus = (JobStatus)okResult.Value!;
+            var okResult = (OkObjectResult) result.Result!;
+            var actualStatus = (JobStatus) okResult.Value!;
             Assert.That(actualStatus.FlinkJobId, Is.EqualTo(jobId));
             Assert.That(actualStatus.State, Is.EqualTo("RUNNING"));
         }
@@ -48,12 +48,12 @@ namespace FlinkDotNet.JobGateway.Tests
             var mockJobManager = new Mock<IFlinkJobManager>();
             var mockLogger = new Mock<ILogger<JobsController>>();
             var controller = new JobsController(mockLogger.Object, mockJobManager.Object);
-            
+
             var jobId = "non-existent-job";
 
             mockJobManager
                 .Setup(m => m.GetJobStatusAsync(jobId))
-                .ReturnsAsync((JobStatus)null!);
+                .ReturnsAsync((JobStatus) null!);
 
             // Act
             var result = await controller.GetJobStatus(jobId);
@@ -69,7 +69,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var mockJobManager = new Mock<IFlinkJobManager>();
             var mockLogger = new Mock<ILogger<JobsController>>();
             var controller = new JobsController(mockLogger.Object, mockJobManager.Object);
-            
+
             var jobId = "test-job-1";
             var expectedMetrics = new JobMetrics
             {
@@ -86,8 +86,8 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = (OkObjectResult)result.Result!;
-            var actualMetrics = (JobMetrics)okResult.Value!;
+            var okResult = (OkObjectResult) result.Result!;
+            var actualMetrics = (JobMetrics) okResult.Value!;
             Assert.That(actualMetrics.RecordsIn, Is.EqualTo(1000));
         }
 
@@ -98,7 +98,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var mockJobManager = new Mock<IFlinkJobManager>();
             var mockLogger = new Mock<ILogger<JobsController>>();
             var controller = new JobsController(mockLogger.Object, mockJobManager.Object);
-            
+
             var jobId = "test-job-1";
 
             mockJobManager
@@ -119,7 +119,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var mockJobManager = new Mock<IFlinkJobManager>();
             var mockLogger = new Mock<ILogger<JobsController>>();
             var controller = new JobsController(mockLogger.Object, mockJobManager.Object);
-            
+
             var jobId = "non-existent-job";
 
             mockJobManager
@@ -146,7 +146,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = (OkObjectResult)result.Result!;
+            var okResult = (OkObjectResult) result.Result!;
             Assert.That(okResult.Value, Is.EqualTo("OK"));
         }
     }

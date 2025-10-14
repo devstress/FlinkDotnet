@@ -443,7 +443,7 @@ public class ClusterModelsTests
         Assert.That(status1.RunningJobs, Is.EqualTo(status2.RunningJobs));
         Assert.That(status1.LastHealthCheck, Is.EqualTo(status2.LastHealthCheck));
         Assert.That(status1.Version, Is.EqualTo(status2.Version));
-        
+
         // Verify different cluster IDs are not equal
         Assert.That(status1.ClusterId, Is.Not.EqualTo(status3.ClusterId));
     }
@@ -460,7 +460,10 @@ public class ClusterModelsTests
         };
 
         // Act
-        var modified = original with { Health = ClusterHealthState.Warning };
+        var modified = original with
+        {
+            Health = ClusterHealthState.Warning
+        };
 
         // Assert
         Assert.That(modified.ClusterId, Is.EqualTo(original.ClusterId));

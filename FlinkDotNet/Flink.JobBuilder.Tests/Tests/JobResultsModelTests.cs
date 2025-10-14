@@ -12,7 +12,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_DefaultConstructor_InitializesProperties()
     {
         var result = new JobSubmissionResult();
-        
+
         Assert.That(result.JobId, Is.EqualTo(string.Empty));
         Assert.That(result.FlinkJobId, Is.EqualTo(string.Empty));
         Assert.That(result.Success, Is.False);
@@ -25,7 +25,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_SetJobId_ReturnsValue()
     {
         var result = new JobSubmissionResult { JobId = "job-123" };
-        
+
         Assert.That(result.JobId, Is.EqualTo("job-123"));
     }
 
@@ -33,7 +33,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_SetFlinkJobId_ReturnsValue()
     {
         var result = new JobSubmissionResult { FlinkJobId = "flink-456" };
-        
+
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-456"));
     }
 
@@ -41,7 +41,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_SetSuccess_ReturnsValue()
     {
         var result = new JobSubmissionResult { Success = true };
-        
+
         Assert.That(result.Success, Is.True);
         Assert.That(result.IsSuccess, Is.True);
     }
@@ -50,7 +50,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_IsSuccess_ReturnsTrueWhenSuccessful()
     {
         var result = new JobSubmissionResult { Success = true };
-        
+
         Assert.That(result.IsSuccess, Is.True);
     }
 
@@ -58,7 +58,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_IsSuccess_ReturnsFalseWhenFailed()
     {
         var result = new JobSubmissionResult { Success = false };
-        
+
         Assert.That(result.IsSuccess, Is.False);
     }
 
@@ -66,7 +66,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_SetErrorMessage_ReturnsValue()
     {
         var result = new JobSubmissionResult { ErrorMessage = "Connection failed" };
-        
+
         Assert.That(result.ErrorMessage, Is.EqualTo("Connection failed"));
     }
 
@@ -75,7 +75,7 @@ public class JobResultsModelTests
     {
         var metadata = new Dictionary<string, string> { { "key", "value" } };
         var result = new JobSubmissionResult { Metadata = metadata };
-        
+
         Assert.That(result.Metadata, Is.EqualTo(metadata));
         Assert.That(result.Metadata["key"], Is.EqualTo("value"));
     }
@@ -84,7 +84,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_CreateSuccess_ReturnsSuccessfulResult()
     {
         var result = JobSubmissionResult.CreateSuccess("job-123", "flink-456");
-        
+
         Assert.That(result.JobId, Is.EqualTo("job-123"));
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-456"));
         Assert.That(result.Success, Is.True);
@@ -98,7 +98,7 @@ public class JobResultsModelTests
         var before = DateTime.UtcNow;
         var result = JobSubmissionResult.CreateSuccess("job-123", "flink-456");
         var after = DateTime.UtcNow;
-        
+
         Assert.That(result.SubmittedAt, Is.GreaterThanOrEqualTo(before));
         Assert.That(result.SubmittedAt, Is.LessThanOrEqualTo(after));
     }
@@ -107,7 +107,7 @@ public class JobResultsModelTests
     public void JobSubmissionResult_CreateFailure_ReturnsFailedResult()
     {
         var result = JobSubmissionResult.CreateFailure("job-123", "Connection timeout");
-        
+
         Assert.That(result.JobId, Is.EqualTo("job-123"));
         Assert.That(result.Success, Is.False);
         Assert.That(result.IsSuccess, Is.False);
@@ -121,7 +121,7 @@ public class JobResultsModelTests
         var before = DateTime.UtcNow;
         var result = JobSubmissionResult.CreateFailure("job-123", "Error");
         var after = DateTime.UtcNow;
-        
+
         Assert.That(result.SubmittedAt, Is.GreaterThanOrEqualTo(before));
         Assert.That(result.SubmittedAt, Is.LessThanOrEqualTo(after));
     }
@@ -134,7 +134,7 @@ public class JobResultsModelTests
     public void JobExecutionResult_DefaultConstructor_InitializesProperties()
     {
         var result = new JobExecutionResult();
-        
+
         Assert.That(result.JobId, Is.EqualTo(string.Empty));
         Assert.That(result.FlinkJobId, Is.EqualTo(string.Empty));
         Assert.That(result.State, Is.EqualTo(string.Empty));
@@ -149,7 +149,7 @@ public class JobResultsModelTests
     {
         var metrics = new JobMetrics { FlinkJobId = "flink-123" };
         var completedAt = DateTime.UtcNow;
-        
+
         var result = new JobExecutionResult
         {
             JobId = "job-123",
@@ -160,7 +160,7 @@ public class JobResultsModelTests
             CompletedAt = completedAt,
             Metrics = metrics
         };
-        
+
         Assert.That(result.JobId, Is.EqualTo("job-123"));
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-456"));
         Assert.That(result.State, Is.EqualTo("FINISHED"));
@@ -174,7 +174,7 @@ public class JobResultsModelTests
     public void JobExecutionResult_SetError_ReturnsValue()
     {
         var result = new JobExecutionResult { Error = "Job failed" };
-        
+
         Assert.That(result.Error, Is.EqualTo("Job failed"));
     }
 
@@ -186,7 +186,7 @@ public class JobResultsModelTests
     public void JobStatus_DefaultConstructor_InitializesProperties()
     {
         var status = new JobStatus();
-        
+
         Assert.That(status.JobId, Is.EqualTo(string.Empty));
         Assert.That(status.FlinkJobId, Is.EqualTo(string.Empty));
         Assert.That(status.State, Is.EqualTo(string.Empty));
@@ -204,7 +204,7 @@ public class JobResultsModelTests
         {
             EndTime = DateTime.UtcNow
         };
-        
+
         Assert.That(status.Duration, Is.Null);
     }
 
@@ -215,7 +215,7 @@ public class JobResultsModelTests
         {
             StartTime = DateTime.UtcNow
         };
-        
+
         Assert.That(status.Duration, Is.Null);
     }
 
@@ -224,13 +224,13 @@ public class JobResultsModelTests
     {
         var startTime = DateTime.UtcNow;
         var endTime = startTime.AddMinutes(5);
-        
+
         var status = new JobStatus
         {
             StartTime = startTime,
             EndTime = endTime
         };
-        
+
         Assert.That(status.Duration, Is.Not.Null);
         Assert.That(status.Duration!.Value.TotalMinutes, Is.EqualTo(5).Within(0.1));
     }
@@ -241,7 +241,7 @@ public class JobResultsModelTests
         var startTime = DateTime.UtcNow.AddMinutes(-10);
         var endTime = DateTime.UtcNow;
         var metrics = new JobMetrics();
-        
+
         var status = new JobStatus
         {
             JobId = "job-123",
@@ -252,7 +252,7 @@ public class JobResultsModelTests
             ErrorMessage = "Warning message",
             Metrics = metrics
         };
-        
+
         Assert.That(status.JobId, Is.EqualTo("job-123"));
         Assert.That(status.FlinkJobId, Is.EqualTo("flink-456"));
         Assert.That(status.State, Is.EqualTo("RUNNING"));
@@ -270,7 +270,7 @@ public class JobResultsModelTests
     public void JobMetrics_DefaultConstructor_InitializesProperties()
     {
         var metrics = new JobMetrics();
-        
+
         Assert.That(metrics.FlinkJobId, Is.EqualTo(string.Empty));
         Assert.That(metrics.Runtime, Is.Null);
         Assert.That(metrics.RecordsIn, Is.EqualTo(0));
@@ -294,7 +294,7 @@ public class JobResultsModelTests
         var duration = TimeSpan.FromMinutes(35);
         var lastCheckpoint = DateTime.UtcNow;
         var customMetrics = new Dictionary<string, object> { { "custom", "value" } };
-        
+
         var metrics = new JobMetrics
         {
             FlinkJobId = "flink-123",
@@ -311,7 +311,7 @@ public class JobResultsModelTests
             Duration = duration,
             CustomMetrics = customMetrics
         };
-        
+
         Assert.That(metrics.FlinkJobId, Is.EqualTo("flink-123"));
         Assert.That(metrics.Runtime, Is.EqualTo(runtime));
         Assert.That(metrics.RecordsIn, Is.EqualTo(1000));
@@ -334,7 +334,7 @@ public class JobResultsModelTests
         metrics.CustomMetrics["throughput"] = 1000.5;
         metrics.CustomMetrics["latency"] = 15;
         metrics.CustomMetrics["errors"] = true;
-        
+
         Assert.That(metrics.CustomMetrics["throughput"], Is.EqualTo(1000.5));
         Assert.That(metrics.CustomMetrics["latency"], Is.EqualTo(15));
         Assert.That(metrics.CustomMetrics["errors"], Is.EqualTo(true));
@@ -348,7 +348,7 @@ public class JobResultsModelTests
     public void FlinkJobGatewayConfiguration_DefaultConstructor_SetsDefaults()
     {
         var config = new FlinkJobGatewayConfiguration();
-        
+
         Assert.That(config.BaseUrl, Is.EqualTo("http://localhost:8080"));
         Assert.That(config.ApiKey, Is.Null);
         Assert.That(config.HttpTimeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
@@ -364,7 +364,7 @@ public class JobResultsModelTests
         {
             BaseUrl = "http://flink-gateway:9090"
         };
-        
+
         Assert.That(config.BaseUrl, Is.EqualTo("http://flink-gateway:9090"));
     }
 
@@ -375,7 +375,7 @@ public class JobResultsModelTests
         {
             ApiKey = "secret-key-123"
         };
-        
+
         Assert.That(config.ApiKey, Is.EqualTo("secret-key-123"));
     }
 
@@ -387,7 +387,7 @@ public class JobResultsModelTests
         {
             HttpTimeout = timeout
         };
-        
+
         Assert.That(config.HttpTimeout, Is.EqualTo(timeout));
     }
 
@@ -398,7 +398,7 @@ public class JobResultsModelTests
         {
             UseHttps = true
         };
-        
+
         Assert.That(config.UseHttps, Is.True);
     }
 
@@ -409,7 +409,7 @@ public class JobResultsModelTests
         {
             MaxRetries = 5
         };
-        
+
         Assert.That(config.MaxRetries, Is.EqualTo(5));
     }
 
@@ -421,7 +421,7 @@ public class JobResultsModelTests
         {
             RetryDelay = delay
         };
-        
+
         Assert.That(config.RetryDelay, Is.EqualTo(delay));
     }
 
@@ -430,7 +430,7 @@ public class JobResultsModelTests
     {
         var timeout = TimeSpan.FromMinutes(15);
         var delay = TimeSpan.FromSeconds(3);
-        
+
         var config = new FlinkJobGatewayConfiguration
         {
             BaseUrl = "https://flink.example.com",
@@ -440,7 +440,7 @@ public class JobResultsModelTests
             MaxRetries = 10,
             RetryDelay = delay
         };
-        
+
         Assert.That(config.BaseUrl, Is.EqualTo("https://flink.example.com"));
         Assert.That(config.ApiKey, Is.EqualTo("api-key-789"));
         Assert.That(config.HttpTimeout, Is.EqualTo(timeout));

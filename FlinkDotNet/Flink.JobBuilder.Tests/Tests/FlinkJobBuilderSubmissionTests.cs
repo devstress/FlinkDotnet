@@ -16,7 +16,7 @@ public class FlinkJobBuilderSubmissionTests
         var jobDef = FlinkJobBuilder.FromKafka("test-topic")
             .ToConsole()
             .BuildJobDefinition();
-        
+
         var result = await mockService.SubmitJobAsync(jobDef);
 
         Assert.That(result, Is.Not.Null);
@@ -32,7 +32,7 @@ public class FlinkJobBuilderSubmissionTests
         var jobDef = FlinkJobBuilder.FromKafka("test-topic")
             .ToConsole()
             .BuildJobDefinition();
-        
+
         jobDef.Metadata.JobName = "MyTestJob";
         await mockService.SubmitJobAsync(jobDef);
 
@@ -131,7 +131,7 @@ public class FlinkJobBuilderSubmissionTests
             FlinkJobId = "test-job-id",
             ErrorMessage = "Job execution failed"
         };
-        
+
         var status = await mockService.GetJobStatusAsync("test-job-id");
 
         Assert.That(status, Is.Not.Null);
@@ -148,7 +148,7 @@ public class FlinkJobBuilderSubmissionTests
             State = "CANCELED",
             FlinkJobId = "test-job-id"
         };
-        
+
         var status = await mockService.GetJobStatusAsync("test-job-id");
 
         Assert.That(status, Is.Not.Null);
@@ -179,7 +179,7 @@ public class FlinkJobBuilderSubmissionTests
     public async System.Threading.Tasks.Task JobStatus_CanCheckMultipleStates()
     {
         var mockService = new MockFlinkJobGatewayService();
-        
+
         // Test RUNNING state
         mockService.StatusToReturn = new JobStatus { State = "RUNNING", FlinkJobId = "job1" };
         var status1 = await mockService.GetJobStatusAsync("job1");
@@ -215,7 +215,7 @@ public class FlinkJobBuilderSubmissionTests
     {
         var mockService = new MockFlinkJobGatewayService();
         mockService.HealthCheckResult = true;
-        
+
         var result = await mockService.HealthCheckAsync();
 
         Assert.That(result, Is.True);
@@ -234,7 +234,7 @@ public class FlinkJobBuilderSubmissionTests
             .Map("x => x.ToUpper()")
             .ToKafka("output-topic")
             .BuildJobDefinition();
-        
+
         jobDef.Metadata.JobName = "TestWorkflow";
         var submitResult = await mockService.SubmitJobAsync(jobDef);
 
@@ -252,15 +252,39 @@ public class FlinkJobBuilderSubmissionTests
 /// </summary>
 public class MockFlinkJobGatewayService : IFlinkJobGatewayService
 {
-    public JobSubmissionResult? LastSubmittedResult { get; set; }
-    public JobDefinition? LastSubmittedJobDefinition { get; set; }
-    public JobStatus? StatusToReturn { get; set; }
-    public JobStatus[]? StatusSequence { get; set; }
-    public int StatusPollCount { get; set; }
+    public JobSubmissionResult? LastSubmittedResult
+    {
+        get; set;
+    }
+    public JobDefinition? LastSubmittedJobDefinition
+    {
+        get; set;
+    }
+    public JobStatus? StatusToReturn
+    {
+        get; set;
+    }
+    public JobStatus[]? StatusSequence
+    {
+        get; set;
+    }
+    public int StatusPollCount
+    {
+        get; set;
+    }
     public bool HealthCheckResult { get; set; } = true;
-    public bool ShouldThrowOnSubmit { get; set; }
-    public bool ValidationShouldFail { get; set; }
-    public System.Threading.CancellationToken LastCancellationToken { get; set; }
+    public bool ShouldThrowOnSubmit
+    {
+        get; set;
+    }
+    public bool ValidationShouldFail
+    {
+        get; set;
+    }
+    public System.Threading.CancellationToken LastCancellationToken
+    {
+        get; set;
+    }
 
     public System.Threading.Tasks.Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, System.Threading.CancellationToken cancellationToken = default)
     {

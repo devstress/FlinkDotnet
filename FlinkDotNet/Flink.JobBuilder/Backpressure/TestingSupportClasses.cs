@@ -14,7 +14,7 @@ public class ConsumerLagMonitor
 
     public bool IsContinuousMonitoringActive() => _continuousMonitoringActive;
     public long GetCurrentLag() => _currentLag;
-    
+
     public bool SimulateLagSpike(long lagAmount)
     {
         _currentLag = lagAmount;
@@ -25,27 +25,33 @@ public class ConsumerLagMonitor
 public class ConsistentHashPartitionManager
 {
     private TimeSpan _lastRebalanceTime = TimeSpan.FromMilliseconds(300);
-    
+
     public TimeSpan GetLastRebalanceTime() => _lastRebalanceTime;
-    
+
     public PartitionRebalanceResult TriggerRebalancing()
     {
         _lastRebalanceTime = TimeSpan.FromMilliseconds(300);
-        return new PartitionRebalanceResult 
-        { 
-            Success = true, 
-            PartitionsReassigned = 8 
+        return new PartitionRebalanceResult
+        {
+            Success = true,
+            PartitionsReassigned = 8
         };
     }
-    
+
     public static bool ValidateOptimalRebalancing() => true;
     public static bool ValidateFunction(string function, string behavior) => true;
 }
 
 public class PartitionRebalanceResult
 {
-    public bool Success { get; init; }
-    public int PartitionsReassigned { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public int PartitionsReassigned
+    {
+        get; init;
+    }
 }
 
 public class FairPartitionDistributor
@@ -105,22 +111,34 @@ public class FiniteResourceManager
             RateLimitingApplied = scenario.ResourcePressure > 0.8
         };
     }
-    
+
     public static bool ValidateTarget(string target, string measurement) => true;
 }
 
 public class ResourceConstrainedScenario
 {
     public string Name { get; init; } = string.Empty;
-    public int LoadRate { get; init; }
-    public double ResourcePressure { get; init; }
+    public int LoadRate
+    {
+        get; init;
+    }
+    public double ResourcePressure
+    {
+        get; init;
+    }
     public string ExpectedBehavior { get; init; } = string.Empty;
 }
 
 public class ResourceConstrainedScenarioResult
 {
-    public bool Success { get; init; }
-    public bool RateLimitingApplied { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public bool RateLimitingApplied
+    {
+        get; init;
+    }
 }
 
 public static class DlqManager
@@ -164,11 +182,23 @@ public class LoadTestPhase
 
 public class LoadTestResult
 {
-    public bool Success { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
     public string RebalancingPerformance { get; init; } = string.Empty;
-    public bool NoisyNeighborEffectiveness { get; init; }
-    public bool RateLimitingEffectiveness { get; init; }
-    public bool FairDistributionMaintained { get; init; }
+    public bool NoisyNeighborEffectiveness
+    {
+        get; init;
+    }
+    public bool RateLimitingEffectiveness
+    {
+        get; init;
+    }
+    public bool FairDistributionMaintained
+    {
+        get; init;
+    }
 }
 
 // Additional supporting classes for comprehensive test coverage
@@ -184,7 +214,10 @@ public static class AutoScaler
 
 public class ScalingMetrics
 {
-    public TimeSpan TriggerTime { get; init; }
+    public TimeSpan TriggerTime
+    {
+        get; init;
+    }
 }
 
 public static class OperationsManager
@@ -226,8 +259,14 @@ public class ConsumerScenarioExecutor
 public class ConsumerScenario
 {
     public string Name { get; init; } = string.Empty;
-    public int ConsumerCount { get; init; }
-    public int ProcessingRate { get; init; }
+    public int ConsumerCount
+    {
+        get; init;
+    }
+    public int ProcessingRate
+    {
+        get; init;
+    }
     public string ExpectedBehavior { get; init; } = string.Empty;
     public ConsistentHashPartitionManager PartitionManager { get; init; } = new();
     public FairPartitionDistributor FairDistributor { get; init; } = new();
@@ -235,7 +274,10 @@ public class ConsumerScenario
 
 public class ConsumerScenarioResult
 {
-    public bool Success { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
 }
 
 public static class DashboardManager
