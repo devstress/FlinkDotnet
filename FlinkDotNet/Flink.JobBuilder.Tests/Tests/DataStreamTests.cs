@@ -1266,6 +1266,8 @@ public class DataStreamTests
 
         Assert.That(filtered, Is.Not.Null);
         Assert.That(filtered, Is.TypeOf<DataStream<int>>());
+        // Verify the IFilterFunction overload is correctly resolved
+        Assert.That(filterFunc, Is.Not.Null);
     }
 
     [Test]
@@ -1281,6 +1283,8 @@ public class DataStreamTests
 
         Assert.That(flatMapped, Is.Not.Null);
         Assert.That(flatMapped, Is.TypeOf<DataStream<string>>());
+        // Verify the IFlatMapFunction overload is correctly resolved
+        Assert.That(flatMapFunc, Is.Not.Null);
     }
 
     [Test]
