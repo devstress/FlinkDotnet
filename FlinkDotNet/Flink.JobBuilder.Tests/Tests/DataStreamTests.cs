@@ -770,6 +770,35 @@ public class AllWindowedStreamTests
         Assert.That(aggregated, Is.TypeOf<DataStream<int>>());
     }
 
+    [Test]
+    public void Aggregate_WithTimeWindow_CreatesAggregatedStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(new TestSourceFunction(), "test-source");
+        var windowed = stream.TimeWindowAll(Time.Seconds(10));
+        var aggFunc = new TestAggregateFunction();
+
+        var aggregated = windowed.Aggregate(aggFunc);
+
+        Assert.That(aggregated, Is.Not.Null);
+        Assert.That(aggregated, Is.TypeOf<DataStream<int>>());
+        Assert.That(aggregated.GetExecutionEnvironment(), Is.SameAs(env));
+    }
+
+    [Test]
+    public void Aggregate_WithCountWindow_ReturnsAggregatedDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(new TestSourceFunction(), "test-source");
+        var windowed = stream.CountWindowAll(10);
+        var aggFunc = new TestAggregateFunction();
+
+        var aggregated = windowed.Aggregate(aggFunc);
+
+        Assert.That(aggregated, Is.Not.Null);
+        Assert.That(aggregated, Is.TypeOf<DataStream<int>>());
+    }
+
     #endregion
 }
 

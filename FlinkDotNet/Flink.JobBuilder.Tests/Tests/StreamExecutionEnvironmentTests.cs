@@ -276,4 +276,123 @@ public class StreamExecutionEnvironmentTests
     }
 
     #endregion
+
+    #region KafkaSourceFunction Tests
+
+    [Test]
+    public void KafkaSourceFunction_Topic_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        var topic = kafkaSource.Topic;
+
+        Assert.That(topic, Is.EqualTo("test-topic"));
+    }
+
+    [Test]
+    public void KafkaSourceFunction_BootstrapServers_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        var servers = kafkaSource.BootstrapServers;
+
+        Assert.That(servers, Is.EqualTo("localhost:9092"));
+    }
+
+    [Test]
+    public void KafkaSourceFunction_GroupId_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        var groupId = kafkaSource.GroupId;
+
+        Assert.That(groupId, Is.EqualTo("test-group"));
+    }
+
+    [Test]
+    public void KafkaSourceFunction_StartingOffsets_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        var offsets = kafkaSource.StartingOffsets;
+
+        Assert.That(offsets, Is.EqualTo("earliest"));
+    }
+
+    [Test]
+    public async Task KafkaSourceFunction_RunAsync_ReturnsEmptySequence()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        var results = new List<string>();
+        await foreach (var item in kafkaSource.RunAsync(CancellationToken.None))
+        {
+            results.Add(item);
+        }
+
+        Assert.That(results, Is.Empty);
+    }
+
+    #endregion
+
+    #region StreamExecutionEnvironmentExtensions Tests
+
+    [Test]
+    public void SetStreamTimeCharacteristic_ProcessingTime_ReturnsEnvironment()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        var result = env.SetStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
+
+        Assert.That(result, Is.SameAs(env));
+    }
+
+    [Test]
+    public void SetStreamTimeCharacteristic_EventTime_ReturnsEnvironment()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        var result = env.SetStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+
+        Assert.That(result, Is.SameAs(env));
+    }
+
+    [Test]
+    public void AddSource_WithSourceFunctionExtension_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var sourceFunc = new TestSourceFunction();
+
+        var stream = env.AddSource(sourceFunc);
+
+        Assert.That(stream, Is.Not.Null);
+        Assert.That(stream, Is.TypeOf<DataStream<int>>());
+    }
+
+    #endregion
 }
