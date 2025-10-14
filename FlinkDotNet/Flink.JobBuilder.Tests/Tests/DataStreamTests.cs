@@ -2650,4 +2650,161 @@ public class AdvancedDataStreamTests
     }
 
     #endregion
+
+    #region StreamExecutionEnvironment Coverage Tests - Chunk F
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithValidValue_SetsMaxParallelism()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.SetMaxParallelism(1000);
+
+        Assert.That(env.GetMaxParallelism(), Is.EqualTo(1000));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithZero_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithNegative_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetMaxParallelism_WithTooLarge_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_SetBufferTimeout_SetsValue()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.SetBufferTimeout(500);
+
+        Assert.That(env.GetBufferTimeout(), Is.EqualTo(500));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_DisableOperatorChaining_DisablesChaining()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.DisableOperatorChaining();
+
+        Assert.That(env.IsChainingEnabled(), Is.False);
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_IsChainingEnabled_DefaultIsTrue()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.That(env.IsChainingEnabled(), Is.True);
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_EnableCheckpointing_SetsInterval()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.EnableCheckpointing(5000);
+
+        Assert.That(env.GetCheckpointInterval(), Is.EqualTo(5000));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_GetCheckpointInterval_DefaultIsNegativeOne()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        Assert.That(env.GetCheckpointInterval(), Is.EqualTo(-1));
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_EnableAdaptiveScheduler_EnablesScheduler()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        env.EnableAdaptiveScheduler(true);
+
+        Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
+    }
+
+    [Test]
+    public void StreamExecutionEnvironment_EnableAdaptiveScheduler_WithFalse_DisablesScheduler()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        env.EnableAdaptiveScheduler(true);
+
+        env.EnableAdaptiveScheduler(false);
+
+        Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.False);
+    }
+
+    #endregion
+
+    #region Source Function Wrapper Tests - Chunk F
+
+    [Test]
+    public void MappedSourceFunction_Constructor_WithNullSource_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => 
+            new MappedSourceFunction<int, int>(null!, s => s * 2));
+    }
+
+    [Test]
+    public void MappedSourceFunction_Constructor_WithNullMapFunction_ThrowsArgumentNullException()
+    {
+        var source = new TestSourceFunction();
+
+        Assert.Throws<ArgumentNullException>(() => 
+            new MappedSourceFunction<int, int>(source, null!));
+    }
+
+    [Test]
+    public void FlatMappedSourceFunction_Constructor_WithNullSource_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => 
+            new FlatMappedSourceFunction<int, int>(null!, s => new[] { s, s * 2 }));
+    }
+
+    [Test]
+    public void FlatMappedSourceFunction_Constructor_WithNullFlatMapFunction_ThrowsArgumentNullException()
+    {
+        var source = new TestSourceFunction();
+
+        Assert.Throws<ArgumentNullException>(() => 
+            new FlatMappedSourceFunction<int, int>(source, null!));
+    }
+
+    [Test]
+    public void FilteredSourceFunction_Constructor_WithNullSource_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => 
+            new FilteredSourceFunction<int>(null!, s => s > 0));
+    }
+
+    [Test]
+    public void FilteredSourceFunction_Constructor_WithNullFilterFunction_ThrowsArgumentNullException()
+    {
+        var source = new TestSourceFunction();
+
+        Assert.Throws<ArgumentNullException>(() => 
+            new FilteredSourceFunction<int>(source, null!));
+    }
+
+    #endregion
 }
