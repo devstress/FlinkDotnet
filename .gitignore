@@ -47,9 +47,7 @@ ScaffoldingReadMe.txt
 *.log
 CodeCoverage/
 CoverageReport/
-coverage-report/
-coverage-report-new/
-coverage-report-chunk1b/
+coverage-report*/
 
 # SonarQube local analysis
 .sonarqube/
@@ -65,13 +63,7 @@ allure-report/
 TestResults/
 CoverageReport/
 coverage-report/
-test-results/
-test-results-stream-exec/
-test-results-final/
-test-results-final2/
-test-results-final3/
-test-results-final4/
-test-results-final5/
+test-results*/
 
 # Producer build artifacts
 scripts/producer/Producer
