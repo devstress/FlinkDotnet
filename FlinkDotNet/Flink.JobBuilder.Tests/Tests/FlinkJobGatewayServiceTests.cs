@@ -974,6 +974,25 @@ public class FlinkJobGatewayServiceTests
     #region Private Method Tests - Coverage Enhancement
 
     [Test]
+    public void LogBootstrapServersInJson_WithValidKafkaSource_LogsBootstrapServers()
+    {
+        // Use reflection to test private method
+        var method = typeof(FlinkJobGatewayService).GetMethod(
+            "LogBootstrapServersInJson",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        var json = @"{
+            ""source"": {
+                ""bootstrapServers"": ""localhost:9092"",
+                ""topic"": ""test-topic""
+            }
+        }";
+
+        // Act - should not throw and will trigger ExtractBootstrapServersFromJson
+        Assert.DoesNotThrow(() => method!.Invoke(null, new object[] { json }));
+    }
+
+    [Test]
     public void CountDiscriminatorOccurrences_WithValidJson_CountsDiscriminators()
     {
         // Use reflection to test private method
