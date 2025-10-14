@@ -324,5 +324,24 @@ namespace Flink.JobBuilder.Tests.Tests
         }
 
         #endregion
+
+        #region AddSource Extension Tests - Coverage Enhancement
+
+        [Test]
+        public void AddSource_WithoutNameParameter_ReturnsDataStreamWithDefaultName()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var sourceFunction = new TestSourceFunction();
+
+            // Act
+            var result = StreamExecutionEnvironmentExtensions.AddSource(env, sourceFunction);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result, Is.TypeOf<DataStream<string>>());
+        }
+
+        #endregion
     }
 }
