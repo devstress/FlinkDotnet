@@ -65,6 +65,10 @@ CoverageReport/
 coverage-report/
 test-results*/
 
+# Coverage output folders (standardize to CoverageReport only)
+**/coverage-*/
+**/Coverage*/
+
 # Producer build artifacts
 scripts/producer/Producer
 scripts/producer/Producer.exe

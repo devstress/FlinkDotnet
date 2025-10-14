@@ -1,0 +1,167 @@
+Summary
+  Generated on: 10/14/2025 - 18:21:11
+  Coverage date: 10/14/2025 - 18:19:55 - 10/14/2025 - 18:21:00
+  Parser: MultiReport (5x Cobertura)
+  Assemblies: 6
+  Classes: 135
+  Files: 38
+  Line coverage: 80.2%
+  Covered lines: 2369
+  Uncovered lines: 584
+  Coverable lines: 2953
+  Total lines: 14032
+  Branch coverage: 68.6% (830 of 1209)
+  Covered branches: 830
+  Total branches: 1209
+  Method coverage: 88.2% (527 of 597)
+  Full method coverage: 81.9% (489 of 597)
+  Covered methods: 527
+  Fully covered methods: 489
+  Total methods: 597
+
+Flink.JobBuilder                                                          83%
+  Flink.JobBuilder.Backpressure.AutoScaler                               100%
+  Flink.JobBuilder.Backpressure.BackpressureTestRunner                   100%
+  Flink.JobBuilder.Backpressure.BufferedItem<T>                          100%
+  Flink.JobBuilder.Backpressure.BufferPool<T>                           94.8%
+  Flink.JobBuilder.Backpressure.ComprehensiveLoadTester                  100%
+  Flink.JobBuilder.Backpressure.ConsistentHashPartitionManager           100%
+  Flink.JobBuilder.Backpressure.ConsumerLagMonitor                       100%
+  Flink.JobBuilder.Backpressure.ConsumerScenario                         100%
+  Flink.JobBuilder.Backpressure.ConsumerScenarioExecutor                 100%
+  Flink.JobBuilder.Backpressure.DashboardManager                         100%
+  Flink.JobBuilder.Backpressure.DefaultKafkaClientFactory                100%
+  Flink.JobBuilder.Backpressure.DefaultKafkaConsumerLagMonitor          39.7%
+  Flink.JobBuilder.Backpressure.DlqManager                               100%
+  Flink.JobBuilder.Backpressure.FailureSimulator                         100%
+  Flink.JobBuilder.Backpressure.FairPartitionDistributor                 100%
+  Flink.JobBuilder.Backpressure.FiniteResourceManager                    100%
+  Flink.JobBuilder.Backpressure.InMemoryRateLimiterStateStorage          100%
+  Flink.JobBuilder.Backpressure.KafkaConfig                              100%
+  Flink.JobBuilder.Backpressure.KafkaPerformanceConfig                   100%
+  Flink.JobBuilder.Backpressure.KafkaRateLimiterStateStorage            80.7%
+  Flink.JobBuilder.Backpressure.KafkaSecurityConfig                      100%
+  Flink.JobBuilder.Backpressure.LagBasedRateLimiter                     80.1%
+  Flink.JobBuilder.Backpressure.LagBasedWaitingRequest                     0%
+  Flink.JobBuilder.Backpressure.LoadTestPhase                            100%
+  Flink.JobBuilder.Backpressure.LoadTestPhaseExecution                   100%
+  Flink.JobBuilder.Backpressure.LoadTestResult                           100%
+  Flink.JobBuilder.Backpressure.LocalJobManagerRateLimiterCoordinator    100%
+  Flink.JobBuilder.Backpressure.ManagementActionManager                  100%
+  Flink.JobBuilder.Backpressure.MetricsValidator                         100%
+  Flink.JobBuilder.Backpressure.MonitoringManager                        100%
+  Flink.JobBuilder.Backpressure.MultiClusterKafkaManager                 100%
+  Flink.JobBuilder.Backpressure.MultiTierRateLimiter                    54.6%
+  Flink.JobBuilder.Backpressure.NetworkBottleneckSimulator               100%
+  Flink.JobBuilder.Backpressure.NetworkBoundBackpressureController       100%
+  Flink.JobBuilder.Backpressure.NoisyNeighborManager                     100%
+  Flink.JobBuilder.Backpressure.OperationsManager                        100%
+  Flink.JobBuilder.Backpressure.ProcessingCharacteristicValidator        100%
+  Flink.JobBuilder.Backpressure.ProductionReadinessValidator             100%
+  Flink.JobBuilder.Backpressure.RateLimiterFactory                      92.5%
+  Flink.JobBuilder.Backpressure.RateLimiterState                         100%
+  Flink.JobBuilder.Backpressure.RateLimitingContext                      100%
+  Flink.JobBuilder.Backpressure.RateLimitingTier                         100%
+  Flink.JobBuilder.Backpressure.ResourceConstrainedScenario              100%
+  Flink.JobBuilder.Backpressure.SlidingWindowRateLimiter                  76%
+  Flink.JobBuilder.Backpressure.StorageBackendInfo                       100%
+  Flink.JobBuilder.Backpressure.TokenBucketRateLimiter                  85.9%
+  Flink.JobBuilder.Backpressure.TopicDesignValidator                     100%
+  Flink.JobBuilder.Backpressure.VariableSpeedProducer                      0%
+  Flink.JobBuilder.Backpressure.WaitingRequest                           100%
+  Flink.JobBuilder.Backpressure.WorldClassStandardValidator                0%
+  Flink.JobBuilder.Demo.RateLimitingDemo                                   0%
+  Flink.JobBuilder.Extensions.FlinkJobBuilderExtensions                  100%
+  Flink.JobBuilder.Extensions.JobDefinitionExtensions                    100%
+  Flink.JobBuilder.Extensions.JobValidationResult                        100%
+  Flink.JobBuilder.Extensions.ServiceCollectionExtensions                100%
+  Flink.JobBuilder.Flink.ConsumeResult                                   100%
+  Flink.JobBuilder.Flink.FlinkKafkaConsumerGroup                         100%
+  Flink.JobBuilder.Flink.FlinkRedisSink                                 61.5%
+  Flink.JobBuilder.Flink.RedisOperation                                  100%
+  Flink.JobBuilder.Flink.RedisTransactionResult                          100%
+  Flink.JobBuilder.Flink.TopicPartition                                  100%
+  Flink.JobBuilder.FlinkJobBuilder                                       100%
+  Flink.JobBuilder.Models.AggregateOperationDefinition                   100%
+  Flink.JobBuilder.Models.AsyncFunctionOperationDefinition               100%
+  Flink.JobBuilder.Models.ConsoleSinkDefinition                          100%
+  Flink.JobBuilder.Models.DatabaseSinkDefinition                         100%
+  Flink.JobBuilder.Models.DatabaseSourceDefinition                       100%
+  Flink.JobBuilder.Models.FileSinkDefinition                             100%
+  Flink.JobBuilder.Models.FileSourceDefinition                           100%
+  Flink.JobBuilder.Models.FilterOperationDefinition                      100%
+  Flink.JobBuilder.Models.FlinkJobGatewayConfiguration                   100%
+  Flink.JobBuilder.Models.GroupByOperationDefinition                     100%
+  Flink.JobBuilder.Models.HttpSinkDefinition                             100%
+  Flink.JobBuilder.Models.HttpSourceDefinition                           100%
+  Flink.JobBuilder.Models.JobDefinition                                  100%
+  Flink.JobBuilder.Models.JobExecutionResult                             100%
+  Flink.JobBuilder.Models.JobMetadata                                    100%
+  Flink.JobBuilder.Models.JobMetrics                                     100%
+  Flink.JobBuilder.Models.JobStatus                                      100%
+  Flink.JobBuilder.Models.JobSubmissionResult                            100%
+  Flink.JobBuilder.Models.JoinOperationDefinition                        100%
+  Flink.JobBuilder.Models.KafkaSinkDefinition                            100%
+  Flink.JobBuilder.Models.KafkaSourceDefinition                          100%
+  Flink.JobBuilder.Models.MapOperationDefinition                         100%
+  Flink.JobBuilder.Models.ProcessFunctionOperationDefinition             100%
+  Flink.JobBuilder.Models.RedisSinkDefinition                            100%
+  Flink.JobBuilder.Models.RetryOperationDefinition                       100%
+  Flink.JobBuilder.Models.SideOutputOperationDefinition                  100%
+  Flink.JobBuilder.Models.SqlSourceDefinition                            100%
+  Flink.JobBuilder.Models.StateOperationDefinition                       100%
+  Flink.JobBuilder.Models.TimerOperationDefinition                       100%
+  Flink.JobBuilder.Models.WindowOperationDefinition                      100%
+  Flink.JobBuilder.Services.FlinkJobGatewayService                      94.4%
+  Flink.JobBuilder.Services.IrValidationResult                           100%
+  Flink.JobBuilder.Services.JobDefinitionValidator                      98.5%
+
+FlinkDotNet.ClusterManager                                               100%
+  FlinkDotNet.ClusterManager.Actors.FlinkClusterActor                    100%
+
+FlinkDotNet.Common                                                       100%
+  FlinkDotNet.Common.Configuration                                       100%
+  FlinkDotNet.Common.ExecutionConfig                                     100%
+
+FlinkDotNet.DataStream                                                  98.1%
+  FlinkDotNet.DataStream.AggregatedSourceFunction<T1, T2, T3>            100%
+  FlinkDotNet.DataStream.AggregatingStateDescriptor<T1, T2, T3>          100%
+  FlinkDotNet.DataStream.AllWindowedStream<T>                            100%
+  FlinkDotNet.DataStream.CapturedOperation                               100%
+  FlinkDotNet.DataStream.DataStream<T>                                  95.2%
+  FlinkDotNet.DataStream.DataStreamExtensions                            100%
+  FlinkDotNet.DataStream.FilteredSourceFunction<T>                       100%
+  FlinkDotNet.DataStream.FlatMappedSourceFunction<T1, T2>                100%
+  FlinkDotNet.DataStream.IAsyncFunction<T1, T2>                          100%
+  FlinkDotNet.DataStream.JobClient                                       100%
+  FlinkDotNet.DataStream.JobExecutionResult                              100%
+  FlinkDotNet.DataStream.JobStatus                                       100%
+  FlinkDotNet.DataStream.KafkaSinkFunction<T>                            100%
+  FlinkDotNet.DataStream.KafkaSourceFunction<T>                          100%
+  FlinkDotNet.DataStream.KafkaSourceFunctionExtensions                   100%
+  FlinkDotNet.DataStream.KeyedStream<T1, T2>                             100%
+  FlinkDotNet.DataStream.ListStateDescriptor<T>                          100%
+  FlinkDotNet.DataStream.MappedSourceFunction<T1, T2>                    100%
+  FlinkDotNet.DataStream.MapStateDescriptor<T1, T2>                      100%
+  FlinkDotNet.DataStream.OperationCapture                               98.5%
+  FlinkDotNet.DataStream.OutputTag<T>                                    100%
+  FlinkDotNet.DataStream.ReducingStateDescriptor<T>                      100%
+  FlinkDotNet.DataStream.SavepointResult                                 100%
+  FlinkDotNet.DataStream.StateDescriptor                                 100%
+  FlinkDotNet.DataStream.StopWithSavepointResult                         100%
+  FlinkDotNet.DataStream.StreamExecutionEnvironment                     98.1%
+  FlinkDotNet.DataStream.StreamExecutionEnvironmentExtensions            100%
+  FlinkDotNet.DataStream.Time                                            100%
+  FlinkDotNet.DataStream.TypeInformation<T>                              100%
+  FlinkDotNet.DataStream.ValueStateDescriptor<T>                         100%
+  FlinkDotNet.DataStream.Watermark                                       100%
+  FlinkDotNet.DataStream.WindowDefinition                                100%
+
+FlinkDotNet.JobGateway                                                  38.2%
+  FlinkDotNet.JobGateway.Controllers.JobsController                      100%
+  FlinkDotNet.JobGateway.ModelStateLoggingFilter                         100%
+  FlinkDotNet.JobGateway.Services.FlinkJobManager                       30.4%
+
+FlinkDotNet.Orchestration                                                100%
+  FlinkDotNet.Orchestration.Services.ClusterActorBridge                  100%
+  FlinkDotNet.Orchestration.Services.FlinkOrchestra                      100%
