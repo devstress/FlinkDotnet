@@ -84,16 +84,17 @@ jobs:
       - name: Build FlinkDotNet solution
         shell: bash
         run: |
+          cd FlinkDotNet
           echo "Building FlinkDotNet solution..."
-          dotnet restore FlinkDotNet/FlinkDotNet.sln
-          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
+          dotnet restore FlinkDotNet.sln
+          dotnet build FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
 
       - name: Run tests for FlinkDotNet solution with coverage
+        shell: bash
         run: |
-          Write-Host "Running tests for FlinkDotNet/FlinkDotNet.sln with code coverage..."
-          Push-Location FlinkDotNet
+          cd FlinkDotNet
+          echo "Running tests for FlinkDotNet.sln with code coverage..."
           dotnet test FlinkDotNet.sln --configuration ${{ env.configuration }} --no-build --logger "trx" --results-directory "TestResults" --collect:"XPlat Code Coverage" --settings coverlet.runsettings
-          Pop-Location
 
       - name: Install ReportGenerator tool
         shell: bash
