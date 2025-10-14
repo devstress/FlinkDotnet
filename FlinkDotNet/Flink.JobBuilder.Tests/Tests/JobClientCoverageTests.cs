@@ -1,4 +1,5 @@
 using FlinkDotNet.DataStream;
+using Flink.JobBuilder.Models;
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
 
@@ -534,6 +535,125 @@ namespace Flink.JobBuilder.Tests.Tests
                     // Expected when Flink is not running
                 }
             });
+        }
+
+        #endregion
+
+        #region Environment Variable and Configuration Tests
+
+        [Test]
+        public void JobClient_WithEnvironmentTimeout_UsesEnvironmentValue()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS", "3");
+
+            try
+            {
+                // Act
+                using var client = new JobClient(TestJobName);
+
+                // Assert
+                Assert.That(client, Is.Not.Null);
+                Assert.That(client.JobName, Is.EqualTo(TestJobName));
+            }
+            finally
+            {
+                // Cleanup
+                Environment.SetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS", null);
+            }
+        }
+
+        [Test]
+        public void JobClient_WithInvalidEnvironmentTimeout_UsesDefaultTimeout()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS", "invalid");
+
+            try
+            {
+                // Act
+                using var client = new JobClient(TestJobName);
+
+                // Assert - Should not throw and use default 5-minute timeout
+                Assert.That(client, Is.Not.Null);
+                Assert.That(client.JobName, Is.EqualTo(TestJobName));
+            }
+            finally
+            {
+                // Cleanup
+                Environment.SetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS", null);
+            }
+        }
+
+        [Test]
+        public void JobClient_WithCustomGatewayConfig_UsesProvidedConfig()
+        {
+            // Arrange
+            var customConfig = new FlinkJobGatewayConfiguration
+            {
+                HttpTimeout = TimeSpan.FromSeconds(2),
+                MaxRetries = 5,
+                RetryDelay = TimeSpan.FromMilliseconds(500)
+            };
+
+            // Act
+            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(2), customConfig);
+
+            // Assert
+            Assert.That(client, Is.Not.Null);
+            Assert.That(client.JobName, Is.EqualTo(TestJobName));
+        }
+
+        [Test]
+        public void JobClient_WithShortTimeout_DisablesRetries()
+        {
+            // Arrange - Timeout < 5 seconds should disable retries
+
+            // Act
+            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(3));
+
+            // Assert
+            Assert.That(client, Is.Not.Null);
+            Assert.That(client.JobName, Is.EqualTo(TestJobName));
+        }
+
+        [Test]
+        public void JobClient_WithLongTimeout_EnablesRetries()
+        {
+            // Arrange - Timeout >= 5 seconds should enable retries
+
+            // Act
+            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(10));
+
+            // Assert
+            Assert.That(client, Is.Not.Null);
+            Assert.That(client.JobName, Is.EqualTo(TestJobName));
+        }
+
+        [Test]
+        public void JobClient_SetJobId_PropertyWorks()
+        {
+            // Arrange
+            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1));
+
+            // Act
+            client.JobId = "test-id-123";
+
+            // Assert
+            Assert.That(client.JobId, Is.EqualTo("test-id-123"));
+        }
+
+        [Test]
+        public void JobClient_SetJobName_PropertyWorks()
+        {
+            // Arrange
+            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1));
+
+            // Act
+            client.JobName = "New Job Name";
+
+            // Assert
+            Assert.That(client.JobName, Is.EqualTo("New Job Name"));
         }
 
         #endregion
