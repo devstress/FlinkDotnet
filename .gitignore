@@ -49,6 +49,7 @@ CodeCoverage/
 CoverageReport/
 coverage-report/
 coverage-report-new/
+coverage-chunk*/
 
 # SonarQube local analysis
 .sonarqube/
