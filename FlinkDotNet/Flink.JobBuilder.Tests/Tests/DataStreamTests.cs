@@ -965,6 +965,361 @@ public class DataStreamTests
     }
 
     #endregion
+
+    #region Source Function Behavior Tests
+
+    [Test]
+    public void MappedSourceFunction_ThroughMapOperation_CreatesCorrectStream()
+    {
+        var sourceFunc = new TestSourceFunction();
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(sourceFunc, "test");
+
+        var mapped = stream.Map(x => x * 2);
+
+        // Verify the stream was created and maintains correct type
+        Assert.That(mapped, Is.Not.Null);
+        Assert.That(mapped, Is.TypeOf<DataStream<int>>());
+        
+        // Verify we can chain more operations
+        var filtered = mapped.Filter(x => x > 5);
+        Assert.That(filtered, Is.Not.Null);
+    }
+
+    [Test]
+    public void FilteredSourceFunction_ThroughFilterOperation_CreatesCorrectStream()
+    {
+        var sourceFunc = new TestSourceFunction();
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(sourceFunc, "test");
+
+        var filtered = stream.Filter(x => x > 2);
+
+        Assert.That(filtered, Is.Not.Null);
+        Assert.That(filtered, Is.TypeOf<DataStream<int>>());
+        
+        // Verify chaining works
+        var mapped = filtered.Map(x => x * 2);
+        Assert.That(mapped, Is.Not.Null);
+    }
+
+    [Test]
+    public void FlatMappedSourceFunction_ThroughFlatMapOperation_CreatesCorrectStream()
+    {
+        var sourceFunc = new TestSourceFunction();
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(sourceFunc, "test");
+
+        var flatMapped = stream.FlatMap<int>(x => new[] { x, x * 10 });
+
+        Assert.That(flatMapped, Is.Not.Null);
+        Assert.That(flatMapped, Is.TypeOf<DataStream<int>>());
+        
+        // Verify chaining
+        var filtered = flatMapped.Filter(x => x < 100);
+        Assert.That(filtered, Is.Not.Null);
+    }
+
+    [Test]
+    public void AggregatedSourceFunction_ThroughWindowAggregate_CreatesCorrectStream()
+    {
+        var sourceFunc = new TestSourceFunction();
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(sourceFunc, "test");
+        var aggFunc = new TestAggregateFunction();
+
+        var windowed = stream.TimeWindowAll(Time.Seconds(5));
+        var aggregated = windowed.Aggregate(aggFunc);
+
+        Assert.That(aggregated, Is.Not.Null);
+        Assert.That(aggregated, Is.TypeOf<DataStream<int>>());
+        
+        // Verify environment is preserved
+        var env2 = aggregated.GetExecutionEnvironment();
+        Assert.That(env2, Is.SameAs(env));
+    }
+
+    [Test]
+    public void ChainedWrapperFunctions_AllWorkTogether()
+    {
+        var sourceFunc = new TestSourceFunction();
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(sourceFunc, "test");
+
+        // Chain map -> filter -> flatmap -> map
+        var result = stream
+            .Map(x => x * 2)
+            .Filter(x => x > 4)
+            .FlatMap<int>(x => new[] { x, x + 1 })
+            .Map(x => x * 3);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<DataStream<int>>());
+    }
+
+    #endregion
+
+    #region Additional Window and State Coverage Tests
+
+    [Test]
+    public void TimeWindowAll_WithMinutes_CreatesCorrectWindow()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        var windowed = stream.TimeWindowAll(Time.Minutes(5));
+
+        Assert.That(windowed, Is.Not.Null);
+        Assert.That(windowed.GetWindowSize(), Is.Not.Null);
+    }
+
+    [Test]
+    public void TimeWindowAll_WithHours_CreatesCorrectWindow()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        var windowed = stream.TimeWindowAll(Time.Hours(1));
+
+        Assert.That(windowed, Is.Not.Null);
+        Assert.That(windowed.GetWindowSize(), Is.Not.Null);
+    }
+
+    [Test]
+    public void CountWindowAll_WithLargeCount_CreatesCorrectWindow()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        var windowed = stream.CountWindowAll(1000);
+
+        Assert.That(windowed, Is.Not.Null);
+        Assert.That(windowed.GetWindowCount(), Is.EqualTo(1000));
+    }
+
+    #endregion
+
+    #region Complex Chaining and Combination Tests
+
+    [Test]
+    public void ComplexChain_MapFilterFlatMapWindow_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var sourceFunc = new TestSourceFunction();
+        var stream = env.AddSource(sourceFunc, "test");
+
+        var result = stream
+            .Map(x => x * 2)
+            .Filter(x => x > 4)
+            .FlatMap<int>(x => new[] { x, x + 1 })
+            .TimeWindowAll(Time.Seconds(5));
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<AllWindowedStream<int>>());
+    }
+
+    [Test]
+    public void ComplexChain_WithPartitioningAndWindowing_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+
+        var result = stream
+            .Rebalance()
+            .Map(x => x * 2)
+            .Rescale()
+            .Filter(x => x > 5)
+            .TimeWindowAll(Time.Seconds(10));
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<AllWindowedStream<int>>());
+    }
+
+    [Test]
+    public void KeyedStream_AfterMultipleOperations_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+
+        var result = stream
+            .Map(x => x * 2)
+            .Filter(x => x > 10)
+            .KeyBy(x => x % 3)
+            .Reduce((a, b) => a + b);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<DataStream<int>>());
+    }
+
+    [Test]
+    public void AllWindowedStream_MultipleAggregations_Work()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var sourceFunc = new TestSourceFunction();
+        var stream = env.AddSource(sourceFunc, "test");
+        var aggFunc = new TestAggregateFunction();
+
+        var windowed1 = stream.TimeWindowAll(Time.Seconds(5));
+        var aggregated1 = windowed1.Aggregate(aggFunc);
+
+        var windowed2 = stream.CountWindowAll(10);
+        var aggregated2 = windowed2.Aggregate(aggFunc);
+
+        Assert.That(aggregated1, Is.Not.Null);
+        Assert.That(aggregated2, Is.Not.Null);
+    }
+
+    #endregion
+
+    #region Edge Cases and Error Handling
+
+    [Test]
+    public void Where_OnCollectionStream_ReturnsSameStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        // Where on collection stream should return same stream (no-op for local)
+        var filtered = stream.Where("value > 1");
+
+        Assert.That(filtered, Is.Not.Null);
+        Assert.That(filtered, Is.SameAs(stream));
+    }
+
+    [Test]
+    public void AddSink_WithNullFunction_DoesNotThrow()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        // AddSink with null should still return stream without throwing
+        Assert.DoesNotThrow(() => stream.AddSink(null!));
+    }
+
+    [Test]
+    public void KeyedStream_MultipleReduceOperations_Work()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5, 6 });
+        var keyed = stream.KeyBy(x => x % 2);
+
+        var reduced1 = keyed.Reduce((a, b) => a + b);
+        var reduced2 = keyed.Reduce((a, b) => Math.Max(a, b));
+
+        Assert.That(reduced1, Is.Not.Null);
+        Assert.That(reduced2, Is.Not.Null);
+    }
+
+    [Test]
+    public void AllWindowedStream_GetWindowSize_ForTimeWindow_ReturnsNonNull()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        var windowed = stream.TimeWindowAll(Time.Milliseconds(100));
+
+        var size = windowed.GetWindowSize();
+
+        Assert.That(size, Is.Not.Null);
+    }
+
+    [Test]
+    public void DataStream_ComplexTypeTransformations_Work()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        // Transform int -> string -> int -> double
+        var result = stream
+            .Map(x => x.ToString())
+            .Map(s => int.Parse(s))
+            .Map(x => (double)x);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<DataStream<double>>());
+    }
+
+    [Test]
+    public void MapWithIMapFunction_OnCollectionStream_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "test", "data" });
+        var mapFunc = new TestMapFunction();
+
+        var mapped = stream.Map(mapFunc);
+
+        Assert.That(mapped, Is.Not.Null);
+        Assert.That(mapped, Is.TypeOf<DataStream<string>>());
+    }
+
+    [Test]
+    public void FilterWithIFilterFunction_OnCollectionStream_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+        var filterFunc = new TestFilterFunction();
+
+        var filtered = stream.Filter(filterFunc);
+
+        Assert.That(filtered, Is.Not.Null);
+        Assert.That(filtered, Is.TypeOf<DataStream<int>>());
+    }
+
+    [Test]
+    public void FlatMapWithIFlatMapFunction_OnCollectionStream_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a,b", "c,d" });
+        var flatMapFunc = new TestFlatMapFunction();
+
+        var flatMapped = stream.FlatMap(flatMapFunc);
+
+        Assert.That(flatMapped, Is.Not.Null);
+        Assert.That(flatMapped, Is.TypeOf<DataStream<string>>());
+    }
+
+    [Test]
+    public void MultiplePartitioningStrategies_Chained_Work()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+
+        var result = stream
+            .Shuffle()
+            .Rebalance()
+            .Rescale()
+            .Forward()
+            .Broadcast();
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+
+    [Test]
+    public void PartitionCustom_WithIntegerKey_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+
+        var result = stream.PartitionCustom<int>(
+            (key, numPartitions) => key % numPartitions,
+            x => x);
+
+        Assert.That(result, Is.Not.Null);
+    }
+
+    [Test]
+    public void SetMaxParallelism_BoundaryValue_2048_Works()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+
+        var result = stream.SetMaxParallelism(2048);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+
+    #endregion
 }
 
 // Test helper classes
