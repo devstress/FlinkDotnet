@@ -258,7 +258,7 @@ public class KafkaRateLimiterStateStorageTests
     }
 
     [Test]
-    public void LoadStateAsync_ApiSignature_IsCorrect()
+    public async Task LoadStateAsync_ApiSignature_IsCorrect()
     {
         // This test validates that the LoadStateAsync method has the correct signature
         var config = new KafkaConfig { BootstrapServers = "localhost:9092" };
@@ -267,8 +267,9 @@ public class KafkaRateLimiterStateStorageTests
         {
             using var storage = new KafkaRateLimiterStateStorage(config, "test-topic", _mockLogger.Object);
             
-            // Verify the method exists and can be called
-            Assert.That(async () => await storage.LoadStateAsync("test"), Is.TypeOf<Func<Task<RateLimiterState?>>>());
+            // Verify the method exists and returns Task<RateLimiterState?>
+            var result = await storage.LoadStateAsync("test");
+            Assert.That(result, Is.InstanceOf<RateLimiterState>().Or.Null);
         }
         catch (InvalidOperationException)
         {
