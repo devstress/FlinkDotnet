@@ -705,5 +705,29 @@ public class FlinkDotNetCommonTests
         Assert.That(config.RestartStrategy, Is.EqualTo("fixed-delay"));
     }
 
+    [Test]
+    public void Configuration_GetInteger_ReturnsDefaultForMissingKey()
+    {
+        var config = new Configuration();
+        var result = config.GetInteger("missing.key", 999);
+        Assert.That(result, Is.EqualTo(999));
+    }
+
+    [Test]
+    public void Configuration_GetBoolean_ReturnsDefaultForMissingKey()
+    {
+        var config = new Configuration();
+        var result = config.GetBoolean("missing.key", true);
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void Configuration_GetLong_ReturnsDefaultForMissingKey()
+    {
+        var config = new Configuration();
+        var result = config.GetLong("missing.key", 999L);
+        Assert.That(result, Is.EqualTo(999L));
+    }
+
     #endregion
 }
