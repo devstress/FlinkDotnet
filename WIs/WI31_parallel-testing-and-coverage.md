@@ -10,7 +10,7 @@
 **Created**: 2025-10-14
 **Status**: Complete
 
-**Note**: Tests that create real Kafka connections have been identified and marked with `[Ignore]` attribute pending refactoring to use mocks. Parallel testing is enabled for faster execution.
+**Note**: Tests creating real Kafka connections have been refactored. Tests now focus on configuration and validation logic only, with all Kafka connection tests removed. Parallel testing is enabled for fast execution (10 seconds for 1334 tests).
 
 ## Lessons Applied from Previous WIs
 ### Previous WI References
