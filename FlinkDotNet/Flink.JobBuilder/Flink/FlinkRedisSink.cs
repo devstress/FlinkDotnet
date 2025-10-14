@@ -243,43 +243,9 @@ namespace Flink.JobBuilder.Flink
             {
                 if (_db == null)
                     throw new InvalidOperationException("Redis not initialized. Call InitializeAsync().");
+                
                 var tran = _db.CreateTransaction();
-                var pending = new List<Task>();
-                var results = new List<object>();
-
-                foreach (var op in operationList)
-                {
-                    switch (op.Type)
-                    {
-                        case RedisOperationType.Increment:
-                            var incTask = tran.StringIncrementAsync(op.Key!, op.Increment);
-                            pending.Add(incTask);
-                            results.Add(incTask);
-                            break;
-                        case RedisOperationType.SetAdd:
-                            var saddTask = tran.SetAddAsync(op.Key!, op.Member!);
-                            pending.Add(saddTask);
-                            results.Add(saddTask);
-                            break;
-                        case RedisOperationType.Get:
-                            var getTask = tran.StringGetAsync(op.Key!);
-                            pending.Add(getTask);
-                            results.Add(getTask);
-                            break;
-                        case RedisOperationType.Set:
-                            var setTask = tran.StringSetAsync(op.Key!, op.Value?.ToString());
-                            pending.Add(setTask);
-                            results.Add(setTask);
-                            break;
-                        case RedisOperationType.Delete:
-                            var delTask = tran.KeyDeleteAsync(op.Key!);
-                            pending.Add(delTask);
-                            results.Add(delTask);
-                            break;
-                        default:
-                            throw new InvalidOperationException($"Unsupported operation type: {op.Type}");
-                    }
-                }
+                var (pending, results) = AddOperationsToTransaction(tran, operationList);
 
                 var committed = await tran.ExecuteAsync().ConfigureAwait(false);
                 if (!committed)
@@ -288,27 +254,7 @@ namespace Flink.JobBuilder.Flink
                 }
 
                 await Task.WhenAll(pending).ConfigureAwait(false);
-
-                var materialized = new List<object>(results.Count);
-                foreach (var r in results)
-                {
-                    switch (r)
-                    {
-                        case Task<long> tL:
-                            materialized.Add(await tL.ConfigureAwait(false));
-                            break;
-                        case Task<bool> tB:
-                            materialized.Add(await tB.ConfigureAwait(false));
-                            break;
-                        case Task<RedisValue> tV:
-                            var v = await tV.ConfigureAwait(false);
-                            materialized.Add(v.HasValue ? v.ToString()! : string.Empty);
-                            break;
-                        default:
-                            materialized.Add(true);
-                            break;
-                    }
-                }
+                var materialized = await MaterializeResultsAsync(results);
 
                 _logger.LogDebug("Redis transaction completed successfully with {Count} results", materialized.Count);
                 return new RedisTransactionResult { Success = true, Results = materialized };
@@ -318,6 +264,74 @@ namespace Flink.JobBuilder.Flink
                 _logger.LogError(ex, "Failed to execute Redis transaction");
                 throw new InvalidOperationException("Redis transaction execution failed", ex);
             }
+        }
+
+        private static (List<Task> pending, List<object> results) AddOperationsToTransaction(
+            ITransaction tran, List<RedisOperation> operations)
+        {
+            var pending = new List<Task>();
+            var results = new List<object>();
+
+            foreach (var op in operations)
+            {
+                switch (op.Type)
+                {
+                    case RedisOperationType.Increment:
+                        var incTask = tran.StringIncrementAsync(op.Key!, op.Increment);
+                        pending.Add(incTask);
+                        results.Add(incTask);
+                        break;
+                    case RedisOperationType.SetAdd:
+                        var saddTask = tran.SetAddAsync(op.Key!, op.Member!);
+                        pending.Add(saddTask);
+                        results.Add(saddTask);
+                        break;
+                    case RedisOperationType.Get:
+                        var getTask = tran.StringGetAsync(op.Key!);
+                        pending.Add(getTask);
+                        results.Add(getTask);
+                        break;
+                    case RedisOperationType.Set:
+                        var setTask = tran.StringSetAsync(op.Key!, op.Value?.ToString());
+                        pending.Add(setTask);
+                        results.Add(setTask);
+                        break;
+                    case RedisOperationType.Delete:
+                        var delTask = tran.KeyDeleteAsync(op.Key!);
+                        pending.Add(delTask);
+                        results.Add(delTask);
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unsupported operation type: {op.Type}");
+                }
+            }
+
+            return (pending, results);
+        }
+
+        private static async Task<List<object>> MaterializeResultsAsync(List<object> results)
+        {
+            var materialized = new List<object>(results.Count);
+            foreach (var r in results)
+            {
+                switch (r)
+                {
+                    case Task<long> tL:
+                        materialized.Add(await tL.ConfigureAwait(false));
+                        break;
+                    case Task<bool> tB:
+                        materialized.Add(await tB.ConfigureAwait(false));
+                        break;
+                    case Task<RedisValue> tV:
+                        var v = await tV.ConfigureAwait(false);
+                        materialized.Add(v.HasValue ? v.ToString()! : string.Empty);
+                        break;
+                    default:
+                        materialized.Add(true);
+                        break;
+                }
+            }
+            return materialized;
         }
 
         private static string MaskConnectionString(string connectionString)
