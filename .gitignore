@@ -47,8 +47,7 @@ ScaffoldingReadMe.txt
 *.log
 CodeCoverage/
 CoverageReport/
-coverage-report/
-coverage-report-new/
+coverage-report*/
 
 # SonarQube local analysis
 .sonarqube/
@@ -64,7 +63,7 @@ allure-report/
 TestResults/
 CoverageReport/
 coverage-report/
-test-results/
+test-results*/
 
 # Producer build artifacts
 scripts/producer/Producer
@@ -126,3 +125,4 @@ LocalTesting/NativeFlinkJob/target/
 LocalTesting/NativeFlinkJob/dependency-reduced-pom.xml
 *.jar
 test-coverage*/
+test-results*/
