@@ -68,7 +68,6 @@ test-results*/
 # Coverage output folders (standardize to CoverageReport only)
 **/coverage-*/
 **/Coverage*/
-**/*coverage*/
 
 # Producer build artifacts
 scripts/producer/Producer
