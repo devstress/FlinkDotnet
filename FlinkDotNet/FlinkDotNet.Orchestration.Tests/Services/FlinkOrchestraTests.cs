@@ -203,7 +203,7 @@ public class FlinkOrchestraTests
 
         // Act
         var workflowId1 = await _orchestra!.StartOrchestrationWorkflowAsync(request1);
-        await Task.Delay(100); // Small delay to ensure different timestamps
+        await Task.Delay(1); // Minimal delay to ensure unique workflow IDs
         var workflowId2 = await _orchestra!.StartOrchestrationWorkflowAsync(request2);
 
         // Assert

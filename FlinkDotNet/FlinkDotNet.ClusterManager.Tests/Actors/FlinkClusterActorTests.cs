@@ -31,7 +31,8 @@ public class FlinkClusterActorTests
             Name = "test-cluster",
             TaskSlots = 4,
             TaskManagers = 2,
-            FlinkVersion = "1.18.0"
+            FlinkVersion = "1.18.0",
+            RetryBaseDelayMs = 0 // No delays in unit tests
         };
     }
 
@@ -648,7 +649,7 @@ public class FlinkClusterActorTests
 
         // Act
         await actor.StartHealthMonitoringAsync();
-        await Task.Delay(100); // Give monitoring task time to start
+        await Task.Delay(1); // Minimal delay to allow async log to complete
 
         // Assert
         _mockLogger.Verify(
