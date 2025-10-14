@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using Moq;
 using Microsoft.Extensions.Logging;
 using Flink.JobBuilder.Flink;

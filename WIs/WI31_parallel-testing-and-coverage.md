@@ -154,9 +154,23 @@
    - Added `<Using Include="NUnit.Framework" />` to support global using directive
    - Removed explicit `using NUnit.Framework;` from 4 test files to fix IDE0005 warnings
 
-3. **Build Validation**: 
+3. **Fixed Flink.JobBuilder.Tests .csproj**:
+   - Added `<Using Include="NUnit.Framework" />` to support global using directive
+   - Removed explicit `using NUnit.Framework;` from 35 test files to fix IDE0005 warnings
+   - Removed unnecessary using from AssemblyInfo.cs
+
+4. **Build Validation**: 
    - ✅ Build succeeded with 0 errors, 0 warnings
    - ✅ All code analysis warnings fixed
+
+**Additional Test Coverage (Completed)**:
+
+5. **Added TimeAndWatermarkTests.cs** (18 new tests):
+   - 13 tests for Time class covering all factory methods (Milliseconds, Seconds, Minutes, Hours, Days)
+   - Tests for both PascalCase and lowercase (Java Flink-style) factory methods
+   - Tests for ToMilliseconds(), ToString(), edge cases (zero, large values)
+   - 5 tests for Watermark class covering constructor, GetTimestamp(), ToString(), edge cases
+   - ✅ All 18 tests passing
 
 ### Challenges Encountered
 
@@ -170,18 +184,28 @@
    - This project was missing the `<Using Include="NUnit.Framework" />` block
    - Added it to .csproj file to enable assembly-level attributes without explicit using
 
-3. **Flink.JobBuilder.Tests Hanging Issue**:
+3. **Flink.JobBuilder.Tests Missing Global Using**:
+   - This project was also missing the `<Using Include="NUnit.Framework" />` block
+   - Added it and removed explicit using statements from 35 test files
+
+4. **Flink.JobBuilder.Tests Hanging Issue**:
    - The largest test project (718 tests) hangs when running all tests together
    - Appears to be a resource contention or test isolation issue
    - Individual test projects complete successfully with parallel execution enabled
    - This is a pre-existing issue, not introduced by parallel testing changes
 
+5. **Watermark API Difference**:
+   - Initially wrote tests assuming Watermark had a Timestamp property
+   - Actual API uses GetTimestamp() method
+   - Fixed tests to use the correct API
+
 ### Solutions Applied
 
 - Removed unnecessary `using NUnit.Framework;` directives from AssemblyInfo.cs files
-- Added missing `<Using Include="NUnit.Framework" />` to FlinkDotNet.JobGateway.Tests.csproj
-- Removed explicit NUnit using directives from FlinkDotNet.JobGateway.Tests test files
-- Validated build and test execution for projects that complete successfully
+- Added missing `<Using Include="NUnit.Framework" />` to test project .csproj files
+- Removed explicit NUnit using directives from all test files in Flink.JobBuilder.Tests
+- Created comprehensive tests for Time and Watermark classes (18 tests)
+- Validated build and test execution for new tests
 
 ## Phase 5: Testing & Validation
 ### Test Results

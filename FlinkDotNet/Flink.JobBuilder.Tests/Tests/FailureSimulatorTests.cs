@@ -1,5 +1,4 @@
 using Flink.JobBuilder.Backpressure;
-using NUnit.Framework;
 
 namespace Flink.JobBuilder.Tests.Tests;
 

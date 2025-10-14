@@ -1,7 +1,6 @@
 using Flink.JobBuilder.Flink;
 using Microsoft.Extensions.Logging;
 using Moq;
-using NUnit.Framework;
 
 namespace Flink.JobBuilder.Tests.Tests;
 

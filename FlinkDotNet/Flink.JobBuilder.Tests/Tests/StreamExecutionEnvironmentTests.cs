@@ -1,6 +1,5 @@
 using FlinkDotNet.Common;
 using FlinkDotNet.DataStream;
-using NUnit.Framework;
 
 namespace Flink.JobBuilder.Tests.Tests;
 

@@ -5,7 +5,6 @@ using Flink.JobBuilder.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using NUnit.Framework;
 
 namespace Flink.JobBuilder.Tests.Tests;
 
