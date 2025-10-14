@@ -1,15 +1,130 @@
+using Confluent.Kafka;
 using Flink.JobBuilder.Backpressure;
+using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace Flink.JobBuilder.Tests.Tests;
 
 /// <summary>
-/// Unit tests for Kafka configuration classes.
-/// Note: Tests that require actual Kafka connections have been removed per unit test standards.
-/// These tests focus on configuration and validation logic only.
+/// Unit tests for KafkaRateLimiterStateStorage using mocked Kafka clients.
+/// Tests verify configuration, initialization, and state management logic without real Kafka connections.
 /// </summary>
 [TestFixture]
 public class KafkaRateLimiterStateStorageTests
 {
+    private Mock<ILogger<KafkaRateLimiterStateStorage>> _mockLogger = null!;
+    private Mock<IKafkaClientFactory> _mockKafkaFactory = null!;
+    private Mock<IProducer<string, string>> _mockProducer = null!;
+    private Mock<IConsumer<string, string>> _mockConsumer = null!;
+
+    [SetUp]
+    public void SetUp()
+    {
+        _mockLogger = new Mock<ILogger<KafkaRateLimiterStateStorage>>();
+        _mockKafkaFactory = new Mock<IKafkaClientFactory>();
+        _mockProducer = new Mock<IProducer<string, string>>();
+        _mockConsumer = new Mock<IConsumer<string, string>>();
+
+        // Setup factory to return mocked clients
+        _mockKafkaFactory
+            .Setup(f => f.CreateProducer<string, string>(It.IsAny<ProducerConfig>()))
+            .Returns(_mockProducer.Object);
+        
+        _mockKafkaFactory
+            .Setup(f => f.CreateConsumer<string, string>(It.IsAny<ConsumerConfig>()))
+            .Returns(_mockConsumer.Object);
+    }
+
+    [Test]
+    public void Constructor_WithValidConfig_CreatesInstance()
+    {
+        // Arrange
+        var config = new KafkaConfig
+        {
+            BootstrapServers = "localhost:9092"
+        };
+
+        // Act
+        using var storage = new KafkaRateLimiterStateStorage(
+            config, 
+            "test-topic", 
+            _mockLogger.Object, 
+            _mockKafkaFactory.Object);
+
+        // Assert
+        Assert.That(storage, Is.Not.Null);
+        Assert.That(storage.BackendInfo, Is.Not.Null);
+        Assert.That(storage.BackendInfo.BackendType, Is.EqualTo("Apache Kafka"));
+        
+        // Verify factory was called to create clients
+        _mockKafkaFactory.Verify(f => f.CreateProducer<string, string>(It.IsAny<ProducerConfig>()), Times.Once);
+        _mockKafkaFactory.Verify(f => f.CreateConsumer<string, string>(It.IsAny<ConsumerConfig>()), Times.Once);
+    }
+
+    [Test]
+    public void Constructor_WithNullLogger_CreatesInstance()
+    {
+        // Arrange
+        var config = new KafkaConfig
+        {
+            BootstrapServers = "localhost:9092"
+        };
+
+        // Act
+        using var storage = new KafkaRateLimiterStateStorage(
+            config, 
+            "test-topic", 
+            null, 
+            _mockKafkaFactory.Object);
+
+        // Assert
+        Assert.That(storage, Is.Not.Null);
+    }
+
+    [Test]
+    public void Constructor_WithDefaultTopicName_CreatesInstance()
+    {
+        // Arrange
+        var config = new KafkaConfig
+        {
+            BootstrapServers = "localhost:9092"
+        };
+
+        // Act
+        using var storage = new KafkaRateLimiterStateStorage(
+            config, 
+            logger: _mockLogger.Object, 
+            kafkaClientFactory: _mockKafkaFactory.Object);
+
+        // Assert
+        Assert.That(storage, Is.Not.Null);
+    }
+
+    [Test]
+    public void BackendInfo_ReturnsCorrectInformation()
+    {
+        // Arrange
+        var config = new KafkaConfig { BootstrapServers = "localhost:9092" };
+        using var storage = new KafkaRateLimiterStateStorage(
+            config, 
+            "test-topic", 
+            _mockLogger.Object, 
+            _mockKafkaFactory.Object);
+
+        // Act
+        var backendInfo = storage.BackendInfo;
+
+        // Assert
+        Assert.That(backendInfo, Is.Not.Null);
+        Assert.That(backendInfo.BackendType, Is.EqualTo("Apache Kafka"));
+        Assert.That(backendInfo.SupportsDistribution, Is.True);
+        Assert.That(backendInfo.SupportsPersistence, Is.True);
+        Assert.That(backendInfo.SupportsReplication, Is.True);
+        Assert.That(backendInfo.TypicalLatency, Is.EqualTo(TimeSpan.FromMilliseconds(5)));
+    }
+
+    #region Configuration Tests
+
     [Test]
     public void KafkaConfig_HasCorrectDefaults()
     {
@@ -112,4 +227,6 @@ public class KafkaRateLimiterStateStorageTests
         Assert.That(performance.RetentionTime, Is.EqualTo(TimeSpan.FromDays(7)));
         Assert.That(performance.EnableCompaction, Is.True);
     }
+
+    #endregion
 }
