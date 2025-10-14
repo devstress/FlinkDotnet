@@ -307,6 +307,170 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(submissionResult.ErrorMessage, Does.Contain("Internal server error"));
         }
 
+        [Test]
+        public async Task SubmitJob_WithMalformedJson_ReturnsBadRequest()
+        {
+            // Arrange
+            var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("{ \"metadata\": { \"jobId\": \"test\", } }"));
+            controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+            // Act
+            var result = await controller.SubmitJob();
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
+        }
+
+        [Test]
+        public async Task SubmitJob_WithFileSourceDefinition_Succeeds()
+        {
+            // Arrange
+            var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
+            
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "file-job",
+                    Version = "1.0"
+                },
+                Source = new FileSourceDefinition
+                {
+                    Path = "/data/input.txt",
+                    Format = "json"
+                },
+                Sink = new FileSinkDefinition
+                {
+                    Path = "/data/output.txt",
+                    Format = "json"
+                }
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(jobDefinition, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+            var expectedResult = JobSubmissionResult.CreateSuccess("file-job", "flink-file-job-1");
+            _mockJobManager
+                .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            var result = await controller.SubmitJob();
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        }
+
+        [Test]
+        public async Task SubmitJob_WithHttpSourceDefinition_Succeeds()
+        {
+            // Arrange
+            var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
+            
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "http-job",
+                    Version = "1.0"
+                },
+                Source = new HttpSourceDefinition
+                {
+                    Url = "https://api.example.com/data",
+                    Method = "GET",
+                    IntervalSeconds = 60
+                },
+                Sink = new HttpSinkDefinition
+                {
+                    Url = "https://api.example.com/output",
+                    Method = "POST"
+                }
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(jobDefinition, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+            var expectedResult = JobSubmissionResult.CreateSuccess("http-job", "flink-http-job-1");
+            _mockJobManager
+                .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            var result = await controller.SubmitJob();
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+        }
+
+        [Test]
+        public async Task SubmitJob_WithDatabaseSourceAndSink_Succeeds()
+        {
+            // Arrange
+            var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
+            
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "db-job",
+                    Version = "1.0",
+                    Parallelism = 4
+                },
+                Source = new DatabaseSourceDefinition
+                {
+                    ConnectionString = "Host=localhost;Database=test",
+                    Query = "SELECT * FROM source_table",
+                    DatabaseType = "postgresql"
+                },
+                Sink = new DatabaseSinkDefinition
+                {
+                    ConnectionString = "Host=localhost;Database=test",
+                    Table = "sink_table",
+                    DatabaseType = "postgresql"
+                }
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(jobDefinition, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+            var expectedResult = JobSubmissionResult.CreateSuccess("db-job", "flink-db-job-1");
+            _mockJobManager
+                .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            var result = await controller.SubmitJob();
+
+            // Assert
+            Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
+            var okResult = (OkObjectResult)result.Result!;
+            var submissionResult = (JobSubmissionResult)okResult.Value!;
+            Assert.That(submissionResult.JobId, Is.EqualTo("db-job"));
+        }
+
         #endregion
 
         #region GetJobStatus Tests
