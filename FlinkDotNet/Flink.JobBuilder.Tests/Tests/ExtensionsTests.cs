@@ -40,7 +40,7 @@ public class ExtensionsTests
         var config = serviceProvider.GetService<FlinkJobGatewayConfiguration>();
 
         Assert.That(config, Is.Not.Null);
-        Assert.That(config.BaseUrl, Is.EqualTo("http://custom:8080"));
+        Assert.That(config!.BaseUrl, Is.EqualTo("http://custom:8080"));
     }
 
     [Test]
@@ -68,7 +68,7 @@ public class ExtensionsTests
         var config = serviceProvider.GetService<FlinkJobGatewayConfiguration>();
 
         Assert.That(config, Is.Not.Null);
-        Assert.That(config.BaseUrl, Is.EqualTo("http://action-configured:9090"));
+        Assert.That(config!.BaseUrl, Is.EqualTo("http://action-configured:9090"));
         Assert.That(config.MaxRetries, Is.EqualTo(5));
     }
 

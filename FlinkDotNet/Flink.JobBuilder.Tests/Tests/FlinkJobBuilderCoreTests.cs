@@ -438,7 +438,7 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void FromSql_WithNullStatements_CreatesEmptyList()
     {
-        var builder = FlinkJobBuilder.FromSql(null);
+        var builder = FlinkJobBuilder.FromSql(null!);
 
         var jobDef = builder.BuildJobDefinition();
 
@@ -460,8 +460,8 @@ public class FlinkJobBuilderCoreTests
         var jobDef = builder.BuildJobDefinition();
 
         Assert.That(jobDef.Sink, Is.TypeOf<KafkaSinkDefinition>());
-        var kafkaSink = (KafkaSinkDefinition) jobDef.Sink;
-        Assert.That(kafkaSink.Topic, Is.EqualTo("output-topic"));
+        var kafkaSink = (KafkaSinkDefinition?)jobDef.Sink;
+        Assert.That(kafkaSink!.Topic, Is.EqualTo("output-topic"));
         Assert.That(kafkaSink.BootstrapServers, Is.EqualTo("localhost:9092"));
     }
 
@@ -473,8 +473,8 @@ public class FlinkJobBuilderCoreTests
 
         var jobDef = builder.BuildJobDefinition();
 
-        var kafkaSink = (KafkaSinkDefinition) jobDef.Sink;
-        Assert.That(kafkaSink.Topic, Is.EqualTo("output-topic"));
+        var kafkaSink = (KafkaSinkDefinition?)jobDef.Sink;
+        Assert.That(kafkaSink!.Topic, Is.EqualTo("output-topic"));
         Assert.That(kafkaSink.BootstrapServers, Is.Null);
     }
 
@@ -499,8 +499,8 @@ public class FlinkJobBuilderCoreTests
         var jobDef = builder.BuildJobDefinition();
 
         Assert.That(jobDef.Sink, Is.TypeOf<HttpSinkDefinition>());
-        var httpSink = (HttpSinkDefinition) jobDef.Sink;
-        Assert.That(httpSink.Url, Is.EqualTo("http://api.example.com/webhook"));
+        var httpSink = (HttpSinkDefinition?)jobDef.Sink;
+        Assert.That(httpSink!.Url, Is.EqualTo("http://api.example.com/webhook"));
         Assert.That(httpSink.Method, Is.EqualTo("PUT"));
         Assert.That(httpSink.Headers, Contains.Key("Content-Type"));
         Assert.That(httpSink.BodyTemplate, Is.EqualTo("{\"data\": \"@value\"}"));
@@ -514,8 +514,8 @@ public class FlinkJobBuilderCoreTests
 
         var jobDef = builder.BuildJobDefinition();
 
-        var httpSink = (HttpSinkDefinition) jobDef.Sink;
-        Assert.That(httpSink.Method, Is.EqualTo("POST"));
+        var httpSink = (HttpSinkDefinition?)jobDef.Sink;
+        Assert.That(httpSink!.Method, Is.EqualTo("POST"));
         Assert.That(httpSink.Headers, Is.Not.Null);
     }
 
@@ -528,8 +528,8 @@ public class FlinkJobBuilderCoreTests
         var jobDef = builder.BuildJobDefinition();
 
         Assert.That(jobDef.Sink, Is.TypeOf<DatabaseSinkDefinition>());
-        var dbSink = (DatabaseSinkDefinition) jobDef.Sink;
-        Assert.That(dbSink.ConnectionString, Is.EqualTo("Server=localhost;Database=output"));
+        var dbSink = (DatabaseSinkDefinition?)jobDef.Sink;
+        Assert.That(dbSink!.ConnectionString, Is.EqualTo("Server=localhost;Database=output"));
         Assert.That(dbSink.Table, Is.EqualTo("results"));
         Assert.That(dbSink.DatabaseType, Is.EqualTo("mysql"));
     }
@@ -542,8 +542,8 @@ public class FlinkJobBuilderCoreTests
 
         var jobDef = builder.BuildJobDefinition();
 
-        var dbSink = (DatabaseSinkDefinition) jobDef.Sink;
-        Assert.That(dbSink.DatabaseType, Is.EqualTo("postgresql"));
+        var dbSink = (DatabaseSinkDefinition?)jobDef.Sink;
+        Assert.That(dbSink!.DatabaseType, Is.EqualTo("postgresql"));
     }
 
     [Test]
@@ -555,8 +555,8 @@ public class FlinkJobBuilderCoreTests
         var jobDef = builder.BuildJobDefinition();
 
         Assert.That(jobDef.Sink, Is.TypeOf<RedisSinkDefinition>());
-        var redisSink = (RedisSinkDefinition) jobDef.Sink;
-        Assert.That(redisSink.Key, Is.EqualTo("counter:key"));
+        var redisSink = (RedisSinkDefinition?)jobDef.Sink;
+        Assert.That(redisSink!.Key, Is.EqualTo("counter:key"));
         Assert.That(redisSink.ConnectionString, Is.EqualTo("localhost:6380"));
         Assert.That(redisSink.OperationType, Is.EqualTo("set"));
         Assert.That(redisSink.Configuration, Contains.Key("exactly_once"));
@@ -570,8 +570,8 @@ public class FlinkJobBuilderCoreTests
 
         var jobDef = builder.BuildJobDefinition();
 
-        var redisSink = (RedisSinkDefinition) jobDef.Sink;
-        Assert.That(redisSink.ConnectionString, Is.EqualTo("localhost:6379"));
+        var redisSink = (RedisSinkDefinition?)jobDef.Sink;
+        Assert.That(redisSink!.ConnectionString, Is.EqualTo("localhost:6379"));
         Assert.That(redisSink.OperationType, Is.EqualTo("increment"));
     }
 
@@ -585,7 +585,7 @@ public class FlinkJobBuilderCoreTests
         var builder = new FlinkJobBuilder();
 
         var ex = Assert.Throws<InvalidOperationException>(() => builder.BuildJobDefinition());
-        Assert.That(ex.Message, Contains.Substring("Job must have a source"));
+        Assert.That(ex!.Message, Contains.Substring("Job must have a source"));
     }
 
     [Test]
@@ -594,7 +594,7 @@ public class FlinkJobBuilderCoreTests
         var builder = FlinkJobBuilder.FromKafka("test-topic");
 
         var ex = Assert.Throws<InvalidOperationException>(() => builder.BuildJobDefinition());
-        Assert.That(ex.Message, Contains.Substring("Job must have a sink"));
+        Assert.That(ex!.Message, Contains.Substring("Job must have a sink"));
     }
 
     [Test]

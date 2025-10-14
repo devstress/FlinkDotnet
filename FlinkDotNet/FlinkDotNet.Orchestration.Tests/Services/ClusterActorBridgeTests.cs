@@ -101,7 +101,7 @@ public class ClusterActorBridgeTests
     public async Task GetStatusAsync_WithCancellationToken_PassesToUnderlyingActor()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         var managerStatus = new ClusterManagerModels.ClusterStatus
         {
             ClusterId = "test-cluster"
@@ -274,7 +274,7 @@ public class ClusterActorBridgeTests
     {
         // Arrange
         var job = new FlinkJobDefinition { JobId = "cancel-test" };
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
 
         _mockClusterActor!.Setup(x => x.SubmitJobAsync(
             It.IsAny<ClusterManagerModels.FlinkJobDefinition>(),
@@ -329,7 +329,7 @@ public class ClusterActorBridgeTests
     public async Task ScaleAsync_WithCancellationToken_PassesToUnderlyingActor()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         _mockClusterActor!.Setup(x => x.ScaleAsync(5, cts.Token))
             .ReturnsAsync(true);
 
@@ -362,7 +362,7 @@ public class ClusterActorBridgeTests
     public async Task RestartAsync_WithCancellationToken_PassesToUnderlyingActor()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         _mockClusterActor!.Setup(x => x.RestartAsync(cts.Token))
             .Returns(Task.CompletedTask);
 
@@ -395,7 +395,7 @@ public class ClusterActorBridgeTests
     public async Task ShutdownAsync_WithCancellationToken_PassesToUnderlyingActor()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         _mockClusterActor!.Setup(x => x.ShutdownAsync(cts.Token))
             .Returns(Task.CompletedTask);
 
@@ -430,7 +430,7 @@ public class ClusterActorBridgeTests
     public async Task StartHealthMonitoringAsync_WithCancellationToken_PassesToUnderlyingActor()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         _mockClusterActor!.Setup(x => x.StartHealthMonitoringAsync(cts.Token))
             .Returns(Task.CompletedTask);
 
@@ -483,7 +483,7 @@ public class ClusterActorBridgeTests
     public async Task GetMetricsAsync_WithCancellationToken_PassesToUnderlyingActor()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         var managerMetrics = new ClusterManagerModels.ClusterMetrics();
 
         _mockClusterActor!.Setup(x => x.GetMetricsAsync(cts.Token))
