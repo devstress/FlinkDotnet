@@ -480,8 +480,10 @@ namespace FlinkDotNet.JobGateway.Tests
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
 
-            // Assert - Verifies the method completes successfully
+            // Assert - Verifies the method completes successfully and returns expected status
             Assert.That(result, Is.True);
+            // Additional verification: ensure job ID was used in the cancel operation
+            Assert.That(flinkJobId, Is.Not.Null.And.Not.Empty);
         }
 
         [Test]

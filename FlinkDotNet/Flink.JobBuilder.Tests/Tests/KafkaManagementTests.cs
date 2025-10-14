@@ -379,7 +379,7 @@ public class KafkaManagementTests
         var method = type.GetMethod("ValidateOperationalIsolation");
         
         Assert.That(method, Is.Not.Null);
-        Assert.That(method.IsStatic, Is.True);
+        Assert.That(method!.IsStatic, Is.True);
         Assert.That(method.IsPublic, Is.True);
         Assert.That(method.ReturnType, Is.EqualTo(typeof(bool)));
     }

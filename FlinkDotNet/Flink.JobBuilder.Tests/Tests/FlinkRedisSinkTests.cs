@@ -696,7 +696,7 @@ namespace Flink.JobBuilder.Tests.Tests
         {
             // Arrange
             var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger!.Object);
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
 
             // Act & Assert - method signature accepts cancellation token
             Assert.ThrowsAsync<InvalidOperationException>(async () => 
@@ -708,7 +708,7 @@ namespace Flink.JobBuilder.Tests.Tests
         {
             // Arrange
             var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger!.Object);
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
 
             // Act & Assert - method signature accepts cancellation token
             Assert.ThrowsAsync<InvalidOperationException>(async () => 
@@ -724,7 +724,7 @@ namespace Flink.JobBuilder.Tests.Tests
             {
                 new RedisOperation { Type = RedisOperationType.Increment, Key = "test-key" }
             };
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
 
             // Act & Assert - method signature accepts cancellation token
             Assert.ThrowsAsync<InvalidOperationException>(async () => 

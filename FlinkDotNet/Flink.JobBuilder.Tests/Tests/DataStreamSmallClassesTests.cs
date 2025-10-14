@@ -170,9 +170,12 @@ namespace Flink.JobBuilder.Tests.Tests
             Assert.That(operation.Function, Is.EqualTo("test"));
         }
 
-        // Helper class for testing
+        // Helper class for testing - intentionally simple to test type handling
+        // Not an interface because we're testing class-based function handling
         private class TestMapFunction
         {
+            // Property used to verify object identity in operation capture tests
+            public int InstanceId { get; } = 1;
         }
 
         #endregion
