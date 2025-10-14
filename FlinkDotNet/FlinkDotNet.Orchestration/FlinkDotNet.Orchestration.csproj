@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="FlinkDotNet.Orchestration.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Temporalio" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
