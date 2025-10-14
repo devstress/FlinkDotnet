@@ -363,6 +363,261 @@ public class DataStreamTests
     }
 
     #endregion
+    
+    #region Function Interface Tests
+    
+    [Test]
+    public void Map_WithIMapFunctionInterface_ReturnsNewDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "hello", "world" });
+        var mapFunc = new TestMapFunction();
+        
+        var mapped = stream.Map(mapFunc);
+        
+        Assert.That(mapped, Is.Not.Null);
+        Assert.That(mapped, Is.TypeOf<DataStream<string>>());
+    }
+    
+    [Test]
+    public void Filter_WithIFilterFunctionInterface_ReturnsSameTypeDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+        var filterFunc = new TestFilterFunction();
+        
+        var filtered = stream.Filter(filterFunc);
+        
+        Assert.That(filtered, Is.Not.Null);
+        Assert.That(filtered, Is.TypeOf<DataStream<int>>());
+    }
+    
+    [Test]
+    public void FlatMap_WithIFlatMapFunctionInterface_ReturnsNewDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a,b", "c,d" });
+        var flatMapFunc = new TestFlatMapFunction();
+        
+        var flatMapped = stream.FlatMap(flatMapFunc);
+        
+        Assert.That(flatMapped, Is.Not.Null);
+        Assert.That(flatMapped, Is.TypeOf<DataStream<string>>());
+    }
+    
+    [Test]
+    public void AddSink_WithISinkFunctionInterface_ReturnsSameDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        var sinkFunc = new TestSinkFunction();
+        
+        var result = stream.AddSink(sinkFunc);
+        
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+    
+    #endregion
+    
+    #region Edge Case and Error Tests
+    
+    [Test]
+    public void Map_WithExpressionOnNonStringStream_ThrowsNotSupportedException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        
+        Assert.Throws<NotSupportedException>(() => stream.Map("upper"));
+    }
+    
+    [Test]
+    public void Map_WithExpressionOnCollectionStream_ThrowsInvalidOperationException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<InvalidOperationException>(() => stream.Map("upper"));
+    }
+    
+    [Test]
+    public void CountWindowAll_WithZeroSize_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        
+        Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
+    }
+    
+    [Test]
+    public void CountWindowAll_WithNegativeSize_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        
+        Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-5));
+    }
+    
+    [Test]
+    public void SetMaxParallelism_WithZero_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(0));
+    }
+    
+    [Test]
+    public void SetMaxParallelism_WithNegative_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(-1));
+    }
+    
+    [Test]
+    public void SetMaxParallelism_WithTooLarge_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(32769));
+    }
+    
+    [Test]
+    public void SetMaxParallelism_WithValidValue_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        var result = stream.SetMaxParallelism(128);
+        
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+    
+    [Test]
+    public void SetMaxParallelism_WithMaxValue_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        var result = stream.SetMaxParallelism(32768); // Maximum allowed value
+        
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+        // Verify boundary condition: 32768 is the maximum allowed parallelism
+        Assert.DoesNotThrow(() => stream.SetMaxParallelism(32768));
+    }
+    
+    [Test]
+    public void SinkToKafka_WithoutBootstrapServers_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", null));
+    }
+    
+    [Test]
+    public void SinkToKafka_WithEmptyBootstrapServers_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", ""));
+    }
+    
+    [Test]
+    public void SinkToKafka_WithWhitespaceBootstrapServers_ThrowsArgumentException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", "   "));
+    }
+    
+    [Test]
+    public void SinkToKafka_OnCollectionStream_ThrowsInvalidOperationException()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "a", "b", "c" });
+        
+        Assert.Throws<InvalidOperationException>(() => stream.SinkToKafka("output-topic", "localhost:9092"));
+    }
+    
+    [Test]
+    public void AssignTimestampsAndWatermarks_WithPunctuatedWatermarks_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        var assigner = new TestPunctuatedWatermarkAssigner();
+        
+        var result = stream.AssignTimestampsAndWatermarks(assigner);
+        
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+    
+    [Test]
+    public void AssignTimestampsAndWatermarks_WithPeriodicWatermarks_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        var assigner = new TestPeriodicWatermarkAssigner();
+        
+        var result = stream.AssignTimestampsAndWatermarks(assigner);
+        
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.SameAs(stream));
+    }
+    
+    #endregion
+}
+
+// Test helper classes
+internal class TestMapFunction : IMapFunction<string, string>
+{
+    public string Map(string value) => value.ToUpper();
+}
+
+internal class TestFilterFunction : IFilterFunction<int>
+{
+    public bool Filter(int value) => value > 2;
+}
+
+internal class TestFlatMapFunction : IFlatMapFunction<string, string>
+{
+    public IEnumerable<string> FlatMap(string value) => value.Split(',');
+}
+
+internal class TestSinkFunction : ISinkFunction<string>
+{
+    public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+}
+
+internal class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<int>
+{
+    public long ExtractTimestamp(int element, long previousElementTimestamp) => element * 1000L;
+    
+    public Watermark? CheckAndGetNextWatermark(int lastElement, long extractedTimestamp)
+    {
+        return new Watermark(extractedTimestamp - 1000);
+    }
+}
+
+internal class TestPeriodicWatermarkAssigner : IAssignerWithPeriodicWatermarks<int>
+{
+    public long ExtractTimestamp(int element, long previousElementTimestamp) => element * 1000L;
+    
+    public Watermark? GetCurrentWatermark()
+    {
+        return new Watermark(System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
 }
 
 [TestFixture]
@@ -418,6 +673,30 @@ public class KeyedStreamTests
     }
 
     #endregion
+    
+    #region IReduceFunction Tests
+    
+    [Test]
+    public void Reduce_WithIReduceFunctionInterface_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
+        var keyed = stream.KeyBy(x => x % 2);
+        var reduceFunc = new TestReduceFunction();
+        
+        var reduced = keyed.Reduce(reduceFunc);
+        
+        Assert.That(reduced, Is.Not.Null);
+        Assert.That(reduced, Is.TypeOf<DataStream<int>>());
+    }
+    
+    #endregion
+}
+
+// More test helper classes
+internal class TestReduceFunction : IReduceFunction<int>
+{
+    public int Reduce(int value1, int value2) => value1 + value2;
 }
 
 [TestFixture]
@@ -474,6 +753,50 @@ public class AllWindowedStreamTests
     }
 
     #endregion
+    
+    #region Window Aggregation Tests
+    
+    [Test]
+    public void Aggregate_WithIAggregateFunctionInterface_ReturnsAggregatedDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.AddSource(new TestSourceFunction(), "test-source");
+        var windowed = stream.TimeWindowAll(Time.Seconds(5));
+        var aggFunc = new TestAggregateFunction();
+        
+        var aggregated = windowed.Aggregate(aggFunc);
+        
+        Assert.That(aggregated, Is.Not.Null);
+        Assert.That(aggregated, Is.TypeOf<DataStream<int>>());
+    }
+    
+    #endregion
+}
+
+// Additional test helper classes
+internal class TestSourceFunction : ISourceFunction<int>
+{
+    public async IAsyncEnumerable<int> RunAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        for (int i = 1; i <= 5; i++)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                yield break;
+            yield return i;
+            await Task.Delay(10, cancellationToken);
+        }
+    }
+}
+
+internal class TestAggregateFunction : IAggregateFunction<int, int, int>
+{
+    public int CreateAccumulator() => 0;
+    
+    public int Add(int value, int accumulator) => accumulator + value;
+    
+    public int GetResult(int accumulator) => accumulator;
+    
+    public int Merge(int acc1, int acc2) => acc1 + acc2;
 }
 
 [TestFixture]
@@ -525,6 +848,310 @@ public class TimeTests
         Assert.That(time, Is.Not.Null);
         Assert.That(time.ToMilliseconds(), Is.EqualTo(1000));
     }
-
+    
     #endregion
+    
+    #region Time Lowercase Aliases Tests (Java Flink Compatibility)
+    
+    [Test]
+    public void milliseconds_CreatesTimeWithCorrectValue()
+    {
+        var time = Time.milliseconds(1000);
+        
+        Assert.That(time, Is.Not.Null);
+        Assert.That(time.ToMilliseconds(), Is.EqualTo(1000));
+    }
+    
+    [Test]
+    public void seconds_CreatesTimeWithCorrectMilliseconds()
+    {
+        var time = Time.seconds(5);
+        
+        Assert.That(time, Is.Not.Null);
+        Assert.That(time.ToMilliseconds(), Is.EqualTo(5000));
+    }
+    
+    [Test]
+    public void minutes_CreatesTimeWithCorrectMilliseconds()
+    {
+        var time = Time.minutes(2);
+        
+        Assert.That(time, Is.Not.Null);
+        Assert.That(time.ToMilliseconds(), Is.EqualTo(120000));
+    }
+    
+    [Test]
+    public void hours_CreatesTimeWithCorrectMilliseconds()
+    {
+        var time = Time.hours(1);
+        
+        Assert.That(time, Is.Not.Null);
+        Assert.That(time.ToMilliseconds(), Is.EqualTo(3600000));
+    }
+    
+    [Test]
+    public void days_CreatesTimeWithCorrectMilliseconds()
+    {
+        var time = Time.days(1);
+        
+        Assert.That(time, Is.Not.Null);
+        Assert.That(time.ToMilliseconds(), Is.EqualTo(86400000));
+    }
+    
+    [Test]
+    public void ToString_ReturnsFormattedString()
+    {
+        var time = Time.Seconds(5);
+        
+        var result = time.ToString();
+        
+        Assert.That(result, Is.EqualTo("5000ms"));
+    }
+    
+    #endregion
+}
+
+[TestFixture]
+public class WatermarkTests
+{
+    [Test]
+    public void Constructor_SetsTimestamp()
+    {
+        var watermark = new Watermark(12345);
+        
+        Assert.That(watermark.GetTimestamp(), Is.EqualTo(12345));
+    }
+    
+    [Test]
+    public void ToString_ReturnsFormattedString()
+    {
+        var watermark = new Watermark(12345);
+        
+        var result = watermark.ToString();
+        
+        Assert.That(result, Is.EqualTo("Watermark(12345)"));
+    }
+}
+
+[TestFixture]
+public class StateDescriptorTests
+{
+    #region ValueStateDescriptor Tests
+    
+    [Test]
+    public void ValueStateDescriptor_Constructor_SetsNameAndType()
+    {
+        var descriptor = new ValueStateDescriptor<int>("test-state");
+        
+        Assert.That(descriptor.Name, Is.EqualTo("test-state"));
+        Assert.That(descriptor.ValueType, Is.EqualTo(typeof(int)));
+    }
+    
+    [Test]
+    public void ValueStateDescriptor_WithStringType_SetsCorrectType()
+    {
+        var descriptor = new ValueStateDescriptor<string>("string-state");
+        
+        Assert.That(descriptor.Name, Is.EqualTo("string-state"));
+        Assert.That(descriptor.ValueType, Is.EqualTo(typeof(string)));
+    }
+    
+    [Test]
+    public void ValueStateDescriptor_WithNullName_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ValueStateDescriptor<int>(null!));
+    }
+    
+    #endregion
+    
+    #region ListStateDescriptor Tests
+    
+    [Test]
+    public void ListStateDescriptor_Constructor_SetsNameAndElementType()
+    {
+        var descriptor = new ListStateDescriptor<string>("list-state");
+        
+        Assert.That(descriptor.Name, Is.EqualTo("list-state"));
+        Assert.That(descriptor.ElementType, Is.EqualTo(typeof(string)));
+    }
+    
+    [Test]
+    public void ListStateDescriptor_WithIntType_SetsCorrectType()
+    {
+        var descriptor = new ListStateDescriptor<int>("int-list");
+        
+        Assert.That(descriptor.Name, Is.EqualTo("int-list"));
+        Assert.That(descriptor.ElementType, Is.EqualTo(typeof(int)));
+    }
+    
+    [Test]
+    public void ListStateDescriptor_WithNullName_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ListStateDescriptor<string>(null!));
+    }
+    
+    #endregion
+    
+    #region MapStateDescriptor Tests
+    
+    [Test]
+    public void MapStateDescriptor_Constructor_SetsNameAndTypes()
+    {
+        var descriptor = new MapStateDescriptor<string, int>("map-state");
+        
+        Assert.That(descriptor.Name, Is.EqualTo("map-state"));
+        Assert.That(descriptor.KeyType, Is.EqualTo(typeof(string)));
+        Assert.That(descriptor.ValueType, Is.EqualTo(typeof(int)));
+    }
+    
+    [Test]
+    public void MapStateDescriptor_WithComplexTypes_SetsCorrectTypes()
+    {
+        var descriptor = new MapStateDescriptor<int, List<string>>("complex-map");
+        
+        Assert.That(descriptor.Name, Is.EqualTo("complex-map"));
+        Assert.That(descriptor.KeyType, Is.EqualTo(typeof(int)));
+        Assert.That(descriptor.ValueType, Is.EqualTo(typeof(List<string>)));
+    }
+    
+    [Test]
+    public void MapStateDescriptor_WithNullName_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new MapStateDescriptor<string, int>(null!));
+    }
+    
+    #endregion
+    
+    #region ReducingStateDescriptor Tests
+    
+    [Test]
+    public void ReducingStateDescriptor_Constructor_SetsNameAndFunction()
+    {
+        var reduceFunc = new TestReduceFunction();
+        var descriptor = new ReducingStateDescriptor<int>("reducing-state", reduceFunc);
+        
+        Assert.That(descriptor.Name, Is.EqualTo("reducing-state"));
+        Assert.That(descriptor.ReduceFunction, Is.SameAs(reduceFunc));
+    }
+    
+    [Test]
+    public void ReducingStateDescriptor_WithNullName_ThrowsArgumentNullException()
+    {
+        var reduceFunc = new TestReduceFunction();
+        Assert.Throws<ArgumentNullException>(() => new ReducingStateDescriptor<int>(null!, reduceFunc));
+    }
+    
+    [Test]
+    public void ReducingStateDescriptor_WithNullFunction_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ReducingStateDescriptor<int>("test", null!));
+    }
+    
+    #endregion
+    
+    #region AggregatingStateDescriptor Tests
+    
+    [Test]
+    public void AggregatingStateDescriptor_Constructor_SetsNameAndFunction()
+    {
+        var aggFunc = new TestAggregateFunction();
+        var descriptor = new AggregatingStateDescriptor<int, int, int>("agg-state", aggFunc);
+        
+        Assert.That(descriptor.Name, Is.EqualTo("agg-state"));
+        Assert.That(descriptor.AggregateFunction, Is.SameAs(aggFunc));
+    }
+    
+    [Test]
+    public void AggregatingStateDescriptor_WithNullName_ThrowsArgumentNullException()
+    {
+        var aggFunc = new TestAggregateFunction();
+        Assert.Throws<ArgumentNullException>(() => new AggregatingStateDescriptor<int, int, int>(null!, aggFunc));
+    }
+    
+    [Test]
+    public void AggregatingStateDescriptor_WithNullFunction_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new AggregatingStateDescriptor<int, int, int>("test", null!));
+    }
+    
+    #endregion
+}
+
+[TestFixture]
+public class OutputTagTests
+{
+    [Test]
+    public void Constructor_SetsId()
+    {
+        var tag = new OutputTag<string>("side-output");
+        
+        Assert.That(tag.Id, Is.EqualTo("side-output"));
+    }
+    
+    [Test]
+    public void Constructor_WithNullId_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => new OutputTag<string>(null!));
+    }
+    
+    [Test]
+    public void Equals_WithSameId_ReturnsTrue()
+    {
+        var tag1 = new OutputTag<string>("test");
+        var tag2 = new OutputTag<string>("test");
+        
+        Assert.That(tag1.Equals(tag2), Is.True);
+    }
+    
+    [Test]
+    public void Equals_WithDifferentId_ReturnsFalse()
+    {
+        var tag1 = new OutputTag<string>("test1");
+        var tag2 = new OutputTag<string>("test2");
+        
+        Assert.That(tag1.Equals(tag2), Is.False);
+    }
+    
+    [Test]
+    public void Equals_WithDifferentType_ReturnsFalse()
+    {
+        var tag1 = new OutputTag<string>("test");
+        var tag2 = new OutputTag<int>("test");
+        
+        Assert.That(tag1.Equals(tag2), Is.False);
+    }
+    
+    [Test]
+    public void Equals_WithNonOutputTag_ReturnsFalse()
+    {
+        var tag = new OutputTag<string>("test");
+        
+        Assert.That(tag.Equals("test"), Is.False);
+    }
+    
+    [Test]
+    public void Equals_WithNull_ReturnsFalse()
+    {
+        var tag = new OutputTag<string>("test");
+        
+        Assert.That(tag.Equals(null), Is.False);
+    }
+    
+    [Test]
+    public void GetHashCode_WithSameId_ReturnsSameHashCode()
+    {
+        var tag1 = new OutputTag<string>("test");
+        var tag2 = new OutputTag<string>("test");
+        
+        Assert.That(tag1.GetHashCode(), Is.EqualTo(tag2.GetHashCode()));
+    }
+    
+    [Test]
+    public void GetHashCode_WithDifferentId_ReturnsDifferentHashCode()
+    {
+        var tag1 = new OutputTag<string>("test1");
+        var tag2 = new OutputTag<string>("test2");
+        
+        Assert.That(tag1.GetHashCode(), Is.Not.EqualTo(tag2.GetHashCode()));
+    }
 }
