@@ -2234,4 +2234,210 @@ public class AdvancedDataStreamTests
     }
 
     #endregion
+
+    #region KafkaSourceFunction Coverage Tests - Chunk 1D
+
+    [Test]
+    public void KafkaSourceFunction_PropertyGetter_Topic_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        Assert.That(kafkaSource.Topic, Is.EqualTo("test-topic"));
+    }
+
+    [Test]
+    public void KafkaSourceFunction_PropertyGetter_BootstrapServers_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        Assert.That(kafkaSource.BootstrapServers, Is.EqualTo("localhost:9092"));
+    }
+
+    [Test]
+    public void KafkaSourceFunction_PropertyGetter_GroupId_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        Assert.That(kafkaSource.GroupId, Is.EqualTo("test-group"));
+    }
+
+    [Test]
+    public void KafkaSourceFunction_PropertyGetter_StartingOffsets_ReturnsCorrectValue()
+    {
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "latest");
+
+        Assert.That(kafkaSource.StartingOffsets, Is.EqualTo("latest"));
+    }
+
+    [Test]
+    public async Task KafkaSourceFunction_RunAsync_ReturnsEmptyEnumerable()
+    {
+        var kafkaSource = new KafkaSourceFunction<int>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => int.Parse(s),
+            "earliest");
+
+        var results = new List<int>();
+        await foreach (var item in kafkaSource.RunAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.That(results, Is.Empty);
+    }
+
+    #endregion
+
+    #region StreamExecutionEnvironmentExtensions Coverage Tests - Chunk 1D
+
+    [Test]
+    public void SetStreamTimeCharacteristic_WithProcessingTime_SetsConfiguration()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        var result = env.SetStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
+
+        Assert.That(result, Is.SameAs(env));
+        // Verify the configuration was set
+        var config = env.GetConfig().GetConfiguration();
+        var timeChar = config.GetString("stream.time-characteristic", null);
+        Assert.That(timeChar, Is.EqualTo("ProcessingTime"));
+    }
+
+    [Test]
+    public void SetStreamTimeCharacteristic_WithEventTime_SetsConfiguration()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        var result = env.SetStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+
+        Assert.That(result, Is.SameAs(env));
+        var config = env.GetConfig().GetConfiguration();
+        var timeChar = config.GetString("stream.time-characteristic", null);
+        Assert.That(timeChar, Is.EqualTo("EventTime"));
+    }
+
+    [Test]
+    public void SetStreamTimeCharacteristic_WithIngestionTime_SetsConfiguration()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        var result = env.SetStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+
+        Assert.That(result, Is.SameAs(env));
+        var config = env.GetConfig().GetConfiguration();
+        var timeChar = config.GetString("stream.time-characteristic", null);
+        Assert.That(timeChar, Is.EqualTo("IngestionTime"));
+    }
+
+    [Test]
+    public void AddSource_WithISourceFunction_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var sourceFunc = new TestSourceFunction();
+
+        var result = env.AddSource(sourceFunc);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<DataStream<int>>());
+    }
+
+    [Test]
+    public void AddSource_WithKafkaSourceFunction_ReturnsDataStream()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var kafkaSource = new KafkaSourceFunction<string>(
+            "test-topic",
+            "localhost:9092",
+            "test-group",
+            s => s,
+            "earliest");
+
+        var result = env.AddSource(kafkaSource);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<DataStream<string>>());
+    }
+
+    #endregion
+
+    #region AllWindowedStream Coverage Tests - Chunk 1D
+
+    [Test]
+    public void AllWindowedStream_AttachOperationCapture_DoesNotThrow()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        var windowed = stream.TimeWindowAll(Time.Seconds(5));
+        var capture = new OperationCapture();
+
+        Assert.DoesNotThrow(() => windowed.AttachOperationCapture(capture));
+    }
+
+    [Test]
+    public void AllWindowedStream_Aggregate_WithOperationCapture_CapturesOperation()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var sourceFunc = new TestSourceFunction();
+        var stream = env.AddSource(sourceFunc, "test-source");
+        var windowed = stream.TimeWindowAll(Time.Seconds(5));
+        var capture = new OperationCapture();
+        windowed.AttachOperationCapture(capture);
+        var aggFunc = new TestAggregateFunction();
+
+        var result = windowed.Aggregate(aggFunc);
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result, Is.TypeOf<DataStream<int>>());
+    }
+
+    [Test]
+    public void AllWindowedStream_GetWindowSize_ForTimeWindow_ReturnsCorrectSize()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        var windowTime = Time.Seconds(10);
+        var windowed = stream.TimeWindowAll(windowTime);
+
+        var size = windowed.GetWindowSize();
+
+        Assert.That(size, Is.Not.Null);
+        Assert.That(size, Is.EqualTo(windowTime));
+    }
+
+    [Test]
+    public void AllWindowedStream_GetWindowCount_ForCountWindow_ReturnsCorrectCount()
+    {
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { 1, 2, 3 });
+        var windowed = stream.CountWindowAll(25);
+
+        var count = windowed.GetWindowCount();
+
+        Assert.That(count, Is.EqualTo(25));
+    }
+
+    #endregion
 }
