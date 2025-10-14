@@ -142,9 +142,10 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void AsyncHttp_WithAllParameters_AddsAsyncFunctionOperation()
     {
-        var headers = new Dictionary<string, string> { { "Authorization", "Bearer token" } };
+        var headers = new System.Collections.Generic.Dictionary<string, string> { { "Authorization", "Bearer token" } };
         var builder = FlinkJobBuilder.FromKafka("test-topic")
-            .AsyncHttp("http://api.example.com/enrich", "POST", 3000, headers, "{data}");
+            .AsyncHttp("http://api.example.com/enrich", "POST", 3000, headers, "{data}")
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -244,9 +245,10 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void WithRetry_WithAllParameters_AddsRetryOperation()
     {
-        var delayPattern = new List<long> { 1000, 2000, 4000 };
+        var delayPattern = new System.Collections.Generic.List<long> { 1000, 2000, 4000 };
         var builder = FlinkJobBuilder.FromKafka("test-topic")
-            .WithRetry(3, delayPattern, "error.type == 'transient'", "dlq-topic");
+            .WithRetry(3, delayPattern, "error.type == 'transient'", "dlq-topic")
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -276,10 +278,11 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void WithProcessFunction_WithAllParameters_AddsProcessFunctionOperation()
     {
-        var parameters = new Dictionary<string, object> { { "threshold", 100 } };
-        var stateKeys = new List<string> { "counter", "timer" };
+        var parameters = new System.Collections.Generic.Dictionary<string, object> { { "threshold", 100 } };
+        var stateKeys = new System.Collections.Generic.List<string> { "counter", "timer" };
         var builder = FlinkJobBuilder.FromKafka("test-topic")
-            .WithProcessFunction("deduplication", parameters, stateKeys);
+            .WithProcessFunction("deduplication", parameters, stateKeys)
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -330,7 +333,8 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void FromKafka_WithBootstrapServers_SetsAllProperties()
     {
-        var builder = FlinkJobBuilder.FromKafka("orders-topic", "localhost:9092");
+        var builder = FlinkJobBuilder.FromKafka("orders-topic", "localhost:9092")
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -343,7 +347,8 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void FromKafka_WithoutBootstrapServers_SetsTopicOnly()
     {
-        var builder = FlinkJobBuilder.FromKafka("test-topic");
+        var builder = FlinkJobBuilder.FromKafka("test-topic")
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -355,7 +360,8 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void FromHttp_WithAllParameters_SetsAllProperties()
     {
-        var builder = FlinkJobBuilder.FromHttp("http://api.example.com/data", "POST", 45);
+        var builder = FlinkJobBuilder.FromHttp("http://api.example.com/data", "POST", 45)
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -369,7 +375,8 @@ public class FlinkJobBuilderCoreTests
     [Test]
     public void FromHttp_WithDefaults_UsesDefaultValues()
     {
-        var builder = FlinkJobBuilder.FromHttp("http://api.example.com");
+        var builder = FlinkJobBuilder.FromHttp("http://api.example.com")
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -384,7 +391,8 @@ public class FlinkJobBuilderCoreTests
         var builder = FlinkJobBuilder.FromDatabase(
             "Server=localhost;Database=prod",
             "SELECT * FROM events",
-            120);
+            120)
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
@@ -400,7 +408,8 @@ public class FlinkJobBuilderCoreTests
     {
         var builder = FlinkJobBuilder.FromDatabase(
             "Server=localhost;Database=test",
-            "SELECT * FROM users");
+            "SELECT * FROM users")
+            .ToConsole();
 
         var jobDef = builder.BuildJobDefinition();
         
