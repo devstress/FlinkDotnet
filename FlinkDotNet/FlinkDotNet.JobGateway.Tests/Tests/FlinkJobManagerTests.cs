@@ -5,7 +5,6 @@ using FlinkDotNet.JobGateway.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using NUnit.Framework;
 
 namespace FlinkDotNet.JobGateway.Tests
 {
