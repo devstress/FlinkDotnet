@@ -63,6 +63,8 @@ allure-results/
 allure-report/
 TestResults/
 CoverageReport/
+coverage-report/
+test-results/
 
 # Producer build artifacts
 scripts/producer/Producer

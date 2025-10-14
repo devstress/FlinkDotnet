@@ -84,6 +84,23 @@ public class ExtensionsTests
 
     #endregion
 
+    #region FlinkJobBuilderExtensions Tests
+
+    [Test]
+    public void CreateJobBuilder_FromServiceProvider_ReturnsFlinkJobBuilder()
+    {
+        var services = new ServiceCollection();
+        services.AddFlinkJobBuilder();
+        var serviceProvider = services.BuildServiceProvider();
+        
+        var builder = serviceProvider.CreateJobBuilder();
+        
+        Assert.That(builder, Is.Not.Null);
+        Assert.That(builder, Is.InstanceOf<FlinkJobBuilder>());
+    }
+
+    #endregion
+
     #region JobDefinitionExtensions Tests
 
     [Test]
@@ -155,6 +172,23 @@ public class ExtensionsTests
     }
 
     [Test]
+    public void JobDefinition_Validate_WithNullJobId_ReturnsInvalid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = null! },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>()
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Contains.Item("Job must have a valid JobId"));
+    }
+
+    [Test]
     public void JobDefinition_Validate_WithKafkaSourceMissingTopic_ReturnsInvalid()
     {
         var jobDef = new JobDefinition
@@ -186,6 +220,22 @@ public class ExtensionsTests
         
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("File source must specify a path"));
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithValidFileSource_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new FileSourceDefinition { Path = "/data/input.csv" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>()
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
@@ -257,6 +307,38 @@ public class ExtensionsTests
     }
 
     [Test]
+    public void JobDefinition_Validate_WithValidDatabaseSink_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost", Table = "users" },
+            Operations = new List<IOperationDefinition>()
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithValidFileSink_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new FileSinkDefinition { Path = "/data/output.csv" },
+            Operations = new List<IOperationDefinition>()
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
     public void JobDefinition_Validate_WithFilterOperationMissingExpression_ReturnsInvalid()
     {
         var jobDef = new JobDefinition
@@ -314,6 +396,64 @@ public class ExtensionsTests
         
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("GroupBy operation must specify at least one key"));
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithGroupByOperationEmptyKeysList_ReturnsInvalid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new GroupByOperationDefinition { Key = "", Keys = new List<string>() }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Contains.Item("GroupBy operation must specify at least one key"));
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithGroupByOperationValidKey_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new GroupByOperationDefinition { Key = "userId" }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithGroupByOperationValidKeys_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new GroupByOperationDefinition { Keys = new List<string> { "userId", "eventType" } }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
@@ -394,6 +534,142 @@ public class ExtensionsTests
         
         Assert.That(result.IsValid, Is.False);
         Assert.That(result.Errors, Contains.Item("Window operation must have a positive size"));
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithWindowOperationNegativeSize_ReturnsInvalid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new WindowOperationDefinition { WindowType = "TUMBLING", Size = -10 }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Contains.Item("Window operation must have a positive size"));
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithValidWindowOperation_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new WindowOperationDefinition { WindowType = "TUMBLING", Size = 60 }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithValidFilterOperation_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new FilterOperationDefinition { Expression = "value > 10" }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithValidMapOperation_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new MapOperationDefinition { Expression = "value * 2" }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithValidAggregateOperation_ReturnsValid()
+    {
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new AggregateOperationDefinition { AggregationType = "SUM", Field = "amount" }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithUnsupportedOperationType_ReturnsValid()
+    {
+        // JoinOperationDefinition is not validated by JobDefinitionExtensions but is valid
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new JoinOperationDefinition { JoinType = "INNER" }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithAsyncFunctionOperation_ReturnsValid()
+    {
+        // AsyncFunctionOperationDefinition is not validated by JobDefinitionExtensions but is valid
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new AsyncFunctionOperationDefinition { FunctionType = "http", TimeoutMs = 5000 }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
