@@ -454,7 +454,7 @@ public class FlinkKafkaConsumerGroupTests
     {
         // Arrange
         var bootstrapServers = "localhost:9092";
-        var timeout = TimeSpan.FromSeconds(10);
+        var timeout = TimeSpan.FromMilliseconds(100);
 
         // Act & Assert
         Assert.DoesNotThrowAsync(async () =>
@@ -466,7 +466,7 @@ public class FlinkKafkaConsumerGroupTests
     {
         // Arrange
         var bootstrapServers = "kafka:9092";
-        var timeout = TimeSpan.FromSeconds(5);
+        var timeout = TimeSpan.FromMilliseconds(100);
 
         // Act
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -480,9 +480,9 @@ public class FlinkKafkaConsumerGroupTests
     [Test]
     public void WaitForKafkaSetupAsync_WithCancellation_ThrowsTaskCanceledException()
     {
-        // Arrange
+        // Arrange - Use 10 second timeout to ensure at least 2 retries (10/5=2)
         var bootstrapServers = "localhost:9092";
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(10);
         using var cts = new CancellationTokenSource();
         
         // Cancel after a short delay to test cancellation handling
@@ -499,9 +499,9 @@ public class FlinkKafkaConsumerGroupTests
         // Arrange & Act & Assert
         Assert.DoesNotThrowAsync(async () =>
         {
-            await FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync("localhost:9092", TimeSpan.FromSeconds(5));
-            await FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync("kafka1:9092,kafka2:9092", TimeSpan.FromSeconds(5));
-            await FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync("192.168.1.100:9092", TimeSpan.FromSeconds(5));
+            await FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync("localhost:9092", TimeSpan.FromMilliseconds(100));
+            await FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync("kafka1:9092,kafka2:9092", TimeSpan.FromMilliseconds(100));
+            await FlinkKafkaConsumerGroup.WaitForKafkaSetupAsync("192.168.1.100:9092", TimeSpan.FromMilliseconds(100));
         });
     }
 

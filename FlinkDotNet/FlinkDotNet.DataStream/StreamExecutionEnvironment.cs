@@ -538,7 +538,7 @@ namespace FlinkDotNet.DataStream
 
     public class JobClient : IJobClient, IDisposable
     {
-        private readonly FlinkJobGatewayService _gateway = new();
+        private readonly FlinkJobGatewayService _gateway;
         private readonly HttpClient _flinkHttp;
         private bool _disposed;
         public string JobId { get; set; } = string.Empty;
@@ -547,12 +547,27 @@ namespace FlinkDotNet.DataStream
             get; set;
         }
 
-        public JobClient(string jobName)
+        public JobClient(string jobName, TimeSpan? httpTimeout = null, FlinkJobGatewayConfiguration? gatewayConfig = null)
         {
             JobName = jobName;
             var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
             var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
-            _flinkHttp = new HttpClient { BaseAddress = new Uri($"http://{host}:{port}"), Timeout = TimeSpan.FromMinutes(5) };
+            
+            // Use provided timeout, or check environment variable, or default to 5 minutes
+            var timeout = httpTimeout ?? 
+                (int.TryParse(Environment.GetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS"), out var timeoutSeconds) 
+                    ? TimeSpan.FromSeconds(timeoutSeconds) 
+                    : TimeSpan.FromMinutes(5));
+            
+            _flinkHttp = new HttpClient { BaseAddress = new Uri($"http://{host}:{port}"), Timeout = timeout };
+            
+            // Use provided gateway configuration or default with same timeout for consistency
+            _gateway = new FlinkJobGatewayService(gatewayConfig ?? new FlinkJobGatewayConfiguration
+            {
+                HttpTimeout = timeout,
+                MaxRetries = timeout.TotalSeconds < 5 ? 0 : 3, // No retries for short timeouts (tests)
+                RetryDelay = TimeSpan.FromSeconds(1)
+            });
         }
 
         /// <summary>
