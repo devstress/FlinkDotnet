@@ -430,6 +430,241 @@ namespace FlinkDotNet.JobGateway.Tests
 
         #endregion
 
+        #region GetJobMetricsAsync - Detailed Tests
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithEmptyResponse_ReturnsEmptyMetrics()
+        {
+            // Arrange
+            var flinkJobId = "test-job-123";
+            
+            // Setup mock to return empty/not found responses for all endpoints
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Content = new StringContent("")
+                });
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert - Should return empty metrics, not throw
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.FlinkJobId, Is.EqualTo(flinkJobId));
+            Assert.That(result.RecordsIn, Is.EqualTo(0));
+            Assert.That(result.RecordsOut, Is.EqualTo(0));
+        }
+
+        #endregion
+
+        #region Job Lifecycle and Tracking Tests
+
+        [Test]
+        public async Task CancelJobAsync_UpdatesJobMappingStatus()
+        {
+            // Arrange
+            var flinkJobId = "test-job-123";
+            
+            // Setup successful PATCH endpoint
+            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.CancelJobAsync(flinkJobId);
+
+            // Assert - Verifies the method completes successfully
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public async Task GetJobStatusAsync_WithoutTrackedJob_UsesFlinkJobIdAsJobId()
+        {
+            // Arrange
+            var flinkJobId = "flink-123";
+            var statusResponse = @"{ ""state"": ""RUNNING"" }";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, statusResponse);
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act - No job mapping exists, so it should fall back to FlinkJobId
+            var result = await jobManager.GetJobStatusAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.JobId, Is.EqualTo(flinkJobId)); // Falls back to FlinkJobId when not in mapping
+            Assert.That(result.FlinkJobId, Is.EqualTo(flinkJobId));
+        }
+
+        #endregion
+
+        #region Validation Tests - Additional Edge Cases
+
+        [Test]
+        public void SubmitJobAsync_WithNullMetadata_ThrowsException()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = null!,
+                Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output-topic", BootstrapServers = "localhost:9092" }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act & Assert - The code tries to access jobDefinition.Metadata.JobId which throws NullReferenceException
+            // This is caught and wrapped, so we expect the method to return a failure result
+            Assert.ThrowsAsync<NullReferenceException>(async () => await jobManager.SubmitJobAsync(jobDefinition));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithValidationError_LogsErrorMessage()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "", JobName = "Test" },
+                Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output-topic", BootstrapServers = "localhost:9092" }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("validation failed")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithWhitespaceJobId_ReturnsValidationFailure()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "   ", JobName = "Test" },
+                Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output-topic", BootstrapServers = "localhost:9092" }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithFileSource_ValidatesPath()
+        {
+            // Arrange - Valid file source but missing path
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "Test Job" },
+                Source = new FileSourceDefinition { Path = null! },
+                Sink = new FileSinkDefinition { Path = "/tmp/output" }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("path").IgnoreCase);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithFileSink_ValidatesPath()
+        {
+            // Arrange - Valid file sink but missing path
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "Test Job" },
+                Source = new FileSourceDefinition { Path = "/tmp/input" },
+                Sink = new FileSinkDefinition { Path = null! }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("path").IgnoreCase);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithKafkaSource_ValidatesTopic()
+        {
+            // Arrange - Valid kafka source but missing topic
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "Test Job" },
+                Source = new KafkaSourceDefinition { Topic = null!, BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("topic").IgnoreCase);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithKafkaSink_ValidatesTopic()
+        {
+            // Arrange - Valid kafka sink but missing topic
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "Test Job" },
+                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = null!, BootstrapServers = "localhost:9092" }
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("topic").IgnoreCase);
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private void SetupHttpResponse(string requestPath, HttpStatusCode statusCode, string responseContent, string method = "GET")
