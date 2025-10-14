@@ -191,6 +191,28 @@ namespace FlinkDotNet.JobGateway.Tests
             // SQL jobs need special handling and will fail during submission, not validation
         }
 
+        [Test]
+        public async Task SubmitJobAsync_WithNonSqlSource_RequiresSink()
+        {
+            // Arrange - Non-SQL jobs require a sink
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "Test Job" },
+                Source = new KafkaSourceDefinition { Topic = "input-topic", BootstrapServers = "localhost:9092" },
+                Sink = null!
+            };
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("sink"));
+        }
+
         #endregion
 
         #region GetJobStatusAsync Tests
@@ -241,6 +263,60 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () => await jobManager.GetJobStatusAsync(flinkJobId));
+        }
+
+        [Test]
+        public async Task GetJobStatusAsync_WithFinishedJob_ReturnsFinishedState()
+        {
+            // Arrange
+            var flinkJobId = "finished-job-123";
+            var statusResponse = new { state = "FINISHED" };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobStatusAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.State, Is.EqualTo("FINISHED"));
+        }
+
+        [Test]
+        public async Task GetJobStatusAsync_WithFailedJob_ReturnsFailedState()
+        {
+            // Arrange
+            var flinkJobId = "failed-job-123";
+            var statusResponse = new { state = "FAILED" };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobStatusAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.State, Is.EqualTo("FAILED"));
+        }
+
+        [Test]
+        public async Task GetJobStatusAsync_WithCanceledJob_ReturnsCanceledState()
+        {
+            // Arrange
+            var flinkJobId = "canceled-job-123";
+            var statusResponse = new { state = "CANCELED" };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, JsonSerializer.Serialize(statusResponse));
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobStatusAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.State, Is.EqualTo("CANCELED"));
         }
 
         #endregion
