@@ -1,4 +1,4 @@
-// Enable parallel test execution at the assembly level
-[assembly: Parallelizable(ParallelScope.Children)]
-// Set the number of worker threads (0 means use number of processors)
-[assembly: LevelOfParallelism(0)]
+// Disable parallel test execution for this assembly
+// Reason: Some tests make external Kafka connections which can timeout
+// when running in parallel, causing the test suite to hang
+[assembly: Parallelizable(ParallelScope.None)]
