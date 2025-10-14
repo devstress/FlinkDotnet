@@ -132,3 +132,4 @@ FlinkDotNet/Flink.JobGateway/flink-ir-runner.jar
 LocalTesting/NativeFlinkJob/target/
 LocalTesting/NativeFlinkJob/dependency-reduced-pom.xml
 *.jar
+test-results*/
