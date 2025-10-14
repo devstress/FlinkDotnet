@@ -649,7 +649,7 @@ public class FlinkClusterActorTests
 
         // Act
         await actor.StartHealthMonitoringAsync();
-        await Task.Delay(1); // Minimal delay to allow async log to complete
+        await Task.Delay(100); // Allow sufficient time for async Task.Run to execute and log
 
         // Assert
         _mockLogger.Verify(
