@@ -758,6 +758,58 @@ public class JobDefinitionValidatorAdvancedTests
 
     #endregion
 
+    #region HttpSink Validation Tests
+
+    [Test]
+    public void Validate_HttpSink_WithEmptyUrl_ReturnsError()
+    {
+        var job = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new HttpSinkDefinition { Url = "", TimeoutMs = 5000 }
+        };
+
+        var result = JobDefinitionValidator.Validate(job);
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Contains.Item("sink.http.url is required"));
+    }
+
+    [Test]
+    public void Validate_HttpSink_WithZeroTimeout_ReturnsError()
+    {
+        var job = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = 0 }
+        };
+
+        var result = JobDefinitionValidator.Validate(job);
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Contains.Item("sink.http.timeoutMs must be between 1 and 1200000"));
+    }
+
+    [Test]
+    public void Validate_HttpSink_WithTimeoutTooLarge_ReturnsError()
+    {
+        var job = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = 1_300_000 }
+        };
+
+        var result = JobDefinitionValidator.Validate(job);
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors, Contains.Item("sink.http.timeoutMs must be between 1 and 1200000"));
+    }
+
+    #endregion
+
     #region Multiple Errors Test
 
     [Test]

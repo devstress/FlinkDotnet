@@ -47,9 +47,7 @@ ScaffoldingReadMe.txt
 *.log
 CodeCoverage/
 CoverageReport/
-coverage-report/
-coverage-report-new/
-coverage-chunk*/
+coverage-report*/
 
 # SonarQube local analysis
 .sonarqube/
@@ -65,7 +63,7 @@ allure-report/
 TestResults/
 CoverageReport/
 coverage-report/
-test-results/
+test-results*/
 
 # Producer build artifacts
 scripts/producer/Producer
@@ -126,3 +124,4 @@ FlinkDotNet/Flink.JobGateway/flink-ir-runner.jar
 LocalTesting/NativeFlinkJob/target/
 LocalTesting/NativeFlinkJob/dependency-reduced-pom.xml
 *.jar
+test-results*/
