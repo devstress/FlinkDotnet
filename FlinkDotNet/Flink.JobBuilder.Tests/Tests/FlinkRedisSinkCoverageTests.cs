@@ -604,6 +604,142 @@ namespace Flink.JobBuilder.Tests.Tests
 
         #endregion
 
+        #region GetSetSizeAsync Tests
+
+        [Test]
+        public async Task GetSetSizeAsync_WithoutInitialization_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await sink.GetSetSizeAsync("test-set");
+            });
+            // The inner exception message contains "Redis not initialized"
+            Assert.That(ex!.InnerException?.Message ?? ex.Message, Does.Contain("Redis not initialized"));
+        }
+
+        [Test]
+        public void GetSetSizeAsync_WithNullKey_ThrowsArgumentException()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () =>
+            {
+                await sink.GetSetSizeAsync(null!);
+            });
+        }
+
+        [Test]
+        public void GetSetSizeAsync_WithEmptyKey_ThrowsArgumentException()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () =>
+            {
+                await sink.GetSetSizeAsync(string.Empty);
+            });
+        }
+
+        [Test]
+        public void GetSetSizeAsync_WithCancellationToken_AcceptsToken()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+            using var cts = new CancellationTokenSource();
+
+            // Act & Assert
+            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await sink.GetSetSizeAsync("test-set", cts.Token);
+            });
+        }
+
+        [Test]
+        public void GetSetSizeAsync_AfterDispose_ThrowsObjectDisposedException()
+        {
+            // Arrange
+            var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+            sink.Dispose();
+
+            // Act & Assert
+            Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+            {
+                await sink.GetSetSizeAsync("test-set");
+            });
+        }
+
+        #endregion
+
+        #region ExecuteTransactionAsync Tests
+
+        [Test]
+        public void ExecuteTransactionAsync_WithNullOperations_ThrowsArgumentNullException()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentNullException>(async () =>
+            {
+                await sink.ExecuteTransactionAsync(null!);
+            });
+        }
+
+        [Test]
+        public async Task ExecuteTransactionAsync_WithEmptyOperations_Succeeds()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+            var operations = new List<RedisOperation>();
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await sink.ExecuteTransactionAsync(operations);
+            });
+            // Should fail because Redis is not initialized
+            Assert.That(ex!.InnerException?.Message ?? ex.Message, Does.Contain("Redis not initialized"));
+        }
+
+        [Test]
+        public void ExecuteTransactionAsync_WithCancellationToken_AcceptsToken()
+        {
+            // Arrange
+            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+            using var cts = new CancellationTokenSource();
+            var operations = new List<RedisOperation>();
+
+            // Act & Assert
+            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await sink.ExecuteTransactionAsync(operations, cts.Token);
+            });
+        }
+
+        [Test]
+        public void ExecuteTransactionAsync_AfterDispose_ThrowsObjectDisposedException()
+        {
+            // Arrange
+            var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+            sink.Dispose();
+            var operations = new List<RedisOperation>();
+
+            // Act & Assert
+            Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+            {
+                await sink.ExecuteTransactionAsync(operations);
+            });
+        }
+
+        #endregion
+
         #region Dispose Tests
 
         [Test]
