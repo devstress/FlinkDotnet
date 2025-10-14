@@ -106,8 +106,13 @@ namespace Flink.JobBuilder.Tests.Tests
         [Test]
         public void InitializeAsync_WithCancellationToken_AcceptsToken()
         {
-            // Arrange
-            using var sink = new FlinkRedisSink("localhost:6379", null, _mockLogger.Object);
+            // Arrange - Use shorter timeout for test performance
+            var redisConfig = new Dictionary<string, object>
+            {
+                ["ConnectTimeout"] = 100, // 100ms timeout for tests
+                ["SyncTimeout"] = 100
+            };
+            using var sink = new FlinkRedisSink("localhost:6379", redisConfig, _mockLogger.Object);
             using var cts = new CancellationTokenSource();
 
             // Act & Assert - Method should accept cancellation token
