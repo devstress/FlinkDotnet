@@ -119,7 +119,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task CancelAsync_WithValidJobId_Succeeds()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -147,7 +147,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public void CancelAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -179,7 +179,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task GetJobExecutionResultAsync_ReturnsResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -205,7 +205,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task GetJobExecutionResultAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -233,7 +233,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task GetJobStatusAsync_ReturnsJobStatus()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -260,7 +260,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task GetJobStatusAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -288,7 +288,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task TriggerSavepointAsync_WithDefaultPath_ReturnsSavepointResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -312,7 +312,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task TriggerSavepointAsync_WithCustomPath_ReturnsSavepointResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -337,7 +337,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task TriggerSavepointAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -365,7 +365,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task CancelWithSavepointAsync_WithDefaultPath_ReturnsSavepointResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -389,7 +389,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task CancelWithSavepointAsync_WithCustomPath_ReturnsSavepointResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -414,7 +414,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task CancelWithSavepointAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -442,7 +442,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task StopWithSavepointAsync_WithDefaultParameters_ReturnsResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -467,7 +467,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task StopWithSavepointAsync_WithCustomPath_ReturnsResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -492,7 +492,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task StopWithSavepointAsync_WithDrainFalse_ReturnsResult()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -517,7 +517,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public async Task StopWithSavepointAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1))
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
             {
                 JobId = TestJobId
             };
@@ -634,7 +634,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public void JobClient_SetJobId_PropertyWorks()
         {
             // Arrange
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1));
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100));
 
             // Act
             client.JobId = "test-id-123";
@@ -647,7 +647,7 @@ namespace Flink.JobBuilder.Tests.Tests
         public void JobClient_SetJobName_PropertyWorks()
         {
             // Arrange
-            using var client = new JobClient(TestJobName, TimeSpan.FromSeconds(1));
+            using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100));
 
             // Act
             client.JobName = "New Job Name";
