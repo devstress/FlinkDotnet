@@ -495,6 +495,8 @@ public class DataStreamTests
 
         Assert.That(result, Is.Not.Null);
         Assert.That(result, Is.SameAs(stream));
+        // Verify normal case: typical parallelism value
+        Assert.DoesNotThrow(() => stream.SetMaxParallelism(128));
     }
 
     [Test]
@@ -1254,6 +1256,8 @@ public class DataStreamTests
     [Test]
     public void FilterWithIFilterFunction_OnCollectionStream_Works()
     {
+        // This test validates the IFilterFunction interface overload, 
+        // distinct from lambda-based Filter tested elsewhere
         var env = StreamExecutionEnvironment.GetExecutionEnvironment();
         var stream = env.FromCollection(new[] { 1, 2, 3, 4, 5 });
         var filterFunc = new TestFilterFunction();
@@ -1267,6 +1271,8 @@ public class DataStreamTests
     [Test]
     public void FlatMapWithIFlatMapFunction_OnCollectionStream_Works()
     {
+        // This test validates the IFlatMapFunction interface overload,
+        // distinct from lambda-based FlatMap tested elsewhere
         var env = StreamExecutionEnvironment.GetExecutionEnvironment();
         var stream = env.FromCollection(new[] { "a,b", "c,d" });
         var flatMapFunc = new TestFlatMapFunction();

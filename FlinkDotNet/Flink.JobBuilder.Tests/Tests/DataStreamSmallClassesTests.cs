@@ -173,6 +173,8 @@ namespace Flink.JobBuilder.Tests.Tests
         // Helper class for testing
         private class TestMapFunction
         {
+            // This class intentionally has no members - used only for type testing
+            public void Placeholder() { }
         }
 
         #endregion
