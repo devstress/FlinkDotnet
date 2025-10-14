@@ -369,6 +369,73 @@ public class OperationCaptureTests
 
     #endregion
 
+    #region Logger Initialization Tests - Coverage Enhancement
+
+    [Test]
+    public void CreateLogger_WithLogDirectory_CreatesLogger()
+    {
+        // Create a temporary log directory for testing
+        var tempLogPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"operation_capture_test_logs_{System.Guid.NewGuid()}");
+        System.IO.Directory.CreateDirectory(tempLogPath);
+
+        try
+        {
+            // Set environment variable
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", tempLogPath);
+
+            // Use reflection to call the private CreateLogger method
+            var method = typeof(OperationCapture).GetMethod(
+                "CreateLogger",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            var logger = method!.Invoke(null, null);
+
+            // Assert - logger should be created
+            Assert.That(logger, Is.Not.Null);
+        }
+        finally
+        {
+            // Cleanup
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
+            if (System.IO.Directory.Exists(tempLogPath))
+            {
+                System.IO.Directory.Delete(tempLogPath, true);
+            }
+        }
+    }
+
+    [Test]
+    public void CreateLogger_WithNonExistentDirectory_HandlesGracefully()
+    {
+        // Use a path that doesn't exist
+        var nonExistentPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"nonexistent_op_capture_{System.Guid.NewGuid()}");
+
+        try
+        {
+            // Set environment variable
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", nonExistentPath);
+
+            // Use reflection to call the private CreateLogger method
+            var method = typeof(OperationCapture).GetMethod(
+                "CreateLogger",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act - should handle gracefully
+            var logger = method!.Invoke(null, null);
+
+            // Assert - logger should still be created
+            Assert.That(logger, Is.Not.Null);
+        }
+        finally
+        {
+            // Cleanup
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
+        }
+    }
+
+    #endregion
+
     #region Test Helper Classes
 
     private class TestDeserializer { }

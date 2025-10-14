@@ -982,4 +982,41 @@ public class AdvancedComponentsTests
     }
 
     #endregion
+
+    #region BufferPool Disposal Tests - Coverage Enhancement
+
+    [Test]
+    public void BufferPool_Dispose_DisposesCleanly()
+    {
+        // Arrange
+        var pool = new BufferPool<int>(
+            maxSize: 10,
+            maxAge: TimeSpan.FromSeconds(1));
+
+        pool.AddAsync(1).Wait();
+
+        // Act
+        pool.Dispose();
+
+        // Assert - should not throw
+        Assert.Pass("BufferPool disposed successfully");
+    }
+
+    [Test]
+    public void BufferPool_DoubleDispose_HandlesGracefully()
+    {
+        // Arrange
+        var pool = new BufferPool<int>(
+            maxSize: 10,
+            maxAge: TimeSpan.FromSeconds(1));
+
+        // Act - dispose twice
+        pool.Dispose();
+        pool.Dispose();
+
+        // Assert - second dispose should be harmless
+        Assert.Pass("Double dispose handled correctly");
+    }
+
+    #endregion
 }

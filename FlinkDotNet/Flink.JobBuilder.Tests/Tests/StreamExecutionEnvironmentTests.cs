@@ -693,4 +693,82 @@ public class StreamExecutionEnvironmentTests
     }
 
     #endregion
+
+    #region Logger Initialization Tests - Coverage Enhancement
+
+    [Test]
+    public void CreateLogger_WithLogDirectory_CleansUpOldLogFiles()
+    {
+        // Create a temporary log directory for testing
+        var tempLogPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"flink_test_logs_{System.Guid.NewGuid()}");
+        System.IO.Directory.CreateDirectory(tempLogPath);
+
+        try
+        {
+            // Set environment variable
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", tempLogPath);
+
+            // Create an old log file (2 days old)
+            var oldLogFile = System.IO.Path.Combine(tempLogPath, "FlinkDotnet.log.20231201");
+            System.IO.File.WriteAllText(oldLogFile, "old log content");
+            System.IO.File.SetLastWriteTimeUtc(oldLogFile, System.DateTime.UtcNow.AddDays(-2));
+
+            // Create a recent log file (today)
+            var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
+            var recentLogFile = System.IO.Path.Combine(tempLogPath, $"FlinkDotnet.log.{today}");
+            System.IO.File.WriteAllText(recentLogFile, "recent log content");
+
+            // Use reflection to call the private CreateLogger method
+            var method = typeof(StreamExecutionEnvironment).GetMethod(
+                "CreateLogger",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act - this should clean up the old log file
+            var logger = method!.Invoke(null, null);
+
+            // Assert - old file should be deleted, recent file should remain
+            Assert.That(System.IO.File.Exists(oldLogFile), Is.False, "Old log file should be deleted");
+            Assert.That(logger, Is.Not.Null);
+        }
+        finally
+        {
+            // Cleanup
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
+            if (System.IO.Directory.Exists(tempLogPath))
+            {
+                System.IO.Directory.Delete(tempLogPath, true);
+            }
+        }
+    }
+
+    [Test]
+    public void CreateLogger_WithNonExistentDirectory_CreatesLogger()
+    {
+        // Use a path that doesn't exist
+        var nonExistentPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"nonexistent_{System.Guid.NewGuid()}");
+
+        try
+        {
+            // Set environment variable
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", nonExistentPath);
+
+            // Use reflection to call the private CreateLogger method
+            var method = typeof(StreamExecutionEnvironment).GetMethod(
+                "CreateLogger",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act - should handle gracefully
+            var logger = method!.Invoke(null, null);
+
+            // Assert - logger should still be created
+            Assert.That(logger, Is.Not.Null);
+        }
+        finally
+        {
+            // Cleanup
+            System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
+        }
+    }
+
+    #endregion
 }

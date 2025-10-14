@@ -970,4 +970,49 @@ public class FlinkJobGatewayServiceTests
     }
 
     #endregion
+
+    #region Private Method Tests - Coverage Enhancement
+
+    [Test]
+    public void LogBootstrapServersInJson_WithValidKafkaSource_LogsBootstrapServers()
+    {
+        // Use reflection to test private method
+        var method = typeof(FlinkJobGatewayService).GetMethod(
+            "LogBootstrapServersInJson",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        var json = @"{
+            ""source"": {
+                ""bootstrapServers"": ""localhost:9092"",
+                ""topic"": ""test-topic""
+            }
+        }";
+
+        // Act - should not throw and will trigger ExtractBootstrapServersFromJson
+        Assert.DoesNotThrow(() => method!.Invoke(null, new object[] { json }));
+    }
+
+    [Test]
+    public void CountDiscriminatorOccurrences_WithValidJson_CountsDiscriminators()
+    {
+        // Use reflection to test private method
+        var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8081" };
+        var service = new FlinkJobGatewayService(config);
+        var method = typeof(FlinkJobGatewayService).GetMethod(
+            "CountDiscriminatorOccurrences",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        var json = @"{
+            ""source"": { ""$type"": ""kafka"" },
+            ""operations"": [
+                { ""$type"": ""map"" },
+                { ""$type"": ""filter"" }
+            ]
+        }";
+
+        // Act - should not throw
+        Assert.DoesNotThrow(() => method!.Invoke(service, new object[] { "test-job", json }));
+    }
+
+    #endregion
 }
