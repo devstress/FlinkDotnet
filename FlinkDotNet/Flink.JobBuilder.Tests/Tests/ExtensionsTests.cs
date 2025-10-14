@@ -633,6 +633,46 @@ public class ExtensionsTests
     }
 
     [Test]
+    public void JobDefinition_Validate_WithUnsupportedOperationType_ReturnsValid()
+    {
+        // JoinOperationDefinition is not validated by JobDefinitionExtensions but is valid
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new JoinOperationDefinition { JoinType = "INNER" }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
+    public void JobDefinition_Validate_WithAsyncFunctionOperation_ReturnsValid()
+    {
+        // AsyncFunctionOperationDefinition is not validated by JobDefinitionExtensions but is valid
+        var jobDef = new JobDefinition
+        {
+            Metadata = new JobMetadata { JobId = "job-123" },
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new KafkaSinkDefinition { Topic = "output" },
+            Operations = new List<IOperationDefinition>
+            {
+                new AsyncFunctionOperationDefinition { FunctionType = "http", TimeoutMs = 5000 }
+            }
+        };
+        
+        var result = jobDef.Validate();
+        
+        Assert.That(result.IsValid, Is.True);
+    }
+
+    [Test]
     public void JobDefinition_Validate_WithMultipleErrors_ReturnsAllErrors()
     {
         var jobDef = new JobDefinition
