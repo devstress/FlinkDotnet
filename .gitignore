@@ -49,6 +49,7 @@ CodeCoverage/
 CoverageReport/
 coverage-report/
 coverage-report-new/
+coverage-report-redis/
 
 # SonarQube local analysis
 .sonarqube/
@@ -65,6 +66,7 @@ TestResults/
 CoverageReport/
 coverage-report/
 test-results/
+test-results-redis/
 
 # Producer build artifacts
 scripts/producer/Producer
