@@ -24,6 +24,7 @@ bld/
 [Ll]ogs/
 **/.vs/
 **/test-logs/
+WIs/
 tools/
 
 # .NET Core
@@ -87,6 +88,12 @@ all_warnings.txt
 *.rej
 *.swp
 *~
+
+# AI-generated summary and analysis files
+*SUMMARY*.md
+IMPLEMENTATION_SUMMARY.md
+*_ANALYSIS.md
+*_REPORT.md
 
 # System files
 Thumbs.db
