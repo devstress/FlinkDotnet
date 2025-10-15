@@ -1484,5 +1484,86 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+
+        #region GetJobStatusAsync Tests
+
+        [Test]
+        public async Task GetJobStatusAsync_WithValidResponse_ReturnsJobStatus()
+        {
+            // Arrange
+            var flinkJobId = "test-flink-job-id";
+            var responseJson = @"{
+                ""state"": ""RUNNING"",
+                ""start-time"": 1234567890000,
+                ""end-time"": -1,
+                ""duration"": 5000
+            }";
+
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, responseJson);
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobStatusAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.State, Is.EqualTo("RUNNING"));
+        }
+
+        [Test]
+        public async Task GetJobStatusAsync_WithNotFoundResponse_ReturnsNull()
+        {
+            // Arrange
+            var flinkJobId = "nonexistent-job-id";
+
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobStatusAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        #endregion
+
+        #region CancelJobAsync Tests
+
+        [Test]
+        public async Task CancelJobAsync_WithPatchSuccessResponse_ReturnsTrue()
+        {
+            // Arrange
+            var flinkJobId = "test-flink-job-id";
+
+            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.CancelJobAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public async Task CancelJobAsync_WithPostSuccessResponse_ReturnsTrue()
+        {
+            // Arrange
+            var flinkJobId = "test-flink-job-id";
+
+            // Setup PATCH to fail (404), then POST to succeed
+            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
+            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.CancelJobAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        #endregion
     }
 }
