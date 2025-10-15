@@ -1083,5 +1083,406 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+
+        #region Job Recovery - JSON Parsing Tests
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithValidJson_ReturnsJobId()
+        {
+            // Arrange
+            var payload = @"
+            {
+                ""jobs"": [
+                    {
+                        ""jid"": ""test-job-123"",
+                        ""name"": ""TestJob""
+                    }
+                ]
+            }";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "TestJob" }) as string;
+
+            // Assert
+            Assert.That(result, Is.EqualTo("test-job-123"));
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithEmptyPayload_ReturnsNull()
+        {
+            // Arrange
+            var payload = "";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "TestJob" }) as string;
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithInvalidJson_ReturnsNull()
+        {
+            // Arrange
+            var payload = "{ invalid json";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "TestJob" }) as string;
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithJobIdProperty_ReturnsJobId()
+        {
+            // Arrange
+            var payload = @"
+            {
+                ""jobs"": [
+                    {
+                        ""jobId"": ""job-456"",
+                        ""name"": ""MyJob""
+                    }
+                ]
+            }";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "MyJob" }) as string;
+
+            // Assert
+            Assert.That(result, Is.EqualTo("job-456"));
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithJobNameMatch_ReturnsJobId()
+        {
+            // Arrange
+            var payload = @"
+            {
+                ""jobs"": [
+                    {
+                        ""id"": ""job-789"",
+                        ""jobName"": ""TestJobName""
+                    }
+                ]
+            }";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "TestJobName" }) as string;
+
+            // Assert
+            Assert.That(result, Is.EqualTo("job-789"));
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithCaseInsensitiveMatch_ReturnsJobId()
+        {
+            // Arrange
+            var payload = @"
+            {
+                ""jobs"": [
+                    {
+                        ""jid"": ""job-abc"",
+                        ""name"": ""MyTestJob""
+                    }
+                ]
+            }";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "mytestjob" }) as string;
+
+            // Assert
+            Assert.That(result, Is.EqualTo("job-abc"));
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithArrayOfJobs_ReturnsFirstMatch()
+        {
+            // Arrange
+            var payload = @"[
+                {
+                    ""jid"": ""job-1"",
+                    ""name"": ""OtherJob""
+                },
+                {
+                    ""jid"": ""job-2"",
+                    ""name"": ""TargetJob""
+                }
+            ]";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "TargetJob" }) as string;
+
+            // Assert
+            Assert.That(result, Is.EqualTo("job-2"));
+        }
+
+        [Test]
+        public void ExtractJobIdFromOverviewPayload_WithNoMatch_ReturnsNull()
+        {
+            // Arrange
+            var payload = @"
+            {
+                ""jobs"": [
+                    {
+                        ""jid"": ""job-999"",
+                        ""name"": ""DifferentJob""
+                    }
+                ]
+            }";
+
+            // Act
+            var method = typeof(FlinkJobManager).GetMethod("ExtractJobIdFromOverviewPayload",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var result = method!.Invoke(null, new object[] { payload, "NonExistent Job" }) as string;
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        #endregion
+
+        #region Encoding and Diagnostic Tests
+
+        [Test]
+        public void EncodeJobDefinition_WithValidDefinition_ReturnsBase64()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-1", JobName = "Test" },
+                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+
+            var method = typeof(FlinkJobManager).GetMethod("EncodeJobDefinition",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            var result = method!.Invoke(jobManager, new object[] { jobDefinition }) as string;
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result, Is.Not.Empty);
+            // Should be valid base64
+            Assert.DoesNotThrow(() => Convert.FromBase64String(result!));
+        }
+
+        [Test]
+        public void LogJobDefinitionDiagnostics_WithDefinition_DoesNotThrow()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-1", JobName = "Test" },
+                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+
+            var method = typeof(FlinkJobManager).GetMethod("LogJobDefinitionDiagnostics",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act & Assert
+            Assert.DoesNotThrow(() => method!.Invoke(jobManager, new object[] { "{\"test\":\"data\"}", jobDefinition }));
+        }
+
+        [Test]
+        public void TrackJob_WithJobDefinition_AddsToMapping()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "track-test-1", JobName = "TrackTest" },
+                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+
+            var method = typeof(FlinkJobManager).GetMethod("TrackJob",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _httpClient);
+
+            // Act
+            Assert.DoesNotThrow(() => method!.Invoke(jobManager, new object[] { jobDefinition, "flink-123" }));
+
+            // Note: We can't directly verify the internal mapping, but we can ensure no exception is thrown
+        }
+
+        #endregion
+
+        #region Validation Helper Tests
+
+        [Test]
+        public void ValidateBasicProperties_WithValidDefinition_NoErrors()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "valid-1", JobName = "Valid Job" },
+                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateBasicProperties",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { jobDefinition, errors });
+
+            // Assert
+            Assert.That(errors, Is.Empty);
+        }
+
+        [Test]
+        public void ValidateBasicProperties_WithEmptyJobId_AddsError()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "", JobName = "Valid Job" },
+                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateBasicProperties",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { jobDefinition, errors });
+
+            // Assert
+            Assert.That(errors, Is.Not.Empty);
+            Assert.That(errors[0], Does.Contain("Job ID"));
+        }
+
+        [Test]
+        public void ValidateBasicProperties_WithNullSource_AddsError()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "valid-1", JobName = "Test" },
+                Source = null!,
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateBasicProperties",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { jobDefinition, errors });
+
+            // Assert
+            Assert.That(errors, Is.Not.Empty);
+            Assert.That(errors[0], Does.Contain("source"));
+        }
+
+        [Test]
+        public void ValidateSource_WithNullSource_NoError()
+        {
+            // Arrange - ValidateSource returns early if source is null (doesn't add error)
+            object? source = null;
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateSource",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object?[] { source, errors });
+
+            // Assert - ValidateSource doesn't add error for null, that's done by ValidateBasicProperties
+            Assert.That(errors, Is.Empty);
+        }
+
+        [Test]
+        public void ValidateSource_WithValidKafkaSource_NoErrors()
+        {
+            // Arrange
+            object source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateSource",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { source, errors });
+
+            // Assert
+            Assert.That(errors, Is.Empty);
+        }
+
+        [Test]
+        public void ValidateSource_WithEmptyKafkaTopic_AddsError()
+        {
+            // Arrange
+            object source = new KafkaSourceDefinition { Topic = "", BootstrapServers = "localhost:9092" };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateSource",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { source, errors });
+
+            // Assert
+            Assert.That(errors, Is.Not.Empty);
+            Assert.That(errors[0], Does.Contain("topic").IgnoreCase);
+        }
+
+        [Test]
+        public void ValidateSource_WithValidFileSource_NoErrors()
+        {
+            // Arrange
+            object source = new FileSourceDefinition { Path = "/tmp/input.txt" };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateSource",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { source, errors });
+
+            // Assert
+            Assert.That(errors, Is.Empty);
+        }
+
+        [Test]
+        public void ValidateSource_WithEmptyFilePath_AddsError()
+        {
+            // Arrange
+            object source = new FileSourceDefinition { Path = "" };
+            var errors = new List<string>();
+
+            var method = typeof(FlinkJobManager).GetMethod("ValidateSource",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+            // Act
+            method!.Invoke(null, new object[] { source, errors });
+
+            // Assert
+            Assert.That(errors, Is.Not.Empty);
+            Assert.That(errors[0], Does.Contain("path").IgnoreCase);
+        }
+
+        #endregion
     }
 }

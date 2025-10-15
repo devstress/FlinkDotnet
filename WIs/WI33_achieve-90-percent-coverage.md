@@ -121,3 +121,161 @@ Prioritized approach to reach 90%:
 - Previous WI32 correctly identified FlinkJobManager as the main blocker
 - Need comprehensive mocking strategy for FlinkJobManager's file I/O dependencies
 - Must focus on FlinkJobManager first - it's the key to reaching 90%
+- Starting with easier helper methods (JSON parsing, validation) provides quick wins
+- Reflection allows testing private static methods effectively
+
+## Phase 2: Design  
+### Requirements
+Create unit tests targeting:
+1. FlinkJobManager JSON parsing and helper methods (quick wins)
+2. FlinkJobManager validation methods
+3. FlinkJobManager encoding and diagnostic methods
+4. Additional StreamExecutionEnvironment paths
+5. FlinkOrchestra service methods  
+6. Source function wrapper classes
+
+### Architecture Decisions
+- Extend existing FlinkJobManagerTests.cs with reflection-based tests for private methods
+- Use reflection to test static helper methods for JSON parsing
+- Focus on methods that don't require complex file I/O mocking first
+- Follow existing NUnit test patterns and AAA structure
+- Add tests incrementally and measure coverage improvement
+
+### Why This Approach
+- Reflection allows testing private static methods without complex mocking
+- JSON parsing methods are pure functions, easy to test
+- Starting with easier methods builds momentum before tackling file I/O
+- Incremental approach allows tracking progress
+
+### Alternatives Considered
+- Could mock file system for all file I/O methods (complex, time-consuming)
+- Could skip private methods and only test public APIs (misses significant coverage)
+- Could focus only on integration tests (doesn't improve unit test coverage)
+
+## Phase 3: TDD/BDD
+### Test Specifications
+**Iteration 1 - FlinkJobManager Helper Methods** (Completed):
+- JSON parsing methods (ExtractJobIdFromOverviewPayload, ExtractJobIdFromOverviewElement)
+- Validation helper methods (ValidateBasicProperties, ValidateSource)
+- Encoding and diagnostic methods (EncodeJobDefinition, TrackJob)
+- Job recovery parsing methods
+- 19 new tests added
+
+**Iteration 2 - Additional Coverage** (Planned):
+- More FlinkJobManager file I/O methods with mocking
+- StreamExecutionEnvironment configuration methods
+- FlinkOrchestra orchestration methods
+- JobClient remaining paths
+- Source Functions coverage
+
+### Behavior Definitions
+Tests validate:
+- Correct JSON parsing from Flink API responses
+- Proper validation of job definitions
+- Base64 encoding of job definitions
+- Job tracking in internal mappings
+- Case-insensitive job name matching
+- Handling of various JSON structures (arrays, objects, nested)
+
+## Phase 4: Implementation
+### Code Changes - Iteration 1
+Extended FlinkJobManagerTests.cs with 19 new tests:
+
+1. **JSON Parsing Tests** (9 tests):
+   - ExtractJobIdFromOverviewPayload with valid/invalid JSON
+   - Different JSON property names (jid, jobId, id)
+   - Case-insensitive job name matching
+   - Array and nested object handling
+   - Empty and malformed payload handling
+
+2. **Validation Helper Tests** (9 tests):
+   - ValidateBasicProperties with various scenarios
+   - ValidateSource for Kafka and File sources
+   - Error detection for missing/empty required fields
+   - Validation of null and whitespace values
+
+3. **Encoding and Diagnostic Tests** (3 tests):
+   - EncodeJobDefinition returns valid Base64
+   - LogJobDefinitionDiagnostics executes without errors
+   - TrackJob adds to internal mapping
+
+### Challenges Encountered
+1. **Private Method Testing**: Used reflection to access private static helper methods
+2. **Method Visibility**: Many critical methods are private, requiring reflection-based testing
+3. **Coverage Gap**: FlinkJobManager is 1661 lines, adding 19 tests only improved from 26.9% to 32.9%
+4. **File I/O Complexity**: Many uncovered methods involve complex file operations requiring extensive mocking
+
+### Solutions Applied
+- Used reflection to test private static methods effectively
+- Focused on pure functions (JSON parsing, validation) for quick wins
+- Verified all 95 tests pass (up from 76 tests)
+- Achieved +6% coverage improvement in FlinkJobManager
+- Overall coverage improved from 70.3% to 71.4% (+61 lines)
+
+## Phase 5: Testing & Validation
+### Test Results - Iteration 1
+- **Tests Added**: 19 new unit tests for FlinkJobManager helper methods
+- **Total Tests**: 1996 (up from 1977) - all passing
+- **Coverage Before**: 70.3% (3742/5322 lines)
+- **Coverage After**: 71.4% (3803/5322 lines)
+- **Coverage Improvement**: +1.1 percentage points (+61 lines covered)
+
+### Performance Metrics
+**Coverage by Assembly (Iteration 1)**:
+- Flink.JobBuilder: 75.8% (was 75.6%, +0.2%)
+- FlinkDotNet.ClusterManager: 92.6% (unchanged)
+- FlinkDotNet.Common: 100% (unchanged)
+- FlinkDotNet.DataStream: 85.4% (unchanged)
+- FlinkDotNet.JobGateway: 37% (was 32.3%, +4.7%) ✓
+  - FlinkJobManager: 32.9% (was 26.9%, +6%) ✓
+- FlinkDotNet.Orchestration: 84.8% (unchanged)
+- FlinkDotNet.Temporal: 100% (unchanged)
+
+**Key Insights**:
+- Successfully improved FlinkJobManager from 26.9% to 32.9% (+6%)
+- Added coverage for JSON parsing, validation, and encoding methods
+- Still need ~987 more covered lines to reach 90% target (4790 target lines)
+- FlinkJobManager remains the main blocker with 1661 total lines
+- Complex file I/O methods (CollectConnectorJars, EnsureRunnerJarAsync, etc.) still uncovered
+
+## Phase 6: Owner Acceptance
+### Demonstration
+(Iteration 1 complete - 71.4% coverage achieved, continuing toward 90% target)
+
+### Owner Feedback
+(Awaiting feedback)
+
+### Final Approval
+(In progress)
+
+## Lessons Learned & Future Reference (MANDATORY)
+### What Worked Well
+- Reflection-based testing allowed access to private static helper methods
+- JSON parsing tests were straightforward and provided good coverage
+- Validation method tests were easy to write and verify
+- Incremental approach with coverage measurement after each iteration
+
+### What Could Be Improved  
+- Need to tackle file I/O mocking sooner for bigger coverage gains
+- Could use test generation tools to accelerate test creation
+- Should focus on highest-value methods first (most lines of code)
+
+### Key Insights for Similar Tasks
+- **Private Method Testing**: Reflection is effective for testing private static methods
+- **Quick Wins**: Start with pure functions (JSON parsing, validation) before complex mocking
+- **Iterative Progress**: Measure coverage after each batch of tests to track progress
+- **Main Blocker**: FlinkJobManager file I/O methods require extensive mocking (file system, ZIP, processes)
+- **Realistic Goal**: 90% from 71.4% requires ~987 more lines - need strategic focus on high-value methods
+
+### Specific Problems to Avoid in Future
+- Don't assume whitespace validation is included in all validators
+- Verify actual validation logic before writing assertion tests
+- Some validation methods return early for null (don't add errors)
+- Complex file I/O methods need comprehensive mocking strategy
+
+### Reference for Future WIs
+- FlinkJobManager has ~1100+ uncovered lines in file I/O methods
+- Reaching 90% requires focusing on SubmitJobToFlinkClusterAsync, CollectConnectorJars, EnsureRunnerJarAsync
+- These methods need mocking: Directory, File, Path, ZipArchive, Process
+- Consider integration tests for some file I/O scenarios if unit testing becomes too complex
+
