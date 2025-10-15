@@ -214,160 +214,209 @@ var assemblies = [
     "name": "Flink.JobBuilder",
     "classes": [
       { "name": "Flink.JobBuilder.Backpressure.AutoScaler", "rp": "Flink.JobBuilder_AutoScaler.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.BackpressureEvent", "rp": "Flink.JobBuilder_BackpressureEvent.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 353, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.BackpressureTestRunner", "rp": "Flink.JobBuilder_BackpressureTestRunner.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.BufferedItem<T>", "rp": "Flink.JobBuilder_BufferedItem_1.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 353, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.BufferPool<T>", "rp": "Flink.JobBuilder_BufferPool_1.html", "cl": 37, "ucl": 2, "cal": 39, "tl": 353, "cb": 16, "tb": 18, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.BufferedItem<T>", "rp": "Flink.JobBuilder_BufferedItem_1.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 353, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.BufferPool<T>", "rp": "Flink.JobBuilder_BufferPool_1.html", "cl": 85, "ucl": 22, "cal": 107, "tl": 353, "cb": 35, "tb": 50, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.BufferPoolStats", "rp": "Flink.JobBuilder_BufferPoolStats.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 353, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ComprehensiveLoadTester", "rp": "Flink.JobBuilder_ComprehensiveLoadTester.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ConsistentHashPartitionManager", "rp": "Flink.JobBuilder_ConsistentHashPartitionManager.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ConsumerLagMonitor", "rp": "Flink.JobBuilder_ConsumerLagMonitor.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.ConsumerScenario", "rp": "Flink.JobBuilder_ConsumerScenario.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.ConsumerScenario", "rp": "Flink.JobBuilder_ConsumerScenario.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ConsumerScenarioExecutor", "rp": "Flink.JobBuilder_ConsumerScenarioExecutor.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.ConsumerScenarioResult", "rp": "Flink.JobBuilder_ConsumerScenarioResult.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.DashboardManager", "rp": "Flink.JobBuilder_DashboardManager.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.DefaultKafkaClientFactory", "rp": "Flink.JobBuilder_DefaultKafkaClientFactory.html", "cl": 0, "ucl": 2, "cal": 2, "tl": 46, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.DefaultKafkaConsumerLagMonitor", "rp": "Flink.JobBuilder_DefaultKafkaConsumerLagMonitor.html", "cl": 37, "ucl": 56, "cal": 93, "tl": 625, "cb": 16, "tb": 42, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.DefaultKafkaClientFactory", "rp": "Flink.JobBuilder_DefaultKafkaClientFactory.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 46, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.DefaultKafkaConsumerLagMonitor", "rp": "Flink.JobBuilder_DefaultKafkaConsumerLagMonitor.html", "cl": 37, "ucl": 56, "cal": 93, "tl": 625, "cb": 16, "tb": 44, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.DlqManager", "rp": "Flink.JobBuilder_DlqManager.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.FailureSimulator", "rp": "Flink.JobBuilder_FailureSimulator.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.FairPartitionDistributor", "rp": "Flink.JobBuilder_FairPartitionDistributor.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.FiniteResourceManager", "rp": "Flink.JobBuilder_FiniteResourceManager.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.InMemoryRateLimiterStateStorage", "rp": "Flink.JobBuilder_InMemoryRateLimiterStateStorage.html", "cl": 46, "ucl": 0, "cal": 46, "tl": 158, "cb": 14, "tb": 14, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.KafkaConfig", "rp": "Flink.JobBuilder_KafkaConfig.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 410, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.KafkaConfig", "rp": "Flink.JobBuilder_KafkaConfig.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 410, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.KafkaPerformanceConfig", "rp": "Flink.JobBuilder_KafkaPerformanceConfig.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 410, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.KafkaRateLimiterStateStorage", "rp": "Flink.JobBuilder_KafkaRateLimiterStateStorage.html", "cl": 62, "ucl": 16, "cal": 78, "tl": 410, "cb": 9, "tb": 18, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.KafkaSecurityConfig", "rp": "Flink.JobBuilder_KafkaSecurityConfig.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 410, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.LagBasedRateLimiter", "rp": "Flink.JobBuilder_LagBasedRateLimiter.html", "cl": 81, "ucl": 20, "cal": 101, "tl": 625, "cb": 28, "tb": 42, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.LagBasedWaitingRequest", "rp": "Flink.JobBuilder_LagBasedWaitingRequest.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 625, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.KafkaRateLimiterStateStorage", "rp": "Flink.JobBuilder_KafkaRateLimiterStateStorage.html", "cl": 63, "ucl": 74, "cal": 137, "tl": 410, "cb": 11, "tb": 34, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.KafkaSecurityConfig", "rp": "Flink.JobBuilder_KafkaSecurityConfig.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 410, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.LagBasedRateLimiter", "rp": "Flink.JobBuilder_LagBasedRateLimiter.html", "cl": 87, "ucl": 75, "cal": 162, "tl": 625, "cb": 32, "tb": 74, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.LagBasedWaitingRequest", "rp": "Flink.JobBuilder_LagBasedWaitingRequest.html", "cl": 0, "ucl": 4, "cal": 4, "tl": 625, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.LoadTestPhase", "rp": "Flink.JobBuilder_LoadTestPhase.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.LoadTestPhaseExecution", "rp": "Flink.JobBuilder_LoadTestPhaseExecution.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.LoadTestResult", "rp": "Flink.JobBuilder_LoadTestResult.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.LoadTestResult", "rp": "Flink.JobBuilder_LoadTestResult.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.LocalJobManagerRateLimiterCoordinator", "rp": "Flink.JobBuilder_LocalJobManagerRateLimiterCoordinator.html", "cl": 12, "ucl": 0, "cal": 12, "tl": 104, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ManagementActionManager", "rp": "Flink.JobBuilder_ManagementActionManager.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.MetricsValidator", "rp": "Flink.JobBuilder_MetricsValidator.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.MonitoringManager", "rp": "Flink.JobBuilder_MonitoringManager.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.MultiClusterKafkaManager", "rp": "Flink.JobBuilder_MultiClusterKafkaManager.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.MultiTierRateLimiter", "rp": "Flink.JobBuilder_MultiTierRateLimiter.html", "cl": 82, "ucl": 68, "cal": 150, "tl": 553, "cb": 35, "tb": 73, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.MultiTierRateLimiter", "rp": "Flink.JobBuilder_MultiTierRateLimiter.html", "cl": 91, "ucl": 83, "cal": 174, "tl": 553, "cb": 44, "tb": 83, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.NetworkBottleneckSimulator", "rp": "Flink.JobBuilder_NetworkBottleneckSimulator.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.NetworkBoundBackpressureController", "rp": "Flink.JobBuilder_NetworkBoundBackpressureController.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.NoisyNeighborManager", "rp": "Flink.JobBuilder_NoisyNeighborManager.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.OperationsManager", "rp": "Flink.JobBuilder_OperationsManager.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.PartitionRebalanceResult", "rp": "Flink.JobBuilder_PartitionRebalanceResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ProcessingCharacteristicValidator", "rp": "Flink.JobBuilder_ProcessingCharacteristicValidator.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.ProductionReadinessValidator", "rp": "Flink.JobBuilder_ProductionReadinessValidator.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.RateLimiterFactory", "rp": "Flink.JobBuilder_RateLimiterFactory.html", "cl": 39, "ucl": 15, "cal": 54, "tl": 255, "cb": 1, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.RateLimiterState", "rp": "Flink.JobBuilder_RateLimiterState.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 103, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.RateLimitingContext", "rp": "Flink.JobBuilder_RateLimitingContext.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 553, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.RateLimitingTier", "rp": "Flink.JobBuilder_RateLimitingTier.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 113, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.ResourceConstrainedScenario", "rp": "Flink.JobBuilder_ResourceConstrainedScenario.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.SlidingWindowRateLimiter", "rp": "Flink.JobBuilder_SlidingWindowRateLimiter.html", "cl": 57, "ucl": 18, "cal": 75, "tl": 234, "cb": 18, "tb": 30, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.StorageBackendInfo", "rp": "Flink.JobBuilder_StorageBackendInfo.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 103, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.TokenBucketRateLimiter", "rp": "Flink.JobBuilder_TokenBucketRateLimiter.html", "cl": 91, "ucl": 16, "cal": 107, "tl": 483, "cb": 30, "tb": 38, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.RateLimiterFactory", "rp": "Flink.JobBuilder_RateLimiterFactory.html", "cl": 50, "ucl": 4, "cal": 54, "tl": 255, "cb": 1, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.RateLimiterState", "rp": "Flink.JobBuilder_RateLimiterState.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 103, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.RateLimitingContext", "rp": "Flink.JobBuilder_RateLimitingContext.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 553, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.RateLimitingTier", "rp": "Flink.JobBuilder_RateLimitingTier.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 113, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.ResourceConstrainedScenario", "rp": "Flink.JobBuilder_ResourceConstrainedScenario.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.ResourceConstrainedScenarioResult", "rp": "Flink.JobBuilder_ResourceConstrainedScenarioResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.ScalingMetrics", "rp": "Flink.JobBuilder_ScalingMetrics.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.SlidingWindowRateLimiter", "rp": "Flink.JobBuilder_SlidingWindowRateLimiter.html", "cl": 57, "ucl": 27, "cal": 84, "tl": 234, "cb": 18, "tb": 36, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.StorageBackendInfo", "rp": "Flink.JobBuilder_StorageBackendInfo.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 103, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.TokenBucketRateLimiter", "rp": "Flink.JobBuilder_TokenBucketRateLimiter.html", "cl": 145, "ucl": 34, "cal": 179, "tl": 483, "cb": 43, "tb": 60, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.TopicDesignValidator", "rp": "Flink.JobBuilder_TopicDesignValidator.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.VariableSpeedProducer", "rp": "Flink.JobBuilder_VariableSpeedProducer.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Backpressure.WaitingRequest", "rp": "Flink.JobBuilder_WaitingRequest.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 483, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Backpressure.WaitingRequest", "rp": "Flink.JobBuilder_WaitingRequest.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 483, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Backpressure.WorldClassStandardValidator", "rp": "Flink.JobBuilder_WorldClassStandardValidator.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 316, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Demo.RateLimitingDemo", "rp": "Flink.JobBuilder_RateLimitingDemo.html", "cl": 0, "ucl": 59, "cal": 59, "tl": 228, "cb": 0, "tb": 28, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Demo.RateLimitingDemo", "rp": "Flink.JobBuilder_RateLimitingDemo.html", "cl": 0, "ucl": 120, "cal": 120, "tl": 228, "cb": 0, "tb": 42, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Extensions.FlinkJobBuilderExtensions", "rp": "Flink.JobBuilder_FlinkJobBuilderExtensions.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 234, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Extensions.JobDefinitionExtensions", "rp": "Flink.JobBuilder_JobDefinitionExtensions.html", "cl": 44, "ucl": 0, "cal": 44, "tl": 234, "cb": 40, "tb": 40, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Extensions.JobValidationResult", "rp": "Flink.JobBuilder_JobValidationResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 234, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Extensions.JobDefinitionExtensions", "rp": "Flink.JobBuilder_JobDefinitionExtensions.html", "cl": 63, "ucl": 0, "cal": 63, "tl": 234, "cb": 58, "tb": 58, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Extensions.JobValidationResult", "rp": "Flink.JobBuilder_JobValidationResult.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 234, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Extensions.ServiceCollectionExtensions", "rp": "Flink.JobBuilder_ServiceCollectionExtensions.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 234, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Flink.ConsumeResult", "rp": "Flink.JobBuilder_ConsumeResult.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 298, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Flink.FlinkKafkaConsumerGroup", "rp": "Flink.JobBuilder_FlinkKafkaConsumerGroup.html", "cl": 65, "ucl": 0, "cal": 65, "tl": 298, "cb": 20, "tb": 20, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Flink.FlinkRedisSink", "rp": "Flink.JobBuilder_FlinkRedisSink.html", "cl": 48, "ucl": 30, "cal": 78, "tl": 432, "cb": 30, "tb": 40, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Flink.RedisOperation", "rp": "Flink.JobBuilder_RedisOperation.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 432, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Flink.RedisTransactionResult", "rp": "Flink.JobBuilder_RedisTransactionResult.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 432, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Flink.TopicPartition", "rp": "Flink.JobBuilder_TopicPartition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 298, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.FlinkJobBuilder", "rp": "Flink.JobBuilder_FlinkJobBuilder.html", "cl": 180, "ucl": 0, "cal": 180, "tl": 566, "cb": 22, "tb": 22, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.AggregateOperationDefinition", "rp": "Flink.JobBuilder_AggregateOperationDefinition.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.AsyncFunctionOperationDefinition", "rp": "Flink.JobBuilder_AsyncFunctionOperationDefinition.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Flink.ConsumeResult", "rp": "Flink.JobBuilder_ConsumeResult.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 298, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Flink.FlinkKafkaConsumerGroup", "rp": "Flink.JobBuilder_FlinkKafkaConsumerGroup.html", "cl": 85, "ucl": 3, "cal": 88, "tl": 298, "cb": 29, "tb": 30, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Flink.FlinkRedisSink", "rp": "Flink.JobBuilder_FlinkRedisSink.html", "cl": 132, "ucl": 75, "cal": 207, "tl": 433, "cb": 64, "tb": 96, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Flink.RedisOperation", "rp": "Flink.JobBuilder_RedisOperation.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 433, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Flink.RedisTransactionResult", "rp": "Flink.JobBuilder_RedisTransactionResult.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 433, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Flink.TopicPartition", "rp": "Flink.JobBuilder_TopicPartition.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 298, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.FlinkJobBuilder", "rp": "Flink.JobBuilder_FlinkJobBuilder.html", "cl": 180, "ucl": 39, "cal": 219, "tl": 566, "cb": 22, "tb": 40, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.AggregateOperationDefinition", "rp": "Flink.JobBuilder_AggregateOperationDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.AsyncFunctionOperationDefinition", "rp": "Flink.JobBuilder_AsyncFunctionOperationDefinition.html", "cl": 13, "ucl": 0, "cal": 13, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.ConsoleSinkDefinition", "rp": "Flink.JobBuilder_ConsoleSinkDefinition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.DatabaseSinkDefinition", "rp": "Flink.JobBuilder_DatabaseSinkDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.DatabaseSourceDefinition", "rp": "Flink.JobBuilder_DatabaseSourceDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.FileSinkDefinition", "rp": "Flink.JobBuilder_FileSinkDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.FileSourceDefinition", "rp": "Flink.JobBuilder_FileSourceDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.FilterOperationDefinition", "rp": "Flink.JobBuilder_FilterOperationDefinition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.FlinkJobGatewayConfiguration", "rp": "Flink.JobBuilder_FlinkJobGatewayConfiguration.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.GroupByOperationDefinition", "rp": "Flink.JobBuilder_GroupByOperationDefinition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.HttpSinkDefinition", "rp": "Flink.JobBuilder_HttpSinkDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.HttpSourceDefinition", "rp": "Flink.JobBuilder_HttpSourceDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JobDefinition", "rp": "Flink.JobBuilder_JobDefinition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JobExecutionResult", "rp": "Flink.JobBuilder_JobExecutionResult.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JobMetadata", "rp": "Flink.JobBuilder_JobMetadata.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JobMetrics", "rp": "Flink.JobBuilder_JobMetrics.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JobStatus", "rp": "Flink.JobBuilder_JobStatus.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 182, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JobSubmissionResult", "rp": "Flink.JobBuilder_JobSubmissionResult.html", "cl": 18, "ucl": 0, "cal": 18, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.JoinOperationDefinition", "rp": "Flink.JobBuilder_JoinOperationDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.KafkaSinkDefinition", "rp": "Flink.JobBuilder_KafkaSinkDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.KafkaSourceDefinition", "rp": "Flink.JobBuilder_KafkaSourceDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.MapOperationDefinition", "rp": "Flink.JobBuilder_MapOperationDefinition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.FlinkJobGatewayConfiguration", "rp": "Flink.JobBuilder_FlinkJobGatewayConfiguration.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.GroupByOperationDefinition", "rp": "Flink.JobBuilder_GroupByOperationDefinition.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.HttpSinkDefinition", "rp": "Flink.JobBuilder_HttpSinkDefinition.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.HttpSourceDefinition", "rp": "Flink.JobBuilder_HttpSourceDefinition.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JobDefinition", "rp": "Flink.JobBuilder_JobDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JobExecutionResult", "rp": "Flink.JobBuilder_JobExecutionResult.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JobMetadata", "rp": "Flink.JobBuilder_JobMetadata.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JobMetrics", "rp": "Flink.JobBuilder_JobMetrics.html", "cl": 13, "ucl": 0, "cal": 13, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JobStatus", "rp": "Flink.JobBuilder_JobStatus.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 182, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JobSubmissionResult", "rp": "Flink.JobBuilder_JobSubmissionResult.html", "cl": 21, "ucl": 0, "cal": 21, "tl": 182, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.JoinOperationDefinition", "rp": "Flink.JobBuilder_JoinOperationDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.KafkaSinkDefinition", "rp": "Flink.JobBuilder_KafkaSinkDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.KafkaSourceDefinition", "rp": "Flink.JobBuilder_KafkaSourceDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.MapOperationDefinition", "rp": "Flink.JobBuilder_MapOperationDefinition.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.ProcessFunctionOperationDefinition", "rp": "Flink.JobBuilder_ProcessFunctionOperationDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.RedisSinkDefinition", "rp": "Flink.JobBuilder_RedisSinkDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.RetryOperationDefinition", "rp": "Flink.JobBuilder_RetryOperationDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.SideOutputOperationDefinition", "rp": "Flink.JobBuilder_SideOutputOperationDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.RedisSinkDefinition", "rp": "Flink.JobBuilder_RedisSinkDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.RetryOperationDefinition", "rp": "Flink.JobBuilder_RetryOperationDefinition.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.SideOutputOperationDefinition", "rp": "Flink.JobBuilder_SideOutputOperationDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Models.SqlSourceDefinition", "rp": "Flink.JobBuilder_SqlSourceDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.StateOperationDefinition", "rp": "Flink.JobBuilder_StateOperationDefinition.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.TimerOperationDefinition", "rp": "Flink.JobBuilder_TimerOperationDefinition.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Models.WindowOperationDefinition", "rp": "Flink.JobBuilder_WindowOperationDefinition.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Flink.JobBuilder.Services.FlinkJobGatewayService", "rp": "Flink.JobBuilder_FlinkJobGatewayService.html", "cl": 101, "ucl": 8, "cal": 109, "tl": 484, "cb": 35, "tb": 46, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.StateOperationDefinition", "rp": "Flink.JobBuilder_StateOperationDefinition.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.TimerOperationDefinition", "rp": "Flink.JobBuilder_TimerOperationDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Models.WindowOperationDefinition", "rp": "Flink.JobBuilder_WindowOperationDefinition.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 518, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Flink.JobBuilder.Services.FlinkJobGatewayService", "rp": "Flink.JobBuilder_FlinkJobGatewayService.html", "cl": 235, "ucl": 11, "cal": 246, "tl": 484, "cb": 96, "tb": 124, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Services.IrValidationResult", "rp": "Flink.JobBuilder_IrValidationResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 377, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Flink.JobBuilder.Services.JobDefinitionValidator", "rp": "Flink.JobBuilder_JobDefinitionValidator.html", "cl": 205, "ucl": 3, "cal": 208, "tl": 377, "cb": 192, "tb": 200, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
+    "name": "FlinkDotNet",
+    "classes": [
+      { "name": "FlinkDotNet.Flink", "rp": "FlinkDotNet_Flink.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 94, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Pipelines.FlinkDotNet", "rp": "FlinkDotNet_FlinkDotNet.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 40, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
     "name": "FlinkDotNet.ClusterManager",
     "classes": [
-      { "name": "FlinkDotNet.ClusterManager.Actors.FlinkClusterActor", "rp": "FlinkDotNet.ClusterManager_FlinkClusterActor.html", "cl": 58, "ucl": 0, "cal": 58, "tl": 449, "cb": 15, "tb": 16, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Actors.FlinkClusterActor", "rp": "FlinkDotNet.ClusterManager_FlinkClusterActor.html", "cl": 224, "ucl": 23, "cal": 247, "tl": 449, "cb": 42, "tb": 58, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Actors.FlinkJobSubmissionResponse", "rp": "FlinkDotNet.ClusterManager_FlinkJobSubmissionResponse.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 449, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Actors.FlinkMetrics", "rp": "FlinkDotNet.ClusterManager_FlinkMetrics.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 449, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Actors.FlinkOverview", "rp": "FlinkDotNet.ClusterManager_FlinkOverview.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 449, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.ClusterConfiguration", "rp": "FlinkDotNet.ClusterManager_ClusterConfiguration.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.ClusterMetrics", "rp": "FlinkDotNet.ClusterManager_ClusterMetrics.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.ClusterStatus", "rp": "FlinkDotNet.ClusterManager_ClusterStatus.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.FlinkJobDefinition", "rp": "FlinkDotNet.ClusterManager_FlinkJobDefinition.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.JobPlacementInfo", "rp": "FlinkDotNet.ClusterManager_JobPlacementInfo.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.JobResourceRequirements", "rp": "FlinkDotNet.ClusterManager_JobResourceRequirements.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.JobSubmissionResult", "rp": "FlinkDotNet.ClusterManager_JobSubmissionResult.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.ClusterManager.Models.ResourceLimits", "rp": "FlinkDotNet.ClusterManager_ResourceLimits.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 203, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "FlinkDotNet.Common",
     "classes": [
       { "name": "FlinkDotNet.Common.Configuration", "rp": "FlinkDotNet.Common_Configuration.html", "cl": 47, "ucl": 0, "cal": 47, "tl": 240, "cb": 30, "tb": 32, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.Common.ExecutionConfig", "rp": "FlinkDotNet.Common_ExecutionConfig.html", "cl": 35, "ucl": 0, "cal": 35, "tl": 251, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Common.ExecutionConfig", "rp": "FlinkDotNet.Common_ExecutionConfig.html", "cl": 38, "ucl": 0, "cal": 38, "tl": 251, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "FlinkDotNet.DataStream",
     "classes": [
-      { "name": "FlinkDotNet.DataStream.AggregatedSourceFunction<T1, T2, T3>", "rp": "FlinkDotNet.DataStream_AggregatedSourceFunction_3.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 931, "cb": 2, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.AggregatingStateDescriptor<T1, T2, T3>", "rp": "FlinkDotNet.DataStream_AggregatingStateDescriptor_3.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 344, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.AggregatedSourceFunction<T1, T2, T3>", "rp": "FlinkDotNet.DataStream_AggregatedSourceFunction_3.html", "cl": 4, "ucl": 5, "cal": 9, "tl": 931, "cb": 2, "tb": 10, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.AggregatingStateDescriptor<T1, T2, T3>", "rp": "FlinkDotNet.DataStream_AggregatingStateDescriptor_3.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 344, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.AllWindowedStream<T>", "rp": "FlinkDotNet.DataStream_AllWindowedStream_1.html", "cl": 27, "ucl": 0, "cal": 27, "tl": 931, "cb": 8, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.CapturedOperation", "rp": "FlinkDotNet.DataStream_CapturedOperation.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 416, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.CapturedOperation", "rp": "FlinkDotNet.DataStream_CapturedOperation.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 416, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.DataStream<T>", "rp": "FlinkDotNet.DataStream_DataStream_1.html", "cl": 119, "ucl": 6, "cal": 125, "tl": 931, "cb": 70, "tb": 82, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.DataStreamExtensions", "rp": "FlinkDotNet.DataStream_DataStreamExtensions.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 288, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.FilteredSourceFunction<T>", "rp": "FlinkDotNet.DataStream_FilteredSourceFunction_1.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 931, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.FlatMappedSourceFunction<T1, T2>", "rp": "FlinkDotNet.DataStream_FlatMappedSourceFunction_2.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 931, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.FilteredSourceFunction<T>", "rp": "FlinkDotNet.DataStream_FilteredSourceFunction_1.html", "cl": 4, "ucl": 4, "cal": 8, "tl": 931, "cb": 4, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.FlatMappedSourceFunction<T1, T2>", "rp": "FlinkDotNet.DataStream_FlatMappedSourceFunction_2.html", "cl": 4, "ucl": 4, "cal": 8, "tl": 931, "cb": 4, "tb": 14, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.IAsyncFunction<T1, T2>", "rp": "FlinkDotNet.DataStream_IAsyncFunction_2.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 406, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.JobClient", "rp": "FlinkDotNet.DataStream_JobClient.html", "cl": 16, "ucl": 0, "cal": 16, "tl": 770, "cb": 7, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.JobExecutionResult", "rp": "FlinkDotNet.DataStream_JobExecutionResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 770, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.JobStatus", "rp": "FlinkDotNet.DataStream_JobStatus.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 770, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.JobClient", "rp": "FlinkDotNet.DataStream_JobClient.html", "cl": 50, "ucl": 49, "cal": 99, "tl": 785, "cb": 15, "tb": 42, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.JobExecutionResult", "rp": "FlinkDotNet.DataStream_JobExecutionResult.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 785, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.JobStatus", "rp": "FlinkDotNet.DataStream_JobStatus.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 785, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.KafkaSinkFunction<T>", "rp": "FlinkDotNet.DataStream_KafkaSinkFunction_1.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 288, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.KafkaSourceFunction<T>", "rp": "FlinkDotNet.DataStream_KafkaSourceFunction_1.html", "cl": 16, "ucl": 0, "cal": 16, "tl": 79, "cb": 4, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.KafkaSourceFunction<T>", "rp": "FlinkDotNet.DataStream_KafkaSourceFunction_1.html", "cl": 19, "ucl": 0, "cal": 19, "tl": 79, "cb": 5, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.KafkaSourceFunctionExtensions", "rp": "FlinkDotNet.DataStream_KafkaSourceFunctionExtensions.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 288, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.KeyedStream<T1, T2>", "rp": "FlinkDotNet.DataStream_KeyedStream_2.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 931, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.ListStateDescriptor<T>", "rp": "FlinkDotNet.DataStream_ListStateDescriptor_1.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 344, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.MappedSourceFunction<T1, T2>", "rp": "FlinkDotNet.DataStream_MappedSourceFunction_2.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 931, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.MapStateDescriptor<T1, T2>", "rp": "FlinkDotNet.DataStream_MapStateDescriptor_2.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 344, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.ListStateDescriptor<T>", "rp": "FlinkDotNet.DataStream_ListStateDescriptor_1.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 344, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.MappedSourceFunction<T1, T2>", "rp": "FlinkDotNet.DataStream_MappedSourceFunction_2.html", "cl": 4, "ucl": 3, "cal": 7, "tl": 931, "cb": 4, "tb": 10, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.MapStateDescriptor<T1, T2>", "rp": "FlinkDotNet.DataStream_MapStateDescriptor_2.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 344, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.OperationCapture", "rp": "FlinkDotNet.DataStream_OperationCapture.html", "cl": 200, "ucl": 3, "cal": 203, "tl": 416, "cb": 65, "tb": 76, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.OutputTag<T>", "rp": "FlinkDotNet.DataStream_OutputTag_1.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 406, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.ReducingStateDescriptor<T>", "rp": "FlinkDotNet.DataStream_ReducingStateDescriptor_1.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 344, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.SavepointResult", "rp": "FlinkDotNet.DataStream_SavepointResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 770, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.StateDescriptor", "rp": "FlinkDotNet.DataStream_StateDescriptor.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 344, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.StopWithSavepointResult", "rp": "FlinkDotNet.DataStream_StopWithSavepointResult.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 770, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.StreamExecutionEnvironment", "rp": "FlinkDotNet.DataStream_StreamExecutionEnvironment.html", "cl": 108, "ucl": 2, "cal": 110, "tl": 770, "cb": 22, "tb": 24, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.OutputTag<T>", "rp": "FlinkDotNet.DataStream_OutputTag_1.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 406, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.ReducingStateDescriptor<T>", "rp": "FlinkDotNet.DataStream_ReducingStateDescriptor_1.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 344, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.SavepointResult", "rp": "FlinkDotNet.DataStream_SavepointResult.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 785, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.StateDescriptor", "rp": "FlinkDotNet.DataStream_StateDescriptor.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 344, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.StopWithSavepointResult", "rp": "FlinkDotNet.DataStream_StopWithSavepointResult.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 785, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.StreamExecutionEnvironment", "rp": "FlinkDotNet.DataStream_StreamExecutionEnvironment.html", "cl": 108, "ucl": 37, "cal": 145, "tl": 785, "cb": 22, "tb": 54, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.StreamExecutionEnvironmentExtensions", "rp": "FlinkDotNet.DataStream_StreamExecutionEnvironmentExtensions.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 288, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.Time", "rp": "FlinkDotNet.DataStream_Time.html", "cl": 15, "ucl": 0, "cal": 15, "tl": 159, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.TypeInformation<T>", "rp": "FlinkDotNet.DataStream_TypeInformation_1.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 288, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.ValueStateDescriptor<T>", "rp": "FlinkDotNet.DataStream_ValueStateDescriptor_1.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 344, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.ValueStateDescriptor<T>", "rp": "FlinkDotNet.DataStream_ValueStateDescriptor_1.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 344, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "FlinkDotNet.DataStream.Watermark", "rp": "FlinkDotNet.DataStream_Watermark.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 159, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.DataStream.WindowDefinition", "rp": "FlinkDotNet.DataStream_WindowDefinition.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 416, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.DataStream.WindowDefinition", "rp": "FlinkDotNet.DataStream_WindowDefinition.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 416, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "FlinkDotNet.JobGateway",
     "classes": [
-      { "name": "FlinkDotNet.JobGateway.Controllers.JobsController", "rp": "FlinkDotNet.JobGateway_JobsController.html", "cl": 40, "ucl": 0, "cal": 40, "tl": 283, "cb": 10, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.JobGateway.ModelStateLoggingFilter", "rp": "FlinkDotNet.JobGateway_ModelStateLoggingFilter.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 222, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "rp": "FlinkDotNet.JobGateway_FlinkJobManager.html", "cl": 120, "ucl": 274, "cal": 394, "tl": 1661, "cb": 50, "tb": 226, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.JobGateway.Controllers.JobsController", "rp": "FlinkDotNet.JobGateway_JobsController.html", "cl": 121, "ucl": 7, "cal": 128, "tl": 283, "cb": 26, "tb": 28, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.JobGateway.ModelStateLoggingFilter", "rp": "FlinkDotNet.JobGateway_ModelStateLoggingFilter.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 222, "cb": 3, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.JobGateway.Program", "rp": "FlinkDotNet.JobGateway_Program.html", "cl": 0, "ucl": 122, "cal": 122, "tl": 222, "cb": 0, "tb": 22, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "rp": "FlinkDotNet.JobGateway_FlinkJobManager.html", "cl": 231, "ucl": 627, "cal": 858, "tl": 1661, "cb": 83, "tb": 432, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "FlinkDotNet.Orchestration",
     "classes": [
-      { "name": "FlinkDotNet.Orchestration.Services.ClusterActorBridge", "rp": "FlinkDotNet.Orchestration_ClusterActorBridge.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 115, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "FlinkDotNet.Orchestration.Services.FlinkOrchestra", "rp": "FlinkDotNet.Orchestration_FlinkOrchestra.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 346, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ClusterConfiguration", "rp": "FlinkDotNet.Orchestration_ClusterConfiguration.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ClusterHealthIssue", "rp": "FlinkDotNet.Orchestration_ClusterHealthIssue.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ClusterInfo", "rp": "FlinkDotNet.Orchestration_ClusterInfo.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ClusterMetrics", "rp": "FlinkDotNet.Orchestration_ClusterMetrics.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ClusterStatus", "rp": "FlinkDotNet.Orchestration_ClusterStatus.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.FlinkJobDefinition", "rp": "FlinkDotNet.Orchestration_FlinkJobDefinition.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.HealthReport", "rp": "FlinkDotNet.Orchestration_HealthReport.html", "cl": 10, "ucl": 0, "cal": 10, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.JobPlacementInfo", "rp": "FlinkDotNet.Orchestration_JobPlacementInfo.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.JobResourceRequirements", "rp": "FlinkDotNet.Orchestration_JobResourceRequirements.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.JobSubmissionResult", "rp": "FlinkDotNet.Orchestration_JobSubmissionResult.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.OrchestrationRequest", "rp": "FlinkDotNet.Orchestration_OrchestrationRequest.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ResourceLimits", "rp": "FlinkDotNet.Orchestration_ResourceLimits.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Models.ScalingResult", "rp": "FlinkDotNet.Orchestration_ScalingResult.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 337, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Services.ClusterActorBridge", "rp": "FlinkDotNet.Orchestration_ClusterActorBridge.html", "cl": 76, "ucl": 0, "cal": 76, "tl": 115, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Orchestration.Services.FlinkOrchestra", "rp": "FlinkDotNet.Orchestration_FlinkOrchestra.html", "cl": 157, "ucl": 58, "cal": 215, "tl": 346, "cb": 26, "tb": 41, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
+  {
+    "name": "FlinkDotNet.Temporal",
+    "classes": [
+      { "name": "FlinkDotNet.Temporal.Models.AutoScalingConfig", "rp": "FlinkDotNet.Temporal_AutoScalingConfig.html", "cl": 9, "ucl": 0, "cal": 9, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.AutoScalingMetric", "rp": "FlinkDotNet.Temporal_AutoScalingMetric.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.ClusterFailureInfo", "rp": "FlinkDotNet.Temporal_ClusterFailureInfo.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.ClusterProvisioningRequest", "rp": "FlinkDotNet.Temporal_ClusterProvisioningRequest.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.ClusterProvisioningResult", "rp": "FlinkDotNet.Temporal_ClusterProvisioningResult.html", "cl": 7, "ucl": 0, "cal": 7, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.HealthMonitoringConfig", "rp": "FlinkDotNet.Temporal_HealthMonitoringConfig.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.JobDistributionResult", "rp": "FlinkDotNet.Temporal_JobDistributionResult.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "FlinkDotNet.Temporal.Models.JobPlacementResult", "rp": "FlinkDotNet.Temporal_JobPlacementResult.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 229, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
@@ -382,10 +431,22 @@ var riskHotspotMetrics = [
 
 var riskHotspots = [
   {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "SubmitJobToFlinkClusterAsync()", "methodShortName": "SubmitJobToFlinkClusterAsync()", "fileIndex": 0, "line": 522,
+    "metrics": [
+      { "value": 1056, "exceeded": true },
+      { "value": 32, "exceeded": true },
+    ]},
+  {
+    "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.StreamExecutionEnvironment", "reportPath": "FlinkDotNet.DataStream_StreamExecutionEnvironment.html", "methodName": "ExecuteAsync()", "methodShortName": "ExecuteAsync()", "fileIndex": 0, "line": 408,
+    "metrics": [
+      { "value": 930, "exceeded": true },
+      { "value": 30, "exceeded": true },
+    ]},
+  {
     "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.DefaultKafkaConsumerLagMonitor", "reportPath": "Flink.JobBuilder_DefaultKafkaConsumerLagMonitor.html", "methodName": "ComputeLagForGroup(System.String,System.TimeSpan)", "methodShortName": "ComputeLagForGroup(...)", "fileIndex": 0, "line": 508,
     "metrics": [
-      { "value": 403, "exceeded": true },
-      { "value": 22, "exceeded": true },
+      { "value": 477, "exceeded": true },
+      { "value": 24, "exceeded": true },
     ]},
   {
     "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Demo.RateLimitingDemo", "reportPath": "Flink.JobBuilder_RateLimitingDemo.html", "methodName": "DemonstrateMultiTierRateLimiting()", "methodShortName": "DemonstrateMultiTierRateLimiting()", "fileIndex": 0, "line": 166,
@@ -400,10 +461,28 @@ var riskHotspots = [
       { "value": 18, "exceeded": true },
     ]},
   {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "CollectVertexNumericMetricsAsync()", "methodShortName": "CollectVertexNumericMetricsAsync()", "fileIndex": 0, "line": 1511,
+    "metrics": [
+      { "value": 342, "exceeded": true },
+      { "value": 18, "exceeded": true },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "EnsureRunnerJarAsync()", "methodShortName": "EnsureRunnerJarAsync()", "fileIndex": 0, "line": 795,
+    "metrics": [
+      { "value": 342, "exceeded": true },
+      { "value": 18, "exceeded": true },
+    ]},
+  {
     "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "TryGetJobIdFromHeaders(System.Net.Http.HttpResponseMessage)", "methodShortName": "TryGetJobIdFromHeaders(...)", "fileIndex": 0, "line": 1288,
     "metrics": [
       { "value": 272, "exceeded": true },
       { "value": 16, "exceeded": true },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.LagBasedRateLimiter", "reportPath": "Flink.JobBuilder_LagBasedRateLimiter.html", "methodName": "CheckConsumerLagAsync()", "methodShortName": "CheckConsumerLagAsync()", "fileIndex": 0, "line": 285,
+    "metrics": [
+      { "value": 210, "exceeded": true },
+      { "value": 14, "exceeded": false },
     ]},
   {
     "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "ExtractJobIdFromOverviewElement(System.Text.Json.JsonElement,System.String)", "methodShortName": "ExtractJobIdFromOverviewElement(...)", "fileIndex": 0, "line": 1229,
@@ -413,6 +492,12 @@ var riskHotspots = [
     ]},
   {
     "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "MatchJobEntry(System.Text.Json.JsonElement,System.String)", "methodShortName": "MatchJobEntry(...)", "fileIndex": 0, "line": 1257,
+    "metrics": [
+      { "value": 210, "exceeded": true },
+      { "value": 14, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "EnsureRunnerJarPathAsync()", "methodShortName": "EnsureRunnerJarPathAsync()", "fileIndex": 0, "line": 406,
     "metrics": [
       { "value": 210, "exceeded": true },
       { "value": 14, "exceeded": false },
@@ -430,19 +515,97 @@ var riskHotspots = [
       { "value": 10, "exceeded": false },
     ]},
   {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Flink.FlinkRedisSink", "reportPath": "Flink.JobBuilder_FlinkRedisSink.html", "methodName": "MaterializeResultsAsync()", "methodShortName": "MaterializeResultsAsync()", "fileIndex": 0, "line": 317,
+    "metrics": [
+      { "value": 110, "exceeded": true },
+      { "value": 10, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.FlinkJobBuilder", "reportPath": "Flink.JobBuilder_FlinkJobBuilder.html", "methodName": "SubmitAndWait()", "methodShortName": "SubmitAndWait()", "fileIndex": 0, "line": 526,
+    "metrics": [
+      { "value": 110, "exceeded": true },
+      { "value": 10, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.FlatMappedSourceFunction<T1, T2>", "reportPath": "FlinkDotNet.DataStream_FlatMappedSourceFunction_2.html", "methodName": "RunAsync()", "methodShortName": "RunAsync()", "fileIndex": 0, "line": 864,
+    "metrics": [
+      { "value": 110, "exceeded": true },
+      { "value": 10, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Program", "reportPath": "FlinkDotNet.JobGateway_Program.html", "methodName": "Main()", "methodShortName": "Main()", "fileIndex": 0, "line": 17,
+    "metrics": [
+      { "value": 110, "exceeded": true },
+      { "value": 10, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "CollectServiceFilesFromRunnerJar(System.IO.Compression.ZipArchive,System.Collections.Generic.Dictionary`2<System.String,System.Collections.Generic.HashSet`1<System.String>>)", "methodShortName": "CollectServiceFilesFromRunnerJar(...)", "fileIndex": 0, "line": 1022,
+    "metrics": [
+      { "value": 110, "exceeded": true },
+      { "value": 10, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "Rank()", "methodShortName": "Rank()", "fileIndex": 0, "line": 1635,
+    "metrics": [
+      { "value": 110, "exceeded": true },
+      { "value": 10, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.LagBasedRateLimiter", "reportPath": "Flink.JobBuilder_LagBasedRateLimiter.html", "methodName": "ProcessWaitingRequestsAsync()", "methodShortName": "ProcessWaitingRequestsAsync()", "fileIndex": 0, "line": 328,
+    "metrics": [
+      { "value": 93, "exceeded": true },
+      { "value": 14, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.Orchestration", "class": "FlinkDotNet.Orchestration.Services.FlinkOrchestra", "reportPath": "FlinkDotNet.Orchestration_FlinkOrchestra.html", "methodName": "SelectClusterAsync()", "methodShortName": "SelectClusterAsync()", "fileIndex": 0, "line": 302,
+    "metrics": [
+      { "value": 75, "exceeded": true },
+      { "value": 14, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.BufferPool<T>", "reportPath": "Flink.JobBuilder_BufferPool_1.html", "methodName": "OnTimerFlush()", "methodShortName": "OnTimerFlush()", "fileIndex": 0, "line": 214,
+    "metrics": [
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.KafkaRateLimiterStateStorage", "reportPath": "Flink.JobBuilder_KafkaRateLimiterStateStorage.html", "methodName": "FlushCachedStateAsync()", "methodShortName": "FlushCachedStateAsync()", "fileIndex": 0, "line": 258,
+    "metrics": [
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.MultiTierRateLimiter", "reportPath": "Flink.JobBuilder_MultiTierRateLimiter.html", "methodName": "OnAdaptiveAdjustment(System.Object)", "methodShortName": "OnAdaptiveAdjustment(...)", "fileIndex": 0, "line": 421,
+    "metrics": [
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
     "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.SlidingWindowRateLimiter", "reportPath": "Flink.JobBuilder_SlidingWindowRateLimiter.html", "methodName": "CalculateWaitTime(System.Int32)", "methodShortName": "CalculateWaitTime(...)", "fileIndex": 0, "line": 208,
     "metrics": [
       { "value": 72, "exceeded": true },
       { "value": 8, "exceeded": false },
     ]},
   {
-    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "FindMatchingJar(FlinkDotNet.JobGateway.Services.FlinkJobManager/FlinkJarsList,System.String)", "methodShortName": "FindMatchingJar(...)", "fileIndex": 0, "line": 900,
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.FlinkJobBuilder", "reportPath": "Flink.JobBuilder_FlinkJobBuilder.html", "methodName": "Submit()", "methodShortName": "Submit()", "fileIndex": 0, "line": 495,
     "metrics": [
       { "value": 72, "exceeded": true },
       { "value": 8, "exceeded": false },
     ]},
   {
-    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "CollectServiceFilesFromRunnerJar(System.IO.Compression.ZipArchive,System.Collections.Generic.Dictionary`2<System.String,System.Collections.Generic.HashSet`1<System.String>>)", "methodShortName": "CollectServiceFilesFromRunnerJar(...)", "fileIndex": 0, "line": 1022,
+    "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.FilteredSourceFunction<T>", "reportPath": "FlinkDotNet.DataStream_FilteredSourceFunction_1.html", "methodName": "RunAsync()", "methodShortName": "RunAsync()", "fileIndex": 0, "line": 891,
+    "metrics": [
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Program", "reportPath": "FlinkDotNet.JobGateway_Program.html", "methodName": "BodyLoggingMiddleware()", "methodShortName": "BodyLoggingMiddleware()", "fileIndex": 0, "line": 158,
+    "metrics": [
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "FindMatchingJar(FlinkDotNet.JobGateway.Services.FlinkJobManager/FlinkJarsList,System.String)", "methodShortName": "FindMatchingJar(...)", "fileIndex": 0, "line": 900,
     "metrics": [
       { "value": 72, "exceeded": true },
       { "value": 8, "exceeded": false },
@@ -466,10 +629,22 @@ var riskHotspots = [
       { "value": 8, "exceeded": false },
     ]},
   {
-    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.MultiTierRateLimiter", "reportPath": "Flink.JobBuilder_MultiTierRateLimiter.html", "methodName": "IsApplicableTier(Flink.JobBuilder.Backpressure.RateLimitingTier,Flink.JobBuilder.Backpressure.RateLimitingContext)", "methodShortName": "IsApplicableTier(...)", "fileIndex": 0, "line": 339,
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "ExtractJobIdFromPath()", "methodShortName": "ExtractJobIdFromPath()", "fileIndex": 0, "line": 1319,
     "metrics": [
-      { "value": 43, "exceeded": true },
-      { "value": 12, "exceeded": false },
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "ExecuteSqlStatementsAsync()", "methodShortName": "ExecuteSqlStatementsAsync()", "fileIndex": 0, "line": 720,
+    "metrics": [
+      { "value": 72, "exceeded": true },
+      { "value": 8, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.KafkaRateLimiterStateStorage", "reportPath": "Flink.JobBuilder_KafkaRateLimiterStateStorage.html", "methodName": "LoadStateAsync()", "methodShortName": "LoadStateAsync()", "fileIndex": 0, "line": 178,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
     ]},
   {
     "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.MultiTierRateLimiter", "reportPath": "Flink.JobBuilder_MultiTierRateLimiter.html", "methodName": "CalculateOptimalWaitTime(Flink.JobBuilder.Backpressure.RateLimitingContext,System.Int32)", "methodShortName": "CalculateOptimalWaitTime(...)", "fileIndex": 0, "line": 364,
@@ -478,7 +653,43 @@ var riskHotspots = [
       { "value": 6, "exceeded": false },
     ]},
   {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.SlidingWindowRateLimiter", "reportPath": "Flink.JobBuilder_SlidingWindowRateLimiter.html", "methodName": "AcquireAsync()", "methodShortName": "AcquireAsync()", "fileIndex": 0, "line": 103,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Demo.RateLimitingDemo", "reportPath": "Flink.JobBuilder_RateLimitingDemo.html", "methodName": "DemonstrateBufferPoolWithThresholds()", "methodShortName": "DemonstrateBufferPoolWithThresholds()", "fileIndex": 0, "line": 113,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Demo.RateLimitingDemo", "reportPath": "Flink.JobBuilder_RateLimitingDemo.html", "methodName": "DemonstrateSlidingWindowRateLimiter()", "methodShortName": "DemonstrateSlidingWindowRateLimiter()", "fileIndex": 0, "line": 81,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.AggregatedSourceFunction<T1, T2, T3>", "reportPath": "FlinkDotNet.DataStream_AggregatedSourceFunction_3.html", "methodName": "RunAsync()", "methodShortName": "RunAsync()", "fileIndex": 0, "line": 921,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.MappedSourceFunction<T1, T2>", "reportPath": "FlinkDotNet.DataStream_MappedSourceFunction_2.html", "methodName": "RunAsync()", "methodShortName": "RunAsync()", "fileIndex": 0, "line": 839,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
     "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "FindExistingRunnerJar()", "methodShortName": "FindExistingRunnerJar()", "fileIndex": 0, "line": 475,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "UpdateLastKnownJars(FlinkDotNet.JobGateway.Services.FlinkJobManager/FlinkJarsList,System.Collections.Generic.List`1<System.String>)", "methodShortName": "UpdateLastKnownJars(...)", "fileIndex": 0, "line": 890,
     "metrics": [
       { "value": 42, "exceeded": true },
       { "value": 6, "exceeded": false },
@@ -508,6 +719,42 @@ var riskHotspots = [
       { "value": 6, "exceeded": false },
     ]},
   {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "CreateSqlGatewaySessionAsync()", "methodShortName": "CreateSqlGatewaySessionAsync()", "fileIndex": 0, "line": 666,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "ExecuteSingleStatementAsync()", "methodShortName": "ExecuteSingleStatementAsync()", "fileIndex": 0, "line": 740,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "TryRecoverFlinkJobIdAsync()", "methodShortName": "TryRecoverFlinkJobIdAsync()", "fileIndex": 0, "line": 1154,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "WaitForJarRegistrationAsync()", "methodShortName": "WaitForJarRegistrationAsync()", "fileIndex": 0, "line": 851,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.TokenBucketRateLimiter", "reportPath": "Flink.JobBuilder_TokenBucketRateLimiter.html", "methodName": "ProcessWaitingRequestsAsync()", "methodShortName": "ProcessWaitingRequestsAsync()", "fileIndex": 0, "line": 345,
+    "metrics": [
+      { "value": 35, "exceeded": true },
+      { "value": 12, "exceeded": false },
+    ]},
+  {
+    "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.JobClient", "reportPath": "FlinkDotNet.DataStream_JobClient.html", "methodName": "GetJobStatusAsync()", "methodShortName": "GetJobStatusAsync()", "fileIndex": 0, "line": 660,
+    "metrics": [
+      { "value": 34, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
+  {
     "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Services.JobDefinitionValidator", "reportPath": "Flink.JobBuilder_JobDefinitionValidator.html", "methodName": "ValidateOperation(Flink.JobBuilder.Models.IOperationDefinition,System.Int32,System.Collections.Generic.List`1<System.String>)", "methodShortName": "ValidateOperation(...)", "fileIndex": 0, "line": 133,
     "metrics": [
       { "value": 24, "exceeded": false },
@@ -516,13 +763,19 @@ var riskHotspots = [
   {
     "assembly": "Flink.JobBuilder", "class": "Flink.JobBuilder.Backpressure.TokenBucketRateLimiter", "reportPath": "Flink.JobBuilder_TokenBucketRateLimiter.html", "methodName": "Dispose(System.Boolean)", "methodShortName": "Dispose(...)", "fileIndex": 0, "line": 422,
     "metrics": [
-      { "value": 27, "exceeded": false },
+      { "value": 23, "exceeded": false },
       { "value": 16, "exceeded": true },
     ]},
   {
     "assembly": "FlinkDotNet.DataStream", "class": "FlinkDotNet.DataStream.OperationCapture", "reportPath": "FlinkDotNet.DataStream_OperationCapture.html", "methodName": "TranslateMapOperation(Flink.JobBuilder.Models.JobDefinition,FlinkDotNet.DataStream.CapturedOperation)", "methodShortName": "TranslateMapOperation(...)", "fileIndex": 0, "line": 286,
     "metrics": [
       { "value": 16, "exceeded": false },
+      { "value": 16, "exceeded": true },
+    ]},
+  {
+    "assembly": "FlinkDotNet.JobGateway", "class": "FlinkDotNet.JobGateway.Services.FlinkJobManager", "reportPath": "FlinkDotNet.JobGateway_FlinkJobManager.html", "methodName": "CancelJobAsync()", "methodShortName": "CancelJobAsync()", "fileIndex": 0, "line": 349,
+    "metrics": [
+      { "value": 17, "exceeded": false },
       { "value": 16, "exceeded": true },
     ]},
 ];
