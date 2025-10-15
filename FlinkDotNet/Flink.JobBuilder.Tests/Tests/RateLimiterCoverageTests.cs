@@ -494,4 +494,68 @@ public class RateLimiterCoverageTests
     }
 
     #endregion
+
+    #region Additional MultiTierRateLimiter Coverage Tests
+
+    [Test]
+    public void MultiTierRateLimiter_TryAcquire_WithDisposedInstance_ThrowsObjectDisposedException()
+    {
+        // Arrange
+        var rateLimiter = new MultiTierRateLimiter();
+        var context = new RateLimitingContext { TopicName = "test-topic", ConsumerGroup = "test-group" };
+        
+        rateLimiter.Dispose();
+
+        // Act & Assert
+        Assert.Throws<ObjectDisposedException>(() => rateLimiter.TryAcquire(context, 1));
+    }
+
+    [Test]
+    public async Task MultiTierRateLimiter_TryAcquireAsync_WithContext_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var context = new RateLimitingContext 
+        { 
+            TopicName = "test-topic", 
+            ConsumerGroup = "test-group",
+            ConsumerId = "consumer-1"
+        };
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(context, 1);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    #endregion
+
+    #region Additional TokenBucketRateLimiter Coverage Tests
+
+    [Test]
+    public async Task TokenBucketRateLimiter_TryAcquireAsync_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 10);
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(10);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_MultipleDispose_HandlesCorrectly()
+    {
+        // Arrange
+        var rateLimiter = new TokenBucketRateLimiter(100, 10);
+
+        // Act & Assert - Multiple dispose should be safe
+        rateLimiter.Dispose();
+        Assert.DoesNotThrow(() => rateLimiter.Dispose());
+    }
+
+    #endregion
 }
