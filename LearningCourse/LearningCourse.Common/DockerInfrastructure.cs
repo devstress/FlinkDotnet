@@ -18,7 +18,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka-\" --format \"{{.Names}}\"");
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka- --format {{.Names}}");
             var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             
             if (string.IsNullOrWhiteSpace(kafkaContainer))
@@ -27,14 +27,14 @@ public static class DockerInfrastructure
             }
 
             // Try Docker bridge network first
-            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
+            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format {{{{.NetworkSettings.Networks.bridge.IPAddress}}}}");
             var ip = ipAddress.Trim();
             
             // If bridge network doesn't have IP, try podman network (for Podman runtime)
             if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
                 Console.WriteLine($"🔍 Bridge network IP not found, trying podman network...");
-                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.podman.IPAddress}}}}\"");
+                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format {{{{.NetworkSettings.Networks.podman.IPAddress}}}}");
                 ip = ipAddress.Trim();
             }
             
@@ -42,7 +42,7 @@ public static class DockerInfrastructure
             {
                 // Fallback: Get the first available network IP
                 Console.WriteLine($"🔍 Specific network not found, getting first available IP...");
-                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}\"");
+                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format {{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}");
                 ip = ipAddress.Trim();
             }
             
@@ -107,7 +107,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka --format {{.Ports}}");
             Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
             
             return ExtractKafkaEndpointFromPorts(kafkaContainers);
@@ -147,7 +147,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var temporalContainers = await RunDockerCommandAsync("ps --filter \"name=temporal-server\" --format \"{{.Ports}}\"");
+            var temporalContainers = await RunDockerCommandAsync("ps --filter name=temporal-server --format {{.Ports}}");
             Console.WriteLine($"🔍 Temporal container port mappings: {temporalContainers.Trim()}");
             
             return ExtractTemporalEndpointFromPorts(temporalContainers);
@@ -186,7 +186,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var redisContainers = await RunDockerCommandAsync("ps --filter \"name=redis\" --format \"{{.Ports}}\"");
+            var redisContainers = await RunDockerCommandAsync("ps --filter name=redis --format {{.Ports}}");
             Console.WriteLine($"🔍 Redis container port mappings: {redisContainers.Trim()}");
             
             return ExtractRedisEndpointFromPorts(redisContainers);
@@ -225,7 +225,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var prometheusContainers = await RunDockerCommandAsync("ps --filter \"name=prometheus\" --format \"{{.Ports}}\"");
+            var prometheusContainers = await RunDockerCommandAsync("ps --filter name=prometheus --format {{.Ports}}");
             Console.WriteLine($"🔍 Prometheus container port mappings: {prometheusContainers.Trim()}");
             
             return ExtractPrometheusEndpointFromPorts(prometheusContainers);
@@ -264,7 +264,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var grafanaContainers = await RunDockerCommandAsync("ps --filter \"name=grafana\" --format \"{{.Ports}}\"");
+            var grafanaContainers = await RunDockerCommandAsync("ps --filter name=grafana --format {{.Ports}}");
             Console.WriteLine($"🔍 Grafana container port mappings: {grafanaContainers.Trim()}");
             
             return ExtractGrafanaEndpointFromPorts(grafanaContainers);

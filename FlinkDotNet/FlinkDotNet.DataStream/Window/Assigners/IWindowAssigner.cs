@@ -40,7 +40,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
     /// </summary>
     /// <typeparam name="T">The type of elements being windowed</typeparam>
     /// <typeparam name="W">The type of Window that this assigner assigns elements to</typeparam>
-    public interface IWindowAssigner<T, W> where W : IWindow
+    public interface IWindowAssigner<T, out W> where W : IWindow
     {
         /// <summary>
         /// Assigns the element to one or more windows based on the given timestamp.

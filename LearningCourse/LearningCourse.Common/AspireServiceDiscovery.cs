@@ -63,6 +63,34 @@ public static class AspireServiceDiscovery
     }
 
     /// <summary>
+    /// Get Temporal gRPC endpoint for workflow execution.
+    /// Checks environment variable first (set by tests), then discovers from Docker.
+    /// </summary>
+    public static async Task<string> GetTemporalEndpointAsync()
+    {
+        // First check if test infrastructure already set it
+        var envValue = Environment.GetEnvironmentVariable("TEMPORAL_ENDPOINT");
+        if (!string.IsNullOrEmpty(envValue))
+        {
+            return envValue;
+        }
+
+        // Discover from Docker/Aspire
+        try
+        {
+            var endpoint = await DockerInfrastructure.GetTemporalHostEndpointAsync();
+            Console.WriteLine($"[Aspire Discovery] Temporal Endpoint: {endpoint}");
+            return endpoint;
+        }
+        catch
+        {
+            // Fallback to default if discovery fails
+            Console.WriteLine("[Aspire Discovery] Using fallback: localhost:7233");
+            return "localhost:7233";
+        }
+    }
+
+    /// <summary>
     /// Get Flink Gateway URL for job submission.
     /// Checks environment variable first (set by tests), then uses default.
     /// </summary>

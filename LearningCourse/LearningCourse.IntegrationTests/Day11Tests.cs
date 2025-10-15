@@ -22,7 +22,7 @@ public class Day11Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day11-Security-Privacy-Compliance/Exercise-Solutions/Exercise112";
     private const string Exercise3Path = "Day11-Security-Privacy-Compliance/Exercise-Solutions/Exercise113";
     private const string Exercise4Path = "Day11-Security-Privacy-Compliance/Exercise-Solutions/Exercise114";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise 1: Authentication and Authorization Setup")]

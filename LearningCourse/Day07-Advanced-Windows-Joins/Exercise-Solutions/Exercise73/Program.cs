@@ -161,7 +161,12 @@ class Program
         }
         finally
         {
-            await Log.CloseAndFlushAsync();
+            // Flush logs with timeout to prevent hanging
+            var flushTask = Log.CloseAndFlushAsync().AsTask();
+            if (await Task.WhenAny(flushTask, Task.Delay(TimeSpan.FromSeconds(2))) == flushTask)
+            {
+                await flushTask; // Completed successfully
+            }
         }
     }
 

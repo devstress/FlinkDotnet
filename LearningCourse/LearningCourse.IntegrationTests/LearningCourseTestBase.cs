@@ -21,6 +21,7 @@ public abstract class LearningCourseTestBase
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
+    private static StreamWriter? _debugLogWriter;
     
     /// <summary>
     /// Kafka container IP for Flink jobs (e.g., "172.17.0.2:9093").
@@ -71,8 +72,19 @@ public abstract class LearningCourseTestBase
         await _setupSemaphore.WaitAsync();
         try
         {
+            // Initialize debug log file with FileShare.ReadWrite to allow multiple test processes to write
+            var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            var debugLogPath = Path.Combine(testLogsDir, $"TestInfrastructure.Debug.log.{DateTime.UtcNow:yyyyMMdd}");
+            var fileStream = new FileStream(debugLogPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            _debugLogWriter = new StreamWriter(fileStream) { AutoFlush = true };
+            
+            LogDebug($"[SETUP] Starting infrastructure setup. _isSetupComplete={_isSetupComplete}");
+            
             if (_isSetupComplete)
             {
+                LogDebug("[SETUP] Infrastructure already set up, skipping...");
                 TestContext.WriteLine("✅ Infrastructure already set up, skipping...");
                 return;
             }
@@ -85,29 +97,7 @@ public abstract class LearningCourseTestBase
             TestContext.WriteLine("📚 Set LEARNINGCOURSE=true for Redis and Observability infrastructure");
             
             TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
-        TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
-        
-        // Clean up test-logs directory from previous runs
-        var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
-        var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
-        
-        if (Directory.Exists(testLogsDir))
-        {
-            TestContext.WriteLine($"🧹 Cleaning up test logs directory: {testLogsDir}");
-            try
-            {
-                Directory.Delete(testLogsDir, recursive: true);
-                TestContext.WriteLine("✅ Test logs directory cleaned");
-            }
-            catch (Exception ex)
-            {
-                TestContext.WriteLine($"⚠️ Warning: Could not clean test logs directory: {ex.Message}");
-            }
-        }
-        
-        // Recreate the directory
-        Directory.CreateDirectory(testLogsDir);
-        TestContext.WriteLine($"📁 Test logs directory ready: {testLogsDir}");
+            TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
         
         // DO NOT set KAFKA_BOOTSTRAP_SERVERS here!
         // REASON: Environment variables set here are inherited by AppHost process,
@@ -182,12 +172,16 @@ public abstract class LearningCourseTestBase
     /// <summary>
     /// Smart polling: Check if containers are actually ready instead of blind wait
     /// Ensures BOTH Kafka and Flink are ready before proceeding
+    /// OPTIMIZED: Faster polling (200ms) and parallel health checks for minimal wait time
     /// </summary>
     private static async Task WaitForInfrastructureReadyAsync()
     {
+        LogDebug("[SETUP] Starting infrastructure readiness polling loop...");
+        TestContext.WriteLine("[SETUP] Starting OPTIMIZED infrastructure readiness polling (200ms intervals)...");
+        
         var stopwatch = Stopwatch.StartNew();
         var maxWait = AppHostStartupTimeout;
-        var pollInterval = TimeSpan.FromMilliseconds(500);
+        var pollInterval = TimeSpan.FromMilliseconds(200);  // OPTIMIZED: 200ms instead of 500ms for faster detection
         
         string? kafkaFlinkIp = null;
         string? kafkaHostEndpoint = null;
@@ -201,13 +195,31 @@ public abstract class LearningCourseTestBase
         // Check if LearningCourse mode is enabled for optional infrastructure
         var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
         
+        int iteration = 0;
         while (stopwatch.Elapsed < maxWait)
         {
-            var discovered = await TryDiscoverEndpointsAsync(
+            iteration++;
+            LogDebug($"[POLL] Iteration {iteration} at {stopwatch.Elapsed.TotalSeconds:F1}s: FlinkReady={flinkReady}, TemporalReady={temporalReady}");
+            
+            // OPTIMIZED: Run endpoint discovery and health checks in parallel for faster detection
+            var discoveryTask = TryDiscoverEndpointsAsync(
                 kafkaFlinkIp, kafkaHostEndpoint, temporalEndpoint,
                 redisEndpoint, prometheusEndpoint, grafanaEndpoint,
-                isLearningCourse, stopwatch);
+                isLearningCourse, stopwatch, iteration);
             
+            var flinkHealthTask = (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
+                ? IsFlinkHealthyAsync()
+                : Task.FromResult(flinkReady);
+            
+            var temporalHealthTask = (temporalEndpoint != null && !temporalReady)
+                ? IsTemporalHealthyAsync(temporalEndpoint)
+                : Task.FromResult(temporalReady);
+            
+            // Wait for all checks in parallel
+            await Task.WhenAll(discoveryTask, flinkHealthTask, temporalHealthTask);
+            
+            // Update discovered endpoints
+            var discovered = await discoveryTask;
             kafkaFlinkIp = discovered.flinkIp ?? kafkaFlinkIp;
             kafkaHostEndpoint = discovered.hostEndpoint ?? kafkaHostEndpoint;
             temporalEndpoint = discovered.temporal ?? temporalEndpoint;
@@ -215,29 +227,26 @@ public abstract class LearningCourseTestBase
             prometheusEndpoint = discovered.prometheus ?? prometheusEndpoint;
             grafanaEndpoint = discovered.grafana ?? grafanaEndpoint;
             
-            // Also check if Flink is ready (not just Kafka)
-            if (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
+            // Update health check results
+            var newFlinkReady = await flinkHealthTask;
+            if (newFlinkReady && !flinkReady)
             {
-                flinkReady = await IsFlinkHealthyAsync();
-                if (flinkReady)
-                {
-                    TestContext.WriteLine($"✅ Flink cluster is healthy (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                }
+                flinkReady = true;
+                TestContext.WriteLine($"✅ Flink cluster is healthy (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
             }
             
-            // Check if Temporal is ready (not just endpoint discovered)
-            if (temporalEndpoint != null && !temporalReady)
+            var newTemporalReady = await temporalHealthTask;
+            if (newTemporalReady && !temporalReady)
             {
-                TestContext.WriteLine($"🔍 Polling Temporal health (attempt at {stopwatch.Elapsed.TotalSeconds:F1}s)...");
-                temporalReady = await IsTemporalHealthyAsync(temporalEndpoint);
-                if (temporalReady)
-                {
-                    TestContext.WriteLine($"✅ Temporal server is healthy and namespace ready (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                }
-                else
-                {
-                    TestContext.WriteLine($"⏳ Temporal not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
-                }
+                temporalReady = true;
+                LogDebug($"[POLL] Temporal READY after {stopwatch.Elapsed.TotalSeconds:F1}s");
+                TestContext.WriteLine($"✅ Temporal server is healthy and namespace ready (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+            }
+            else if (temporalEndpoint != null && !temporalReady && iteration % 5 == 1)
+            {
+                // Log every 5th iteration to reduce noise
+                LogDebug($"[POLL] Temporal NOT ready yet after {stopwatch.Elapsed.TotalSeconds:F1}s");
+                TestContext.WriteLine($"⏳ Temporal not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
             }
             
             // Core infrastructure must be ready: Kafka, Flink, and Temporal
@@ -254,11 +263,15 @@ public abstract class LearningCourseTestBase
                 PrometheusHostEndpoint = prometheusEndpoint;
                 GrafanaHostEndpoint = grafanaEndpoint;
                 
-                TestContext.WriteLine($"✅ All infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {(maxWait - stopwatch.Elapsed).TotalSeconds:F1}s)");
+                var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
+                TestContext.WriteLine($"✅ All infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
                 if (isLearningCourse)
                 {
                     TestContext.WriteLine($"   📚 LearningCourse infrastructure: Redis={redisEndpoint}, Prometheus={prometheusEndpoint}, Grafana={grafanaEndpoint}");
                 }
+                
+                // Log optimization metrics
+                LogDebug($"[OPTIMIZATION] Poll interval: 200ms, Total iterations: {iteration}, Time saved: {savedTime:F1}s");
                 return;
             }
             
@@ -277,12 +290,13 @@ public abstract class LearningCourseTestBase
     
     /// <summary>
     /// Check if Flink JobManager is healthy and ready to accept jobs
+    /// OPTIMIZED: Reduced timeout to 1 second for faster failure detection
     /// </summary>
     private static async Task<bool> IsFlinkHealthyAsync()
     {
         try
         {
-            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(1) };  // OPTIMIZED: 1s timeout
             var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health");
             return response.IsSuccessStatusCode;
         }
@@ -299,15 +313,18 @@ public abstract class LearningCourseTestBase
     /// </summary>
     private static async Task<bool> IsTemporalHealthyAsync(string temporalEndpoint)
     {
+        LogDebug($"[TEMPORAL-HEALTH] Checking Temporal health at {temporalEndpoint}");
         TestContext.WriteLine($"🔍 [Temporal Health] Starting check for endpoint: {temporalEndpoint}");
         
         try
         {
             // Step 1: TCP connectivity check (fast pre-check)
+            LogDebug($"[TEMPORAL-HEALTH] Step 1: TCP connectivity test");
             TestContext.WriteLine($"🔍 [Temporal Health] Step 1: TCP connectivity test");
             var parts = temporalEndpoint.Split(':');
             if (parts.Length != 2 || !int.TryParse(parts[1], out var port))
             {
+                LogDebug($"[TEMPORAL-HEALTH] Invalid endpoint format: {temporalEndpoint}");
                 TestContext.WriteLine($"❌ [Temporal Health] Invalid endpoint format: {temporalEndpoint}");
                 return false;
             }
@@ -315,22 +332,26 @@ public abstract class LearningCourseTestBase
             var host = parts[0];
             
             // Verify TCP connection to Temporal gRPC port
+            // OPTIMIZED: Reduced timeout to 1 second for faster detection
             using var tcpClient = new System.Net.Sockets.TcpClient();
             var connectTask = tcpClient.ConnectAsync(host, port);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(2));
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));  // OPTIMIZED: 1s timeout
             
             var completedTask = await Task.WhenAny(connectTask, timeoutTask);
             
             if (completedTask != connectTask || !tcpClient.Connected)
             {
+                LogDebug($"[TEMPORAL-HEALTH] TCP connection failed to {host}:{port}");
                 TestContext.WriteLine($"❌ [Temporal Health] TCP connection failed to {host}:{port}");
                 return false; // TCP connection failed
             }
             
+            LogDebug($"[TEMPORAL-HEALTH] TCP result: SUCCESS to {host}:{port}");
             TestContext.WriteLine($"✅ [Temporal Health] TCP connection successful to {host}:{port}");
             
             // Step 2: Namespace verification (verify "default" namespace exists)
             // This ensures Temporal auto-setup has completed namespace creation
+            LogDebug($"[TEMPORAL-HEALTH] Step 2: Namespace verification");
             TestContext.WriteLine($"🔍 [Temporal Health] Step 2: Namespace verification for 'default'");
             var client = await Temporalio.Client.TemporalClient.ConnectAsync(
                 new Temporalio.Client.TemporalClientConnectOptions
@@ -341,18 +362,21 @@ public abstract class LearningCourseTestBase
             
             // If we successfully connected with namespace "default", it exists and is ready
             // Note: TemporalClient doesn't implement IDisposable, so no using statement needed
+            LogDebug($"[TEMPORAL-HEALTH] Namespace verification SUCCESS");
             TestContext.WriteLine($"✅ [Temporal Health] Successfully connected with namespace 'default' - Temporal is READY");
             return true;
         }
         catch (Temporalio.Exceptions.RpcException ex) when (ex.Message.Contains("Namespace default is not found"))
         {
             // Namespace doesn't exist yet - Temporal still initializing
+            LogDebug($"[TEMPORAL-HEALTH] Namespace verification FAILED: {ex.Message}");
             TestContext.WriteLine($"⏳ [Temporal Health] Namespace 'default' not found yet: {ex.Message}");
             return false;
         }
         catch (Exception ex)
         {
             // Other connection errors
+            LogDebug($"[TEMPORAL-HEALTH] Connection error: {ex.GetType().Name}: {ex.Message}");
             TestContext.WriteLine($"❌ [Temporal Health] Connection error: {ex.GetType().Name}: {ex.Message}");
             return false;
         }
@@ -375,7 +399,8 @@ public abstract class LearningCourseTestBase
         string? currentPrometheus,
         string? currentGrafana,
         bool isLearningCourse,
-        Stopwatch stopwatch)
+        Stopwatch stopwatch,
+        int iteration)
     {
         try
         {
@@ -389,29 +414,65 @@ public abstract class LearningCourseTestBase
             // Kafka discovery (always required)
             if (flinkIp == null)
             {
-                flinkIp = await DockerInfrastructure.GetKafkaContainerIpAsync();
-                if (flinkIp != null)
+                try
                 {
-                    TestContext.WriteLine($"✅ Kafka container IP discovered: {flinkIp} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    flinkIp = await DockerInfrastructure.GetKafkaContainerIpAsync();
+                    if (flinkIp != null)
+                    {
+                        LogDebug($"[DISCOVERY] Kafka container IP discovered: {flinkIp}");
+                        TestContext.WriteLine($"✅ Kafka container IP discovered: {flinkIp} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"[DISCOVERY] Failed to get Kafka container IP: {ex.Message}");
+                    if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
+                    {
+                        TestContext.WriteLine($"⚠️ Kafka container IP discovery failed (iteration {iteration}): {ex.Message}");
+                    }
                 }
             }
             
             if (hostEndpoint == null)
             {
-                hostEndpoint = await DockerInfrastructure.GetKafkaHostEndpointAsync();
-                if (hostEndpoint != null)
+                try
                 {
-                    TestContext.WriteLine($"✅ Kafka host endpoint discovered: {hostEndpoint} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    hostEndpoint = await DockerInfrastructure.GetKafkaHostEndpointAsync();
+                    if (hostEndpoint != null)
+                    {
+                        LogDebug($"[DISCOVERY] Kafka host endpoint discovered: {hostEndpoint}");
+                        TestContext.WriteLine($"✅ Kafka host endpoint discovered: {hostEndpoint} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"[DISCOVERY] Failed to get Kafka host endpoint: {ex.Message}");
+                    if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
+                    {
+                        TestContext.WriteLine($"⚠️ Kafka host endpoint discovery failed (iteration {iteration}): {ex.Message}");
+                    }
                 }
             }
             
             // Temporal discovery (always required)
             if (temporal == null)
             {
-                temporal = await DockerInfrastructure.GetTemporalHostEndpointAsync();
-                if (temporal != null)
+                try
                 {
-                    TestContext.WriteLine($"✅ Temporal endpoint discovered: {temporal} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    temporal = await DockerInfrastructure.GetTemporalHostEndpointAsync();
+                    if (temporal != null)
+                    {
+                        LogDebug($"[DISCOVERY] Temporal endpoint discovered: {temporal}");
+                        TestContext.WriteLine($"✅ Temporal endpoint discovered: {temporal} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"[DISCOVERY] Failed to get Temporal endpoint: {ex.Message}");
+                    if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
+                    {
+                        TestContext.WriteLine($"⚠️ Temporal endpoint discovery failed (iteration {iteration}): {ex.Message}");
+                    }
                 }
             }
             
@@ -420,36 +481,74 @@ public abstract class LearningCourseTestBase
             {
                 if (redis == null)
                 {
-                    redis = await DockerInfrastructure.GetRedisHostEndpointAsync();
-                    if (redis != null)
+                    try
                     {
-                        TestContext.WriteLine($"✅ Redis endpoint discovered: {redis} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        redis = await DockerInfrastructure.GetRedisHostEndpointAsync();
+                        if (redis != null)
+                        {
+                            LogDebug($"[DISCOVERY] Redis endpoint discovered: {redis}");
+                            TestContext.WriteLine($"✅ Redis endpoint discovered: {redis} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogDebug($"[DISCOVERY] Failed to get Redis endpoint: {ex.Message}");
+                        if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
+                        {
+                            TestContext.WriteLine($"⚠️ Redis endpoint discovery failed (iteration {iteration}): {ex.Message}");
+                        }
                     }
                 }
                 
                 if (prometheus == null)
                 {
-                    prometheus = await DockerInfrastructure.GetPrometheusHostEndpointAsync();
-                    if (prometheus != null)
+                    try
                     {
-                        TestContext.WriteLine($"✅ Prometheus endpoint discovered: {prometheus} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        prometheus = await DockerInfrastructure.GetPrometheusHostEndpointAsync();
+                        if (prometheus != null)
+                        {
+                            LogDebug($"[DISCOVERY] Prometheus endpoint discovered: {prometheus}");
+                            TestContext.WriteLine($"✅ Prometheus endpoint discovered: {prometheus} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogDebug($"[DISCOVERY] Failed to get Prometheus endpoint: {ex.Message}");
+                        if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
+                        {
+                            TestContext.WriteLine($"⚠️ Prometheus endpoint discovery failed (iteration {iteration}): {ex.Message}");
+                        }
                     }
                 }
                 
                 if (grafana == null)
                 {
-                    grafana = await DockerInfrastructure.GetGrafanaHostEndpointAsync();
-                    if (grafana != null)
+                    try
                     {
-                        TestContext.WriteLine($"✅ Grafana endpoint discovered: {grafana} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        grafana = await DockerInfrastructure.GetGrafanaHostEndpointAsync();
+                        if (grafana != null)
+                        {
+                            LogDebug($"[DISCOVERY] Grafana endpoint discovered: {grafana}");
+                            TestContext.WriteLine($"✅ Grafana endpoint discovered: {grafana} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogDebug($"[DISCOVERY] Failed to get Grafana endpoint: {ex.Message}");
+                        if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
+                        {
+                            TestContext.WriteLine($"⚠️ Grafana endpoint discovery failed (iteration {iteration}): {ex.Message}");
+                        }
                     }
                 }
             }
             
             return (flinkIp, hostEndpoint, temporal, redis, prometheus, grafana);
         }
-        catch
+        catch (Exception ex)
         {
+            LogDebug($"[DISCOVERY] Unexpected error in TryDiscoverEndpointsAsync: {ex}");
+            TestContext.WriteLine($"❌ Unexpected error in endpoint discovery: {ex.Message}");
             return (null, null, null, null, null, null);
         }
     }
@@ -467,10 +566,13 @@ public abstract class LearningCourseTestBase
         {
             if (!_isSetupComplete)
             {
+                LogDebug("[TEARDOWN] Infrastructure already torn down, skipping...");
                 TestContext.WriteLine("✅ Infrastructure already torn down, skipping...");
                 return;
             }
             _isSetupComplete = false;
+            
+            LogDebug("[TEARDOWN] Starting teardown process");
             
             TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
         
@@ -478,10 +580,11 @@ public abstract class LearningCourseTestBase
         TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
         CancelAllFlinkJobsSync();
         
-        // Copy Flink logs from Flink containers BEFORE stopping them
-        // Note: FlinkJobRunner logs are embedded within Flink's logging system
-        TestContext.WriteLine("📋 Copying Flink logs from Flink containers...");
+        // Copy logs from all containers BEFORE stopping them
+        TestContext.WriteLine("📋 Copying container logs...");
         CopyFlinkLogs();
+        CopyTemporalLogs();
+        CopyPostgreSqlLogs();
         
         if (_appHostProcess != null && !_appHostProcess.HasExited)
         {
@@ -515,10 +618,13 @@ public abstract class LearningCourseTestBase
         TestContext.WriteLine("🧹 Manually cleaning up containers...");
             CleanupContainers();
             
+            LogDebug("[TEARDOWN] Teardown complete");
             TestContext.WriteLine("✅ Teardown complete");
         }
         finally
         {
+            _debugLogWriter?.Dispose();
+            _debugLogWriter = null;
             _setupSemaphore.Release();
         }
     }
@@ -699,6 +805,299 @@ public abstract class LearningCourseTestBase
         {
             var error = copyProcess.StandardError.ReadToEnd();
             TestContext.WriteLine($"   ⚠️ Failed to copy {fileName}: {error}");
+        }
+    }
+    
+    /// <summary>
+    /// Copy Temporal server logs from Temporal container to host filesystem.
+    /// Temporal logs help debug workflow execution issues, especially worker initialization problems.
+    /// </summary>
+    private static void CopyTemporalLogs()
+    {
+        try
+        {
+            var repoRoot = FindRepositoryRoot();
+            if (repoRoot == null)
+            {
+                TestContext.WriteLine("⚠️ Could not find repository root, skipping Temporal log copy");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            
+            // Get Temporal container ID
+            var getContainerPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=temporal",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var getContainerProcess = Process.Start(getContainerPsi);
+            if (getContainerProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to get Temporal container");
+                return;
+            }
+            
+            var containerId = getContainerProcess.StandardOutput.ReadToEnd().Trim();
+            getContainerProcess.WaitForExit();
+            
+            if (string.IsNullOrWhiteSpace(containerId))
+            {
+                TestContext.WriteLine("⚠️ No Temporal container found");
+                return;
+            }
+            
+            TestContext.WriteLine($"📦 Found Temporal container: {containerId.Substring(0, 12)}");
+            
+            // Copy Temporal server logs using docker logs command
+            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            var destPath = Path.Combine(testLogsDir, $"Temporal.server.log.{dateStamp}");
+            
+            var logsPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"logs {containerId}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var logsProcess = Process.Start(logsPsi);
+            if (logsProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to get Temporal logs");
+                return;
+            }
+            
+            var logs = logsProcess.StandardOutput.ReadToEnd();
+            var errors = logsProcess.StandardError.ReadToEnd();
+            logsProcess.WaitForExit(TimeSpan.FromSeconds(10));
+            
+            // Combine stdout and stderr
+            var allLogs = logs;
+            if (!string.IsNullOrWhiteSpace(errors))
+            {
+                allLogs += "\n--- STDERR ---\n" + errors;
+            }
+            
+            if (!string.IsNullOrWhiteSpace(allLogs))
+            {
+                File.WriteAllText(destPath, allLogs);
+                var fileInfo = new FileInfo(destPath);
+                TestContext.WriteLine($"   ✅ Copied Temporal logs ({fileInfo.Length} bytes)");
+            }
+            else
+            {
+                TestContext.WriteLine("   ⚠️ No Temporal logs found");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error copying Temporal logs: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Copy PostgreSQL logs from PostgreSQL container to host filesystem.
+    /// PostgreSQL is Temporal's persistence backend, logs help debug database connection issues.
+    /// </summary>
+    private static void CopyPostgreSqlLogs()
+    {
+        try
+        {
+            var repoRoot = FindRepositoryRoot();
+            if (repoRoot == null)
+            {
+                TestContext.WriteLine("⚠️ Could not find repository root, skipping PostgreSQL log copy");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            
+            // Get PostgreSQL container ID
+            var getContainerPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=postgres",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var getContainerProcess = Process.Start(getContainerPsi);
+            if (getContainerProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to get PostgreSQL container");
+                return;
+            }
+            
+            var containerId = getContainerProcess.StandardOutput.ReadToEnd().Trim();
+            getContainerProcess.WaitForExit();
+            
+            if (string.IsNullOrWhiteSpace(containerId))
+            {
+                TestContext.WriteLine("⚠️ No PostgreSQL container found");
+                return;
+            }
+            
+            TestContext.WriteLine($"📦 Found PostgreSQL container: {containerId.Substring(0, 12)}");
+            
+            // Copy PostgreSQL logs using docker logs command
+            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            var destPath = Path.Combine(testLogsDir, $"PostgreSQL.server.log.{dateStamp}");
+            
+            var logsPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"logs {containerId}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var logsProcess = Process.Start(logsPsi);
+            if (logsProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to get PostgreSQL logs");
+                return;
+            }
+            
+            var logs = logsProcess.StandardOutput.ReadToEnd();
+            var errors = logsProcess.StandardError.ReadToEnd();
+            logsProcess.WaitForExit(TimeSpan.FromSeconds(10));
+            
+            // Combine stdout and stderr
+            var allLogs = logs;
+            if (!string.IsNullOrWhiteSpace(errors))
+            {
+                allLogs += "\n--- STDERR ---\n" + errors;
+            }
+            
+            if (!string.IsNullOrWhiteSpace(allLogs))
+            {
+                File.WriteAllText(destPath, allLogs);
+                var fileInfo = new FileInfo(destPath);
+                TestContext.WriteLine($"   ✅ Copied PostgreSQL logs ({fileInfo.Length} bytes)");
+            }
+            else
+            {
+                TestContext.WriteLine("   ⚠️ No PostgreSQL logs found");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error copying PostgreSQL logs: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Write network debug information to log file for troubleshooting container connectivity.
+    /// Captures Docker container state, network configuration, and port mappings.
+    /// </summary>
+    private static void LogNetworkState(string context)
+    {
+        try
+        {
+            var repoRoot = FindRepositoryRoot();
+            if (repoRoot == null) return;
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            var debugLogPath = Path.Combine(testLogsDir, $"TestInfrastructure.Debug.log.{DateTime.UtcNow:yyyyMMdd}");
+            
+            // Use FileShare.ReadWrite to allow multiple processes to write simultaneously
+            using var fileStream = new FileStream(debugLogPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            using var writer = new StreamWriter(fileStream) { AutoFlush = true };
+            writer.WriteLine($"\n==================== NETWORK DEBUG: {context} @ {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} ====================");
+            
+            // Get all running containers with detailed info
+            var containersPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Names}}\\t{{.Status}}\\t{{.Ports}}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var containersProcess = Process.Start(containersPsi);
+            if (containersProcess != null)
+            {
+                var output = containersProcess.StandardOutput.ReadToEnd();
+                containersProcess.WaitForExit(TimeSpan.FromSeconds(5));
+                writer.WriteLine("\n=== RUNNING CONTAINERS ===");
+                writer.WriteLine(output);
+            }
+            
+            // Get container count for Aspire-managed containers
+            var countPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name | wc -l",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var countProcess = Process.Start(countPsi);
+            if (countProcess != null)
+            {
+                var count = countProcess.StandardOutput.ReadToEnd().Trim();
+                countProcess.WaitForExit(TimeSpan.FromSeconds(5));
+                writer.WriteLine($"\n=== ASPIRE CONTAINER COUNT: {count} ===");
+            }
+            
+            // Get specific Temporal container info if exists
+            var temporalPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps --filter name=temporal --format \"ID={{.ID}} Status={{.Status}} Ports={{.Ports}}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var temporalProcess = Process.Start(temporalPsi);
+            if (temporalProcess != null)
+            {
+                var temporalInfo = temporalProcess.StandardOutput.ReadToEnd().Trim();
+                temporalProcess.WaitForExit(TimeSpan.FromSeconds(5));
+                writer.WriteLine($"\n=== TEMPORAL CONTAINER ===");
+                writer.WriteLine(string.IsNullOrEmpty(temporalInfo) ? "NO TEMPORAL CONTAINER FOUND" : temporalInfo);
+            }
+            
+            // Get Kafka container info
+            var kafkaPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps --filter name=kafka --format \"ID={{.ID}} Status={{.Status}} Ports={{.Ports}}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+            
+            using var kafkaProcess = Process.Start(kafkaPsi);
+            if (kafkaProcess != null)
+            {
+                var kafkaInfo = kafkaProcess.StandardOutput.ReadToEnd().Trim();
+                kafkaProcess.WaitForExit(TimeSpan.FromSeconds(5));
+                writer.WriteLine($"\n=== KAFKA CONTAINER ===");
+                writer.WriteLine(string.IsNullOrEmpty(kafkaInfo) ? "NO KAFKA CONTAINER FOUND" : kafkaInfo);
+            }
+            
+            writer.WriteLine($"\n==================== END NETWORK DEBUG: {context} ====================\n");
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error logging network state: {ex.Message}");
         }
     }
     
@@ -890,6 +1289,19 @@ public abstract class LearningCourseTestBase
         var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
         var fullPath = Path.Combine(repoRoot, "LearningCourse", exercisePath);
 
+        LogDebug($"[EXERCISE] Starting {exercisePath}");
+        LogDebug($"[EXERCISE] TEMPORAL_ENDPOINT={TemporalHostEndpoint}");
+        LogDebug($"[EXERCISE] Test infrastructure state: _isSetupComplete={_isSetupComplete}");
+        
+        // Ensure infrastructure is ready before executing exercises
+        // This handles cases where tests are run individually without GlobalSetUp
+        if (!_isSetupComplete)
+        {
+            LogDebug("[EXERCISE] Infrastructure not ready, starting setup...");
+            TestContext.WriteLine("⚠️ Infrastructure not ready, initializing...");
+            await GlobalSetUp();
+        }
+        
         TestContext.WriteLine($"🏃 Executing exercise: {exercisePath}");
 
         var psi = new ProcessStartInfo
@@ -946,24 +1358,90 @@ public abstract class LearningCourseTestBase
         }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 
+        // Add process startup diagnostic logging
+        TestContext.WriteLine($"🔍 [DIAGNOSTIC] About to start process: dotnet run --no-build --configuration Release");
+        TestContext.WriteLine($"🔍 [DIAGNOSTIC] Working directory: {fullPath}");
+        TestContext.WriteLine($"🔍 [DIAGNOSTIC] Timeout: {timeout?.TotalSeconds ?? 60} seconds");
+        
         using var process = Process.Start(psi);
         if (process == null)
         {
             throw new InvalidOperationException($"Failed to start exercise: {exercisePath}");
         }
 
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-
-        var timeoutMilliseconds = (int)(timeout ?? TimeSpan.FromMinutes(5)).TotalMilliseconds;
-        if (!process.WaitForExit(timeoutMilliseconds))
+        TestContext.WriteLine($"🔍 [DIAGNOSTIC] Process started with PID {process.Id}, waiting for output...");
+        
+        // Capture output incrementally to detect progress and extend timeout dynamically
+        var outputBuilder = new System.Text.StringBuilder();
+        var errorBuilder = new System.Text.StringBuilder();
+        var lastOutputTime = DateTime.UtcNow;
+        var outputLock = new object();
+        
+        process.OutputDataReceived += (sender, e) =>
         {
-            process.Kill(entireProcessTree: true);
-            throw new TimeoutException($"Exercise {exercisePath} timed out after {timeout}");
-        }
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                lock (outputLock)
+                {
+                    outputBuilder.AppendLine(e.Data);
+                    lastOutputTime = DateTime.UtcNow; // Update last output time on any output
+                }
+                TestContext.WriteLine($"[Exercise Output] {e.Data}");
+            }
+        };
+        
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                lock (outputLock)
+                {
+                    errorBuilder.AppendLine(e.Data);
+                    lastOutputTime = DateTime.UtcNow; // Update last output time on any error output
+                }
+                TestContext.WriteLine($"[Exercise Error] {e.Data}");
+            }
+        };
+        
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
 
-        var output = await outputTask;
-        var error = await errorTask;
+        // Dynamic timeout: base timeout + extensions when there's progress
+        var baseTimeout = timeout ?? TimeSpan.FromMinutes(1);
+        var noProgressTimeout = TimeSpan.FromSeconds(30); // Kill if no output for 30 seconds
+        var waitStopwatch = Stopwatch.StartNew();
+        
+        // Poll for process exit with dynamic timeout extension
+        while (!process.HasExited)
+        {
+            var timeSinceLastOutput = DateTime.UtcNow - lastOutputTime;
+            
+            // Check if we've exceeded the no-progress timeout
+            if (timeSinceLastOutput > noProgressTimeout)
+            {
+                TestContext.WriteLine($"❌ [DIAGNOSTIC] No output for {timeSinceLastOutput.TotalSeconds:F1}s (threshold: {noProgressTimeout.TotalSeconds}s)");
+                TestContext.WriteLine($"❌ [DIAGNOSTIC] Killing process tree for PID {process.Id} after {waitStopwatch.Elapsed.TotalSeconds:F1}s total...");
+                process.Kill(entireProcessTree: true);
+                throw new TimeoutException($"Exercise {exercisePath} timed out after {waitStopwatch.Elapsed.TotalSeconds:F1}s with no output for {timeSinceLastOutput.TotalSeconds:F1}s");
+            }
+            
+            // Wait a bit before checking again
+            await Task.Delay(500);
+            
+            // Also check absolute maximum timeout (baseTimeout * 3 to allow for extensions)
+            if (waitStopwatch.Elapsed > baseTimeout * 3)
+            {
+                TestContext.WriteLine($"❌ [DIAGNOSTIC] Absolute maximum timeout reached: {waitStopwatch.Elapsed.TotalSeconds:F1}s");
+                TestContext.WriteLine($"❌ [DIAGNOSTIC] Killing process tree for PID {process.Id}...");
+                process.Kill(entireProcessTree: true);
+                throw new TimeoutException($"Exercise {exercisePath} exceeded absolute maximum timeout of {(baseTimeout * 3).TotalSeconds:F1}s");
+            }
+        }
+        
+        TestContext.WriteLine($"✅ [DIAGNOSTIC] Process exited after {waitStopwatch.Elapsed.TotalSeconds:F1}s (last output: {(DateTime.UtcNow - lastOutputTime).TotalSeconds:F1}s ago)");
+
+        var output = outputBuilder.ToString();
+        var error = errorBuilder.ToString();
 
         TestContext.WriteLine($"✅ Exercise completed with exit code {process.ExitCode}");
         if (!string.IsNullOrEmpty(output))
@@ -974,7 +1452,21 @@ public abstract class LearningCourseTestBase
         {
             TestContext.WriteLine($"⚠️ Error output:\n{error}");
         }
+        
+        // Log network state after exercise execution for debugging
+        LogNetworkState($"AFTER Exercise: {exercisePath} (ExitCode: {process.ExitCode})");
 
         return (process.ExitCode, output, error);
+    }
+    
+    /// <summary>
+    /// Write debug log message to both console and file
+    /// </summary>
+    private static void LogDebug(string message)
+    {
+        var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logMessage = $"[{timestamp}] {message}";
+        Console.WriteLine(logMessage);
+        _debugLogWriter?.WriteLine(logMessage);
     }
 }

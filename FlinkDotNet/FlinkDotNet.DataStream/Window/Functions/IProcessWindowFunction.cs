@@ -25,7 +25,7 @@ namespace FlinkDotNet.DataStream.Window.Functions
     /// <typeparam name="TInput">The type of input elements</typeparam>
     /// <typeparam name="TOutput">The type of output elements</typeparam>
     /// <typeparam name="TKey">The type of the key</typeparam>
-    /// <typeparam name="TWindow">The type of window</typeparam>
+    /// <typeparam name="TWindow">The type of window (used for type safety and API consistency)</typeparam>
     public interface IProcessWindowFunction<TInput, TOutput, TKey, TWindow>
         where TWindow : IWindow
     {
@@ -36,12 +36,12 @@ namespace FlinkDotNet.DataStream.Window.Functions
         /// <param name="context">The context in which the window is being evaluated</param>
         /// <param name="elements">The elements in the window</param>
         /// <returns>The output elements</returns>
-        IEnumerable<TOutput> Process(TKey key, Context context, IEnumerable<TInput> elements);
+        IEnumerable<TOutput> Process(TKey key, IProcessWindowContext context, IEnumerable<TInput> elements);
 
         /// <summary>
         /// Context that provides information about the window being processed.
         /// </summary>
-        public interface Context
+        public interface IProcessWindowContext
         {
             /// <summary>
             /// Gets the window that is being processed.

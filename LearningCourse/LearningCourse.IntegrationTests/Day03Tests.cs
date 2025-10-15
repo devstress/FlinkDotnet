@@ -24,7 +24,7 @@ public class Day03Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise32";
     private const string Exercise3Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise33";
     private const string Exercise4Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise34";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Exercise 1: Netflix AI Model DDL Mastery (90 minutes)

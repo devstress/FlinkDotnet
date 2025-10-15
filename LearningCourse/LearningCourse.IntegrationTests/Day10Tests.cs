@@ -22,10 +22,10 @@ public class Day10Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day10-Performance-Optimization-Scaling/Exercise-Solutions/Exercise102";
     private const string Exercise3Path = "Day10-Performance-Optimization-Scaling/Exercise-Solutions/Exercise103";
     private const string Exercise4Path = "Day10-Performance-Optimization-Scaling/Exercise-Solutions/Exercise104";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
-    private static readonly TimeSpan Exercise102Timeout = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan Exercise103Timeout = TimeSpan.FromMinutes(3);
-    private static readonly TimeSpan Exercise104Timeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Exercise102Timeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Exercise103Timeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Exercise104Timeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise 101: Resource Optimization - Latency Profiling")]

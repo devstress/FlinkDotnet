@@ -14,14 +14,15 @@
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
-    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Util\FlinkDotNet.Util.csproj" />
   </ItemGroup>
 
 </Project>

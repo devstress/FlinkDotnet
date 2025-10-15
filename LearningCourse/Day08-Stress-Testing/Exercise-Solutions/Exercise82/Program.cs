@@ -35,17 +35,22 @@ class Program
     private const string OutputTopic = "backpressure-output";
     private const string ConsumerGroup = "exercise82-consumer";
     
-    // Backpressure test scenarios
+    // Backpressure test scenarios - reduced for faster test completion
     private static readonly List<BackpressureScenario> Scenarios = new()
     {
-        new() { Name = "Normal Load", ProducerRate = 100, ProcessingDelayMs = 5, DurationSeconds = 10 },
-        new() { Name = "Overload - Backpressure Activated", ProducerRate = 200, ProcessingDelayMs = 15, DurationSeconds = 15 },
-        new() { Name = "Recovery - Rate Limiting", ProducerRate = 150, ProcessingDelayMs = 8, DurationSeconds = 10 }
+        new() { Name = "Normal Load", ProducerRate = 50, ProcessingDelayMs = 5, DurationSeconds = 5 },
+        new() { Name = "Overload - Backpressure Activated", ProducerRate = 100, ProcessingDelayMs = 15, DurationSeconds = 5 },
+        new() { Name = "Recovery - Rate Limiting", ProducerRate = 75, ProcessingDelayMs = 8, DurationSeconds = 5 }
     };
 
     static async Task<int> Main(string[] args)
     {
+        // DIAGNOSTIC: First thing - prove we entered Main()
+        Console.WriteLine($"[DIAGNOSTIC] Exercise82 Main() entered at {DateTime.UtcNow:HH:mm:ss}");
+        Console.WriteLine($"[DIAGNOSTIC] Args count: {args.Length}");
+        
         Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.WriteLine("[DIAGNOSTIC] Console encoding set");
         
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()

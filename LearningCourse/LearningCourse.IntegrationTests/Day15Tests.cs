@@ -15,7 +15,7 @@ public class Day15Tests : LearningCourseTestBase
     private const string Exercise152Path = "Day15-Capstone-Project/Exercise-Solutions/Exercise152";
     private const string Exercise153Path = "Day15-Capstone-Project/Exercise-Solutions/Exercise153";
     private const string Exercise154Path = "Day15-Capstone-Project/Exercise-Solutions/Exercise154";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise151: Platform Architecture Validation")]
@@ -149,7 +149,7 @@ public class Day15Tests : LearningCourseTestBase
         var (exitCode, output, error) = await ExecuteExerciseAsync(
             Exercise154Path,
             Array.Empty<string>(),
-            TimeSpan.FromMinutes(3)); // Longer timeout for performance benchmarking
+            TimeSpan.FromSeconds(30)); // Longer timeout for performance benchmarking
 
         TestContext.WriteLine();
         TestContext.WriteLine("--------------------------------------------------------------------------------");

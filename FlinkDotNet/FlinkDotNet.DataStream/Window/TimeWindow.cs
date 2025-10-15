@@ -100,6 +100,7 @@ namespace FlinkDotNet.DataStream.Window
         /// Gets the window for the given timestamp with the specified window size.
         /// </summary>
         /// <param name="timestamp">The timestamp</param>
+        /// <param name="offset">The offset to apply to the window start</param>
         /// <param name="windowSize">The size of the window in milliseconds</param>
         /// <returns>The window that contains the timestamp</returns>
         public static TimeWindow GetWindowStartWithOffset(long timestamp, long offset, long windowSize)

@@ -8,7 +8,7 @@
     <!-- Disable strict analyzers for learning projects -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningsNotAsErrors />
-    <NoWarn>$(NoWarn);S1118;S2325;S3903;S1481;S1450;S6966;S1075;S3358;S4457</NoWarn>
+    <NoWarn>$(NoWarn);S1118;S2325;S3903;S1481;S1450;S6966;S1075;S3358;S4457;CA2017</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

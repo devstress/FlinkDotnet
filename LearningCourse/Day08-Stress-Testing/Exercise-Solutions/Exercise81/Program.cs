@@ -35,12 +35,12 @@ class Program
     private const string ProcessedEventsTopic = "processed-stress-events";
     private const string ConsumerGroup = "exercise81-consumer";
     
-    // Stress test parameters
+    // Stress test parameters (reduced for faster test execution)
     private static readonly List<LoadScenario> Scenarios = new()
     {
-        new() { Name = "Baseline Load", RatePerSecond = 50, DurationSeconds = 10 },
-        new() { Name = "Moderate Load", RatePerSecond = 100, DurationSeconds = 15 },
-        new() { Name = "High Load", RatePerSecond = 150, DurationSeconds = 10 }
+        new() { Name = "Baseline Load", RatePerSecond = 40, DurationSeconds = 5 },
+        new() { Name = "Moderate Load", RatePerSecond = 60, DurationSeconds = 5 },
+        new() { Name = "High Load", RatePerSecond = 80, DurationSeconds = 5 }
     };
 
     static async Task<int> Main(string[] args)

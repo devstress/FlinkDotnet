@@ -26,7 +26,7 @@ public class Day04Tests : LearningCourseTestBase
     private const string Exercise3Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise43";
     private const string Exercise4Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise44";
     private const string Exercise5Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise45";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Exercise 1: Netflix Global Rate Limiting Controller (90 minutes)

@@ -542,7 +542,8 @@ public class AdaptiveQualityFunction : FlinkDotNet.DataStream.IMapFunction<strin
                 QualityLevel.Ultra4K => 50,   // Highest processing cost
                 QualityLevel.HD1080p => 30,
                 QualityLevel.HD720p => 20,
-                QualityLevel.SD480p => 10     // Lowest processing cost
+                QualityLevel.SD480p => 10,    // Lowest processing cost
+                _ => 30                        // Default fallback
             };
             
             Thread.Sleep(processingTime);

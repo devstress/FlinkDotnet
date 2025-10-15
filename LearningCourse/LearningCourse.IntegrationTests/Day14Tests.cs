@@ -22,7 +22,7 @@ public class Day14Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day14-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/Exercise142";
     private const string Exercise3Path = "Day14-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/Exercise143";
     private const string Exercise4Path = "Day14-Advanced-Testing-Chaos-Engineering/Exercise-Solutions/Exercise144";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise 1: Property-Based Testing")]

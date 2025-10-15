@@ -22,7 +22,7 @@ public class Day05Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day05-Enterprise-Observability/Exercise-Solutions/Exercise52";
     private const string Exercise3Path = "Day05-Enterprise-Observability/Exercise-Solutions/Exercise53";
     private const string Exercise4Path = "Day05-Enterprise-Observability/Exercise-Solutions/Exercise54";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise 1: Observability Infrastructure Setup")]

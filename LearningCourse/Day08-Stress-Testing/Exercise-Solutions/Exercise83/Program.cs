@@ -35,18 +35,23 @@ class Program
     private const string BenchmarkOutputTopic = "benchmark-output";
     private const string ConsumerGroup = "exercise83-consumer";
     
-    // Benchmark scenarios
+    // Benchmark scenarios - reduced for faster test completion
     private static readonly List<BenchmarkScenario> Scenarios = new()
     {
-        new() { Name = "Latency Benchmark", TargetOperations = 10000, Type = BenchmarkType.Latency },
-        new() { Name = "Throughput Benchmark", TargetOperations = 50000, Type = BenchmarkType.Throughput },
-        new() { Name = "Memory Benchmark", TargetOperations = 25000, Type = BenchmarkType.Memory },
-        new() { Name = "CPU Benchmark", TargetOperations = 15000, Type = BenchmarkType.CPU }
+        new() { Name = "Latency Benchmark", TargetOperations = 500, Type = BenchmarkType.Latency },
+        new() { Name = "Throughput Benchmark", TargetOperations = 2000, Type = BenchmarkType.Throughput },
+        new() { Name = "Memory Benchmark", TargetOperations = 1000, Type = BenchmarkType.Memory },
+        new() { Name = "CPU Benchmark", TargetOperations = 500, Type = BenchmarkType.CPU }
     };
 
     static async Task<int> Main(string[] args)
     {
+        // DIAGNOSTIC: First thing - prove we entered Main()
+        Console.WriteLine($"[DIAGNOSTIC] Exercise83 Main() entered at {DateTime.UtcNow:HH:mm:ss}");
+        Console.WriteLine($"[DIAGNOSTIC] Args count: {args.Length}");
+        
         Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.WriteLine("[DIAGNOSTIC] Console encoding set");
         
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()

@@ -18,7 +18,7 @@ public class Day07Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day07-Advanced-Windows-Joins/Exercise-Solutions/Exercise72";
     private const string Exercise3Path = "Day07-Advanced-Windows-Joins/Exercise-Solutions/Exercise73";
     private const string Exercise4Path = "Day07-Advanced-Windows-Joins/Exercise-Solutions/Exercise74";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise 71: E-commerce Order Enrichment - Multi-stream temporal joins")]

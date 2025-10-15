@@ -6,8 +6,11 @@ namespace LearningCourse.IntegrationTests;
 /// Integration tests for Day 8: Stress Testing exercises
 /// Tests real Kafka/FlinkDotNet infrastructure for high-volume event processing
 /// </summary>
+[NonParallelizable]
 public class Day08Tests : LearningCourseTestBase
 {
+    private static readonly TimeSpan StressTestTimeout = TimeSpan.FromSeconds(30);
+
     [Test]
     public async Task Exercise81_StressTestingWithRealKafka_ShouldProcessHighVolumeEvents()
     {
@@ -26,7 +29,9 @@ public class Day08Tests : LearningCourseTestBase
         // Act
         TestContext.WriteLine("Executing Exercise81...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
-            "Day08-Stress-Testing/Exercise-Solutions/Exercise81");
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise81",
+            Array.Empty<string>(),
+            StressTestTimeout);
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0), 
@@ -56,7 +61,9 @@ public class Day08Tests : LearningCourseTestBase
         // Act
         TestContext.WriteLine("Executing Exercise82...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
-            "Day08-Stress-Testing/Exercise-Solutions/Exercise82");
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise82",
+            Array.Empty<string>(),
+            StressTestTimeout);
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0), 
@@ -86,7 +93,9 @@ public class Day08Tests : LearningCourseTestBase
         // Act
         TestContext.WriteLine("Executing Exercise83...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
-            "Day08-Stress-Testing/Exercise-Solutions/Exercise83");
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise83",
+            Array.Empty<string>(),
+            StressTestTimeout);
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0), 
@@ -116,7 +125,9 @@ public class Day08Tests : LearningCourseTestBase
         // Act
         TestContext.WriteLine("Executing Exercise84...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
-            "Day08-Stress-Testing/Exercise-Solutions/Exercise84");
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise84",
+            Array.Empty<string>(),
+            StressTestTimeout);
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0),

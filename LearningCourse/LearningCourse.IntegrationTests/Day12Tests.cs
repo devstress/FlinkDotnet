@@ -22,7 +22,7 @@ public class Day12Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day12-Disaster-Recovery-Multi-Region/Exercise-Solutions/Exercise122";
     private const string Exercise3Path = "Day12-Disaster-Recovery-Multi-Region/Exercise-Solutions/Exercise123";
     private const string Exercise4Path = "Day12-Disaster-Recovery-Multi-Region/Exercise-Solutions/Exercise124";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     [Test]
     [Description("Exercise 1: Multi-Region Setup Configuration")]

@@ -24,7 +24,7 @@ public class Day02Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise22";
     private const string Exercise3Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise23";
     private const string Exercise4Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise24";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Exercise 1.1: Production Infrastructure Validation
