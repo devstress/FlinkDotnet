@@ -12,7 +12,7 @@
 - **Local environment setup requirements**:
   - .NET 9.0 SDK installation using official Microsoft installer
   - Aspire workload installation (`dotnet workload install aspire`)
-  - Docker Desktop running for Aspire orchestration
+  - Docker Desktop or Podman running for Aspire orchestration
   - LocalTesting solution builds and runs without errors
 - **GitHub workflow local validation**:
   - ALL GitHub workflows must pass locally before submission for review
@@ -64,7 +64,7 @@
 - **Troubleshooting common issues**:
   - If `dotnet --version` shows 8.x, ensure .NET 9.0 is installed and PATH is updated
   - If Aspire workload fails to install, update to latest .NET 9.0 version first
-  - If LocalTesting fails, verify Docker Desktop is running and has sufficient resources
+  - If LocalTesting fails, verify Docker Desktop or Podman is running and has sufficient resources
   - If build errors occur, clean and rebuild: `dotnet clean && dotnet build`
 - **Failure to verify .NET 9.0 environment is a MAJOR violation** requiring complete environment setup before work can proceed
 - **Automated environment verification**:
@@ -655,7 +655,7 @@ All work items must follow this mandatory progression:
 - **ALWAYS ask user directly** when their action is required to proceed
 - **Script Design Philosophy**: Scripts should work standalone first, then fallback to manual instructions
 - **Examples of required prompts**:
-  - "Please restart Docker Desktop now and let me know when it's ready"
+  - "Please restart Docker Desktop or Podman now and let me know when it's ready"
   - "Please run these commands manually: [commands]"
   - "Please check [status] and confirm when complete"
 - **Password Prompting**: NEVER attempt interactive password prompting - use manual fallback instead

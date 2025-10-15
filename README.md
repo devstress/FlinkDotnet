@@ -84,7 +84,7 @@ await env.ExecuteAsync("order-processor");
 
 ## Quick Start
 
-**Prerequisites:** .NET 9.0 SDK, Docker Desktop
+**Prerequisites:** .NET 9.0 SDK, Docker Desktop (or Podman)
 
 ```bash
 # 1. Clone and build
@@ -285,7 +285,7 @@ See [**Technology Decision Guide**](docs/flink-vs-temporal-decision-guide.md) fo
 ## Requirements
 
 - **.NET 9.0 SDK** - Required for all development
-- **Docker Desktop** - For local testing with Aspire
+- **Docker Desktop** or **Podman** - For local testing with Aspire
 - **Apache Flink 2.1 cluster** - Production deployments
 - **Apache Kafka** - For stream sources/sinks (optional)
 

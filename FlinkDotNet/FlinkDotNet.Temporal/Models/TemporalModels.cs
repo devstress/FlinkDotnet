@@ -7,11 +7,23 @@ namespace FlinkDotNet.Temporal.Models;
 /// </summary>
 public record JobDistributionResult
 {
-    public int TotalJobs { get; init; }
-    public int SuccessfulPlacements { get; init; }
-    public int FailedPlacements { get; init; }
+    public int TotalJobs
+    {
+        get; init;
+    }
+    public int SuccessfulPlacements
+    {
+        get; init;
+    }
+    public int FailedPlacements
+    {
+        get; init;
+    }
     public List<JobPlacementResult> Placements { get; init; } = new();
-    public TimeSpan TotalDistributionTime { get; init; }
+    public TimeSpan TotalDistributionTime
+    {
+        get; init;
+    }
     public Dictionary<string, int> ClusterDistribution { get; init; } = new();
 }
 
@@ -22,10 +34,22 @@ public record JobPlacementResult
 {
     public string JobId { get; init; } = string.Empty;
     public string ClusterId { get; init; } = string.Empty;
-    public bool Success { get; init; }
-    public string? ErrorMessage { get; init; }
-    public DateTime PlacementTime { get; init; }
-    public TimeSpan PlacementDuration { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public string? ErrorMessage
+    {
+        get; init;
+    }
+    public DateTime PlacementTime
+    {
+        get; init;
+    }
+    public TimeSpan PlacementDuration
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -51,8 +75,14 @@ public record AutoScalingMetric
 {
     public string Name { get; init; } = string.Empty;
     public double Weight { get; init; } = 1.0;
-    public double Threshold { get; init; }
-    public AutoScalingMetricType Type { get; init; }
+    public double Threshold
+    {
+        get; init;
+    }
+    public AutoScalingMetricType Type
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -74,12 +104,21 @@ public enum AutoScalingMetricType
 public record ClusterFailureInfo
 {
     public string ClusterId { get; init; } = string.Empty;
-    public ClusterFailureType FailureType { get; init; }
-    public DateTime FailureTime { get; init; }
+    public ClusterFailureType FailureType
+    {
+        get; init;
+    }
+    public DateTime FailureTime
+    {
+        get; init;
+    }
     public string Description { get; init; } = string.Empty;
     public Dictionary<string, object> FailureContext { get; init; } = new();
     public List<string> AffectedJobs { get; init; } = new();
-    public FailureSeverity Severity { get; init; }
+    public FailureSeverity Severity
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -155,11 +194,26 @@ public record ClusterProvisioningRequest
 public record ClusterProvisioningResult
 {
     public string ClusterId { get; init; } = string.Empty;
-    public bool Success { get; init; }
-    public string? ErrorMessage { get; init; }
-    public DateTime ProvisioningStartTime { get; init; }
-    public DateTime? ProvisioningEndTime { get; init; }
-    public TimeSpan? ProvisioningDuration { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public string? ErrorMessage
+    {
+        get; init;
+    }
+    public DateTime ProvisioningStartTime
+    {
+        get; init;
+    }
+    public DateTime? ProvisioningEndTime
+    {
+        get; init;
+    }
+    public TimeSpan? ProvisioningDuration
+    {
+        get; init;
+    }
     public Dictionary<string, object> ProvisioningMetadata { get; init; } = new();
 }
 

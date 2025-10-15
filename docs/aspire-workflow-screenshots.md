@@ -1,6 +1,6 @@
 # Backpressure Test: What To Check Locally
 
-When running locally with Aspire (Docker required), verify the following from the dashboards and logs:
+When running locally with Aspire (Docker Desktop or Podman required), verify the following from the dashboards and logs:
 
 ## 1. Aspire Dashboard
 - Resources for Kafka (and UI) are running

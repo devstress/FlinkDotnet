@@ -6,11 +6,26 @@ namespace FlinkDotNet.Orchestration.Models;
 public record ClusterStatus
 {
     public string ClusterId { get; init; } = string.Empty;
-    public ClusterHealthState Health { get; init; }
-    public int AvailableSlots { get; init; }
-    public int TotalSlots { get; init; }
-    public int RunningJobs { get; init; }
-    public DateTime LastHealthCheck { get; init; }
+    public ClusterHealthState Health
+    {
+        get; init;
+    }
+    public int AvailableSlots
+    {
+        get; init;
+    }
+    public int TotalSlots
+    {
+        get; init;
+    }
+    public int RunningJobs
+    {
+        get; init;
+    }
+    public DateTime LastHealthCheck
+    {
+        get; init;
+    }
     public string Version { get; init; } = string.Empty;
     public Dictionary<string, object> AdditionalMetrics { get; init; } = new();
 }
@@ -21,12 +36,30 @@ public record ClusterStatus
 public record ClusterMetrics
 {
     public string ClusterId { get; init; } = string.Empty;
-    public double CpuUtilization { get; init; }
-    public double MemoryUtilization { get; init; }
-    public long ProcessedRecords { get; init; }
-    public double Throughput { get; init; }
-    public double BackpressureRatio { get; init; }
-    public DateTime Timestamp { get; init; }
+    public double CpuUtilization
+    {
+        get; init;
+    }
+    public double MemoryUtilization
+    {
+        get; init;
+    }
+    public long ProcessedRecords
+    {
+        get; init;
+    }
+    public double Throughput
+    {
+        get; init;
+    }
+    public double BackpressureRatio
+    {
+        get; init;
+    }
+    public DateTime Timestamp
+    {
+        get; init;
+    }
     public Dictionary<string, double> CustomMetrics { get; init; } = new();
 }
 
@@ -53,7 +86,10 @@ public record FlinkJobDefinition
     public int Parallelism { get; init; } = 1;
     public Dictionary<string, string> Configuration { get; init; } = new();
     public JobPriority Priority { get; init; } = JobPriority.Normal;
-    public TimeSpan? Timeout { get; init; }
+    public TimeSpan? Timeout
+    {
+        get; init;
+    }
     public List<string> RequiredResources { get; init; } = new();
     public JobResourceRequirements ResourceRequirements { get; init; } = new();
 }
@@ -65,10 +101,22 @@ public record JobSubmissionResult
 {
     public string JobId { get; init; } = string.Empty;
     public string ClusterId { get; init; } = string.Empty;
-    public bool Success { get; init; }
-    public string? ErrorMessage { get; init; }
-    public DateTime SubmissionTime { get; init; }
-    public string? FlinkJobId { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public string? ErrorMessage
+    {
+        get; init;
+    }
+    public DateTime SubmissionTime
+    {
+        get; init;
+    }
+    public string? FlinkJobId
+    {
+        get; init;
+    }
     public JobPlacementInfo PlacementInfo { get; init; } = new();
 }
 
@@ -92,8 +140,14 @@ public record ClusterInfo
     public string Name { get; init; } = string.Empty;
     public ClusterStatus Status { get; init; } = new();
     public ClusterConfiguration Configuration { get; init; } = new();
-    public DateTime CreatedAt { get; init; }
-    public DateTime LastUpdateAt { get; init; }
+    public DateTime CreatedAt
+    {
+        get; init;
+    }
+    public DateTime LastUpdateAt
+    {
+        get; init;
+    }
     public string Region { get; init; } = string.Empty;
     public string Zone { get; init; } = string.Empty;
 }
@@ -144,7 +198,10 @@ public record JobPlacementInfo
 {
     public string ClusterId { get; init; } = string.Empty;
     public string Reason { get; init; } = string.Empty;
-    public int AssignedSlots { get; init; }
+    public int AssignedSlots
+    {
+        get; init;
+    }
     public SubmissionStrategy Strategy { get; init; } = SubmissionStrategy.BestFit;
     public Dictionary<string, object> PlacementMetadata { get; init; } = new();
 }
@@ -166,15 +223,42 @@ public enum SubmissionStrategy
 /// </summary>
 public record HealthReport
 {
-    public int TotalClusters { get; init; }
-    public int HealthyClusters { get; init; }
-    public int WarningClusters { get; init; }
-    public int CriticalClusters { get; init; }
-    public int OfflineClusters { get; init; }
-    public int TotalAvailableSlots { get; init; }
-    public int TotalRunningJobs { get; init; }
-    public double OverallHealthScore { get; init; }
-    public DateTime GeneratedAt { get; init; }
+    public int TotalClusters
+    {
+        get; init;
+    }
+    public int HealthyClusters
+    {
+        get; init;
+    }
+    public int WarningClusters
+    {
+        get; init;
+    }
+    public int CriticalClusters
+    {
+        get; init;
+    }
+    public int OfflineClusters
+    {
+        get; init;
+    }
+    public int TotalAvailableSlots
+    {
+        get; init;
+    }
+    public int TotalRunningJobs
+    {
+        get; init;
+    }
+    public double OverallHealthScore
+    {
+        get; init;
+    }
+    public DateTime GeneratedAt
+    {
+        get; init;
+    }
     public List<ClusterHealthIssue> Issues { get; init; } = new();
 }
 
@@ -186,8 +270,14 @@ public record ClusterHealthIssue
     public string ClusterId { get; init; } = string.Empty;
     public string Issue { get; init; } = string.Empty;
     public string Severity { get; init; } = string.Empty;
-    public DateTime DetectedAt { get; init; }
-    public string? Resolution { get; init; }
+    public DateTime DetectedAt
+    {
+        get; init;
+    }
+    public string? Resolution
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -195,13 +285,34 @@ public record ClusterHealthIssue
 /// </summary>
 public record ScalingResult
 {
-    public bool Success { get; init; }
-    public int PreviousCapacity { get; init; }
-    public int NewCapacity { get; init; }
-    public int ClustersAdded { get; init; }
-    public int ClustersRemoved { get; init; }
-    public string? ErrorMessage { get; init; }
-    public TimeSpan Duration { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public int PreviousCapacity
+    {
+        get; init;
+    }
+    public int NewCapacity
+    {
+        get; init;
+    }
+    public int ClustersAdded
+    {
+        get; init;
+    }
+    public int ClustersRemoved
+    {
+        get; init;
+    }
+    public string? ErrorMessage
+    {
+        get; init;
+    }
+    public TimeSpan Duration
+    {
+        get; init;
+    }
     public List<string> Actions { get; init; } = new();
 }
 
@@ -211,10 +322,16 @@ public record ScalingResult
 public record OrchestrationRequest
 {
     public string RequestId { get; init; } = string.Empty;
-    public int TargetClusters { get; init; }
+    public int TargetClusters
+    {
+        get; init;
+    }
     public int MinClusters { get; init; } = 1;
     public int MaxClusters { get; init; } = 100;
     public ClusterConfiguration DefaultClusterConfig { get; init; } = new();
     public Dictionary<string, object> WorkflowParameters { get; init; } = new();
-    public TimeSpan? MaxDuration { get; init; }
+    public TimeSpan? MaxDuration
+    {
+        get; init;
+    }
 }

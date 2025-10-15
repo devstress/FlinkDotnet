@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Text;
+using System.Text.Json;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.JobGateway.Services;
-using System.Text.Json;
-using System.Text;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FlinkDotNet.JobGateway.Controllers;
 
@@ -32,7 +32,7 @@ public class JobsController : ControllerBase
     public async Task<ActionResult<JobSubmissionResult>> SubmitJob()
     {
         LogRequestReceived();
-        
+
         var requestBodyResult = await ReadRequestBodyAsync();
         if (requestBodyResult.Error != null)
             return requestBodyResult.Error;
@@ -44,8 +44,8 @@ public class JobsController : ControllerBase
         var jobDefinition = jobDefResult.JobDefinition!;
         EnsureJobMetadata(jobDefinition);
 
-        _logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}", 
-            jobDefinition.Metadata.JobId, 
+        _logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}",
+            jobDefinition.Metadata.JobId,
             jobDefinition.Metadata.JobName ?? "Unnamed");
 
         return await SubmitJobToFlinkAsync(jobDefinition);
@@ -71,7 +71,10 @@ public class JobsController : ControllerBase
             if (string.IsNullOrWhiteSpace(raw))
             {
                 _logger.LogWarning("⚠️ Empty request body received");
-                return (null, BadRequest(new { error = "Empty request body" }));
+                return (null, BadRequest(new
+                {
+                    error = "Empty request body"
+                }));
             }
 
             return (raw, null);
@@ -79,7 +82,11 @@ public class JobsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Failed reading request body");
-            return (null, BadRequest(new { error = "Unable to read request body", ex.Message }));
+            return (null, BadRequest(new
+            {
+                error = "Unable to read request body",
+                ex.Message
+            }));
         }
     }
 
@@ -93,11 +100,14 @@ public class JobsController : ControllerBase
                 PropertyNameCaseInsensitive = true,
             };
             var jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, opts);
-            
+
             if (jobDefinition == null)
             {
                 _logger.LogError("❌ Unable to deserialize job definition");
-                return (null, BadRequest(new { error = "Unable to deserialize job definition" }));
+                return (null, BadRequest(new
+                {
+                    error = "Unable to deserialize job definition"
+                }));
             }
 
             _logger.LogInformation("✅ Job definition deserialized successfully");
@@ -105,9 +115,13 @@ public class JobsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Deserialization failure for job submission. Raw snippet: {Snippet}", 
+            _logger.LogError(ex, "❌ Deserialization failure for job submission. Raw snippet: {Snippet}",
                 raw.Length > 400 ? raw[..400] : raw);
-            return (null, BadRequest(new { error = "Invalid job definition JSON", ex.Message }));
+            return (null, BadRequest(new
+            {
+                error = "Invalid job definition JSON",
+                ex.Message
+            }));
         }
     }
 

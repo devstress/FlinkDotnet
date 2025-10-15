@@ -10,7 +10,7 @@ Key pieces:
 
 ## 5‑Minute Quick Start
 
-Prereqs: .NET 9 SDK, Docker Desktop (for LocalTesting), Java 17 and Maven (auto-installed if not found).
+Prereqs: .NET 9 SDK, Docker Desktop or Podman (for LocalTesting), Java 17 and Maven (auto-installed if not found).
 
 1) Generate and validate IR in C#
 ```csharp

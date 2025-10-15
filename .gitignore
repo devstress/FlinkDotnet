@@ -46,6 +46,12 @@ ScaffoldingReadMe.txt
 *~
 *.log
 CodeCoverage/
+CoverageReport/
+coverage-report*/
+
+# SonarQube local analysis
+.sonarqube/
+.sonar/
 
 # Build and test output files
 *_warnings.txt
@@ -55,6 +61,13 @@ CodeCoverage/
 allure-results/
 allure-report/
 TestResults/
+CoverageReport/
+coverage-report/
+test-results*/
+
+# Coverage output folders (standardize to CoverageReport only)
+**/coverage-*/
+**/Coverage*/
 
 # Producer build artifacts
 scripts/producer/Producer
@@ -115,3 +128,5 @@ FlinkDotNet/Flink.JobGateway/flink-ir-runner.jar
 LocalTesting/NativeFlinkJob/target/
 LocalTesting/NativeFlinkJob/dependency-reduced-pom.xml
 *.jar
+test-coverage*/
+test-results*/

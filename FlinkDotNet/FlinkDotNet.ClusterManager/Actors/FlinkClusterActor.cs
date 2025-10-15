@@ -1,8 +1,8 @@
-using FlinkDotNet.ClusterManager.Models;
+using System.Text.Json;
 using FlinkDotNet.ClusterManager.Interfaces;
+using FlinkDotNet.ClusterManager.Models;
 using Microsoft.Extensions.Logging;
 using Polly;
-using System.Text.Json;
 
 namespace FlinkDotNet.ClusterManager.Actors;
 
@@ -17,12 +17,15 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
     private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicy;
     private readonly ClusterConfiguration _configuration;
     private readonly CancellationTokenSource _healthMonitoringCts = new();
-    
+
     private ClusterStatus _currentStatus;
     private Task? _healthMonitoringTask;
     private bool _disposed;
 
-    public string ClusterId { get; }
+    public string ClusterId
+    {
+        get;
+    }
 
     public FlinkClusterActor(
         string clusterId,
@@ -48,7 +51,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
             .Or<HttpRequestException>()
             .WaitAndRetryAsync(
                 retryCount: 3,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                sleepDurationProvider: retryAttempt => TimeSpan.FromMilliseconds(_configuration.RetryBaseDelayMs * Math.Pow(2, retryAttempt)),
                 onRetry: (outcome, timespan, retryCount, context) =>
                 {
                     _logger.LogWarning("Retry {RetryCount} for cluster {ClusterId} after {Delay}ms",
@@ -70,7 +73,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 var overview = JsonSerializer.Deserialize<FlinkOverview>(content);
-                
+
                 _currentStatus = _currentStatus with
                 {
                     Health = ClusterHealthState.Healthy,
@@ -226,7 +229,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
 
         try
         {
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(_configuration.RetryBaseDelayMs * 5), cancellationToken);
 
             _logger.LogInformation("Successfully scaled cluster {ClusterId} to parallelism {Parallelism}", ClusterId, parallelism);
             return true;
@@ -251,10 +254,10 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
                 LastHealthCheck = DateTime.UtcNow
             };
 
-            var restartDelay = _configuration.Properties.ContainsKey("restart.delay.seconds") 
+            var restartDelay = _configuration.Properties.ContainsKey("restart.delay.seconds")
                 ? TimeSpan.FromSeconds(int.Parse(_configuration.Properties["restart.delay.seconds"]))
                 : TimeSpan.FromSeconds(30);
-            
+
             await Task.Delay(restartDelay, cancellationToken);
 
             // Refresh status after restart
@@ -386,6 +389,7 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
         {
             _healthMonitoringCts.Cancel();
             _healthMonitoringCts.Dispose();
+            _httpClient?.Dispose();
             _disposed = true;
         }
     }
@@ -400,9 +404,18 @@ public class FlinkClusterActor : IFlinkClusterActor, IDisposable
 // Supporting models for Flink API responses
 internal record FlinkOverview
 {
-    public int SlotsTotal { get; init; }
-    public int SlotsAvailable { get; init; }
-    public int JobsRunning { get; init; }
+    public int SlotsTotal
+    {
+        get; init;
+    }
+    public int SlotsAvailable
+    {
+        get; init;
+    }
+    public int JobsRunning
+    {
+        get; init;
+    }
     public string FlinkVersion { get; init; } = string.Empty;
 }
 
@@ -413,9 +426,24 @@ internal record FlinkJobSubmissionResponse
 
 internal record FlinkMetrics
 {
-    public double CpuUtilization { get; init; }
-    public double MemoryUtilization { get; init; }
-    public long ProcessedRecords { get; init; }
-    public double Throughput { get; init; }
-    public double BackpressureRatio { get; init; }
+    public double CpuUtilization
+    {
+        get; init;
+    }
+    public double MemoryUtilization
+    {
+        get; init;
+    }
+    public long ProcessedRecords
+    {
+        get; init;
+    }
+    public double Throughput
+    {
+        get; init;
+    }
+    public double BackpressureRatio
+    {
+        get; init;
+    }
 }

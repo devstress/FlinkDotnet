@@ -41,12 +41,18 @@ public interface IRateLimitingStrategy
     /// <summary>
     /// Gets the current rate limit in operations per second.
     /// </summary>
-    double CurrentRateLimit { get; }
+    double CurrentRateLimit
+    {
+        get;
+    }
 
     /// <summary>
     /// Gets the current utilization percentage (0.0 to 1.0).
     /// </summary>
-    double CurrentUtilization { get; }
+    double CurrentUtilization
+    {
+        get;
+    }
 
     /// <summary>
     /// Updates the rate limit dynamically based on system conditions.
@@ -70,10 +76,22 @@ public class RateLimitingTier
 {
     public string Name { get; init; } = string.Empty;
     public string Scope { get; init; } = string.Empty;
-    public double RateLimit { get; init; }
-    public double BurstCapacity { get; init; }
-    public TimeSpan BurstDuration { get; init; }
-    public RateLimitingEnforcement Enforcement { get; init; }
+    public double RateLimit
+    {
+        get; init;
+    }
+    public double BurstCapacity
+    {
+        get; init;
+    }
+    public TimeSpan BurstDuration
+    {
+        get; init;
+    }
+    public RateLimitingEnforcement Enforcement
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -83,13 +101,13 @@ public enum RateLimitingEnforcement
 {
     /// <summary>Hard limit - immediately reject requests exceeding limit</summary>
     HardLimit,
-    
+
     /// <summary>Throttling - slow down requests but don't reject</summary>
     Throttling,
-    
+
     /// <summary>Backpressure - signal upstream to slow down</summary>
     Backpressure,
-    
+
     /// <summary>Circuit breaker - stop requests after threshold breached</summary>
     CircuitBreaker
 }

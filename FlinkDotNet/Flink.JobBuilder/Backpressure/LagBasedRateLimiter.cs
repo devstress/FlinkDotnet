@@ -44,11 +44,11 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     private readonly IKafkaConsumerLagMonitor _lagMonitor;
     private readonly ILogger<LagBasedRateLimiter>? _logger;
     private readonly Timer _lagCheckTimer;
-    
+
     // Async wait queue for non-blocking operations
     private readonly ConcurrentQueue<LagBasedWaitingRequest> _waitingRequests = new();
     private readonly Timer _processWaitingRequestsTimer;
-    
+
     private double _currentTokens;
     private DateTime _lastRefill;
     private double _currentRateLimit;
@@ -72,9 +72,12 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
         IKafkaConsumerLagMonitor? lagMonitor = null,
         ILogger<LagBasedRateLimiter>? logger = null)
     {
-        if (rateLimit <= 0) throw new ArgumentException("Rate limit must be positive", nameof(rateLimit));
-        if (burstCapacity <= 0) throw new ArgumentException("Burst capacity must be positive", nameof(burstCapacity));
-        if (string.IsNullOrWhiteSpace(consumerGroup)) throw new ArgumentException("Consumer group is required", nameof(consumerGroup));
+        if (rateLimit <= 0)
+            throw new ArgumentException("Rate limit must be positive", nameof(rateLimit));
+        if (burstCapacity <= 0)
+            throw new ArgumentException("Burst capacity must be positive", nameof(burstCapacity));
+        if (string.IsNullOrWhiteSpace(consumerGroup))
+            throw new ArgumentException("Consumer group is required", nameof(consumerGroup));
 
         _currentRateLimit = rateLimit;
         _maxTokens = burstCapacity;
@@ -86,13 +89,13 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
         _lastRefill = DateTime.UtcNow;
         _isRefillPaused = false;
 
-        _logger?.LogInformation("LagBasedRateLimiter created: rate={RateLimit}, burst={BurstCapacity}, group={ConsumerGroup}, threshold={LagThreshold}", 
+        _logger?.LogInformation("LagBasedRateLimiter created: rate={RateLimit}, burst={BurstCapacity}, group={ConsumerGroup}, threshold={LagThreshold}",
             rateLimit, burstCapacity, consumerGroup, _lagThreshold);
 
         // Timer to check consumer lag and adjust refilling
-        _lagCheckTimer = new Timer(CheckConsumerLagAsync, null, 
+        _lagCheckTimer = new Timer(CheckConsumerLagAsync, null,
             TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            
+
         // Timer to process waiting requests efficiently
         _processWaitingRequestsTimer = new Timer(ProcessWaitingRequestsAsync, null,
             TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(10));
@@ -101,18 +104,19 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public Task<bool> TryAcquireAsync(int permits = 1, CancellationToken cancellationToken = default)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         lock (_lock)
         {
             RefillTokens();
-            
+
             if (_currentTokens >= permits)
             {
                 _currentTokens -= permits;
                 return Task.FromResult(true);
             }
-            
+
             return Task.FromResult(false);
         }
     }
@@ -120,18 +124,19 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public bool TryAcquire(int permits = 1)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         lock (_lock)
         {
             RefillTokens();
-            
+
             if (_currentTokens >= permits)
             {
                 _currentTokens -= permits;
                 return true;
             }
-            
+
             return false;
         }
     }
@@ -139,7 +144,8 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public async Task AcquireAsync(int permits = 1, CancellationToken cancellationToken = default)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         // Try immediate acquisition first
         if (await TryAcquireAsync(permits, cancellationToken))
@@ -187,14 +193,15 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public void UpdateRateLimit(double newRateLimit)
     {
-        if (newRateLimit <= 0) throw new ArgumentException("Rate limit must be positive", nameof(newRateLimit));
+        if (newRateLimit <= 0)
+            throw new ArgumentException("Rate limit must be positive", nameof(newRateLimit));
 
         lock (_lock)
         {
             RefillTokens(); // Update tokens with old rate first
             _currentRateLimit = newRateLimit;
         }
-        
+
         _logger?.LogInformation("Rate limit updated to {NewRateLimit} ops/sec", newRateLimit);
     }
 
@@ -207,7 +214,7 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
             _lastRefill = DateTime.UtcNow;
             _isRefillPaused = false;
         }
-        
+
         _logger?.LogInformation("Rate limiter reset to full capacity");
     }
 
@@ -261,7 +268,7 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
 
         var now = DateTime.UtcNow;
         var elapsed = (now - _lastRefill).TotalSeconds;
-        
+
         if (elapsed > 0)
         {
             var tokensToAdd = elapsed * _currentRateLimit;
@@ -275,7 +282,8 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// </summary>
     private async void CheckConsumerLagAsync(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -290,7 +298,7 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
                     _isRefillPaused = true;
                     if (!wasRefillPaused)
                     {
-                        _logger?.LogWarning("High consumer lag detected ({CurrentLag}ms > {Threshold}ms). Pausing token refilling for backpressure.", 
+                        _logger?.LogWarning("High consumer lag detected ({CurrentLag}ms > {Threshold}ms). Pausing token refilling for backpressure.",
                             currentLag.TotalMilliseconds, _lagThreshold.TotalMilliseconds);
                     }
                 }
@@ -300,7 +308,7 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
                     _isRefillPaused = false;
                     if (wasRefillPaused)
                     {
-                        _logger?.LogInformation("Consumer lag reduced ({CurrentLag}ms <= {Threshold}ms). Resuming token refilling.", 
+                        _logger?.LogInformation("Consumer lag reduced ({CurrentLag}ms <= {Threshold}ms). Resuming token refilling.",
                             currentLag.TotalMilliseconds, _lagThreshold.TotalMilliseconds);
                     }
                 }
@@ -317,7 +325,8 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// </summary>
     private async void ProcessWaitingRequestsAsync(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -380,8 +389,9 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
     /// <param name="disposing">True if disposing managed resources</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             // Complete any waiting requests
@@ -389,12 +399,12 @@ public class LagBasedRateLimiter : IRateLimitingStrategy, IDisposable
             {
                 waitingRequest.TaskCompletionSource.TrySetCanceled();
             }
-            
+
             _lagCheckTimer?.Dispose();
             _processWaitingRequestsTimer?.Dispose();
             _lagMonitor?.Dispose();
         }
-        
+
         _disposed = true;
     }
 }
@@ -440,8 +450,14 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
     /// <inheritdoc />
     public TimeSpan GetCurrentLag(string consumerGroup)
     {
-        if (_lagCache.TryGetValue(consumerGroup, out var lag)) return lag;
-        try { var computed = ComputeLagForGroup(consumerGroup, TimeSpan.FromSeconds(5)); _lagCache[consumerGroup] = computed; return computed; }
+        if (_lagCache.TryGetValue(consumerGroup, out var lag))
+            return lag;
+        try
+        {
+            var computed = ComputeLagForGroup(consumerGroup, TimeSpan.FromSeconds(5));
+            _lagCache[consumerGroup] = computed;
+            return computed;
+        }
         catch { return TimeSpan.Zero; }
     }
 
@@ -453,7 +469,8 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
 
     private void RefreshLagData(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -504,7 +521,7 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
         using var admin = new Confluent.Kafka.AdminClientBuilder(new Confluent.Kafka.AdminClientConfig
         {
             BootstrapServers = bootstrap,
-            SocketTimeoutMs = (int)Math.Max(3000, timeout.TotalMilliseconds)
+            SocketTimeoutMs = (int) Math.Max(3000, timeout.TotalMilliseconds)
         }).Build();
 
         // Discover topic partitions
@@ -534,7 +551,7 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
             GroupId = consumerGroup,
             EnableAutoCommit = false,
             EnablePartitionEof = false,
-            SocketTimeoutMs = (int)Math.Max(3000, timeout.TotalMilliseconds),
+            SocketTimeoutMs = (int) Math.Max(3000, timeout.TotalMilliseconds),
             SessionTimeoutMs = 6000,
             ApiVersionRequest = true,
             AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Latest
@@ -552,9 +569,11 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
                 var watermarks = consumer.QueryWatermarkOffsets(tp, timeout);
                 var endOffset = watermarks.High;
                 var committedTopicPartitionOffset = committed.FirstOrDefault(c => c.TopicPartition.Equals(tp));
-                if (committedTopicPartitionOffset?.Offset == null || committedTopicPartitionOffset.Offset == Confluent.Kafka.Offset.Unset) continue;
+                if (committedTopicPartitionOffset?.Offset == null || committedTopicPartitionOffset.Offset == Confluent.Kafka.Offset.Unset)
+                    continue;
                 var lag = Math.Max(0, endOffset.Value - committedTopicPartitionOffset.Offset.Value);
-                if (lag > maxLag) maxLag = lag;
+                if (lag > maxLag)
+                    maxLag = lag;
             }
             catch { /* ignore partition errors */ }
         }
@@ -572,13 +591,14 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
 
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             _refreshTimer?.Dispose();
         }
-        
+
         _disposed = true;
     }
 }
@@ -589,8 +609,17 @@ public class DefaultKafkaConsumerLagMonitor : IKafkaConsumerLagMonitor
 /// </summary>
 internal class LagBasedWaitingRequest
 {
-    public int Permits { get; init; }
+    public int Permits
+    {
+        get; init;
+    }
     public TaskCompletionSource<bool> TaskCompletionSource { get; init; } = new();
-    public CancellationToken CancellationToken { get; init; }
-    public DateTime RequestTime { get; init; }
+    public CancellationToken CancellationToken
+    {
+        get; init;
+    }
+    public DateTime RequestTime
+    {
+        get; init;
+    }
 }

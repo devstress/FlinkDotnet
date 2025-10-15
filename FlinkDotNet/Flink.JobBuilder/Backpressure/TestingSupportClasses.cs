@@ -1,9 +1,5 @@
 using System;
 
-#pragma warning disable S3400 // Remove this method and declare a constant for this value
-#pragma warning disable S1118 // Add a 'protected' constructor or the 'static' keyword to the class declaration
-#pragma warning disable S2325 // Make method a static method
-
 namespace Flink.JobBuilder.Backpressure;
 
 /// <summary>
@@ -18,7 +14,7 @@ public class ConsumerLagMonitor
 
     public bool IsContinuousMonitoringActive() => _continuousMonitoringActive;
     public long GetCurrentLag() => _currentLag;
-    
+
     public bool SimulateLagSpike(long lagAmount)
     {
         _currentLag = lagAmount;
@@ -29,41 +25,69 @@ public class ConsumerLagMonitor
 public class ConsistentHashPartitionManager
 {
     private TimeSpan _lastRebalanceTime = TimeSpan.FromMilliseconds(300);
-    
+
     public TimeSpan GetLastRebalanceTime() => _lastRebalanceTime;
-    
+
     public PartitionRebalanceResult TriggerRebalancing()
     {
         _lastRebalanceTime = TimeSpan.FromMilliseconds(300);
-        return new PartitionRebalanceResult 
-        { 
-            Success = true, 
-            PartitionsReassigned = 8 
+        return new PartitionRebalanceResult
+        {
+            Success = true,
+            PartitionsReassigned = 8
         };
     }
-    
+
     public static bool ValidateOptimalRebalancing() => true;
     public static bool ValidateFunction(string function, string behavior) => true;
 }
 
 public class PartitionRebalanceResult
 {
-    public bool Success { get; init; }
-    public int PartitionsReassigned { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public int PartitionsReassigned
+    {
+        get; init;
+    }
 }
 
 public class FairPartitionDistributor
 {
-    public double GetLoadVariance() => 0.03; // 3% variance, under 5% threshold
-    public double GetLoadVarianceUnderPressure(double pressure) => Math.Min(0.05, pressure * 0.1);
-    public bool ValidateFairAllocation() => GetLoadVariance() < 0.05;
+    // Test support class with configurable variance threshold and simulated load state
+    private readonly double _varianceThreshold;
+    private readonly double _loadVariance;
+
+    public FairPartitionDistributor(double varianceThreshold = 0.05, double loadVariance = 0.03)
+    {
+        _varianceThreshold = varianceThreshold;
+        _loadVariance = loadVariance; // 3% variance, under 5% threshold
+    }
+
+    public double GetLoadVariance() => _loadVariance;
+    public double GetLoadVarianceUnderPressure(double pressure) => Math.Min(_varianceThreshold, pressure * 0.1);
+    public bool ValidateFairAllocation() => GetLoadVariance() < _varianceThreshold;
 }
 
 public class NoisyNeighborManager
 {
-    public static bool ValidateIsolationDuringNetworkIssues() => true;
-    public static bool ValidateResourceIsolation() => true;
-    public static bool ValidateIsolationDuringLoad(double pressureLevel) => pressureLevel < 0.9;
+    // Test support class for noisy neighbor isolation scenarios  
+    private readonly double _isolationThreshold;
+    private readonly bool _networkIssuesHandled;
+    private readonly bool _resourceIsolationEnabled;
+
+    public NoisyNeighborManager(double isolationThreshold = 0.9, bool networkIssuesHandled = true, bool resourceIsolationEnabled = true)
+    {
+        _isolationThreshold = isolationThreshold;
+        _networkIssuesHandled = networkIssuesHandled;
+        _resourceIsolationEnabled = resourceIsolationEnabled;
+    }
+
+    public bool ValidateIsolationDuringNetworkIssues() => _networkIssuesHandled;
+    public bool ValidateResourceIsolation() => _resourceIsolationEnabled;
+    public bool ValidateIsolationDuringLoad(double pressureLevel) => pressureLevel < _isolationThreshold;
 }
 
 public static class NetworkBoundBackpressureController
@@ -87,22 +111,34 @@ public class FiniteResourceManager
             RateLimitingApplied = scenario.ResourcePressure > 0.8
         };
     }
-    
+
     public static bool ValidateTarget(string target, string measurement) => true;
 }
 
 public class ResourceConstrainedScenario
 {
     public string Name { get; init; } = string.Empty;
-    public int LoadRate { get; init; }
-    public double ResourcePressure { get; init; }
+    public int LoadRate
+    {
+        get; init;
+    }
+    public double ResourcePressure
+    {
+        get; init;
+    }
     public string ExpectedBehavior { get; init; } = string.Empty;
 }
 
 public class ResourceConstrainedScenarioResult
 {
-    public bool Success { get; init; }
-    public bool RateLimitingApplied { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public bool RateLimitingApplied
+    {
+        get; init;
+    }
 }
 
 public static class DlqManager
@@ -146,11 +182,23 @@ public class LoadTestPhase
 
 public class LoadTestResult
 {
-    public bool Success { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
     public string RebalancingPerformance { get; init; } = string.Empty;
-    public bool NoisyNeighborEffectiveness { get; init; }
-    public bool RateLimitingEffectiveness { get; init; }
-    public bool FairDistributionMaintained { get; init; }
+    public bool NoisyNeighborEffectiveness
+    {
+        get; init;
+    }
+    public bool RateLimitingEffectiveness
+    {
+        get; init;
+    }
+    public bool FairDistributionMaintained
+    {
+        get; init;
+    }
 }
 
 // Additional supporting classes for comprehensive test coverage
@@ -166,7 +214,10 @@ public static class AutoScaler
 
 public class ScalingMetrics
 {
-    public TimeSpan TriggerTime { get; init; }
+    public TimeSpan TriggerTime
+    {
+        get; init;
+    }
 }
 
 public static class OperationsManager
@@ -195,7 +246,7 @@ public static class ProductionReadinessValidator
 }
 
 // Additional classes referenced in test step definitions
-public class VariableSpeedProducer
+public static class VariableSpeedProducer
 {
     public static bool StartProduction(int messageCount, int baseRate, double[] variationPattern) => true;
 }
@@ -208,8 +259,14 @@ public class ConsumerScenarioExecutor
 public class ConsumerScenario
 {
     public string Name { get; init; } = string.Empty;
-    public int ConsumerCount { get; init; }
-    public int ProcessingRate { get; init; }
+    public int ConsumerCount
+    {
+        get; init;
+    }
+    public int ProcessingRate
+    {
+        get; init;
+    }
     public string ExpectedBehavior { get; init; } = string.Empty;
     public ConsistentHashPartitionManager PartitionManager { get; init; } = new();
     public FairPartitionDistributor FairDistributor { get; init; } = new();
@@ -217,7 +274,10 @@ public class ConsumerScenario
 
 public class ConsumerScenarioResult
 {
-    public bool Success { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
 }
 
 public static class DashboardManager

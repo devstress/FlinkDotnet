@@ -6,11 +6,26 @@ namespace FlinkDotNet.ClusterManager.Models;
 public record ClusterStatus
 {
     public string ClusterId { get; init; } = string.Empty;
-    public ClusterHealthState Health { get; init; }
-    public int AvailableSlots { get; init; }
-    public int TotalSlots { get; init; }
-    public int RunningJobs { get; init; }
-    public DateTime LastHealthCheck { get; init; }
+    public ClusterHealthState Health
+    {
+        get; init;
+    }
+    public int AvailableSlots
+    {
+        get; init;
+    }
+    public int TotalSlots
+    {
+        get; init;
+    }
+    public int RunningJobs
+    {
+        get; init;
+    }
+    public DateTime LastHealthCheck
+    {
+        get; init;
+    }
     public string Version { get; init; } = string.Empty;
     public Dictionary<string, object> AdditionalMetrics { get; init; } = new();
 }
@@ -21,12 +36,30 @@ public record ClusterStatus
 public record ClusterMetrics
 {
     public string ClusterId { get; init; } = string.Empty;
-    public double CpuUtilization { get; init; }
-    public double MemoryUtilization { get; init; }
-    public long ProcessedRecords { get; init; }
-    public double Throughput { get; init; }
-    public double BackpressureRatio { get; init; }
-    public DateTime Timestamp { get; init; }
+    public double CpuUtilization
+    {
+        get; init;
+    }
+    public double MemoryUtilization
+    {
+        get; init;
+    }
+    public long ProcessedRecords
+    {
+        get; init;
+    }
+    public double Throughput
+    {
+        get; init;
+    }
+    public double BackpressureRatio
+    {
+        get; init;
+    }
+    public DateTime Timestamp
+    {
+        get; init;
+    }
     public Dictionary<string, double> CustomMetrics { get; init; } = new();
 }
 
@@ -53,7 +86,10 @@ public record FlinkJobDefinition
     public int Parallelism { get; init; } = 1;
     public Dictionary<string, string> Configuration { get; init; } = new();
     public JobPriority Priority { get; init; } = JobPriority.Normal;
-    public TimeSpan? Timeout { get; init; }
+    public TimeSpan? Timeout
+    {
+        get; init;
+    }
     public List<string> RequiredResources { get; init; } = new();
     public JobResourceRequirements ResourceRequirements { get; init; } = new();
 }
@@ -65,10 +101,22 @@ public record JobSubmissionResult
 {
     public string JobId { get; init; } = string.Empty;
     public string ClusterId { get; init; } = string.Empty;
-    public bool Success { get; init; }
-    public string? ErrorMessage { get; init; }
-    public DateTime SubmissionTime { get; init; }
-    public string? FlinkJobId { get; init; }
+    public bool Success
+    {
+        get; init;
+    }
+    public string? ErrorMessage
+    {
+        get; init;
+    }
+    public DateTime SubmissionTime
+    {
+        get; init;
+    }
+    public string? FlinkJobId
+    {
+        get; init;
+    }
     public JobPlacementInfo PlacementInfo { get; init; } = new();
 }
 
@@ -102,7 +150,10 @@ public record JobPlacementInfo
 {
     public string ClusterId { get; init; } = string.Empty;
     public string Reason { get; init; } = string.Empty;
-    public int AssignedSlots { get; init; }
+    public int AssignedSlots
+    {
+        get; init;
+    }
     public SubmissionStrategy Strategy { get; init; } = SubmissionStrategy.BestFit;
     public Dictionary<string, object> PlacementMetadata { get; init; } = new();
 }
@@ -133,6 +184,11 @@ public record ClusterConfiguration
     public string Region { get; init; } = "default";
     public string Zone { get; init; } = "default";
     public bool HighAvailability { get; init; } = true;
+    
+    /// <summary>
+    /// Base retry delay in milliseconds for HTTP operations (default: 1000ms for production, can be set to 0 for tests)
+    /// </summary>
+    public int RetryBaseDelayMs { get; init; } = 1000;
 }
 
 /// <summary>
