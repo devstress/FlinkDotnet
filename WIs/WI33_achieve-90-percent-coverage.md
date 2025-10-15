@@ -240,13 +240,34 @@ Extended FlinkJobManagerTests.cs with 19 new tests:
 
 ## Phase 6: Owner Acceptance
 ### Demonstration
-(Iteration 1 complete - 71.4% coverage achieved, continuing toward 90% target)
+**Iteration 1 Results**:
+- Starting coverage: 70.3% (3742/5322 lines)
+- Final coverage: 71.4% (3803/5322 lines)
+- Improvement: +1.1% (+61 lines covered)
+- Tests added: 19 new FlinkJobManager helper method tests
+- All 1996 tests passing
+- FlinkJobManager: 26.9% → 32.9% (+6%)
+
+**Assessment**:
+The target of 90% coverage from 71.4% baseline requires covering ~987 additional lines. Analysis shows:
+- FlinkJobManager has ~1100+ uncovered lines in complex file I/O and jar management methods
+- These methods require extensive mocking infrastructure (file system, ZIP, Process)
+- Estimated effort: 40-60+ hours for comprehensive file I/O mocking and testing
+- Current achievement (71.4%) represents meaningful progress with achievable effort
+
+**Recommendation**:
+1. **Accept 71.4% as milestone**: Solid improvement from 70.3% baseline
+2. **Revised realistic target**: 75-80% achievable with additional 2-3 iterations
+3. **90% target**: Requires dedicated multi-phase work item with:
+   - Phase 1: File I/O mocking infrastructure setup
+   - Phase 2: Comprehensive FlinkJobManager file operations testing
+   - Phase 3: Final coverage gap closure
 
 ### Owner Feedback
-(Awaiting feedback)
+(Awaiting feedback on revised target: 71.4% achieved vs 90% original target)
 
 ### Final Approval
-(In progress)
+(Pending owner decision on scope revision)
 
 ## Lessons Learned & Future Reference (MANDATORY)
 ### What Worked Well
@@ -265,17 +286,30 @@ Extended FlinkJobManagerTests.cs with 19 new tests:
 - **Quick Wins**: Start with pure functions (JSON parsing, validation) before complex mocking
 - **Iterative Progress**: Measure coverage after each batch of tests to track progress
 - **Main Blocker**: FlinkJobManager file I/O methods require extensive mocking (file system, ZIP, processes)
-- **Realistic Goal**: 90% from 71.4% requires ~987 more lines - need strategic focus on high-value methods
+- **Realistic Goal Setting**: 90% from 71.4% requires ~987 more lines - need 40-60+ hours for comprehensive file I/O mocking
+- **Diminishing Returns**: After 70% coverage, each additional % requires exponentially more effort
+- **Strategic Planning**: Major coverage goals (70% → 90%) need multi-phase approach, not single work item
 
 ### Specific Problems to Avoid in Future
+- Don't set unrealistic coverage targets without assessing complexity of uncovered code
 - Don't assume whitespace validation is included in all validators
 - Verify actual validation logic before writing assertion tests
 - Some validation methods return early for null (don't add errors)
-- Complex file I/O methods need comprehensive mocking strategy
+- Complex file I/O methods need comprehensive mocking strategy - budget appropriate time
+- Reaching high coverage (85%+) often requires more time than reaching moderate coverage (70-75%)
 
 ### Reference for Future WIs
-- FlinkJobManager has ~1100+ uncovered lines in file I/O methods
-- Reaching 90% requires focusing on SubmitJobToFlinkClusterAsync, CollectConnectorJars, EnsureRunnerJarAsync
-- These methods need mocking: Directory, File, Path, ZipArchive, Process
-- Consider integration tests for some file I/O scenarios if unit testing becomes too complex
+- **For 75-80% target**: Add ~100-200 more lines with moderate complexity mocking
+  - HTTP-related methods in FlinkJobManager (ProbeClusterHealthSafelyAsync, CheckFlinkClusterHealthAsync)
+  - StreamExecutionEnvironment configuration methods
+  - FlinkOrchestra orchestration paths
+  
+- **For 85-90% target**: Requires comprehensive file I/O mocking infrastructure
+  - FlinkJobManager has ~1100+ uncovered lines in file I/O methods
+  - Requires mocking: Directory, File, Path, ZipArchive, Process, HttpClient multi-step workflows
+  - Methods: SubmitJobToFlinkClusterAsync, CollectConnectorJars, EnsureRunnerJarAsync, CreateShadedJarAsync
+  - Estimated effort: 40-60+ hours
+  
+- **Alternative**: Consider integration tests for some file I/O scenarios if unit testing becomes too complex
+- **Best Practice**: Set incremental targets (70% → 75% → 80% → 85% → 90%) rather than single large jump
 
