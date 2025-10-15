@@ -191,13 +191,51 @@ FlinkDotNet.Orchestration        100%       90%       ✓
 ## Phase 4: Implementation
 
 ### Code Changes
-[To be filled during implementation]
+
+**Tier 1: Quick Wins - Completed**
+
+1. **DataStreamTests.cs** - Added error path tests
+   - `Map_WithNoValidSource_ThrowsInvalidOperationException` 
+   - `Filter_WithNoValidSource_ThrowsInvalidOperationException`
+   - `FlatMap_WithNoValidSource_ThrowsInvalidOperationException`
+   - `SinkToKafka_WithNullJob_ThrowsInvalidOperationException`
+
+2. **OperationCaptureTests.cs** - Added cleanup error handling tests
+   - `CreateLoggerConfiguration_WithOldLogFiles_CleansUpSuccessfully`
+   - `CreateLoggerConfiguration_WithLockedLogDirectory_HandlesCleanupError`
+
+3. **AdvancedComponentsTests.cs** - Added BufferPool disposal test
+   - `BufferPool_DisposeWithPendingFlush_HandlesCleanupError`
+
+**Results:**
+- Tests added: 7 new tests
+- Total tests: 2007 (was 2000)
+- Coverage improvement: 81.8% → 82.0% (+0.2%, +5 lines)
+- Lines covered: 2426 → 2431
+- Remaining gap to 90%: 237 lines
 
 ### Challenges Encountered
-[To be filled during implementation]
+
+1. **Smaller than expected coverage improvement**: Tier 1 quick wins only added 5 lines of coverage
+   - The error paths tested were important for code quality but represented small coverage gains
+   - DataStream error paths tested using reflection were harder to trigger naturally
+
+2. **Coverage calculation**: Need 237 more lines to reach 90% (from 2431 to 2668)
+   - Original estimate of ~80 lines for Tier 1 was too optimistic
+   - Most DataStream components are already at 95-98%, leaving few uncovered lines
+
+3. **Complex components remain the main blockers**:
+   - MultiTierRateLimiter (53.3%) - 260+ uncovered lines
+   - FlinkJobManager (43.1%) - 945 uncovered lines
+   - DefaultKafkaConsumerLagMonitor (39.7%) - 80+ uncovered lines
 
 ### Solutions Applied
-[To be filled during implementation]
+
+**Adjusted Strategy:**
+1. Continue with Tier 2 (rate limiters) but focus on higher-impact tests
+2. Add comprehensive tests for MultiTierRateLimiter methods
+3. Focus on methods that are easier to test without complex infrastructure
+4. May need to reconsider target or add integration tests for complex components
 
 ## Phase 5: Testing & Validation
 

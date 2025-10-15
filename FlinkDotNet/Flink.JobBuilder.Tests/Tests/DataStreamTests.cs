@@ -2807,4 +2807,76 @@ public class AdvancedDataStreamTests
     }
 
     #endregion
+
+    #region DataStream Error Path Tests (Coverage Improvement)
+
+    [Test]
+    public void Map_WithNoValidSource_ThrowsInvalidOperationException()
+    {
+        // Arrange - Create a DataStream with no valid source using reflection
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var dataStreamType = typeof(DataStream<string>);
+        var constructor = dataStreamType.GetConstructor(
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            new[] { typeof(IEnumerable<string>), typeof(StreamExecutionEnvironment) },
+            null);
+        
+        // Create a stream with null collection to trigger error path
+        var stream = (DataStream<string>)constructor!.Invoke(new object[] { null!, env });
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => stream.Map(s => s.ToUpper()));
+    }
+
+    [Test]
+    public void Filter_WithNoValidSource_ThrowsInvalidOperationException()
+    {
+        // Arrange - Create a DataStream with no valid source
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var dataStreamType = typeof(DataStream<string>);
+        var constructor = dataStreamType.GetConstructor(
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            new[] { typeof(IEnumerable<string>), typeof(StreamExecutionEnvironment) },
+            null);
+        
+        var stream = (DataStream<string>)constructor!.Invoke(new object[] { null!, env });
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => stream.Filter(s => s.Length > 0));
+    }
+
+    [Test]
+    public void FlatMap_WithNoValidSource_ThrowsInvalidOperationException()
+    {
+        // Arrange - Create a DataStream with no valid source
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var dataStreamType = typeof(DataStream<string>);
+        var constructor = dataStreamType.GetConstructor(
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            new[] { typeof(IEnumerable<string>), typeof(StreamExecutionEnvironment) },
+            null);
+        
+        var stream = (DataStream<string>)constructor!.Invoke(new object[] { null!, env });
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => stream.FlatMap<string>(s => new[] { s }));
+    }
+
+    [Test]
+    public void SinkToKafka_WithNullJob_ThrowsInvalidOperationException()
+    {
+        // Arrange - Create a DataStream from collection (no JobDefinition)
+        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        var stream = env.FromCollection(new[] { "test" });
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => 
+            stream.SinkToKafka("output-topic", "localhost:9092"));
+        Assert.That(ex.Message, Does.Contain("IR-backed stream"));
+    }
+
+    #endregion
 }
