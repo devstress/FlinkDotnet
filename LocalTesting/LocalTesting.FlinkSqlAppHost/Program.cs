@@ -13,6 +13,13 @@ EnsureFlinkKafkaNetwork();
 LogConfiguredPorts();
 SetupEnvironment();
 
+// Check if LearningCourse mode is enabled - enables additional infrastructure for learning exercises
+var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
+if (isLearningCourse)
+{
+    Console.WriteLine("📚 LearningCourse mode enabled - Redis and Observability stack will be deployed");
+}
+
 var diagnosticsVerbose = Environment.GetEnvironmentVariable("DIAGNOSTICS_VERBOSE") == "1";
 if (diagnosticsVerbose)
 {
@@ -214,6 +221,42 @@ builder.AddContainer("temporal-server", "temporalio/auto-setup", "1.22.4")
     .WithEnvironment("SKIP_DB_CREATE", "false")  // Let Temporal create databases
     .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false")  // Create default namespace
     .WaitFor(temporalDbServer);  // Wait for PostgreSQL to be ready
+
+// LearningCourse Infrastructure - Conditionally add Redis and Observability stack
+if (isLearningCourse)
+{
+    // Redis - Required for Day15 Capstone Project exercises (Exercise151-154)
+    // Provides state management, caching, and distributed coordination capabilities
+    // CRITICAL: Use Bitnami Redis image with ALLOW_EMPTY_PASSWORD for learning exercises
+    // This allows exercises to connect with simple "localhost:port" format without authentication
+    #pragma warning disable S1481 // Redis resource is created but not directly referenced - used via connection string
+    var redis = builder.AddContainer("redis", "bitnami/redis", "latest")
+        .WithHttpEndpoint(port: Ports.RedisHostPort, targetPort: 6379, name: "redis-port")
+        .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes");  // Disable password requirement for learning
+    #pragma warning restore S1481
+    
+    Console.WriteLine($"✅ Redis deployed on port {Ports.RedisHostPort} for LearningCourse exercises");
+    
+    // Observability Stack - Prometheus for metrics collection
+    // Required for monitoring and performance analysis exercises
+    var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "latest")
+        .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
+        .WithBindMount(Path.Combine(repoRoot, "LocalTesting", "prometheus.yml"), "/etc/prometheus/prometheus.yml", isReadOnly: true);
+    
+    Console.WriteLine($"✅ Prometheus deployed on port {Ports.PrometheusHostPort} for metrics collection");
+    
+    // Observability Stack - Grafana for metrics visualization
+    // Provides dashboards and alerting for performance monitoring
+    #pragma warning disable S1481 // Grafana resource is created but not directly referenced - accessed via browser
+    var grafana = builder.AddContainer("grafana", "grafana/grafana", "latest")
+        .WithHttpEndpoint(port: Ports.GrafanaHostPort, targetPort: 3000, name: "grafana-http")
+        .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
+        .WithEnvironment("GF_SECURITY_ADMIN_USER", "admin")
+        .WaitFor(prometheus);  // Wait for Prometheus to be ready
+    #pragma warning restore S1481
+    
+    Console.WriteLine($"✅ Grafana deployed on port {Ports.GrafanaHostPort} for visualization");
+}
 
 #pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();

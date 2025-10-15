@@ -20,6 +20,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using FlinkDotNet.Common;
+using FlinkDotNet.DataStream.State;
+using FlinkDotNet.DataStream.Checkpoint;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
 using Microsoft.Extensions.Logging;
@@ -85,6 +87,8 @@ namespace FlinkDotNet.DataStream
         private bool _adaptiveSchedulerEnabled = false;
         private bool _reactiveModeEnabled = false;
         private string? _savepointPath;
+        private IStateBackend? _stateBackend;
+        private readonly CheckpointConfig _checkpointConfig = new();
         private JobDefinition? _activeJob;
         private OperationCapture? _operationCapture;
 
@@ -366,6 +370,37 @@ namespace FlinkDotNet.DataStream
         public string? GetSavepointPath()
         {
             return _savepointPath;
+        }
+
+        /// <summary>
+        /// Sets the state backend for this execution environment.
+        /// The state backend determines how state is stored and checkpointed.
+        /// </summary>
+        /// <param name="stateBackend">The state backend to use</param>
+        /// <returns>This object</returns>
+        public StreamExecutionEnvironment SetStateBackend(IStateBackend stateBackend)
+        {
+            _stateBackend = stateBackend ?? throw new System.ArgumentNullException(nameof(stateBackend));
+            return this;
+        }
+
+        /// <summary>
+        /// Gets the configured state backend.
+        /// </summary>
+        /// <returns>The state backend, or null if not configured</returns>
+        public IStateBackend? GetStateBackend()
+        {
+            return _stateBackend;
+        }
+
+        /// <summary>
+        /// Gets the checkpoint configuration for this execution environment.
+        /// Use this to configure checkpoint storage, timeouts, and other checkpoint behavior.
+        /// </summary>
+        /// <returns>The checkpoint configuration</returns>
+        public CheckpointConfig GetCheckpointConfig()
+        {
+            return _checkpointConfig;
         }
 
         /// <summary>

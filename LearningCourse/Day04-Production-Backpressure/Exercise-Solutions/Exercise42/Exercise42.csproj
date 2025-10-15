@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Disable strict analyzers for learning projects -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsNotAsErrors />
+    <NoWarn>$(NoWarn);S1118;S2325;S3903;S1481;S1450;S6966;S1075;S3358;S4457;NU1605</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- FlinkDotNet Infrastructure -->
+    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
+    
+    <!-- Kafka Producer/Consumer - Use version compatible with FlinkDotNet.DataStream -->
+    <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
+    
+    <!-- Logging - Use version compatible with FlinkDotNet.DataStream -->
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+  </ItemGroup>
+
+</Project>

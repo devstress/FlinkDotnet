@@ -202,7 +202,7 @@ public class ExactlyOnceKafkaProducer : FlinkKafkaProducer<ProcessedPayment>
 
 ## Hands-On Exercises
 
-### Exercise 8.1: Banking Transaction System
+### Exercise 9.1: Banking Transaction System
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Build an exactly-once payment processing system that:
@@ -214,7 +214,7 @@ Build an exactly-once payment processing system that:
 **💡 Implementation Focus**: Financial transaction processing with exactly-once guarantees
 **🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise81/)**
 
-### Exercise 8.2: E-commerce Order Processing
+### Exercise 9.2: E-commerce Order Processing
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Create an order fulfillment system with:
@@ -226,7 +226,7 @@ Create an order fulfillment system with:
 **💡 Implementation Focus**: Distributed transaction management with exactly-once semantics
 **🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise82/)**
 
-### Exercise 8.3: Real-time Analytics with Exactly-Once
+### Exercise 9.3: Real-time Analytics with Exactly-Once
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Implement analytics aggregations that:
@@ -238,7 +238,7 @@ Implement analytics aggregations that:
 **💡 Implementation Focus**: Exactly-once semantics in real-time analytics scenarios
 **🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise83/)**
 
-### Exercise 8.4: Advanced Exactly-Once Patterns
+### Exercise 9.4: Advanced Exactly-Once Patterns
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Master advanced exactly-once techniques:

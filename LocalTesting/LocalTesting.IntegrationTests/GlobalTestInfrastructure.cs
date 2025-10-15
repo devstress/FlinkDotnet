@@ -39,6 +39,9 @@ public class GlobalTestInfrastructure
 
         try
         {
+            // Capture initial network state before infrastructure starts
+            await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("0-before-setup");
+            
             // Configure JAR path for Gateway
             ConfigureGatewayJarPath();
 
@@ -90,6 +93,9 @@ public class GlobalTestInfrastructure
                 var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                 Console.WriteLine($"🐳 Current containers:\n{allContainers}");
             }
+            
+            // Capture network state after containers are detected
+            await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("1-after-container-detection");
             
             // Wait for Kafka with retry mechanism
             Console.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
@@ -166,17 +172,26 @@ public class GlobalTestInfrastructure
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();
             
+            // Capture final network state after all infrastructure is ready
+            await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("2-infrastructure-ready");
+            
             Console.WriteLine($"🌍 ========================================");
             Console.WriteLine($"🌍 GLOBAL INFRASTRUCTURE READY in {sw.Elapsed.TotalSeconds:F1}s");
             Console.WriteLine($"🌍 ========================================");
             Console.WriteLine($"🌍 Kafka connection string: {KafkaConnectionString}");
             Console.WriteLine($"🌍 Infrastructure will remain active for all tests");
             Console.WriteLine($"🌍 Tests can now run in parallel with shared infrastructure");
+            
+            // Clean up old network diagnostic logs
+            NetworkDiagnostics.CleanupOldLogs();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Global infrastructure setup failed: {ex.Message}");
             Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+            
+            // Capture network diagnostics on failure
+            await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("error-setup-failed");
             
             // Capture container diagnostics and include in exception
             var diagnostics = await GetContainerDiagnosticsAsync();
@@ -192,6 +207,9 @@ public class GlobalTestInfrastructure
     public async Task GlobalTearDown()
     {
         Console.WriteLine("🌍 TEARDOWN: Cleaning up test infrastructure...");
+
+        // Capture network state before teardown
+        await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("3-before-teardown");
 
         if (AppHost != null)
         {

@@ -20,10 +20,10 @@ namespace LearningCourse.IntegrationTests;
 [Category("integration")]
 public class Day03Tests : LearningCourseTestBase
 {
-    private const string Exercise1Path = "Day03-AI-Stream-Processing/Exercise-Solutions/AIModelDDLMastery";
-    private const string Exercise2Path = "Day03-AI-Stream-Processing/Exercise-Solutions/FraudDetectionSystem";
-    private const string Exercise3Path = "Day03-AI-Stream-Processing/Exercise-Solutions/MLPredictTVFImplementation";
-    private const string Exercise4Path = "Day03-AI-Stream-Processing/Exercise-Solutions/MLNetIntegration";
+    private const string Exercise1Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise31";
+    private const string Exercise2Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise32";
+    private const string Exercise3Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise33";
+    private const string Exercise4Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise34";
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
@@ -40,7 +40,7 @@ public class Day03Tests : LearningCourseTestBase
     /// </summary>
     [Test]
     [Description("Exercise 1: Netflix AI Model DDL Mastery - Complete model lifecycle")]
-    public async Task Exercise1_AIModelDDLMastery_ShouldExecuteSuccessfully()
+    public async Task Exercise1_Exercise31_ShouldExecuteSuccessfully()
     {
         TestContext.WriteLine("================================================================================");
         TestContext.WriteLine("  Exercise 1: Netflix AI Model DDL Mastery");
@@ -91,7 +91,7 @@ public class Day03Tests : LearningCourseTestBase
     /// </summary>
     [Test]
     [Description("Exercise 2: Uber Fraud Detection Pipeline - ML_PREDICT TVF implementation")]
-    public async Task Exercise2_FraudDetectionSystem_ShouldExecuteSuccessfully()
+    public async Task Exercise2_Exercise32_ShouldExecuteSuccessfully()
     {
         PrintExercise2Header();
 
@@ -130,7 +130,7 @@ public class Day03Tests : LearningCourseTestBase
     /// </summary>
     [Test]
     [Description("Exercise 3: LinkedIn Behavioral Analytics - PTFs with managed state")]
-    public async Task Exercise3_MLPredictTVFImplementation_ShouldExecuteSuccessfully()
+    public async Task Exercise3_Exercise33_ShouldExecuteSuccessfully()
     {
         PrintExercise3Header();
 
@@ -169,7 +169,7 @@ public class Day03Tests : LearningCourseTestBase
     /// </summary>
     [Test]
     [Description("Exercise 4: Amazon Product Recommendations - VARIANT types for dynamic AI")]
-    public async Task Exercise4_MLNetIntegration_ShouldExecuteSuccessfully()
+    public async Task Exercise4_Exercise34_ShouldExecuteSuccessfully()
     {
         PrintExercise4Header();
 
@@ -198,12 +198,20 @@ public class Day03Tests : LearningCourseTestBase
     {
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise") || output.Contains("AI") || output.Contains("Model"), "Exercise output not found"),
-            ["AI/ML Processing"] = (output.Contains("model", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("AI", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("ML", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("machine learning", StringComparison.OrdinalIgnoreCase), "AI/ML processing not found"),
-            ["Execution Completed"] = (output.Contains("COMPLETED") || output.Contains("completed successfully") || output.Contains("SUCCESS") || output.Contains("✅") || output.Contains("finished"), "Exercise did not complete successfully")
+            ["Infrastructure Ready"] = (output.Contains("Kafka is ready") || output.Contains("Flink cluster is healthy"),
+                "Infrastructure verification not found"),
+            ["Topics Created"] = (output.Contains("Topics created") || output.Contains("Topics already exist") || output.Contains("ai-model-registrations"),
+                "Kafka topic creation not found"),
+            ["Flink Job Submitted"] = (output.Contains("Submitting Flink validation job") || output.Contains("validation job"),
+                "Flink job submission not found"),
+            ["Models Registered"] = (output.Contains("Registered") && (output.Contains("fraud_detection") || output.Contains("sentiment_analysis")),
+                "Model registration through Kafka not found"),
+            ["Validation Results"] = (output.Contains("Validation Results") || output.Contains("validated"),
+                "Model validation results not found"),
+            ["Real Infrastructure"] = (!output.Contains("Task.Delay") && !output.Contains("simulation") && !output.Contains("ConcurrentQueue"),
+                "Simulation code detected - must use real infrastructure"),
+            ["Execution Completed"] = (output.Contains("COMPLETED SUCCESSFULLY") || output.Contains("completed successfully") || output.Contains("SUCCESS"),
+                "Exercise did not complete successfully")
         };
     }
 
@@ -228,14 +236,64 @@ public class Day03Tests : LearningCourseTestBase
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise3ValidationChecks(string output)
     {
+        // STRICT validation for Exercise33: Must use real Kafka/FlinkDotNet infrastructure
+        // Following WI38 requirements and update-LearningCourse.md guidance
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise") || output.Contains("Processing") || output.Contains("Starting"), "Exercise output not found"),
-            ["ML/AI Processing"] = (output.Contains("model", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("predict", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("ML", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("analytics", StringComparison.OrdinalIgnoreCase), "ML/AI processing not found"),
-            ["Execution Completed"] = (output.Contains("COMPLETED") || output.Contains("completed successfully") || output.Contains("SUCCESS") || output.Contains("✅") || output.Contains("finished"), "Exercise did not complete successfully")
+            ["Infrastructure Ready"] = (
+                output.Contains("Kafka is ready", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink cluster is healthy", StringComparison.OrdinalIgnoreCase),
+                "Real infrastructure verification not found - Exercise33 must validate Kafka/Flink"
+            ),
+            ["Kafka Topics Created"] = (
+                output.Contains("Topics created", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Topics already exist", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("fraud-", StringComparison.OrdinalIgnoreCase),
+                "Kafka topic creation not found - Exercise33 must create real Kafka topics"
+            ),
+            ["ML Model Training"] = (
+                output.Contains("ML.NET", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Training", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("model", StringComparison.OrdinalIgnoreCase),
+                "ML.NET model training not found - Exercise33 must train real ML models"
+            ),
+            ["FlinkDotNet Job Submission"] = (
+                output.Contains("Flink job", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Submitting", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("JobId", StringComparison.OrdinalIgnoreCase),
+                "FlinkDotNet job submission not found - Exercise33 must submit real Flink jobs"
+            ),
+            ["Real Kafka Producer"] = (
+                output.Contains("Producing", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("transactions produced", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("messages produced", StringComparison.OrdinalIgnoreCase),
+                "Real Kafka producer not found - Exercise33 must produce messages to Kafka"
+            ),
+            ["Real Kafka Consumer"] = (
+                output.Contains("Consuming", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("predictions consumed", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("results consumed", StringComparison.OrdinalIgnoreCase),
+                "Real Kafka consumer not found - Exercise33 must consume predictions from Kafka"
+            ),
+            ["Ensemble Predictions"] = (
+                output.Contains("ensemble", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("multi-model", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("voting", StringComparison.OrdinalIgnoreCase),
+                "Ensemble voting pattern not found - Exercise33 must demonstrate multi-model ensemble"
+            ),
+            ["NO Simulation Patterns"] = (
+                !output.Contains("Task.Delay") &&
+                !output.Contains("ConcurrentQueue") &&
+                !output.Contains("simulation", StringComparison.OrdinalIgnoreCase) &&
+                !output.Contains("IAsyncEnumerable", StringComparison.OrdinalIgnoreCase),
+                "CRITICAL: Simulation patterns detected - Exercise33 MUST use real Kafka/FlinkDotNet (no Task.Delay, ConcurrentQueue, or IAsyncEnumerable)"
+            ),
+            ["Execution Completed"] = (
+                output.Contains("COMPLETED SUCCESSFULLY", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase),
+                "Exercise did not complete successfully"
+            )
         };
     }
 

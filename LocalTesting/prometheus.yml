@@ -1,0 +1,29 @@
+# Prometheus configuration for LearningCourse observability stack
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Flink JobManager metrics
+  - job_name: 'flink-jobmanager'
+    static_configs:
+      - targets: ['flink-jobmanager:8081']
+    metrics_path: '/metrics'
+
+  # Flink TaskManager metrics
+  - job_name: 'flink-taskmanager'
+    static_configs:
+      - targets: ['flink-taskmanager:8081']
+    metrics_path: '/metrics'
+
+  # Gateway metrics
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['flink-job-gateway:8080']
+    metrics_path: '/metrics'
+
+  # Kafka metrics (if exposed)
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:9092']
+    metrics_path: '/metrics'

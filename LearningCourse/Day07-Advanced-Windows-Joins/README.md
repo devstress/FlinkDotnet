@@ -79,7 +79,7 @@ var enrichedStream = dataStream
 
 ## Hands-On Exercises
 
-### Exercise 6.1: E-commerce Order Enrichment
+### Exercise 7.1: E-commerce Order Enrichment
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Build a real-time order processing system that joins:
@@ -91,7 +91,7 @@ Build a real-time order processing system that joins:
 **💡 Implementation Focus**: Multi-stream temporal joins for real-time order processing
 **🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise61/)**
 
-### Exercise 6.2: Financial Fraud Detection Windows
+### Exercise 7.2: Financial Fraud Detection Windows
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Implement sliding windows for fraud detection:
@@ -103,7 +103,7 @@ Implement sliding windows for fraud detection:
 **💡 Implementation Focus**: Advanced windowing strategies for fraud detection patterns
 **🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise62/)**
 
-### Exercise 6.3: IoT Sensor Data Correlation
+### Exercise 7.3: IoT Sensor Data Correlation
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Create temporal joins for IoT manufacturing:
@@ -115,7 +115,7 @@ Create temporal joins for IoT manufacturing:
 **💡 Implementation Focus**: IoT data correlation with precise temporal alignment
 **🔧 [Working Code & Instructions →](Exercise-Solutions/Exercise63/)**
 
-### Exercise 6.4: Advanced Windowing Optimization
+### Exercise 7.4: Advanced Windowing Optimization
 **📁 [Complete Solution Available →](Exercise-Solutions/)**
 
 Master advanced windowing performance techniques:

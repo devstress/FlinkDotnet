@@ -18,10 +18,10 @@ namespace LearningCourse.IntegrationTests;
 [Category("integration")]
 public class Day09Tests : LearningCourseTestBase
 {
-    private const string Exercise1Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise81";
-    private const string Exercise2Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise82";
-    private const string Exercise3Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise83";
-    private const string Exercise4Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise84";
+    private const string Exercise1Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise91";
+    private const string Exercise2Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise92";
+    private const string Exercise3Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise93";
+    private const string Exercise4Path = "Day09-Exactly-Once-Semantics/Exercise-Solutions/Exercise94";
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
 
     [Test]

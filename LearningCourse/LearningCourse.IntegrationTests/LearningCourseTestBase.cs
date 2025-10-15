@@ -33,6 +33,33 @@ public abstract class LearningCourseTestBase
     /// Dynamically allocated host port mapped to Kafka's container port.
     /// </summary>
     public static string? KafkaHostBootstrapServers { get; private set; }
+    
+    /// <summary>
+    /// Temporal gRPC endpoint for workflow execution (e.g., "localhost:43210").
+    /// Dynamically allocated host port mapped to Temporal's container port 7233.
+    /// </summary>
+    public static string? TemporalHostEndpoint { get; private set; }
+    
+    /// <summary>
+    /// Redis endpoint for state management (e.g., "localhost:43211").
+    /// Dynamically allocated host port mapped to Redis's container port 6379.
+    /// Only available when LEARNINGCOURSE=true.
+    /// </summary>
+    public static string? RedisHostEndpoint { get; private set; }
+    
+    /// <summary>
+    /// Prometheus metrics endpoint (e.g., "http://localhost:43212").
+    /// Dynamically allocated host port mapped to Prometheus's container port 9090.
+    /// Only available when LEARNINGCOURSE=true.
+    /// </summary>
+    public static string? PrometheusHostEndpoint { get; private set; }
+    
+    /// <summary>
+    /// Grafana dashboard endpoint (e.g., "http://localhost:43213").
+    /// Dynamically allocated host port mapped to Grafana's container port 3000.
+    /// Only available when LEARNINGCOURSE=true.
+    /// </summary>
+    public static string? GrafanaHostEndpoint { get; private set; }
 
     /// <summary>
     /// Start LocalTesting AppHost once for all tests.
@@ -49,6 +76,13 @@ public abstract class LearningCourseTestBase
                 TestContext.WriteLine("✅ Infrastructure already set up, skipping...");
                 return;
             }
+            
+            // Set LEARNINGCOURSE=true to enable Redis and Observability infrastructure
+            // Required for:
+            // - Day15 exercises (Exercise151-154): Redis for state management
+            // - Day05 Exercise51: Prometheus/Grafana for observability metrics
+            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
+            TestContext.WriteLine("📚 Set LEARNINGCOURSE=true for Redis and Observability infrastructure");
             
             TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
         TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
@@ -157,13 +191,29 @@ public abstract class LearningCourseTestBase
         
         string? kafkaFlinkIp = null;
         string? kafkaHostEndpoint = null;
+        string? temporalEndpoint = null;
+        string? redisEndpoint = null;
+        string? prometheusEndpoint = null;
+        string? grafanaEndpoint = null;
         bool flinkReady = false;
+        bool temporalReady = false;
+        
+        // Check if LearningCourse mode is enabled for optional infrastructure
+        var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
         
         while (stopwatch.Elapsed < maxWait)
         {
-            var discovered = await TryDiscoverEndpointsAsync(kafkaFlinkIp, kafkaHostEndpoint, stopwatch);
+            var discovered = await TryDiscoverEndpointsAsync(
+                kafkaFlinkIp, kafkaHostEndpoint, temporalEndpoint,
+                redisEndpoint, prometheusEndpoint, grafanaEndpoint,
+                isLearningCourse, stopwatch);
+            
             kafkaFlinkIp = discovered.flinkIp ?? kafkaFlinkIp;
             kafkaHostEndpoint = discovered.hostEndpoint ?? kafkaHostEndpoint;
+            temporalEndpoint = discovered.temporal ?? temporalEndpoint;
+            redisEndpoint = discovered.redis ?? redisEndpoint;
+            prometheusEndpoint = discovered.prometheus ?? prometheusEndpoint;
+            grafanaEndpoint = discovered.grafana ?? grafanaEndpoint;
             
             // Also check if Flink is ready (not just Kafka)
             if (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
@@ -175,12 +225,40 @@ public abstract class LearningCourseTestBase
                 }
             }
             
-            // All infrastructure must be ready: Kafka AND Flink
-            if (kafkaFlinkIp != null && kafkaHostEndpoint != null && flinkReady)
+            // Check if Temporal is ready (not just endpoint discovered)
+            if (temporalEndpoint != null && !temporalReady)
+            {
+                TestContext.WriteLine($"🔍 Polling Temporal health (attempt at {stopwatch.Elapsed.TotalSeconds:F1}s)...");
+                temporalReady = await IsTemporalHealthyAsync(temporalEndpoint);
+                if (temporalReady)
+                {
+                    TestContext.WriteLine($"✅ Temporal server is healthy and namespace ready (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+                else
+                {
+                    TestContext.WriteLine($"⏳ Temporal not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
+                }
+            }
+            
+            // Core infrastructure must be ready: Kafka, Flink, and Temporal
+            // LearningCourse infrastructure (Redis, Prometheus, Grafana) is optional
+            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && temporalEndpoint != null && flinkReady && temporalReady;
+            var learningCourseReady = !isLearningCourse || (redisEndpoint != null && prometheusEndpoint != null && grafanaEndpoint != null);
+            
+            if (coreReady && learningCourseReady)
             {
                 KafkaFlinkBootstrapServers = kafkaFlinkIp;
                 KafkaHostBootstrapServers = kafkaHostEndpoint;
+                TemporalHostEndpoint = temporalEndpoint;
+                RedisHostEndpoint = redisEndpoint;
+                PrometheusHostEndpoint = prometheusEndpoint;
+                GrafanaHostEndpoint = grafanaEndpoint;
+                
                 TestContext.WriteLine($"✅ All infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {(maxWait - stopwatch.Elapsed).TotalSeconds:F1}s)");
+                if (isLearningCourse)
+                {
+                    TestContext.WriteLine($"   📚 LearningCourse infrastructure: Redis={redisEndpoint}, Prometheus={prometheusEndpoint}, Grafana={grafanaEndpoint}");
+                }
                 return;
             }
             
@@ -191,7 +269,10 @@ public abstract class LearningCourseTestBase
             $"Infrastructure not ready within {maxWait.TotalSeconds}s. " +
             $"KafkaFlinkIp: {KafkaFlinkBootstrapServers ?? "null"}, " +
             $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
-            $"FlinkReady: {flinkReady}");
+            $"TemporalEndpoint: {TemporalHostEndpoint ?? "null"}, " +
+            $"FlinkReady: {flinkReady}, " +
+            $"TemporalReady: {temporalReady}" +
+            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"}, Prometheus: {PrometheusHostEndpoint ?? "null"}, Grafana: {GrafanaHostEndpoint ?? "null"}" : ""));
     }
     
     /// <summary>
@@ -212,18 +293,100 @@ public abstract class LearningCourseTestBase
     }
     
     /// <summary>
-    /// Try to discover Kafka endpoints with logging
+    /// Check if Temporal server is healthy and ready to accept workflow connections.
+    /// Verifies both TCP connectivity AND that the "default" namespace is created and ready.
+    /// This ensures Temporal has completed initialization including namespace registration.
     /// </summary>
-    private static async Task<(string? flinkIp, string? hostEndpoint)> TryDiscoverEndpointsAsync(
+    private static async Task<bool> IsTemporalHealthyAsync(string temporalEndpoint)
+    {
+        TestContext.WriteLine($"🔍 [Temporal Health] Starting check for endpoint: {temporalEndpoint}");
+        
+        try
+        {
+            // Step 1: TCP connectivity check (fast pre-check)
+            TestContext.WriteLine($"🔍 [Temporal Health] Step 1: TCP connectivity test");
+            var parts = temporalEndpoint.Split(':');
+            if (parts.Length != 2 || !int.TryParse(parts[1], out var port))
+            {
+                TestContext.WriteLine($"❌ [Temporal Health] Invalid endpoint format: {temporalEndpoint}");
+                return false;
+            }
+            
+            var host = parts[0];
+            
+            // Verify TCP connection to Temporal gRPC port
+            using var tcpClient = new System.Net.Sockets.TcpClient();
+            var connectTask = tcpClient.ConnectAsync(host, port);
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(2));
+            
+            var completedTask = await Task.WhenAny(connectTask, timeoutTask);
+            
+            if (completedTask != connectTask || !tcpClient.Connected)
+            {
+                TestContext.WriteLine($"❌ [Temporal Health] TCP connection failed to {host}:{port}");
+                return false; // TCP connection failed
+            }
+            
+            TestContext.WriteLine($"✅ [Temporal Health] TCP connection successful to {host}:{port}");
+            
+            // Step 2: Namespace verification (verify "default" namespace exists)
+            // This ensures Temporal auto-setup has completed namespace creation
+            TestContext.WriteLine($"🔍 [Temporal Health] Step 2: Namespace verification for 'default'");
+            var client = await Temporalio.Client.TemporalClient.ConnectAsync(
+                new Temporalio.Client.TemporalClientConnectOptions
+                {
+                    TargetHost = temporalEndpoint,
+                    Namespace = "default"
+                });
+            
+            // If we successfully connected with namespace "default", it exists and is ready
+            // Note: TemporalClient doesn't implement IDisposable, so no using statement needed
+            TestContext.WriteLine($"✅ [Temporal Health] Successfully connected with namespace 'default' - Temporal is READY");
+            return true;
+        }
+        catch (Temporalio.Exceptions.RpcException ex) when (ex.Message.Contains("Namespace default is not found"))
+        {
+            // Namespace doesn't exist yet - Temporal still initializing
+            TestContext.WriteLine($"⏳ [Temporal Health] Namespace 'default' not found yet: {ex.Message}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Other connection errors
+            TestContext.WriteLine($"❌ [Temporal Health] Connection error: {ex.GetType().Name}: {ex.Message}");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Try to discover all infrastructure endpoints with logging
+    /// </summary>
+    private static async Task<(
+        string? flinkIp,
+        string? hostEndpoint,
+        string? temporal,
+        string? redis,
+        string? prometheus,
+        string? grafana)> TryDiscoverEndpointsAsync(
         string? currentFlinkIp,
         string? currentHostEndpoint,
+        string? currentTemporal,
+        string? currentRedis,
+        string? currentPrometheus,
+        string? currentGrafana,
+        bool isLearningCourse,
         Stopwatch stopwatch)
     {
         try
         {
             string? flinkIp = currentFlinkIp;
             string? hostEndpoint = currentHostEndpoint;
+            string? temporal = currentTemporal;
+            string? redis = currentRedis;
+            string? prometheus = currentPrometheus;
+            string? grafana = currentGrafana;
             
+            // Kafka discovery (always required)
             if (flinkIp == null)
             {
                 flinkIp = await DockerInfrastructure.GetKafkaContainerIpAsync();
@@ -242,11 +405,52 @@ public abstract class LearningCourseTestBase
                 }
             }
             
-            return (flinkIp, hostEndpoint);
+            // Temporal discovery (always required)
+            if (temporal == null)
+            {
+                temporal = await DockerInfrastructure.GetTemporalHostEndpointAsync();
+                if (temporal != null)
+                {
+                    TestContext.WriteLine($"✅ Temporal endpoint discovered: {temporal} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                }
+            }
+            
+            // LearningCourse infrastructure discovery (only when LEARNINGCOURSE=true)
+            if (isLearningCourse)
+            {
+                if (redis == null)
+                {
+                    redis = await DockerInfrastructure.GetRedisHostEndpointAsync();
+                    if (redis != null)
+                    {
+                        TestContext.WriteLine($"✅ Redis endpoint discovered: {redis} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    }
+                }
+                
+                if (prometheus == null)
+                {
+                    prometheus = await DockerInfrastructure.GetPrometheusHostEndpointAsync();
+                    if (prometheus != null)
+                    {
+                        TestContext.WriteLine($"✅ Prometheus endpoint discovered: {prometheus} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    }
+                }
+                
+                if (grafana == null)
+                {
+                    grafana = await DockerInfrastructure.GetGrafanaHostEndpointAsync();
+                    if (grafana != null)
+                    {
+                        TestContext.WriteLine($"✅ Grafana endpoint discovered: {grafana} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                    }
+                }
+            }
+            
+            return (flinkIp, hostEndpoint, temporal, redis, prometheus, grafana);
         }
         catch
         {
-            return (null, null);
+            return (null, null, null, null, null, null);
         }
     }
 
@@ -713,6 +917,18 @@ public abstract class LearningCourseTestBase
         psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
         psi.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
         
+        // Set TEMPORAL_ENDPOINT for Day06 Temporal workflow exercises
+        if (!string.IsNullOrEmpty(TemporalHostEndpoint))
+        {
+            psi.Environment["TEMPORAL_ENDPOINT"] = TemporalHostEndpoint;
+        }
+        
+        // Set REDIS_ENDPOINT for Day15 exercises that use Redis
+        if (!string.IsNullOrEmpty(RedisHostEndpoint))
+        {
+            psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
+        }
+        
         // Set LOG_FILE_PATH to ensure all logs go to LocalTesting/test-logs/
         // Use absolute path to ensure logs are written to the correct location
         var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
@@ -720,6 +936,14 @@ public abstract class LearningCourseTestBase
         
         TestContext.WriteLine($"🔧 Setting KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers} for exercise (host access)");
         TestContext.WriteLine($"🔧 Setting KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers} for Flink jobs (container access)");
+        if (!string.IsNullOrEmpty(TemporalHostEndpoint))
+        {
+            TestContext.WriteLine($"🔧 Setting TEMPORAL_ENDPOINT={TemporalHostEndpoint} for Temporal workflows");
+        }
+        if (!string.IsNullOrEmpty(RedisHostEndpoint))
+        {
+            TestContext.WriteLine($"🔧 Setting REDIS_ENDPOINT={RedisHostEndpoint} for Redis state management");
+        }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 
         using var process = Process.Start(psi);

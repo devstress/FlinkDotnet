@@ -11,7 +11,7 @@ namespace LearningCourse.IntegrationTests;
 /// - Exercise 1: Netflix Global Rate Limiting Controller - Epoch-based budget minting
 /// - Exercise 2: Uber Regional Redis Coordination - Atomic budget operations
 /// - Exercise 3: LinkedIn High-Performance Gateway - Local token buckets and hot path
-/// - Exercise 4: Chaos Engineering Production Validation - Compound failure scenarios
+/// - Exercise 4: Production Deployment Strategies - Blue-Green, Canary, Rolling Update
 /// - Exercise 5: Simple BackpressureQueue Implementation - Alternative approach comparison
 ///
 /// Implementation: Uses FlinkDotNet with .NET Aspire for infrastructure
@@ -21,11 +21,11 @@ namespace LearningCourse.IntegrationTests;
 [Category("integration")]
 public class Day04Tests : LearningCourseTestBase
 {
-    private const string Exercise1Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise31";
-    private const string Exercise2Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise32";
-    private const string Exercise3Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise33";
-    private const string Exercise4Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise34";
-    private const string Exercise5Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise35";
+    private const string Exercise1Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise41";
+    private const string Exercise2Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise42";
+    private const string Exercise3Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise43";
+    private const string Exercise4Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise44";
+    private const string Exercise5Path = "Day04-Production-Backpressure/Exercise-Solutions/Exercise45";
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
@@ -158,20 +158,20 @@ public class Day04Tests : LearningCourseTestBase
     }
 
     /// <summary>
-    /// Exercise 4: Chaos Engineering Production Validation (60 minutes)
+    /// Exercise 4: Production Deployment Strategies (90 minutes)
     ///
     /// This test validates:
-    /// - Combined failure scenarios
-    /// - Fail-closed behavior verification
-    /// - End-to-end flow control validation
-    /// - Production monitoring during failures
-    /// - Netflix/Uber/LinkedIn resilience patterns
+    /// - Blue-Green deployment with instant traffic switching
+    /// - Canary deployment with progressive rollout (1% → 5% → 25% → 100%)
+    /// - Rolling update with batch-wise instance updates
+    /// - Health check validation at deployment gates
+    /// - Real Kafka/FlinkDotNet deployment orchestration
     ///
-    /// Expected: Production-validated resilience matching enterprise standards
+    /// Expected: Production-grade deployment strategies with real streaming infrastructure
     /// </summary>
     [Test]
-    [Description("Exercise 4: Chaos Engineering - Compound failure validation")]
-    public async Task Exercise4_ChaosEngineeringValidation_ShouldExecuteSuccessfully()
+    [Description("Exercise 4: Production Deployment - Blue-Green, Canary, Rolling Update")]
+    public async Task Exercise4_ProductionDeployment_ShouldExecuteSuccessfully()
     {
         PrintExercise4Header();
 
@@ -236,71 +236,338 @@ public class Day04Tests : LearningCourseTestBase
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise1ValidationChecks(string output)
     {
+        // STRICT validation for Exercise41: Must use real Kafka/FlinkDotNet infrastructure
+        // Following WI39 requirements - Netflix-style adaptive backpressure with real streaming
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise 3.1", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("Netflix", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("Starting Exercise", StringComparison.OrdinalIgnoreCase),
-                                   "Exercise 3.1 not found"),
-            ["Backpressure Implementation"] = (output.Contains("backpressure", StringComparison.OrdinalIgnoreCase) ||
-                                              output.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
-                                              output.Contains("adaptive", StringComparison.OrdinalIgnoreCase),
-                                              "Backpressure implementation not found"),
-            ["Netflix Patterns"] = (output.Contains("Netflix", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("streaming", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("quality", StringComparison.OrdinalIgnoreCase),
-                                   "Netflix patterns not found"),
-            ["Execution Completed"] = (output.Contains("COMPLETED", StringComparison.OrdinalIgnoreCase) ||
-                                      output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
-                                      output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase) ||
-                                      output.Contains("✅"),
-                                      "Exercise did not complete successfully")
+            ["Infrastructure Ready"] = (
+                output.Contains("Kafka is ready", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink cluster is healthy", StringComparison.OrdinalIgnoreCase),
+                "Real infrastructure verification not found - Exercise41 must validate Kafka/Flink"
+            ),
+            ["Kafka Topics Created"] = (
+                output.Contains("Topics created", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Topics already exist", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("streaming-requests", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("streaming-sessions", StringComparison.OrdinalIgnoreCase),
+                "Kafka topic creation not found - Exercise41 must create real Kafka topics"
+            ),
+            ["FlinkDotNet Job Submission"] = (
+                output.Contains("Flink job", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Submitting", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("JobId", StringComparison.OrdinalIgnoreCase),
+                "FlinkDotNet job submission not found - Exercise41 must submit real Flink job"
+            ),
+            ["Messages Produced"] = (
+                output.Contains("produced", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("requests generated", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("transactions produced", StringComparison.OrdinalIgnoreCase),
+                "Real Kafka producer not found - Exercise41 must produce streaming requests"
+            ),
+            ["Quality Levels"] = (
+                output.Contains("Ultra4K", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("HD1080p", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("HD720p", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("SD480p", StringComparison.OrdinalIgnoreCase),
+                "Quality levels not demonstrated - Exercise41 must show Netflix quality adaptation"
+            ),
+            ["Backpressure Active"] = (
+                output.Contains("Backpressure", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("quality adjust", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("degradat", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("adaptive", StringComparison.OrdinalIgnoreCase),
+                "Adaptive backpressure not demonstrated - Exercise41 must show quality adjustments"
+            ),
+            ["Sessions Consumed"] = (
+                output.Contains("sessions consumed", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("consumed", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("results", StringComparison.OrdinalIgnoreCase),
+                "Streaming sessions not consumed - Exercise41 must consume from Kafka"
+            ),
+            ["Job Cleanup"] = (
+                output.Contains("Cancelling", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("job cancelled", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Cleaning up", StringComparison.OrdinalIgnoreCase),
+                "Flink job cleanup not performed - Exercise41 must cancel jobs properly"
+            ),
+            ["NO Simulation Patterns"] = (
+                !output.Contains("ConcurrentQueue") &&
+                !output.Contains("BackgroundService") &&
+                !output.Contains("Task.Delay") &&
+                !output.Contains("IAsyncEnumerable"),
+                "CRITICAL: Simulation patterns detected - Exercise41 MUST use real Kafka/FlinkDotNet (no ConcurrentQueue, BackgroundService, Task.Delay)"
+            ),
+            ["Execution Completed"] = (
+                output.Contains("COMPLETED SUCCESSFULLY", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase),
+                "Exercise did not complete successfully"
+            )
         };
     }
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise2ValidationChecks(string output)
     {
+        // STRICT validation for Exercise42: Must use real Kafka/FlinkDotNet infrastructure
+        // Following WI40 requirements - Multi-tier rate limiting with real streaming
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise 3.2", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("Multi-Tier", StringComparison.OrdinalIgnoreCase) ||
-                                   output.Contains("Starting Exercise", StringComparison.OrdinalIgnoreCase),
-                                   "Exercise 3.2 not found"),
-            ["Industry Patterns"] = (output.Contains("Twitter", StringComparison.OrdinalIgnoreCase) ||
-                                    output.Contains("Uber", StringComparison.OrdinalIgnoreCase) ||
-                                    output.Contains("Production Patterns", StringComparison.OrdinalIgnoreCase),
-                                    "Industry patterns not found"),
-            ["Rate Limiting"] = (output.Contains("rate", StringComparison.OrdinalIgnoreCase) ||
-                                output.Contains("limit", StringComparison.OrdinalIgnoreCase) ||
-                                output.Contains("tier", StringComparison.OrdinalIgnoreCase),
-                                "Rate limiting not found"),
-            ["Execution Completed"] = (output.Contains("COMPLETED", StringComparison.OrdinalIgnoreCase) ||
-                                      output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
-                                      output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase) ||
-                                      output.Contains("✅"),
-                                      "Exercise did not complete successfully")
+            ["Infrastructure Ready"] = (
+                output.Contains("Kafka is ready", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink cluster is healthy", StringComparison.OrdinalIgnoreCase),
+                "Real infrastructure verification not found - Exercise42 must validate Kafka/Flink"
+            ),
+            ["Kafka Topics Created"] = (
+                output.Contains("Topics created", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Topics already exist", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("client-requests", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("gateway-filtered", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("application-filtered", StringComparison.OrdinalIgnoreCase),
+                "Kafka topic creation not found - Exercise42 must create multi-tier topics"
+            ),
+            ["FlinkDotNet Jobs Submission"] = (
+                output.Contains("Gateway Tier", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Application Tier", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Database Tier", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink job", StringComparison.OrdinalIgnoreCase),
+                "FlinkDotNet job submission not found - Exercise42 must submit three-tier Flink jobs"
+            ),
+            ["Messages Produced"] = (
+                output.Contains("produced", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("requests generated", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("client requests", StringComparison.OrdinalIgnoreCase),
+                "Real Kafka producer not found - Exercise42 must produce client requests"
+            ),
+            ["User Tiers"] = (
+                output.Contains("Free", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Premium", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Enterprise", StringComparison.OrdinalIgnoreCase),
+                "User tiers not demonstrated - Exercise42 must show Free/Premium/Enterprise tier handling"
+            ),
+            ["Rate Limiting Tiers"] = (
+                output.Contains("Gateway", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Application", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Database", StringComparison.OrdinalIgnoreCase),
+                "Multi-tier rate limiting not demonstrated - Exercise42 must show all three tiers"
+            ),
+            ["Industry Patterns"] = (
+                output.Contains("Twitter", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Uber", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Stripe", StringComparison.OrdinalIgnoreCase),
+                "Industry patterns not referenced - Exercise42 must demonstrate Twitter/Uber/Stripe patterns"
+            ),
+            ["Results Consumed"] = (
+                output.Contains("consumed", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("processed requests", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("results", StringComparison.OrdinalIgnoreCase),
+                "Processed requests not consumed - Exercise42 must consume from final Kafka topic"
+            ),
+            ["Job Cleanup"] = (
+                output.Contains("Cancelling", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("job cancelled", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Cleaning up", StringComparison.OrdinalIgnoreCase),
+                "Flink job cleanup not performed - Exercise42 must cancel jobs properly"
+            ),
+            ["NO Simulation Patterns"] = (
+                !output.Contains("ConcurrentQueue") &&
+                !output.Contains("ConcurrentDictionary") &&
+                !output.Contains("BackgroundService") &&
+                !output.Contains("Task.Delay") &&
+                !output.Contains("SemaphoreSlim"),
+                "CRITICAL: Simulation patterns detected - Exercise42 MUST use real Kafka/FlinkDotNet (no ConcurrentQueue, ConcurrentDictionary, BackgroundService, Task.Delay, SemaphoreSlim)"
+            ),
+            ["Execution Completed"] = (
+                output.Contains("COMPLETED SUCCESSFULLY", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase),
+                "Exercise did not complete successfully"
+            )
         };
     }
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise3ValidationChecks(string output)
     {
+        // STRICT validation for Exercise43: Must use real Kafka/FlinkDotNet infrastructure
+        // Following WI41 requirements - Performance testing with real streaming metrics
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise 3.3") || output.Contains("Performance Testing"), "Exercise 3.3 not found"),
-            ["Performance Testing"] = (output.Contains("performance") || output.Contains("testing") || output.Contains("load"), "Performance testing not found"),
-            ["Industry Patterns"] = (output.Contains("Netflix") || output.Contains("Uber") || output.Contains("Twitter"), "Industry patterns not found"),
-            ["Execution Completed"] = (output.Contains("COMPLETED") || output.Contains("completed successfully") || output.Contains("SUCCESS") || output.Contains("✅"), "Exercise did not complete successfully")
+            ["Infrastructure Ready"] = (
+                output.Contains("Kafka is ready", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink cluster is healthy", StringComparison.OrdinalIgnoreCase),
+                "Real infrastructure verification not found - Exercise43 must validate Kafka/Flink"
+            ),
+            ["Kafka Topics Created"] = (
+                output.Contains("Topics created", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Topics already exist", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("performance-load-input", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("performance-latency-measurements", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("performance-throughput-metrics", StringComparison.OrdinalIgnoreCase),
+                "Kafka topic creation not found - Exercise43 must create performance testing topics"
+            ),
+            ["FlinkDotNet Jobs Submission"] = (
+                output.Contains("LoadGenerator", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("LatencyMeasurement", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("ThroughputBenchmark", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink job", StringComparison.OrdinalIgnoreCase),
+                "FlinkDotNet job submission not found - Exercise43 must submit performance testing jobs"
+            ),
+            ["Load Patterns"] = (
+                output.Contains("Constant", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Ramp", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Spike", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Stress", StringComparison.OrdinalIgnoreCase),
+                "Load patterns not demonstrated - Exercise43 must show constant/ramp/spike/stress patterns"
+            ),
+            ["Latency Percentiles"] = (
+                output.Contains("P50", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("P95", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("P99", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("percentile", StringComparison.OrdinalIgnoreCase),
+                "Latency percentiles not found - Exercise43 must calculate P50/P95/P99 latencies"
+            ),
+            ["Throughput Metrics"] = (
+                output.Contains("throughput", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("msg/sec", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("ops/sec", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("messages per second", StringComparison.OrdinalIgnoreCase),
+                "Throughput metrics not found - Exercise43 must measure messages/sec"
+            ),
+            ["Industry Scenarios"] = (
+                output.Contains("Netflix", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Uber", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Twitter", StringComparison.OrdinalIgnoreCase),
+                "Industry scenarios not demonstrated - Exercise43 must show Netflix/Uber/Twitter patterns"
+            ),
+            ["Industry Benchmarks"] = (
+                output.Contains("benchmark", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("100ms", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("23ms", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("50ms", StringComparison.OrdinalIgnoreCase),
+                "Industry benchmarks not found - Exercise43 must reference real industry standards"
+            ),
+            ["Results Consumed"] = (
+                output.Contains("consumed", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("results", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("metrics", StringComparison.OrdinalIgnoreCase),
+                "Performance results not consumed - Exercise43 must consume from Kafka results topic"
+            ),
+            ["Job Cleanup"] = (
+                output.Contains("Cancelling", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("job cancelled", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Cleaning up", StringComparison.OrdinalIgnoreCase),
+                "Flink job cleanup not performed - Exercise43 must cancel jobs properly"
+            ),
+            ["NO Simulation Patterns"] = (
+                !output.Contains("ConcurrentQueue") &&
+                !output.Contains("ConcurrentDictionary") &&
+                !output.Contains("BackgroundService") &&
+                !output.Contains("Task.Delay", StringComparison.OrdinalIgnoreCase),
+                "CRITICAL: Simulation patterns detected - Exercise43 MUST use real Kafka/FlinkDotNet (no ConcurrentQueue, ConcurrentDictionary, BackgroundService, Task.Delay for load generation)"
+            ),
+            ["Execution Completed"] = (
+                output.Contains("COMPLETED SUCCESSFULLY", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase),
+                "Exercise did not complete successfully"
+            )
         };
     }
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise4ValidationChecks(string output)
     {
+        // STRICT validation for Exercise44: Must use real Kafka/FlinkDotNet infrastructure
+        // Following WI42 requirements - Production deployment with real streaming orchestration
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise 3.4") || output.Contains("Production Deployment"), "Exercise 3.4 not found"),
-            ["Deployment Patterns"] = (output.Contains("deployment") || output.Contains("Blue-green") || output.Contains("Canary"), "Deployment patterns not found"),
-            ["Resilience"] = (output.Contains("resilience") || output.Contains("Circuit breaker") || output.Contains("health"), "Resilience patterns not found"),
-            ["Execution Completed"] = (output.Contains("COMPLETED") || output.Contains("completed successfully") || output.Contains("SUCCESS") || output.Contains("✅"), "Exercise did not complete successfully")
+            ["Infrastructure Ready"] = (
+                output.Contains("Kafka is ready", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink cluster is healthy", StringComparison.OrdinalIgnoreCase),
+                "Real infrastructure verification not found - Exercise44 must validate Kafka/Flink"
+            ),
+            ["Kafka Topics Created"] = (
+                output.Contains("Topics created", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Topics already exist", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("deployment-requests", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("blue-green-events", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("canary-events", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("rolling-update-events", StringComparison.OrdinalIgnoreCase),
+                "Kafka topic creation not found - Exercise44 must create deployment orchestration topics"
+            ),
+            ["FlinkDotNet Jobs Submission"] = (
+                output.Contains("BlueGreenDeployment", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("CanaryDeployment", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("RollingUpdate", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("HealthMonitor", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Flink job", StringComparison.OrdinalIgnoreCase),
+                "FlinkDotNet job submission not found - Exercise44 must submit deployment orchestration jobs"
+            ),
+            ["Deployment Requests Produced"] = (
+                output.Contains("produced", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("deployment request", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("triggering deployment", StringComparison.OrdinalIgnoreCase),
+                "Real Kafka producer not found - Exercise44 must produce deployment requests"
+            ),
+            ["Blue-Green Strategy"] = (
+                output.Contains("Blue-Green", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("BlueGreen", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("green environment", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("traffic switch", StringComparison.OrdinalIgnoreCase),
+                "Blue-Green deployment not demonstrated - Exercise44 must show instant traffic switching"
+            ),
+            ["Canary Strategy"] = (
+                output.Contains("Canary", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("1%", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("5%", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("25%", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("traffic", StringComparison.OrdinalIgnoreCase),
+                "Canary deployment not demonstrated - Exercise44 must show progressive rollout"
+            ),
+            ["Rolling Update Strategy"] = (
+                output.Contains("Rolling", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("batch", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("instances", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("instance-by-instance", StringComparison.OrdinalIgnoreCase),
+                "Rolling update not demonstrated - Exercise44 must show batch-wise updates"
+            ),
+            ["Health Checks"] = (
+                output.Contains("health check", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("health status", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("healthy", StringComparison.OrdinalIgnoreCase),
+                "Health checks not demonstrated - Exercise44 must validate health during deployments"
+            ),
+            ["Industry Patterns"] = (
+                output.Contains("Netflix", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("AWS", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Spotify", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Amazon", StringComparison.OrdinalIgnoreCase),
+                "Industry patterns not referenced - Exercise44 must demonstrate Netflix/AWS patterns"
+            ),
+            ["Deployment Results Consumed"] = (
+                output.Contains("consumed", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("deployment result", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("success", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("completed stages", StringComparison.OrdinalIgnoreCase),
+                "Deployment results not consumed - Exercise44 must consume from results topic"
+            ),
+            ["Job Cleanup"] = (
+                output.Contains("Cancelling", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("job cancelled", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Cleaning up", StringComparison.OrdinalIgnoreCase),
+                "Flink job cleanup not performed - Exercise44 must cancel jobs properly"
+            ),
+            ["NO Simulation Patterns"] = (
+                !output.Contains("ConcurrentQueue") &&
+                !output.Contains("ConcurrentDictionary") &&
+                !output.Contains("BackgroundService") &&
+                !output.Contains("Task.Delay"),
+                "CRITICAL: Simulation patterns detected - Exercise44 MUST use real Kafka/FlinkDotNet (no ConcurrentQueue, ConcurrentDictionary, BackgroundService, Task.Delay for deployment orchestration)"
+            ),
+            ["Execution Completed"] = (
+                output.Contains("COMPLETED SUCCESSFULLY", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("completed successfully", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase),
+                "Exercise did not complete successfully"
+            )
         };
     }
 
@@ -308,7 +575,7 @@ public class Day04Tests : LearningCourseTestBase
     {
         return new Dictionary<string, (bool result, string failureMessage)>
         {
-            ["Exercise Started"] = (output.Contains("Exercise 3.5", StringComparison.OrdinalIgnoreCase) ||
+            ["Exercise Started"] = (output.Contains("Exercise 4.5", StringComparison.OrdinalIgnoreCase) ||
                                    output.Contains("BackpressureQueue", StringComparison.OrdinalIgnoreCase) ||
                                    output.Contains("Starting", StringComparison.OrdinalIgnoreCase),
                                    "Exercise not found"),
@@ -367,17 +634,17 @@ public class Day04Tests : LearningCourseTestBase
     private static void PrintExercise4Header()
     {
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 4: Chaos Engineering Production Validation");
+        TestContext.WriteLine("  Exercise 4: Production Deployment Strategies");
         TestContext.WriteLine("================================================================================");
         TestContext.WriteLine();
-        TestContext.WriteLine("Reference: Netflix/Uber/LinkedIn Chaos Engineering");
+        TestContext.WriteLine("Reference: Netflix Blue-Green, AWS Canary, Spotify Rolling Update");
         TestContext.WriteLine();
         TestContext.WriteLine("Testing concepts:");
-        TestContext.WriteLine("  - Combined failure scenarios");
-        TestContext.WriteLine("  - Fail-closed behavior verification");
-        TestContext.WriteLine("  - End-to-end flow control validation");
-        TestContext.WriteLine("  - Production monitoring during failures");
-        TestContext.WriteLine("  - Enterprise resilience patterns");
+        TestContext.WriteLine("  - Blue-Green deployment with instant traffic switching");
+        TestContext.WriteLine("  - Canary deployment with progressive rollout (1% → 5% → 25% → 100%)");
+        TestContext.WriteLine("  - Rolling update with batch-wise instance updates");
+        TestContext.WriteLine("  - Health check validation at deployment gates");
+        TestContext.WriteLine("  - Real Kafka/FlinkDotNet deployment orchestration");
         TestContext.WriteLine();
     }
 

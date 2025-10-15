@@ -1,12 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <RunConfiguration>
-    <!-- Run test assemblies sequentially to prevent parallel Aspire infrastructure startup -->
-    <MaxCpuCount>1</MaxCpuCount>
-    <DisableParallelization>true</DisableParallelization>
+    <!-- Enable parallel execution - infrastructure is shared via GlobalTestSetup -->
+    <!-- MaxCpuCount=0 uses all available cores for maximum parallelism -->
+    <MaxCpuCount>0</MaxCpuCount>
+    <DisableParallelization>false</DisableParallelization>
+    
+    <!-- Timeout for individual tests (10 minutes) -->
+    <TestSessionTimeout>600000</TestSessionTimeout>
   </RunConfiguration>
   <NUnit>
-    <!-- Prevent parallel test execution within assemblies -->
-    <NumberOfTestWorkers>1</NumberOfTestWorkers>
+    <!-- Enable parallel test execution within test classes -->
+    <!-- NumberOfTestWorkers=0 uses all available CPU cores -->
+    <NumberOfTestWorkers>0</NumberOfTestWorkers>
+    
+    <!-- Ensure synchronized output in parallel execution -->
+    <SynchronousEvents>false</SynchronousEvents>
   </NUnit>
+  <LoggerRunSettings>
+    <Loggers>
+      <Logger friendlyName="console" enabled="True">
+        <Configuration>
+          <Verbosity>minimal</Verbosity>
+        </Configuration>
+      </Logger>
+    </Loggers>
+  </LoggerRunSettings>
 </RunSettings>

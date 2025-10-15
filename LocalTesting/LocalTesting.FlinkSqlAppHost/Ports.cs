@@ -31,4 +31,13 @@ public static class Ports
     public const int TemporalGrpcPort = 7233;   // gRPC frontend port
     public const int TemporalUIPort = 8088;     // HTTP UI port
     public const string TemporalHostAddress = "localhost:7233";  // For SDK clients
+    
+    // LearningCourse Infrastructure ports (only deployed when LEARNINGCOURSE=true)
+    // Redis - State management and caching for Day15 Capstone Project
+    public const int RedisHostPort = 6379;      // Redis default port
+    public const string RedisHostAddress = "localhost:6379";  // For SDK clients
+    
+    // Observability Stack - Monitoring and metrics
+    public const int PrometheusHostPort = 9090;  // Prometheus metrics collection
+    public const int GrafanaHostPort = 3000;     // Grafana visualization dashboard
 }

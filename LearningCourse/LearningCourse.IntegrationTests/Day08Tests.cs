@@ -3,110 +3,135 @@ using NUnit.Framework;
 namespace LearningCourse.IntegrationTests;
 
 /// <summary>
-/// Integration tests for Day 8: Complex Logic Stress Testing
-///
-/// Reference: LocalTesting Stress Test Framework
-///
-/// These tests validate exercises for stress testing patterns:
-/// - Exercise 1: Volume Stress Testing - Million+ message throughput
-/// - Exercise 2: Velocity Stress Testing - Burst traffic and latency
-/// - Exercise 3: Variety Stress Testing - Complex data scenarios
-/// - Exercise 4: Fault Injection Testing - Chaos engineering patterns
-///
-/// Implementation: Uses FlinkDotNet with .NET Aspire for infrastructure
+/// Integration tests for Day 8: Stress Testing exercises
+/// Tests real Kafka/FlinkDotNet infrastructure for high-volume event processing
 /// </summary>
-[TestFixture]
-[Category("day08-stress-testing")]
-[Category("integration")]
 public class Day08Tests : LearningCourseTestBase
 {
-    private const string Exercise1Path = "Day08-Stress-Testing/Exercise-Solutions/Exercise71";
-    private const string Exercise2Path = "Day08-Stress-Testing/Exercise-Solutions/Exercise72";
-    private const string Exercise3Path = "Day08-Stress-Testing/Exercise-Solutions/Exercise73";
-    private const string Exercise4Path = "Day08-Stress-Testing/Exercise-Solutions/Exercise74";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(5); // Longer timeout for stress tests
-
     [Test]
-    [Description("Exercise 1: Volume Stress Testing - Million+ messages")]
-    public async Task Exercise1_VolumeStressTesting_ShouldExecuteSuccessfully()
+    public async Task Exercise81_StressTestingWithRealKafka_ShouldProcessHighVolumeEvents()
     {
+        // Arrange
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 1: Volume Stress Testing");
+        TestContext.WriteLine("Exercise 8.1: Stress Testing with Real Infrastructure");
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Testing concepts:");
-        TestContext.WriteLine("  - High-throughput data processing");
-        TestContext.WriteLine("  - Million message stress test");
-        TestContext.WriteLine("  - Large state operations");
-        TestContext.WriteLine("  - Memory pressure testing");
-        TestContext.WriteLine();
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise1Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 1 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 1 completed successfully");
+        TestContext.WriteLine("");
+        TestContext.WriteLine("Test Objectives:");
+        TestContext.WriteLine("  ✓ High-volume Kafka message production");
+        TestContext.WriteLine("  ✓ Real Flink stream processing under load");
+        TestContext.WriteLine("  ✓ Performance monitoring and benchmarking");
+        TestContext.WriteLine("  ✓ Throughput and latency analysis");
+        TestContext.WriteLine("");
+        
+        // Act
+        TestContext.WriteLine("Executing Exercise81...");
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise81");
+        
+        // Assert
+        Assert.That(exitCode, Is.EqualTo(0), 
+            $"Exercise81 should complete successfully. Error output: {error}");
+        
+        TestContext.WriteLine("");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("[SUCCESS] Exercise 8.1 completed - Real infrastructure stress testing validated");
+        TestContext.WriteLine("================================================================================");
     }
 
     [Test]
-    [Description("Exercise 2: Velocity Stress Testing - Burst traffic")]
-    public async Task Exercise2_VelocityStressTesting_ShouldExecuteSuccessfully()
+    public async Task Exercise82_BackpressureMonitoringWithRealKafka_ShouldProcessVariableLoadScenarios()
     {
+        // Arrange
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 2: Velocity Stress Testing");
+        TestContext.WriteLine("Exercise 8.2: Backpressure Monitoring with Real Infrastructure");
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Testing concepts:");
-        TestContext.WriteLine("  - Burst traffic simulation");
-        TestContext.WriteLine("  - Variable rate testing");
-        TestContext.WriteLine("  - Latency benchmark");
-        TestContext.WriteLine("  - Real-time processing under load");
-        TestContext.WriteLine();
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise2Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 2 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 2 completed successfully");
+        TestContext.WriteLine("");
+        TestContext.WriteLine("Test Objectives:");
+        TestContext.WriteLine("  ✓ Real-time backpressure detection via Kafka consumer lag");
+        TestContext.WriteLine("  ✓ Flink stream processing under variable load");
+        TestContext.WriteLine("  ✓ Backpressure scenario testing (normal, overload, recovery)");
+        TestContext.WriteLine("  ✓ Production-ready backpressure handling patterns");
+        TestContext.WriteLine("");
+        
+        // Act
+        TestContext.WriteLine("Executing Exercise82...");
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise82");
+        
+        // Assert
+        Assert.That(exitCode, Is.EqualTo(0), 
+            $"Exercise82 should complete successfully. Error output: {error}");
+        
+        TestContext.WriteLine("");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("[SUCCESS] Exercise 8.2 completed - Real infrastructure backpressure monitoring validated");
+        TestContext.WriteLine("================================================================================");
     }
 
     [Test]
-    [Description("Exercise 3: Variety Stress Testing - Complex data scenarios")]
-    public async Task Exercise3_VarietyStressTesting_ShouldExecuteSuccessfully()
+    public async Task Exercise83_PerformanceBenchmarkingWithRealKafka_ShouldExecuteBenchmarkScenarios()
     {
+        // Arrange
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 3: Variety Stress Testing");
+        TestContext.WriteLine("Exercise 8.3: Performance Benchmarking with Real Infrastructure");
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Testing concepts:");
-        TestContext.WriteLine("  - Schema evolution testing");
-        TestContext.WriteLine("  - Data quality stress test");
-        TestContext.WriteLine("  - Complex transformation load");
-        TestContext.WriteLine("  - Diverse data type handling");
-        TestContext.WriteLine();
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise3Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 3 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 3 completed successfully");
+        TestContext.WriteLine("");
+        TestContext.WriteLine("Test Objectives:");
+        TestContext.WriteLine("  ✓ Multi-scenario performance benchmarking");
+        TestContext.WriteLine("  ✓ Real Flink stream processing under benchmark workloads");
+        TestContext.WriteLine("  ✓ Latency, throughput, memory, and CPU testing");
+        TestContext.WriteLine("  ✓ Performance metrics collection and reporting");
+        TestContext.WriteLine("");
+        
+        // Act
+        TestContext.WriteLine("Executing Exercise83...");
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise83");
+        
+        // Assert
+        Assert.That(exitCode, Is.EqualTo(0), 
+            $"Exercise83 should complete successfully. Error output: {error}");
+        
+        TestContext.WriteLine("");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("[SUCCESS] Exercise 8.3 completed - Real infrastructure performance benchmarking validated");
+        TestContext.WriteLine("================================================================================");
     }
 
     [Test]
-    [Description("Exercise 4: Fault Injection Testing - Chaos engineering")]
-    public async Task Exercise4_FaultInjectionTesting_ShouldExecuteSuccessfully()
+    public async Task Exercise84_ResourceMonitoringWithRealKafka_ShouldAnalyzeCapacityPlanning()
     {
+        // Arrange
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 4: Fault Injection Testing");
+        TestContext.WriteLine("Exercise 8.4: Resource Monitoring & Capacity Planning with Real Infrastructure");
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Testing concepts:");
-        TestContext.WriteLine("  - Network fault injection");
-        TestContext.WriteLine("  - Service failure simulation");
-        TestContext.WriteLine("  - Data corruption testing");
-        TestContext.WriteLine("  - Chaos engineering patterns");
-        TestContext.WriteLine();
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise4Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 4 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 4 completed successfully");
+        TestContext.WriteLine("");
+        TestContext.WriteLine("Test Objectives:");
+        TestContext.WriteLine("  ✓ Real-time resource monitoring during Flink processing");
+        TestContext.WriteLine("  ✓ Multi-scenario workload testing (Light, Normal, Heavy)");
+        TestContext.WriteLine("  ✓ Capacity planning analysis with production metrics");
+        TestContext.WriteLine("  ✓ Resource optimization recommendations");
+        TestContext.WriteLine("");
+        
+        // Act
+        TestContext.WriteLine("Executing Exercise84...");
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            "Day08-Stress-Testing/Exercise-Solutions/Exercise84");
+        
+        // Assert
+        Assert.That(exitCode, Is.EqualTo(0),
+            $"Exercise84 should complete successfully. Error output: {error}");
+        
+        TestContext.WriteLine("");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("[SUCCESS] Exercise 8.4 completed - Real infrastructure resource monitoring validated");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("");
+        TestContext.WriteLine("🎉 Day 8: Stress Testing - ALL EXERCISES COMPLETED");
+        TestContext.WriteLine("   ✓ Exercise 8.1: Stress testing with circuit breaker");
+        TestContext.WriteLine("   ✓ Exercise 8.2: Backpressure monitoring");
+        TestContext.WriteLine("   ✓ Exercise 8.3: Performance benchmarking");
+        TestContext.WriteLine("   ✓ Exercise 8.4: Resource monitoring & capacity planning");
+        TestContext.WriteLine("================================================================================");
     }
 }
