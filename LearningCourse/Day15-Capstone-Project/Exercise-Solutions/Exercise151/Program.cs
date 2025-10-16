@@ -117,7 +117,7 @@ static async Task<bool> ValidateFlinkClusterAsync(string gatewayUrl)
         using var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(5);
         
-        var response = await client.GetAsync($"{gatewayUrl}/v1/config");
+        var response = await client.GetAsync($"{gatewayUrl}/v1/overview");
         return response.IsSuccessStatusCode;
     }
     catch (Exception ex)

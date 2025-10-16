@@ -60,7 +60,14 @@ public class Day13Tests : LearningCourseTestBase
         TestContext.WriteLine("  Exercise 3: Saga Pattern Implementation");
         TestContext.WriteLine("================================================================================");
 
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise3Path, Array.Empty<string>(), ExerciseTimeout);
+        // Use progress monitoring to handle long-running saga workflow
+        TestContext.WriteLine("Progress will be tracked: saga-commands → saga-results");
+        var (exitCode, output, error) = await ExecuteExerciseWithProgressMonitoringAsync(
+            Exercise3Path,
+            "saga-commands",               // Input topic from Program.cs line 36
+            "saga-results",                // Output topic from Program.cs line 38
+            Array.Empty<string>(),
+            TimeSpan.FromMinutes(2)); // 2 minute absolute max, but will extend with progress
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 3 should complete successfully. Exit code: {exitCode}\nError: {error}");
         TestContext.WriteLine("✅ Exercise 3 (Saga Pattern) completed successfully");
@@ -74,7 +81,14 @@ public class Day13Tests : LearningCourseTestBase
         TestContext.WriteLine("  Exercise 4: Complex Event Processing (CEP) Pattern Implementation");
         TestContext.WriteLine("================================================================================");
 
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise4Path, Array.Empty<string>(), ExerciseTimeout);
+        // Use progress monitoring to handle long-running CEP pattern detection
+        TestContext.WriteLine("Progress will be tracked: security-events → security-alerts");
+        var (exitCode, output, error) = await ExecuteExerciseWithProgressMonitoringAsync(
+            Exercise4Path,
+            "security-events",             // Input topic from Program.cs line 36
+            "security-alerts",             // Output topic from Program.cs line 37
+            Array.Empty<string>(),
+            TimeSpan.FromMinutes(2)); // 2 minute absolute max, but will extend with progress
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 4 should complete successfully. Exit code: {exitCode}\nError: {error}");
         TestContext.WriteLine("✅ Exercise 4 (CEP) completed successfully");

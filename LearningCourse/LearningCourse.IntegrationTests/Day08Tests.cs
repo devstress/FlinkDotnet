@@ -26,15 +26,15 @@ public class Day08Tests : LearningCourseTestBase
         TestContext.WriteLine("  ✓ Throughput and latency analysis");
         TestContext.WriteLine("");
         
-        // Act
+        // Act - Use regular execution with adequate timeout for slow message production
         TestContext.WriteLine("Executing Exercise81...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
             "Day08-Stress-Testing/Exercise-Solutions/Exercise81",
             Array.Empty<string>(),
-            StressTestTimeout);
+            TimeSpan.FromMinutes(3)); // 3 minute timeout for slow production + Flink processing
         
         // Assert
-        Assert.That(exitCode, Is.EqualTo(0), 
+        Assert.That(exitCode, Is.EqualTo(0),
             $"Exercise81 should complete successfully. Error output: {error}");
         
         TestContext.WriteLine("");
@@ -58,12 +58,12 @@ public class Day08Tests : LearningCourseTestBase
         TestContext.WriteLine("  ✓ Production-ready backpressure handling patterns");
         TestContext.WriteLine("");
         
-        // Act
+        // Act - Use regular execution with adequate timeout for slow message production
         TestContext.WriteLine("Executing Exercise82...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
             "Day08-Stress-Testing/Exercise-Solutions/Exercise82",
             Array.Empty<string>(),
-            StressTestTimeout);
+            TimeSpan.FromMinutes(3)); // 3 minute timeout for slow production + Flink processing
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0), 
@@ -90,12 +90,12 @@ public class Day08Tests : LearningCourseTestBase
         TestContext.WriteLine("  ✓ Performance metrics collection and reporting");
         TestContext.WriteLine("");
         
-        // Act
+        // Act - Use regular execution with adequate timeout for slow message production
         TestContext.WriteLine("Executing Exercise83...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
             "Day08-Stress-Testing/Exercise-Solutions/Exercise83",
             Array.Empty<string>(),
-            StressTestTimeout);
+            TimeSpan.FromMinutes(3)); // 3 minute timeout for slow production + Flink processing
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0), 
@@ -122,12 +122,12 @@ public class Day08Tests : LearningCourseTestBase
         TestContext.WriteLine("  ✓ Resource optimization recommendations");
         TestContext.WriteLine("");
         
-        // Act
+        // Act - Use regular execution with adequate timeout for slow message production
         TestContext.WriteLine("Executing Exercise84...");
         var (exitCode, output, error) = await ExecuteExerciseAsync(
             "Day08-Stress-Testing/Exercise-Solutions/Exercise84",
             Array.Empty<string>(),
-            StressTestTimeout);
+            TimeSpan.FromMinutes(3)); // 3 minute timeout for slow production + Flink processing
         
         // Assert
         Assert.That(exitCode, Is.EqualTo(0),

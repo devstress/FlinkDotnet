@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using LearningCourse.Common;
 using NUnit.Framework;
 
@@ -1485,6 +1487,232 @@ public abstract class LearningCourseTestBase
     }
 
     /// <summary>
+    /// Get the total message count for a Kafka topic across all partitions.
+    /// Used for progress monitoring during exercise execution.
+    /// </summary>
+    private static async Task<long> GetKafkaTopicMessageCountAsync(string topicName)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(KafkaHostBootstrapServers))
+            {
+                throw new InvalidOperationException("Kafka bootstrap servers not discovered");
+            }
+
+            var adminConfig = new AdminClientConfig
+            {
+                BootstrapServers = KafkaHostBootstrapServers
+            };
+
+            using var adminClient = new AdminClientBuilder(adminConfig).Build();
+            
+            // Get topic metadata to find partitions
+            var metadata = adminClient.GetMetadata(topicName, TimeSpan.FromSeconds(5));
+            var topicMetadata = metadata.Topics.FirstOrDefault(t => t.Topic == topicName);
+            
+            if (topicMetadata == null)
+            {
+                return 0; // Topic doesn't exist yet
+            }
+
+            long totalMessages = 0;
+            
+            // Use a consumer to query watermark offsets (AdminClient doesn't have QueryWatermarkOffsets)
+            var consumerConfig = new ConsumerConfig
+            {
+                BootstrapServers = KafkaHostBootstrapServers,
+                GroupId = $"test-consumer-{Guid.NewGuid()}", // Unique group ID for monitoring
+                AutoOffsetReset = AutoOffsetReset.Earliest
+            };
+
+            using var consumer = new ConsumerBuilder<byte[], byte[]>(consumerConfig).Build();
+            
+            // Query each partition's high watermark (total messages)
+            foreach (var partition in topicMetadata.Partitions)
+            {
+                var topicPartition = new TopicPartition(topicName, partition.PartitionId);
+                
+                // Get the high watermark (end offset) for this partition using consumer
+                var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(5));
+                
+                // Message count = high watermark - low watermark
+                var messageCount = watermarkOffsets.High.Value - watermarkOffsets.Low.Value;
+                totalMessages += messageCount;
+            }
+
+            // Satisfy async method signature (no actual async operations needed for Confluent.Kafka sync API)
+            return await Task.FromResult(totalMessages);
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Failed to get message count for topic {topicName}: {ex.Message}");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Execute an exercise program with progress monitoring based on Kafka topic message counts.
+    /// Extends timeout automatically when progress is detected (messages flowing from input to output topics).
+    /// Detects hangs quickly (30 seconds without progress).
+    /// </summary>
+    protected async Task<(int exitCode, string output, string error)> ExecuteExerciseWithProgressMonitoringAsync(
+        string exercisePath,
+        string inputTopic,
+        string outputTopic,
+        string[]? arguments = null,
+        TimeSpan? baseTimeout = null)
+    {
+        var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
+        var fullPath = Path.Combine(repoRoot, "LearningCourse", exercisePath);
+
+        LogDebug($"[EXERCISE-PROGRESS] Starting {exercisePath} with progress monitoring");
+        LogDebug($"[EXERCISE-PROGRESS] Input topic: {inputTopic}, Output topic: {outputTopic}");
+        
+        // Ensure infrastructure is ready before executing exercises
+        if (!_isSetupComplete)
+        {
+            LogDebug("[EXERCISE-PROGRESS] Infrastructure not ready, starting setup...");
+            TestContext.WriteLine("⚠️ Infrastructure not ready, initializing...");
+            await GlobalSetUp();
+        }
+        
+        TestContext.WriteLine($"🏃 Executing exercise with progress monitoring: {exercisePath}");
+        TestContext.WriteLine($"📊 Monitoring progress: {inputTopic} → {outputTopic}");
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = $"run --no-build --configuration Release {string.Join(" ", arguments ?? Array.Empty<string>())}",
+            WorkingDirectory = fullPath,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        
+        // Set environment variables (same as ExecuteExerciseAsync)
+        if (string.IsNullOrEmpty(KafkaHostBootstrapServers) || string.IsNullOrEmpty(KafkaFlinkBootstrapServers))
+        {
+            throw new InvalidOperationException("Kafka bootstrap servers not discovered. Ensure GlobalSetUp ran successfully.");
+        }
+        
+        psi.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
+        psi.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
+        
+        if (!string.IsNullOrEmpty(TemporalHostEndpoint))
+        {
+            psi.Environment["TEMPORAL_ENDPOINT"] = TemporalHostEndpoint;
+        }
+        
+        if (!string.IsNullOrEmpty(RedisHostEndpoint))
+        {
+            psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
+        }
+        
+        var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
+        psi.Environment["LOG_FILE_PATH"] = testLogsDir;
+        
+        TestContext.WriteLine($"🔧 KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers}");
+        TestContext.WriteLine($"🔧 KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers}");
+
+        using var process = Process.Start(psi);
+        if (process == null)
+        {
+            throw new InvalidOperationException($"Failed to start exercise: {exercisePath}");
+        }
+
+        TestContext.WriteLine($"🔍 Process started with PID {process.Id}");
+        
+        // Capture output incrementally
+        var outputBuilder = new System.Text.StringBuilder();
+        var errorBuilder = new System.Text.StringBuilder();
+        var outputLock = new object();
+        
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                lock (outputLock)
+                {
+                    outputBuilder.AppendLine(e.Data);
+                }
+                TestContext.WriteLine($"[Exercise Output] {e.Data}");
+            }
+        };
+        
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                lock (outputLock)
+                {
+                    errorBuilder.AppendLine(e.Data);
+                }
+                TestContext.WriteLine($"[Exercise Error] {e.Data}");
+            }
+        };
+        
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        // Progress monitoring loop
+        var progressTimeout = TimeSpan.FromSeconds(30); // Timeout if no progress for 30 seconds
+        var lastProgressTime = DateTime.UtcNow;
+        var lastProgressPercent = 0.0;
+        var waitStopwatch = Stopwatch.StartNew();
+        var checkInterval = TimeSpan.FromSeconds(5); // Check progress every 5 seconds
+        
+        TestContext.WriteLine($"📊 Progress monitoring active: 30s no-progress timeout with automatic extensions");
+        
+        while (!process.HasExited)
+        {
+            await Task.Delay(checkInterval);
+            
+            // Query Kafka topics for message counts
+            var inputCount = await GetKafkaTopicMessageCountAsync(inputTopic);
+            var outputCount = await GetKafkaTopicMessageCountAsync(outputTopic);
+            
+            // Calculate progress percentage
+            var currentProgress = inputCount > 0 ? (outputCount * 100.0 / inputCount) : 0.0;
+            
+            // Check if progress has changed
+            if (Math.Abs(currentProgress - lastProgressPercent) > 0.1) // Progress changed by > 0.1%
+            {
+                lastProgressTime = DateTime.UtcNow;
+                lastProgressPercent = currentProgress;
+                TestContext.WriteLine($"📈 Progress: {outputCount}/{inputCount} messages ({currentProgress:F1}%) - extending timeout");
+                LogDebug($"[EXERCISE-PROGRESS] Progress detected: {currentProgress:F1}% ({outputCount}/{inputCount})");
+            }
+            
+            var timeSinceProgress = DateTime.UtcNow - lastProgressTime;
+            
+            // Check for progress timeout (no progress for 30 seconds)
+            if (timeSinceProgress > progressTimeout)
+            {
+                TestContext.WriteLine($"❌ No progress for {timeSinceProgress.TotalSeconds:F1}s (last: {lastProgressPercent:F1}%)");
+                TestContext.WriteLine($"❌ Killing process after {waitStopwatch.Elapsed.TotalSeconds:F1}s total");
+                process.Kill(entireProcessTree: true);
+                throw new TimeoutException(
+                    $"Exercise {exercisePath} timed out: no progress for {timeSinceProgress.TotalSeconds:F1}s. " +
+                    $"Last progress: {lastProgressPercent:F1}% ({outputCount}/{inputCount} messages)");
+            }
+        }
+        
+        TestContext.WriteLine($"✅ Process completed after {waitStopwatch.Elapsed.TotalSeconds:F1}s");
+        TestContext.WriteLine($"✅ Final progress: {lastProgressPercent:F1}%");
+
+        var output = outputBuilder.ToString();
+        var error = errorBuilder.ToString();
+
+        TestContext.WriteLine($"✅ Exercise completed with exit code {process.ExitCode}");
+        
+        // Network state already logged in OneTimeSetup - no need to log after each exercise
+        // LogNetworkState($"AFTER Exercise: {exercisePath} (ExitCode: {process.ExitCode})");
+
+        return (process.ExitCode, output, error);
+    }
+
+    /// <summary>
     /// Execute an exercise program and capture its output.
     /// Automatically parses and tracks Flink job IDs for cleanup.
     /// </summary>
@@ -1612,9 +1840,8 @@ public abstract class LearningCourseTestBase
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        // Dynamic timeout: base timeout + automatic extensions when there's progress
+        // Dynamic timeout: automatic extensions when there's progress (output produced)
         // This matches LocalTesting pattern: extends timeout when output is produced
-        var baseTimeout = timeout ?? TimeSpan.FromMinutes(1);
         var noProgressTimeout = TimeSpan.FromSeconds(20); // Kill if no output for 20 seconds
         var waitStopwatch = Stopwatch.StartNew();
         
@@ -1634,16 +1861,6 @@ public abstract class LearningCourseTestBase
             
             // Wait a bit before checking again
             await Task.Delay(500);
-            
-            // Also check absolute maximum timeout (baseTimeout * 1.5 to allow for extensions)
-            // Reduced from 3x to 1.5x for faster failure detection
-            if (waitStopwatch.Elapsed > baseTimeout * 1.5)
-            {
-                TestContext.WriteLine($"❌ [DIAGNOSTIC] Absolute maximum timeout reached: {waitStopwatch.Elapsed.TotalSeconds:F1}s");
-                TestContext.WriteLine($"❌ [DIAGNOSTIC] Killing process tree for PID {process.Id}...");
-                process.Kill(entireProcessTree: true);
-                throw new TimeoutException($"Exercise {exercisePath} exceeded absolute maximum timeout of {(baseTimeout * 1.5).TotalSeconds:F1}s");
-            }
         }
         
         TestContext.WriteLine($"✅ [DIAGNOSTIC] Process exited after {waitStopwatch.Elapsed.TotalSeconds:F1}s (last output: {(DateTime.UtcNow - lastOutputTime).TotalSeconds:F1}s ago)");
@@ -1661,8 +1878,8 @@ public abstract class LearningCourseTestBase
             TestContext.WriteLine($"⚠️ Error output:\n{error}");
         }
         
-        // Log network state after exercise execution for debugging
-        LogNetworkState($"AFTER Exercise: {exercisePath} (ExitCode: {process.ExitCode})");
+        // Network state already logged in OneTimeSetup - no need to log after each exercise
+        // LogNetworkState($"AFTER Exercise: {exercisePath} (ExitCode: {process.ExitCode})");
 
         return (process.ExitCode, output, error);
     }

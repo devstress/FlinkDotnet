@@ -101,7 +101,7 @@ static async Task<bool> ValidateInfrastructureHealthAsync(string kafkaServers, s
         
         // Check Flink
         using var httpClient = new HttpClient();
-        var flinkResponse = await httpClient.GetAsync($"{flinkUrl}/v1/config");
+        var flinkResponse = await httpClient.GetAsync($"{flinkUrl}/v1/overview");
         var flinkHealthy = flinkResponse.IsSuccessStatusCode;
         
         // Check Redis

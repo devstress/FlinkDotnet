@@ -258,6 +258,8 @@ class Program
             BootstrapServers = KafkaBootstrapServers,
             ClientId = $"exercise84-{scenario.Name.Replace(" ", "-").ToLower()}",
             Acks = Acks.All,
+            BatchSize = 16384,
+            CompressionType = CompressionType.Snappy,
             LingerMs = 5
         };
 
@@ -279,23 +281,31 @@ class Program
             var localTaskId = taskId;
             var task = Task.Run(async () =>
             {
+                // Batch parallel production for better throughput
+                var batchTasks = new List<Task>();
                 for (int i = 0; i < eventsPerTask; i++)
                 {
                     var workloadEvent = GenerateWorkloadEvent(
-                        Interlocked.Increment(ref eventsProduced), 
-                        scenario, 
+                        Interlocked.Increment(ref eventsProduced),
+                        scenario,
                         localTaskId);
                     
-                    await producer.ProduceAsync(ResourceInputTopic, new Message<string, string>
+                    var produceTask = producer.ProduceAsync(ResourceInputTopic, new Message<string, string>
                     {
                         Key = workloadEvent.Id,
                         Value = JsonSerializer.Serialize(workloadEvent)
                     });
                     
+                    batchTasks.Add(produceTask);
+                    
                     // Pace the workload to achieve target rate
-                    var delayMs = (scenario.DurationSeconds * 1000) / eventsPerTask;
-                    await Task.Delay(Math.Max(1, delayMs));
+                    // CRITICAL FIX: Calculate delay to distribute events evenly over duration
+                    var intervalMs = 1000.0 / scenario.EventsPerSecond;
+                    var delayMs = intervalMs * scenario.ConcurrentTasks;
+                    await Task.Delay((int)Math.Max(1, delayMs));
                 }
+                
+                await Task.WhenAll(batchTasks);
             });
             
             tasks.Add(task);

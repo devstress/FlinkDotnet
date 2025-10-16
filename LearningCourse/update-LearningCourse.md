@@ -1065,6 +1065,7 @@ dotnet test LearningCourse/IntegrationTests.sln --configuration Release --logger
 1. **Fast Failure is Better Than Long Waits** - Users prefer quick failures over 2+ minute timeouts
 2. **Small Progress Detection** - Show incremental progress, don't wait for completion
 3. **Reasonable Timeouts** - Balance between infrastructure startup time and user patience
+4. **Progress Monitoring** - Track message processing progress and extend timeouts dynamically
 
 **Timeout Guidelines**:
 
@@ -1074,6 +1075,234 @@ dotnet test LearningCourse/IntegrationTests.sln --configuration Release --logger
 | **Medium exercises** (10-60s execution) | 1-2 minutes | Allows completion, fast failure |
 | **Heavy exercises** (load testing, benchmarks) | 3-5 minutes | Infrastructure intensive |
 | **Temporal workflows** (distributed) | 30 seconds for fast failure | Mark as [Ignore] if infrastructure issues |
+
+### Progress Monitoring Implementation (NEW - MANDATORY)
+
+**User Requirement**: "Now we have Observability so we can add the progress % attribute in the exercise. If the progress % changed extend the timeout to 30 seconds until % unchanged showing it is hang."
+
+**Solution**: Implement Kafka topic message count monitoring to track processing progress.
+
+#### Progress Calculation Formula
+
+```csharp
+// Calculate progress % = (output messages / input messages) * 100
+double progressPercentage = (double)outputMessageCount / inputMessageCount * 100.0;
+```
+
+#### Timeout Extension Strategy
+
+**Rules**:
+1. **Initial Timeout**: 30 seconds default
+2. **Progress Detection**: Query Kafka input/output topic message counts every 5 seconds
+3. **Extend if Progress**: If progress % changes, extend timeout by 30 seconds
+4. **Hang Detection**: If progress % unchanged for 30 seconds, test is truly hung → timeout
+5. **Absolute Maximum**: 5 minutes maximum timeout (10 extensions)
+
+#### Implementation Pattern
+
+```csharp
+// In LearningCourseTestBase.cs
+private async Task<(int exitCode, string output, string error)> ExecuteExerciseWithProgressMonitoringAsync(
+    string exercisePath,
+    string[] arguments,
+    TimeSpan? timeout = null,
+    string inputTopic = null,
+    string outputTopic = null)
+{
+    var baseTimeout = timeout ?? TimeSpan.FromSeconds(30);
+    var absoluteMaxTimeout = TimeSpan.FromMinutes(5);
+    var progressCheckInterval = TimeSpan.FromSeconds(5);
+    var extensionAmount = TimeSpan.FromSeconds(30);
+    
+    var startTime = DateTime.UtcNow;
+    var currentTimeout = baseTimeout;
+    var lastProgressPercentage = 0.0;
+    var lastProgressChangeTime = startTime;
+    
+    while (DateTime.UtcNow - startTime < absoluteMaxTimeout)
+    {
+        var elapsed = DateTime.UtcNow - startTime;
+        
+        // Check if process has exited
+        if (process.HasExited)
+        {
+            return (process.ExitCode, output, error);
+        }
+        
+        // Check progress if topics are specified
+        if (!string.IsNullOrEmpty(inputTopic) && !string.IsNullOrEmpty(outputTopic))
+        {
+            var inputMessageCount = await GetKafkaTopicMessageCountAsync(inputTopic);
+            var outputMessageCount = await GetKafkaTopicMessageCountAsync(outputTopic);
+            
+            if (inputMessageCount > 0)
+            {
+                var currentProgressPercentage = (double)outputMessageCount / inputMessageCount * 100.0;
+                
+                // Check if progress has changed
+                if (Math.Abs(currentProgressPercentage - lastProgressPercentage) > 0.1)
+                {
+                    // Progress detected - extend timeout
+                    lastProgressPercentage = currentProgressPercentage;
+                    lastProgressChangeTime = DateTime.UtcNow;
+                    currentTimeout = elapsed + extensionAmount;
+                    
+                    TestContext.WriteLine($"[PROGRESS] {currentProgressPercentage:F1}% complete ({outputMessageCount}/{inputMessageCount} messages) - extending timeout");
+                }
+                else if (DateTime.UtcNow - lastProgressChangeTime > extensionAmount)
+                {
+                    // No progress for 30 seconds - exercise is hung
+                    throw new TimeoutException(
+                        $"Exercise {exercisePath} appears hung: no progress for {extensionAmount.TotalSeconds}s at {lastProgressPercentage:F1}% ({outputMessageCount}/{inputMessageCount} messages)");
+                }
+            }
+        }
+        
+        // Check standard timeout
+        if (elapsed > currentTimeout)
+        {
+            throw new TimeoutException(
+                $"Exercise {exercisePath} timed out after {elapsed.TotalSeconds:F1}s with no progress monitoring");
+        }
+        
+        await Task.Delay(progressCheckInterval);
+    }
+    
+    throw new TimeoutException(
+        $"Exercise {exercisePath} exceeded absolute maximum timeout of {absoluteMaxTimeout.TotalMinutes} minutes");
+}
+
+private async Task<long> GetKafkaTopicMessageCountAsync(string topicName)
+{
+    // Use Kafka AdminClient to get topic offsets
+    var config = new AdminClientConfig
+    {
+        BootstrapServers = _kafkaHostEndpoint
+    };
+    
+    using var adminClient = new AdminClientBuilder(config).Build();
+    
+    try
+    {
+        var metadata = adminClient.GetMetadata(topicName, TimeSpan.FromSeconds(5));
+        var topic = metadata.Topics.FirstOrDefault(t => t.Topic == topicName);
+        
+        if (topic == null) return 0;
+        
+        long totalMessages = 0;
+        
+        foreach (var partition in topic.Partitions)
+        {
+            var topicPartition = new TopicPartition(topicName, partition.PartitionId);
+            var watermarkOffsets = adminClient.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(5));
+            totalMessages += watermarkOffsets.High.Value - watermarkOffsets.Low.Value;
+        }
+        
+        return totalMessages;
+    }
+    catch (Exception ex)
+    {
+        TestContext.WriteLine($"[WARNING] Failed to get message count for topic {topicName}: {ex.Message}");
+        return 0;
+    }
+}
+```
+
+#### Exercise Integration Pattern
+
+```csharp
+// In exercise Program.cs - Add progress logging
+Console.WriteLine($"[PROGRESS] Processing: {processedCount}/{totalCount} messages ({percentage:F1}%)");
+
+// Every 100 messages or 1 second, log progress
+if (processedCount % 100 == 0 || DateTime.UtcNow - lastLogTime > TimeSpan.FromSeconds(1))
+{
+    var percentage = (double)processedCount / totalCount * 100.0;
+    Console.WriteLine($"[PROGRESS] {percentage:F1}% complete ({processedCount}/{totalCount} messages)");
+    lastLogTime = DateTime.UtcNow;
+}
+```
+
+#### Test Usage Pattern
+
+```csharp
+[Test]
+[Description("Exercise 8.1: Stress Testing with Progress Monitoring")]
+public async Task Exercise81_StressTesting_ShouldCompleteWithProgressTracking()
+{
+    TestContext.WriteLine("================================================================================");
+    TestContext.WriteLine("Exercise 8.1: Stress Testing with Real Infrastructure");
+    TestContext.WriteLine("================================================================================");
+    
+    // Enable progress monitoring by specifying input/output topics
+    var (exitCode, output, error) = await ExecuteExerciseWithProgressMonitoringAsync(
+        Exercise81Path,
+        Array.Empty<string>(),
+        timeout: TimeSpan.FromSeconds(30),  // Initial timeout
+        inputTopic: "stress-test-input",     // Monitor this input topic
+        outputTopic: "stress-test-output");  // Monitor this output topic
+    
+    Assert.That(exitCode, Is.EqualTo(0),
+        $"Exercise 8.1 should complete successfully. Exit code: {exitCode}\nError: {error}");
+    
+    TestContext.WriteLine("✅ Exercise 8.1 completed with progress monitoring");
+}
+```
+
+#### Benefits of Progress Monitoring
+
+1. **Smart Timeout Extension**: Tests that make progress get more time automatically
+2. **Fast Hang Detection**: Tests that stop progressing fail within 30 seconds
+3. **User Feedback**: Clear progress percentage shown during execution
+4. **No False Positives**: Long-running tests complete successfully if making progress
+5. **Observability**: Kafka topic monitoring provides real-time processing metrics
+
+#### Exercises Requiring Progress Monitoring
+
+**High Priority** (currently timing out):
+- **Day13 Exercise 3** (Saga Pattern): Multiple Flink jobs, 45s+ execution
+- **Day13 Exercise 4** (CEP): Complex event processing, 45s+ execution
+- **Day08 Exercise 81** (Stress Testing): High-volume message processing, 38s+ execution
+- **Day08 Exercise 82** (Backpressure Monitoring): Variable load scenarios
+- **Day08 Exercise 83** (Performance Benchmarking): Large-scale testing
+- **Day09**: Exactly-once semantics with checkpoint delays
+
+#### Migration Plan
+
+1. **Phase 1**: Add `GetKafkaTopicMessageCountAsync()` helper to LearningCourseTestBase
+2. **Phase 2**: Add `ExecuteExerciseWithProgressMonitoringAsync()` overload
+3. **Phase 3**: Update failing tests to use progress monitoring (Day08, Day13)
+4. **Phase 4**: Add progress logging to exercise code
+5. **Phase 5**: Validate all tests pass with new timeout strategy
+
+#### Example Timeout Behavior
+
+**Without Progress Monitoring** (Current):
+```
+00:00 - Exercise starts
+00:30 - No output for 20s → TIMEOUT (even if making progress)
+```
+
+**With Progress Monitoring** (New):
+```
+00:00 - Exercise starts
+00:05 - Progress: 10% (100/1000 messages) → extend timeout to 00:35
+00:10 - Progress: 25% (250/1000 messages) → extend timeout to 00:40
+00:15 - Progress: 50% (500/1000 messages) → extend timeout to 00:45
+00:20 - Progress: 75% (750/1000 messages) → extend timeout to 00:50
+00:25 - Progress: 100% (1000/1000 messages) → complete successfully
+```
+
+**Hang Detection** (New):
+```
+00:00 - Exercise starts
+00:05 - Progress: 10% (100/1000 messages) → extend timeout to 00:35
+00:10 - Progress: 10% (100/1000 messages) → no change
+00:15 - Progress: 10% (100/1000 messages) → no change
+00:20 - Progress: 10% (100/1000 messages) → no change
+00:25 - Progress: 10% (100/1000 messages) → no change
+00:35 - No progress for 30s → TIMEOUT (truly hung)
+```
 
 **Implementation Pattern**:
 

@@ -36,7 +36,7 @@ public class ThroughputScenario
         {
             BootstrapServers = _kafkaBootstrapServers,
             EnableIdempotence = true,
-            Acks = Acks.Leader,
+            Acks = Acks.All, // Required when EnableIdempotence = true
             LingerMs = 0, // No batching
             BatchSize = 1
         };
@@ -128,7 +128,7 @@ public class ThroughputScenario
         {
             BootstrapServers = _kafkaBootstrapServers,
             EnableIdempotence = true,
-            Acks = Acks.Leader,
+            Acks = Acks.All, // Required when EnableIdempotence = true
             LingerMs = 0,
             BatchSize = 1
         };
@@ -219,7 +219,7 @@ public class ThroughputScenario
         {
             BootstrapServers = _kafkaBootstrapServers,
             EnableIdempotence = true,
-            Acks = Acks.Leader,
+            Acks = Acks.All, // Required when EnableIdempotence = true
             LingerMs = 0,
             BatchSize = 1
         };
@@ -310,7 +310,7 @@ public class ThroughputScenario
         {
             BootstrapServers = _kafkaBootstrapServers,
             EnableIdempotence = true,
-            Acks = Acks.Leader,
+            Acks = Acks.All, // Required when EnableIdempotence = true
             LingerMs = 10, // Enable batching
             BatchSize = batchSize * 1024, // Approximate batch size
             CompressionType = Confluent.Kafka.CompressionType.Gzip

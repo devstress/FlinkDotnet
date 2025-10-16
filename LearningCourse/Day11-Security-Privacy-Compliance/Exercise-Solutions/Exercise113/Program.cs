@@ -172,7 +172,8 @@ class Program
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = kafkaEndpoint,
-            Acks = Acks.All
+            Acks = Acks.All,
+            EnableIdempotence = true
         };
 
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
@@ -211,7 +212,9 @@ class Program
         var kafkaEndpoint = await GetKafkaBootstrapServersAsync();
         var producerConfig = new ProducerConfig
         {
-            BootstrapServers = kafkaEndpoint
+            BootstrapServers = kafkaEndpoint,
+            Acks = Acks.All,
+            EnableIdempotence = true
         };
 
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
@@ -403,7 +406,9 @@ class Program
 
         var producerConfig = new ProducerConfig
         {
-            BootstrapServers = kafkaEndpoint
+            BootstrapServers = kafkaEndpoint,
+            Acks = Acks.All,
+            EnableIdempotence = true
         };
 
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
@@ -429,7 +434,9 @@ class Program
         var kafkaEndpoint = await GetKafkaBootstrapServersAsync();
         var producerConfig = new ProducerConfig
         {
-            BootstrapServers = kafkaEndpoint
+            BootstrapServers = kafkaEndpoint,
+            Acks = Acks.All,
+            EnableIdempotence = true
         };
 
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();

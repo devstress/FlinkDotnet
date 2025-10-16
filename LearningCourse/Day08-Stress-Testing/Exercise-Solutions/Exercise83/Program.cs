@@ -252,7 +252,11 @@ class Program
             BootstrapServers = KafkaBootstrapServers,
             ClientId = $"exercise83-{scenario.Type.ToString().ToLower()}",
             Acks = Acks.All,
-            LingerMs = scenario.Type == BenchmarkType.Throughput ? 5 : 0
+            // Latency benchmark: immediate send for accurate measurement
+            // Other benchmarks: batch for better throughput
+            BatchSize = scenario.Type == BenchmarkType.Latency ? 1 : 16384,
+            LingerMs = scenario.Type == BenchmarkType.Latency ? 0 : 5,
+            CompressionType = scenario.Type == BenchmarkType.Latency ? CompressionType.None : CompressionType.Snappy
         };
 
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
@@ -294,33 +298,45 @@ class Program
         }
         else
         {
-            // Sequential for latency, memory, CPU benchmarks
+            // Batch parallel for latency, memory, CPU benchmarks
+            var tasks = new List<Task>();
             for (int i = 0; i < scenario.TargetOperations; i++)
             {
+                var localIndex = i;
                 var opStopwatch = Stopwatch.StartNew();
-                var benchmarkEvent = GenerateBenchmarkEvent(i, scenario);
+                var benchmarkEvent = GenerateBenchmarkEvent(localIndex, scenario);
                 
-                await producer.ProduceAsync(BenchmarkInputTopic, new Message<string, string>
+                var task = producer.ProduceAsync(BenchmarkInputTopic, new Message<string, string>
                 {
                     Key = benchmarkEvent.Id,
                     Value = JsonSerializer.Serialize(benchmarkEvent)
+                }).ContinueWith(_ =>
+                {
+                    opStopwatch.Stop();
+                    lock (latencies)
+                    {
+                        latencies.Add(opStopwatch.Elapsed.TotalMilliseconds);
+                    }
+                    
+                    // Memory snapshot for memory benchmark
+                    if (scenario.Type == BenchmarkType.Memory && localIndex % 5000 == 0)
+                    {
+                        lock (memorySnapshots)
+                        {
+                            memorySnapshots.Add(GC.GetTotalMemory(false));
+                        }
+                    }
+                    
+                    // CPU-intensive work for CPU benchmark
+                    if (scenario.Type == BenchmarkType.CPU)
+                    {
+                        PerformCPUIntensiveWork();
+                    }
                 });
                 
-                opStopwatch.Stop();
-                latencies.Add(opStopwatch.Elapsed.TotalMilliseconds);
-                
-                // Memory snapshot for memory benchmark
-                if (scenario.Type == BenchmarkType.Memory && i % 5000 == 0)
-                {
-                    memorySnapshots.Add(GC.GetTotalMemory(false));
-                }
-                
-                // CPU-intensive work for CPU benchmark
-                if (scenario.Type == BenchmarkType.CPU)
-                {
-                    PerformCPUIntensiveWork();
-                }
+                tasks.Add(task);
             }
+            await Task.WhenAll(tasks);
         }
 
         producer.Flush(TimeSpan.FromSeconds(10));
