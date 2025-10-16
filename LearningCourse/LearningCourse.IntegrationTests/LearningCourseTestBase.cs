@@ -17,7 +17,7 @@ public abstract class LearningCourseTestBase
     private static Process? _appHostProcess;
     private static bool _isSetupComplete = false;
     private static readonly SemaphoreSlim _setupSemaphore = new SemaphoreSlim(1, 1);
-    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(30);
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
@@ -112,11 +112,37 @@ public abstract class LearningCourseTestBase
         
         TestContext.WriteLine("✅ AppHost process started, polling for infrastructure readiness...");
         
-            await WaitForInfrastructureReadyAsync();
-            
-            _isSetupComplete = true;
-            
-            TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+            try
+            {
+                await WaitForInfrastructureReadyAsync();
+                
+                _isSetupComplete = true;
+                
+                TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+            }
+            catch (TimeoutException ex)
+            {
+                // Infrastructure setup failed - kill the AppHost process to avoid leaving it running
+                TestContext.WriteLine($"❌ Infrastructure setup failed: {ex.Message}");
+                TestContext.WriteLine("🛑 Killing AppHost process due to setup failure...");
+                
+                if (_appHostProcess != null && !_appHostProcess.HasExited)
+                {
+                    try
+                    {
+                        _appHostProcess.Kill(entireProcessTree: true);
+                        _appHostProcess.Dispose();
+                        _appHostProcess = null;
+                    }
+                    catch (Exception killEx)
+                    {
+                        TestContext.WriteLine($"⚠️ Error killing AppHost: {killEx.Message}");
+                    }
+                }
+                
+                // Re-throw to fail the test setup
+                throw;
+            }
         }
         finally
         {
@@ -1406,7 +1432,8 @@ public abstract class LearningCourseTestBase
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        // Dynamic timeout: base timeout + extensions when there's progress
+        // Dynamic timeout: base timeout + automatic extensions when there's progress
+        // This matches LocalTesting pattern: extends timeout when output is produced
         var baseTimeout = timeout ?? TimeSpan.FromMinutes(1);
         var noProgressTimeout = TimeSpan.FromSeconds(30); // Kill if no output for 30 seconds
         var waitStopwatch = Stopwatch.StartNew();
@@ -1429,6 +1456,7 @@ public abstract class LearningCourseTestBase
             await Task.Delay(500);
             
             // Also check absolute maximum timeout (baseTimeout * 3 to allow for extensions)
+            // This allows tests to run longer if they're making progress
             if (waitStopwatch.Elapsed > baseTimeout * 3)
             {
                 TestContext.WriteLine($"❌ [DIAGNOSTIC] Absolute maximum timeout reached: {waitStopwatch.Elapsed.TotalSeconds:F1}s");
