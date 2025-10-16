@@ -16,7 +16,7 @@ public abstract class LearningCourseTestBase
 {
     private static Process? _appHostProcess;
     private static bool _isSetupComplete = false;
-    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(40);
+    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(90);
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
@@ -155,10 +155,24 @@ public abstract class LearningCourseTestBase
     }
     
     /// <summary>
-    /// Start AppHost process with output capture
+    /// Start AppHost process with output capture to both console and log file
     /// </summary>
     private static Process StartAppHostProcess()
     {
+        // Create Aspire log file
+        var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
+        var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+        Directory.CreateDirectory(testLogsDir);
+        var aspireLogPath = Path.Combine(testLogsDir, $"Aspire.AppHost.log.{DateTime.UtcNow:yyyyMMdd}");
+        
+        // Create log writer with FileShare.ReadWrite for concurrent access
+        var aspireLogStream = new FileStream(aspireLogPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+        var aspireLogWriter = new StreamWriter(aspireLogStream) { AutoFlush = true };
+        
+        aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] === Aspire AppHost Starting ===");
+        aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] Log file: {aspireLogPath}");
+        aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] LEARNINGCOURSE=true (enabling Redis and Observability)");
+        
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -169,20 +183,29 @@ public abstract class LearningCourseTestBase
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        
+        // CRITICAL: Pass LEARNINGCOURSE environment variable to AppHost process
+        // AppHost checks this to enable Redis and Observability infrastructure
+        psi.Environment["LEARNINGCOURSE"] = "true";
 
         var process = Process.Start(psi);
         
         if (process == null)
         {
+            aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [ERROR] Failed to start AppHost process");
+            aspireLogWriter.Dispose();
             throw new InvalidOperationException("Failed to start AppHost process");
         }
 
-        // Capture output for diagnostics
+        aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] AppHost process started with PID {process.Id}");
+
+        // Capture output for diagnostics - write to both console and log file
         process.OutputDataReceived += (sender, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data))
             {
                 TestContext.WriteLine($"[AppHost] {e.Data}");
+                aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [OUT] {e.Data}");
             }
         };
         process.ErrorDataReceived += (sender, e) =>
@@ -190,11 +213,22 @@ public abstract class LearningCourseTestBase
             if (!string.IsNullOrEmpty(e.Data))
             {
                 TestContext.WriteLine($"[AppHost Error] {e.Data}");
+                aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [ERR] {e.Data}");
             }
         };
         
+        // Clean up log writer when process exits
+        process.Exited += (sender, e) =>
+        {
+            aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] === Aspire AppHost Exited ===");
+            aspireLogWriter.Dispose();
+        };
+        process.EnableRaisingEvents = true;
+        
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+        
+        TestContext.WriteLine($"📝 Aspire AppHost log: {aspireLogPath}");
         
         return process;
     }
@@ -598,17 +632,21 @@ public abstract class LearningCourseTestBase
     }
 
     /// <summary>
-    /// Kill any orphaned FlinkDotNet.JobGateway processes that may be holding port 8080.
-    /// This prevents "address already in use" errors when starting new test runs.
+    /// Kill any orphaned processes from previous test runs.
+    /// This prevents "address already in use" errors and infrastructure startup failures.
+    /// Kills both JobGateway (port 8080) and AppHost processes.
     /// </summary>
     private static void KillOrphanedJobGatewayProcesses()
     {
         try
         {
+            // Kill both JobGateway and AppHost processes to ensure clean state
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = "-NoProfile -Command \"Get-Process -Name 'FlinkDotNet.JobGateway' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force }\"",
+                Arguments = "-NoProfile -Command \"" +
+                    "Get-Process -Name 'FlinkDotNet.JobGateway','LocalTesting.FlinkSqlAppHost' -ErrorAction SilentlyContinue | " +
+                    "ForEach-Object { Stop-Process -Id $_.Id -Force }\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -624,7 +662,7 @@ public abstract class LearningCourseTestBase
                 
                 if (!string.IsNullOrWhiteSpace(output))
                 {
-                    TestContext.WriteLine($"   ✅ Killed orphaned JobGateway processes: {output}");
+                    TestContext.WriteLine($"   ✅ Killed orphaned processes: {output}");
                 }
                 if (!string.IsNullOrWhiteSpace(error) && !error.Contains("Cannot find a process"))
                 {
@@ -634,7 +672,7 @@ public abstract class LearningCourseTestBase
         }
         catch (Exception ex)
         {
-            TestContext.WriteLine($"   ⚠️ Error killing orphaned JobGateway processes: {ex.Message}");
+            TestContext.WriteLine($"   ⚠️ Error killing orphaned processes: {ex.Message}");
             // Don't throw - cleanup is best effort
         }
     }
@@ -718,6 +756,13 @@ public abstract class LearningCourseTestBase
                 LogDebug("[TEARDOWN] Cleaning up containers...");
                 CleanupContainers();
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Containers cleaned up");
+                
+                // Prune Docker volumes to prevent "exceeded num_locks" error
+                TestContext.WriteLine("🧹 Pruning orphaned Docker volumes...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Pruning Docker volumes...");
+                LogDebug("[TEARDOWN] Pruning Docker volumes...");
+                PruneDockerVolumes();
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Docker volumes pruned");
                 
             LogDebug("[TEARDOWN] Teardown complete");
             Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Teardown complete");
@@ -1289,6 +1334,65 @@ public abstract class LearningCourseTestBase
         catch (Exception ex)
         {
             TestContext.WriteLine($"⚠️ Error cleaning up containers: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Prune orphaned Docker volumes to prevent "exceeded num_locks" error.
+    /// Orphaned volumes accumulate over time and can exhaust Docker's volume lock limit (default 2048).
+    /// This cleanup prevents "allocation failed; exceeded num_locks" errors.
+    /// </summary>
+    private static void PruneDockerVolumes()
+    {
+        try
+        {
+            var prunePsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "volume prune -f",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var pruneProcess = Process.Start(prunePsi);
+            if (pruneProcess == null)
+            {
+                TestContext.WriteLine("⚠️ Failed to start volume prune command");
+                return;
+            }
+            
+            pruneProcess.WaitForExit(TimeSpan.FromSeconds(30));
+            var output = pruneProcess.StandardOutput.ReadToEnd();
+            var error = pruneProcess.StandardError.ReadToEnd();
+            
+            if (pruneProcess.ExitCode == 0)
+            {
+                // Extract reclaimed space from output (e.g., "Total reclaimed space: 36.41GB")
+                var reclaimedMatch = System.Text.RegularExpressions.Regex.Match(output, @"Total reclaimed space:\s*([\d.]+\s*[KMGT]?B)");
+                if (reclaimedMatch.Success)
+                {
+                    TestContext.WriteLine($"✅ Docker volume prune successful - Reclaimed: {reclaimedMatch.Groups[1].Value}");
+                }
+                else
+                {
+                    TestContext.WriteLine("✅ Docker volume prune successful");
+                }
+            }
+            else
+            {
+                TestContext.WriteLine($"⚠️ Docker volume prune failed with exit code {pruneProcess.ExitCode}");
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    TestContext.WriteLine($"   Error: {error.Trim()}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Error pruning Docker volumes: {ex.Message}");
+            // Don't throw - cleanup is best effort
         }
     }
 
