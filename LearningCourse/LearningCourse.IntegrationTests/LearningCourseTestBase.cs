@@ -1842,7 +1842,7 @@ public abstract class LearningCourseTestBase
 
         // Dynamic timeout: automatic extensions when there's progress (output produced)
         // This matches LocalTesting pattern: extends timeout when output is produced
-        var noProgressTimeout = TimeSpan.FromSeconds(20); // Kill if no output for 20 seconds
+        var noProgressTimeout = TimeSpan.FromSeconds(45); // Kill if no output for 45 seconds (increased from 20s for ML/processing-intensive exercises)
         var waitStopwatch = Stopwatch.StartNew();
         
         // Poll for process exit with dynamic timeout extension
