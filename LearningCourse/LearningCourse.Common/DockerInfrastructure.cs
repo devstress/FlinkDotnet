@@ -18,7 +18,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka- --format {{.Names}}");
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka- --format \"{{.Names}}\"");
             var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             
             if (string.IsNullOrWhiteSpace(kafkaContainer))
@@ -27,14 +27,14 @@ public static class DockerInfrastructure
             }
 
             // Try Docker bridge network first
-            var ipAddress = await RunDockerCommandAsync("inspect " + kafkaContainer + " --format {{.NetworkSettings.Networks.bridge.IPAddress}}");
+            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
             var ip = ipAddress.Trim();
             
             // If bridge network doesn't have IP, try podman network (for Podman runtime)
             if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
                 Console.WriteLine($"🔍 Bridge network IP not found, trying podman network...");
-                ipAddress = await RunDockerCommandAsync("inspect " + kafkaContainer + " --format {{.NetworkSettings.Networks.podman.IPAddress}}");
+                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.podman.IPAddress}}}}\"");
                 ip = ipAddress.Trim();
             }
             
@@ -42,7 +42,7 @@ public static class DockerInfrastructure
             {
                 // Fallback: Get the first available network IP
                 Console.WriteLine($"🔍 Specific network not found, getting first available IP...");
-                ipAddress = await RunDockerCommandAsync("inspect " + kafkaContainer + " --format {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}");
+                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}\"");
                 ip = ipAddress.Trim();
             }
             
@@ -78,7 +78,7 @@ public static class DockerInfrastructure
             Console.WriteLine(header);
             logWriter?.WriteLine(header);
             
-            var dockerPs = await RunDockerCommandAsync("ps --format \"table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}\"");
+            var dockerPs = await RunDockerCommandAsync("ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
             
             Console.WriteLine(dockerPs);
             logWriter?.WriteLine(dockerPs);

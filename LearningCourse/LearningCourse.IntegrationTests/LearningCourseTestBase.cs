@@ -70,11 +70,39 @@ public abstract class LearningCourseTestBase
     {
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] GlobalSetUp called");
         
+        // Kill any orphaned processes from previous test runs FIRST
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Cleaning up orphaned processes...");
+        KillOrphanedJobGatewayProcesses();
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Orphaned process cleanup complete");
+        
+        // Dispose any existing debug log writer first to release file locks
+        if (_debugLogWriter != null)
+        {
+            Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Disposing existing debug log writer...");
+            _debugLogWriter.Dispose();
+            _debugLogWriter = null;
+        }
+        
         // Initialize debug log file with FileShare.ReadWrite to allow multiple test processes to write
         var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
         var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
         
-        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Ensuring test logs directory exists...");
+        // Clean up old test logs before starting new test run
+        if (Directory.Exists(testLogsDir))
+        {
+            Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Cleaning up old test logs...");
+            try
+            {
+                Directory.Delete(testLogsDir, recursive: true);
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Old logs deleted successfully");
+            }
+            catch (IOException ex)
+            {
+                // If deletion fails due to file locks, just log and continue
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Warning: Could not delete old logs (files may be in use): {ex.Message}");
+            }
+        }
+        
         Directory.CreateDirectory(testLogsDir);
         
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Creating debug log file...");
@@ -570,6 +598,48 @@ public abstract class LearningCourseTestBase
     }
 
     /// <summary>
+    /// Kill any orphaned FlinkDotNet.JobGateway processes that may be holding port 8080.
+    /// This prevents "address already in use" errors when starting new test runs.
+    /// </summary>
+    private static void KillOrphanedJobGatewayProcesses()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = "-NoProfile -Command \"Get-Process -Name 'FlinkDotNet.JobGateway' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force }\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var process = Process.Start(psi);
+            if (process != null)
+            {
+                process.WaitForExit(TimeSpan.FromSeconds(5));
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                
+                if (!string.IsNullOrWhiteSpace(output))
+                {
+                    TestContext.WriteLine($"   ✅ Killed orphaned JobGateway processes: {output}");
+                }
+                if (!string.IsNullOrWhiteSpace(error) && !error.Contains("Cannot find a process"))
+                {
+                    TestContext.WriteLine($"   ⚠️ Error during cleanup: {error}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️ Error killing orphaned JobGateway processes: {ex.Message}");
+            // Don't throw - cleanup is best effort
+        }
+    }
+    
+    /// <summary>
     /// Stop LocalTesting AppHost after all tests complete.
     /// Force kills the process and manually cleans up containers.
     /// Called by each test assembly's SetUpFixture.
@@ -588,6 +658,11 @@ public abstract class LearningCourseTestBase
                 
                 TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Stopping LocalTesting AppHost...");
+                
+                // Kill any orphaned JobGateway processes
+                TestContext.WriteLine("🧹 Killing orphaned JobGateway processes...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Killing orphaned JobGateway processes...");
+                KillOrphanedJobGatewayProcesses();
             
                 // Cancel all Flink jobs BEFORE copying logs and stopping containers
                 TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
