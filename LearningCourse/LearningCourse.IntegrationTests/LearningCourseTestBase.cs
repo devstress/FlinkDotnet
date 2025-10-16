@@ -16,8 +16,7 @@ public abstract class LearningCourseTestBase
 {
     private static Process? _appHostProcess;
     private static bool _isSetupComplete = false;
-    private static readonly SemaphoreSlim _setupSemaphore = new SemaphoreSlim(1, 1);
-    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(40);
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
@@ -69,84 +68,61 @@ public abstract class LearningCourseTestBase
     /// </summary>
     public static async Task GlobalSetUp()
     {
-        await _setupSemaphore.WaitAsync();
-        try
-        {
-            // Initialize debug log file with FileShare.ReadWrite to allow multiple test processes to write
-            var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
-            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
-            Directory.CreateDirectory(testLogsDir);
-            var debugLogPath = Path.Combine(testLogsDir, $"TestInfrastructure.Debug.log.{DateTime.UtcNow:yyyyMMdd}");
-            var fileStream = new FileStream(debugLogPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-            _debugLogWriter = new StreamWriter(fileStream) { AutoFlush = true };
-            
-            LogDebug($"[SETUP] Starting infrastructure setup. _isSetupComplete={_isSetupComplete}");
-            
-            if (_isSetupComplete)
-            {
-                LogDebug("[SETUP] Infrastructure already set up, skipping...");
-                TestContext.WriteLine("✅ Infrastructure already set up, skipping...");
-                return;
-            }
-            
-            // Set LEARNINGCOURSE=true to enable Redis and Observability infrastructure
-            // Required for:
-            // - Day15 exercises (Exercise151-154): Redis for state management
-            // - Day05 Exercise51: Prometheus/Grafana for observability metrics
-            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
-            TestContext.WriteLine("📚 Set LEARNINGCOURSE=true for Redis and Observability infrastructure");
-            
-            TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
-            TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] GlobalSetUp called");
         
+        // Initialize debug log file with FileShare.ReadWrite to allow multiple test processes to write
+        var repoRoot = FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root");
+        var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+        
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Ensuring test logs directory exists...");
+        Directory.CreateDirectory(testLogsDir);
+        
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Creating debug log file...");
+        var debugLogPath = Path.Combine(testLogsDir, $"TestInfrastructure.Debug.log.{DateTime.UtcNow:yyyyMMdd}");
+        var fileStream = new FileStream(debugLogPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+        _debugLogWriter = new StreamWriter(fileStream) { AutoFlush = true };
+        
+        LogDebug("[SETUP] Starting infrastructure setup");
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Debug log initialized");
+        
+        // Set LEARNINGCOURSE=true to enable Redis and Observability infrastructure
+        Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
+        TestContext.WriteLine("📚 Set LEARNINGCOURSE=true for Redis and Observability infrastructure");
+        
+        TestContext.WriteLine("🚀 Starting LocalTesting AppHost...");
+        TestContext.WriteLine($"📁 AppHost path: {AppHostPath}");
+    
         // DO NOT set KAFKA_BOOTSTRAP_SERVERS here!
-        // REASON: Environment variables set here are inherited by AppHost process,
-        // which then passes them to all Docker containers including Flink containers.
-        // This causes Kafka client inside Flink TaskManager to use localhost:9093 instead of kafka:9092.
-        //
-        // SOLUTION: Set KAFKA_BOOTSTRAP_SERVERS only in ExecuteExerciseAsync() so it's ONLY
-        // available to exercise processes, NOT to AppHost or Flink containers.
         TestContext.WriteLine($"✅ NOT setting KAFKA_BOOTSTRAP_SERVERS globally to prevent Docker inheritance");
 
         _appHostProcess = StartAppHostProcess();
+        var appHostStartTime = DateTime.UtcNow;
         
         TestContext.WriteLine("✅ AppHost process started, polling for infrastructure readiness...");
         
+        try
+        {
+            await WaitForInfrastructureReadyAsync(appHostStartTime);
+            
+            _isSetupComplete = true;
+            
+            TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+        }
+        catch (TimeoutException ex)
+        {
+            TestContext.WriteLine($"❌ Infrastructure setup failed: {ex.Message}");
+            TestContext.WriteLine("🛑 Running teardown to clean up containers due to setup failure...");
+            
             try
             {
-                await WaitForInfrastructureReadyAsync();
-                
-                _isSetupComplete = true;
-                
-                TestContext.WriteLine("✅ All infrastructure ready, tests can proceed");
+                GlobalTearDown();
             }
-            catch (TimeoutException ex)
+            catch (Exception teardownEx)
             {
-                // Infrastructure setup failed - kill the AppHost process to avoid leaving it running
-                TestContext.WriteLine($"❌ Infrastructure setup failed: {ex.Message}");
-                TestContext.WriteLine("🛑 Killing AppHost process due to setup failure...");
-                
-                if (_appHostProcess != null && !_appHostProcess.HasExited)
-                {
-                    try
-                    {
-                        _appHostProcess.Kill(entireProcessTree: true);
-                        _appHostProcess.Dispose();
-                        _appHostProcess = null;
-                    }
-                    catch (Exception killEx)
-                    {
-                        TestContext.WriteLine($"⚠️ Error killing AppHost: {killEx.Message}");
-                    }
-                }
-                
-                // Re-throw to fail the test setup
-                throw;
+                TestContext.WriteLine($"⚠️ Error during teardown after setup failure: {teardownEx.Message}");
             }
-        }
-        finally
-        {
-            _setupSemaphore.Release();
+            
+            throw;
         }
     }
     
@@ -200,7 +176,8 @@ public abstract class LearningCourseTestBase
     /// Ensures BOTH Kafka and Flink are ready before proceeding
     /// OPTIMIZED: Faster polling (200ms) and parallel health checks for minimal wait time
     /// </summary>
-    private static async Task WaitForInfrastructureReadyAsync()
+    /// <param name="appHostStartTime">The time when AppHost process was started</param>
+    private static async Task WaitForInfrastructureReadyAsync(DateTime appHostStartTime)
     {
         LogDebug("[SETUP] Starting infrastructure readiness polling loop...");
         TestContext.WriteLine("[SETUP] Starting OPTIMIZED infrastructure readiness polling (200ms intervals)...");
@@ -208,6 +185,7 @@ public abstract class LearningCourseTestBase
         var stopwatch = Stopwatch.StartNew();
         var maxWait = AppHostStartupTimeout;
         var pollInterval = TimeSpan.FromMilliseconds(200);  // OPTIMIZED: 200ms instead of 500ms for faster detection
+        bool dockerPsLogged = false;  // Track if we've logged docker ps 30 seconds after AppHost start
         
         string? kafkaFlinkIp = null;
         string? kafkaHostEndpoint = null;
@@ -226,6 +204,16 @@ public abstract class LearningCourseTestBase
         {
             iteration++;
             LogDebug($"[POLL] Iteration {iteration} at {stopwatch.Elapsed.TotalSeconds:F1}s: FlinkReady={flinkReady}, TemporalReady={temporalReady}");
+            
+            // Log docker ps 30 seconds after AppHost started (once only)
+            var timeSinceAppHostStart = (DateTime.UtcNow - appHostStartTime).TotalSeconds;
+            if (!dockerPsLogged && timeSinceAppHostStart >= 30)
+            {
+                dockerPsLogged = true;
+                TestContext.WriteLine($"🐳 === DOCKER PS (30 seconds after AppHost start) ===");
+                LogDebug($"[DOCKER-PS] Logging docker ps at {timeSinceAppHostStart:F1}s after AppHost start");
+                await DockerInfrastructure.LogDockerPsAsync("30 seconds after AppHost start", _debugLogWriter);
+            }
             
             // OPTIMIZED: Run endpoint discovery and health checks in parallel for faster detection
             var discoveryTask = TryDiscoverEndpointsAsync(
@@ -447,6 +435,8 @@ public abstract class LearningCourseTestBase
                     {
                         LogDebug($"[DISCOVERY] Kafka container IP discovered: {flinkIp}");
                         TestContext.WriteLine($"✅ Kafka container IP discovered: {flinkIp} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+                        // Log docker ps after successful Kafka IP discovery
+                        await DockerInfrastructure.LogDockerPsAsync("After Kafka IP Discovery", _debugLogWriter);
                     }
                 }
                 catch (Exception ex)
@@ -587,71 +577,83 @@ public abstract class LearningCourseTestBase
     /// </summary>
     public static void GlobalTearDown()
     {
-        _setupSemaphore.Wait();
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] GlobalTearDown called");
+        LogDebug("[TEARDOWN] GlobalTearDown called");
+        
         try
         {
-            if (!_isSetupComplete)
-            {
-                LogDebug("[TEARDOWN] Infrastructure already torn down, skipping...");
-                TestContext.WriteLine("✅ Infrastructure already torn down, skipping...");
-                return;
-            }
-            _isSetupComplete = false;
-            
-            LogDebug("[TEARDOWN] Starting teardown process");
-            
-            TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
-        
-        // Cancel all Flink jobs BEFORE copying logs and stopping containers
-        TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
-        CancelAllFlinkJobsSync();
-        
-        // Copy logs from all containers BEFORE stopping them
-        TestContext.WriteLine("📋 Copying container logs...");
-        CopyFlinkLogs();
-        CopyTemporalLogs();
-        CopyPostgreSqlLogs();
-        
-        if (_appHostProcess != null && !_appHostProcess.HasExited)
-        {
-            try
-            {
-                TestContext.WriteLine($"⚠️ Force killing AppHost process (PID: {_appHostProcess.Id})...");
-                _appHostProcess.Kill(entireProcessTree: true);
                 
-                // Give it 5 seconds to terminate
-                if (_appHostProcess.WaitForExit(TimeSpan.FromSeconds(5)))
-                {
-                    TestContext.WriteLine("✅ AppHost process terminated");
-                }
-                else
-                {
-                    TestContext.WriteLine("⚠️ Process did not terminate within 5 seconds");
-                }
-            }
-            catch (Exception ex)
-            {
-                TestContext.WriteLine($"⚠️ Error killing AppHost: {ex.Message}");
-            }
-            finally
-            {
-                _appHostProcess.Dispose();
-                _appHostProcess = null;
-            }
-        }
-        
-        // Manually clean up containers since force kill doesn't allow Aspire to clean them up
-        TestContext.WriteLine("🧹 Manually cleaning up containers...");
-            CleanupContainers();
+                LogDebug("[TEARDOWN] Starting teardown process");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Starting teardown process");
+                
+                TestContext.WriteLine("🛑 Stopping LocalTesting AppHost...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Stopping LocalTesting AppHost...");
             
+                // Cancel all Flink jobs BEFORE copying logs and stopping containers
+                TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Cancelling Flink jobs...");
+                LogDebug("[TEARDOWN] Cancelling Flink jobs...");
+                CancelAllFlinkJobsSync();
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Flink jobs cancelled");
+                LogDebug("[TEARDOWN] Flink jobs cancelled");
+                
+                // Copy logs from all containers BEFORE stopping them
+                TestContext.WriteLine("📋 Copying container logs...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs...");
+                LogDebug("[TEARDOWN] Copying container logs...");
+                CopyFlinkLogs();
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Flink logs copied");
+                CopyTemporalLogs();
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Temporal logs copied");
+                CopyPostgreSqlLogs();
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] PostgreSQL logs copied");
+                LogDebug("[TEARDOWN] All logs copied");
+                
+                if (_appHostProcess != null && !_appHostProcess.HasExited)
+                {
+                    try
+                    {
+                        TestContext.WriteLine($"⚠️ Force killing AppHost process (PID: {_appHostProcess.Id})...");
+                        _appHostProcess.Kill(entireProcessTree: true);
+                        
+                        // Give it 5 seconds to terminate
+                        if (_appHostProcess.WaitForExit(TimeSpan.FromSeconds(5)))
+                        {
+                            TestContext.WriteLine("✅ AppHost process terminated");
+                        }
+                        else
+                        {
+                            TestContext.WriteLine("⚠️ Process did not terminate within 5 seconds");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        TestContext.WriteLine($"⚠️ Error killing AppHost: {ex.Message}");
+                    }
+                    finally
+                    {
+                        _appHostProcess.Dispose();
+                        _appHostProcess = null;
+                    }
+                }
+                
+                // Manually clean up containers since force kill doesn't allow Aspire to clean them up
+                TestContext.WriteLine("🧹 Manually cleaning up containers...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Cleaning up containers...");
+                LogDebug("[TEARDOWN] Cleaning up containers...");
+                CleanupContainers();
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Containers cleaned up");
+                
             LogDebug("[TEARDOWN] Teardown complete");
+            Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Teardown complete");
             TestContext.WriteLine("✅ Teardown complete");
         }
         finally
         {
+            Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Finally block - disposing resources...");
             _debugLogWriter?.Dispose();
             _debugLogWriter = null;
-            _setupSemaphore.Release();
+            Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Resources disposed, teardown finished");
         }
     }
     
@@ -1320,7 +1322,6 @@ public abstract class LearningCourseTestBase
         LogDebug($"[EXERCISE] Test infrastructure state: _isSetupComplete={_isSetupComplete}");
         
         // Ensure infrastructure is ready before executing exercises
-        // This handles cases where tests are run individually without GlobalSetUp
         if (!_isSetupComplete)
         {
             LogDebug("[EXERCISE] Infrastructure not ready, starting setup...");
@@ -1435,7 +1436,7 @@ public abstract class LearningCourseTestBase
         // Dynamic timeout: base timeout + automatic extensions when there's progress
         // This matches LocalTesting pattern: extends timeout when output is produced
         var baseTimeout = timeout ?? TimeSpan.FromMinutes(1);
-        var noProgressTimeout = TimeSpan.FromSeconds(30); // Kill if no output for 30 seconds
+        var noProgressTimeout = TimeSpan.FromSeconds(20); // Kill if no output for 20 seconds
         var waitStopwatch = Stopwatch.StartNew();
         
         // Poll for process exit with dynamic timeout extension
@@ -1455,14 +1456,14 @@ public abstract class LearningCourseTestBase
             // Wait a bit before checking again
             await Task.Delay(500);
             
-            // Also check absolute maximum timeout (baseTimeout * 3 to allow for extensions)
-            // This allows tests to run longer if they're making progress
-            if (waitStopwatch.Elapsed > baseTimeout * 3)
+            // Also check absolute maximum timeout (baseTimeout * 1.5 to allow for extensions)
+            // Reduced from 3x to 1.5x for faster failure detection
+            if (waitStopwatch.Elapsed > baseTimeout * 1.5)
             {
                 TestContext.WriteLine($"❌ [DIAGNOSTIC] Absolute maximum timeout reached: {waitStopwatch.Elapsed.TotalSeconds:F1}s");
                 TestContext.WriteLine($"❌ [DIAGNOSTIC] Killing process tree for PID {process.Id}...");
                 process.Kill(entireProcessTree: true);
-                throw new TimeoutException($"Exercise {exercisePath} exceeded absolute maximum timeout of {(baseTimeout * 3).TotalSeconds:F1}s");
+                throw new TimeoutException($"Exercise {exercisePath} exceeded absolute maximum timeout of {(baseTimeout * 1.5).TotalSeconds:F1}s");
             }
         }
         

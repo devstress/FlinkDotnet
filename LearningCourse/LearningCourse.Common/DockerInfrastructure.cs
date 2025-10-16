@@ -27,14 +27,14 @@ public static class DockerInfrastructure
             }
 
             // Try Docker bridge network first
-            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format {{{{.NetworkSettings.Networks.bridge.IPAddress}}}}");
+            var ipAddress = await RunDockerCommandAsync("inspect " + kafkaContainer + " --format {{.NetworkSettings.Networks.bridge.IPAddress}}");
             var ip = ipAddress.Trim();
             
             // If bridge network doesn't have IP, try podman network (for Podman runtime)
             if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
                 Console.WriteLine($"🔍 Bridge network IP not found, trying podman network...");
-                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format {{{{.NetworkSettings.Networks.podman.IPAddress}}}}");
+                ipAddress = await RunDockerCommandAsync("inspect " + kafkaContainer + " --format {{.NetworkSettings.Networks.podman.IPAddress}}");
                 ip = ipAddress.Trim();
             }
             
@@ -42,7 +42,7 @@ public static class DockerInfrastructure
             {
                 // Fallback: Get the first available network IP
                 Console.WriteLine($"🔍 Specific network not found, getting first available IP...");
-                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format {{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}");
+                ipAddress = await RunDockerCommandAsync("inspect " + kafkaContainer + " --format {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}");
                 ip = ipAddress.Trim();
             }
             
@@ -59,6 +59,41 @@ public static class DockerInfrastructure
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to get Kafka container IP: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Logs the current state of all Docker containers using docker ps.
+    /// Useful for debugging container discovery and connectivity issues.
+    /// </summary>
+    /// <param name="context">Context description for the log entry</param>
+    /// <param name="logWriter">Optional StreamWriter for writing to debug log file</param>
+    public static async Task LogDockerPsAsync(string context, StreamWriter? logWriter = null)
+    {
+        try
+        {
+            var header = $"\n🐳 === DOCKER PS ({context}) ===";
+            var footer = $"🐳 === END DOCKER PS ({context}) ===\n";
+            
+            Console.WriteLine(header);
+            logWriter?.WriteLine(header);
+            
+            var dockerPs = await RunDockerCommandAsync("ps --format \"table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}\"");
+            
+            Console.WriteLine(dockerPs);
+            logWriter?.WriteLine(dockerPs);
+            
+            Console.WriteLine(footer);
+            logWriter?.WriteLine(footer);
+            
+            logWriter?.Flush();  // Ensure it's written immediately
+        }
+        catch (Exception ex)
+        {
+            var errorMsg = $"⚠️ Failed to run docker ps for {context}: {ex.Message}";
+            Console.WriteLine(errorMsg);
+            logWriter?.WriteLine(errorMsg);
+            logWriter?.Flush();
         }
     }
 
@@ -110,10 +145,15 @@ public static class DockerInfrastructure
             var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka --format {{.Ports}}");
             Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
             
+            // Log docker ps after discovering Kafka ports
+            await LogDockerPsAsync("After Kafka Port Discovery");
+            
             return ExtractKafkaEndpointFromPorts(kafkaContainers);
         }
         catch (Exception ex)
         {
+            // Log docker ps if Kafka discovery fails
+            await LogDockerPsAsync("Kafka Discovery Failed");
             throw new InvalidOperationException($"Failed to discover Kafka endpoint from Docker: {ex.Message}", ex);
         }
     }
@@ -150,10 +190,15 @@ public static class DockerInfrastructure
             var temporalContainers = await RunDockerCommandAsync("ps --filter name=temporal-server --format {{.Ports}}");
             Console.WriteLine($"🔍 Temporal container port mappings: {temporalContainers.Trim()}");
             
+            // Log docker ps after discovering Temporal ports
+            await LogDockerPsAsync("After Temporal Port Discovery");
+            
             return ExtractTemporalEndpointFromPorts(temporalContainers);
         }
         catch (Exception ex)
         {
+            // Log docker ps if Temporal discovery fails
+            await LogDockerPsAsync("Temporal Discovery Failed");
             throw new InvalidOperationException($"Failed to discover Temporal endpoint from Docker: {ex.Message}", ex);
         }
     }
@@ -189,10 +234,15 @@ public static class DockerInfrastructure
             var redisContainers = await RunDockerCommandAsync("ps --filter name=redis --format {{.Ports}}");
             Console.WriteLine($"🔍 Redis container port mappings: {redisContainers.Trim()}");
             
+            // Log docker ps after discovering Redis ports
+            await LogDockerPsAsync("After Redis Port Discovery");
+            
             return ExtractRedisEndpointFromPorts(redisContainers);
         }
         catch (Exception ex)
         {
+            // Log docker ps if Redis discovery fails
+            await LogDockerPsAsync("Redis Discovery Failed");
             throw new InvalidOperationException($"Failed to discover Redis endpoint from Docker: {ex.Message}", ex);
         }
     }
@@ -228,10 +278,15 @@ public static class DockerInfrastructure
             var prometheusContainers = await RunDockerCommandAsync("ps --filter name=prometheus --format {{.Ports}}");
             Console.WriteLine($"🔍 Prometheus container port mappings: {prometheusContainers.Trim()}");
             
+            // Log docker ps after discovering Prometheus ports
+            await LogDockerPsAsync("After Prometheus Port Discovery");
+            
             return ExtractPrometheusEndpointFromPorts(prometheusContainers);
         }
         catch (Exception ex)
         {
+            // Log docker ps if Prometheus discovery fails
+            await LogDockerPsAsync("Prometheus Discovery Failed");
             throw new InvalidOperationException($"Failed to discover Prometheus endpoint from Docker: {ex.Message}", ex);
         }
     }
@@ -267,10 +322,15 @@ public static class DockerInfrastructure
             var grafanaContainers = await RunDockerCommandAsync("ps --filter name=grafana --format {{.Ports}}");
             Console.WriteLine($"🔍 Grafana container port mappings: {grafanaContainers.Trim()}");
             
+            // Log docker ps after discovering Grafana ports
+            await LogDockerPsAsync("After Grafana Port Discovery");
+            
             return ExtractGrafanaEndpointFromPorts(grafanaContainers);
         }
         catch (Exception ex)
         {
+            // Log docker ps if Grafana discovery fails
+            await LogDockerPsAsync("Grafana Discovery Failed");
             throw new InvalidOperationException($"Failed to discover Grafana endpoint from Docker: {ex.Message}", ex);
         }
     }
