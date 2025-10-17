@@ -62,14 +62,46 @@ PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Configure Kafka with FIXED external port 9093
-// CRITICAL: Use WithEndpoint to ensure external port is FIXED at 9093
-// - Internal listener (PLAINTEXT): kafka:9092 (container-to-container)
-// - External listener (PLAINTEXT_HOST): localhost:9093 (host machine access)
-// Tests and external clients MUST use localhost:9093
+// Detect LEARNINGCOURSE mode for conditional metrics configuration
+var isLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
+Console.WriteLine($"🔍 Running in {(isLearningCourseMode ? "LEARNINGCOURSE" : "PRODUCTION")} mode");
+Console.WriteLine($"   Metrics export: {(isLearningCourseMode ? "ENABLED (Flink + Kafka)" : "DISABLED")}");
+
+// Configure Kafka - Aspire's AddKafka() uses KRaft mode by default (no Zookeeper)
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka");
+var kafkaBuilder = builder.AddKafka("kafka");
+
+// Enable JMX for metrics export only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    kafkaBuilder = kafkaBuilder
+        .WithEnvironment("KAFKA_JMX_PORT", "9101")
+        .WithEnvironment("KAFKA_JMX_HOSTNAME", "0.0.0.0")
+        .WithEnvironment("KAFKA_JMX_OPTS",
+            "-Dcom.sun.management.jmxremote " +
+            "-Dcom.sun.management.jmxremote.authenticate=false " +
+            "-Dcom.sun.management.jmxremote.ssl=false " +
+            "-Djava.rmi.server.hostname=kafka " +
+            "-Dcom.sun.management.jmxremote.rmi.port=9101");
+    Console.WriteLine("   📊 Kafka JMX metrics enabled on port 9101");
+}
+
+var kafka = kafkaBuilder;
 #pragma warning restore S1481
+
+// Kafka JMX Exporter - only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    Console.WriteLine("   📊 Deploying Kafka JMX Exporter for metrics collection");
+    #pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
+    var kafkaExporter = builder.AddContainer("kafka-exporter", "prom/jmx-exporter", "0.20.0")
+        .WithArgs("5556", "kafka:9101")  // Listen port, JMX target
+        .WithHttpEndpoint(targetPort: 5556, name: "metrics")
+        .WithReference(kafka);  // Ensure same Docker network
+    #pragma warning restore S1481
+    
+    Console.WriteLine("   📊 Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
+}
 
 // Flink JobManager with named HTTP endpoint for service references
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
@@ -83,59 +115,154 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
         .WithContainerRuntimeArgs("--publish", $"{Ports.JobManagerHostPort}:8081");
 }
 
+// Build base Flink properties for JobManager
+var baseJobManagerFlinkProperties =
+    "jobmanager.rpc.address: flink-jobmanager\n" +
+    "rest.address: 0.0.0.0\n" +
+    "rest.bind-address: 0.0.0.0\n" +
+    "parallelism.default: 1\n" +
+    "rest.port: 8081\n" +
+    "rest.bind-port: 8081\n" +
+    $"jobmanager.memory.process.size: {jobManagerMemoryMb}m\n" +
+    "heartbeat.interval: 5000\n" +
+    "heartbeat.timeout: 30000\n" +
+    "pekko.ask.timeout: 30s\n" +
+    "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
+    "classloader.resolve-order: parent-first\n" +
+    "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n";
+
+// Add Prometheus metrics configuration only in LEARNINGCOURSE mode
+var jobManagerFlinkProperties = isLearningCourseMode
+    ? baseJobManagerFlinkProperties +
+      "metrics.reporters: prom\n" +
+      "metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter\n" +
+      "metrics.reporter.prom.port: 9250\n"
+    : baseJobManagerFlinkProperties;
+
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
-    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs");  // Set log path inside container
     // REMOVED: .WithEnvironment("KAFKA_BOOTSTRAP", "kafka:9092")
     // REASON: FlinkJobRunner.java prioritizes environment variable over job definition
     // This caused jobs to use wrong Kafka address (localhost:17901 instead of kafka:9092)
     // Job definitions explicitly provide bootstrapServers, so environment variable is not needed
-    .WithEnvironment("FLINK_PROPERTIES",
-        "jobmanager.rpc.address: flink-jobmanager\n" +
-        "rest.address: 0.0.0.0\n" +
-        "rest.bind-address: 0.0.0.0\n" +
-        "parallelism.default: 1\n" +
-        "rest.port: 8081\n" +
-        "rest.bind-port: 8081\n" +
-        $"jobmanager.memory.process.size: {jobManagerMemoryMb}m\n" +
-        "heartbeat.interval: 5000\n" +
-        "heartbeat.timeout: 30000\n" +
-        "pekko.ask.timeout: 30s\n" +
-        "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
-        "classloader.resolve-order: parent-first\n" +
-        "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n")
+    
+// Only set FLINK_PROPERTIES if NOT using mounted config file in LEARNINGCOURSE mode
+if (!isLearningCourseMode)
+{
+    jobManager = jobManager.WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties);
+}
+
+jobManager = jobManager
+    .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
-    .WithArgs("jobmanager");
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs");  // Mount host test-logs to container
+
+// Expose Prometheus metrics port only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    jobManager = jobManager.WithHttpEndpoint(port: 9250, targetPort: 9250, name: "jm-metrics");
+    Console.WriteLine("   📊 Flink JobManager Prometheus metrics exposed on port 9250");
+}
+
+// Mount Prometheus metrics JAR and config file only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+    if (File.Exists(metricsJarPath))
+    {
+        jobManager = jobManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
+        Console.WriteLine("   📊 Flink Prometheus metrics JAR mounted for JobManager");
+    }
+    
+    // Mount Flink config file with Prometheus metrics configuration
+    var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
+    if (File.Exists(flinkConfigPath))
+    {
+        jobManager = jobManager.WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true);
+        Console.WriteLine("   📊 Flink config file mounted for JobManager (Prometheus metrics enabled)");
+    }
+}
+
+jobManager = jobManager.WithArgs("jobmanager");
 
 // Flink TaskManager with increased slots for parallel test execution (10 tests)
 // CRITICAL: TaskManager must wait for both JobManager and Kafka to be ready
 // - WaitFor(jobManager): Ensures TaskManager can register with JobManager
 // - WaitFor(kafka): Ensures Kafka is ready before TaskManager starts processing jobs
-builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
+// Build base Flink properties for TaskManager
+var baseTaskManagerFlinkProperties =
+    "jobmanager.rpc.address: flink-jobmanager\n" +
+    "rest.address: 0.0.0.0\n" +
+    "rest.bind-address: 0.0.0.0\n" +
+    "parallelism.default: 1\n" +
+    $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n" +
+    $"taskmanager.memory.jvm-metaspace.size: {taskManagerMetaspaceMb}m\n" +
+    "taskmanager.numberOfTaskSlots: 10\n" +
+    "heartbeat.interval: 5000\n" +
+    "heartbeat.timeout: 30000\n" +
+    "pekko.ask.timeout: 30s\n" +
+    "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
+    "classloader.resolve-order: parent-first\n" +
+    "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n";
+
+// Add Prometheus metrics configuration only in LEARNINGCOURSE mode
+var taskManagerFlinkProperties = isLearningCourseMode
+    ? baseTaskManagerFlinkProperties +
+      "metrics.reporters: prom\n" +
+      "metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter\n" +
+      "metrics.reporter.prom.port: 9251\n"
+    : baseTaskManagerFlinkProperties;
+
+var taskManagerBuilder = builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
-    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
-    .WithEnvironment("FLINK_PROPERTIES",
-        "jobmanager.rpc.address: flink-jobmanager\n" +
-        "rest.address: 0.0.0.0\n" +
-        "rest.bind-address: 0.0.0.0\n" +
-        "parallelism.default: 1\n" +
-        $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n" +
-        $"taskmanager.memory.jvm-metaspace.size: {taskManagerMetaspaceMb}m\n" +
-        "taskmanager.numberOfTaskSlots: 10\n" +
-        "heartbeat.interval: 5000\n" +
-        "heartbeat.timeout: 30000\n" +
-        "pekko.ask.timeout: 30s\n" +
-        "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
-        "classloader.resolve-order: parent-first\n" +
-        "classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.\n")
+    .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs");  // Set log path inside container
+    
+// Only set FLINK_PROPERTIES if NOT using mounted config file in LEARNINGCOURSE mode
+if (!isLearningCourseMode)
+{
+    taskManagerBuilder = taskManagerBuilder.WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties);
+}
+
+taskManagerBuilder = taskManagerBuilder
+    .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs");  // Mount host test-logs to container
+
+// Expose Prometheus metrics port only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    taskManagerBuilder = taskManagerBuilder.WithHttpEndpoint(port: 9251, targetPort: 9251, name: "tm-metrics");
+    Console.WriteLine("   📊 Flink TaskManager Prometheus metrics exposed on port 9251");
+}
+
+var taskManager = taskManagerBuilder;
+
+// Mount Prometheus metrics JAR and config file only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+    if (File.Exists(metricsJarPath))
+    {
+        taskManager = taskManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
+        Console.WriteLine("   📊 Flink Prometheus metrics JAR mounted for TaskManager");
+    }
+    
+    // Mount Flink config file with Prometheus metrics configuration
+    var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
+    if (File.Exists(flinkConfigPath))
+    {
+        taskManager = taskManager.WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true);
+        Console.WriteLine("   📊 Flink config file mounted for TaskManager (Prometheus metrics enabled)");
+    }
+}
+
+taskManager = taskManager
     .WithReference(kafka)
     .WithArgs("taskmanager");
 
@@ -154,27 +281,72 @@ if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
         .WithContainerRuntimeArgs("--publish", $"{Ports.SqlGatewayHostPort}:8083");
 }
 
-var sqlGateway = sqlGatewayBuilder
+// Build base Flink properties for SQL Gateway
+// CRITICAL: sql-gateway.endpoint.rest.address is REQUIRED by Flink 2.1.0
+// Without it, SQL Gateway fails with "Missing required options are: address"
+var baseSqlGatewayFlinkProperties =
+    "jobmanager.rpc.address: flink-jobmanager\n" +
+    "rest.address: flink-jobmanager\n" +
+    "rest.port: 8081\n" +
+    "sql-gateway.endpoint.rest.address: flink-sql-gateway\n" +
+    "sql-gateway.endpoint.rest.bind-address: 0.0.0.0\n" +
+    "sql-gateway.endpoint.rest.port: 8083\n" +
+    "sql-gateway.endpoint.rest.bind-port: 8083\n" +
+    "sql-gateway.endpoint.type: rest\n" +
+    "sql-gateway.session.check-interval: 60000\n" +
+    "sql-gateway.session.idle-timeout: 600000\n" +
+    "sql-gateway.worker.threads.max: 10\n" +
+    "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n";
+
+// Add Prometheus metrics configuration only in LEARNINGCOURSE mode
+var sqlGatewayFlinkProperties = isLearningCourseMode
+    ? baseSqlGatewayFlinkProperties +
+      "metrics.reporters: prom\n" +
+      "metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter\n" +
+      "metrics.reporter.prom.port: 9252\n"
+    : baseSqlGatewayFlinkProperties;
+
+sqlGatewayBuilder = sqlGatewayBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("LOG_FILE_PATH", "/opt/flink/test-logs")  // Set log path inside container
-    .WithEnvironment("FLINK_PROPERTIES",
-        "jobmanager.rpc.address: flink-jobmanager\n" +
-        "rest.address: flink-jobmanager\n" +
-        "rest.port: 8081\n" +
-        "sql-gateway.endpoint.rest.address: 0.0.0.0\n" +
-        "sql-gateway.endpoint.rest.bind-address: 0.0.0.0\n" +
-        "sql-gateway.endpoint.rest.port: 8083\n" +
-        "sql-gateway.endpoint.rest.bind-port: 8083\n" +
-        "sql-gateway.endpoint.type: rest\n" +
-        "sql-gateway.session.check-interval: 60000\n" +
-        "sql-gateway.session.idle-timeout: 600000\n" +
-        "sql-gateway.worker.threads.max: 10\n" +
-        "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n")
+    .WithEnvironment("FLINK_PROPERTIES", sqlGatewayFlinkProperties);  // ALWAYS set FLINK_PROPERTIES for SQL Gateway
+
+sqlGatewayBuilder = sqlGatewayBuilder
+    .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithEnvironment("JAVA_TOOL_OPTIONS", JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
-    .WithBindMount(testLogsDir, "/opt/flink/test-logs")  // Mount host test-logs to container
-    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
+    .WithBindMount(testLogsDir, "/opt/flink/test-logs");  // Mount host test-logs to container
+
+// Expose Prometheus metrics port only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    sqlGatewayBuilder = sqlGatewayBuilder.WithHttpEndpoint(port: 9252, targetPort: 9252, name: "sg-metrics");
+    Console.WriteLine("   📊 Flink SQL Gateway Prometheus metrics exposed on port 9252");
+}
+
+var sqlGateway = sqlGatewayBuilder;
+
+// Mount Prometheus metrics JAR and config file only in LEARNINGCOURSE mode
+if (isLearningCourseMode)
+{
+    var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+    if (File.Exists(metricsJarPath))
+    {
+        sqlGateway = sqlGateway.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
+        Console.WriteLine("   📊 Flink Prometheus metrics JAR mounted for SQL Gateway");
+    }
+    
+    // Mount Flink config file with Prometheus metrics configuration
+    var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
+    if (File.Exists(flinkConfigPath))
+    {
+        sqlGateway = sqlGateway.WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true);
+        Console.WriteLine("   📊 Flink config file mounted for SQL Gateway (Prometheus metrics enabled)");
+    }
+}
+
+sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
 // IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
@@ -255,18 +427,31 @@ if (isLearningCourse)
     
     // Observability Stack - Prometheus for metrics collection
     // Required for monitoring and performance analysis exercises
+    var prometheusConfigFile = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
+    
+    Console.WriteLine($"   📊 Prometheus config: prometheus.yml");
+    
     var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
-        .WithBindMount(Path.Combine(repoRoot, "LocalTesting", "prometheus.yml"), "/etc/prometheus/prometheus.yml", isReadOnly: true);
+        .WithBindMount(prometheusConfigFile, "/etc/prometheus/prometheus.yml", isReadOnly: true);
+    
+    // Note: Prometheus will scrape Flink metrics using container DNS names
+    // Aspire automatically creates a shared Docker network where containers can resolve each other
+    // Same mechanism TaskManager uses to connect to JobManager via "flink-jobmanager" hostname
     
     Console.WriteLine($"✅ Prometheus deployed on port {Ports.PrometheusHostPort} for metrics collection");
     
     // Observability Stack - Grafana for metrics visualization
     // Provides dashboards and alerting for performance monitoring
+    // CRITICAL: Anonymous authentication enabled for learning environment (no login required)
+    // Complete anonymous access configuration to bypass login page entirely
     #pragma warning disable S1481 // Grafana resource is created but not directly referenced - accessed via browser
     var grafana = builder.AddContainer("grafana", "grafana/grafana", "latest")
         .WithHttpEndpoint(port: Ports.GrafanaHostPort, targetPort: 3000, name: "grafana-http")
-        .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
+        .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")  // Enable anonymous access
+        .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")  // Grant admin role to anonymous users
+        .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")  // Completely hide login form
+        .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")  // Keep admin account for advanced config
         .WithEnvironment("GF_SECURITY_ADMIN_USER", "admin")
         .WaitFor(prometheus);  // Wait for Prometheus to be ready
     #pragma warning restore S1481

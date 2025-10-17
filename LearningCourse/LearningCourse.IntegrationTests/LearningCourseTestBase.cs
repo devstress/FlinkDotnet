@@ -72,6 +72,18 @@ public abstract class LearningCourseTestBase
     {
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] GlobalSetUp called");
         
+        // CRITICAL: Reset all static endpoint properties to null
+        // This ensures fresh discovery for each test run when containers restart with new ports
+        KafkaFlinkBootstrapServers = null;
+        KafkaHostBootstrapServers = null;
+        TemporalHostEndpoint = null;
+        RedisHostEndpoint = null;
+        PrometheusHostEndpoint = null;
+        GrafanaHostEndpoint = null;
+        _isSetupComplete = false;
+        
+        Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Static endpoint properties reset for fresh discovery");
+        
         // Kill any orphaned processes from previous test runs
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Cleaning up orphaned processes...");
         KillOrphanedJobGatewayProcesses();
@@ -716,14 +728,19 @@ public abstract class LearningCourseTestBase
                 // AppHost can exit during Flink job cancellation, so copy logs immediately
                 
                 // Step 1: Copy container logs FIRST while everything is still running
-                TestContext.WriteLine("📋 Copying container logs immediately (before any cleanup)...");
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs FIRST...");
-                LogDebug("[TEARDOWN] CRITICAL: Copying logs BEFORE any teardown operations (AppHost can exit during job cancellation)");
+                // DISABLED: Log copying causes 180s timeout on Temporal server logs
+                // TestContext.WriteLine("📋 Copying container logs immediately (before any cleanup)...");
+                // Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs FIRST...");
+                // LogDebug("[TEARDOWN] CRITICAL: Copying logs BEFORE any teardown operations (AppHost can exit during job cancellation)");
                 
-                await CopyAllContainerLogsAsync();
+                // await CopyAllContainerLogsAsync();
                 
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Container logs copied");
-                LogDebug("[TEARDOWN] Container logs copied successfully");
+                // Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Container logs copied");
+                // LogDebug("[TEARDOWN] Container logs copied successfully");
+                TestContext.WriteLine("⚡ Skipping log copy for faster teardown");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Skipping log copy for faster teardown");
+                LogDebug("[TEARDOWN] Skipping log copy for faster teardown (temporal-server timeout issue)");
+                await Task.CompletedTask; // Satisfy async method signature
                 
                 // Step 2: Cancel Flink jobs (AppHost may exit during this operation)
                 TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");

@@ -1,29 +1,45 @@
-# Prometheus configuration for LearningCourse observability stack
+# Prometheus configuration for FlinkDotnet
+# Scrapes metrics from Flink, Kafka, and Prometheus itself
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    monitor: 'flinkdotnet-monitor'
+    environment: 'development'
 
 scrape_configs:
-  # Flink JobManager metrics
+  # Flink JobManager metrics (Prometheus reporter on port 9250)
   - job_name: 'flink-jobmanager'
+    metrics_path: '/'
     static_configs:
-      - targets: ['flink-jobmanager:8081']
-    metrics_path: '/metrics'
+      - targets: ['flink-jobmanager:9250']
+        labels:
+          component: 'flink'
+          role: 'jobmanager'
 
-  # Flink TaskManager metrics
+  # Flink TaskManager metrics (Prometheus reporter on port 9251)
   - job_name: 'flink-taskmanager'
+    metrics_path: '/'
     static_configs:
-      - targets: ['flink-taskmanager:8081']
-    metrics_path: '/metrics'
+      - targets: ['flink-taskmanager:9251']
+        labels:
+          component: 'flink'
+          role: 'taskmanager'
 
-  # Gateway metrics
-  - job_name: 'gateway'
-    static_configs:
-      - targets: ['flink-job-gateway:8080']
-    metrics_path: '/metrics'
-
-  # Kafka metrics (if exposed)
+  # Kafka JMX metrics via JMX Exporter (port 5556)
   - job_name: 'kafka'
-    static_configs:
-      - targets: ['kafka:9092']
     metrics_path: '/metrics'
+    static_configs:
+      - targets: ['kafka-exporter:5556']
+        labels:
+          component: 'kafka'
+          role: 'broker'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          component: 'prometheus'
+          role: 'server'

@@ -8,6 +8,8 @@
   <version>1.0.0</version>
   <name>Flink IR Runner</name>
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.release>17</java.release>
     <maven.compiler.source>${java.release}</maven.compiler.source>
     <maven.compiler.target>${java.release}</maven.compiler.target>
