@@ -145,7 +145,7 @@ public abstract class LearningCourseTestBase
             
             try
             {
-                GlobalTearDown();
+                await GlobalTearDownAsync();
             }
             catch (Exception teardownEx)
             {
@@ -685,7 +685,7 @@ public abstract class LearningCourseTestBase
     /// Called by each test assembly's SetUpFixture.
     /// Idempotent - safe to call multiple times (will only teardown once).
     /// </summary>
-    public static void GlobalTearDown()
+    public static async Task GlobalTearDownAsync()
     {
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] GlobalTearDown called");
         LogDebug("[TEARDOWN] GlobalTearDown called");
@@ -720,7 +720,7 @@ public abstract class LearningCourseTestBase
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs FIRST...");
                 LogDebug("[TEARDOWN] CRITICAL: Copying logs BEFORE any teardown operations (AppHost can exit during job cancellation)");
                 
-                CopyAllContainerLogs();
+                await CopyAllContainerLogsAsync();
                 
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Container logs copied");
                 LogDebug("[TEARDOWN] Container logs copied successfully");
@@ -794,8 +794,9 @@ public abstract class LearningCourseTestBase
     /// Copy logs from all running Aspire containers using 'docker logs' command.
     /// CRITICAL: This must be called BEFORE stopping/removing containers.
     /// Copies logs from: Kafka, Flink (JobManager, TaskManager, SQL Gateway), Temporal, PostgreSQL, Redis
+    /// Uses parallel processing to prevent containers being removed during sequential log capture.
     /// </summary>
-    private static void CopyAllContainerLogs()
+    private static async Task CopyAllContainerLogsAsync()
     {
         try
         {
@@ -858,8 +859,10 @@ public abstract class LearningCourseTestBase
             TestContext.WriteLine($"📦 Found {containers.Length} container(s) to copy logs from");
             
             var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            var copiedCount = 0;
-            var failedCount = 0;
+            
+            // CRITICAL: Capture logs in PARALLEL to prevent containers being removed during sequential processing
+            // Sequential processing can take 60+ seconds, causing containers to be removed before we get to them
+            var logCaptureTasks = new List<Task<(bool success, string containerName, string logFileName)>>();
             
             foreach (var container in containers)
             {
@@ -890,97 +893,102 @@ public abstract class LearningCourseTestBase
                     logFileName = $"{containerName}.container.log.{dateStamp}";
                 
                 var logFilePath = Path.Combine(testLogsDir, logFileName);
-                LogDebug($"[LOG-COPY] Processing container {containerName} (ID: {containerId}) -> {logFileName}");
                 
-                // Use docker logs to capture stdout and stderr
-                var logsPsi = new ProcessStartInfo
+                // Capture logs in parallel to prevent containers being removed during processing
+                var captureTask = Task.Run(async () =>
                 {
-                    FileName = "docker",
-                    Arguments = $"logs {containerId}",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
-                
-                using var logsProcess = Process.Start(logsPsi);
-                if (logsProcess == null)
-                {
-                    LogDebug($"[LOG-COPY] Failed to start docker logs process for {containerName}");
-                    failedCount++;
-                    continue;
-                }
-                
-                // Read output with timeout to prevent hanging
-                // Temporal and PostgreSQL containers can have large logs (30+ seconds to read)
-                string stdout = "";
-                string stderr = "";
-                
-                try
-                {
-                    var readTask = Task.Run(() =>
+                    try
                     {
-                        stdout = logsProcess.StandardOutput.ReadToEnd();
-                        stderr = logsProcess.StandardError.ReadToEnd();
-                    });
-                    
-                    // Increase timeout to 60 seconds for large container logs (Temporal, PostgreSQL)
-                    if (!readTask.Wait(TimeSpan.FromSeconds(60)))
-                    {
-                        // Timeout - kill the process
-                        LogDebug($"[LOG-COPY] Timeout reading logs from {containerName}, killing process");
-                        try
+                        LogDebug($"[LOG-COPY] Processing container {containerName} (ID: {containerId}) -> {logFileName}");
+                        
+                        // Use docker logs to capture stdout and stderr
+                        var logsPsi = new ProcessStartInfo
                         {
-                            logsProcess.Kill();
+                            FileName = "docker",
+                            Arguments = $"logs {containerId}",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            CreateNoWindow = true
+                        };
+                        
+                        using var logsProcess = Process.Start(logsPsi);
+                        if (logsProcess == null)
+                        {
+                            LogDebug($"[LOG-COPY] Failed to start docker logs process for {containerName}");
+                            return (false, containerName, logFileName);
                         }
-                        catch { }
-                        TestContext.WriteLine($"   ⚠️ Timeout collecting logs from {containerName}");
-                        failedCount++;
-                        continue;
+                        
+                        // Read output with timeout
+                        string stdout = "";
+                        string stderr = "";
+                        
+                        var readTask = Task.Run(() =>
+                        {
+                            stdout = logsProcess.StandardOutput.ReadToEnd();
+                            stderr = logsProcess.StandardError.ReadToEnd();
+                        });
+                        
+                        // Temporal server has extremely large logs - use 180 second timeout
+                        // Other containers use 60 second timeout
+                        var timeout = containerName.Contains("temporal-server", StringComparison.OrdinalIgnoreCase)
+                            ? TimeSpan.FromSeconds(180)
+                            : TimeSpan.FromSeconds(60);
+                        
+                        var completedTask = await Task.WhenAny(readTask, Task.Delay(timeout));
+                        if (completedTask != readTask)
+                        {
+                            LogDebug($"[LOG-COPY] Timeout ({timeout.TotalSeconds}s) reading logs from {containerName}");
+                            try { logsProcess.Kill(); } catch { }
+                            return (false, containerName, logFileName);
+                        }
+                        
+                        LogDebug($"[LOG-COPY] docker logs collected: stdout={stdout?.Length ?? 0}, stderr={stderr?.Length ?? 0}");
+                        
+                        // Combine stdout and stderr
+                        var allLogs = stdout;
+                        if (!string.IsNullOrWhiteSpace(stderr))
+                        {
+                            allLogs += "\n\n=== STDERR ===\n" + stderr;
+                        }
+                        
+                        if (!string.IsNullOrWhiteSpace(allLogs))
+                        {
+                            File.WriteAllText(logFilePath, allLogs);
+                            var fileInfo = new FileInfo(logFilePath);
+                            LogDebug($"[LOG-COPY] Wrote {fileInfo.Length} bytes to {logFilePath}");
+                            return (true, containerName, logFileName);
+                        }
+                        
+                        LogDebug($"[LOG-COPY] No logs content for {containerName}");
+                        return (false, containerName, logFileName);
                     }
-                }
-                catch (Exception readEx)
-                {
-                    LogDebug($"[LOG-COPY] Error reading logs from {containerName}: {readEx.Message}");
-                    try
+                    catch (Exception ex)
                     {
-                        logsProcess.Kill();
+                        LogDebug($"[LOG-COPY] Error capturing logs from {containerName}: {ex.Message}");
+                        return (false, containerName, logFileName);
                     }
-                    catch { }
-                    failedCount++;
-                    continue;
-                }
+                });
                 
-                LogDebug($"[LOG-COPY] docker logs collected: stdout length: {stdout?.Length ?? 0}, stderr length: {stderr?.Length ?? 0}");
-                
-                // Combine stdout and stderr
-                var allLogs = stdout;
-                if (!string.IsNullOrWhiteSpace(stderr))
+                logCaptureTasks.Add(captureTask);
+            }
+            
+            // Wait for all log captures to complete
+            var results = await Task.WhenAll(logCaptureTasks);
+            
+            var copiedCount = 0;
+            var failedCount = 0;
+            foreach (var (success, containerName, logFileName) in results)
+            {
+                if (success)
                 {
-                    allLogs += "\n\n=== STDERR ===\n" + stderr;
-                }
-                
-                if (!string.IsNullOrWhiteSpace(allLogs))
-                {
-                    try
-                    {
-                        File.WriteAllText(logFilePath, allLogs);
-                        var fileInfo = new FileInfo(logFilePath);
-                        LogDebug($"[LOG-COPY] Successfully wrote {fileInfo.Length} bytes to {logFilePath}");
-                        TestContext.WriteLine($"   ✅ Copied {containerName} logs ({fileInfo.Length} bytes) to {logFileName}");
-                        copiedCount++;
-                    }
-                    catch (Exception writeEx)
-                    {
-                        LogDebug($"[LOG-COPY] Failed to write file {logFilePath}: {writeEx.Message}");
-                        TestContext.WriteLine($"   ❌ Failed to write {logFileName}: {writeEx.Message}");
-                        failedCount++;
-                    }
+                    var fileInfo = new FileInfo(Path.Combine(testLogsDir, logFileName));
+                    TestContext.WriteLine($"   ✅ Copied {containerName} logs ({fileInfo.Length} bytes) to {logFileName}");
+                    copiedCount++;
                 }
                 else
                 {
-                    LogDebug($"[LOG-COPY] No logs content for {containerName}");
-                    TestContext.WriteLine($"   ⚠️ No logs found for {containerName}");
+                    TestContext.WriteLine($"   ⚠️ Failed to copy logs from {containerName}");
                     failedCount++;
                 }
             }
