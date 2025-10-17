@@ -3,6 +3,7 @@ using Temporalio.Client;
 using Temporalio.Worker;
 using Temporalio.Workflows;
 using Temporalio.Activities;
+using Microsoft.Extensions.Logging;
 
 // Configure Serilog for structured logging
 Log.Logger = new LoggerConfiguration()
@@ -72,20 +73,17 @@ try
     
     Log.Information("✅ Connected to Temporal server successfully");
     
+    // CRITICAL: Wait for Temporal history service shards to initialize
+    // After namespace verification, history service needs additional time to initialize shards
+    // Without this delay, workflows fail with "Not enough hosts to serve the request"
+    Log.Information("⏳ Waiting for Temporal history service shards to initialize...");
+    await Task.Delay(2000); // 2 second delay for shard initialization
+    
     // Create worker to execute workflows and activities
     const string taskQueue = "booking-saga-queue";
-    
-    // Configure worker with explicit concurrency settings
-    var workerOptions = new TemporalWorkerOptions(taskQueue)
-    {
-        MaxConcurrentWorkflowTasks = 10,    // Allow 10 concurrent workflow tasks
-        MaxConcurrentActivities = 20,        // Allow 20 concurrent activities
-        MaxConcurrentLocalActivities = 20    // Allow 20 concurrent local activities
-    };
-    
     using var worker = new TemporalWorker(
         client,
-        workerOptions
+        new TemporalWorkerOptions(taskQueue)
             .AddWorkflow<BookingSagaWorkflow>()
             .AddAllActivities(new BookingActivities()));
     
@@ -127,12 +125,17 @@ try
     Console.WriteLine("🎭 Processing {0} booking scenarios (success + failures)...", scenarios.Length);
     Console.WriteLine();
     
-    // Start worker and execute workflows
+    // Start worker and execute workflows (following Exercise61 working pattern)
     await worker.ExecuteAsync(async () =>
     {
         Log.Information("🔄 Temporal worker started on task queue: {TaskQueue}", taskQueue);
         
-        // Execute workflow scenarios
+        // CRITICAL: Give worker time to fully initialize and start polling
+        // Without this delay, StartWorkflowAsync may hang waiting for worker
+        await Task.Delay(1000);
+        Log.Information("✅ Worker initialization complete, ready to process workflows");
+        
+        // Execute workflow scenarios sequentially
         foreach (var booking in scenarios)
         {
             // Use unique workflow ID with timestamp to avoid collisions from previous runs
@@ -160,31 +163,20 @@ try
                 }
             }
             
-            try
+            // Wait for workflow to complete
+            var result = await handle.GetResultAsync();
+            
+            Console.WriteLine("✅ {0}: {1}",
+                booking.BookingId,
+                result.Status);
+            
+            if (result.CompensatedSteps.Count > 0)
             {
-                // Wait for workflow to complete
-                Log.Information("⏳ Waiting for workflow {WorkflowId} to complete...", workflowId);
-                
-                var result = await handle.GetResultAsync();
-                
-                Console.WriteLine("✅ {0}: {1}",
-                    booking.BookingId,
-                    result.Status);
-                
-                if (result.CompensatedSteps.Count > 0)
+                Console.WriteLine("   🔄 Compensated steps:");
+                foreach (var step in result.CompensatedSteps)
                 {
-                    Console.WriteLine("   🔄 Compensated steps:");
-                    foreach (var step in result.CompensatedSteps)
-                    {
-                        Console.WriteLine("      - {0}", step);
-                    }
+                    Console.WriteLine("      - {0}", step);
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("❌ {0}: Failed - {1}",
-                    booking.BookingId,
-                    ex.Message);
             }
             
             Console.WriteLine();
@@ -236,6 +228,8 @@ public class BookingSagaWorkflow
     [WorkflowRun]
     public async Task<BookingResult> RunAsync(BookingRequest request)
     {
+        Workflow.Logger.LogInformation("[WORKFLOW] BookingSagaWorkflow started for {BookingId}", request.BookingId);
+        
         var result = new BookingResult
         {
             BookingId = request.BookingId,
@@ -248,6 +242,7 @@ public class BookingSagaWorkflow
         
         try
         {
+            Workflow.Logger.LogInformation("[WORKFLOW] About to execute activities for {BookingId}", request.BookingId);
             // Step 1: Reserve Hotel
             if (request.FailAt == BookingStep.Hotel)
                 throw new InvalidOperationException("Simulated hotel reservation failure");

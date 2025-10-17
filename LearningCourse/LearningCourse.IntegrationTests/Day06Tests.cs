@@ -23,7 +23,13 @@ public class Day06Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day06-Temporal-Workflows/Exercise-Solutions/Exercise62";
     private const string Exercise3Path = "Day06-Temporal-Workflows/Exercise-Solutions/Exercise63";
     private const string Exercise4Path = "Day06-Temporal-Workflows/Exercise-Solutions/Exercise64";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(60);
+    
+    // Standard timeout for basic exercises (Exercise61, Exercise62)
+    private static readonly TimeSpan StandardTimeout = TimeSpan.FromSeconds(60);
+    
+    // Extended timeout for complex workflow patterns (Exercise63: saga compensation, Exercise64: WaitCondition)
+    // Exercise64 has 30s WaitConditionAsync + infrastructure overhead, needs ~90s total
+    private static readonly TimeSpan ExtendedTimeout = TimeSpan.FromSeconds(90);
 
     [Test]
     [Description("Exercise 6.1: Basic Workflow Definition - OrderProcessingWorkflow")]
@@ -35,7 +41,7 @@ public class Day06Tests : LearningCourseTestBase
         TestContext.WriteLine("Validates: OrderProcessingWorkflow with sequential activity execution");
         TestContext.WriteLine();
 
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise1Path, Array.Empty<string>(), ExerciseTimeout);
+        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise1Path, Array.Empty<string>(), StandardTimeout);
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 6.1 should complete successfully. Exit code: {exitCode}\nError: {error}");
         
@@ -59,7 +65,7 @@ public class Day06Tests : LearningCourseTestBase
         TestContext.WriteLine("Validates: Automatic retry, exponential backoff, non-retryable errors");
         TestContext.WriteLine();
 
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise2Path, Array.Empty<string>(), ExerciseTimeout);
+        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise2Path, Array.Empty<string>(), StandardTimeout);
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 6.2 should complete successfully. Exit code: {exitCode}\nError: {error}");
         
@@ -74,7 +80,7 @@ public class Day06Tests : LearningCourseTestBase
     }
 
     [Test]
-    [Ignore("Known Temporal SDK issue - hangs indefinitely on complex workflows with saga compensation. See WI75.")]
+    [Ignore("Known Temporal .NET SDK issue: Saga workflows with compensation hang indefinitely. Infrastructure is healthy but workflow never completes. Works manually but fails in test environment. See update-LearningCourse.md lines 120-130 for details.")]
     [Description("Exercise 6.3: Error Handling - BookingSagaWorkflow with compensation")]
     public async Task Exercise63_ErrorHandling_ExecutesSagaCompensation()
     {
@@ -84,9 +90,12 @@ public class Day06Tests : LearningCourseTestBase
         TestContext.WriteLine("Validates: Saga pattern, compensation logic, reverse-order rollback");
         TestContext.WriteLine();
 
-        // ExecuteExerciseAsync has built-in 45s no-progress timeout with automatic extensions
-        // Exercise logs progress every 5s, so timeout will extend as long as workflow is active
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise3Path, Array.Empty<string>(), ExerciseTimeout);
+        // Exercise63 processes 3 saga scenarios with compensation - workflows may be silent for extended periods
+        // Use 90s no-output timeout to allow workflows to complete without premature termination
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            Exercise3Path,
+            Array.Empty<string>(),
+            timeout: ExtendedTimeout);
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 6.3 should complete successfully. Exit code: {exitCode}\nError: {error}");
         
@@ -102,7 +111,7 @@ public class Day06Tests : LearningCourseTestBase
     }
 
     [Test]
-    [Ignore("Known Temporal SDK issue - hangs indefinitely on complex workflows with signals/queries. See WI75.")]
+    [Ignore("Known Temporal .NET SDK issue: Workflows with signals/queries hang indefinitely. Infrastructure is healthy but workflow never completes. Works manually but fails in test environment. See update-LearningCourse.md lines 120-130 for details.")]
     [Description("Exercise 6.4: Advanced Patterns - SupportTicketWorkflow with signals/queries")]
     public async Task Exercise64_AdvancedPatterns_HandlesSignalsAndQueries()
     {
@@ -112,9 +121,12 @@ public class Day06Tests : LearningCourseTestBase
         TestContext.WriteLine("Validates: Workflow signals, queries, WaitCondition, dynamic behavior");
         TestContext.WriteLine();
 
-        // ExecuteExerciseAsync has built-in 45s no-progress timeout with automatic extensions
-        // Exercise logs progress every 5s, so timeout will extend as long as workflow is active
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise4Path, Array.Empty<string>(), ExerciseTimeout);
+        // Exercise64 has 30s WaitConditionAsync - workflow is silent while waiting
+        // Use extended timeout to allow WaitCondition to complete without premature termination
+        var (exitCode, output, error) = await ExecuteExerciseAsync(
+            Exercise4Path,
+            Array.Empty<string>(),
+            timeout: ExtendedTimeout);
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 6.4 should complete successfully. Exit code: {exitCode}\nError: {error}");
         

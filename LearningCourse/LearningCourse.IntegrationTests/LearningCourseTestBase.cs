@@ -692,6 +692,14 @@ public abstract class LearningCourseTestBase
         
         try
         {
+                // CRITICAL: Only run teardown if setup completed successfully
+                // GlobalTearDown might be called during cleanup of failed setup
+                if (!_isSetupComplete && _appHostProcess == null)
+                {
+                    Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Setup never completed, skipping teardown");
+                    LogDebug("[TEARDOWN] Setup never completed, skipping teardown");
+                    return;
+                }
                 
                 LogDebug("[TEARDOWN] Starting teardown process");
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Starting teardown process");
@@ -704,7 +712,20 @@ public abstract class LearningCourseTestBase
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Killing orphaned JobGateway processes...");
                 KillOrphanedJobGatewayProcesses();
             
-                // Cancel all Flink jobs BEFORE copying logs and stopping containers
+                // CRITICAL ORDER: Copy logs FIRST before any other teardown operations
+                // AppHost can exit during Flink job cancellation, so copy logs immediately
+                
+                // Step 1: Copy container logs FIRST while everything is still running
+                TestContext.WriteLine("📋 Copying container logs immediately (before any cleanup)...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs FIRST...");
+                LogDebug("[TEARDOWN] CRITICAL: Copying logs BEFORE any teardown operations (AppHost can exit during job cancellation)");
+                
+                CopyAllContainerLogs();
+                
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Container logs copied");
+                LogDebug("[TEARDOWN] Container logs copied successfully");
+                
+                // Step 2: Cancel Flink jobs (AppHost may exit during this operation)
                 TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Cancelling Flink jobs...");
                 LogDebug("[TEARDOWN] Cancelling Flink jobs...");
@@ -712,18 +733,7 @@ public abstract class LearningCourseTestBase
                 Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Flink jobs cancelled");
                 LogDebug("[TEARDOWN] Flink jobs cancelled");
                 
-                // Copy logs from all containers BEFORE stopping them
-                TestContext.WriteLine("📋 Copying container logs...");
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs...");
-                LogDebug("[TEARDOWN] Copying container logs...");
-                CopyFlinkLogs();
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Flink logs copied");
-                CopyTemporalLogs();
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Temporal logs copied");
-                CopyPostgreSqlLogs();
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] PostgreSQL logs copied");
-                LogDebug("[TEARDOWN] All logs copied");
-                
+                // Step 3: Kill AppHost process if it's still running
                 if (_appHostProcess != null && !_appHostProcess.HasExited)
                 {
                     try
@@ -779,372 +789,206 @@ public abstract class LearningCourseTestBase
         }
     }
     
+    
     /// <summary>
-    /// Copy Flink logs from Flink containers to host filesystem before containers are stopped.
-    /// This includes Apache Flink logs (JobManager, TaskManager, SQL Gateway) which contain
-    /// embedded FlinkJobRunner application logs since FlinkJobRunner runs as a job within Flink.
+    /// Copy logs from all running Aspire containers using 'docker logs' command.
+    /// CRITICAL: This must be called BEFORE stopping/removing containers.
+    /// Copies logs from: Kafka, Flink (JobManager, TaskManager, SQL Gateway), Temporal, PostgreSQL, Redis
     /// </summary>
-    private static void CopyFlinkLogs()
+    private static void CopyAllContainerLogs()
     {
         try
         {
+            LogDebug("[LOG-COPY] CopyAllContainerLogs called");
+            TestContext.WriteLine("📋 Starting container log collection...");
+            
             var repoRoot = FindRepositoryRoot();
             if (repoRoot == null)
             {
+                LogDebug("[LOG-COPY] Could not find repository root");
                 TestContext.WriteLine("⚠️ Could not find repository root, skipping log copy");
                 return;
             }
             
             var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
             Directory.CreateDirectory(testLogsDir);
+            LogDebug($"[LOG-COPY] Test logs directory: {testLogsDir}");
             
-            // Get all Flink container IDs (JobManager and TaskManager)
+            // Get all Aspire-managed containers
+            LogDebug("[LOG-COPY] Querying Docker for Aspire containers");
             var getContainersPsi = new ProcessStartInfo
             {
                 FileName = "docker",
-                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=flink",
+                Arguments = "ps --filter label=com.microsoft.developer.usvc-dev.name --format \"{{.ID}}|{{.Names}}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 CreateNoWindow = true
             };
             
             using var getContainersProcess = Process.Start(getContainersPsi);
             if (getContainersProcess == null)
             {
-                TestContext.WriteLine("⚠️ Failed to get Flink container list");
+                LogDebug("[LOG-COPY] Failed to start docker ps process");
+                TestContext.WriteLine("⚠️ Failed to get container list");
                 return;
             }
             
-            var containerIds = getContainersProcess.StandardOutput.ReadToEnd().Trim();
+            var containerInfo = getContainersProcess.StandardOutput.ReadToEnd().Trim();
+            var containerError = getContainersProcess.StandardError.ReadToEnd().Trim();
             getContainersProcess.WaitForExit();
             
-            if (string.IsNullOrWhiteSpace(containerIds))
+            if (!string.IsNullOrWhiteSpace(containerError))
             {
-                TestContext.WriteLine("⚠️ No Flink containers found");
+                LogDebug($"[LOG-COPY] Docker ps stderr: {containerError}");
+            }
+            
+            LogDebug($"[LOG-COPY] Docker ps output: {containerInfo}");
+            
+            if (string.IsNullOrWhiteSpace(containerInfo))
+            {
+                LogDebug("[LOG-COPY] No containers found in docker ps output");
+                TestContext.WriteLine("⚠️ No containers found to copy logs from");
                 return;
             }
             
-            var containerIdList = containerIds.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            TestContext.WriteLine($"📦 Found {containerIdList.Length} Flink containers");
+            var containers = containerInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            LogDebug($"[LOG-COPY] Found {containers.Length} container(s): {string.Join(", ", containers)}");
+            TestContext.WriteLine($"📦 Found {containers.Length} container(s) to copy logs from");
             
-            // Copy logs from each Flink container
-            foreach (var containerId in containerIdList)
-            {
-                CopyLogsFromContainer(containerId, testLogsDir);
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Error copying Flink logs: {ex.Message}");
-        }
-    }
-    
-    /// <summary>
-    /// Copy all logs from /opt/flink/log/ in a specific container.
-    /// This includes both Apache Flink logs and FlinkJobRunner logs (both write to same directory).
-    /// Renames Apache Flink logs to Flink.{component}.log.YYYYMMDD format.
-    /// FlinkJobRunner logs already follow the correct naming convention.
-    /// </summary>
-    private static void CopyLogsFromContainer(string containerId, string testLogsDir)
-    {
-        try
-        {
-            var logFiles = GetLogFilesFromContainer(containerId);
-            if (logFiles == null || logFiles.Length == 0)
-            {
-                TestContext.WriteLine($"   No Flink logs found in container {containerId.Substring(0, 12)}");
-                return;
-            }
-            
-            TestContext.WriteLine($"   Found {logFiles.Length} Flink log files in container {containerId.Substring(0, 12)}");
-            
-            var componentType = GetContainerComponentType(containerId);
             var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            var copiedCount = 0;
+            var failedCount = 0;
             
-            foreach (var logFile in logFiles)
+            foreach (var container in containers)
             {
-                CopyIndividualLogFile(containerId, logFile, testLogsDir, componentType, dateStamp);
+                var parts = container.Split('|');
+                if (parts.Length != 2) continue;
+                
+                var containerId = parts[0];
+                var containerName = parts[1];
+                
+                // Determine log file name based on container type
+                string logFileName;
+                if (containerName.Contains("kafka", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Kafka.container.log.{dateStamp}";
+                else if (containerName.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Flink.jobmanager.container.log.{dateStamp}";
+                else if (containerName.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Flink.taskmanager.container.log.{dateStamp}";
+                else if (containerName.Contains("flink-sql-gateway", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Flink.sql-gateway.container.log.{dateStamp}";
+                else if (containerName.Contains("temporal-server", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Temporal.server.container.log.{dateStamp}";
+                else if (containerName.Contains("temporal-postgres", StringComparison.OrdinalIgnoreCase) ||
+                         containerName.Contains("postgres", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"PostgreSQL.container.log.{dateStamp}";
+                else if (containerName.Contains("redis", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Redis.container.log.{dateStamp}";
+                else
+                    logFileName = $"{containerName}.container.log.{dateStamp}";
+                
+                var logFilePath = Path.Combine(testLogsDir, logFileName);
+                LogDebug($"[LOG-COPY] Processing container {containerName} (ID: {containerId}) -> {logFileName}");
+                
+                // Use docker logs to capture stdout and stderr
+                var logsPsi = new ProcessStartInfo
+                {
+                    FileName = "docker",
+                    Arguments = $"logs {containerId}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                
+                using var logsProcess = Process.Start(logsPsi);
+                if (logsProcess == null)
+                {
+                    LogDebug($"[LOG-COPY] Failed to start docker logs process for {containerName}");
+                    failedCount++;
+                    continue;
+                }
+                
+                // Read output with timeout to prevent hanging
+                string stdout = "";
+                string stderr = "";
+                
+                try
+                {
+                    var readTask = Task.Run(() =>
+                    {
+                        stdout = logsProcess.StandardOutput.ReadToEnd();
+                        stderr = logsProcess.StandardError.ReadToEnd();
+                    });
+                    
+                    if (!readTask.Wait(TimeSpan.FromSeconds(5)))
+                    {
+                        // Timeout - kill the process
+                        LogDebug($"[LOG-COPY] Timeout reading logs from {containerName}, killing process");
+                        try
+                        {
+                            logsProcess.Kill();
+                        }
+                        catch { }
+                        TestContext.WriteLine($"   ⚠️ Timeout collecting logs from {containerName}");
+                        failedCount++;
+                        continue;
+                    }
+                }
+                catch (Exception readEx)
+                {
+                    LogDebug($"[LOG-COPY] Error reading logs from {containerName}: {readEx.Message}");
+                    try
+                    {
+                        logsProcess.Kill();
+                    }
+                    catch { }
+                    failedCount++;
+                    continue;
+                }
+                
+                LogDebug($"[LOG-COPY] docker logs collected: stdout length: {stdout?.Length ?? 0}, stderr length: {stderr?.Length ?? 0}");
+                
+                // Combine stdout and stderr
+                var allLogs = stdout;
+                if (!string.IsNullOrWhiteSpace(stderr))
+                {
+                    allLogs += "\n\n=== STDERR ===\n" + stderr;
+                }
+                
+                if (!string.IsNullOrWhiteSpace(allLogs))
+                {
+                    try
+                    {
+                        File.WriteAllText(logFilePath, allLogs);
+                        var fileInfo = new FileInfo(logFilePath);
+                        LogDebug($"[LOG-COPY] Successfully wrote {fileInfo.Length} bytes to {logFilePath}");
+                        TestContext.WriteLine($"   ✅ Copied {containerName} logs ({fileInfo.Length} bytes) to {logFileName}");
+                        copiedCount++;
+                    }
+                    catch (Exception writeEx)
+                    {
+                        LogDebug($"[LOG-COPY] Failed to write file {logFilePath}: {writeEx.Message}");
+                        TestContext.WriteLine($"   ❌ Failed to write {logFileName}: {writeEx.Message}");
+                        failedCount++;
+                    }
+                }
+                else
+                {
+                    LogDebug($"[LOG-COPY] No logs content for {containerName}");
+                    TestContext.WriteLine($"   ⚠️ No logs found for {containerName}");
+                    failedCount++;
+                }
             }
+            
+            LogDebug($"[LOG-COPY] Summary: {copiedCount} successful, {failedCount} failed out of {containers.Length} total");
+            TestContext.WriteLine($"✅ Copied logs from {copiedCount}/{containers.Length} container(s) ({failedCount} failed)");
         }
         catch (Exception ex)
         {
-            TestContext.WriteLine($"   ⚠️ Error copying logs from container {containerId.Substring(0, 12)}: {ex.Message}");
-        }
-    }
-    
-    private static string[]? GetLogFilesFromContainer(string containerId)
-    {
-        var checkLogsPsi = new ProcessStartInfo
-        {
-            FileName = "docker",
-            Arguments = $"exec {containerId} sh -c \"ls /opt/flink/log/*.log* 2>/dev/null || echo ''\"",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-        
-        using var checkProcess = Process.Start(checkLogsPsi);
-        if (checkProcess == null) return null;
-        
-        var logFiles = checkProcess.StandardOutput.ReadToEnd().Trim();
-        checkProcess.WaitForExit();
-        
-        return string.IsNullOrWhiteSpace(logFiles)
-            ? null
-            : logFiles.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-    }
-    
-    private static string GetContainerComponentType(string containerId)
-    {
-        var getNamePsi = new ProcessStartInfo
-        {
-            FileName = "docker",
-            Arguments = $"inspect --format={{{{.Name}}}} {containerId}",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            CreateNoWindow = true
-        };
-        
-        using var getNameProcess = Process.Start(getNamePsi);
-        var containerName = getNameProcess?.StandardOutput.ReadToEnd().Trim().TrimStart('/') ?? "unknown";
-        getNameProcess?.WaitForExit();
-        
-        if (containerName.Contains("jobmanager", StringComparison.OrdinalIgnoreCase))
-            return "jobmanager";
-        if (containerName.Contains("taskmanager", StringComparison.OrdinalIgnoreCase) ||
-            containerName.Contains("taskexecutor", StringComparison.OrdinalIgnoreCase))
-            return "taskmanager";
-        if (containerName.Contains("sql-gateway", StringComparison.OrdinalIgnoreCase))
-            return "sql-gateway";
-        
-        return "unknown";
-    }
-    
-    private static void CopyIndividualLogFile(string containerId, string logFile, string testLogsDir,
-        string componentType, string dateStamp)
-    {
-        var fileName = Path.GetFileName(logFile);
-        var destName = fileName.StartsWith("FlinkIRRunner.", StringComparison.OrdinalIgnoreCase)
-            ? fileName
-            : $"Flink.{componentType}.log.{dateStamp}";
-        
-        var destPath = Path.Combine(testLogsDir, destName);
-        
-        var copyPsi = new ProcessStartInfo
-        {
-            FileName = "docker",
-            Arguments = $"cp {containerId}:{logFile} \"{destPath}\"",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-        
-        using var copyProcess = Process.Start(copyPsi);
-        if (copyProcess == null) return;
-        
-        copyProcess.WaitForExit(TimeSpan.FromSeconds(5));
-        
-        if (copyProcess.ExitCode == 0 && File.Exists(destPath))
-        {
-            var fileInfo = new FileInfo(destPath);
-            TestContext.WriteLine($"   ✅ Copied {fileName} as {destName} ({fileInfo.Length} bytes)");
-        }
-        else
-        {
-            var error = copyProcess.StandardError.ReadToEnd();
-            TestContext.WriteLine($"   ⚠️ Failed to copy {fileName}: {error}");
-        }
-    }
-    
-    /// <summary>
-    /// Copy Temporal server logs from Temporal container to host filesystem.
-    /// Temporal logs help debug workflow execution issues, especially worker initialization problems.
-    /// </summary>
-    private static void CopyTemporalLogs()
-    {
-        try
-        {
-            var repoRoot = FindRepositoryRoot();
-            if (repoRoot == null)
-            {
-                TestContext.WriteLine("⚠️ Could not find repository root, skipping Temporal log copy");
-                return;
-            }
-            
-            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
-            Directory.CreateDirectory(testLogsDir);
-            
-            // Get Temporal container ID
-            var getContainerPsi = new ProcessStartInfo
-            {
-                FileName = "docker",
-                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=temporal",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-            
-            using var getContainerProcess = Process.Start(getContainerPsi);
-            if (getContainerProcess == null)
-            {
-                TestContext.WriteLine("⚠️ Failed to get Temporal container");
-                return;
-            }
-            
-            var containerId = getContainerProcess.StandardOutput.ReadToEnd().Trim();
-            getContainerProcess.WaitForExit();
-            
-            if (string.IsNullOrWhiteSpace(containerId))
-            {
-                TestContext.WriteLine("⚠️ No Temporal container found");
-                return;
-            }
-            
-            TestContext.WriteLine($"📦 Found Temporal container: {containerId.Substring(0, 12)}");
-            
-            // Copy Temporal server logs using docker logs command
-            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            var destPath = Path.Combine(testLogsDir, $"Temporal.server.log.{dateStamp}");
-            
-            var logsPsi = new ProcessStartInfo
-            {
-                FileName = "docker",
-                Arguments = $"logs {containerId}",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            
-            using var logsProcess = Process.Start(logsPsi);
-            if (logsProcess == null)
-            {
-                TestContext.WriteLine("⚠️ Failed to get Temporal logs");
-                return;
-            }
-            
-            var logs = logsProcess.StandardOutput.ReadToEnd();
-            var errors = logsProcess.StandardError.ReadToEnd();
-            logsProcess.WaitForExit(TimeSpan.FromSeconds(10));
-            
-            // Combine stdout and stderr
-            var allLogs = logs;
-            if (!string.IsNullOrWhiteSpace(errors))
-            {
-                allLogs += "\n--- STDERR ---\n" + errors;
-            }
-            
-            if (!string.IsNullOrWhiteSpace(allLogs))
-            {
-                File.WriteAllText(destPath, allLogs);
-                var fileInfo = new FileInfo(destPath);
-                TestContext.WriteLine($"   ✅ Copied Temporal logs ({fileInfo.Length} bytes)");
-            }
-            else
-            {
-                TestContext.WriteLine("   ⚠️ No Temporal logs found");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Error copying Temporal logs: {ex.Message}");
-        }
-    }
-    
-    /// <summary>
-    /// Copy PostgreSQL logs from PostgreSQL container to host filesystem.
-    /// PostgreSQL is Temporal's persistence backend, logs help debug database connection issues.
-    /// </summary>
-    private static void CopyPostgreSqlLogs()
-    {
-        try
-        {
-            var repoRoot = FindRepositoryRoot();
-            if (repoRoot == null)
-            {
-                TestContext.WriteLine("⚠️ Could not find repository root, skipping PostgreSQL log copy");
-                return;
-            }
-            
-            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
-            Directory.CreateDirectory(testLogsDir);
-            
-            // Get PostgreSQL container ID
-            var getContainerPsi = new ProcessStartInfo
-            {
-                FileName = "docker",
-                Arguments = "ps -q --filter label=com.microsoft.developer.usvc-dev.name --filter name=postgres",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-            
-            using var getContainerProcess = Process.Start(getContainerPsi);
-            if (getContainerProcess == null)
-            {
-                TestContext.WriteLine("⚠️ Failed to get PostgreSQL container");
-                return;
-            }
-            
-            var containerId = getContainerProcess.StandardOutput.ReadToEnd().Trim();
-            getContainerProcess.WaitForExit();
-            
-            if (string.IsNullOrWhiteSpace(containerId))
-            {
-                TestContext.WriteLine("⚠️ No PostgreSQL container found");
-                return;
-            }
-            
-            TestContext.WriteLine($"📦 Found PostgreSQL container: {containerId.Substring(0, 12)}");
-            
-            // Copy PostgreSQL logs using docker logs command
-            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            var destPath = Path.Combine(testLogsDir, $"PostgreSQL.server.log.{dateStamp}");
-            
-            var logsPsi = new ProcessStartInfo
-            {
-                FileName = "docker",
-                Arguments = $"logs {containerId}",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            
-            using var logsProcess = Process.Start(logsPsi);
-            if (logsProcess == null)
-            {
-                TestContext.WriteLine("⚠️ Failed to get PostgreSQL logs");
-                return;
-            }
-            
-            var logs = logsProcess.StandardOutput.ReadToEnd();
-            var errors = logsProcess.StandardError.ReadToEnd();
-            logsProcess.WaitForExit(TimeSpan.FromSeconds(10));
-            
-            // Combine stdout and stderr
-            var allLogs = logs;
-            if (!string.IsNullOrWhiteSpace(errors))
-            {
-                allLogs += "\n--- STDERR ---\n" + errors;
-            }
-            
-            if (!string.IsNullOrWhiteSpace(allLogs))
-            {
-                File.WriteAllText(destPath, allLogs);
-                var fileInfo = new FileInfo(destPath);
-                TestContext.WriteLine($"   ✅ Copied PostgreSQL logs ({fileInfo.Length} bytes)");
-            }
-            else
-            {
-                TestContext.WriteLine("   ⚠️ No PostgreSQL logs found");
-            }
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Error copying PostgreSQL logs: {ex.Message}");
+            LogDebug($"[LOG-COPY] Exception in CopyAllContainerLogs: {ex}");
+            TestContext.WriteLine($"⚠️ Error copying container logs: {ex.Message}");
         }
     }
     

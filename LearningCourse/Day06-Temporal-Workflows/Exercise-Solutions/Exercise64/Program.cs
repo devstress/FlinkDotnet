@@ -72,6 +72,12 @@ try
     
     Log.Information("✅ Connected to Temporal server successfully");
     
+    // CRITICAL: Wait for Temporal history service shards to initialize
+    // After namespace verification, history service needs additional time to initialize shards
+    // Without this delay, workflows fail with "Not enough hosts to serve the request"
+    Log.Information("⏳ Waiting for Temporal history service shards to initialize...");
+    await Task.Delay(2000); // 2 second delay for shard initialization
+    
     // Create worker to execute workflows and activities
     const string taskQueue = "support-ticket-queue";
     
@@ -118,12 +124,20 @@ try
     Console.WriteLine("   Priority: {0}", ticketRequest.Priority);
     Console.WriteLine();
     
-    // Start worker and execute workflows
-    await worker.ExecuteAsync(async () =>
+    // CRITICAL: Run worker in BACKGROUND to avoid deadlock (WI75)
+    // Worker must run continuously to process WaitConditionAsync, signals, and queries
+    using var cts = new CancellationTokenSource();
+    var workerTask = worker.ExecuteAsync(cts.Token);
+    
+    try
     {
         Log.Information("🔄 Temporal worker started on task queue: {TaskQueue}", taskQueue);
         
-        // Execute workflow
+        // CRITICAL: Give worker time to fully initialize and start polling for tasks
+        // Without this delay, workflows may start before worker is ready to process them
+        await Task.Delay(500);
+        
+        // Start workflow (worker runs in background)
         WorkflowHandle<SupportTicketWorkflow, TicketResult> handle = null!;
         for (int attempt = 1; attempt <= 5; attempt++)
         {
@@ -185,6 +199,7 @@ try
         await handle.SignalAsync(wf => wf.ResolveTicket("Issue resolved - password reset"));
         
         // Wait for workflow completion
+        // Safe to await result - worker running in background, processes WaitConditionAsync
         Console.WriteLine("⏳ Waiting for workflow completion...");
         var result = await handle.GetResultAsync();
         
@@ -210,7 +225,20 @@ try
         Console.WriteLine();
         Console.WriteLine("🌐 View workflow in Temporal UI: http://localhost:8088");
         Console.WriteLine();
-    });
+    }
+    finally
+    {
+        // Gracefully shutdown worker
+        cts.Cancel();
+        try
+        {
+            await workerTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancelling worker
+        }
+    }
     
     Log.Information("Exercise 6.4: Advanced Patterns completed successfully");
 }

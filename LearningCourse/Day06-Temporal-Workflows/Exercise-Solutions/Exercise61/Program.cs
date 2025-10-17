@@ -132,9 +132,24 @@ try
             
             Log.Information("🚀 Starting workflow for {OrderId}", order.OrderId);
             
-            var handle = await client.StartWorkflowAsync(
-                (OrderProcessingWorkflow wf) => wf.RunAsync(order),
-                new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+            // Retry workflow start with exponential backoff (namespace race condition)
+            WorkflowHandle<OrderProcessingWorkflow, OrderResult> handle = null!;
+            for (int attempt = 1; attempt <= 5; attempt++)
+            {
+                try
+                {
+                    handle = await client.StartWorkflowAsync(
+                        (OrderProcessingWorkflow wf) => wf.RunAsync(order),
+                        new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+                    break; // Success
+                }
+                catch (Temporalio.Exceptions.RpcException ex) when (ex.Message.Contains("not found") && attempt < 5)
+                {
+                    Log.Warning("Namespace temporarily unavailable (attempt {Attempt}/5), retrying in {Delay}ms...",
+                        attempt, 500 * attempt);
+                    await Task.Delay(500 * attempt);
+                }
+            }
             
             // Wait for workflow to complete
             var result = await handle.GetResultAsync();
