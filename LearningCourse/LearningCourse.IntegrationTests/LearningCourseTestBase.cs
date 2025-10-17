@@ -814,12 +814,13 @@ public abstract class LearningCourseTestBase
             Directory.CreateDirectory(testLogsDir);
             LogDebug($"[LOG-COPY] Test logs directory: {testLogsDir}");
             
-            // Get all Aspire-managed containers
-            LogDebug("[LOG-COPY] Querying Docker for Aspire containers");
+            // Get all Aspire-managed containers (including stopped ones with -a flag)
+            // CRITICAL: Use 'docker ps -a' to include stopped containers during teardown
+            LogDebug("[LOG-COPY] Querying Docker for Aspire containers (including stopped)");
             var getContainersPsi = new ProcessStartInfo
             {
                 FileName = "docker",
-                Arguments = "ps --filter label=com.microsoft.developer.usvc-dev.name --format \"{{.ID}}|{{.Names}}\"",
+                Arguments = "ps -a --filter label=com.microsoft.developer.usvc-dev.name --format \"{{.ID}}|{{.Names}}\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -911,6 +912,7 @@ public abstract class LearningCourseTestBase
                 }
                 
                 // Read output with timeout to prevent hanging
+                // Temporal and PostgreSQL containers can have large logs (30+ seconds to read)
                 string stdout = "";
                 string stderr = "";
                 
@@ -922,7 +924,8 @@ public abstract class LearningCourseTestBase
                         stderr = logsProcess.StandardError.ReadToEnd();
                     });
                     
-                    if (!readTask.Wait(TimeSpan.FromSeconds(5)))
+                    // Increase timeout to 60 seconds for large container logs (Temporal, PostgreSQL)
+                    if (!readTask.Wait(TimeSpan.FromSeconds(60)))
                     {
                         // Timeout - kill the process
                         LogDebug($"[LOG-COPY] Timeout reading logs from {containerName}, killing process");
