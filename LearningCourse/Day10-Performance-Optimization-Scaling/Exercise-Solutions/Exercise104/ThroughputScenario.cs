@@ -35,8 +35,8 @@ public class ThroughputScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
-            Acks = Acks.All, // Required when EnableIdempotence = true
+            EnableIdempotence = false, // Disable for throughput benchmarking
+            Acks = Acks.Leader, // Faster than Acks.All for benchmarking
             LingerMs = 0, // No batching
             BatchSize = 1
         };
@@ -68,6 +68,12 @@ public class ThroughputScenario
                 Key = evt.Id,
                 Value = json
             });
+
+            // Progress logging to prevent timeout
+            if ((i + 1) % 100 == 0)
+            {
+                Console.WriteLine($"   Produced {i + 1}/{eventCount} events...");
+            }
         }
 
         producer.Flush(TimeSpan.FromSeconds(5));
@@ -127,8 +133,8 @@ public class ThroughputScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
-            Acks = Acks.All, // Required when EnableIdempotence = true
+            EnableIdempotence = false, // Disable for throughput benchmarking
+            Acks = Acks.Leader, // Faster than Acks.All for benchmarking
             LingerMs = 0,
             BatchSize = 1
         };
@@ -160,6 +166,12 @@ public class ThroughputScenario
                 Key = evt.Id,
                 Value = data
             });
+
+            // Progress logging to prevent timeout
+            if ((i + 1) % 100 == 0)
+            {
+                Console.WriteLine($"   Produced {i + 1}/{eventCount} events...");
+            }
         }
 
         producer.Flush(TimeSpan.FromSeconds(5));
@@ -218,8 +230,8 @@ public class ThroughputScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
-            Acks = Acks.All, // Required when EnableIdempotence = true
+            EnableIdempotence = false, // Disable for throughput benchmarking
+            Acks = Acks.Leader, // Faster than Acks.All for benchmarking
             LingerMs = 0,
             BatchSize = 1
         };
@@ -251,6 +263,12 @@ public class ThroughputScenario
                 Key = evt.Id,
                 Value = data
             });
+
+            // Progress logging to prevent timeout
+            if ((i + 1) % 100 == 0)
+            {
+                Console.WriteLine($"   Produced {i + 1}/{eventCount} events...");
+            }
         }
 
         producer.Flush(TimeSpan.FromSeconds(5));
@@ -309,8 +327,8 @@ public class ThroughputScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
-            Acks = Acks.All, // Required when EnableIdempotence = true
+            EnableIdempotence = false, // Disable for throughput benchmarking
+            Acks = Acks.Leader, // Faster than Acks.All for benchmarking
             LingerMs = 10, // Enable batching
             BatchSize = batchSize * 1024, // Approximate batch size
             CompressionType = Confluent.Kafka.CompressionType.Gzip

@@ -123,10 +123,24 @@ try
     {
         Log.Information("🔄 Temporal worker started on task queue: {TaskQueue}", taskQueue);
         
-        // Execute workflow inside worker callback
-        var handle = await client.StartWorkflowAsync(
-            (SupportTicketWorkflow wf) => wf.RunAsync(ticketRequest),
-            new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+        // Execute workflow inside worker callback with retry (namespace race condition)
+        WorkflowHandle<SupportTicketWorkflow, TicketResult> handle = null!;
+        for (int attempt = 1; attempt <= 5; attempt++)
+        {
+            try
+            {
+                handle = await client.StartWorkflowAsync(
+                    (SupportTicketWorkflow wf) => wf.RunAsync(ticketRequest),
+                    new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+                break; // Success
+            }
+            catch (Temporalio.Exceptions.RpcException ex) when (ex.Message.Contains("not found") && attempt < 5)
+            {
+                Log.Warning("Namespace temporarily unavailable (attempt {Attempt}/5), retrying in {Delay}ms...",
+                    attempt, 500 * attempt);
+                await Task.Delay(500 * attempt);
+            }
+        }
         
         Console.WriteLine("✅ Workflow started: {0}", workflowId);
         Console.WriteLine();
@@ -170,9 +184,24 @@ try
         Console.WriteLine("✅ Resolving ticket via signal...");
         await handle.SignalAsync(wf => wf.ResolveTicket("Issue resolved - password reset"));
         
-        // Wait for workflow completion
+        // Wait for workflow completion with periodic progress logging
         Console.WriteLine("⏳ Waiting for workflow completion...");
-        var result = await handle.GetResultAsync();
+        
+        var completionTask = handle.GetResultAsync();
+        var progressTask = Task.Run(async () =>
+        {
+            while (!completionTask.IsCompleted)
+            {
+                await Task.Delay(5000); // Log every 5 seconds
+                if (!completionTask.IsCompleted)
+                {
+                    Log.Information("⏳ Still waiting for workflow completion...");
+                }
+            }
+        });
+        
+        var result = await completionTask;
+        await progressTask; // Ensure progress task completes
         
         Console.WriteLine();
         Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");

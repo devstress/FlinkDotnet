@@ -351,6 +351,12 @@ class Program
                 else
                 {
                     timeoutCount++;
+                    // Log progress every 10 timeouts to prevent no-output timeout
+                    if (timeoutCount % 10 == 0)
+                    {
+                        Log.Information("   ⏸️  Waiting for additional sessions ({TimeoutCount}/{MaxTimeouts} timeouts)...",
+                            timeoutCount, maxTimeouts);
+                    }
                 }
             }
             catch (ConsumeException ex)

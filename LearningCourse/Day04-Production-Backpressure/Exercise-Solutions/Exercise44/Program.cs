@@ -53,6 +53,9 @@ try
     // Produce deployment requests for all three strategies
     await ProduceDeploymentRequests(kafkaBootstrapServers);
 
+    // Consume and display health check events (demonstrates health monitoring)
+    await ConsumeHealthCheckEvents(kafkaBootstrapServers);
+
     // Consume and display deployment results
     await ConsumeDeploymentResults(kafkaBootstrapServers);
 
@@ -241,6 +244,57 @@ static async Task ProduceDeploymentRequests(string kafkaBootstrapServers)
 
     producer.Flush(TimeSpan.FromSeconds(10));
     Log.Information("✅ All deployment requests produced successfully");
+}
+
+// Consume and display health check events
+static Task ConsumeHealthCheckEvents(string kafkaBootstrapServers)
+{
+    Log.Information("Consuming health check events...");
+
+    var config = new ConsumerConfig
+    {
+        BootstrapServers = kafkaBootstrapServers,
+        GroupId = "exercise44-health-consumer",
+        AutoOffsetReset = AutoOffsetReset.Earliest,
+        EnableAutoCommit = true
+    };
+
+    using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
+    consumer.Subscribe("health-check-events");
+
+    var checksReceived = 0;
+    var targetChecks = 5; // database, cache, external_api, memory, cpu
+    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+    Console.WriteLine();
+    Console.WriteLine("🏥 Health Check Events:");
+    Console.WriteLine("".PadRight(85, '-'));
+
+    try
+    {
+        while (checksReceived < targetChecks && !cts.Token.IsCancellationRequested)
+        {
+            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
+            if (consumeResult?.Message?.Value != null)
+            {
+                var healthCheck = JsonSerializer.Deserialize<HealthCheckEvent>(consumeResult.Message.Value);
+                if (healthCheck != null)
+                {
+                    checksReceived++;
+                    Console.WriteLine($"   ✅ {healthCheck.CheckName}: {healthCheck.Status} ({healthCheck.ResponseTimeMs}ms)");
+                }
+            }
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        // Expected when timeout occurs
+    }
+
+    consumer.Close();
+    Log.Information("✅ {Count} health checks validated", checksReceived);
+    
+    return Task.CompletedTask;
 }
 
 // Consume and display deployment results

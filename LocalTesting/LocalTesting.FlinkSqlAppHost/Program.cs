@@ -13,6 +13,20 @@ EnsureFlinkKafkaNetwork();
 LogConfiguredPorts();
 SetupEnvironment();
 
+// Validate system memory and calculate dynamic allocations
+Console.WriteLine("\n🔍 Analyzing system resources...");
+if (!MemoryCalculator.ValidateMinimumMemory())
+{
+    Console.WriteLine("❌ System does not meet minimum memory requirements for Flink");
+    Console.WriteLine("   Please ensure at least 4GB RAM is available");
+    return;
+}
+
+var taskManagerMemoryMb = MemoryCalculator.CalculateTaskManagerProcessMemoryMb();
+var taskManagerMetaspaceMb = MemoryCalculator.CalculateTaskManagerMetaspaceMb(taskManagerMemoryMb);
+var jobManagerMemoryMb = MemoryCalculator.CalculateJobManagerProcessMemoryMb();
+Console.WriteLine($"✅ Memory allocation calculated successfully\n");
+
 // Check if LearningCourse mode is enabled - enables additional infrastructure for learning exercises
 var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
 if (isLearningCourse)
@@ -82,7 +96,7 @@ var jobManager = jobManagerBuilder
         "parallelism.default: 1\n" +
         "rest.port: 8081\n" +
         "rest.bind-port: 8081\n" +
-        "jobmanager.memory.process.size: 2048m\n" +
+        $"jobmanager.memory.process.size: {jobManagerMemoryMb}m\n" +
         "heartbeat.interval: 5000\n" +
         "heartbeat.timeout: 30000\n" +
         "pekko.ask.timeout: 30s\n" +
@@ -108,7 +122,8 @@ builder.AddContainer("flink-taskmanager", "flink:2.1.0-java17")
         "rest.address: 0.0.0.0\n" +
         "rest.bind-address: 0.0.0.0\n" +
         "parallelism.default: 1\n" +
-        "taskmanager.memory.process.size: 3072m\n" +
+        $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n" +
+        $"taskmanager.memory.jvm-metaspace.size: {taskManagerMetaspaceMb}m\n" +
         "taskmanager.numberOfTaskSlots: 10\n" +
         "heartbeat.interval: 5000\n" +
         "heartbeat.timeout: 30000\n" +

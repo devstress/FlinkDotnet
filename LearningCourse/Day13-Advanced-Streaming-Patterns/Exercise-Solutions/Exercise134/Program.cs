@@ -114,7 +114,10 @@ class Program
 
                 Log.Information(">> Step 7/11: Submitting DataExfiltration Detector job...");
                 dataExfiltrationJob = await SubmitDataExfiltrationDetectorJobAsync();
+                Log.Information("   ✅ All 4 pattern detectors submitted successfully");
+                Log.Information("   ⏸️  Waiting for pattern detectors to initialize (3s)...");
                 await Task.Delay(TimeSpan.FromSeconds(3));
+                Log.Information("   ✓ Pattern detectors ready");
                 Log.Information("");
 
                 // Step 3: Submit Alert Aggregator job

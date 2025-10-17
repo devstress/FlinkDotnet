@@ -100,28 +100,33 @@ class Program
                 // Step 2: Submit Saga Orchestrator job
                 Log.Information(">> Step 4/11: Submitting Saga Orchestrator job...");
                 orchestratorJob = await SubmitSagaOrchestratorJobAsync();
-                await Task.Delay(TimeSpan.FromSeconds(5)); // Wait for job to start
+                Log.Information("   Waiting 10s for job to start and gateway to stabilize...");
+                await Task.Delay(TimeSpan.FromSeconds(10)); // Wait for job to start
                 Log.Information("");
 
-                // Step 3: Submit Step Processor jobs
+                // Step 3: Submit Step Processor jobs with longer delays to prevent gateway overload
                 Log.Information(">> Step 5/11: Submitting CreatePost Processor job...");
                 createPostJob = await SubmitCreatePostProcessorJobAsync();
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                Log.Information("   Waiting 10s for gateway to stabilize...");
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 Log.Information("");
 
                 Log.Information(">> Step 6/11: Submitting ModeratePost Processor job...");
                 moderatePostJob = await SubmitModeratePostProcessorJobAsync();
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                Log.Information("   Waiting 10s for gateway to stabilize...");
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 Log.Information("");
 
                 Log.Information(">> Step 7/11: Submitting PublishPost Processor job...");
                 publishPostJob = await SubmitPublishPostProcessorJobAsync();
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                Log.Information("   Waiting 10s for gateway to stabilize...");
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 Log.Information("");
 
                 Log.Information(">> Step 8/11: Submitting NotifyFollowers Processor job...");
                 notifyFollowersJob = await SubmitNotifyFollowersProcessorJobAsync();
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                Log.Information("   Waiting 10s for gateway to stabilize...");
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 Log.Information("");
 
                 // Step 4: Execute saga scenarios

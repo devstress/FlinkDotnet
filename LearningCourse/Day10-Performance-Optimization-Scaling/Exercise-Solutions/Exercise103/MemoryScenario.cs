@@ -33,7 +33,7 @@ public class MemoryScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
+            EnableIdempotence = false,
             Acks = Acks.Leader
         };
 
@@ -136,7 +136,7 @@ public class MemoryScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
+            EnableIdempotence = false,
             Acks = Acks.Leader
         };
 
@@ -237,7 +237,7 @@ public class MemoryScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
+            EnableIdempotence = false,
             Acks = Acks.Leader
         };
 
@@ -344,7 +344,7 @@ public class MemoryScenario
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _kafkaBootstrapServers,
-            EnableIdempotence = true,
+            EnableIdempotence = false,
             Acks = Acks.Leader
         };
 

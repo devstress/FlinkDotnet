@@ -141,14 +141,45 @@ try
             Log.Information("🚀 Starting saga for {BookingId} (Fail at: {FailAt})",
                 booking.BookingId, booking.FailAt);
             
-            var handle = await client.StartWorkflowAsync(
-                (BookingSagaWorkflow wf) => wf.RunAsync(booking),
-                new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+            // Retry workflow start with exponential backoff (namespace race condition)
+            WorkflowHandle<BookingSagaWorkflow, BookingResult> handle = null!;
+            for (int attempt = 1; attempt <= 5; attempt++)
+            {
+                try
+                {
+                    handle = await client.StartWorkflowAsync(
+                        (BookingSagaWorkflow wf) => wf.RunAsync(booking),
+                        new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+                    break; // Success
+                }
+                catch (Temporalio.Exceptions.RpcException ex) when (ex.Message.Contains("not found") && attempt < 5)
+                {
+                    Log.Warning("Namespace temporarily unavailable (attempt {Attempt}/5), retrying in {Delay}ms...",
+                        attempt, 500 * attempt);
+                    await Task.Delay(500 * attempt);
+                }
+            }
             
             try
             {
-                // Wait for workflow to complete
-                var result = await handle.GetResultAsync();
+                // Wait for workflow to complete with periodic progress logging
+                Log.Information("⏳ Waiting for workflow {WorkflowId} to complete...", workflowId);
+                
+                var completionTask = handle.GetResultAsync();
+                var progressTask = Task.Run(async () =>
+                {
+                    while (!completionTask.IsCompleted)
+                    {
+                        await Task.Delay(5000); // Log every 5 seconds
+                        if (!completionTask.IsCompleted)
+                        {
+                            Log.Information("⏳ Still waiting for {BookingId} workflow...", booking.BookingId);
+                        }
+                    }
+                });
+                
+                var result = await completionTask;
+                await progressTask; // Ensure progress task completes
                 
                 Console.WriteLine("✅ {0}: {1}",
                     booking.BookingId,

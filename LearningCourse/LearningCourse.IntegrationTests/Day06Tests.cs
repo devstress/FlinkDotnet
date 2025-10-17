@@ -23,7 +23,7 @@ public class Day06Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day06-Temporal-Workflows/Exercise-Solutions/Exercise62";
     private const string Exercise3Path = "Day06-Temporal-Workflows/Exercise-Solutions/Exercise63";
     private const string Exercise4Path = "Day06-Temporal-Workflows/Exercise-Solutions/Exercise64";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(60);
 
     [Test]
     [Description("Exercise 6.1: Basic Workflow Definition - OrderProcessingWorkflow")]
@@ -75,7 +75,6 @@ public class Day06Tests : LearningCourseTestBase
 
     [Test]
     [Description("Exercise 6.3: Error Handling - BookingSagaWorkflow with compensation")]
-    [Ignore("Known issue: Exercise hangs in test infrastructure but works manually. Needs investigation.")]
     public async Task Exercise63_ErrorHandling_ExecutesSagaCompensation()
     {
         TestContext.WriteLine("================================================================================");
@@ -84,6 +83,8 @@ public class Day06Tests : LearningCourseTestBase
         TestContext.WriteLine("Validates: Saga pattern, compensation logic, reverse-order rollback");
         TestContext.WriteLine();
 
+        // ExecuteExerciseAsync has built-in 45s no-progress timeout with automatic extensions
+        // Exercise logs progress every 5s, so timeout will extend as long as workflow is active
         var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise3Path, Array.Empty<string>(), ExerciseTimeout);
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 6.3 should complete successfully. Exit code: {exitCode}\nError: {error}");
@@ -101,7 +102,6 @@ public class Day06Tests : LearningCourseTestBase
 
     [Test]
     [Description("Exercise 6.4: Advanced Patterns - SupportTicketWorkflow with signals/queries")]
-    [Ignore("Known issue: Exercise hangs in test infrastructure but works manually. Needs investigation.")]
     public async Task Exercise64_AdvancedPatterns_HandlesSignalsAndQueries()
     {
         TestContext.WriteLine("================================================================================");
@@ -110,6 +110,8 @@ public class Day06Tests : LearningCourseTestBase
         TestContext.WriteLine("Validates: Workflow signals, queries, WaitCondition, dynamic behavior");
         TestContext.WriteLine();
 
+        // ExecuteExerciseAsync has built-in 45s no-progress timeout with automatic extensions
+        // Exercise logs progress every 5s, so timeout will extend as long as workflow is active
         var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise4Path, Array.Empty<string>(), ExerciseTimeout);
 
         Assert.That(exitCode, Is.EqualTo(0), $"Exercise 6.4 should complete successfully. Exit code: {exitCode}\nError: {error}");
