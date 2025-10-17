@@ -72,7 +72,7 @@ public abstract class LearningCourseTestBase
     {
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] GlobalSetUp called");
         
-        // Kill any orphaned processes from previous test runs FIRST
+        // Kill any orphaned processes from previous test runs
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Cleaning up orphaned processes...");
         KillOrphanedJobGatewayProcesses();
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Orphaned process cleanup complete");

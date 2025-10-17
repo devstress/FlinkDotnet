@@ -118,12 +118,12 @@ try
     Console.WriteLine("   Priority: {0}", ticketRequest.Priority);
     Console.WriteLine();
     
-    // Start worker and execute workflow (matching Exercise61 pattern)
+    // Start worker and execute workflows
     await worker.ExecuteAsync(async () =>
     {
         Log.Information("🔄 Temporal worker started on task queue: {TaskQueue}", taskQueue);
         
-        // Execute workflow inside worker callback with retry (namespace race condition)
+        // Execute workflow
         WorkflowHandle<SupportTicketWorkflow, TicketResult> handle = null!;
         for (int attempt = 1; attempt <= 5; attempt++)
         {
@@ -184,24 +184,9 @@ try
         Console.WriteLine("✅ Resolving ticket via signal...");
         await handle.SignalAsync(wf => wf.ResolveTicket("Issue resolved - password reset"));
         
-        // Wait for workflow completion with periodic progress logging
+        // Wait for workflow completion
         Console.WriteLine("⏳ Waiting for workflow completion...");
-        
-        var completionTask = handle.GetResultAsync();
-        var progressTask = Task.Run(async () =>
-        {
-            while (!completionTask.IsCompleted)
-            {
-                await Task.Delay(5000); // Log every 5 seconds
-                if (!completionTask.IsCompleted)
-                {
-                    Log.Information("⏳ Still waiting for workflow completion...");
-                }
-            }
-        });
-        
-        var result = await completionTask;
-        await progressTask; // Ensure progress task completes
+        var result = await handle.GetResultAsync();
         
         Console.WriteLine();
         Console.WriteLine("╔═══════════════════════════════════════════════════════════╗");

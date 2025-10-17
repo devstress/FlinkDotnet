@@ -127,12 +127,12 @@ try
     Console.WriteLine("🎭 Processing {0} booking scenarios (success + failures)...", scenarios.Length);
     Console.WriteLine();
     
-    // Start worker and execute workflows (matching Exercise61 pattern)
+    // Start worker and execute workflows
     await worker.ExecuteAsync(async () =>
     {
         Log.Information("🔄 Temporal worker started on task queue: {TaskQueue}", taskQueue);
         
-        // Execute workflows inside worker callback
+        // Execute workflow scenarios
         foreach (var booking in scenarios)
         {
             // Use unique workflow ID with timestamp to avoid collisions from previous runs
@@ -162,24 +162,10 @@ try
             
             try
             {
-                // Wait for workflow to complete with periodic progress logging
+                // Wait for workflow to complete
                 Log.Information("⏳ Waiting for workflow {WorkflowId} to complete...", workflowId);
                 
-                var completionTask = handle.GetResultAsync();
-                var progressTask = Task.Run(async () =>
-                {
-                    while (!completionTask.IsCompleted)
-                    {
-                        await Task.Delay(5000); // Log every 5 seconds
-                        if (!completionTask.IsCompleted)
-                        {
-                            Log.Information("⏳ Still waiting for {BookingId} workflow...", booking.BookingId);
-                        }
-                    }
-                });
-                
-                var result = await completionTask;
-                await progressTask; // Ensure progress task completes
+                var result = await handle.GetResultAsync();
                 
                 Console.WriteLine("✅ {0}: {1}",
                     booking.BookingId,
