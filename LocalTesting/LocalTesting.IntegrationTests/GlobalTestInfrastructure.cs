@@ -208,6 +208,10 @@ public class GlobalTestInfrastructure
     {
         Console.WriteLine("🌍 TEARDOWN: Cleaning up test infrastructure...");
 
+        // CRITICAL: Capture container logs BEFORE stopping/disposing AppHost
+        // Once AppHost.StopAsync() is called, containers are immediately stopped and may be removed
+        await CaptureAllContainerLogsAsync();
+
         // Capture network state before teardown
         await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("3-before-teardown");
 
@@ -233,6 +237,91 @@ public class GlobalTestInfrastructure
             {
                 Console.WriteLine($"✅ Cleanup completed with: {ex.Message}");
             }
+        }
+    }
+
+    /// <summary>
+    /// Capture logs from all containers before teardown
+    /// </summary>
+    private static async Task CaptureAllContainerLogsAsync()
+    {
+        try
+        {
+            Console.WriteLine("📋 Capturing container logs before teardown...");
+            
+            var repoRoot = FindRepositoryRoot(Environment.CurrentDirectory);
+            if (repoRoot == null)
+            {
+                Console.WriteLine("⚠️ Cannot find repository root, skipping log capture");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            
+            // Capture logs from all key containers (containers log to stdout/stderr, not files)
+            await CaptureContainerLogAsync("kafka", Path.Combine(testLogsDir, $"Kafka.container.log.{timestamp}"));
+            await CaptureContainerLogAsync("temporal-server", Path.Combine(testLogsDir, $"temporal-server.container.log.{timestamp}"));
+            await CaptureContainerLogAsync("temporal-postgres", Path.Combine(testLogsDir, $"temporal-postgres.container.log.{timestamp}"));
+            await CaptureContainerLogAsync("redis", Path.Combine(testLogsDir, $"Redis.container.log.{timestamp}"));
+            
+            Console.WriteLine("✅ Container logs captured");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error capturing container logs: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Capture logs from a specific container
+    /// </summary>
+    private static async Task CaptureContainerLogAsync(string containerNameFilter, string outputPath)
+    {
+        try
+        {
+            // Find container by name filter (including stopped containers)
+            // Use --filter to match containers whose name contains the filter string
+            var containerList = await RunDockerCommandAsync($"ps -a --filter \"name={containerNameFilter}\" --format \"{{{{.Names}}}}\"");
+            var containers = containerList.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(c => c.Trim())
+                .Where(c => !string.IsNullOrEmpty(c))
+                .ToList();
+            
+            if (containers.Count == 0)
+            {
+                Console.WriteLine($"⚠️ No container matching '{containerNameFilter}' found");
+                return;
+            }
+            
+            // Take the first matching container
+            var containerName = containers[0];
+            Console.WriteLine($"🔍 Found container: {containerName}");
+            
+            // Get container logs (stdout + stderr, using 2>&1 redirect)
+            var logs = await RunDockerCommandAsync($"logs {containerName} 2>&1");
+            
+            // Check if logs contain error about container not found
+            if (logs.Contains("no container with name or ID", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"⚠️ Container {containerName} was already removed, cannot capture logs");
+                return;
+            }
+            
+            if (!string.IsNullOrWhiteSpace(logs))
+            {
+                await File.WriteAllTextAsync(outputPath, logs);
+                var lineCount = logs.Split('\n').Length;
+                Console.WriteLine($"✅ Captured {lineCount} lines of logs for {containerName} → {Path.GetFileName(outputPath)}");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ No logs available for {containerName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error capturing logs for {containerNameFilter}: {ex.Message}");
         }
     }
 

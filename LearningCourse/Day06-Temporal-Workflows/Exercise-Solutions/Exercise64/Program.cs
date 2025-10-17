@@ -371,17 +371,19 @@ public class SupportTicketWorkflow
 public class SupportActivities
 {
     [Activity]
-    public Task CreateTicketAsync(string ticketId)
+    public async Task CreateTicketAsync(string ticketId)
     {
-        // Simulate ticket creation
-        return Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Creating ticket {ticketId}...");
+        await Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Ticket {ticketId} created");
     }
     
     [Activity]
-    public Task CloseTicketAsync(string ticketId)
+    public async Task CloseTicketAsync(string ticketId)
     {
-        // Simulate ticket closure
-        return Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Closing ticket {ticketId}...");
+        await Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Ticket {ticketId} closed");
     }
 }
 

@@ -46,12 +46,8 @@ var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../..
 var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
 var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
 
-// Ensure test-logs directory and container-specific subdirectories exist
+// Ensure test-logs directory exists
 Directory.CreateDirectory(testLogsDir);
-Directory.CreateDirectory(Path.Combine(testLogsDir, "kafka"));
-Directory.CreateDirectory(Path.Combine(testLogsDir, "postgres"));
-Directory.CreateDirectory(Path.Combine(testLogsDir, "temporal"));
-Directory.CreateDirectory(Path.Combine(testLogsDir, "redis"));
 
 Environment.SetEnvironmentVariable("LOG_FILE_PATH", testLogsDir);
 Console.WriteLine($"📁 Log files will be written to: {testLogsDir}");
@@ -72,8 +68,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // - External listener (PLAINTEXT_HOST): localhost:9093 (host machine access)
 // Tests and external clients MUST use localhost:9093
 #pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafka = builder.AddKafka("kafka")
-    .WithBindMount(Path.Combine(testLogsDir, "kafka"), "/opt/bitnami/kafka/logs");
+var kafka = builder.AddKafka("kafka");
 #pragma warning restore S1481
 
 // Flink JobManager with named HTTP endpoint for service references
@@ -214,8 +209,7 @@ builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
 // Temporal's auto-setup expects simple authentication (trust or no password)
 var temporalDbServer = builder.AddPostgres("temporal-postgres")
     .WithEnvironment("POSTGRES_HOST_AUTH_METHOD", "trust")  // Allow trust authentication (no password)
-    .WithEnvironment("POSTGRES_DB", "temporal")  // Create temporal database on startup
-    .WithBindMount(Path.Combine(testLogsDir, "postgres"), "/var/log/postgresql");  // Mount PostgreSQL logs
+    .WithEnvironment("POSTGRES_DB", "temporal");  // Create temporal database on startup
                                                   // PostgreSQL will use default "postgres" user with trust authentication
 
 // Note: Temporal auto-setup will also create "temporal_visibility" database
@@ -242,7 +236,6 @@ builder.AddContainer("temporal-server", "temporalio/auto-setup", "1.22.4")
     .WithEnvironment("VISIBILITY_DBNAME", "temporal_visibility")  // Specify visibility database name
     .WithEnvironment("SKIP_DB_CREATE", "false")  // Let Temporal create databases
     .WithEnvironment("SKIP_DEFAULT_NAMESPACE_CREATION", "false")  // Create default namespace
-    .WithBindMount(Path.Combine(testLogsDir, "temporal"), "/var/log/temporal")  // Mount Temporal logs
     .WaitFor(temporalDbServer);  // Wait for PostgreSQL to be ready
 
 // LearningCourse Infrastructure - Conditionally add Redis and Observability stack
@@ -255,8 +248,7 @@ if (isLearningCourse)
     #pragma warning disable S1481 // Redis resource is created but not directly referenced - used via connection string
     var redis = builder.AddContainer("redis", "bitnami/redis", "latest")
         .WithHttpEndpoint(port: Ports.RedisHostPort, targetPort: 6379, name: "redis-port")
-        .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes")  // Disable password requirement for learning
-        .WithBindMount(Path.Combine(testLogsDir, "redis"), "/opt/bitnami/redis/logs");  // Mount Redis logs
+        .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes");  // Disable password requirement for learning
     #pragma warning restore S1481
     
     Console.WriteLine($"✅ Redis deployed on port {Ports.RedisHostPort} for LearningCourse exercises");

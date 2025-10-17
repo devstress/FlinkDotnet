@@ -144,27 +144,81 @@ try
             Log.Information("🚀 Starting saga for {BookingId} (Fail at: {FailAt})",
                 booking.BookingId, booking.FailAt);
             
+            Console.WriteLine("   [DEBUG] About to call StartWorkflowAsync for {0}...", booking.BookingId);
+            
             // Retry workflow start with exponential backoff (namespace race condition)
             WorkflowHandle<BookingSagaWorkflow, BookingResult> handle = null!;
             for (int attempt = 1; attempt <= 5; attempt++)
             {
                 try
                 {
+                    Console.WriteLine("   [DEBUG] StartWorkflowAsync attempt {0}/5...", attempt);
                     handle = await client.StartWorkflowAsync(
                         (BookingSagaWorkflow wf) => wf.RunAsync(booking),
                         new WorkflowOptions(id: workflowId, taskQueue: taskQueue));
+                    Console.WriteLine("   [DEBUG] StartWorkflowAsync completed successfully!");
                     break; // Success
                 }
                 catch (Temporalio.Exceptions.RpcException ex) when (ex.Message.Contains("not found") && attempt < 5)
                 {
                     Log.Warning("Namespace temporarily unavailable (attempt {Attempt}/5), retrying in {Delay}ms...",
                         attempt, 500 * attempt);
+                    Console.WriteLine("   [DEBUG] RpcException (namespace not found), retrying...");
                     await Task.Delay(500 * attempt);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("   [DEBUG] StartWorkflowAsync exception: {0}", ex.Message);
+                    Console.WriteLine("   [DEBUG] Exception type: {0}", ex.GetType().Name);
+                    throw;
                 }
             }
             
-            // Wait for workflow to complete
-            var result = await handle.GetResultAsync();
+            Console.WriteLine("   [DEBUG] About to call GetResultAsync with 60s timeout...");
+            
+            // Wait for workflow to complete with timeout and periodic progress updates
+            var resultTask = handle.GetResultAsync();
+            var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var progressInterval = TimeSpan.FromSeconds(5);
+            var startTime = DateTime.UtcNow;
+            
+            BookingResult result;
+            try
+            {
+                while (!resultTask.IsCompleted && !timeoutCts.Token.IsCancellationRequested)
+                {
+                    var delayTask = Task.Delay(progressInterval, timeoutCts.Token);
+                    var completed = await Task.WhenAny(resultTask, delayTask);
+                    
+                    if (completed == resultTask)
+                    {
+                        break; // Workflow completed successfully
+                    }
+                    
+                    // Workflow still running, log progress
+                    var elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
+                    Console.WriteLine("   [PROGRESS] Workflow {0} still executing after {1:F1}s...",
+                        booking.BookingId, elapsed);
+                }
+                
+                if (timeoutCts.Token.IsCancellationRequested && !resultTask.IsCompleted)
+                {
+                    throw new TimeoutException($"Workflow {booking.BookingId} did not complete within 60 seconds");
+                }
+                
+                result = await resultTask;
+                Console.WriteLine("   [DEBUG] GetResultAsync completed after {0:F1}s!",
+                    (DateTime.UtcNow - startTime).TotalSeconds);
+            }
+            catch (TimeoutException tex)
+            {
+                Console.WriteLine("   [ERROR] Workflow timeout: {0}", tex.Message);
+                throw;
+            }
+            finally
+            {
+                timeoutCts.Dispose();
+            }
             
             Console.WriteLine("✅ {0}: {1}",
                 booking.BookingId,
@@ -333,52 +387,59 @@ public class BookingSagaWorkflow
 public class BookingActivities
 {
     [Activity]
-    public Task ReserveHotelAsync(string bookingId)
+    public async Task ReserveHotelAsync(string bookingId)
     {
-        // Simulate hotel reservation
-        return Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Reserving hotel for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Hotel reserved for {bookingId}");
     }
     
     [Activity]
-    public Task CancelHotelAsync(string bookingId)
+    public async Task CancelHotelAsync(string bookingId)
     {
-        // Simulate hotel cancellation (compensation)
-        return Task.Delay(Random.Shared.Next(100, 200));
+        Console.WriteLine($"   [ACTIVITY] Cancelling hotel for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 200));
+        Console.WriteLine($"   [ACTIVITY] Hotel cancelled for {bookingId}");
     }
     
     [Activity]
-    public Task ReserveFlightAsync(string bookingId)
+    public async Task ReserveFlightAsync(string bookingId)
     {
-        // Simulate flight reservation
-        return Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Reserving flight for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Flight reserved for {bookingId}");
     }
     
     [Activity]
-    public Task CancelFlightAsync(string bookingId)
+    public async Task CancelFlightAsync(string bookingId)
     {
-        // Simulate flight cancellation (compensation)
-        return Task.Delay(Random.Shared.Next(100, 200));
+        Console.WriteLine($"   [ACTIVITY] Cancelling flight for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 200));
+        Console.WriteLine($"   [ACTIVITY] Flight cancelled for {bookingId}");
     }
     
     [Activity]
-    public Task ProcessPaymentAsync(string bookingId)
+    public async Task ProcessPaymentAsync(string bookingId)
     {
-        // Simulate payment processing
-        return Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Processing payment for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Payment processed for {bookingId}");
     }
     
     [Activity]
-    public Task RefundPaymentAsync(string bookingId)
+    public async Task RefundPaymentAsync(string bookingId)
     {
-        // Simulate payment refund (compensation)
-        return Task.Delay(Random.Shared.Next(100, 200));
+        Console.WriteLine($"   [ACTIVITY] Refunding payment for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 200));
+        Console.WriteLine($"   [ACTIVITY] Payment refunded for {bookingId}");
     }
     
     [Activity]
-    public Task CreateShipmentAsync(string bookingId)
+    public async Task CreateShipmentAsync(string bookingId)
     {
-        // Simulate shipment creation
-        return Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Creating shipment for {bookingId}...");
+        await Task.Delay(Random.Shared.Next(100, 300));
+        Console.WriteLine($"   [ACTIVITY] Shipment created for {bookingId}");
     }
 }
 

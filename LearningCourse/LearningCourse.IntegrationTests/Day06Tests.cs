@@ -80,7 +80,6 @@ public class Day06Tests : LearningCourseTestBase
     }
 
     [Test]
-    [Ignore("Known Temporal .NET SDK issue: Saga workflows with compensation hang indefinitely. Infrastructure is healthy but workflow never completes. Works manually but fails in test environment. See update-LearningCourse.md lines 120-130 for details.")]
     [Description("Exercise 6.3: Error Handling - BookingSagaWorkflow with compensation")]
     public async Task Exercise63_ErrorHandling_ExecutesSagaCompensation()
     {
@@ -111,7 +110,6 @@ public class Day06Tests : LearningCourseTestBase
     }
 
     [Test]
-    [Ignore("Known Temporal .NET SDK issue: Workflows with signals/queries hang indefinitely. Infrastructure is healthy but workflow never completes. Works manually but fails in test environment. See update-LearningCourse.md lines 120-130 for details.")]
     [Description("Exercise 6.4: Advanced Patterns - SupportTicketWorkflow with signals/queries")]
     public async Task Exercise64_AdvancedPatterns_HandlesSignalsAndQueries()
     {

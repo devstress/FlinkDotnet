@@ -24,6 +24,8 @@ public class Day03Tests : LearningCourseTestBase
     private const string Exercise2Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise32";
     private const string Exercise3Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise33";
     private const string Exercise4Path = "Day03-AI-Stream-Processing/Exercise-Solutions/Exercise34";
+    // Exercise33 needs longer timeout due to ML.NET model training (3 models ~24s) + Flink jobs + message processing
+    private static readonly TimeSpan Exercise33Timeout = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
@@ -137,7 +139,7 @@ public class Day03Tests : LearningCourseTestBase
         var (exitCode, output, error) = await ExecuteExerciseAsync(
             Exercise3Path,
             Array.Empty<string>(),
-            ExerciseTimeout);
+            Exercise33Timeout);  // Use extended timeout for ML training
 
         TestContext.WriteLine();
         TestContext.WriteLine("--------------------------------------------------------------------------------");
