@@ -366,15 +366,24 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 // 4. This prevents any confusion about which Kafka address to use
 // Gateway with service reference for Flink discovery
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
-builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(name: "gateway-http")
-    .WithEnvironment("ASPNETCORE_URLS", $"http://localhost:{Ports.GatewayHostPort.ToString()}")  // Override launchSettings.json
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Production")  // Use Production environment
+// Configure Gateway environment based on mode
+// In LearningCourse mode, use "LearningCourse" environment to load appsettings.LearningCourse.json
+// This enables Prometheus metrics via configuration (similar to Flink's approach)
+var gatewayEnvironment = isLearningCourseMode ? "LearningCourse" : "Production";
+
+var gatewayBuilder = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
+    .WithEnvironment("ASPNETCORE_URLS", $"http://0.0.0.0:{Ports.GatewayHostPort.ToString()}")  // Bind to 0.0.0.0 for Docker container access
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", gatewayEnvironment)  // Use LearningCourse or Production environment
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Set log file path for Gateway
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager for standard job submission
     .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway for direct SQL execution
+
+if (isLearningCourseMode)
+{
+    Console.WriteLine($"   📊 Gateway Prometheus metrics enabled (ASPNETCORE_ENVIRONMENT={gatewayEnvironment})");
+}
 
 // Temporal PostgreSQL - Database for Temporal server
 // CRITICAL: Must configure PostgreSQL WITHOUT password for Temporal auto-setup compatibility

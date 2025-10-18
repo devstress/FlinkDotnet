@@ -7,7 +7,6 @@ namespace LocalTesting.FlinkSqlAppHost;
 public static class MemoryCalculator
 {
     private const long MinimumSystemMemoryMb = 4096; // 4GB minimum required
-    private const long GbInMb = 1024;
     
     /// <summary>
     /// Gets total available physical memory in MB.

@@ -328,4 +328,150 @@ rate(kafka_server_brokertopicmetrics_bytes_out_total[5m])
 ### Reference for Future WIs
 - Use this pattern for other JMX-based services (e.g., Java applications)
 - JMX exporter args format: `["listen_port", "target_host:jmx_port"]`
+
+## Phase 6: Debug Investigation - Critical Flink Configuration Issue
+
+### Diagnostic Script Execution
+
+Created and ran `debug-flink-metrics-issue.ps1` to investigate why Prometheus metrics aren't accessible despite proper configuration.
+
+**Key Findings**:
+
+1. **Containers Status**: ✅ All Flink containers running with ports exposed
+   - `flink-jobmanager`: Port 9250 exposed → `127.0.0.1:42835`
+   - `flink-taskmanager`: Port 9251 exposed → `127.0.0.1:44477`
+   - `flink-sql-gateway`: Port 9252 exposed → `127.0.0.1:40319`
+
+2. **Prometheus JAR**: ✅ Mounted correctly in all containers
+   ```
+   -rwxrwxrwx 1 1000 1000 101461 Oct 17 15:34 flink-metrics-prometheus-2.1.0.jar
+   ```
+
+3. **Config File**: ✅ Mounted with correct Prometheus configuration
+   ```yaml
+   metrics.reporters: prom
+   metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+   metrics.reporter.prom.port: 9250-9252
+   metrics.reporter.prom.filterLabelValueCharacters: false
+   ```
+
+4. **CRITICAL ISSUE FOUND**: ❌ **Flink NOT reading the mounted config file**
+   ```
+   2025-10-17 19:43:03,753 INFO org.apache.flink.runtime.metrics.MetricRegistryImpl [] - 
+   No metrics reporter configured, no metrics will be exposed/reported.
+   ```
+
+5. **Kafka JMX Exporter**: ❌ Container failed to start
+   ```
+   fail: could not create the container {"Container": {"name":"kafka-exporter-trxfadca"}}
+   error: "object not found\ncontainer not found"
+   ```
+
+### Root Cause Analysis - Flink Metrics Not Exported
+
+**Problem**: Flink Docker container is NOT reading the mounted `/opt/flink/conf/flink-conf.yaml` file.
+
+**Why This Happens**: The Flink Docker image's entrypoint script (`docker-entrypoint.sh`) has specific behavior:
+1. **If `FLINK_PROPERTIES` env var exists** → Overwrites `/opt/flink/conf/flink-conf.yaml` with the env var content
+2. **If `FLINK_PROPERTIES` is missing** → Uses minimal default config (no metrics reporters)
+3. **Bind mounts are ignored** → Entrypoint script runs BEFORE bind mounts take effect
+
+**Current Code Issue** (`LocalTesting/LocalTesting.FlinkSqlAppHost/Program.cs`):
+
+**Lines 151-154** (JobManager):
+```csharp
+// Only set FLINK_PROPERTIES if NOT using mounted config file in LEARNINGCOURSE mode
+if (!isLearningCourseMode)
+{
+    jobManager = jobManager.WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties);
+}
+```
+
+**Lines 225-228** (TaskManager):
+```csharp
+// Only set FLINK_PROPERTIES if NOT using mounted config file in LEARNINGCOURSE mode
+if (!isLearningCourseMode)
+{
+    taskManagerBuilder = taskManagerBuilder.WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties);
+}
+```
+
+**This logic is BACKWARDS!** It skips setting `FLINK_PROPERTIES` in LEARNINGCOURSE mode, causing Flink to use minimal default config (no metrics) instead of our Prometheus-enabled config.
+
+**Evidence from Container Logs**:
+```
+Plugin loader metrics-prometheus found, reusing it
+BUT THEN:
+No metrics reporter configured, no metrics will be exposed/reported.
+```
+
+This proves Flink found the Prometheus plugin JAR but didn't load it because the config says `metrics.reporters: []` (empty).
+
+### Root Cause Analysis - Kafka JMX Exporter Not Starting
+
+**Problem**: Kafka exporter container fails with "object not found" error
+
+**Likely Cause**: Aspire's `.WithArgs()` method signature issue or image not found. Need to investigate if:
+1. Image `prom/jmx-exporter:0.20.0` needs to be pulled first
+2. `.WithArgs()` needs array syntax instead of params: `.WithArgs(new[] {"5556", "kafka:9101"})`
+
+### Solution Design
+
+**For Flink Metrics** (MUST FIX):
+1. **Remove the config file bind mount approach** - It doesn't work with Flink's entrypoint
+2. **ALWAYS set FLINK_PROPERTIES in LEARNINGCOURSE mode** - Let Flink's entrypoint write the config
+3. **Include full Prometheus configuration in the environment variable**
+
+**For Kafka JMX Exporter** (MUST FIX):
+1. Use array syntax for args: `.WithArgs(new[] {"5556", "kafka:9101"})`
+2. Add image pull policy or verify image exists
+3. Consider using environment variable configuration instead of args
+
+### Implementation Plan
+
+1. **Update Program.cs lines 151-154**:
+   ```csharp
+   // ALWAYS set FLINK_PROPERTIES (Flink entrypoint needs this)
+   jobManager = jobManager.WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties);
+   ```
+
+2. **Update Program.cs lines 225-228**:
+   ```csharp
+   // ALWAYS set FLINK_PROPERTIES (Flink entrypoint needs this)
+   taskManagerBuilder = taskManagerBuilder.WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties);
+   ```
+
+3. **Remove config file bind mounts** (lines 181-186, 257-262, 341-346):
+   - These are ineffective because entrypoint overwrites them
+   - Environment variable approach is the correct method
+
+4. **Fix Kafka JMX Exporter args** (line 98):
+   ```csharp
+   .WithArgs(new[] {"5556", "kafka:9101"})  // Use array syntax
+   ```
+
+### Lessons Learned from This Debug Session
+
+**What We Discovered**:
+- Flink Docker entrypoint script behavior differs from expectations
+- Bind mounts don't work for Flink config files (entrypoint overwrites them)
+- `FLINK_PROPERTIES` environment variable is the ONLY reliable way to configure Flink in containers
+- Container arg syntax matters (params vs array)
+
+**Problems to Avoid**:
+- ❌ Don't rely on bind-mounted config files for Flink containers
+- ❌ Don't skip environment variables thinking bind mounts will work
+- ✅ Always use `FLINK_PROPERTIES` for Flink Docker containers
+- ✅ Test that metrics endpoints are accessible before assuming configuration works
+- ✅ Check container logs for "No metrics reporter configured" warnings
+
+### Next Steps
+
+1. Implement the fixes above
+2. Remove unnecessary config file bind mounts
+3. Re-run diagnostic script to verify:
+   - Flink logs show "Prometheus metrics reporter started on port 9250"
+   - Metrics endpoints respond: `curl http://localhost:9250/metrics`
+   - Kafka exporter starts successfully
+4. Run Day05 tests to confirm all targets UP and metrics scraped
 - Always mount JMX config files when using custom metrics

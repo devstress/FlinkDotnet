@@ -5,6 +5,7 @@ using FlinkDotNet.JobGateway.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.OpenApi.Models;
+using Prometheus;
 using Serilog;
 
 namespace FlinkDotNet.JobGateway;
@@ -130,6 +131,21 @@ public static class Program
             var logger = sp.GetRequiredService<ILogger<FlinkJobManager>>();
             return new FlinkJobManager(logger, httpClient);
         });
+        
+        // Register MetricsService as singleton for persistent metrics across requests
+        // Prometheus metrics are configured via appsettings.json (similar to Flink's approach)
+        var metricsEnabled = builder.Configuration.GetValue<bool>("Metrics:Prometheus:Enabled");
+        
+        if (metricsEnabled)
+        {
+            Log.Information("Prometheus metrics ENABLED (configured in appsettings)");
+            builder.Services.AddSingleton<MetricsService>();
+        }
+        else
+        {
+            Log.Information("Prometheus metrics DISABLED (configured in appsettings)");
+        }
+        
         // Logging is now configured via Serilog in Main()
     }
 
@@ -145,6 +161,17 @@ public static class Program
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Flink Job Gateway API v1");
                 c.RoutePrefix = string.Empty;
             });
+        }
+
+        // Enable Prometheus metrics endpoint based on configuration (similar to Flink's metrics.reporters)
+        var metricsEnabled = app.Configuration.GetValue<bool>("Metrics:Prometheus:Enabled");
+        
+        if (metricsEnabled)
+        {
+            app.UseMetricServer();
+            app.UseHttpMetrics();
+            var metricsPath = app.Configuration.GetValue<string>("Metrics:Prometheus:Path") ?? "/metrics";
+            Log.Information("Prometheus metrics endpoint enabled at {Path} (configured via appsettings)", metricsPath);
         }
 
         app.UseAuthorization();
