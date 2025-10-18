@@ -7,9 +7,6 @@ if (!ConfigureContainerRuntime())
     return;
 }
 
-// Ensure Flink/Kafka network exists for container communication
-EnsureFlinkKafkaNetwork();
-
 LogConfiguredPorts();
 SetupEnvironment();
 
@@ -90,10 +87,16 @@ var kafka = kafkaBuilder;
 if (isLearningCourseMode)
 {
     Console.WriteLine("   📊 Deploying Kafka JMX Exporter for metrics collection");
+    
+    var jmxConfigPath = Path.Combine(repoRoot, "LocalTesting", "jmx-exporter-kafka-config.yml");
+    
     #pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
     var kafkaExporter = builder.AddContainer("kafka-exporter", "prom/jmx-exporter", "0.20.0")
-        .WithArgs("5556", "kafka:9101")  // Listen port, JMX target
+        .WithBindMount(jmxConfigPath, "/config.yml", isReadOnly: true)
+        .WithArgs("5556", "/config.yml")  // Port and config file path
         .WithHttpEndpoint(targetPort: 5556, name: "metrics")
+        .WithEnvironment("JMX_HOST", "kafka")
+        .WithEnvironment("JMX_PORT", "9101")
         .WithReference(kafka);  // Ensure same Docker network
     #pragma warning restore S1481
     
@@ -298,23 +301,16 @@ if (isLearningCourseMode)
 sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
+#pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(name: "gateway-http")  // Let Aspire allocate dynamic port
+    .WithHttpEndpoint(port: 8080, name: "gateway-http")
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)  // Host path to connectors
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
-    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
-
-// Enable Prometheus metrics in LEARNINGCOURSE mode via Aspire configuration injection
-if (isLearningCourseMode)
-{
-    gateway = gateway
-        .WithEnvironment("Metrics__Prometheus__Enabled", "true")
-        .WithEnvironment("Metrics__Prometheus__Port", "8080")
-        .WithEnvironment("Metrics__Prometheus__Path", "/metrics");
-    Console.WriteLine($"   📊 Gateway Prometheus metrics enabled via Aspire configuration");
-}
+    .WithReference(sqlGateway.GetEndpoint("sg-http"))  // Reference SQL Gateway endpoint for service discovery
+    .WithReference(kafka);  // Reference Kafka for service discovery and connection string injection
+#pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
 // CRITICAL: Must configure PostgreSQL WITHOUT password for Temporal auto-setup compatibility
@@ -374,9 +370,19 @@ if (isLearningCourse)
     Console.WriteLine($"   📊 Prometheus config: prometheus.yml");
     Console.WriteLine($"   ⚠️  Gateway port (17105) may need updating - check Aspire dashboard for actual port");
     
-    var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "latest")
+    var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
         .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
+    // Note: Gateway is accessed via host.docker.internal, not service name, so no WithReference needed
+    
+    // Add explicit port mapping for Podman/Docker compatibility
+    if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
+    {
+        prometheusBuilder = prometheusBuilder
+            .WithContainerRuntimeArgs("--publish", $"{Ports.PrometheusHostPort}:9090");
+    }
+    
+    var prometheus = prometheusBuilder;
     
     // Note: Prometheus uses static_configs in prometheus.yml for scraping
     // Container DNS resolution works automatically within Aspire's shared Docker network
@@ -660,92 +666,3 @@ static void SetPodmanDockerHost()
     }
 }
 
-static void EnsureFlinkKafkaNetwork()
-{
-    const string networkName = "aspire-flink-network";
-    
-    try
-    {
-        var containerRuntime = GetContainerRuntimeCommand();
-        
-        // Check if network already exists
-        var checkPsi = new ProcessStartInfo
-        {
-            FileName = containerRuntime,
-            Arguments = $"network inspect {networkName}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var checkProcess = Process.Start(checkPsi);
-        if (checkProcess != null)
-        {
-            checkProcess.StandardOutput.ReadToEnd();
-            checkProcess.WaitForExit(5000);
-            
-            if (checkProcess.ExitCode == 0)
-            {
-                Console.WriteLine($"✅ {containerRuntime} network '{networkName}' already exists");
-                return;
-            }
-        }
-
-        // Network doesn't exist, create it
-        var createPsi = new ProcessStartInfo
-        {
-            FileName = containerRuntime,
-            Arguments = $"network create {networkName}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var createProcess = Process.Start(createPsi);
-        if (createProcess != null)
-        {
-            createProcess.StandardOutput.ReadToEnd();
-            var error = createProcess.StandardError.ReadToEnd();
-            createProcess.WaitForExit(5000);
-            
-            if (createProcess.ExitCode == 0)
-            {
-                Console.WriteLine($"✅ Created {containerRuntime} network '{networkName}' for Flink-Kafka communication");
-            }
-            else
-            {
-                Console.WriteLine($"⚠️ Failed to create network '{networkName}': {error}");
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"⚠️ Error managing Flink-Kafka network: {ex.Message}");
-    }
-}
-
-static string GetContainerRuntimeCommand()
-{
-    // Check if Podman is configured as the runtime
-    if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
-    {
-        return "podman";
-    }
-    
-    // Check if Docker is available
-    if (IsDockerAvailable())
-    {
-        return "docker";
-    }
-    
-    // Check if Podman is available as fallback
-    if (IsPodmanAvailable())
-    {
-        return "podman";
-    }
-    
-    // Default to docker
-    return "docker";
-}

@@ -36,16 +36,6 @@ scrape_configs:
           component: 'kafka'
           role: 'broker'
 
-  # FlinkDotNet JobGateway metrics (Gateway runs on host, port is dynamic)
-  # Entry-point script should replace __GATEWAY_TARGET__ with host:port
-  - job_name: 'flinkdotnet-gateway'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['__GATEWAY_TARGET__']
-        labels:
-          component: 'flinkdotnet'
-          role: 'gateway'
-
   # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
