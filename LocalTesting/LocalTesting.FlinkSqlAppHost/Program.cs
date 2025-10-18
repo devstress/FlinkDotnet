@@ -428,7 +428,7 @@ if (isLearningCourse)
     var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
         .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
-        .WithReference(gateway);
+        .WithReference(gateway.GetEndpoint("http-gateway"));  // Reference Gateway endpoint for service discovery
     
     // Note: Prometheus will scrape Flink metrics using container DNS names (flink-jobmanager, flink-taskmanager, etc.)
     // Aspire automatically creates a shared Docker network where containers can resolve each other by name
