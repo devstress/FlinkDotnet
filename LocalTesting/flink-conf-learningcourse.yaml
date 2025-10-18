@@ -20,6 +20,8 @@ state.checkpoints.dir: file:///tmp/flink-checkpoints
 state.savepoints.dir: file:///tmp/flink-savepoints
 
 # Metrics Reporters - PROMETHEUS CONFIGURATION
+# Port will be overridden per component via FLINK_PROPERTIES environment variable
+# JobManager: 9250, TaskManager: 9251, SQL Gateway: 9252
 metrics.reporters: prom
 metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
 metrics.reporter.prom.port: 9250-9252
