@@ -181,7 +181,7 @@ if (isLearningCourseMode)
     var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
     if (File.Exists(flinkConfigPath))
     {
-        jobManager = jobManager.WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true);
+        jobManager = jobManager.WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true);
         Console.WriteLine("   📊 Flink config file mounted for JobManager (Prometheus metrics enabled)");
     }
 }
@@ -257,7 +257,7 @@ if (isLearningCourseMode)
     var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
     if (File.Exists(flinkConfigPath))
     {
-        taskManager = taskManager.WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true);
+        taskManager = taskManager.WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true);
         Console.WriteLine("   📊 Flink config file mounted for TaskManager (Prometheus metrics enabled)");
     }
 }
@@ -341,7 +341,7 @@ if (isLearningCourseMode)
     var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
     if (File.Exists(flinkConfigPath))
     {
-        sqlGateway = sqlGateway.WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true);
+        sqlGateway = sqlGateway.WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true);
         Console.WriteLine("   📊 Flink config file mounted for SQL Gateway (Prometheus metrics enabled)");
     }
 }
@@ -349,40 +349,22 @@ if (isLearningCourseMode)
 sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
 // Flink.JobGateway - Add Flink Job Gateway
-// IMPORTANT: Gateway needs container network address since it submits jobs to Flink containers
-// Flink jobs run inside Docker containers and must use "kafka:9092" (container network name)
-// NOT "localhost:port" (which only works from the host machine)
+var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
+    .WithHttpEndpoint(name: "gateway-http")  // Let Aspire allocate dynamic port
+    .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)  // Host path to connectors
+    .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
+    .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
+    .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
+    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
 
-// CRITICAL: Use .WithReference() for Aspire service discovery
-// Aspire automatically injects endpoint URLs as environment variables:
-// services__flink-jobmanager__http__0 = "http://localhost:{dynamicPort}"
-// The Gateway's DiscoverFlinkEndpoint() method (FlinkJobManager.cs line 45)
-// checks for this variable first, enabling automatic Flink cluster discovery
-//
-// NOTE: Gateway does NOT have KAFKA_BOOTSTRAP environment variable set because:
-// 1. Job definitions explicitly provide bootstrapServers (e.g., "kafka:9092")
-// 2. Flink containers (JobManager/TaskManager) have KAFKA_BOOTSTRAP=kafka:9092 set
-// 3. Java FlinkJobRunner jobs inherit environment from Flink containers, not Gateway
-// 4. This prevents any confusion about which Kafka address to use
-// Gateway with service reference for Flink discovery
-// All ports are hardcoded - no WaitFor dependencies needed for parallel startup
-// Configure Gateway environment based on mode
-// In LearningCourse mode, use "LearningCourse" environment to load appsettings.LearningCourse.json
-// This enables Prometheus metrics via configuration (similar to Flink's approach)
-var gatewayEnvironment = isLearningCourseMode ? "LearningCourse" : "Production";
-
-var gatewayBuilder = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithEnvironment("ASPNETCORE_URLS", $"http://0.0.0.0:{Ports.GatewayHostPort.ToString()}")  // Bind to 0.0.0.0 for Docker container access
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", gatewayEnvironment)  // Use LearningCourse or Production environment
-    .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
-    .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Point to Release build JAR
-    .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Set log file path for Gateway
-    .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager for standard job submission
-    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway for direct SQL execution
-
+// Enable Prometheus metrics in LEARNINGCOURSE mode via Aspire configuration injection
 if (isLearningCourseMode)
 {
-    Console.WriteLine($"   📊 Gateway Prometheus metrics enabled (ASPNETCORE_ENVIRONMENT={gatewayEnvironment})");
+    gateway = gateway
+        .WithEnvironment("Metrics__Prometheus__Enabled", "true")
+        .WithEnvironment("Metrics__Prometheus__Port", "8080")
+        .WithEnvironment("Metrics__Prometheus__Path", "/metrics");
+    Console.WriteLine($"   📊 Gateway Prometheus metrics enabled via Aspire configuration");
 }
 
 // Temporal PostgreSQL - Database for Temporal server
@@ -436,17 +418,21 @@ if (isLearningCourse)
     
     // Observability Stack - Prometheus for metrics collection
     // Required for monitoring and performance analysis exercises
-    var prometheusConfigFile = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
+    // CRITICAL: Gateway runs as .NET project on host, accessible via host.docker.internal
+    // Gateway port must be manually updated in prometheus.yml after checking Aspire dashboard
+    var prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
     
     Console.WriteLine($"   📊 Prometheus config: prometheus.yml");
+    Console.WriteLine($"   ⚠️  Gateway port (17105) may need updating - check Aspire dashboard for actual port");
     
     var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
-        .WithBindMount(prometheusConfigFile, "/etc/prometheus/prometheus.yml", isReadOnly: true);
+        .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
+        .WithReference(gateway);
     
-    // Note: Prometheus will scrape Flink metrics using container DNS names
-    // Aspire automatically creates a shared Docker network where containers can resolve each other
-    // Same mechanism TaskManager uses to connect to JobManager via "flink-jobmanager" hostname
+    // Note: Prometheus will scrape Flink metrics using container DNS names (flink-jobmanager, flink-taskmanager, etc.)
+    // Aspire automatically creates a shared Docker network where containers can resolve each other by name
+    // Gateway is scraped via host.docker.internal since it runs as a .NET project on the host
     
     Console.WriteLine($"✅ Prometheus deployed on port {Ports.PrometheusHostPort} for metrics collection");
     
