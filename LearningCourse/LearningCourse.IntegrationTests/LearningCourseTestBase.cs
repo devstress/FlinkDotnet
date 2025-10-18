@@ -339,9 +339,10 @@ public abstract class LearningCourseTestBase
                 TestContext.WriteLine($"⏳ Temporal not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
             }
             
-            // Core infrastructure must be ready: Kafka, Flink, and Temporal
+            // Core infrastructure must be ready: Kafka and Flink
+            // Temporal is optional (not all tests need it - e.g., Day05 Prometheus metrics test)
             // LearningCourse infrastructure (Redis, Prometheus, Grafana) is optional
-            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && temporalEndpoint != null && flinkReady && temporalReady;
+            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && flinkReady;
             var learningCourseReady = !isLearningCourse || (redisEndpoint != null && prometheusEndpoint != null && grafanaEndpoint != null);
             
             if (coreReady && learningCourseReady)
@@ -372,10 +373,9 @@ public abstract class LearningCourseTestBase
             $"Infrastructure not ready within {maxWait.TotalSeconds}s. " +
             $"KafkaFlinkIp: {KafkaFlinkBootstrapServers ?? "null"}, " +
             $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
-            $"TemporalEndpoint: {TemporalHostEndpoint ?? "null"}, " +
-            $"FlinkReady: {flinkReady}, " +
-            $"TemporalReady: {temporalReady}" +
-            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"}, Prometheus: {PrometheusHostEndpoint ?? "null"}, Grafana: {GrafanaHostEndpoint ?? "null"}" : ""));
+            $"FlinkReady: {flinkReady}" +
+            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"}, Prometheus: {PrometheusHostEndpoint ?? "null"}, Grafana: {GrafanaHostEndpoint ?? "null"}" : "") +
+            $" (Temporal is optional: {TemporalHostEndpoint ?? "not discovered"}, TemporalReady: {temporalReady})");
     }
     
     /// <summary>

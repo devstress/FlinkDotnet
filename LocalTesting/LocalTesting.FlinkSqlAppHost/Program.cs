@@ -62,13 +62,12 @@ Console.WriteLine($"🔍 Running in {(isLearningCourseMode ? "LEARNINGCOURSE" : 
 Console.WriteLine($"   Metrics export: {(isLearningCourseMode ? "ENABLED (Flink + Kafka)" : "DISABLED")}");
 
 // Configure Kafka - Aspire's AddKafka() uses KRaft mode by default (no Zookeeper)
-#pragma warning disable S1481 // Kafka resource is created but not directly referenced - used via connection string
-var kafkaBuilder = builder.AddKafka("kafka");
+var kafka = builder.AddKafka("kafka");
 
 // Enable JMX for metrics export only in LEARNINGCOURSE mode
 if (isLearningCourseMode)
 {
-    kafkaBuilder = kafkaBuilder
+    kafka = kafka
         .WithEnvironment("KAFKA_JMX_PORT", "9101")
         .WithEnvironment("KAFKA_JMX_HOSTNAME", "0.0.0.0")
         .WithEnvironment("KAFKA_JMX_OPTS",
@@ -80,27 +79,32 @@ if (isLearningCourseMode)
     Console.WriteLine("   📊 Kafka JMX metrics enabled on port 9101");
 }
 
-var kafka = kafkaBuilder;
-#pragma warning restore S1481
-
 // Kafka JMX Exporter - only in LEARNINGCOURSE mode
+// Uses the Bitnami JMX Exporter (latest version 1.5.0) as a standalone HTTP server
+// Connects to Kafka's JMX endpoint (kafka:9101) and exposes metrics on port 5556
 if (isLearningCourseMode)
 {
     Console.WriteLine("   📊 Deploying Kafka JMX Exporter for metrics collection");
     
     var jmxConfigPath = Path.Combine(repoRoot, "LocalTesting", "jmx-exporter-kafka-config.yml");
     
-    #pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
-    var kafkaExporter = builder.AddContainer("kafka-exporter", "prom/jmx-exporter", "0.20.0")
-        .WithBindMount(jmxConfigPath, "/config.yml", isReadOnly: true)
-        .WithArgs("5556", "/config.yml")  // Port and config file path
-        .WithHttpEndpoint(targetPort: 5556, name: "metrics")
-        .WithEnvironment("JMX_HOST", "kafka")
-        .WithEnvironment("JMX_PORT", "9101")
-        .WithReference(kafka);  // Ensure same Docker network
-    #pragma warning restore S1481
-    
-    Console.WriteLine("   📊 Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
+    if (File.Exists(jmxConfigPath))
+    {
+        #pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
+        var kafkaExporter = builder.AddContainer("kafka-exporter", "bitnami/jmx-exporter", "latest")
+            .WithBindMount(jmxConfigPath, "/opt/bitnami/jmx-exporter/exporter.yml", isReadOnly: true)
+            .WithHttpEndpoint(targetPort: 5556, name: "metrics")
+            .WithArgs("5556", "/opt/bitnami/jmx-exporter/exporter.yml")
+            .WithReference(kafka)
+            .WaitFor(kafka);
+        #pragma warning restore S1481
+        
+        Console.WriteLine("   📊 Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
+    }
+    else
+    {
+        Console.WriteLine("   ⚠️  Kafka JMX Exporter config not found, skipping deployment");
+    }
 }
 
 // Flink JobManager with named HTTP endpoint for service references

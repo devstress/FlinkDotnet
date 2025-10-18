@@ -1,6 +1,10 @@
 # Kafka JMX Exporter Configuration for Prometheus
 # This file configures which Kafka JMX metrics to export to Prometheus
-# Used by prom/jmx-exporter container to scrape kafka:9101 JMX endpoint
+# Used by bitnami/jmx-exporter container to scrape kafka:9101 JMX endpoint
+
+# JMX connection configuration
+# Format: hostPort: "hostname:port" for JMX RMI connection
+hostPort: kafka:9101
 
 # Lower case output names for consistency
 lowercaseOutputName: true

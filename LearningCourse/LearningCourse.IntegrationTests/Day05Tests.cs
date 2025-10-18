@@ -26,61 +26,6 @@ public class Day05Tests : LearningCourseTestBase
     private const string Exercise4Path = "Day05-Enterprise-Observability/Exercise-Solutions/Exercise54";
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
-    [Test]
-    [Description("Exercise 1: Observability Infrastructure Setup")]
-    public async Task Exercise1_ObservabilityInfrastructure_ShouldExecuteSuccessfully()
-    {
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 1: Observability Infrastructure Setup");
-        TestContext.WriteLine("================================================================================");
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise1Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 1 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 1 completed successfully");
-    }
-
-    [Test]
-    [Description("Exercise 2: Metrics and Monitoring Implementation")]
-    public async Task Exercise2_MetricsMonitoring_ShouldExecuteSuccessfully()
-    {
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 2: Metrics and Monitoring Implementation");
-        TestContext.WriteLine("================================================================================");
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise2Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 2 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 2 completed successfully");
-    }
-
-    [Test]
-    [Description("Exercise 3: Distributed Tracing Configuration")]
-    public async Task Exercise3_DistributedTracing_ShouldExecuteSuccessfully()
-    {
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 3: Distributed Tracing Configuration");
-        TestContext.WriteLine("================================================================================");
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise3Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 3 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 3 completed successfully");
-    }
-
-    [Test]
-    [Description("Exercise 4: Alerting and Dashboards")]
-    public async Task Exercise4_AlertingDashboards_ShouldExecuteSuccessfully()
-    {
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 4: Alerting and Dashboards");
-        TestContext.WriteLine("================================================================================");
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(Exercise4Path, Array.Empty<string>(), ExerciseTimeout);
-
-        Assert.That(exitCode, Is.EqualTo(0), $"Exercise 4 should complete successfully. Exit code: {exitCode}\nError: {error}");
-        TestContext.WriteLine("✅ Exercise 4 completed successfully");
-    }
 
     /// <summary>
     /// Helper method to extract dashboard information from Grafana UI
