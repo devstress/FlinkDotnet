@@ -37,9 +37,6 @@
     
     <!-- Day 05: Enterprise Observability -->
     <ProjectReference Include="..\Day05-Enterprise-Observability\Exercise-Solutions\Exercise51\Exercise51.csproj" />
-    <ProjectReference Include="..\Day05-Enterprise-Observability\Exercise-Solutions\Exercise52\Exercise52.csproj" />
-    <ProjectReference Include="..\Day05-Enterprise-Observability\Exercise-Solutions\Exercise53\Exercise53.csproj" />
-    <ProjectReference Include="..\Day05-Enterprise-Observability\Exercise-Solutions\Exercise54\Exercise54.csproj" />
     
     <!-- Day 06: Temporal Workflows -->
     <ProjectReference Include="..\Day06-Temporal-Workflows\Exercise-Solutions\Exercise61\Exercise61.csproj" />

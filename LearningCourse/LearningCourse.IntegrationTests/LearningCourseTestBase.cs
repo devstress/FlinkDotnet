@@ -1647,6 +1647,9 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
+        // Set FLINK_GATEWAY_URL for exercises that submit Flink jobs directly (always use localhost:8080)
+        psi.Environment["FLINK_GATEWAY_URL"] = "http://localhost:8080";
+        
         // Set LOG_FILE_PATH to ensure all logs go to LocalTesting/test-logs/
         // Use absolute path to ensure logs are written to the correct location
         var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
