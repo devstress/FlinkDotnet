@@ -24,6 +24,7 @@ bld/
 [Ll]ogs/
 **/.vs/
 **/test-logs/
+!LearningCourse/Day05-Enterprise-Observability/videos/
 tools/
 
 # .NET Core
