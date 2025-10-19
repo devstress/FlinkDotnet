@@ -24,7 +24,6 @@ using FlinkDotNet.DataStream.State;
 using FlinkDotNet.DataStream.Checkpoint;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
-using FlinkDotNet.Common;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
