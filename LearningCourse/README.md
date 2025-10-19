@@ -4,7 +4,7 @@ This directory contains integration tests for the FlinkDotNet Learning Course tu
 
 ## ⚠️ IMPORTANT: Running Integration Tests
 
-**All LearningCourse integration tests MUST be run through `LocalTesting/LocalTesting.sln`** to share the same Aspire infrastructure.
+**All LearningCourse integration tests MUST be run through `LearningCourse/IntegrationTests.sln`** using the dedicated LearningCourse test infrastructure.
 
 ### Quick Start
 

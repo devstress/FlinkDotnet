@@ -15,9 +15,9 @@
 ### Validate LocalTesting Stack
 ```bash
 # Run the integration tests to validate Kafka + Flink + Gateway
-dotnet test ../../LocalTesting/LocalTesting.IntegrationTests -c Release --filter TestCategory=observability
+dotnet test ../../LearningCourse/IntegrationTests.sln -c Release --filter "FullyQualifiedName~Day02"
 
-# Optional: run the AppHost manually
+# Optional: run the AppHost manually (starts infrastructure)
 dotnet run --project ../../LocalTesting/LocalTesting.FlinkSqlAppHost/LocalTesting.FlinkSqlAppHost.csproj
 ```
 

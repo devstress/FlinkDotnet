@@ -69,7 +69,7 @@ All exercises use **real Temporal infrastructure** - no mocking, no simulation:
 1. **LocalTesting Running** with Temporal infrastructure:
    ```bash
    cd LocalTesting
-   dotnet run --project LocalTesting.AppHost
+   dotnet run --project LocalTesting.FlinkSqlAppHost
    ```
 
 2. **Verify Temporal Connectivity**:
@@ -264,16 +264,16 @@ Exercise 6.4 completed successfully
 All exercises have comprehensive integration tests:
 
 ```bash
-cd LearningCourse/LearningCourse.IntegrationTests
+cd LearningCourse
 
 # Run all Day 6 tests
-dotnet test --filter "Category=day06-temporal-workflows"
+dotnet test IntegrationTests.sln --filter "Category=day06-temporal-workflows"
 
 # Run specific exercise test
-dotnet test --filter "FullyQualifiedName~Exercise61"
-dotnet test --filter "FullyQualifiedName~Exercise62"
-dotnet test --filter "FullyQualifiedName~Exercise63"
-dotnet test --filter "FullyQualifiedName~Exercise64"
+dotnet test IntegrationTests.sln --filter "FullyQualifiedName~Exercise61"
+dotnet test IntegrationTests.sln --filter "FullyQualifiedName~Exercise62"
+dotnet test IntegrationTests.sln --filter "FullyQualifiedName~Exercise63"
+dotnet test IntegrationTests.sln --filter "FullyQualifiedName~Exercise64"
 ```
 
 **Test Coverage:**

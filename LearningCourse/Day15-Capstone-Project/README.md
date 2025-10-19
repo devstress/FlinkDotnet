@@ -612,8 +612,8 @@ cd Exercise154 && dotnet run && cd ..
 All exercises have corresponding integration tests in `LearningCourse.IntegrationTests/Day15Tests.cs`:
 
 ```bash
-cd LearningCourse/LearningCourse.IntegrationTests
-dotnet test --filter "Category=day15-capstone-project"
+cd LearningCourse
+dotnet test IntegrationTests.sln --filter "Category=day15-capstone-project"
 ```
 
 **Test Coverage**:

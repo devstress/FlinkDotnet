@@ -7,13 +7,13 @@ using FlinkDotNet.DataStream;
 namespace Exercise51_ObservabilityDemo
 {
     /// <summary>
-    /// Exercise 51: Observability Demo - High-Volume Message Processing
+    /// Exercise 51: Observability Demo - Message Processing
     ///
-    /// This exercise demonstrates comprehensive observability by processing 100,000 messages
+    /// This exercise demonstrates comprehensive observability by processing messages
     /// while Prometheus and Grafana track metrics in real-time.
     ///
     /// Key differences from Exercise1:
-    /// - Processes 100,000 messages (vs 50) for extended observation
+    /// - Processes 100 messages for testing observability metrics
     /// - Job is NOT cancelled automatically - allows live metric collection
     /// - Optimized for observability testing (no delays between messages)
     /// </summary>
@@ -23,7 +23,7 @@ namespace Exercise51_ObservabilityDemo
         private const string InputTopic = "observability_input_day05";
         private const string OutputTopic = "observability_output_day05";
         private static readonly string ConsumerGroup = $"observability-demo-{Guid.NewGuid():N}"; // Still unique to avoid offset issues
-        private const int MessageCount = 1000; // Reduced for faster test execution while still demonstrating observability
+        private const int MessageCount = 1000; // Moderate count for testing observability metrics
         
         // Kafka addresses - read from environment variables set by test infrastructure
         // IMPORTANT: Both producer and Flink consumer must use the SAME Kafka address
@@ -46,7 +46,7 @@ namespace Exercise51_ObservabilityDemo
                 .CreateLogger();
 
             Console.WriteLine("================================================================================");
-            Console.WriteLine("  Exercise 51: Observability Demo - High-Volume Processing");
+            Console.WriteLine("  Exercise 51: Observability Demo - Message Processing");
             Console.WriteLine("================================================================================");
             Console.WriteLine();
             Console.WriteLine("🔧 ENVIRONMENT CONFIGURATION:");
@@ -59,7 +59,7 @@ namespace Exercise51_ObservabilityDemo
             Console.WriteLine($"   CONSUMER_GROUP: {ConsumerGroup}");
             Console.WriteLine();
             Console.WriteLine("  Purpose: Demonstrate comprehensive observability metrics");
-            Console.WriteLine($"  Message Volume: {MessageCount:N0} messages");
+            Console.WriteLine($"  Message Count: {MessageCount} messages");
             Console.WriteLine("  Monitoring: Prometheus + Grafana + Flink Dashboard");
             Console.WriteLine();
             Console.WriteLine("  Note: Job will continue running for metric collection");
@@ -254,20 +254,13 @@ namespace Exercise51_ObservabilityDemo
                     var task = producer.ProduceAsync(InputTopic, message);
                     tasks.Add(task);
                     
-                    // Log special tracking message
-                    if (i == 5000)
-                    {
-                        Log.Information("🎯 TRACKING MESSAGE SENT: key-5000 = 'message 5000' (for observability demo)");
-                        Console.WriteLine($"   🎯 TRACKING: Sent key-5000 for observability tracking");
-                    }
-                    
-                    // Print progress every 2,000 messages (more frequent for debugging)
-                    if ((i + 1) % 2000 == 0)
+                    // Print progress for small message counts
+                    if (MessageCount <= 20 || (i + 1) % Math.Max(1, MessageCount / 5) == 0)
                     {
                         var elapsed = stopwatch.Elapsed.TotalSeconds;
-                        var rate = (i + 1) / elapsed;
+                        var rate = elapsed > 0 ? (i + 1) / elapsed : 0;
                         Log.Information("📊 Progress: {Current}/{Total} messages produced ({Rate:N0} msg/sec)", i + 1, MessageCount, rate);
-                        Console.WriteLine($"   [{i + 1:N0}/{MessageCount:N0}] Rate: {rate:N0} msg/sec");
+                        Console.WriteLine($"   [{i + 1}/{MessageCount}] Rate: {rate:N0} msg/sec");
                     }
                 }
                 catch (ProduceException<string, string> ex)
@@ -309,7 +302,6 @@ namespace Exercise51_ObservabilityDemo
 
             var consumedCount = 0;
             var capitalizedCount = 0;
-            var key5000Found = false;
             var stopwatch = Stopwatch.StartNew();
 
             try
@@ -321,14 +313,6 @@ namespace Exercise51_ObservabilityDemo
                     if (result != null)
                     {
                         consumedCount++;
-                        
-                        // Track special message for observability demo
-                        if (result.Message.Key == "key-5000")
-                        {
-                            key5000Found = true;
-                            Log.Information("🎯 TRACKING MESSAGE RECEIVED: key-5000 = '{Value}' (transformed)", result.Message.Value);
-                            Console.WriteLine($"   🎯 TRACKING: Received key-5000 = '{result.Message.Value}' (transformed)");
-                        }
                         
                         if (result.Message.Value == result.Message.Value.ToUpperInvariant())
                         {
@@ -359,11 +343,6 @@ namespace Exercise51_ObservabilityDemo
                 Console.WriteLine($"   [SUCCESS] Verified processing: {capitalizedCount}/{consumedCount} messages capitalized");
                 Console.WriteLine($"   Note: Job continues processing remaining {MessageCount - consumedCount:N0} messages");
                 
-                if (key5000Found)
-                {
-                    Log.Information("✅ Tracking message key-5000 successfully processed through pipeline");
-                    Console.WriteLine($"   ✅ Tracking message key-5000 verified in output");
-                }
             }
             else
             {

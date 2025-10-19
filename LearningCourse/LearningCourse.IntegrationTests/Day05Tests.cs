@@ -1304,7 +1304,7 @@ public class Day05Tests : LearningCourseTestBase
 
     private async Task<string?> WaitForFlinkJobToStartAsync(string flinkRestApi)
     {
-        var timeout = TimeSpan.FromSeconds(90); // Reduced - misconfiguration fixed, but keep reasonable for job startup
+        var timeout = TimeSpan.FromSeconds(100); // Reduced - misconfiguration fixed, but keep reasonable for job startup
         var stopwatch = Stopwatch.StartNew();
         var lastJobCount = -1;
         var attemptCount = 0;

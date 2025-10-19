@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.1 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1 and focuses on three core technologies - **Apache Flink** (real-time stream processing), **Kafka** (message streaming broker), and **Temporal** (workflow orchestration) - making it easier for .NET developers to handle large-scale data processing challenges in multi-tiered, distributed real-time stream processing.
+**FlinkDotNet** is a comprehensive .NET framework that enables developers to build and submit streaming jobs to Apache Flink 2.1 clusters using a fluent C# API. It provides extensive compatibility with Apache Flink 2.1 and integrates with three core technologies - **Apache Flink** (real-time stream processing), **Kafka** (message streaming broker), and **Temporal.io** (workflow orchestration platform) - making it easier for .NET developers to handle large-scale data processing challenges in multi-tiered, distributed real-time stream processing.
 
 <!-- Build & Test Status -->
 [![Build](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml)
@@ -158,7 +158,7 @@ Traditional solutions require Java expertise or vendor lock-in. FlinkDotNet brin
 | **Event-Time Processing** | Watermarks, late data handling, time windows (tumbling/sliding/session) |
 | **Exactly-Once** | Checkpointing and savepoints for fault tolerance |
 | **Dynamic Scaling** | Flink 2.1 adaptive scheduler, reactive mode, savepoint-based scaling |
-| **Multi-Cluster Orchestration** | Temporal-powered workflows for thousands of clusters |
+| **Workflow Integration** | Temporal.io platform integration for complex orchestration |
 | **Local Development** | .NET Aspire integration - start full stack with one command |
 | **Enterprise Observability** | Full PGL stack (Prometheus, Grafana, Loki) + OpenTelemetry |
 
@@ -193,16 +193,18 @@ FlinkDotNet/
 ├── FlinkDotNet.DataStream/      # Apache Flink 2.1 compatible streaming API
 ├── Flink.JobBuilder/            # Fluent DSL for rapid development
 ├── FlinkDotNet.JobGateway/      # Job submission service
-├── FlinkDotNet.Orchestration/   # Multi-cluster management
-├── FlinkDotNet.Temporal/        # Durable workflow definitions
-└── FlinkDotNet.ClusterManager/  # Actor-based cluster lifecycle
+├── FlinkDotNet.Common/          # Shared utilities and models
+├── FlinkDotNet.Table/           # Table API support
+├── FlinkDotNet.Testing/         # Test infrastructure
+└── FlinkDotNet.Util/            # Utility functions
 
 LocalTesting/                     # Complete local dev environment
 ├── LocalTesting.FlinkSqlAppHost/    # .NET Aspire orchestration
 └── LocalTesting.IntegrationTests/   # End-to-end validation tests
 
 LearningCourse/                   # 15-day learning path
-└── Day01-Kafka-Flink-Data-Pipeline/ # Baeldung tutorial adaptation
+├── IntegrationTests.sln/        # Dedicated solution for course tests
+└── Day01-Day15/                 # 15 days of hands-on exercises
 ```
 
 ## Documentation

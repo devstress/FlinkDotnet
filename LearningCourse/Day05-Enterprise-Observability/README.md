@@ -8,6 +8,7 @@ By the end of this lesson, you will understand:
 - When Grafana + Prometheus becomes necessary for metrics
 - How to configure Prometheus exporters for Kafka, Flink JobManager, and Flink TaskManager
 - Why this course focuses on Grafana + Prometheus for distributed systems
+- When to add OpenTelemetry for message-level tracking in streaming pipelines
 
 ---
 
@@ -210,145 +211,6 @@ flink_taskmanager_Status_JVM_Memory_Heap_Used      # Resource usage
 
 ---
 
-## ❓ Why Don't We Need OpenTelemetry (OTel) in This Exercise?
-
-### TL;DR: We're monitoring infrastructure, not application traces
-
-**Short answer:** OTel is for **distributed tracing of application requests**. This exercise focuses on **infrastructure metrics** (Kafka, Flink), which are already exposed by built-in exporters.
-
-### Detailed Explanation
-
-#### What OTel Provides (and Why We Don't Need It Here):
-
-**1. Distributed Request Tracing**
-- **OTel purpose**: Track a single user request as it flows through multiple microservices
-- **This exercise**: We're not tracking individual user requests or API calls
-- **What we track instead**: Stream processing throughput and infrastructure health
-
-Example of what OTel would trace:
-```
-User Request → API Gateway → Order Service → Payment Service → Inventory Service
-     ↓              ↓              ↓                ↓                  ↓
-     └────────── Trace ID: abc123 spans entire request flow ──────────┘
-```
-
-Example of what we actually monitor (without OTel):
-```
-Kafka Messages → Flink Processing → Kafka Output
-       ↓                ↓                 ↓
-   Throughput       Transform       Throughput
-   (metrics)        (metrics)       (metrics)
-```
-
-**2. Application Instrumentation**
-- **OTel purpose**: Instrument your application code to emit traces and spans
-- **This exercise**: Flink and Kafka already have built-in metrics exporters
-- **No custom code needed**: Infrastructure components self-report their metrics
-
-**3. Service-to-Service Dependencies**
-- **OTel purpose**: Visualize how microservices call each other and their dependencies
-- **This exercise**: We have a simple pipeline architecture (Kafka → Flink → Kafka), not a complex service mesh
-- **Complexity level**: 3 components in a linear pipeline vs dozens of interconnected microservices
-
-### When You WOULD Need OTel + Prometheus Together
-
-You'd add OTel to this stack if you had:
-
-**Scenario 1: Multiple Microservices with Complex Interactions**
-```
-┌─────────────────────────────────────────────────────────┐
-│  User Request Flow (requires OTel tracing)              │
-└─────────────────────────────────────────────────────────┘
-
-API Gateway → Order Service ──┬→ Payment Service
-                              ├→ Inventory Service
-                              ├→ Shipping Service
-                              └→ Notification Service
-                                        ↓
-                              Each service calls 2-3 others
-```
-
-**Scenario 2: Need to Debug Cross-Service Latency**
-```
-Problem: API response time is 2000ms, but where's the slowdown?
-
-With OTel Traces:
-├─ API Gateway: 50ms
-├─ Order Service: 100ms
-│  ├─ Database query: 80ms
-│  └─ Business logic: 20ms
-├─ Payment Service: 1800ms ← FOUND THE BOTTLENECK!
-│  ├─ External API call: 1750ms ← Third-party payment gateway is slow
-│  └─ Processing: 50ms
-└─ Notification Service: 50ms
-
-Without OTel: You'd only see "API took 2000ms" with no breakdown
-```
-
-**Scenario 3: Multiple Teams/Services Need Correlation**
-```
-Frontend Team: "The checkout is slow!"
-Backend Team: "Which service? What request ID?"
-Payment Team: "We don't see any issues..."
-Database Team: "Our metrics look normal..."
-
-With OTel: Share trace ID abc123, everyone sees the same request flow
-Without OTel: Each team looks at their own logs/metrics in isolation
-```
-
-### What We Actually Have in This Exercise
-
-**Simple Linear Pipeline**:
-```
-Kafka (Producer) → Flink (Transform) → Kafka (Consumer)
-       ↓                  ↓                   ↓
-   Messages/sec      Processing Rate      Messages/sec
-   (Prometheus)      (Prometheus)         (Prometheus)
-```
-
-**Infrastructure Metrics Suffice Because**:
-1. **No request tracing needed**: We're processing streams, not handling individual user requests
-2. **Built-in exporters**: Kafka JMX and Flink Prometheus reporters already exist
-3. **Simple data flow**: Linear pipeline is easy to understand without traces
-4. **Performance metrics**: Throughput and latency metrics from Prometheus are sufficient
-
-### Real-World Example: When to Add OTel
-
-**Current Exercise (No OTel Needed)**:
-- Flink job processes Kafka messages
-- Monitor: throughput, lag, processing time
-- Tools: Prometheus metrics from Flink/Kafka
-- Complexity: Low (3 components)
-
-**E-commerce Platform (OTel Required)**:
-- User places order → 15 microservices involved
-- Monitor: which service caused the 5-second delay?
-- Tools: OTel traces + Prometheus metrics + logs
-- Complexity: High (50+ services, 100+ endpoints)
-
-### Summary: This Exercise's Observability Needs
-
-| Observability Need | Solution in This Exercise | Why OTel Not Needed |
-|-------------------|---------------------------|---------------------|
-| **Infrastructure Health** | Prometheus metrics (CPU, memory, JVM) | OTel doesn't monitor infrastructure |
-| **Throughput Tracking** | Flink metrics (records in/out) | Built-in Flink reporter suffices |
-| **Performance Monitoring** | Prometheus queries (rate, latency) | No cross-service traces needed |
-| **Alerting** | Grafana + Prometheus alerts | Metrics-based alerts work fine |
-| **Debugging** | Logs + metrics correlation | Single-pipeline is straightforward |
-
-### When to Revisit OTel
-
-Add OpenTelemetry when you:
-1. ✅ Have 5+ microservices with complex interactions
-2. ✅ Need to trace individual requests across services
-3. ✅ Multiple teams need to correlate incidents
-4. ✅ Cross-service latency debugging becomes difficult
-5. ✅ Service dependency mapping is unclear
-
-For this Flink streaming exercise, **Prometheus metrics alone provide everything we need**.
-
----
-
 ## 🔧 Prometheus Exporter Configuration
 
 ### Overview
@@ -490,129 +352,699 @@ flink_taskmanager_Status_JVM_CPU_Load                # CPU usage
 
 ---
 
-## 🎬 Hands-On Exercises
+## 🎬 Hands-On Exercise
 
-### Exercise 1: Grafana Dashboard Exploration
+### Exercise 5.1: Complete Observability Stack Integration
 
-**Objective:** Navigate Grafana UI and explore observability features
-
-**What you'll learn:**
-- Anonymous access configuration (no login required)
-- Dashboard discovery and navigation
-- Data source configuration (Prometheus)
-- Flink metrics visualization
-- Message flow tracking
-
-**Video demonstration:**
-- 📹 [Full UI Test Recording](./videos/GrafanaDashboard_20251018_120432.webm)
-- 📸 [Screenshots](./videos/):
-  - [Homepage](./videos/Grafana_01_Homepage_20251018_120345.png)
-  - [Dashboards](./videos/Grafana_02_Dashboards_20251018_120347.png)
-  - [Flink Dashboard](./videos/Grafana_03_FlinkDashboard_20251018_120349.png)
-  - [Data Sources](./videos/Grafana_04_DataSources_20251018_120352.png)
-  - [Flink Metrics](./videos/Grafana_06_FlinkDashboard_20251018_120428.png)
-
-**Test to run:**
-```bash
-cd LearningCourse/LearningCourse.IntegrationTests
-dotnet test --filter "FullyQualifiedName~UIVideoTest_GrafanaDashboard"
-```
-
-**What the test does:**
-1. Starts Exercise 1 (message processing pipeline) in background
-2. Opens Grafana in browser (anonymous access)
-3. Discovers available dashboards
-4. Explores Flink metrics dashboard
-5. Verifies Prometheus data source connection
-6. Tracks message flow through metrics
-7. Integrates with Flink Dashboard for job status
-
----
-
-### Exercise 2: Prometheus Metrics Tracking
-
-**Objective:** Query Prometheus directly and track message processing
+**Objective:** Understand and validate the complete Prometheus-based observability stack with Grafana visualization
 
 **What you'll learn:**
-- Prometheus query interface (PromQL)
-- System uptime verification
-- Flink records IN/OUT metrics
-- Throughput rate calculation
-- Graph visualization
-- Integration with Flink Dashboard
+- Prometheus metrics collection from Kafka, Flink JobManager, and TaskManager
+- Grafana dashboard navigation and data source configuration
+- PromQL queries for system health and throughput monitoring
+- Real-time message flow tracking through the pipeline
+- Kafka broker topic metrics validation
 
-**Video demonstration:**
-- 📹 [Full UI Test Recording](./videos/PrometheusMetrics_20251018_120452.webm)
-- 📸 [Screenshots](./videos/):
-  - [Homepage](./videos/Prometheus_01_Homepage_20251018_120440.png)
-  - [Uptime Query](./videos/Prometheus_02_UptimeQuery_20251018_120447.png)
-  - [Query Interface](./videos/Prometheus_Debug_QueryInterface_20251018_120443.png)
+**Location:** [`LearningCourse/Day05-Enterprise-Observability/Exercise-Solutions/Exercise51/`](./Exercise-Solutions/Exercise51/)
 
-**Test to run:**
+**Run the exercise:**
 ```bash
-cd LearningCourse/LearningCourse.IntegrationTests
-dotnet test --filter "FullyQualifiedName~UIVideoTest_PrometheusMetrics"
+cd LearningCourse/Day05-Enterprise-Observability/Exercise-Solutions/Exercise51
+dotnet run
 ```
 
-**What the test does:**
-1. Starts Exercise 1 (message processing pipeline) in background
-2. Opens Prometheus UI
-3. Queries system uptime: `up`
-4. Queries Flink input metrics: `flink_taskmanager_job_task_operator_numRecordsIn`
-5. Switches to graph view for visualization
-6. Queries Flink output metrics: `flink_taskmanager_job_task_operator_numRecordsOut`
-7. Calculates throughput rate: `rate(flink_taskmanager_job_task_operator_numRecordsOut[1m])`
-8. Navigates to Flink Dashboard for job verification
-9. Returns to Prometheus targets page for health check
+**What the exercise does:**
+1. Produces 1,000 messages to Kafka topic `observability_input_day05`
+2. Flink processes messages and writes to `observability_output_day05`
+3. All components expose Prometheus metrics:
+   - Kafka JMX Exporter: Dynamic port (discovered via Docker)
+   - Flink JobManager: Port 9250
+   - Flink TaskManager: Port 9251
+4. Prometheus scrapes all metrics every 15 seconds
+5. Grafana visualizes metrics in pre-configured dashboards
 
-**Key PromQL queries:**
+**Test validation:**
+```bash
+cd LearningCourse
+dotnet test IntegrationTests.sln --filter "FullyQualifiedName~Day05Tests"
+```
+
+**Available tests:**
+1. **Day05GrafanaDashboardTest** - Validates Grafana UI, dashboards, and Prometheus connectivity
+2. **Day05PrometheusMetricsTest** - Validates Prometheus metrics collection and Kafka topic metrics
+
+**Key metrics to explore:**
+
 ```promql
 # System health
 up
 
-# Message input tracking
+# Flink input throughput
 flink_taskmanager_job_task_operator_numRecordsIn
 
-# Message output tracking
+# Flink output throughput
 flink_taskmanager_job_task_operator_numRecordsOut
 
-# Throughput rate (messages per second)
+# Kafka broker topic metrics (note: lowercase with _total suffix)
+kafka_server_brokertopicmetrics_messagesinpersec_count_total{topic="observability_input_day05"}
+
+# Message processing rate (messages per second)
 rate(flink_taskmanager_job_task_operator_numRecordsOut[1m])
 
 # Cluster health
 flink_jobmanager_numRegisteredTaskManagers
 ```
 
+**Access the observability stack:**
+- **Grafana Dashboard**: http://localhost:3000 (anonymous access enabled)
+- **Prometheus UI**: http://localhost:9090
+- **Flink Dashboard**: http://localhost:8081
+
 ---
 
-### Exercise 3: Prometheus Exporter Validation (Non-Playwright)
+## 🔭 When to Add OpenTelemetry for Message Tracking
 
-**Objective:** Verify all three Prometheus exporters are functioning correctly
+### Understanding the Need for Message-Level Tracing
 
-**What you'll learn:**
-- HTTP-based metrics endpoint testing
-- Kafka JMX exporter validation (port 5556)
-- Flink JobManager metrics validation (port 9250)
-- Flink TaskManager metrics validation (port 9251)
-- Prometheus scrape target verification
+While Prometheus metrics provide excellent infrastructure-level observability (throughput, latency, resource usage), there are scenarios where you need **message-level tracking** to understand the journey of individual messages through your distributed system.
 
-**Test to run:**
-```bash
-cd LearningCourse/LearningCourse.IntegrationTests
-dotnet test --filter "FullyQualifiedName~Day05PrometheusMetricsTest"
+### The Gap: What Prometheus Cannot Tell You
+
+**Current Observability (Prometheus metrics):**
+```promql
+# Prometheus tells you AGGREGATE information:
+kafka_server_brokertopicmetrics_messagesinpersec_count_total  # ✅ 1000 messages/sec
+flink_taskmanager_job_task_operator_numRecordsIn              # ✅ 950 records processed
+flink_taskmanager_job_task_operator_numRecordsOut             # ✅ 900 records output
+
+# But it CANNOT tell you INDIVIDUAL message information:
+# ❌ Which specific messages were processed?
+# ❌ Why were 50 messages dropped (1000 input - 950 processed)?
+# ❌ Where exactly did those 50 messages fail?
+# ❌ How long did Order #12345 take from Kafka → Flink → Output?
+# ❌ What was the processing path for message ID abc-123?
 ```
 
-**What the test does:**
-1. Verifies Kafka JMX exporter responds on port 5556
-2. Validates Flink JobManager metrics endpoint on port 9250
-3. Validates Flink TaskManager metrics endpoint on port 9251
-4. Ensures all exporters return valid Prometheus metrics format
-5. Uses LocalTesting/test-logs/ for debugging if failures occur
+### Business Scenario: "Where Is My Order?"
 
-**Metrics endpoints verified:**
-- `http://localhost:5556/metrics` - Kafka JMX Exporter
-- `http://localhost:9250/metrics` - Flink JobManager
-- `http://localhost:9251/metrics` - Flink TaskManager
+**Customer Support Request:**
+> "Customer called: Order #12345 was placed 2 hours ago but shows as 'Processing'. Where is it stuck?"
+
+**With Prometheus only:**
+```
+Support: "System shows 1000 orders/hour throughput - looks normal"
+Customer: "But where is MY order #12345?"
+Support: "I can't track individual orders, only aggregate metrics"
+```
+
+**With OpenTelemetry tracing:**
+```
+Support: "Let me search for Order #12345 in Jaeger..."
+Trace shows:
+├─ 10:00:00.100 - Received in Kafka (topic: orders)
+├─ 10:00:00.150 - Flink picked up message
+├─ 10:00:00.200 - Validation started
+├─ 10:00:00.250 - ❌ Validation FAILED: Missing required field "email"
+└─ 10:00:00.251 - Sent to dead-letter queue
+
+Support: "Your order failed validation due to missing email. Please update and resubmit."
+```
+
+---
+
+### When OpenTelemetry Becomes Essential
+
+#### Use Case 1: Debugging Message Loss in Streaming Pipelines
+
+**Problem Statement:**
+```
+Pipeline: Kafka (Producer) → Flink (Transform) → Kafka (Output)
+Expected: 10,000 messages
+Actual: 9,500 messages in output
+
+Where did 500 messages go? 🤔
+```
+
+**Without OTel (Prometheus metrics only):**
+```promql
+# You see the numbers don't add up:
+kafka_in_total: 10000
+flink_processed_total: 9800
+kafka_out_total: 9500
+
+# But you cannot identify:
+# - Which 500 messages were lost?
+# - At which stage (Kafka → Flink OR Flink → Output)?
+# - Why were they lost (validation, timeout, error)?
+```
+
+**With OTel (Distributed tracing):**
+```csharp
+// Producer side - Start trace
+using var activity = activitySource.StartActivity("ProduceMessage", ActivityKind.Producer);
+var messageId = Guid.NewGuid().ToString();
+activity?.SetTag("message.id", messageId);
+activity?.SetTag("order.id", orderId);
+activity?.SetTag("topic", "orders_input");
+
+// Propagate trace context via Kafka headers
+var headers = new Headers
+{
+    { "traceparent", Encoding.UTF8.GetBytes(Activity.Current.Id) }
+};
+
+await producer.ProduceAsync("orders_input", new Message<string, string>
+{
+    Key = orderId,
+    Value = jsonMessage,
+    Headers = headers
+});
+
+// Flink processing - Continue trace
+var traceParent = kafkaRecord.Headers.First(h => h.Key == "traceparent");
+using var activity = activitySource.StartActivity("ProcessMessage", 
+    ActivityKind.Consumer, traceParent);
+
+activity?.SetTag("message.id", messageId);
+activity?.SetTag("processing.step", "validation");
+
+try 
+{
+    ValidateMessage(message);
+    activity?.SetTag("validation.result", "success");
+}
+catch (ValidationException ex)
+{
+    activity?.SetTag("validation.result", "failed");
+    activity?.SetTag("validation.error", ex.Message);
+    activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+    // Message goes to dead-letter queue
+}
+
+// Now in Jaeger you can:
+// 1. Search for all failed messages: tags="validation.result:failed"
+// 2. See which 500 messages failed validation
+// 3. Group by error type to find common issues
+// 4. Track full message journey from producer to dead-letter queue
+```
+
+**Jaeger Query Results:**
+```
+Found 500 traces with validation.result=failed:
+- 350 messages: Missing required field "email"
+- 100 messages: Invalid phone number format
+- 50 messages: Duplicate order ID
+
+Action: Fix validation logic for email field (70% of failures)
+```
+
+---
+
+#### Use Case 2: Performance Analysis Per Message Type
+
+**Business Question:**
+> "Why do VIP customer orders take 5 seconds while regular orders take 100ms?"
+
+**Prometheus aggregate metrics:**
+```promql
+# Average latency
+avg(flink_processing_latency_seconds) = 0.5s
+
+# P99 latency
+histogram_quantile(0.99, flink_processing_latency_bucket) = 5s
+
+# But which specific orders are slow? What's different about them?
+```
+
+**With OpenTelemetry (per-message breakdown):**
+```csharp
+using var activity = activitySource.StartActivity("ProcessOrder");
+activity?.SetTag("order.id", orderId);
+activity?.SetTag("customer.tier", customer.Tier); // "VIP", "Regular", "Premium"
+activity?.SetTag("order.amount", order.TotalAmount);
+activity?.SetTag("order.item_count", order.Items.Count);
+
+// Child spans for each processing step
+using (var dbActivity = activitySource.StartActivity("DatabaseLookup"))
+{
+    var customerHistory = await _db.GetCustomerHistory(customerId);
+    dbActivity?.SetTag("history.order_count", customerHistory.Count);
+}
+
+using (var validationActivity = activitySource.StartActivity("VIPValidation"))
+{
+    if (customer.Tier == "VIP")
+    {
+        // VIP validation calls external fraud detection API
+        await _fraudService.CheckOrder(order); // ← This takes 5 seconds!
+        validationActivity?.SetTag("fraud_check.duration_ms", 5000);
+    }
+}
+
+using (var outputActivity = activitySource.StartActivity("WriteToKafka"))
+{
+    await _kafkaProducer.ProduceAsync(output);
+}
+```
+
+**Jaeger Analysis:**
+```
+Filter traces by:
+- customer.tier = "VIP"
+- duration > 4s
+
+Results show:
+├─ Total duration: 5.1s
+│  ├─ DatabaseLookup: 50ms
+│  ├─ VIPValidation: 5000ms ← BOTTLENECK!
+│  │  └─ External fraud API call: 4950ms
+│  └─ WriteToKafka: 50ms
+
+Root cause: VIP fraud detection API has 5s timeout
+Solution: Implement async fraud checking with callback
+Expected improvement: VIP orders from 5s → 200ms
+```
+
+---
+
+#### Use Case 3: Cross-System Message Journey Tracking
+
+**Complex Architecture:**
+```
+HTTP API → Kafka → Flink Transform → Kafka → Consumer Service → Database → Notification Service
+```
+
+**Problem:** Customer complaint: "Order placed 30 minutes ago, no confirmation email"
+
+**Without OTel:**
+```
+API Team: "We received the order and sent to Kafka" ✅
+Kafka Team: "Message is in topic, Flink consumed it" ✅
+Flink Team: "We processed it and sent to output topic" ✅
+Consumer Team: "We saved to database successfully" ✅
+Notification Team: "We haven't received any notification request" ❌
+
+Where did it fail? 🤔 Manual correlation across 5 teams...
+```
+
+**With OpenTelemetry (Single trace ID across all systems):**
+```csharp
+// API receives order - Start trace
+[HttpPost("orders")]
+public async Task<IActionResult> CreateOrder([FromBody] Order order)
+{
+    using var activity = activitySource.StartActivity("ReceiveOrder", ActivityKind.Server);
+    var traceId = activity?.TraceId.ToString();
+    
+    activity?.SetTag("order.id", order.Id);
+    activity?.SetTag("customer.email", order.Email);
+    
+    // Propagate trace context to Kafka
+    var headers = new Headers
+    {
+        { "traceparent", Encoding.UTF8.GetBytes(Activity.Current.Id) }
+    };
+    
+    await _kafkaProducer.ProduceAsync("orders_input", new Message<string, string>
+    {
+        Key = order.Id,
+        Value = JsonSerializer.Serialize(order),
+        Headers = headers
+    });
+    
+    return Ok(new { orderId = order.Id, traceId });
+}
+
+// Flink extracts and continues trace
+var parentContext = ExtractTraceContext(kafkaRecord.Headers);
+using var activity = activitySource.StartActivity("TransformOrder",
+    ActivityKind.Consumer, parentContext);
+
+// Consumer service continues the same trace
+using var activity = activitySource.StartActivity("SaveOrder",
+    ActivityKind.Client, parentContext);
+await _repository.SaveAsync(order);
+
+// Check: Should notification be triggered?
+if (order.NotifyCustomer)
+{
+    using var notifyActivity = activitySource.StartActivity("TriggerNotification");
+    await _notificationQueue.EnqueueAsync(order.Id);
+}
+else
+{
+    activity?.AddEvent(new ActivityEvent("NotificationSkipped", 
+        tags: new ActivityTagsCollection { { "reason", "customer_opted_out" } }));
+}
+```
+
+**Jaeger Investigation:**
+```
+Search: order.id = "12345"
+
+Complete trace shows:
+├─ 10:00:00.000 - API: ReceiveOrder (200ms)
+├─ 10:00:00.200 - Kafka: MessageProduced
+├─ 10:00:00.250 - Flink: TransformOrder (100ms)
+│  └─ Event: "ValidatedSuccessfully"
+├─ 10:00:00.350 - Kafka: OutputMessageProduced
+├─ 10:00:00.400 - Consumer: SaveOrder (50ms)
+│  └─ Event: "NotificationSkipped" ← FOUND IT!
+│     └─ Reason: "customer_opted_out"
+└─ Total: 400ms (no notification service involved)
+
+Resolution: Customer opted out of email notifications in profile settings
+Action: Update UI to show "Notifications disabled" message
+```
+
+---
+
+### OpenTelemetry Integration Architecture for Streaming
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                   OpenTelemetry Instrumentation                    │
+│                                                                    │
+│  Producer → Kafka → Flink → Kafka → Consumer                      │
+│     ↓         ↓       ↓        ↓         ↓                        │
+│  [Span]   [Context] [Span]  [Context]  [Span]                    │
+│     │         │       │        │         │                        │
+│     └─────────┴───────┴────────┴─────────┘                        │
+│                       │                                            │
+│              Trace ID: abc-123-def-456                            │
+│                       ↓                                            │
+│              OTel Collector                                        │
+│                 ├─→ Traces → Jaeger (message journey)            │
+│                 ├─→ Metrics → Prometheus (aggregates)            │
+│                 └─→ Logs → ElasticSearch (debug info)            │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Implementation Guide: Adding OTel to Exercise 5.1
+
+**Step 1: Add OpenTelemetry NuGet Packages**
+```xml
+<ItemGroup>
+  <PackageReference Include="OpenTelemetry" Version="1.7.0" />
+  <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0" />
+  <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.7.0" />
+  <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.7.0" />
+</ItemGroup>
+```
+
+**Step 2: Configure OpenTelemetry TracerProvider**
+```csharp
+var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("Exercise51.MessageProcessing")
+    .SetResourceBuilder(ResourceBuilder.CreateDefault()
+        .AddService("exercise51-producer", serviceVersion: "1.0.0"))
+    .AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri("http://localhost:4317"); // OTel Collector gRPC endpoint
+    })
+    .Build();
+
+var activitySource = new ActivitySource("Exercise51.MessageProcessing");
+```
+
+**Step 3: Instrument Message Production**
+```csharp
+for (int i = 0; i < messageCount; i++)
+{
+    // Start a new trace span for each message
+    using var activity = activitySource.StartActivity("ProduceMessage", ActivityKind.Producer);
+    
+    var messageId = Guid.NewGuid().ToString();
+    var orderId = $"ORDER-{i:D6}";
+    
+    // Add tags for filtering and analysis
+    activity?.SetTag("message.id", messageId);
+    activity?.SetTag("order.id", orderId);
+    activity?.SetTag("topic", inputTopic);
+    activity?.SetTag("partition", i % 3);
+    activity?.SetTag("message.index", i);
+    
+    var message = new ObservabilityMessage
+    {
+        MessageId = messageId,
+        OrderId = orderId,
+        Timestamp = DateTime.UtcNow,
+        Data = $"Order data {i}"
+    };
+    
+    var json = JsonSerializer.Serialize(message);
+    
+    // Propagate trace context via Kafka headers (W3C Trace Context standard)
+    var headers = new Headers();
+    if (Activity.Current != null)
+    {
+        headers.Add("traceparent", Encoding.UTF8.GetBytes(Activity.Current.Id));
+        if (!string.IsNullOrEmpty(Activity.Current.TraceStateString))
+        {
+            headers.Add("tracestate", Encoding.UTF8.GetBytes(Activity.Current.TraceStateString));
+        }
+    }
+    
+    var result = await producer.ProduceAsync(inputTopic, new Message<string, string>
+    {
+        Key = orderId,
+        Value = json,
+        Headers = headers
+    });
+    
+    // Record Kafka metadata in span
+    activity?.SetTag("kafka.partition", result.Partition.Value);
+    activity?.SetTag("kafka.offset", result.Offset.Value);
+    activity?.SetTag("kafka.timestamp", result.Timestamp.UtcDateTime);
+    activity?.AddEvent(new ActivityEvent("MessageProduced", 
+        tags: new ActivityTagsCollection 
+        { 
+            { "kafka.topic", result.Topic },
+            { "kafka.partition", result.Partition.Value }
+        }));
+    
+    if (i % 100 == 0)
+    {
+        Console.WriteLine($"Produced {i} messages (trace: {activity?.TraceId})");
+    }
+}
+```
+
+**Step 4: Extract Trace Context in Flink (Conceptual)**
+```csharp
+// Note: This would require custom Flink function implementation
+public class TracingMapFunction : RichMapFunction<string, string>
+{
+    private ActivitySource _activitySource;
+    
+    public override void Open(Configuration parameters)
+    {
+        _activitySource = new ActivitySource("Exercise51.FlinkProcessor");
+    }
+    
+    public override string Map(string value)
+    {
+        // Parse Kafka record to extract headers
+        var kafkaRecord = ParseKafkaRecord(value);
+        
+        // Extract trace context from Kafka headers
+        var traceparent = kafkaRecord.Headers.FirstOrDefault(h => h.Key == "traceparent")?.Value;
+        ActivityContext parentContext = default;
+        
+        if (traceparent != null)
+        {
+            ActivityContext.TryParse(Encoding.UTF8.GetString(traceparent), null, out parentContext);
+        }
+        
+        // Start child span continuing the trace
+        using var activity = _activitySource.StartActivity("ProcessMessage", 
+            ActivityKind.Consumer, parentContext);
+        
+        activity?.SetTag("message.id", kafkaRecord.MessageId);
+        activity?.SetTag("processing.step", "transformation");
+        
+        try
+        {
+            // Process message
+            var transformed = Transform(kafkaRecord);
+            
+            activity?.SetTag("processing.result", "success");
+            activity?.SetTag("output.size_bytes", transformed.Length);
+            
+            return transformed;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.RecordException(ex);
+            throw;
+        }
+    }
+}
+```
+
+**Step 5: Deploy OpenTelemetry Collector**
+```yaml
+# otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+exporters:
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger, logging]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+```
+
+**Step 6: Query Traces in Jaeger**
+```bash
+# Access Jaeger UI
+http://localhost:16686
+
+# Search queries:
+# 1. Find all messages for a specific order
+Service: exercise51-producer
+Tags: order.id="ORDER-000123"
+
+# 2. Find slow message processing (> 1 second)
+Service: exercise51-producer
+Min Duration: 1s
+
+# 3. Find failed message processing
+Service: exercise51-producer
+Tags: error=true
+
+# 4. Find messages by topic
+Service: exercise51-producer
+Tags: topic="observability_input_day05"
+
+# 5. View trace timeline
+Click on trace to see:
+├─ ProduceMessage (50ms)
+│  ├─ Kafka write (30ms)
+│  └─ Serialization (20ms)
+├─ ProcessMessage (100ms) ← Flink processing
+│  ├─ Validation (20ms)
+│  ├─ Transformation (50ms)
+│  └─ Enrichment (30ms)
+└─ OutputMessage (30ms)
+Total: 180ms end-to-end
+```
+
+---
+
+### Cost-Benefit Analysis: When to Add OTel
+
+**Benefits:**
+- ✅ **Individual message debugging**: Track specific orders/transactions
+- ✅ **Message loss investigation**: Identify exactly which messages failed and why
+- ✅ **Per-message latency analysis**: Find slow messages and their characteristics
+- ✅ **Cross-system correlation**: Single trace ID across entire pipeline
+- ✅ **Customer support**: Answer "where is my order?" questions instantly
+- ✅ **Error pattern detection**: Group failures by error type and message attributes
+
+**Costs:**
+- ❌ **Development overhead**: Instrumentation code in every component
+- ❌ **Performance impact**: 1-5% CPU overhead for span creation
+- ❌ **Storage costs**: Traces require 10-100x more storage than metrics
+- ❌ **Infrastructure complexity**: OTel Collector, Jaeger, trace storage
+- ❌ **Operational overhead**: Trace retention policies, sampling strategies
+- ❌ **Learning curve**: Teams need to understand distributed tracing concepts
+
+**Decision Matrix:**
+
+| Your Situation | Recommendation | Reason |
+|----------------|----------------|---------|
+| **Simple Kafka → Flink pipeline** | ⛔ **Use Prometheus only** | Aggregate metrics sufficient for infrastructure |
+| **Need to debug specific failed messages** | ✅ **Add OpenTelemetry** | Per-message visibility essential |
+| **Customer support needs "where is my order?"** | ✅ **Add OpenTelemetry** | Business requirement for tracking |
+| **5+ interconnected microservices** | ✅ **Add OpenTelemetry** | Cross-service debugging required |
+| **Performance SLAs per customer tier** | ✅ **Add OpenTelemetry** | Need per-message latency analysis |
+| **High throughput (>100k msgs/sec)** | ⚠️ **Use 1-10% sampling** | Full tracing too expensive |
+| **Compliance/audit requirements** | ✅ **Add OpenTelemetry** | Message journey audit trail needed |
+
+---
+
+### Hybrid Approach: Prometheus + Selective OTel Tracing
+
+**Best Practice for Production:**
+```csharp
+// Use head-based sampling: trace only a percentage of messages
+var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("Exercise51.MessageProcessing")
+    .SetSampler(new TraceIdRatioBasedSampler(0.01)) // Sample 1% of traces
+    .AddOtlpExporter()
+    .Build();
+
+// OR: Trace only high-value/error cases
+bool shouldTrace = 
+    order.Amount > 10000 ||                    // High-value orders
+    customer.Tier == "VIP" ||                   // VIP customers
+    message.RetryCount > 0 ||                   // Retry attempts
+    IsDebugMode();                              // Debug sessions
+
+if (shouldTrace || activity?.Recorded == true)
+{
+    using var activity = activitySource.StartActivity("ProcessOrder");
+    // ... detailed tracing
+}
+```
+
+**Result:**
+- **Prometheus**: 100% of messages → aggregate metrics (cost-effective)
+- **OpenTelemetry**: 1-10% of messages → detailed traces (targeted debugging)
+- **Best of both worlds**: Infrastructure monitoring + message-level debugging
+
+---
+
+### Summary: Prometheus vs OpenTelemetry
+
+| Aspect | Prometheus Metrics | OpenTelemetry Traces |
+|--------|-------------------|---------------------|
+| **Purpose** | Infrastructure health, aggregate performance | Individual message journey tracking |
+| **Granularity** | Aggregate (all messages) | Per-message (specific messages) |
+| **Questions Answered** | "How many?" "How fast?" "How much?" | "Which one?" "Where?" "Why?" |
+| **Storage Cost** | Low (time-series points) | High (full trace spans) |
+| **Performance Overhead** | Minimal (pull-based scraping) | Moderate (span creation per message) |
+| **Use in This Course** | ✅ Primary observability | ⚠️ Add when needed |
+| **Production Recommendation** | Always enable | Enable selectively with sampling |
+
+**For Exercise 5.1 (Current State):**
+- ✅ **Prometheus**: Sufficient for learning infrastructure observability
+- ⛔ **OpenTelemetry**: Not implemented (can be added as advanced exercise)
+
+**When to Revisit:**
+- Customer support requires message-level tracking
+- Debugging production issues requires per-message analysis
+- Business requires audit trail of message processing
+- Multiple teams need to correlate incidents across services
 
 ---
 
@@ -692,6 +1124,21 @@ curl http://localhost:9251/metrics  # TaskManager
 docker exec flink-jobmanager ls /opt/flink/lib/ | grep prometheus
 ```
 
+**4. Kafka JMX metrics not showing**
+```bash
+# Find Kafka exporter container port (dynamic)
+docker ps | grep kafka-exporter
+
+# Test JMX exporter endpoint
+curl http://localhost:<port>/metrics
+
+# Check for BrokerTopicMetrics (only appear after messages are produced)
+curl http://localhost:<port>/metrics | grep -i brokertopicmetrics
+
+# Inspect JMX exporter logs
+docker logs <kafka-exporter-container-id>
+```
+
 ---
 
 ## 📚 Further Reading
@@ -709,18 +1156,29 @@ docker exec flink-jobmanager ls /opt/flink/lib/ | grep prometheus
 - [PromQL Tutorial](https://prometheus.io/docs/prometheus/latest/querying/basics/)
 - [PromQL Cheat Sheet](https://promlabs.com/promql-cheat-sheet/)
 
+### OpenTelemetry
+- [OpenTelemetry .NET Getting Started](https://opentelemetry.io/docs/instrumentation/net/getting-started/)
+- [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/)
+- [Jaeger Tracing](https://www.jaegertracing.io/docs/latest/)
+
 ---
 
 ## ✅ Summary
 
 You've learned:
 1. ✅ Why observability starts with ElasticSearch for distributed logs
-2. ✅ When to add OpenTelemetry for distributed tracing
+2. ✅ When to add OpenTelemetry for distributed tracing and message-level tracking
 3. ✅ When Grafana + Prometheus becomes essential for metrics
 4. ✅ How to configure Prometheus exporters for Kafka, Flink JobManager, and TaskManager
 5. ✅ Why this course focuses on Grafana + Prometheus for distributed systems
 6. ✅ How to navigate Grafana dashboards and query Prometheus metrics
-7. ✅ How to track message flow through Flink using metrics
+7. ✅ How to track aggregate message flow through Flink using metrics
+8. ✅ When to add OpenTelemetry for individual message journey tracking
+9. ✅ Cost-benefit analysis of OpenTelemetry in streaming architectures
+10. ✅ Hybrid approach: Prometheus for aggregates + selective OTel tracing
+
+**Key Takeaway:**
+> Start with Prometheus for infrastructure observability. Add OpenTelemetry when message-level tracking becomes a business requirement, compliance need, or debugging bottleneck. Use sampling (1-10%) in high-throughput production systems.
 
 **Next Steps:**
 - Day 6: Temporal Workflows - Durable orchestration patterns

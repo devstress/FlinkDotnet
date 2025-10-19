@@ -72,6 +72,7 @@ var kafka = builder.AddKafka("kafka");
 if (isLearningCourseMode)
 {
     kafka = kafka
+        .WithEnvironment("KAFKA_JMX_ENABLED", "true")  // CRITICAL: Required for Confluent images
         .WithEnvironment("KAFKA_JMX_PORT", "9101")
         .WithEnvironment("KAFKA_JMX_HOSTNAME", "kafka")
         .WithEnvironment("KAFKA_JMX_OPTS",
@@ -80,6 +81,7 @@ if (isLearningCourseMode)
             "-Dcom.sun.management.jmxremote.ssl=false " +
             "-Djava.rmi.server.hostname=kafka " +
             "-Dcom.sun.management.jmxremote.rmi.port=9101 " +
+            "-Dcom.sun.management.jmxremote.host=0.0.0.0 " +  // CRITICAL: Bind to all interfaces
             "-Dcom.sun.management.jmxremote.local.only=false")
         // CRITICAL: Confluent images also need KAFKA_OPTS for JMX
         .WithEnvironment("KAFKA_OPTS",
@@ -89,6 +91,7 @@ if (isLearningCourseMode)
             "-Djava.rmi.server.hostname=kafka " +
             "-Dcom.sun.management.jmxremote.port=9101 " +
             "-Dcom.sun.management.jmxremote.rmi.port=9101 " +
+            "-Dcom.sun.management.jmxremote.host=0.0.0.0 " +  // CRITICAL: Bind to all interfaces
             "-Dcom.sun.management.jmxremote.local.only=false");
     Console.WriteLine("   📊 Kafka JMX metrics enabled on port 9101");
     Console.WriteLine("   📊 Using both KAFKA_JMX_OPTS and KAFKA_OPTS for Confluent compatibility");
