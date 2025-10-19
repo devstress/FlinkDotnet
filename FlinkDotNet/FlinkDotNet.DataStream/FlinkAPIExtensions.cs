@@ -28,12 +28,12 @@ namespace FlinkDotNet.DataStream
         /// Processing time - the time when operators process elements
         /// </summary>
         ProcessingTime,
-        
+
         /// <summary>
         /// Event time - timestamps embedded in the events themselves
         /// </summary>
         EventTime,
-        
+
         /// <summary>
         /// Ingestion time - time when elements enter the Flink system
         /// </summary>
@@ -129,11 +129,19 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of elements to write</typeparam>
     public class KafkaSinkFunction<T> : ISinkFunction<T>
     {
-#pragma warning disable IDE0052, S4487 // Remove unread private members - will be used in production implementation
         private readonly string _topic;
         private readonly string _bootstrapServers;
         private readonly Func<T, byte[]> _serializer;
-#pragma warning restore IDE0052, S4487
+
+        /// <summary>
+        /// Gets the Kafka topic to write to.
+        /// </summary>
+        public string Topic => _topic;
+
+        /// <summary>
+        /// Gets the Kafka bootstrap servers configuration.
+        /// </summary>
+        public string BootstrapServers => _bootstrapServers;
 
         /// <summary>
         /// Creates a Kafka sink function.

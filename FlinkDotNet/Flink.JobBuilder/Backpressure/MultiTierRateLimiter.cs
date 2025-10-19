@@ -43,12 +43,12 @@ public class MultiTierRateLimiter : IDisposable
     {
         _instanceId = Environment.MachineName + "-" + Guid.NewGuid().ToString("N")[..8];
         _stateStorage = stateStorage ?? new InMemoryRateLimiterStateStorage();
-        
+
         // Initialize with default configuration
         InitializeDefaultTiers();
-        
+
         // Timer for adaptive rate limiting adjustments
-        _adaptiveTimer = new Timer(OnAdaptiveAdjustment, null, 
+        _adaptiveTimer = new Timer(OnAdaptiveAdjustment, null,
             TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
@@ -62,7 +62,7 @@ public class MultiTierRateLimiter : IDisposable
         {
             _tiers.Clear();
             _tiers.AddRange(tiers);
-            
+
             // Create rate limiters for each tier
             foreach (var tier in _tiers)
             {
@@ -81,7 +81,8 @@ public class MultiTierRateLimiter : IDisposable
     /// <returns>True if all tiers allow the request</returns>
     public bool TryAcquire(RateLimitingContext context, int permits = 1)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(MultiTierRateLimiter));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(MultiTierRateLimiter));
 
         var applicableTiers = GetApplicableTiers(context);
 
@@ -106,10 +107,11 @@ public class MultiTierRateLimiter : IDisposable
     /// <param name="permits">Number of permits to acquire</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if all tiers allow the request</returns>
-    public async Task<bool> TryAcquireAsync(RateLimitingContext context, int permits = 1, 
+    public async Task<bool> TryAcquireAsync(RateLimitingContext context, int permits = 1,
         CancellationToken cancellationToken = default)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(MultiTierRateLimiter));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(MultiTierRateLimiter));
 
         var applicableTiers = GetApplicableTiers(context);
         var acquisitions = new List<(string tierName, bool acquired)>();
@@ -117,14 +119,14 @@ public class MultiTierRateLimiter : IDisposable
         try
         {
             // Try to acquire from all tiers
-#pragma warning disable S3267 // Loop should be simplified by calling Select
+            // Note: Cannot use Select here due to early exit logic and rollback side effects
             foreach (var tier in applicableTiers)
             {
                 if (_rateLimiters.TryGetValue(tier.Name, out var rateLimiter))
                 {
                     var acquired = await rateLimiter.TryAcquireAsync(permits, cancellationToken);
                     acquisitions.Add((tier.Name, acquired));
-                    
+
                     if (!acquired)
                     {
                         // Failed at this tier, rollback previous acquisitions
@@ -133,7 +135,6 @@ public class MultiTierRateLimiter : IDisposable
                     }
                 }
             }
-#pragma warning restore S3267
 
             return true;
         }
@@ -152,7 +153,7 @@ public class MultiTierRateLimiter : IDisposable
     /// <param name="context">Request context for tier identification</param>
     /// <param name="permits">Number of permits to acquire</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task AcquireAsync(RateLimitingContext context, int permits = 1, 
+    public async Task AcquireAsync(RateLimitingContext context, int permits = 1,
         CancellationToken cancellationToken = default)
     {
         while (!await TryAcquireAsync(context, permits, cancellationToken))
@@ -203,14 +204,14 @@ public class MultiTierRateLimiter : IDisposable
     {
         // Check that token bucket rate limiters can accommodate bursts
         var tokenBucketLimiters = _rateLimiters.Values.OfType<TokenBucketRateLimiter>();
-        
+
         if (!tokenBucketLimiters.Any())
         {
             // If no token bucket limiters, burst accommodation is not applicable
             return true;
         }
-        
-        return tokenBucketLimiters.All(bucket => 
+
+        return tokenBucketLimiters.All(bucket =>
             bucket.CanAccommodateBurst(bucket.CurrentRateLimit * 2)); // Test with 2x burst
     }
 
@@ -223,11 +224,11 @@ public class MultiTierRateLimiter : IDisposable
         // In the hierarchy: Global > Topic > Consumer Group > Consumer
         // This ensures critical workloads (at higher tiers) get resources over batch workloads (at lower tiers)
         var hierarchicalEnforcement = ValidateHierarchicalEnforcement();
-        
+
         // Additionally check that hard limits (typically for critical workloads) are enforced
         var hardLimitTiers = _tiers.Where(t => t.Enforcement == RateLimitingEnforcement.HardLimit);
         var hardLimitsEnforced = hardLimitTiers.Any();
-        
+
         return hierarchicalEnforcement && hardLimitsEnforced;
     }
 
@@ -238,28 +239,24 @@ public class MultiTierRateLimiter : IDisposable
     {
         // Check if the adaptive timer is configured for rate limit adjustments
         var timerConfigured = _adaptiveTimer != null;
-        
+
         // Check if rate limiters support dynamic adjustment (they do through state storage)
         var dynamicAdjustmentSupported = _stateStorage != null;
-        
+
         // Check if we have multiple enforcement types that can be adaptively adjusted
         var multipleEnforcementTypes = _tiers.Select(t => t.Enforcement).Distinct().Count() > 1;
-        
+
         return timerConfigured && dynamicAdjustmentSupported && multipleEnforcementTypes;
     }
 
     /// <summary>
     /// Validates integration with rebalancing operations.
     /// </summary>
-#pragma warning disable S3400 // Remove this method and declare a constant for this value
-#pragma warning disable S2325 // Make method a static method
-    public bool ValidateRebalancingIntegration()
+    public static bool ValidateRebalancingIntegration()
     {
         // Check if rate limits are recalculated during rebalancing
         return true; // Simplified for demonstration
     }
-#pragma warning restore S3400
-#pragma warning restore S2325
 
     /// <summary>
     /// Validates fair allocation across consumers.
@@ -268,8 +265,9 @@ public class MultiTierRateLimiter : IDisposable
     {
         // Check that rate limits are fairly distributed
         var consumerTiers = _tiers.Where(t => t.Scope == "Per instance").ToList();
-        if (!consumerTiers.Any()) return true;
-        
+        if (!consumerTiers.Any())
+            return true;
+
         var utilizationVariance = CalculateUtilizationVariance(consumerTiers);
         return utilizationVariance < 0.1; // Less than 10% variance
     }
@@ -282,12 +280,12 @@ public class MultiTierRateLimiter : IDisposable
         // Check all required tiers are configured and working
         var requiredTiers = new[] { "Global", "Topic", "Consumer Group", "Consumer" };
         var configuredTiers = _tiers.Select(t => t.Name).ToHashSet();
-        
-        var hasAllTiers = requiredTiers.All(required => 
+
+        var hasAllTiers = requiredTiers.All(required =>
             configuredTiers.Any(configured => configured.Contains(required)));
-        
+
         var allWorkingCorrectly = _rateLimiters.Values.All(rl => rl.CurrentRateLimit > 0);
-        
+
         return hasAllTiers && allWorkingCorrectly;
     }
 
@@ -299,7 +297,7 @@ public class MultiTierRateLimiter : IDisposable
         // Check that per-client and per-IP quotas are being enforced
         var hasPerClientQuotas = _tiers.Any(t => t.Scope.Contains("Per-client"));
         var hasPerIpQuotas = _tiers.Any(t => t.Scope.Contains("Per-IP"));
-        
+
         return hasPerClientQuotas || hasPerIpQuotas;
     }
 
@@ -312,14 +310,14 @@ public class MultiTierRateLimiter : IDisposable
             new() { Name = "Consumer Group", Scope = "Per group", RateLimit = 100_000, BurstCapacity = 150_000, BurstDuration = TimeSpan.FromSeconds(5), Enforcement = RateLimitingEnforcement.Backpressure },
             new() { Name = "Consumer", Scope = "Per instance", RateLimit = 10_000, BurstCapacity = 15_000, BurstDuration = TimeSpan.FromSeconds(2), Enforcement = RateLimitingEnforcement.CircuitBreaker }
         };
-        
+
         ConfigureTiers(defaultTiers);
     }
 
     private IRateLimitingStrategy CreateRateLimiterForTier(RateLimitingTier tier)
     {
         var rateLimiterId = $"{_instanceId}-{tier.Name}";
-        
+
         return tier.Enforcement switch
         {
             RateLimitingEnforcement.HardLimit => new TokenBucketRateLimiter(tier.RateLimit, tier.BurstCapacity, rateLimiterId, _stateStorage),
@@ -385,7 +383,8 @@ public class MultiTierRateLimiter : IDisposable
     {
         // Check that this tier's rate limit doesn't exceed parent tier
         var parentTier = GetParentTier(tier);
-        if (parentTier == null) return true;
+        if (parentTier == null)
+            return true;
 
         if (_rateLimiters.TryGetValue(tier.Name, out var childLimiter) &&
             _rateLimiters.TryGetValue(parentTier.Name, out var parentLimiter))
@@ -409,7 +408,8 @@ public class MultiTierRateLimiter : IDisposable
             .Select(t => _rateLimiters[t.Name].CurrentUtilization)
             .ToList();
 
-        if (!utilizations.Any()) return 0;
+        if (!utilizations.Any())
+            return 0;
 
         var mean = utilizations.Average();
         var variance = utilizations.Sum(u => Math.Pow(u - mean, 2)) / utilizations.Count;
@@ -418,7 +418,8 @@ public class MultiTierRateLimiter : IDisposable
 
     private void OnAdaptiveAdjustment(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -457,21 +458,22 @@ public class MultiTierRateLimiter : IDisposable
     /// <param name="disposing">True if disposing managed resources</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             _adaptiveTimer?.Dispose();
-            
+
             foreach (var rateLimiter in _rateLimiters.Values)
             {
                 if (rateLimiter is IDisposable disposable)
                     disposable.Dispose();
             }
-            
+
             _rateLimiters.Clear();
         }
-        
+
         _disposed = true;
     }
 
@@ -495,13 +497,11 @@ public class MultiTierRateLimiter : IDisposable
     /// </summary>
     /// <param name="producerId">Producer identifier</param>
     /// <returns>True if producer throttling is properly configured</returns>
-#pragma warning disable S2325 // Make method a static method
-    public bool ValidateProducerThrottling(string producerId)
+    public static bool ValidateProducerThrottling(string producerId)
     {
         // Mock implementation for testing
         return !string.IsNullOrEmpty(producerId);
     }
-#pragma warning restore S2325
 
     /// <summary>
     /// Gets the current quota status for a specific tier.
@@ -525,11 +525,29 @@ public class MultiTierRateLimiter : IDisposable
 /// </summary>
 public class RateLimitingContext
 {
-    public string? TopicName { get; init; }
-    public string? ConsumerGroup { get; init; }
-    public string? ConsumerId { get; init; }
-    public string? ClientId { get; init; }
-    public string? ClientIp { get; init; }
-    public string? RequestType { get; init; }
+    public string? TopicName
+    {
+        get; init;
+    }
+    public string? ConsumerGroup
+    {
+        get; init;
+    }
+    public string? ConsumerId
+    {
+        get; init;
+    }
+    public string? ClientId
+    {
+        get; init;
+    }
+    public string? ClientIp
+    {
+        get; init;
+    }
+    public string? RequestType
+    {
+        get; init;
+    }
     public Dictionary<string, object> AdditionalProperties { get; init; } = new();
 }

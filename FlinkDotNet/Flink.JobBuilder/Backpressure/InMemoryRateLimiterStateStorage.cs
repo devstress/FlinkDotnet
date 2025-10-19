@@ -72,10 +72,11 @@ public class InMemoryRateLimiterStateStorage : IRateLimiterStateStorage
     /// <inheritdoc />
     public Task SaveStateAsync(string rateLimiterId, RateLimiterState state, CancellationToken cancellationToken = default)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(InMemoryRateLimiterStateStorage));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(InMemoryRateLimiterStateStorage));
 
         _stateStore.AddOrUpdate(rateLimiterId, state, (_, _) => state);
-        
+
         _logger.LogDebug("Rate limiter state saved to memory: {RateLimiterId}", rateLimiterId);
         return Task.CompletedTask;
     }
@@ -83,10 +84,11 @@ public class InMemoryRateLimiterStateStorage : IRateLimiterStateStorage
     /// <inheritdoc />
     public Task<RateLimiterState?> LoadStateAsync(string rateLimiterId, CancellationToken cancellationToken = default)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(InMemoryRateLimiterStateStorage));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(InMemoryRateLimiterStateStorage));
 
         var found = _stateStore.TryGetValue(rateLimiterId, out var state);
-        
+
         if (found)
         {
             _logger.LogDebug("Rate limiter state loaded from memory: {RateLimiterId}", rateLimiterId);
@@ -116,11 +118,12 @@ public class InMemoryRateLimiterStateStorage : IRateLimiterStateStorage
     /// </summary>
     public void ClearAllStates()
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(InMemoryRateLimiterStateStorage));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(InMemoryRateLimiterStateStorage));
 
         var count = _stateStore.Count;
         _stateStore.Clear();
-        
+
         _logger.LogInformation("Cleared {Count} rate limiter states from memory", count);
     }
 
@@ -139,16 +142,17 @@ public class InMemoryRateLimiterStateStorage : IRateLimiterStateStorage
     /// <param name="disposing">True if disposing managed resources</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             var count = _stateStore.Count;
             _stateStore.Clear();
-            
+
             _logger.LogInformation("In-memory rate limiter state storage disposed, lost {Count} states", count);
         }
-        
+
         _disposed = true;
     }
 }

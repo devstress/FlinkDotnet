@@ -27,7 +27,7 @@ FlinkDotNet is a comprehensive Apache Flink integration solution that enables .N
 ### Prerequisites
 
 - **.NET 9.0 SDK** or higher ([Download](https://dotnet.microsoft.com/download/dotnet/9.0))
-- **Docker Desktop** for local development and testing
+- **Docker Desktop** or **Podman** for local development and testing
 - **Git** for version control
 - **IDE**: Visual Studio, JetBrains Rider, or VS Code
 - **Java 17** for Apache Flink integration

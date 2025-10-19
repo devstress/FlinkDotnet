@@ -27,7 +27,7 @@ public class BufferPool<T> : IDisposable
     private readonly IRateLimitingStrategy _rateLimiter;
     private readonly Timer _flushTimer;
     private readonly SemaphoreSlim _flushSemaphore = new(1, 1);
-    
+
     private volatile int _currentSize;
     private volatile bool _disposed;
     private DateTime _lastFlush = DateTime.UtcNow;
@@ -50,8 +50,10 @@ public class BufferPool<T> : IDisposable
     /// <param name="rateLimiter">Optional rate limiter for flush operations</param>
     public BufferPool(int maxSize, TimeSpan maxAge, IRateLimitingStrategy? rateLimiter = null)
     {
-        if (maxSize <= 0) throw new ArgumentException("Max size must be positive", nameof(maxSize));
-        if (maxAge <= TimeSpan.Zero) throw new ArgumentException("Max age must be positive", nameof(maxAge));
+        if (maxSize <= 0)
+            throw new ArgumentException("Max size must be positive", nameof(maxSize));
+        if (maxAge <= TimeSpan.Zero)
+            throw new ArgumentException("Max age must be positive", nameof(maxAge));
 
         _maxSize = maxSize;
         _maxAge = maxAge;
@@ -70,7 +72,8 @@ public class BufferPool<T> : IDisposable
     /// <returns>True if item was buffered, false if backpressure was applied</returns>
     public async Task<bool> TryAddAsync(T item, CancellationToken cancellationToken = default)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(BufferPool<T>));
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(BufferPool<T>));
 
         // Check if we need to apply backpressure
         if (_currentSize >= _maxSize)
@@ -80,7 +83,7 @@ public class BufferPool<T> : IDisposable
                 Reason = BackpressureReason.BufferFull,
                 CurrentSize = _currentSize,
                 MaxSize = _maxSize,
-                Utilization = (double)_currentSize / _maxSize
+                Utilization = (double) _currentSize / _maxSize
             });
 
             // Try to flush to make space
@@ -132,7 +135,8 @@ public class BufferPool<T> : IDisposable
     /// <param name="cancellationToken">Cancellation token</param>
     public async Task FlushAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         await _flushSemaphore.WaitAsync(cancellationToken);
         try
@@ -154,7 +158,7 @@ public class BufferPool<T> : IDisposable
         {
             CurrentSize = _currentSize,
             MaxSize = _maxSize,
-            Utilization = (double)_currentSize / _maxSize,
+            Utilization = (double) _currentSize / _maxSize,
             MaxAge = _maxAge,
             LastFlush = _lastFlush,
             RateLimiterUtilization = _rateLimiter.CurrentUtilization
@@ -186,10 +190,11 @@ public class BufferPool<T> : IDisposable
 
     private async Task PerformFlushAsync()
     {
-        if (_currentSize == 0) return;
+        if (_currentSize == 0)
+            return;
 
         var itemsToFlush = new List<BufferedItem<T>>();
-        
+
         // Drain the buffer
         while (_buffer.TryDequeue(out var item))
         {
@@ -206,7 +211,8 @@ public class BufferPool<T> : IDisposable
 
     private async void OnTimerFlush(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -243,12 +249,13 @@ public class BufferPool<T> : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             _flushTimer?.Dispose();
-            
+
             // Final flush
             try
             {
@@ -258,10 +265,10 @@ public class BufferPool<T> : IDisposable
             {
                 // Best effort cleanup
             }
-            
+
             _flushSemaphore?.Dispose();
         }
-        
+
         _disposed = true;
     }
 }
@@ -273,7 +280,10 @@ public class BufferPool<T> : IDisposable
 public class BufferedItem<T>
 {
     public T Item { get; init; } = default!;
-    public DateTime Timestamp { get; init; }
+    public DateTime Timestamp
+    {
+        get; init;
+    }
     public TimeSpan Age => DateTime.UtcNow - Timestamp;
 }
 
@@ -282,12 +292,30 @@ public class BufferedItem<T>
 /// </summary>
 public class BufferPoolStats
 {
-    public int CurrentSize { get; init; }
-    public int MaxSize { get; init; }
-    public double Utilization { get; init; }
-    public TimeSpan MaxAge { get; init; }
-    public DateTime LastFlush { get; init; }
-    public double RateLimiterUtilization { get; init; }
+    public int CurrentSize
+    {
+        get; init;
+    }
+    public int MaxSize
+    {
+        get; init;
+    }
+    public double Utilization
+    {
+        get; init;
+    }
+    public TimeSpan MaxAge
+    {
+        get; init;
+    }
+    public DateTime LastFlush
+    {
+        get; init;
+    }
+    public double RateLimiterUtilization
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -295,10 +323,22 @@ public class BufferPoolStats
 /// </summary>
 public class BackpressureEvent
 {
-    public BackpressureReason Reason { get; init; }
-    public int CurrentSize { get; init; }
-    public int MaxSize { get; init; }
-    public double Utilization { get; init; }
+    public BackpressureReason Reason
+    {
+        get; init;
+    }
+    public int CurrentSize
+    {
+        get; init;
+    }
+    public int MaxSize
+    {
+        get; init;
+    }
+    public double Utilization
+    {
+        get; init;
+    }
 }
 
 /// <summary>

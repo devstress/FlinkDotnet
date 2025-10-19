@@ -20,7 +20,7 @@ public static class Program
         // Use the filename with explicit date, and let Serilog handle it with Infinite rolling
         var today = DateTime.UtcNow.ToString("yyyyMMdd");
         var logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
-        
+
         // Clean up old log files (older than 1 day)
         try
         {
@@ -41,7 +41,7 @@ public static class Program
         {
             // Ignore cleanup errors
         }
-        
+
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
@@ -61,20 +61,20 @@ public static class Program
             Log.Information("FLINK_CLUSTER_HOST: {Host}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST"));
             Log.Information("FLINK_CLUSTER_PORT: {Port}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"));
             Log.Information("KAFKA_BOOTSTRAP: {Kafka}", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
-            
+
             // Check for Aspire service discovery variables
             var aspireFlinkEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
             Log.Information("Aspire Flink endpoint: {Endpoint}", aspireFlinkEndpoint ?? "NOT SET");
-            
+
             var builder = WebApplication.CreateBuilder(args);
-            
+
             // Use Serilog for ASP.NET Core logging
             builder.Host.UseSerilog();
-            
+
             ConfigureServices(builder);
             var app = builder.Build();
             ConfigurePipeline(app);
-            
+
             Log.Information("Gateway configured, starting web server...");
             await app.RunAsync();
         }
@@ -207,12 +207,12 @@ public static class Program
         using var mem = new MemoryStream();
         ctx.Response.Body = mem;
         await next();
-        
+
         // CRITICAL FIX: Reset memory stream position BEFORE copying back
         // The controller wrote to the stream, so position is at the end
         // We must reset to 0 to copy the full response
         mem.Position = 0;
-        
+
         if (isSubmit && ctx.Response.StatusCode == 400)
         {
             var bodyText = await new StreamReader(mem).ReadToEndAsync();
@@ -221,7 +221,7 @@ public static class Program
                 .LogWarning("Job submission returned 400. Response body: {Body}", bodyText);
             mem.Position = 0; // Reset again after reading for logging
         }
-        
+
         await mem.CopyToAsync(originalBody);
         ctx.Response.Body = originalBody;
     }
@@ -243,5 +243,7 @@ internal sealed class ModelStateLoggingFilter : IActionFilter
                 string.Join("; ", errors));
         }
     }
-    public void OnActionExecuted(ActionExecutedContext context) { }
+    public void OnActionExecuted(ActionExecutedContext context)
+    {
+    }
 }

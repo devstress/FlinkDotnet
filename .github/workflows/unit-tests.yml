@@ -70,25 +70,72 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
         run: |
+          cd FlinkDotNet
           ${{ runner.temp }}/scanner/dotnet-sonarscanner begin \
             /k:"devstress_flinkdotnet" \
             /o:"devstress" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io"
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+            /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/**/coverage.cobertura.xml" \
+            /d:sonar.sources="." \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs"
 
       - name: Build FlinkDotNet solution
         shell: bash
         run: |
+          cd FlinkDotNet
           echo "Building FlinkDotNet solution..."
-          dotnet restore FlinkDotNet/FlinkDotNet.sln
-          dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
+          dotnet restore FlinkDotNet.sln
+          dotnet build FlinkDotNet.sln --configuration ${{ env.configuration }} --no-restore
 
-      - name: Run tests for FlinkDotNet solution
+      - name: Run tests for FlinkDotNet solution with coverage
+        shell: bash
         run: |
-          Write-Host "Running tests for FlinkDotNet/FlinkDotNet.sln..."
-          Push-Location FlinkDotNet
-          dotnet test FlinkDotNet.sln --configuration ${{ env.configuration }} --no-build --logger "trx" --results-directory "TestResults"
-          Pop-Location
+          cd FlinkDotNet
+          echo "Running tests for FlinkDotNet.sln with code coverage..."
+          dotnet test FlinkDotNet.sln --configuration ${{ env.configuration }} --no-build --logger "trx" --results-directory "TestResults" --collect:"XPlat Code Coverage" --settings coverlet.runsettings
+
+      - name: Install ReportGenerator tool
+        shell: bash
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool || dotnet tool update -g dotnet-reportgenerator-globaltool
+
+      - name: Generate Code Coverage Report
+        shell: bash
+        run: |
+          reportgenerator \
+            -reports:"FlinkDotNet/TestResults/**/coverage.cobertura.xml" \
+            -targetdir:"FlinkDotNet/CoverageReport" \
+            -reporttypes:"Html;Cobertura;MarkdownSummary" \
+            -verbosity:"Info"
+
+      - name: Display Coverage Summary
+        run: |
+          Write-Host "Code Coverage Summary:"
+          if (Test-Path "FlinkDotNet/CoverageReport/Summary.md") {
+            Get-Content "FlinkDotNet/CoverageReport/Summary.md"
+          }
+
+      - name: Check Code Coverage Threshold
+        shell: bash
+        run: |
+          COVERAGE=$(grep -oP 'line-rate="\K[^"]+' FlinkDotNet/CoverageReport/Cobertura.xml | head -1)
+          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc)
+          echo "Code Coverage: ${COVERAGE_PERCENT}%"
+          if (( $(echo "$COVERAGE_PERCENT < 80" | bc -l) )); then
+            echo "ERROR: Code coverage ${COVERAGE_PERCENT}% is below the required 80% threshold"
+            exit 1
+          fi
+          echo "SUCCESS: Code coverage ${COVERAGE_PERCENT}% meets the 80% threshold"
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: FlinkDotNet/CoverageReport/
+          retention-days: 7
 
       - name: End SonarQube Cloud analysis
         if: github.event_name == 'push' || github.event_name == 'pull_request'
@@ -96,6 +143,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
         run: |
+          cd FlinkDotNet
           ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Verify Test Results

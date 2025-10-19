@@ -36,14 +36,14 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     private readonly string _rateLimiterId;
     private readonly IRateLimiterStateStorage _stateStorage;
     private readonly Timer _statePersistTimer;
-    
+
     // Async wait queue for non-blocking operations (v2.0 improvement)
     private readonly ConcurrentQueue<WaitingRequest> _waitingRequests = new();
     private readonly Timer _processWaitingRequestsTimer;
-    
+
     // JobManager integration for distributed coordination (v2.0 improvement)
     private readonly IJobManagerRateLimiterCoordinator? _jobManagerCoordinator;
-    
+
     private double _currentTokens;
     private DateTime _lastRefill;
     private double _currentRateLimit;
@@ -57,35 +57,37 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// <param name="rateLimiterId">Unique identifier for this rate limiter instance</param>
     /// <param name="stateStorage">State storage backend (Kafka recommended for production)</param>
     /// <param name="jobManagerCoordinator">JobManager coordinator for distributed rate limiting</param>
-    public TokenBucketRateLimiter(double rateLimit, double burstCapacity, string? rateLimiterId = null, 
+    public TokenBucketRateLimiter(double rateLimit, double burstCapacity, string? rateLimiterId = null,
         IRateLimiterStateStorage? stateStorage = null, IJobManagerRateLimiterCoordinator? jobManagerCoordinator = null)
     {
-        if (rateLimit <= 0) throw new ArgumentException("Rate limit must be positive", nameof(rateLimit));
-        if (burstCapacity <= 0) throw new ArgumentException("Burst capacity must be positive", nameof(burstCapacity));
+        if (rateLimit <= 0)
+            throw new ArgumentException("Rate limit must be positive", nameof(rateLimit));
+        if (burstCapacity <= 0)
+            throw new ArgumentException("Burst capacity must be positive", nameof(burstCapacity));
 
         _rateLimiterId = rateLimiterId ?? Guid.NewGuid().ToString();
         _currentRateLimit = rateLimit;
         _maxTokens = burstCapacity;
         _currentTokens = burstCapacity; // Start with full bucket
         _lastRefill = DateTime.UtcNow;
-        
+
         // Use Kafka storage by default, fall back to in-memory if not provided
         _stateStorage = stateStorage ?? new InMemoryRateLimiterStateStorage();
-        
+
         // JobManager coordination (v2.0 improvement)
         _jobManagerCoordinator = jobManagerCoordinator ?? new LocalJobManagerRateLimiterCoordinator();
-        
+
         // Timer to periodically persist state for durability
-        _statePersistTimer = new Timer(PersistStateAsync, null, 
+        _statePersistTimer = new Timer(PersistStateAsync, null,
             TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
-            
+
         // Timer to process waiting requests efficiently (v2.0 improvement)
         _processWaitingRequestsTimer = new Timer(ProcessWaitingRequestsAsync, null,
             TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(10));
-        
+
         // Try to restore previous state from storage
         _ = Task.Run(RestoreStateAsync);
-        
+
         // Register with JobManager for distributed coordination
         _ = Task.Run(() => _jobManagerCoordinator.RegisterRateLimiterAsync(_rateLimiterId, OnJobManagerRateLimitUpdated));
     }
@@ -93,18 +95,19 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public Task<bool> TryAcquireAsync(int permits = 1, CancellationToken cancellationToken = default)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         lock (_lock)
         {
             RefillTokens();
-            
+
             if (_currentTokens >= permits)
             {
                 _currentTokens -= permits;
                 return Task.FromResult(true);
             }
-            
+
             return Task.FromResult(false);
         }
     }
@@ -112,18 +115,19 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public bool TryAcquire(int permits = 1)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         lock (_lock)
         {
             RefillTokens();
-            
+
             if (_currentTokens >= permits)
             {
                 _currentTokens -= permits;
                 return true;
             }
-            
+
             return false;
         }
     }
@@ -131,7 +135,8 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public async Task AcquireAsync(int permits = 1, CancellationToken cancellationToken = default)
     {
-        if (permits <= 0) throw new ArgumentException("Permits must be positive", nameof(permits));
+        if (permits <= 0)
+            throw new ArgumentException("Permits must be positive", nameof(permits));
 
         // Try immediate acquisition first
         if (await TryAcquireAsync(permits, cancellationToken))
@@ -195,14 +200,15 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// <inheritdoc />
     public void UpdateRateLimit(double newRateLimit)
     {
-        if (newRateLimit <= 0) throw new ArgumentException("Rate limit must be positive", nameof(newRateLimit));
+        if (newRateLimit <= 0)
+            throw new ArgumentException("Rate limit must be positive", nameof(newRateLimit));
 
         lock (_lock)
         {
             RefillTokens(); // Update tokens with old rate first
             _currentRateLimit = newRateLimit;
         }
-        
+
         // Coordinate with JobManager for distributed rate limiting (v2.0 improvement)
         _ = Task.Run(() => _jobManagerCoordinator?.CoordinateRateLimitAsync(_rateLimiterId, newRateLimit));
     }
@@ -261,7 +267,7 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     {
         var now = DateTime.UtcNow;
         var elapsed = (now - _lastRefill).TotalSeconds;
-        
+
         if (elapsed > 0)
         {
             var tokensToAdd = elapsed * _currentRateLimit;
@@ -275,7 +281,8 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// </summary>
     private async void PersistStateAsync(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -335,7 +342,8 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// </summary>
     private async void ProcessWaitingRequestsAsync(object? state)
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
 
         try
         {
@@ -411,8 +419,9 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
     /// <param name="disposing">True if disposing managed resources</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (_disposed) return;
-        
+        if (_disposed)
+            return;
+
         if (disposing)
         {
             // Persist final state before disposing
@@ -425,13 +434,13 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
                 // Ignore errors during disposal - this is best effort cleanup
                 // We cannot afford to throw exceptions during disposal
             }
-            
+
             // Complete any waiting requests
             while (_waitingRequests.TryDequeue(out var waitingRequest))
             {
                 waitingRequest.TaskCompletionSource.TrySetCanceled();
             }
-            
+
             // Unregister from JobManager
             try
             {
@@ -441,13 +450,13 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
             {
                 // Best effort cleanup
             }
-            
+
             _statePersistTimer?.Dispose();
             _processWaitingRequestsTimer?.Dispose();
             _stateStorage?.Dispose();
             _jobManagerCoordinator?.Dispose();
         }
-        
+
         _disposed = true;
     }
 }
@@ -458,8 +467,17 @@ public class TokenBucketRateLimiter : IRateLimitingStrategy, IDisposable
 /// </summary>
 internal class WaitingRequest
 {
-    public int Permits { get; init; }
+    public int Permits
+    {
+        get; init;
+    }
     public TaskCompletionSource<bool> TaskCompletionSource { get; init; } = new();
-    public CancellationToken CancellationToken { get; init; }
-    public DateTime RequestTime { get; init; }
+    public CancellationToken CancellationToken
+    {
+        get; init;
+    }
+    public DateTime RequestTime
+    {
+        get; init;
+    }
 }

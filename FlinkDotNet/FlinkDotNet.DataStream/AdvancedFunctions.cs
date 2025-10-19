@@ -169,17 +169,26 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the timestamp of the element currently being processed.
         /// </summary>
-        long Timestamp { get; }
+        long Timestamp
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the current processing time.
         /// </summary>
-        long CurrentProcessingTime { get; }
+        long CurrentProcessingTime
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the current event time watermark.
         /// </summary>
-        long CurrentWatermark { get; }
+        long CurrentWatermark
+        {
+            get;
+        }
 
         /// <summary>
         /// Registers a timer to fire at the given timestamp.
@@ -210,7 +219,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the key of the element currently being processed.
         /// </summary>
-        TKey CurrentKey { get; }
+        TKey CurrentKey
+        {
+            get;
+        }
     }
 
     /// <summary>
@@ -221,7 +233,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the time domain of the firing timer.
         /// </summary>
-        TimeDomain TimeDomain { get; }
+        TimeDomain TimeDomain
+        {
+            get;
+        }
     }
 
     /// <summary>
@@ -232,7 +247,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the key of the timer.
         /// </summary>
-        TKey CurrentKey { get; }
+        TKey CurrentKey
+        {
+            get;
+        }
     }
 
     /// <summary>
@@ -243,22 +261,34 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the start timestamp of the window.
         /// </summary>
-        long WindowStart { get; }
+        long WindowStart
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the end timestamp of the window.
         /// </summary>
-        long WindowEnd { get; }
+        long WindowEnd
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the current processing time.
         /// </summary>
-        long CurrentProcessingTime { get; }
+        long CurrentProcessingTime
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the current event time watermark.
         /// </summary>
-        long CurrentWatermark { get; }
+        long CurrentWatermark
+        {
+            get;
+        }
     }
 
     /// <summary>
@@ -286,7 +316,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the identifier of this output tag.
         /// </summary>
-        public string Id { get; }
+        public string Id
+        {
+            get;
+        }
 
         public OutputTag(string id)
         {

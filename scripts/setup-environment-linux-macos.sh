@@ -111,8 +111,9 @@ install_docker() {
             echo "   Using Homebrew to install Docker Desktop..."
             brew install --cask docker
         else
-            echo "   ❌ Homebrew not found. Please install Docker Desktop manually."
-            echo "      Visit: https://docs.docker.com/desktop/install/mac-install/"
+            echo "   ❌ Homebrew not found. Please install Docker Desktop or Podman manually."
+            echo "      Docker Desktop: https://docs.docker.com/desktop/install/mac-install/"
+            echo "      Podman: brew install podman (requires Homebrew)"
             echo "      Or install Homebrew first: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
             exit 1
         fi
@@ -206,7 +207,7 @@ main() {
             echo "   ✅ Docker is running"
         else
             echo "   ⚠️  Docker is installed but not running"
-            echo "      Please start Docker Desktop or the Docker service"
+            echo "      Please start Docker Desktop, Podman, or the Docker service"
         fi
     else
         install_docker
@@ -286,7 +287,7 @@ main() {
         echo "   • You may need to start Docker service: sudo systemctl start docker"
     elif [[ "$OS" == "macOS" ]]; then
         echo "🍎 macOS Note:"
-        echo "   • Make sure Docker Desktop is running before starting exercises"
+        echo "   • Make sure Docker Desktop or Podman is running before starting exercises"
         echo "   • You may need to restart your terminal for PATH changes"
     fi
     
