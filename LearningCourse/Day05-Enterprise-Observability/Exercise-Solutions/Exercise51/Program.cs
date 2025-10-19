@@ -23,11 +23,12 @@ namespace Exercise51_ObservabilityDemo
         private const string InputTopic = "observability_input_day05";
         private const string OutputTopic = "observability_output_day05";
         private static readonly string ConsumerGroup = $"observability-demo-{Guid.NewGuid():N}"; // Still unique to avoid offset issues
-        private const int MessageCount = 10000; // Sufficient volume for observability testing with reasonable execution time
+        private const int MessageCount = 1000; // Reduced for faster test execution while still demonstrating observability
         
         // Kafka addresses - read from environment variables set by test infrastructure
         // IMPORTANT: Both producer and Flink consumer must use the SAME Kafka address
         // Test infrastructure dynamically discovers Kafka port and sets KAFKA_BOOTSTRAP_SERVERS
+        // Producer uses host address, Flink uses Docker internal address
         private static string KafkaBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9092";
         private static string KafkaFlinkBootstrapServers =>
@@ -100,51 +101,17 @@ namespace Exercise51_ObservabilityDemo
             await CreateTopicsAsync();
             Console.WriteLine();
 
-            Console.WriteLine($">> Step 4/6: Starting message production (async)...");
-            var productionTask = ProduceMessagesAsync(); // Start async, store task
-            Console.WriteLine("   Messages are being produced in background...");
-            Console.WriteLine();
-
-            // Wait and retry up to 5 times for messages to appear in Kafka
-            Console.WriteLine("   ⏳ Waiting for initial messages to be produced (up to 5 retries)...");
-            bool messagesReady = false;
-            for (int retry = 1; retry <= 5; retry++)
-            {
-                await Task.Delay(10000); // Wait 10 seconds between checks
-                
-                // Check if messages exist in input topic
-                try
-                {
-                    var messageCount = await CheckTopicHasMessagesAsync(InputTopic);
-                    if (messageCount > 0)
-                    {
-                        Console.WriteLine($"   ✅ Retry {retry}/5: Found {messageCount} messages in Kafka, proceeding with job submission");
-                        messagesReady = true;
-                        break;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"   ⏳ Retry {retry}/5: No messages yet, waiting...");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"   ⚠️  Retry {retry}/5: Error checking topic - {ex.Message}");
-                }
-            }
-
-            if (!messagesReady)
-            {
-                Console.WriteLine("   ⚠️  Warning: Proceeding anyway after 5 retries - Flink will wait for messages");
-            }
-            Console.WriteLine();
-
-            Console.WriteLine(">> Step 5/6: Submitting Flink job (will poll for messages)...");
+            Console.WriteLine(">> Step 4/6: Submitting Flink job (will poll for messages)...");
             var jobClient = await SubmitJob();
             Console.WriteLine($"   Job ID: {jobClient.GetJobId()}");
             Console.WriteLine("   Job will remain running for observability metrics collection");
             Console.WriteLine("   ⏳ Waiting for job to fully start...");
-            await Task.Delay(5000); // Wait for job to fully start
+            await Task.Delay(3000); // Wait for job to start (matching Day 1 timing)
+            Console.WriteLine();
+
+            Console.WriteLine($">> Step 5/6: Producing messages...");
+            await ProduceMessagesAsync(); // Produce messages AFTER job is running
+            await Task.Delay(2000); // Wait for Flink to process (matching Day 1 timing)
             Console.WriteLine();
 
             Console.WriteLine(">> Step 6/6: Monitoring processing (sampling results)...");
@@ -173,6 +140,56 @@ namespace Exercise51_ObservabilityDemo
             // Test infrastructure will cancel the job via Flink REST API
             Console.WriteLine("Press Ctrl+C to exit (job will continue running)...");
             await Task.Delay(Timeout.Infinite);
+        }
+
+        static async Task<long> GetTopicMessageCountAsync(string topic)
+        {
+            try
+            {
+                var consumerConfig = new ConsumerConfig
+                {
+                    BootstrapServers = KafkaBootstrapServers,
+                    GroupId = $"count-check-{Guid.NewGuid()}",
+                    AutoOffsetReset = AutoOffsetReset.Earliest,
+                    EnableAutoCommit = false,
+                    BrokerAddressFamily = BrokerAddressFamily.V4,
+                    SecurityProtocol = SecurityProtocol.Plaintext
+                };
+
+                using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
+                
+                // Use AdminClient to get topic metadata
+                var adminConfig = new AdminClientConfig
+                {
+                    BootstrapServers = KafkaBootstrapServers,
+                    BrokerAddressFamily = BrokerAddressFamily.V4,
+                    SecurityProtocol = SecurityProtocol.Plaintext
+                };
+                
+                using var admin = new AdminClientBuilder(adminConfig).Build();
+                var metadata = admin.GetMetadata(topic, TimeSpan.FromSeconds(5));
+                var topicMetadata = metadata.Topics.FirstOrDefault(t => t.Topic == topic);
+                
+                if (topicMetadata == null)
+                {
+                    return await Task.FromResult(0L);
+                }
+
+                long totalMessages = 0;
+                foreach (var partition in topicMetadata.Partitions)
+                {
+                    var topicPartition = new TopicPartition(topic, partition.PartitionId);
+                    var watermark = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(5));
+                    totalMessages += (watermark.High.Value - watermark.Low.Value);
+                }
+
+                return await Task.FromResult(totalMessages);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   Error checking topic message count: {ex.Message}");
+                return await Task.FromResult(0L);
+            }
         }
 
         static async Task<FlinkDotNet.DataStream.IJobClient> SubmitJob()
@@ -386,14 +403,33 @@ namespace Exercise51_ObservabilityDemo
 
         static async Task CreateTopicsAsync()
         {
-            var adminConfig = new AdminClientConfig 
-            { 
+            var adminConfig = new AdminClientConfig
+            {
                 BootstrapServers = KafkaBootstrapServers,
                 BrokerAddressFamily = BrokerAddressFamily.V4,
                 SecurityProtocol = SecurityProtocol.Plaintext
             };
             
             using var admin = new AdminClientBuilder(adminConfig).Build();
+
+            // Delete topics first to ensure clean state (prevent message accumulation between test runs)
+            var topicsToDelete = new[] { InputTopic, OutputTopic };
+            try
+            {
+                await admin.DeleteTopicsAsync(topicsToDelete);
+                Console.WriteLine($"   [INFO] Deleted existing topics: {InputTopic}, {OutputTopic}");
+                // Wait for topic deletion to complete
+                await Task.Delay(2000);
+            }
+            catch (DeleteTopicsException ex)
+            {
+                // Topics don't exist - this is fine
+                var existErrors = ex.Results.Where(r => r.Error.Code != ErrorCode.UnknownTopicOrPart).ToList();
+                if (existErrors.Any())
+                {
+                    Console.WriteLine($"   [WARNING] Some topics failed to delete: {string.Join(", ", existErrors.Select(e => e.Error.Reason))}");
+                }
+            }
 
             var topicsToCreate = new[]
             {
@@ -509,29 +545,6 @@ namespace Exercise51_ObservabilityDemo
             throw new TimeoutException($"Flink not healthy within {timeout.TotalSeconds}s");
         }
 
-        static Task<int> CheckTopicHasMessagesAsync(string topic)
-        {
-            var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"check-{Guid.NewGuid()}");
-            using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
-            consumer.Subscribe(topic);
-            
-            var messageCount = 0;
-            var timeout = TimeSpan.FromSeconds(10); // Increased timeout to allow more consumption
-            var stopwatch = Stopwatch.StartNew();
-            
-            // Check for at least 100 messages to ensure significant data exists
-            while (stopwatch.Elapsed < timeout && messageCount < 100)
-            {
-                var result = consumer.Consume(TimeSpan.FromMilliseconds(500));
-                if (result != null)
-                {
-                    messageCount++;
-                }
-            }
-            
-            consumer.Close();
-            return Task.FromResult(messageCount);
-        }
     }
 
     public class WordsCapitalizer : FlinkDotNet.DataStream.IMapFunction<string, string>

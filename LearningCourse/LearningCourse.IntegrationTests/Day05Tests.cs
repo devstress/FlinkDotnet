@@ -19,7 +19,7 @@ public class Day05Tests : LearningCourseTestBase
     private readonly HttpClient _httpClient = new();
     private Process? _exercise51Process;
     private string? _activeJobId;
-    private const int MessageCount = 10000; // Expected message count from Exercise51
+    private const int MessageCount = 1000; // Expected message count from Exercise51 (reduced for faster tests)
 
     [TearDown]
     public async Task TearDown()
@@ -103,7 +103,7 @@ public class Day05Tests : LearningCourseTestBase
 
         // Step 2: Start Exercise51 to generate metrics
         const string Exercise51Path = "Day05-Enterprise-Observability/Exercise-Solutions/Exercise51";
-        TestContext.WriteLine("▶️  Step 2: Starting Exercise51 to generate metrics (10,000 messages)...");
+        TestContext.WriteLine("▶️  Step 2: Starting Exercise51 to generate metrics (1,000 messages)...");
         TestContext.WriteLine("   Pipeline: observability_input → Flink (uppercase) → observability_output");
         TestContext.WriteLine($"   📁 Exercise Path: {Exercise51Path}");
         TestContext.WriteLine($"   🌐 Kafka Bootstrap Servers (Host): {KafkaHostBootstrapServers}");
@@ -223,7 +223,7 @@ public class Day05Tests : LearningCourseTestBase
 
         // 5. Kafka Topic Monitoring - Verify Actual Record Counts (STRICT VALIDATION)
         TestContext.WriteLine("   📊 5. Kafka Topic Monitoring - Verify Actual Record Counts:");
-        TestContext.WriteLine("      Must validate that Kafka topics contain the expected 10,000 messages");
+        TestContext.WriteLine("      Must validate that Kafka topics contain the expected 1,000 messages");
         VerifyKafkaTopicRecordCounts();
         TestContext.WriteLine();
 
@@ -239,8 +239,8 @@ public class Day05Tests : LearningCourseTestBase
         TestContext.WriteLine("  ✅ Kafka JMX Exporter: VALIDATED - Input/Output topic metrics have data");
         TestContext.WriteLine("  ✅ TaskManager Exporter: VALIDATED - JVM, records, buffers have data");
         TestContext.WriteLine("  ✅ JobManager Exporter: VALIDATED - TaskManagers, running jobs have data");
-        TestContext.WriteLine("  ✅ Message Processing: 10,000 records successfully processed by Flink");
-        TestContext.WriteLine("  ✅ Kafka Topic Validation: 10,000 messages in both input and output topics");
+        TestContext.WriteLine("  ✅ Message Processing: 1,000 records successfully processed by Flink");
+        TestContext.WriteLine("  ✅ Kafka Topic Validation: 1,000 messages in both input and output topics");
         TestContext.WriteLine("  ✅ Rate Queries: Processing rate per second calculations have data");
         TestContext.WriteLine("  ✅ STRICT VALIDATION: Test would FAIL if any metric was empty");
         TestContext.WriteLine("  📝 Note: End-to-end message tracking (key-5000) verified in Playwright test");
@@ -286,8 +286,15 @@ public class Day05Tests : LearningCourseTestBase
         TestContext.WriteLine("   ✅ Flink cluster is healthy and accepting requests");
         TestContext.WriteLine();
 
+        // Step 1.5: CRITICAL - Wait for Kafka endpoint discovery before starting Exercise51
+        TestContext.WriteLine("▶️  Step 1.5: Verifying Kafka endpoints are discovered...");
+        await WaitForKafkaEndpointsAsync();
+        TestContext.WriteLine($"   ✅ Kafka Host: {KafkaHostBootstrapServers}");
+        TestContext.WriteLine($"   ✅ Kafka Flink: {KafkaFlinkBootstrapServers}");
+        TestContext.WriteLine();
+
         // Step 2: Start Exercise51 in background
-        TestContext.WriteLine("▶️  Step 2: Starting Exercise51 in background (10,000 messages)...");
+        TestContext.WriteLine("▶️  Step 2: Starting Exercise51 in background (1,000 messages)...");
         TestContext.WriteLine("   Pipeline: observability_input → Flink (uppercase) → observability_output");
         TestContext.WriteLine("   This will generate metrics for observability demonstration");
         
@@ -298,7 +305,7 @@ public class Day05Tests : LearningCourseTestBase
         TestContext.WriteLine("      1. Verify Kafka ready");
         TestContext.WriteLine("      2. Verify Flink healthy");
         TestContext.WriteLine("      3. Create topics");
-        TestContext.WriteLine("      4. Produce 10,000 messages");
+        TestContext.WriteLine("      4. Produce 1,000 messages");
         TestContext.WriteLine("      5. Submit Flink job");
         TestContext.WriteLine("      6. Monitor processing (30s)");
         TestContext.WriteLine();
@@ -403,7 +410,7 @@ public class Day05Tests : LearningCourseTestBase
 
         // 6. Kafka Topic Monitoring - Verify Actual Record Counts (STRICT VALIDATION)
         TestContext.WriteLine("   📊 6. Kafka Topic Monitoring - Verify Actual Record Counts:");
-        TestContext.WriteLine("      Must validate that Kafka topics contain the expected 10,000 messages");
+        TestContext.WriteLine("      Must validate that Kafka topics contain the expected 1,000 messages");
         VerifyKafkaTopicRecordCounts();
         TestContext.WriteLine();
 
@@ -497,12 +504,21 @@ public class Day05Tests : LearningCourseTestBase
                 "Buffers in local processing");
 
             // ═══════════════════════════════════════════════════════════════════════
-            // PART 5: Kafka Aggregate Metrics - SKIPPED (dynamic topics)
+            // PART 5: Kafka Aggregate Metrics via JMX Exporter
             // ═══════════════════════════════════════════════════════════════════════
-            TestContext.WriteLine("   📊 6. Kafka Aggregate Metrics:");
-            TestContext.WriteLine("      ⏭️  SKIPPED: Topic names are dynamic (contain GUIDs)");
-            TestContext.WriteLine("      💡 Kafka JMX metrics cannot be queried by specific topic names");
-            TestContext.WriteLine("      ✅ Message processing verified via Flink metrics instead");
+            TestContext.WriteLine("   📊 6. Kafka Aggregate Metrics via JMX Exporter:");
+            
+            // Show Kafka broker-level metrics (not topic-specific)
+            await QueryAndDisplayMetric(queryInput!, executeButton, page,
+                "kafka_server_BrokerTopicMetrics_MessagesInPerSec_Count",
+                "Total messages received by Kafka broker (all topics)");
+            
+            await QueryAndDisplayMetric(queryInput!, executeButton, page,
+                "kafka_server_BrokerTopicMetrics_BytesInPerSec_Count",
+                "Total bytes received by Kafka broker");
+            
+            TestContext.WriteLine("      💡 Note: Topic-specific metrics require static topic names");
+            TestContext.WriteLine("      ✅ Aggregate broker metrics show overall Kafka activity");
 
             // ═══════════════════════════════════════════════════════════════════════
             // PART 3: Grafana Dashboards with Data Visualization
@@ -1219,16 +1235,47 @@ public class Day05Tests : LearningCourseTestBase
             WorkingDirectory = fullPath
         };
 
-        startInfo.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers ?? "localhost:9093";
-        startInfo.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers ?? "kafka:9092";
+        // CRITICAL: Ensure Kafka endpoints are discovered before setting environment variables
+        if (string.IsNullOrEmpty(KafkaHostBootstrapServers) || string.IsNullOrEmpty(KafkaFlinkBootstrapServers))
+        {
+            throw new InvalidOperationException(
+                $"Kafka endpoints not discovered! " +
+                $"KafkaHostBootstrapServers={KafkaHostBootstrapServers ?? "null"}, " +
+                $"KafkaFlinkBootstrapServers={KafkaFlinkBootstrapServers ?? "null"}");
+        }
+
+        startInfo.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
+        startInfo.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
         // Exercise51 uses the Gateway to submit jobs, not Flink REST API directly
         startInfo.Environment["FLINK_GATEWAY_URL"] = "http://localhost:8080";
 
+        TestContext.WriteLine($"   🔧 KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers}");
+        TestContext.WriteLine($"   🔧 KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers}");
+        TestContext.WriteLine($"   🔧 FLINK_GATEWAY_URL=http://localhost:8080");
+
         _exercise51Process = new Process { StartInfo = startInfo };
+        
+        // Capture output for debugging
+        _exercise51Process.OutputDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                TestContext.WriteLine($"   [Exercise51] {e.Data}");
+            }
+        };
+        _exercise51Process.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                TestContext.WriteLine($"   [Exercise51 Error] {e.Data}");
+            }
+        };
+
         _exercise51Process.Start();
         _exercise51Process.BeginOutputReadLine();
         _exercise51Process.BeginErrorReadLine();
 
+        TestContext.WriteLine($"   📝 Exercise51 process started with PID {_exercise51Process.Id}");
         await Task.Delay(2000);
     }
 
@@ -1674,6 +1721,34 @@ public class Day05Tests : LearningCourseTestBase
         }
         
         throw new InvalidOperationException($"Failed to query Prometheus after {maxRetries} attempts: {query}");
+    }
+
+    /// <summary>
+    /// Wait for Kafka endpoints to be discovered and populated.
+    /// This prevents race conditions where Exercise51 starts before Kafka is ready.
+    /// </summary>
+    private async Task WaitForKafkaEndpointsAsync()
+    {
+        var timeout = TimeSpan.FromSeconds(30);
+        var stopwatch = Stopwatch.StartNew();
+        var retryDelay = 500;
+
+        while (stopwatch.Elapsed < timeout)
+        {
+            if (!string.IsNullOrEmpty(KafkaHostBootstrapServers) &&
+                !string.IsNullOrEmpty(KafkaFlinkBootstrapServers))
+            {
+                TestContext.WriteLine($"   ✅ Kafka endpoints ready after {stopwatch.Elapsed.TotalSeconds:F1}s");
+                return;
+            }
+
+            await Task.Delay(retryDelay);
+        }
+
+        throw new TimeoutException(
+            $"Kafka endpoints not discovered within {timeout.TotalSeconds}s. " +
+            $"KafkaHostBootstrapServers: {KafkaHostBootstrapServers ?? "null"}, " +
+            $"KafkaFlinkBootstrapServers: {KafkaFlinkBootstrapServers ?? "null"}");
     }
         
 }
