@@ -230,7 +230,7 @@ public class Day05Tests : LearningCourseTestBase
         // 6. Kafka JMX Metrics - Note: Topic names are now dynamic with GUIDs
         TestContext.WriteLine("   📊 6. Kafka JMX Metrics via Prometheus:");
         TestContext.WriteLine("      Topic names are dynamic (contain GUIDs) - verifying aggregate metrics only");
-        await VerifyOptionalMetric("kafka_server_BrokerTopicMetrics_MessagesInPerSec_Count",
+        await VerifyOptionalMetric("kafka_server_brokertopicmetrics_messagesinpersec_count_total",
             "Total messages across all topics via Kafka JMX exporter");
         TestContext.WriteLine();
 
@@ -408,13 +408,21 @@ public class Day05Tests : LearningCourseTestBase
             "Buffers in local processing - backpressure monitoring");
         TestContext.WriteLine();
 
-        // 6. Kafka Topic Monitoring - Verify Actual Record Counts (STRICT VALIDATION)
-        TestContext.WriteLine("   📊 6. Kafka Topic Monitoring - Verify Actual Record Counts:");
-        TestContext.WriteLine("      Must validate that Kafka topics contain the expected 1,000 messages");
+        // 6. Kafka JMX Metrics - Verify INPUT Topic via Prometheus (PROVES JMX IS WORKING)
+        TestContext.WriteLine("   📊 6. Kafka JMX Metrics - Verify INPUT Topic via Prometheus:");
+        TestContext.WriteLine("      CRITICAL: Must prove Kafka JMX exporter is working BEFORE checking output");
+        TestContext.WriteLine("      This validates the full chain: Kafka → JMX → JMX Exporter → Prometheus");
+        await VerifyKafkaInputTopicViaPrometheusAsync();
+        TestContext.WriteLine();
+
+        // 7. Kafka Topic Monitoring - Verify Actual Record Counts in BOTH topics
+        TestContext.WriteLine("   📊 7. Kafka Topic Monitoring - Verify Actual Record Counts:");
+        TestContext.WriteLine("      Now that JMX is proven working, validate both input and output topics");
         VerifyKafkaTopicRecordCounts();
         TestContext.WriteLine();
 
-        TestContext.WriteLine("   ✅ ALL THREE PROMETHEUS EXPORTERS VERIFIED - Video will show actual data!");
+        TestContext.WriteLine("   ✅ ALL PROMETHEUS EXPORTERS VERIFIED - Video will show actual data!");
+        TestContext.WriteLine("   ✅ Kafka JMX exporter PROVEN WORKING with input topic metrics!");
         TestContext.WriteLine("   ✅ Proceeding to record UI video with validated metrics...");
         TestContext.WriteLine();
 
@@ -432,7 +440,7 @@ public class Day05Tests : LearningCourseTestBase
             // ═══════════════════════════════════════════════════════════════════════
             TestContext.WriteLine("▶️  Step 7: Prometheus - Messages Per Second Rate Tracking...");
             
-            await page.GotoAsync(PrometheusHostEndpoint, new PageGotoOptions
+            await page.GotoAsync(PrometheusHostEndpoint!, new PageGotoOptions
             {
                 WaitUntil = WaitUntilState.DOMContentLoaded,
                 Timeout = 60000
@@ -510,11 +518,11 @@ public class Day05Tests : LearningCourseTestBase
             
             // Show Kafka broker-level metrics (not topic-specific)
             await QueryAndDisplayMetric(queryInput!, executeButton, page,
-                "kafka_server_BrokerTopicMetrics_MessagesInPerSec_Count",
+                "kafka_server_brokertopicmetrics_messagesinpersec_count_total",
                 "Total messages received by Kafka broker (all topics)");
             
             await QueryAndDisplayMetric(queryInput!, executeButton, page,
-                "kafka_server_BrokerTopicMetrics_BytesInPerSec_Count",
+                "kafka_server_brokertopicmetrics_bytesinpersec_count_total",
                 "Total bytes received by Kafka broker");
             
             TestContext.WriteLine("      💡 Note: Topic-specific metrics require static topic names");
@@ -534,7 +542,7 @@ public class Day05Tests : LearningCourseTestBase
             TestContext.WriteLine("   📝 Configuring Grafana Prometheus data source...");
             await ConfigureGrafanaDataSourceAsync(GrafanaHostEndpoint!, PrometheusHostEndpoint!);
             
-            await page.GotoAsync(GrafanaHostEndpoint, new PageGotoOptions
+            await page.GotoAsync(GrafanaHostEndpoint!, new PageGotoOptions
             {
                 WaitUntil = WaitUntilState.DOMContentLoaded,
                 Timeout = 60000
@@ -610,7 +618,7 @@ public class Day05Tests : LearningCourseTestBase
             try
             {
                 var runningJobLink = page.Locator($"a[href*='/jobs/{_activeJobId}']").First;
-                if (await runningJobLink.IsVisibleAsync(new LocatorIsVisibleOptions { Timeout = 5000 }))
+                if (await runningJobLink.IsVisibleAsync())
                 {
                     await runningJobLink.ClickAsync();
                     TestContext.WriteLine($"   ✓ Opened job details: {_activeJobId}");
@@ -618,7 +626,7 @@ public class Day05Tests : LearningCourseTestBase
                     
                     // Show different tabs
                     var metricsTab = page.Locator("a:has-text('Metrics'), li:has-text('Metrics')").First;
-                    if (await metricsTab.IsVisibleAsync(new LocatorIsVisibleOptions { Timeout = 3000 }))
+                    if (await metricsTab.IsVisibleAsync())
                     {
                         await metricsTab.ClickAsync();
                         TestContext.WriteLine("   ✓ Viewing job metrics");
@@ -699,46 +707,75 @@ public class Day05Tests : LearningCourseTestBase
 
     private async Task QueryAndDisplayMetric(ILocator queryInput, ILocator executeButton, IPage page, string metric, string description = "")
     {
+        const int MaxRetries = 5;
+        const int RetryDelaySeconds = 10;
+        
         if (!string.IsNullOrEmpty(description))
         {
             TestContext.WriteLine($"      Query: {description}");
         }
         
-        // Force click to bypass any overlays (like autocomplete tooltips)
-        await queryInput.ClickAsync(new LocatorClickOptions { Force = true });
-        await page.WaitForTimeoutAsync(500);
-        
-        // Clear any existing text and type the new metric
-        await queryInput.FillAsync("");
-        await queryInput.FillAsync(metric);
-        await page.WaitForTimeoutAsync(1000);
-        
-        await executeButton.ClickAsync();
-        
-        // Wait longer to show the results
-        await page.WaitForTimeoutAsync(7000);
-        
-        // CRITICAL: Validate that results are NOT empty in the DOM
-        TestContext.WriteLine($"      🔍 Validating DOM contains actual data (not empty results)...");
-        
-        // Check for "Empty query result" or "No data" messages that indicate no metrics
-        var emptyResultSelectors = new[]
+        for (int attempt = 1; attempt <= MaxRetries; attempt++)
         {
-            "text=/empty query result/i",
-            "text=/no data/i",
-            "text=/no datapoints/i",
-            ".alert:has-text('No data')",
-            ".empty-results"
-        };
-        
-        foreach (var selector in emptyResultSelectors)
-        {
-            var emptyResult = page.Locator(selector).First;
-            if (await emptyResult.CountAsync() > 0)
+            TestContext.WriteLine($"      🔄 Attempt {attempt}/{MaxRetries} to query metric...");
+            
+            // Force click to bypass any overlays (like autocomplete tooltips)
+            await queryInput.ClickAsync(new LocatorClickOptions { Force = true });
+            await page.WaitForTimeoutAsync(500);
+            
+            // Clear any existing text and type the new metric
+            await queryInput.FillAsync("");
+            await queryInput.FillAsync(metric);
+            await page.WaitForTimeoutAsync(1000);
+            
+            await executeButton.ClickAsync();
+            
+            // Wait longer to show the results
+            await page.WaitForTimeoutAsync(7000);
+            
+            // CRITICAL: Validate that results are NOT empty in the DOM
+            TestContext.WriteLine($"      🔍 Validating DOM contains actual data (not empty results)...");
+            
+            // Check for "Empty query result" or "No data" messages that indicate no metrics
+            var emptyResultSelectors = new[]
             {
-                TestContext.WriteLine($"      ❌ EMPTY RESULT DETECTED in DOM: '{selector}'");
-                Assert.Fail($"Metric query '{metric}' returned EMPTY RESULTS in Prometheus UI. The dynamic topic name fix may not be working correctly.");
+                "text=/empty query result/i",
+                "text=/no data/i",
+                "text=/no datapoints/i",
+                ".alert:has-text('No data')",
+                ".empty-results"
+            };
+            
+            bool hasEmptyResult = false;
+            foreach (var selector in emptyResultSelectors)
+            {
+                var emptyResult = page.Locator(selector).First;
+                if (await emptyResult.CountAsync() > 0)
+                {
+                    TestContext.WriteLine($"      ⚠️  EMPTY RESULT DETECTED in DOM: '{selector}'");
+                    hasEmptyResult = true;
+                    break;
+                }
             }
+            
+            if (hasEmptyResult)
+            {
+                if (attempt < MaxRetries)
+                {
+                    TestContext.WriteLine($"      ⚠️  Query returned empty results, waiting {RetryDelaySeconds}s before retry {attempt + 1}...");
+                    await page.WaitForTimeoutAsync(RetryDelaySeconds * 1000);
+                    continue; // Retry the query
+                }
+                else
+                {
+                    TestContext.WriteLine($"      ❌ Query still empty after {MaxRetries} attempts");
+                    Assert.Fail($"Metric query '{metric}' returned EMPTY RESULTS in Prometheus UI after {MaxRetries} retries. Metrics may not be exported yet.");
+                }
+            }
+            
+            // If we get here, no empty result was detected - query succeeded
+            TestContext.WriteLine($"      ✅ Query returned data on attempt {attempt}");
+            break; // Exit retry loop
         }
         
         // Verify we have actual data rows/values in the table or graph
@@ -1362,6 +1399,7 @@ public class Day05Tests : LearningCourseTestBase
             if (!response.IsSuccessStatusCode)
             {
                 TestContext.WriteLine($"   ⚠️  HTTP {response.StatusCode} - Query failed (optional metric)");
+                await DebugKafkaJmxExporterAsync(); // Debug JMX exporter when query fails
                 return;
             }
 
@@ -1377,6 +1415,7 @@ public class Day05Tests : LearningCourseTestBase
                 {
                     TestContext.WriteLine($"   ⚠️  METRIC HAS NO DATA (optional - not a failure)");
                     TestContext.WriteLine($"   💡 Kafka JMX exporter may need more time to collect metrics");
+                    await DebugKafkaJmxExporterAsync(); // Debug JMX exporter when no data
                 }
                 else
                 {
@@ -1399,6 +1438,194 @@ public class Day05Tests : LearningCourseTestBase
         catch (Exception ex)
         {
             TestContext.WriteLine($"   ⚠️  Exception (optional metric): {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Verifies Kafka INPUT topic metrics via Prometheus to prove JMX exporter is working.
+    /// This is the FIRST validation that proves the chain: Kafka → JMX → JMX Exporter → Prometheus
+    /// Must succeed before checking output topic to ensure JMX is functioning.
+    /// </summary>
+    private async Task VerifyKafkaInputTopicViaPrometheusAsync()
+    {
+        const string InputTopic = "observability_input_day05";
+        
+        TestContext.WriteLine($"      🔍 Verifying INPUT topic '{InputTopic}' via Kafka JMX metrics in Prometheus");
+        TestContext.WriteLine("      This proves Kafka JMX exporter is collecting and exposing topic-level metrics");
+        TestContext.WriteLine();
+        
+        // Query for topic-specific MessagesInPerSec metric (lowercase with _total suffix)
+        var topicMetricQuery = $"kafka_server_brokertopicmetrics_messagesinpersec_count_total{{topic=\"{InputTopic}\"}}";
+        TestContext.WriteLine($"      Query: {topicMetricQuery}");
+        
+        try
+        {
+            var queryUrl = $"{PrometheusHostEndpoint}/api/v1/query?query={Uri.EscapeDataString(topicMetricQuery)}";
+            var response = await _httpClient.GetAsync(queryUrl);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"      ❌ HTTP {response.StatusCode} - Prometheus query failed");
+                TestContext.WriteLine("      This indicates Prometheus is not accessible or query is malformed");
+                await DebugKafkaJmxExporterAsync();
+                Assert.Fail($"Prometheus query for input topic failed with HTTP {response.StatusCode}");
+            }
+            
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            
+            if (doc.RootElement.TryGetProperty("data", out var data) &&
+                data.TryGetProperty("result", out var result))
+            {
+                var resultArray = result.EnumerateArray().ToList();
+                
+                if (resultArray.Count == 0)
+                {
+                    TestContext.WriteLine($"      ❌ NO METRICS FOUND for input topic '{InputTopic}'!");
+                    TestContext.WriteLine("      ❌ This means Kafka JMX exporter is NOT exposing topic-specific metrics");
+                    TestContext.WriteLine("      💡 Possible causes:");
+                    TestContext.WriteLine("         • Topic name mismatch (verify Exercise51 uses 'observability_input_day05')");
+                    TestContext.WriteLine("         • JMX exporter not configured for topic-specific metrics");
+                    TestContext.WriteLine("         • Kafka not exposing JMX metrics for topics");
+                    TestContext.WriteLine("         • No messages have been produced to the topic yet");
+                    TestContext.WriteLine();
+                    
+                    // Debug the JMX exporter to see what IS being exported
+                    await DebugKafkaJmxExporterAsync();
+                    
+                    Assert.Fail($"Kafka JMX metrics for input topic '{InputTopic}' NOT FOUND in Prometheus. JMX exporter may not be working correctly.");
+                }
+                else
+                {
+                    TestContext.WriteLine($"      ✅ Found {resultArray.Count} metric series for input topic!");
+                    
+                    // Show the metric values
+                    foreach (var item in resultArray)
+                    {
+                        if (item.TryGetProperty("metric", out var metric) &&
+                            item.TryGetProperty("value", out var value))
+                        {
+                            var topicLabel = metric.TryGetProperty("topic", out var t) ? t.GetString() : "unknown";
+                            var valueArray = value.EnumerateArray().ToList();
+                            if (valueArray.Count >= 2)
+                            {
+                                var metricValue = valueArray[1].GetString();
+                                TestContext.WriteLine($"         Topic: {topicLabel}, MessagesIn: {metricValue}");
+                            }
+                        }
+                    }
+                    
+                    TestContext.WriteLine();
+                    TestContext.WriteLine($"      ✅ KAFKA JMX EXPORTER IS WORKING!");
+                    TestContext.WriteLine("      ✅ Topic-specific metrics successfully flowing: Kafka → JMX → Prometheus");
+                    TestContext.WriteLine("      ✅ Safe to proceed with output topic verification");
+                }
+            }
+            else
+            {
+                TestContext.WriteLine($"      ❌ Unexpected Prometheus response format");
+                Assert.Fail("Unexpected Prometheus response format for Kafka topic metric query");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"      ❌ Exception querying Prometheus: {ex.Message}");
+            await DebugKafkaJmxExporterAsync();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Debug Kafka JMX Exporter by querying its metrics endpoint directly.
+    /// This helps diagnose why Kafka JMX metrics aren't appearing in Prometheus.
+    /// </summary>
+    private async Task DebugKafkaJmxExporterAsync()
+    {
+        try
+        {
+            TestContext.WriteLine("\n   🔍 DEBUGGING KAFKA JMX EXPORTER:");
+            
+            // Get kafka-exporter container port from Docker
+            var kafkaExporterEndpoint = await LearningCourse.Common.DockerInfrastructure.GetKafkaExporterHostEndpointAsync();
+            
+            if (string.IsNullOrEmpty(kafkaExporterEndpoint))
+            {
+                TestContext.WriteLine("   ❌ kafka-exporter container not found or port not exposed");
+                TestContext.WriteLine("   💡 Check: docker ps | grep kafka-exporter");
+                return;
+            }
+            
+            TestContext.WriteLine($"   📊 Kafka JMX Exporter endpoint: {kafkaExporterEndpoint}");
+            
+            // Query the exporter's /metrics endpoint directly
+            var metricsUrl = $"{kafkaExporterEndpoint}/metrics";
+            TestContext.WriteLine($"   🔗 Querying: {metricsUrl}");
+            
+            var response = await _httpClient.GetAsync(metricsUrl);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"   ❌ JMX Exporter returned {response.StatusCode}");
+                TestContext.WriteLine("   💡 JMX exporter may not be running or not exposing metrics");
+                return;
+            }
+            
+            var metricsText = await response.Content.ReadAsStringAsync();
+            var lines = metricsText.Split('\n');
+            
+            TestContext.WriteLine($"   ✅ JMX Exporter responding ({lines.Length} lines)");
+            
+            // Count Kafka-specific metrics
+            var kafkaMetrics = lines.Where(l => l.StartsWith("kafka_server_") || l.StartsWith("kafka_controller_") || l.StartsWith("kafka_network_")).ToList();
+            
+            if (kafkaMetrics.Count == 0)
+            {
+                TestContext.WriteLine("   ❌ NO KAFKA METRICS FOUND in JMX exporter output!");
+                TestContext.WriteLine("   💡 Possible causes:");
+                TestContext.WriteLine("      • Kafka JMX port (9101) not accessible");
+                TestContext.WriteLine("      • JMX exporter config file incorrect");
+                TestContext.WriteLine("      • Kafka container not running or misconfigured");
+                
+                // Show first 20 lines of what IS being exported
+                TestContext.WriteLine("\n   📋 Sample of exported metrics (first 20 non-comment lines):");
+                var sampleLines = lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("#")).Take(20);
+                foreach (var line in sampleLines)
+                {
+                    TestContext.WriteLine($"      {line.Substring(0, Math.Min(100, line.Length))}");
+                }
+            }
+            else
+            {
+                TestContext.WriteLine($"   ✅ Found {kafkaMetrics.Count} Kafka metrics in JMX exporter");
+                
+                // Show sample Kafka metrics
+                TestContext.WriteLine("\n   📋 Sample Kafka metrics from JMX exporter:");
+                foreach (var metric in kafkaMetrics.Take(10))
+                {
+                    var parts = metric.Split(' ');
+                    if (parts.Length >= 2)
+                    {
+                        TestContext.WriteLine($"      {parts[0]} = {parts[1]}");
+                    }
+                }
+                
+                // Check specifically for BrokerTopicMetrics
+                var brokerMetrics = kafkaMetrics.Where(m => m.Contains("BrokerTopicMetrics")).ToList();
+                if (brokerMetrics.Count > 0)
+                {
+                    TestContext.WriteLine($"\n   ✅ Found {brokerMetrics.Count} BrokerTopicMetrics (messages, bytes, etc.)");
+                }
+                else
+                {
+                    TestContext.WriteLine("\n   ⚠️  NO BrokerTopicMetrics found - may need topic activity to generate");
+                }
+            }
+            
+            TestContext.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️  JMX Exporter debug failed: {ex.Message}");
         }
     }
 

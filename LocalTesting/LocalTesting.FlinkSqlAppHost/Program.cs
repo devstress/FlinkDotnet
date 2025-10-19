@@ -62,21 +62,36 @@ Console.WriteLine($"🔍 Running in {(isLearningCourseMode ? "LEARNINGCOURSE" : 
 Console.WriteLine($"   Metrics export: {(isLearningCourseMode ? "ENABLED (Flink + Kafka)" : "DISABLED")}");
 
 // Configure Kafka - Aspire's AddKafka() uses KRaft mode by default (no Zookeeper)
+// CRITICAL: Confluent Local image doesn't support JMX out of the box
+// We need to use standard Kafka image or configure Confluent properly
 var kafka = builder.AddKafka("kafka");
 
 // Enable JMX for metrics export only in LEARNINGCOURSE mode
+// PROBLEM: confluentinc/confluent-local may not respect KAFKA_JMX_* environment variables
+// The image uses a custom startup script that might ignore these settings
 if (isLearningCourseMode)
 {
     kafka = kafka
         .WithEnvironment("KAFKA_JMX_PORT", "9101")
-        .WithEnvironment("KAFKA_JMX_HOSTNAME", "0.0.0.0")
+        .WithEnvironment("KAFKA_JMX_HOSTNAME", "kafka")
         .WithEnvironment("KAFKA_JMX_OPTS",
             "-Dcom.sun.management.jmxremote " +
             "-Dcom.sun.management.jmxremote.authenticate=false " +
             "-Dcom.sun.management.jmxremote.ssl=false " +
             "-Djava.rmi.server.hostname=kafka " +
-            "-Dcom.sun.management.jmxremote.rmi.port=9101");
+            "-Dcom.sun.management.jmxremote.rmi.port=9101 " +
+            "-Dcom.sun.management.jmxremote.local.only=false")
+        // CRITICAL: Confluent images also need KAFKA_OPTS for JMX
+        .WithEnvironment("KAFKA_OPTS",
+            "-Dcom.sun.management.jmxremote " +
+            "-Dcom.sun.management.jmxremote.authenticate=false " +
+            "-Dcom.sun.management.jmxremote.ssl=false " +
+            "-Djava.rmi.server.hostname=kafka " +
+            "-Dcom.sun.management.jmxremote.port=9101 " +
+            "-Dcom.sun.management.jmxremote.rmi.port=9101 " +
+            "-Dcom.sun.management.jmxremote.local.only=false");
     Console.WriteLine("   📊 Kafka JMX metrics enabled on port 9101");
+    Console.WriteLine("   📊 Using both KAFKA_JMX_OPTS and KAFKA_OPTS for Confluent compatibility");
 }
 
 // Kafka JMX Exporter - only in LEARNINGCOURSE mode
@@ -94,11 +109,17 @@ if (isLearningCourseMode)
         var kafkaExporter = builder.AddContainer("kafka-exporter", "bitnami/jmx-exporter", "latest")
             .WithBindMount(jmxConfigPath, "/opt/bitnami/jmx-exporter/exporter.yml", isReadOnly: true)
             .WithHttpEndpoint(targetPort: 5556, name: "metrics")
-            .WithArgs("5556", "/opt/bitnami/jmx-exporter/exporter.yml")
-            .WithReference(kafka);
+            .WithReference(kafka)  // Keep reference for network connectivity
+            .WaitFor(kafka)  // CRITICAL: Wait for Kafka container to be started
+            .WithEntrypoint("/bin/sh")
+            .WithArgs("-c",
+                // CRITICAL: Add 10-second delay to allow Kafka JMX port to be fully initialized
+                // Kafka container starts quickly but JMX port takes time to become available
+                "sleep 10 && java -jar /opt/bitnami/jmx-exporter/jmx_prometheus_standalone.jar 5556 /opt/bitnami/jmx-exporter/exporter.yml");
         #pragma warning restore S1481
         
         Console.WriteLine("   📊 Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
+        Console.WriteLine("   ⏳ JMX Exporter will wait 10s after Kafka starts for JMX port initialization");
     }
     else
     {
@@ -400,6 +421,9 @@ if (isLearningCourse)
     // Provides dashboards and alerting for performance monitoring
     // CRITICAL: Anonymous authentication enabled for learning environment (no login required)
     // Complete anonymous access configuration to bypass login page entirely
+    var grafanaDashboardPath = Path.Combine(repoRoot, "LocalTesting", "grafana-kafka-dashboard.json");
+    var grafanaProvisioningPath = Path.Combine(repoRoot, "LocalTesting", "grafana-provisioning-dashboards.yaml");
+    
     var grafanaBuilder = builder.AddContainer("grafana", "grafana/grafana", "latest")
         .WithHttpEndpoint(port: Ports.GrafanaHostPort, targetPort: 3000, name: "grafana-http")
         .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")  // Enable anonymous access
@@ -407,7 +431,24 @@ if (isLearningCourse)
         .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")  // Completely hide login form
         .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")  // Keep admin account for advanced config
         .WithEnvironment("GF_SECURITY_ADMIN_USER", "admin")
+        .WithEnvironment("GF_PATHS_PROVISIONING", "/etc/grafana/provisioning")  // Enable provisioning
         .WaitFor(prometheus);  // Wait for Prometheus to be ready
+    
+    // Mount Kafka dashboard provisioning configuration
+    if (File.Exists(grafanaProvisioningPath))
+    {
+        grafanaBuilder = grafanaBuilder
+            .WithBindMount(grafanaProvisioningPath, "/etc/grafana/provisioning/dashboards/dashboards.yaml", isReadOnly: true);
+        Console.WriteLine("   📊 Grafana dashboard provisioning configured");
+    }
+    
+    // Mount Kafka dashboard if it exists
+    if (File.Exists(grafanaDashboardPath))
+    {
+        grafanaBuilder = grafanaBuilder
+            .WithBindMount(grafanaDashboardPath, "/etc/grafana/provisioning/dashboards/kafka-dashboard.json", isReadOnly: true);
+        Console.WriteLine("   📊 Kafka metrics dashboard mounted for Grafana");
+    }
     
     #pragma warning disable S1481 // Grafana resource is created but not directly referenced - accessed via browser
     var grafana = grafanaBuilder;

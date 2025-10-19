@@ -39,7 +39,7 @@ rules:
     type: COUNTER
   
   - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>(.+)
-    name: kafka_server_BrokerTopicMetrics_$1_$3
+    name: kafka_server_BrokerTopicMetrics_$1_$2
     type: GAUGE
   
   # Kafka Server metrics (general patterns)

@@ -25,8 +25,10 @@ namespace FlinkDotNet.DataStream.Window.Functions
     /// <typeparam name="TInput">The type of input elements</typeparam>
     /// <typeparam name="TOutput">The type of output elements</typeparam>
     /// <typeparam name="TKey">The type of the key</typeparam>
-    /// <typeparam name="TWindow">The type of window (used for type safety and API consistency)</typeparam>
+    /// <typeparam name="TWindow">The type of window (used for type safety and API consistency with Flink Java API)</typeparam>
+#pragma warning disable S2326 // TWindow is intentionally included for type safety and API consistency with Flink's Java API
     public interface IProcessWindowFunction<TInput, TOutput, TKey, TWindow>
+#pragma warning restore S2326
         where TWindow : IWindow
     {
         /// <summary>

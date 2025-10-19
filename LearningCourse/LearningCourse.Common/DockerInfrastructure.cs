@@ -397,4 +397,55 @@ public static class DockerInfrastructure
 
         throw new InvalidOperationException($"Could not determine Flink REST API endpoint from Docker/Podman ports: {flinkContainers}");
     }
+
+    /// <summary>
+    /// Discovers the Kafka JMX Exporter endpoint from Docker port mappings for debugging metrics export.
+    /// This finds the dynamically allocated host port that maps to JMX Exporter's HTTP port (5556).
+    /// </summary>
+    /// <returns>Kafka JMX Exporter endpoint for host access (e.g., "http://localhost:43214") or null if not found</returns>
+    public static async Task<string?> GetKafkaExporterHostEndpointAsync()
+    {
+        try
+        {
+            var exporterContainers = await RunDockerCommandAsync("ps --filter name=kafka-exporter --format {{.Ports}}");
+            Console.WriteLine($"🔍 Kafka JMX Exporter port mappings: {exporterContainers.Trim()}");
+            
+            if (string.IsNullOrWhiteSpace(exporterContainers))
+            {
+                Console.WriteLine("⚠️  kafka-exporter container not found");
+                return null;
+            }
+            
+            // Log docker ps after discovering exporter ports
+            await LogDockerPsAsync("After Kafka Exporter Port Discovery");
+            
+            return ExtractKafkaExporterEndpointFromPorts(exporterContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if exporter discovery fails
+            await LogDockerPsAsync("Kafka Exporter Discovery Failed");
+            Console.WriteLine($"⚠️  Failed to discover Kafka JMX Exporter endpoint from Docker: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string ExtractKafkaExporterEndpointFromPorts(string exporterContainers)
+    {
+        var lines = exporterContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 5556 (JMX Exporter's HTTP port)
+            // Format: 127.0.0.1:PORT->5556/tcp or 0.0.0.0:PORT->5556/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->5556");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Kafka JMX Exporter port mapping: host {port} -> container 5556");
+                return $"http://127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Kafka JMX Exporter endpoint from Docker/Podman ports: {exporterContainers}");
+    }
 }
