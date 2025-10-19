@@ -1020,7 +1020,8 @@ public abstract class LearningCourseTestBase
     /// Write network debug information to log file for troubleshooting container connectivity.
     /// Captures Docker container state, network configuration, and port mappings.
     /// <summary>
-    /// Copy logs from CRITICAL Flink containers only (JobManager, TaskManager).
+    /// Copy logs from CRITICAL Flink containers only (JobManager, TaskManager, SQL Gateway).
+    /// Also copies kafka-exporter logs for debugging JMX metrics issues.
     /// This is faster than copying all container logs and avoids temporal-server timeout.
     /// CRITICAL: This must be called BEFORE stopping/removing containers.
     /// </summary>
@@ -1043,12 +1044,12 @@ public abstract class LearningCourseTestBase
             Directory.CreateDirectory(testLogsDir);
             LogDebug($"[FLINK-LOG-COPY] Test logs directory: {testLogsDir}");
             
-            // Get only Flink containers (JobManager and TaskManager)
-            LogDebug("[FLINK-LOG-COPY] Querying Docker for Flink containers");
+            // Get Flink containers and kafka-exporter (for JMX metrics debugging)
+            LogDebug("[FLINK-LOG-COPY] Querying Docker for Flink and kafka-exporter containers");
             var getContainersPsi = new ProcessStartInfo
             {
                 FileName = "docker",
-                Arguments = "ps -a --filter name=flink --filter label=com.microsoft.developer.usvc-dev.name --format \"{{.ID}}|{{.Names}}\"",
+                Arguments = "ps -a --filter label=com.microsoft.developer.usvc-dev.name --format \"{{.ID}}|{{.Names}}\" | findstr /i \"flink kafka-exporter\"",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -1082,8 +1083,8 @@ public abstract class LearningCourseTestBase
             }
             
             var containers = containerInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            LogDebug($"[FLINK-LOG-COPY] Found {containers.Length} Flink container(s): {string.Join(", ", containers)}");
-            TestContext.WriteLine($"📦 Found {containers.Length} Flink container(s) to copy logs from");
+            LogDebug($"[FLINK-LOG-COPY] Found {containers.Length} critical container(s): {string.Join(", ", containers)}");
+            TestContext.WriteLine($"📦 Found {containers.Length} critical container(s) to copy logs from (Flink + kafka-exporter)");
             
             var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
             
@@ -1106,8 +1107,10 @@ public abstract class LearningCourseTestBase
                     logFileName = $"Flink.taskmanager.container.log.{dateStamp}";
                 else if (containerName.Contains("flink-sql-gateway", StringComparison.OrdinalIgnoreCase))
                     logFileName = $"Flink.sql-gateway.container.log.{dateStamp}";
+                else if (containerName.Contains("kafka-exporter", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Kafka.exporter.container.log.{dateStamp}";
                 else
-                    continue; // Skip non-Flink containers
+                    continue; // Skip non-critical containers
                 
                 var logFilePath = Path.Combine(testLogsDir, logFileName);
                 
@@ -1208,7 +1211,7 @@ public abstract class LearningCourseTestBase
             }
             
             LogDebug($"[FLINK-LOG-COPY] Summary: {copiedCount} successful, {failedCount} failed out of {containers.Length} total");
-            TestContext.WriteLine($"✅ Copied Flink logs from {copiedCount}/{containers.Length} container(s) ({failedCount} failed)");
+            TestContext.WriteLine($"✅ Copied critical logs from {copiedCount}/{containers.Length} container(s) ({failedCount} failed)");
         }
         catch (Exception ex)
         {

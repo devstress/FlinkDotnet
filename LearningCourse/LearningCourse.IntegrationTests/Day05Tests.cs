@@ -945,51 +945,37 @@ public class Day05Tests : LearningCourseTestBase
 
     private async Task WaitForPrometheusReadyAsync(string prometheusEndpoint)
     {
-        var timeout = TimeSpan.FromSeconds(30); // Reduced - misconfiguration fixed
+        var timeout = TimeSpan.FromSeconds(30);
         var stopwatch = Stopwatch.StartNew();
-        var retryDelay = 1000; // Start with 1s delay
-        var attemptCount = 0;
+        var retryDelay = 2000;
 
         TestContext.WriteLine($"   Checking Prometheus health at: {prometheusEndpoint}/-/healthy");
-        TestContext.WriteLine($"   ⏳ Prometheus container may need time to fully start...");
-        TestContext.WriteLine($"   ⏱️  Wait started: {DateTime.UtcNow:HH:mm:ss} UTC");
 
         while (stopwatch.Elapsed < timeout)
         {
-            attemptCount++;
             try
             {
                 var response = await _httpClient.GetAsync($"{prometheusEndpoint}/-/healthy");
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    TestContext.WriteLine($"   ✅ Prometheus ready after {stopwatch.Elapsed.TotalSeconds:F1}s ({attemptCount} attempts)");
-                    TestContext.WriteLine($"   ⏱️  Ready at: {DateTime.UtcNow:HH:mm:ss} UTC");
+                    TestContext.WriteLine($"   ✅ Prometheus ready after {stopwatch.Elapsed.TotalSeconds:F1}s");
                     return;
                 }
                 
-                if (attemptCount % 3 == 0) // Log more frequently
-                {
-                    TestContext.WriteLine($"   ⚠️  Attempt {attemptCount}: Prometheus returned {response.StatusCode} ({stopwatch.Elapsed.TotalSeconds:F1}s elapsed)");
-                }
+                TestContext.WriteLine($"   ⚠️  Prometheus health check returned {response.StatusCode}, retrying...");
             }
             catch (Exception ex)
             {
-                if (attemptCount % 3 == 0) // Log more frequently
-                {
-                    TestContext.WriteLine($"   ⚠️  Attempt {attemptCount}: Connection failed - {ex.Message} ({stopwatch.Elapsed.TotalSeconds:F1}s elapsed)");
-                }
+                TestContext.WriteLine($"   ⚠️  Prometheus health check failed ({ex.Message}), retrying...");
             }
 
             await Task.Delay(retryDelay);
-            retryDelay = Math.Min(retryDelay + 500, 5000); // Gradual increase from 2s
         }
 
-        TestContext.WriteLine($"   ❌ Prometheus timeout after {attemptCount} attempts");
-        TestContext.WriteLine($"   ⏱️  Timeout at: {DateTime.UtcNow:HH:mm:ss} UTC");
-        TestContext.WriteLine($"   💡 Tip: Prometheus container exists but service may not have started");
         throw new TimeoutException($"Prometheus not ready within {timeout.TotalSeconds}s");
     }
+
 
     private async Task VerifyPrometheusTargetsAsync(string prometheusEndpoint)
     {
@@ -1459,14 +1445,14 @@ public class Day05Tests : LearningCourseTestBase
         TestContext.WriteLine($"         Expected Count: {MessageCount:N0} messages per topic");
         TestContext.WriteLine();
         
-        // Count messages in input topic
+        // Count messages in input topic with retry logic
         TestContext.WriteLine($"      🔍 Counting messages in INPUT topic '{InputTopic}'...");
-        var inputCount = CountMessagesInKafkaTopic(InputTopic);
+        var inputCount = CountMessagesInKafkaTopicWithRetry(InputTopic);
         TestContext.WriteLine($"         ✅ Input topic has {inputCount:N0} messages");
         
-        // Count messages in output topic
+        // Count messages in output topic with retry logic
         TestContext.WriteLine($"      🔍 Counting messages in OUTPUT topic '{OutputTopic}'...");
-        var outputCount = CountMessagesInKafkaTopic(OutputTopic);
+        var outputCount = CountMessagesInKafkaTopicWithRetry(OutputTopic);
         TestContext.WriteLine($"         ✅ Output topic has {outputCount:N0} messages");
         TestContext.WriteLine();
         
@@ -1489,6 +1475,37 @@ public class Day05Tests : LearningCourseTestBase
         TestContext.WriteLine($"         • Input topic: {inputCount:N0}/{MessageCount:N0} messages ✓");
         TestContext.WriteLine($"         • Output topic: {outputCount:N0}/{MessageCount:N0} messages ✓");
         TestContext.WriteLine($"         • End-to-end pipeline verified with exact message counts");
+    }
+
+    private int CountMessagesInKafkaTopicWithRetry(string topic)
+    {
+        const int MaxRetries = 5;
+        const int RetryDelaySeconds = 10;
+        
+        for (int attempt = 1; attempt <= MaxRetries; attempt++)
+        {
+            TestContext.WriteLine($"         🔄 Attempt {attempt}/{MaxRetries} to count messages in '{topic}'...");
+            
+            var count = CountMessagesInKafkaTopic(topic);
+            
+            if (count > 0)
+            {
+                TestContext.WriteLine($"         ✅ Found {count:N0} messages on attempt {attempt}");
+                return count;
+            }
+            
+            if (attempt < MaxRetries)
+            {
+                TestContext.WriteLine($"         ⚠️  Count is 0, waiting {RetryDelaySeconds}s before retry {attempt + 1}...");
+                System.Threading.Thread.Sleep(TimeSpan.FromSeconds(RetryDelaySeconds));
+            }
+            else
+            {
+                TestContext.WriteLine($"         ❌ Still 0 messages after {MaxRetries} attempts");
+            }
+        }
+        
+        return 0; // Return 0 after all retries exhausted
     }
 
     private int CountMessagesInKafkaTopic(string topic)
