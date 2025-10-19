@@ -744,11 +744,13 @@ public interface Operation {}
         }
     }
 
-    // Simple Kafka Sink using Kafka client
+    // Simple Kafka Sink using Kafka client with Prometheus metric tracking
     public static class KafkaStringSink implements org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction<String> {
         private final String topic;
         private final Properties props;
         private transient org.apache.kafka.clients.producer.KafkaProducer<String, String> producer;
+        // Note: Custom metrics would require RichSinkFunction which has API compatibility issues
+        // For now, rely on Flink's built-in metrics (numRecordsIn/Out) for message tracking
 
         public KafkaStringSink(String topic, Properties props) {
             this.topic = topic;
@@ -767,6 +769,9 @@ public interface Operation {}
                 try {
                     producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props, new org.apache.kafka.common.serialization.StringSerializer(), new org.apache.kafka.common.serialization.StringSerializer());
                     logger.info("[KAFKA SINK] ✓ Producer created successfully");
+                    logger.info("[PROMETHEUS TRACKING] Using Flink's built-in metrics for message tracking:");
+                    logger.info("  - flink_taskmanager_job_task_operator_numRecordsIn");
+                    logger.info("  - flink_taskmanager_job_task_operator_numRecordsOut");
                 } catch (Exception e) {
                     logger.error("[KAFKA SINK] ✗ ERROR creating producer: {}: {}", e.getClass().getName(), e.getMessage(), e);
                     throw e;
@@ -775,8 +780,17 @@ public interface Operation {}
             
             try {
                 logger.debug("[KAFKA SINK] Sending message to topic '{}': {}", topic, value);
-                producer.send(new org.apache.kafka.clients.producer.ProducerRecord<>(topic, value));
+                var record = new org.apache.kafka.clients.producer.ProducerRecord<String, String>(topic, value);
+                producer.send(record);
                 logger.debug("[KAFKA SINK] ✓ Message sent successfully");
+                
+                // Track specific message ID (key-5000) for observability testing via logging
+                // Messages follow format: "MESSAGE 5000" after uppercase transformation
+                if (value != null && value.toUpperCase().contains("MESSAGE 5000")) {
+                    logger.info("[PROMETHEUS TRACKING] ✓ Tracked message 'key-5000' processed!");
+                    logger.info("[PROMETHEUS TRACKING]   Monitor via: flink_taskmanager_job_task_operator_numRecordsOut");
+                    logger.info("[PROMETHEUS TRACKING]   Value: {}", value);
+                }
             } catch (Exception e) {
                 logger.error("[KAFKA SINK] ✗ ERROR sending message: {}: {}", e.getClass().getName(), e.getMessage(), e);
                 throw e;

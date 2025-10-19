@@ -90,13 +90,12 @@ if (isLearningCourseMode)
     
     if (File.Exists(jmxConfigPath))
     {
-        #pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
+#pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
         var kafkaExporter = builder.AddContainer("kafka-exporter", "bitnami/jmx-exporter", "latest")
             .WithBindMount(jmxConfigPath, "/opt/bitnami/jmx-exporter/exporter.yml", isReadOnly: true)
             .WithHttpEndpoint(targetPort: 5556, name: "metrics")
             .WithArgs("5556", "/opt/bitnami/jmx-exporter/exporter.yml")
-            .WithReference(kafka)
-            .WaitFor(kafka);
+            .WithReference(kafka);
         #pragma warning restore S1481
         
         Console.WriteLine("   📊 Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
@@ -401,8 +400,7 @@ if (isLearningCourse)
     // Provides dashboards and alerting for performance monitoring
     // CRITICAL: Anonymous authentication enabled for learning environment (no login required)
     // Complete anonymous access configuration to bypass login page entirely
-    #pragma warning disable S1481 // Grafana resource is created but not directly referenced - accessed via browser
-    var grafana = builder.AddContainer("grafana", "grafana/grafana", "latest")
+    var grafanaBuilder = builder.AddContainer("grafana", "grafana/grafana", "latest")
         .WithHttpEndpoint(port: Ports.GrafanaHostPort, targetPort: 3000, name: "grafana-http")
         .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")  // Enable anonymous access
         .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")  // Grant admin role to anonymous users
@@ -410,6 +408,9 @@ if (isLearningCourse)
         .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")  // Keep admin account for advanced config
         .WithEnvironment("GF_SECURITY_ADMIN_USER", "admin")
         .WaitFor(prometheus);  // Wait for Prometheus to be ready
+    
+    #pragma warning disable S1481 // Grafana resource is created but not directly referenced - accessed via browser
+    var grafana = grafanaBuilder;
     #pragma warning restore S1481
     
     Console.WriteLine($"✅ Grafana deployed on port {Ports.GrafanaHostPort} for visualization");

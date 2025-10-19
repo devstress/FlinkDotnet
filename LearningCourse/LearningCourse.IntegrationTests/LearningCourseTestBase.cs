@@ -727,20 +727,16 @@ public abstract class LearningCourseTestBase
                 // CRITICAL ORDER: Copy logs FIRST before any other teardown operations
                 // AppHost can exit during Flink job cancellation, so copy logs immediately
                 
-                // Step 1: Copy container logs FIRST while everything is still running
-                // DISABLED: Log copying causes 180s timeout on Temporal server logs
-                // TestContext.WriteLine("📋 Copying container logs immediately (before any cleanup)...");
-                // Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying container logs FIRST...");
-                // LogDebug("[TEARDOWN] CRITICAL: Copying logs BEFORE any teardown operations (AppHost can exit during job cancellation)");
+                // Step 1: Copy CRITICAL container logs FIRST while everything is still running
+                // Copy only Flink logs (TaskManager, JobManager) to avoid temporal-server timeout
+                TestContext.WriteLine("📋 Copying critical Flink container logs immediately (before any cleanup)...");
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Copying critical Flink logs FIRST...");
+                LogDebug("[TEARDOWN] CRITICAL: Copying Flink logs BEFORE any teardown operations (AppHost can exit during job cancellation)");
                 
-                // await CopyAllContainerLogsAsync();
+                await CopyCriticalFlinkLogsAsync();
                 
-                // Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Container logs copied");
-                // LogDebug("[TEARDOWN] Container logs copied successfully");
-                TestContext.WriteLine("⚡ Skipping log copy for faster teardown");
-                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Skipping log copy for faster teardown");
-                LogDebug("[TEARDOWN] Skipping log copy for faster teardown (temporal-server timeout issue)");
-                await Task.CompletedTask; // Satisfy async method signature
+                Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [TEARDOWN] Critical Flink logs copied");
+                LogDebug("[TEARDOWN] Critical Flink logs copied successfully");
                 
                 // Step 2: Cancel Flink jobs (AppHost may exit during this operation)
                 TestContext.WriteLine("🧹 Cancelling all running Flink jobs...");
@@ -1023,6 +1019,204 @@ public abstract class LearningCourseTestBase
     /// <summary>
     /// Write network debug information to log file for troubleshooting container connectivity.
     /// Captures Docker container state, network configuration, and port mappings.
+    /// <summary>
+    /// Copy logs from CRITICAL Flink containers only (JobManager, TaskManager).
+    /// This is faster than copying all container logs and avoids temporal-server timeout.
+    /// CRITICAL: This must be called BEFORE stopping/removing containers.
+    /// </summary>
+    private static async Task CopyCriticalFlinkLogsAsync()
+    {
+        try
+        {
+            LogDebug("[FLINK-LOG-COPY] CopyCriticalFlinkLogsAsync called");
+            TestContext.WriteLine("📋 Starting critical Flink container log collection...");
+            
+            var repoRoot = FindRepositoryRoot();
+            if (repoRoot == null)
+            {
+                LogDebug("[FLINK-LOG-COPY] Could not find repository root");
+                TestContext.WriteLine("⚠️ Could not find repository root, skipping log copy");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            Directory.CreateDirectory(testLogsDir);
+            LogDebug($"[FLINK-LOG-COPY] Test logs directory: {testLogsDir}");
+            
+            // Get only Flink containers (JobManager and TaskManager)
+            LogDebug("[FLINK-LOG-COPY] Querying Docker for Flink containers");
+            var getContainersPsi = new ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps -a --filter name=flink --filter label=com.microsoft.developer.usvc-dev.name --format \"{{.ID}}|{{.Names}}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var getContainersProcess = Process.Start(getContainersPsi);
+            if (getContainersProcess == null)
+            {
+                LogDebug("[FLINK-LOG-COPY] Failed to start docker ps process");
+                TestContext.WriteLine("⚠️ Failed to get Flink container list");
+                return;
+            }
+            
+            var containerInfo = getContainersProcess.StandardOutput.ReadToEnd().Trim();
+            var containerError = getContainersProcess.StandardError.ReadToEnd().Trim();
+            getContainersProcess.WaitForExit();
+            
+            if (!string.IsNullOrWhiteSpace(containerError))
+            {
+                LogDebug($"[FLINK-LOG-COPY] Docker ps stderr: {containerError}");
+            }
+            
+            LogDebug($"[FLINK-LOG-COPY] Docker ps output: {containerInfo}");
+            
+            if (string.IsNullOrWhiteSpace(containerInfo))
+            {
+                LogDebug("[FLINK-LOG-COPY] No Flink containers found");
+                TestContext.WriteLine("⚠️ No Flink containers found to copy logs from");
+                return;
+            }
+            
+            var containers = containerInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            LogDebug($"[FLINK-LOG-COPY] Found {containers.Length} Flink container(s): {string.Join(", ", containers)}");
+            TestContext.WriteLine($"📦 Found {containers.Length} Flink container(s) to copy logs from");
+            
+            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            
+            // Capture logs in PARALLEL to prevent containers being removed during processing
+            var logCaptureTasks = new List<Task<(bool success, string containerName, string logFileName)>>();
+            
+            foreach (var container in containers)
+            {
+                var parts = container.Split('|');
+                if (parts.Length != 2) continue;
+                
+                var containerId = parts[0];
+                var containerName = parts[1];
+                
+                // Determine log file name based on container type
+                string logFileName;
+                if (containerName.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Flink.jobmanager.container.log.{dateStamp}";
+                else if (containerName.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Flink.taskmanager.container.log.{dateStamp}";
+                else if (containerName.Contains("flink-sql-gateway", StringComparison.OrdinalIgnoreCase))
+                    logFileName = $"Flink.sql-gateway.container.log.{dateStamp}";
+                else
+                    continue; // Skip non-Flink containers
+                
+                var logFilePath = Path.Combine(testLogsDir, logFileName);
+                
+                // Capture logs in parallel
+                var captureTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        LogDebug($"[FLINK-LOG-COPY] Processing container {containerName} (ID: {containerId}) -> {logFileName}");
+                        
+                        // Use docker logs to capture stdout and stderr
+                        var logsPsi = new ProcessStartInfo
+                        {
+                            FileName = "docker",
+                            Arguments = $"logs {containerId}",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            CreateNoWindow = true
+                        };
+                        
+                        using var logsProcess = Process.Start(logsPsi);
+                        if (logsProcess == null)
+                        {
+                            LogDebug($"[FLINK-LOG-COPY] Failed to start docker logs process for {containerName}");
+                            return (false, containerName, logFileName);
+                        }
+                        
+                        // Read output with timeout (Flink logs are much smaller than Temporal)
+                        string stdout = "";
+                        string stderr = "";
+                        
+                        var readTask = Task.Run(() =>
+                        {
+                            stdout = logsProcess.StandardOutput.ReadToEnd();
+                            stderr = logsProcess.StandardError.ReadToEnd();
+                        });
+                        
+                        // 10 second timeout for Flink logs (they're small)
+                        var timeout = TimeSpan.FromSeconds(10);
+                        
+                        var completedTask = await Task.WhenAny(readTask, Task.Delay(timeout));
+                        if (completedTask != readTask)
+                        {
+                            LogDebug($"[FLINK-LOG-COPY] Timeout ({timeout.TotalSeconds}s) reading logs from {containerName}");
+                            try { logsProcess.Kill(); } catch { }
+                            return (false, containerName, logFileName);
+                        }
+                        
+                        LogDebug($"[FLINK-LOG-COPY] docker logs collected: stdout={stdout?.Length ?? 0}, stderr={stderr?.Length ?? 0}");
+                        
+                        // Combine stdout and stderr
+                        var allLogs = stdout;
+                        if (!string.IsNullOrWhiteSpace(stderr))
+                        {
+                            allLogs += "\n\n=== STDERR ===\n" + stderr;
+                        }
+                        
+                        if (!string.IsNullOrWhiteSpace(allLogs))
+                        {
+                            File.WriteAllText(logFilePath, allLogs);
+                            var fileInfo = new FileInfo(logFilePath);
+                            LogDebug($"[FLINK-LOG-COPY] Wrote {fileInfo.Length} bytes to {logFilePath}");
+                            return (true, containerName, logFileName);
+                        }
+                        
+                        LogDebug($"[FLINK-LOG-COPY] No logs content for {containerName}");
+                        return (false, containerName, logFileName);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogDebug($"[FLINK-LOG-COPY] Error capturing logs from {containerName}: {ex.Message}");
+                        return (false, containerName, logFileName);
+                    }
+                });
+                
+                logCaptureTasks.Add(captureTask);
+            }
+            
+            // Wait for all log captures to complete
+            var results = await Task.WhenAll(logCaptureTasks);
+            
+            var copiedCount = 0;
+            var failedCount = 0;
+            foreach (var (success, containerName, logFileName) in results)
+            {
+                if (success)
+                {
+                    var fileInfo = new FileInfo(Path.Combine(testLogsDir, logFileName));
+                    TestContext.WriteLine($"   ✅ Copied {containerName} logs ({fileInfo.Length} bytes) to {logFileName}");
+                    copiedCount++;
+                }
+                else
+                {
+                    TestContext.WriteLine($"   ⚠️ Failed to copy logs from {containerName}");
+                    failedCount++;
+                }
+            }
+            
+            LogDebug($"[FLINK-LOG-COPY] Summary: {copiedCount} successful, {failedCount} failed out of {containers.Length} total");
+            TestContext.WriteLine($"✅ Copied Flink logs from {copiedCount}/{containers.Length} container(s) ({failedCount} failed)");
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"[FLINK-LOG-COPY] Exception in CopyCriticalFlinkLogsAsync: {ex}");
+            TestContext.WriteLine($"⚠️ Error copying Flink container logs: {ex.Message}");
+        }
+    }
+    
     /// </summary>
     private static void LogNetworkState(string context)
     {

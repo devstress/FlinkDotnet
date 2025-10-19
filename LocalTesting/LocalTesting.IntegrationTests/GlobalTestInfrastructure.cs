@@ -261,6 +261,8 @@ public class GlobalTestInfrastructure
             
             // Capture logs from all key containers (containers log to stdout/stderr, not files)
             await CaptureContainerLogAsync("kafka", Path.Combine(testLogsDir, $"Kafka.container.log.{timestamp}"));
+            await CaptureContainerLogAsync("flink-taskmanager", Path.Combine(testLogsDir, $"Flink.TaskManager.container.log.{timestamp}"));
+            await CaptureContainerLogAsync("flink-jobmanager", Path.Combine(testLogsDir, $"Flink.JobManager.container.log.{timestamp}"));
             await CaptureContainerLogAsync("temporal-server", Path.Combine(testLogsDir, $"temporal-server.container.log.{timestamp}"));
             await CaptureContainerLogAsync("temporal-postgres", Path.Combine(testLogsDir, $"temporal-postgres.container.log.{timestamp}"));
             await CaptureContainerLogAsync("redis", Path.Combine(testLogsDir, $"Redis.container.log.{timestamp}"));

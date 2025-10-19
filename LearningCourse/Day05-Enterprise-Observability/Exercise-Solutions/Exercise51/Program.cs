@@ -19,14 +19,17 @@ namespace Exercise51_ObservabilityDemo
     /// </summary>
     static class Program
     {
-        private const string InputTopic = "observability_input";
-        private const string OutputTopic = "observability_output";
-        private const string ConsumerGroup = "observability-demo";
+        // Use fixed topic names for observability testing
+        private const string InputTopic = "observability_input_day05";
+        private const string OutputTopic = "observability_output_day05";
+        private static readonly string ConsumerGroup = $"observability-demo-{Guid.NewGuid():N}"; // Still unique to avoid offset issues
         private const int MessageCount = 10000; // Sufficient volume for observability testing with reasonable execution time
         
         // Kafka addresses - read from environment variables set by test infrastructure
+        // IMPORTANT: Both producer and Flink consumer must use the SAME Kafka address
+        // Test infrastructure dynamically discovers Kafka port and sets KAFKA_BOOTSTRAP_SERVERS
         private static string KafkaBootstrapServers =>
-            Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
+            Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9092";
         private static string KafkaFlinkBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
@@ -45,6 +48,15 @@ namespace Exercise51_ObservabilityDemo
             Console.WriteLine("  Exercise 51: Observability Demo - High-Volume Processing");
             Console.WriteLine("================================================================================");
             Console.WriteLine();
+            Console.WriteLine("🔧 ENVIRONMENT CONFIGURATION:");
+            Console.WriteLine($"   KAFKA_BOOTSTRAP_SERVERS: {KafkaBootstrapServers}");
+            Console.WriteLine($"   KAFKA_FLINK_BOOTSTRAP_SERVERS: {KafkaFlinkBootstrapServers}");
+            Console.WriteLine($"   FLINK_GATEWAY_URL: {FlinkGatewayUrl}");
+            Console.WriteLine($"   MESSAGE_COUNT: {MessageCount:N0}");
+            Console.WriteLine($"   INPUT_TOPIC: {InputTopic}");
+            Console.WriteLine($"   OUTPUT_TOPIC: {OutputTopic}");
+            Console.WriteLine($"   CONSUMER_GROUP: {ConsumerGroup}");
+            Console.WriteLine();
             Console.WriteLine("  Purpose: Demonstrate comprehensive observability metrics");
             Console.WriteLine($"  Message Volume: {MessageCount:N0} messages");
             Console.WriteLine("  Monitoring: Prometheus + Grafana + Flink Dashboard");
@@ -57,16 +69,19 @@ namespace Exercise51_ObservabilityDemo
 
             try
             {
+                Log.Information("🚀 Starting Observability Demo at {Timestamp}", DateTime.UtcNow);
                 await RunObservabilityDemo();
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error executing observability demo");
-                Console.WriteLine($"ERROR: {ex.Message}");
+                Log.Error(ex, "❌ FATAL ERROR executing observability demo");
+                Console.WriteLine($"❌ ERROR: {ex.Message}");
+                Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
                 Environment.Exit(1);
             }
             finally
             {
+                Log.Information("🛑 Shutting down Exercise51 at {Timestamp}", DateTime.UtcNow);
                 await Log.CloseAndFlushAsync();
             }
         }
@@ -85,15 +100,51 @@ namespace Exercise51_ObservabilityDemo
             await CreateTopicsAsync();
             Console.WriteLine();
 
-            Console.WriteLine(">> Step 4/6: Submitting Flink job...");
+            Console.WriteLine($">> Step 4/6: Starting message production (async)...");
+            var productionTask = ProduceMessagesAsync(); // Start async, store task
+            Console.WriteLine("   Messages are being produced in background...");
+            Console.WriteLine();
+
+            // Wait and retry up to 5 times for messages to appear in Kafka
+            Console.WriteLine("   ⏳ Waiting for initial messages to be produced (up to 5 retries)...");
+            bool messagesReady = false;
+            for (int retry = 1; retry <= 5; retry++)
+            {
+                await Task.Delay(10000); // Wait 10 seconds between checks
+                
+                // Check if messages exist in input topic
+                try
+                {
+                    var messageCount = await CheckTopicHasMessagesAsync(InputTopic);
+                    if (messageCount > 0)
+                    {
+                        Console.WriteLine($"   ✅ Retry {retry}/5: Found {messageCount} messages in Kafka, proceeding with job submission");
+                        messagesReady = true;
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"   ⏳ Retry {retry}/5: No messages yet, waiting...");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"   ⚠️  Retry {retry}/5: Error checking topic - {ex.Message}");
+                }
+            }
+
+            if (!messagesReady)
+            {
+                Console.WriteLine("   ⚠️  Warning: Proceeding anyway after 5 retries - Flink will wait for messages");
+            }
+            Console.WriteLine();
+
+            Console.WriteLine(">> Step 5/6: Submitting Flink job (will poll for messages)...");
             var jobClient = await SubmitJob();
             Console.WriteLine($"   Job ID: {jobClient.GetJobId()}");
             Console.WriteLine("   Job will remain running for observability metrics collection");
+            Console.WriteLine("   ⏳ Waiting for job to fully start...");
             await Task.Delay(5000); // Wait for job to fully start
-            Console.WriteLine();
-
-            Console.WriteLine($">> Step 5/6: Producing {MessageCount:N0} messages...");
-            ProduceMessages();
             Console.WriteLine();
 
             Console.WriteLine(">> Step 6/6: Monitoring processing (sampling results)...");
@@ -126,13 +177,18 @@ namespace Exercise51_ObservabilityDemo
 
         static async Task<FlinkDotNet.DataStream.IJobClient> SubmitJob()
         {
+            Log.Information("📝 Creating Flink job for observability demo");
             Console.WriteLine($"   Creating Flink job for observability demo...");
             Console.WriteLine($"   - Input Topic: {InputTopic}");
             Console.WriteLine($"   - Transformation: Uppercase");
             Console.WriteLine($"   - Output Topic: {OutputTopic}");
+            Console.WriteLine($"   - Flink Bootstrap Servers: {KafkaFlinkBootstrapServers}");
+            Console.WriteLine($"   - Consumer Group: {ConsumerGroup}");
 
+            Log.Information("🔧 Initializing Flink StreamExecutionEnvironment");
             var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
+            Log.Information("📥 Creating Kafka source for topic {Topic}", InputTopic);
             var stringInputStream = environment.FromKafka(
                 topic: InputTopic,
                 bootstrapServers: KafkaFlinkBootstrapServers,
@@ -140,25 +196,33 @@ namespace Exercise51_ObservabilityDemo
                 startingOffsets: "earliest"
             );
 
+            Log.Information("🔄 Adding Map transformation (Uppercase)");
             stringInputStream
                 .Map(new WordsCapitalizer())
                 .SinkToKafka(OutputTopic, KafkaFlinkBootstrapServers);
 
+            Log.Information("🚀 Submitting job 'observability-demo-pipeline' to Flink cluster");
             var jobClient = await environment.ExecuteAsync("observability-demo-pipeline");
+            var jobId = jobClient.GetJobId();
 
-            Console.WriteLine($"   [SUCCESS] Job submitted");
+            Log.Information("✅ Job submitted successfully - Job ID: {JobId}", jobId);
+            Console.WriteLine($"   [SUCCESS] Job submitted - Job ID: {jobId}");
             
             return jobClient;
         }
 
-        static void ProduceMessages()
+        static async Task ProduceMessagesAsync()
         {
+            Log.Information("📤 Starting ASYNC message production - {MessageCount} messages to topic {Topic}", MessageCount, InputTopic);
             var producerConfig = CreateProducerConfig(KafkaBootstrapServers);
             using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
 
-            Console.WriteLine($"   Producing {MessageCount:N0} messages (optimized for speed)...");
+            Console.WriteLine($"   Producing {MessageCount:N0} messages ASYNCHRONOUSLY...");
+            Console.WriteLine($"   Kafka Bootstrap Servers: {KafkaBootstrapServers}");
+            Console.WriteLine($"   Target Topic: {InputTopic}");
             var stopwatch = Stopwatch.StartNew();
 
+            var tasks = new List<Task>();
             for (int i = 0; i < MessageCount; i++)
             {
                 var message = new Message<string, string>
@@ -169,41 +233,66 @@ namespace Exercise51_ObservabilityDemo
 
                 try
                 {
-                    // Fire and forget for speed (no await)
-                    _ = producer.ProduceAsync(InputTopic, message);
+                    // Fire-and-forget - don't await individual messages
+                    var task = producer.ProduceAsync(InputTopic, message);
+                    tasks.Add(task);
                     
-                    // Print progress every 10,000 messages
-                    if ((i + 1) % 10000 == 0)
+                    // Log special tracking message
+                    if (i == 5000)
+                    {
+                        Log.Information("🎯 TRACKING MESSAGE SENT: key-5000 = 'message 5000' (for observability demo)");
+                        Console.WriteLine($"   🎯 TRACKING: Sent key-5000 for observability tracking");
+                    }
+                    
+                    // Print progress every 2,000 messages (more frequent for debugging)
+                    if ((i + 1) % 2000 == 0)
                     {
                         var elapsed = stopwatch.Elapsed.TotalSeconds;
                         var rate = (i + 1) / elapsed;
+                        Log.Information("📊 Progress: {Current}/{Total} messages produced ({Rate:N0} msg/sec)", i + 1, MessageCount, rate);
                         Console.WriteLine($"   [{i + 1:N0}/{MessageCount:N0}] Rate: {rate:N0} msg/sec");
                     }
                 }
                 catch (ProduceException<string, string> ex)
                 {
+                    Log.Error("❌ Failed to produce message {MessageId}: {Error}", i, ex.Error.Reason);
                     Console.WriteLine($"   [ERROR] Failed to produce message {i}: {ex.Error.Reason}");
                 }
             }
 
-            // Flush all pending messages
+            // Flush all pending messages to ensure delivery
+            Log.Information("⏳ Flushing all pending messages to Kafka (ensuring delivery before job submission)");
+            Console.WriteLine($"   Flushing messages to Kafka...");
             producer.Flush(TimeSpan.FromSeconds(30));
             stopwatch.Stop();
             
             var totalRate = MessageCount / stopwatch.Elapsed.TotalSeconds;
+            Log.Information("✅ Message production complete: {MessageCount} messages in {Duration:F1}s ({Rate:N0} msg/sec)",
+                MessageCount, stopwatch.Elapsed.TotalSeconds, totalRate);
             Console.WriteLine($"   [SUCCESS] All {MessageCount:N0} messages produced in {stopwatch.Elapsed.TotalSeconds:F1}s ({totalRate:N0} msg/sec)");
+            Console.WriteLine($"   ✅ All messages flushed to Kafka - topics are ready for consumption");
+            
+            // Wait a moment for Kafka to fully persist messages
+            await Task.Delay(2000);
+            Log.Information("⏳ Waited 2s for Kafka to persist messages - ready for Flink job submission");
         }
 
         static void MonitorProcessing()
         {
-            var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"monitor-{Guid.NewGuid()}");
+            var monitorGroup = $"monitor-{Guid.NewGuid()}";
+            Log.Information("👀 Starting output monitoring - Consumer Group: {ConsumerGroup}, Topic: {Topic}", monitorGroup, OutputTopic);
+            
+            var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, monitorGroup);
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
             consumer.Subscribe(OutputTopic);
 
             Console.WriteLine($"   Sampling output messages (will check first 100)...");
+            Console.WriteLine($"   Output Topic: {OutputTopic}");
+            Console.WriteLine($"   Monitoring for 30 seconds...");
 
             var consumedCount = 0;
             var capitalizedCount = 0;
+            var key5000Found = false;
             var stopwatch = Stopwatch.StartNew();
 
             try
@@ -216,13 +305,22 @@ namespace Exercise51_ObservabilityDemo
                     {
                         consumedCount++;
                         
+                        // Track special message for observability demo
+                        if (result.Message.Key == "key-5000")
+                        {
+                            key5000Found = true;
+                            Log.Information("🎯 TRACKING MESSAGE RECEIVED: key-5000 = '{Value}' (transformed)", result.Message.Value);
+                            Console.WriteLine($"   🎯 TRACKING: Received key-5000 = '{result.Message.Value}' (transformed)");
+                        }
+                        
                         if (result.Message.Value == result.Message.Value.ToUpperInvariant())
                         {
                             capitalizedCount++;
                         }
 
-                        if (consumedCount % 20 == 0)
+                        if (consumedCount % 10 == 0)
                         {
+                            Log.Information("📥 Sampled {Count} output messages ({Capitalized} capitalized)", consumedCount, capitalizedCount);
                             Console.WriteLine($"   Sampled: {consumedCount} messages ({capitalizedCount} capitalized)");
                         }
                     }
@@ -230,6 +328,7 @@ namespace Exercise51_ObservabilityDemo
             }
             catch (ConsumeException ex)
             {
+                Log.Error("❌ Consumption error: {Error}", ex.Error.Reason);
                 Console.WriteLine($"   [ERROR] Consumption error: {ex.Error.Reason}");
             }
             finally
@@ -239,11 +338,19 @@ namespace Exercise51_ObservabilityDemo
 
             if (consumedCount > 0)
             {
+                Log.Information("✅ Monitoring complete: {Capitalized}/{Total} messages verified as capitalized", capitalizedCount, consumedCount);
                 Console.WriteLine($"   [SUCCESS] Verified processing: {capitalizedCount}/{consumedCount} messages capitalized");
                 Console.WriteLine($"   Note: Job continues processing remaining {MessageCount - consumedCount:N0} messages");
+                
+                if (key5000Found)
+                {
+                    Log.Information("✅ Tracking message key-5000 successfully processed through pipeline");
+                    Console.WriteLine($"   ✅ Tracking message key-5000 verified in output");
+                }
             }
             else
             {
+                Log.Warning("⚠️ No messages consumed from output topic - job may still be starting");
                 Console.WriteLine($"   [WARNING] No messages consumed yet - job may still be starting");
             }
         }
@@ -318,9 +425,13 @@ namespace Exercise51_ObservabilityDemo
             var timeout = TimeSpan.FromSeconds(60);
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;
+            var attemptCount = 0;
+
+            Log.Information("⏳ Waiting for Kafka to become ready at {BootstrapServers}", KafkaBootstrapServers);
 
             while (stopwatch.Elapsed < timeout)
             {
+                attemptCount++;
                 try
                 {
                     var adminConfig = new AdminClientConfig
@@ -336,20 +447,23 @@ namespace Exercise51_ObservabilityDemo
 
                     if (metadata?.Brokers?.Count > 0)
                     {
-                        Console.WriteLine($"   [SUCCESS] Kafka ready ({metadata.Brokers.Count} broker(s))");
+                        Log.Information("✅ Kafka ready after {Elapsed:F1}s - {BrokerCount} broker(s) found",
+                            stopwatch.Elapsed.TotalSeconds, metadata.Brokers.Count);
+                        Console.WriteLine($"   [SUCCESS] Kafka ready ({metadata.Brokers.Count} broker(s)) after {stopwatch.Elapsed.TotalSeconds:F1}s");
                         return;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Continue waiting
+                    Log.Debug("Kafka connection attempt {Attempt} failed: {Error}", attemptCount, ex.Message);
                 }
 
-                Console.WriteLine($"   [RETRY] Waiting for Kafka... ({stopwatch.Elapsed.TotalSeconds:F1}s elapsed)");
+                Console.WriteLine($"   [RETRY {attemptCount}] Waiting for Kafka... ({stopwatch.Elapsed.TotalSeconds:F1}s elapsed)");
                 await Task.Delay(retryDelay);
                 retryDelay = Math.Min(retryDelay + 1000, 5000);
             }
 
+            Log.Error("❌ Kafka not ready within {Timeout}s timeout", timeout.TotalSeconds);
             throw new TimeoutException($"Kafka not ready within {timeout.TotalSeconds}s");
         }
 
@@ -358,39 +472,84 @@ namespace Exercise51_ObservabilityDemo
             var timeout = TimeSpan.FromSeconds(30);
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;
+            var attemptCount = 0;
+
+            Log.Information("⏳ Waiting for Flink cluster to become healthy at {FlinkUrl}", FlinkGatewayUrl);
 
             while (stopwatch.Elapsed < timeout)
             {
+                attemptCount++;
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/v1/overview");
+                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
                     
                     if (response.IsSuccessStatusCode)
                     {
-                        Console.WriteLine($"   [SUCCESS] Flink cluster healthy");
+                        var content = await response.Content.ReadAsStringAsync();
+                        Log.Information("✅ Flink cluster healthy after {Elapsed:F1}s - Status: {StatusCode}",
+                            stopwatch.Elapsed.TotalSeconds, response.StatusCode);
+                        Console.WriteLine($"   [SUCCESS] Flink cluster healthy after {stopwatch.Elapsed.TotalSeconds:F1}s");
                         return;
                     }
+                    
+                    Log.Debug("Flink health check attempt {Attempt} returned {StatusCode}", attemptCount, response.StatusCode);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Continue waiting
+                    Log.Debug("Flink connection attempt {Attempt} failed: {Error}", attemptCount, ex.Message);
                 }
 
-                Console.WriteLine($"   [RETRY] Waiting for Flink... ({stopwatch.Elapsed.TotalSeconds:F1}s elapsed)");
+                Console.WriteLine($"   [RETRY {attemptCount}] Waiting for Flink... ({stopwatch.Elapsed.TotalSeconds:F1}s elapsed)");
                 await Task.Delay(retryDelay);
                 retryDelay = Math.Min(retryDelay + 1000, 5000);
             }
 
+            Log.Error("❌ Flink not healthy within {Timeout}s timeout", timeout.TotalSeconds);
             throw new TimeoutException($"Flink not healthy within {timeout.TotalSeconds}s");
+        }
+
+        static Task<int> CheckTopicHasMessagesAsync(string topic)
+        {
+            var consumerConfig = CreateConsumerConfig(KafkaBootstrapServers, $"check-{Guid.NewGuid()}");
+            using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
+            consumer.Subscribe(topic);
+            
+            var messageCount = 0;
+            var timeout = TimeSpan.FromSeconds(10); // Increased timeout to allow more consumption
+            var stopwatch = Stopwatch.StartNew();
+            
+            // Check for at least 100 messages to ensure significant data exists
+            while (stopwatch.Elapsed < timeout && messageCount < 100)
+            {
+                var result = consumer.Consume(TimeSpan.FromMilliseconds(500));
+                if (result != null)
+                {
+                    messageCount++;
+                }
+            }
+            
+            consumer.Close();
+            return Task.FromResult(messageCount);
         }
     }
 
     public class WordsCapitalizer : FlinkDotNet.DataStream.IMapFunction<string, string>
     {
+        private static int _processedCount = 0;
+        
         public string Map(string s)
         {
-            return s.ToUpperInvariant();
+            var transformed = s.ToUpperInvariant();
+            _processedCount++;
+            
+            // Log every 1000th message for monitoring
+            if (_processedCount % 1000 == 0)
+            {
+                Log.Debug("🔄 Transformed {Count} messages", _processedCount);
+            }
+            
+            return transformed;
         }
     }
 }
