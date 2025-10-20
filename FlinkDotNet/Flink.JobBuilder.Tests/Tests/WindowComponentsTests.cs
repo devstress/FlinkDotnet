@@ -211,6 +211,31 @@ public class WindowComponentsTests
         Assert.That(window.End, Is.EqualTo(10000)); // Should end at 10 seconds
     }
 
+    [Test]
+    public void TumblingEventTimeWindows_TimeCharacteristic_ReturnsEventTime()
+    {
+        // Arrange
+        var assigner = TumblingEventTimeWindows<int>.Of(Time.Seconds(5));
+
+        // Act & Assert
+        Assert.That(assigner.TimeCharacteristic, Is.EqualTo(FlinkDotNet.DataStream.Window.Assigners.TimeCharacteristic.EventTime));
+        Assert.That(assigner.IsEventTime, Is.True);
+    }
+
+    [Test]
+    public void TumblingEventTimeWindows_ToString_ReturnsFormattedString()
+    {
+        // Arrange
+        var assigner = TumblingEventTimeWindows<int>.Of(Time.Seconds(10));
+
+        // Act
+        var str = assigner.ToString();
+
+        // Assert
+        Assert.That(str, Does.Contain("TumblingEventTimeWindows"));
+        Assert.That(str, Does.Contain("10000")); // 10 seconds in milliseconds
+    }
+
     #endregion
 
     #region SlidingEventTimeWindows Tests
@@ -249,6 +274,31 @@ public class WindowComponentsTests
         // Assert
         Assert.That(windows, Is.Not.Null);
         Assert.That(windows.Count(), Is.GreaterThanOrEqualTo(1));
+    }
+
+    [Test]
+    public void SlidingEventTimeWindows_TimeCharacteristic_ReturnsEventTime()
+    {
+        // Arrange
+        var assigner = SlidingEventTimeWindows<int>.Of(Time.Seconds(10), Time.Seconds(5));
+
+        // Act & Assert
+        Assert.That(assigner.TimeCharacteristic, Is.EqualTo(FlinkDotNet.DataStream.Window.Assigners.TimeCharacteristic.EventTime));
+        Assert.That(assigner.IsEventTime, Is.True);
+    }
+
+    [Test]
+    public void SlidingEventTimeWindows_ToString_ReturnsFormattedString()
+    {
+        // Arrange
+        var assigner = SlidingEventTimeWindows<int>.Of(Time.Seconds(20), Time.Seconds(5));
+
+        // Act
+        var str = assigner.ToString();
+
+        // Assert
+        Assert.That(str, Does.Contain("SlidingEventTimeWindows"));
+        Assert.That(str, Does.Contain("20000")); // 20 seconds in milliseconds
     }
 
     #endregion
@@ -296,6 +346,155 @@ public class WindowComponentsTests
         // Assert
         Assert.That(window.Start, Is.EqualTo(timestamp));
         Assert.That(window.End, Is.EqualTo(timestamp + Time.Minutes(5).ToMilliseconds()));
+    }
+
+    [Test]
+    public void SessionWindows_TimeCharacteristic_ReturnsEventTime()
+    {
+        // Arrange
+        var assigner = SessionWindows<int>.WithGap(Time.Minutes(5));
+
+        // Act & Assert
+        Assert.That(assigner.TimeCharacteristic, Is.EqualTo(FlinkDotNet.DataStream.Window.Assigners.TimeCharacteristic.EventTime));
+        Assert.That(assigner.IsEventTime, Is.True);
+    }
+
+    [Test]
+    public void SessionWindows_CanMerge_ReturnsTrue()
+    {
+        // Arrange
+        var assigner = SessionWindows<int>.WithGap(Time.Minutes(5));
+
+        // Act & Assert
+        Assert.That(assigner.CanMerge, Is.True);
+    }
+
+    [Test]
+    public void SessionWindows_ToString_ReturnsFormattedString()
+    {
+        // Arrange
+        var assigner = SessionWindows<int>.WithGap(Time.Seconds(30));
+
+        // Act
+        var str = assigner.ToString();
+
+        // Assert
+        Assert.That(str, Does.Contain("SessionWindows"));
+        Assert.That(str, Does.Contain("30000")); // 30 seconds in milliseconds
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithOverlappingWindows_MergesThem()
+    {
+        // Arrange
+        var window1 = new TimeWindow(1000, 3000);
+        var window2 = new TimeWindow(2500, 4500);
+        var window3 = new TimeWindow(4000, 6000);
+        var windows = new List<TimeWindow> { window1, window2, window3 };
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert - should merge window1 and window2, window3 overlaps with merged
+        Assert.That(merged.Count, Is.LessThanOrEqualTo(2));
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithNonOverlappingWindows_KeepsSeparate()
+    {
+        // Arrange
+        var window1 = new TimeWindow(1000, 2000);
+        var window2 = new TimeWindow(3000, 4000);
+        var window3 = new TimeWindow(5000, 6000);
+        var windows = new List<TimeWindow> { window1, window2, window3 };
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert - should keep all windows separate
+        Assert.That(merged.Count, Is.EqualTo(3));
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithSingleWindow_ReturnsSameWindow()
+    {
+        // Arrange
+        var window = new TimeWindow(1000, 2000);
+        var windows = new List<TimeWindow> { window };
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert
+        Assert.That(merged.Count, Is.EqualTo(1));
+        Assert.That(merged[0].Start, Is.EqualTo(1000));
+        Assert.That(merged[0].End, Is.EqualTo(2000));
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithEmptyList_ReturnsEmpty()
+    {
+        // Arrange
+        var windows = new List<TimeWindow>();
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert
+        Assert.That(merged, Is.Empty);
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithUnsortedWindows_MergesCorrectly()
+    {
+        // Arrange - windows provided out of order
+        var window1 = new TimeWindow(5000, 6000);
+        var window2 = new TimeWindow(1000, 3000);
+        var window3 = new TimeWindow(2500, 4500);
+        var windows = new List<TimeWindow> { window1, window2, window3 };
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert - should sort and merge correctly
+        Assert.That(merged.Count, Is.GreaterThan(0));
+        Assert.That(merged[0].Start, Is.EqualTo(1000)); // First window should start at earliest time
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithAdjacentWindows_MergesThem()
+    {
+        // Arrange - windows that are adjacent (end of one == start of next)
+        var window1 = new TimeWindow(1000, 2000);
+        var window2 = new TimeWindow(2000, 3000);
+        var windows = new List<TimeWindow> { window1, window2 };
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert - adjacent windows should merge
+        Assert.That(merged.Count, Is.EqualTo(1));
+        Assert.That(merged[0].Start, Is.EqualTo(1000));
+        Assert.That(merged[0].End, Is.EqualTo(3000));
+    }
+
+    [Test]
+    public void SessionWindows_MergeWindows_WithMultipleOverlappingSessions_MergesAll()
+    {
+        // Arrange - multiple windows that all overlap
+        var window1 = new TimeWindow(1000, 5000);
+        var window2 = new TimeWindow(2000, 6000);
+        var window3 = new TimeWindow(3000, 7000);
+        var window4 = new TimeWindow(4000, 8000);
+        var windows = new List<TimeWindow> { window1, window2, window3, window4 };
+
+        // Act
+        var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+
+        // Assert - all should merge into one large window
+        Assert.That(merged.Count, Is.EqualTo(1));
+        Assert.That(merged[0].Start, Is.EqualTo(1000));
+        Assert.That(merged[0].End, Is.EqualTo(8000));
     }
 
     #endregion
