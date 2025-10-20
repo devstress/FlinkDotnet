@@ -392,11 +392,11 @@ if (isLearningCourse)
     // Observability Stack - Prometheus for metrics collection
     // Required for monitoring and performance analysis exercises
     // CRITICAL: Gateway runs as .NET project on host, accessible via host.docker.internal
-    // Gateway port must be manually updated in prometheus.yml after checking Aspire dashboard
+    // Gateway port is fixed at 8080 via ASPNETCORE_URLS environment variable
     var prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
     
     Console.WriteLine($"   📊 Prometheus config: prometheus.yml");
-    Console.WriteLine($"   ⚠️  Gateway port (17105) may need updating - check Aspire dashboard for actual port");
+    Console.WriteLine($"   ℹ️  Gateway port is fixed at {Ports.GatewayHostPort}");
     
     var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
