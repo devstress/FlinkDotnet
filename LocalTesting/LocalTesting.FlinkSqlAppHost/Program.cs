@@ -64,7 +64,9 @@ Console.WriteLine($"   Metrics export: {(isLearningCourseMode ? "ENABLED (Flink 
 // Configure Kafka - Aspire's AddKafka() uses KRaft mode by default (no Zookeeper)
 // CRITICAL: Confluent Local image doesn't support JMX out of the box
 // We need to use standard Kafka image or configure Confluent properly
-var kafka = builder.AddKafka("kafka");
+// HEALTH CHECK RETRY: Configure container health check with 3 retries, 10s interval
+var kafka = builder.AddKafka("kafka")
+    .WithContainerRuntimeArgs("--health-retries", "3", "--health-interval", "10s", "--health-start-period", "30s");
 
 // Enable JMX for metrics export only in LEARNINGCOURSE mode
 // PROBLEM: confluentinc/confluent-local may not respect KAFKA_JMX_* environment variables
