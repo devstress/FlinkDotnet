@@ -152,33 +152,22 @@ public class GlobalTestInfrastructure
             Console.WriteLine("✅ Gateway is ready");
 
             // Wait for Temporal server resource with retry mechanism
-            // Can be disabled via environment variable for debugging
-            var skipTemporal = Environment.GetEnvironmentVariable("SKIP_TEMPORAL_INIT")?.ToLower() == "true";
+            Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
+            await RetryHealthCheckAsync("temporal-server", app, 3, TimeSpan.FromSeconds(5));
+            Console.WriteLine("✅ Temporal server resource reported healthy");
             
-            if (skipTemporal)
-            {
-                Console.WriteLine("⏳ SKIPPING Temporal initialization (SKIP_TEMPORAL_INIT=true)");
-                Console.WriteLine("   ℹ️ Temporal tests will be skipped");
-            }
-            else
-            {
-                Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
-                await RetryHealthCheckAsync("temporal-server", app, 3, TimeSpan.FromSeconds(5));
-                Console.WriteLine("✅ Temporal server resource reported healthy");
-                
-                // Then wait for Temporal to be fully initialized
-                Console.WriteLine("⏳ Waiting for Temporal server to be fully ready...");
-                Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
-                
-                // Give Temporal time to complete schema setup
-                await Task.Delay(TimeSpan.FromSeconds(5)); // Optimized: Reduced from 10s to 5s
-                
-                // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
-                TemporalEndpoint = await GetTemporalEndpointAsync();
-                Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
-                await RetryWaitForReadyAsync("Temporal", () => LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
-                Console.WriteLine("✅ Temporal server is fully ready");
-            }
+            // Then wait for Temporal to be fully initialized
+            Console.WriteLine("⏳ Waiting for Temporal server to be fully ready...");
+            Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
+            
+            // Give Temporal time to complete schema setup
+            await Task.Delay(TimeSpan.FromSeconds(5)); // Optimized: Reduced from 10s to 5s
+            
+            // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
+            TemporalEndpoint = await GetTemporalEndpointAsync();
+            Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
+            await RetryWaitForReadyAsync("Temporal", () => LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
+            Console.WriteLine("✅ Temporal server is fully ready");
 
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();

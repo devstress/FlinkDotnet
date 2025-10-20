@@ -90,7 +90,6 @@ jobs:
           DOCKER_HOST: "unix:///var/run/docker.sock"
           TESTCONTAINERS_RYUK_DISABLED: "false"
           TESTCONTAINERS_HOST_OVERRIDE: "localhost"
-          SKIP_TEMPORAL_INIT: "true"  # Skip Temporal initialization to fix timeout issues
         run: |
           echo "=== Starting LocalTesting Integration Tests ==="
           dotnet test LocalTesting/LocalTesting.IntegrationTests --no-build --configuration ${{ env.configuration }} --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
