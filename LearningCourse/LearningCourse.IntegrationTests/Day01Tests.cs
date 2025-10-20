@@ -20,7 +20,7 @@ public class Day01Tests : LearningCourseTestBase
 {
     private const string Exercise1Path = "Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise1-StringCapitalize";
     private const string Exercise2Path = "Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise2-BackupAggregator";
-    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Exercise 1: String Stream Processing (Baeldung Sections 1-6)

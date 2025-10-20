@@ -398,9 +398,18 @@ public class OperationCaptureTests
         {
             // Cleanup
             System.Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
-            if (System.IO.Directory.Exists(tempLogPath))
+            // Wait a moment for log files to be released
+            System.Threading.Thread.Sleep(100);
+            try
             {
-                System.IO.Directory.Delete(tempLogPath, true);
+                if (System.IO.Directory.Exists(tempLogPath))
+                {
+                    System.IO.Directory.Delete(tempLogPath, true);
+                }
+            }
+            catch (System.IO.IOException)
+            {
+                // Log files may be locked - ignore cleanup errors in tests
             }
         }
     }

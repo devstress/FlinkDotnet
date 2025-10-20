@@ -907,6 +907,18 @@ public abstract class LocalTestingTestBase
     }
 
     /// <summary>
+    /// Capture network diagnostics for a specific test checkpoint.
+    /// Helper method for tests to capture network state at critical points.
+    /// </summary>
+    /// <param name="testName">Name of the test</param>
+    /// <param name="checkpoint">Checkpoint name (e.g., "before-test", "after-failure")</param>
+    protected static async Task CaptureTestNetworkDiagnosticsAsync(string testName, string checkpoint)
+    {
+        var checkpointName = $"test-{testName}-{checkpoint}";
+        await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync(checkpointName);
+    }
+
+    /// <summary>
     /// Get the dynamically allocated Flink JobManager HTTP endpoint from Aspire.
     /// Aspire DCP assigns random ports during testing, so we cannot use hardcoded ports.
     /// </summary>

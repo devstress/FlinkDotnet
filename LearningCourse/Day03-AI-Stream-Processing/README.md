@@ -53,7 +53,7 @@ curl http://localhost:5000/ai/model/status
 **Steps:**
 1. **Netflix Model Registry Setup** (30 min):
    ```bash
-   cd LearningCourse/Day02-AI-Stream-Processing/Exercise-Solutions/AIModelDDLMastery
+   cd LearningCourse/Day02-AI-Stream-Processing/Exercise-Solutions/Exercise31
    dotnet build
    dotnet run --configuration=NetflixModelRegistry
    ```
@@ -109,7 +109,7 @@ curl http://localhost:5000/ai/model/status
 
 2. **Advanced Ensemble Inference** (45 min):
    ```bash
-   cd Exercise-Solutions/FraudDetectionSystem
+   cd Exercise-Solutions/Exercise32
    dotnet build
    dotnet run --configuration=UberFraudDetection
    ```
@@ -134,7 +134,7 @@ curl http://localhost:5000/ai/model/status
 **Steps:**
 1. **Stateful Behavioral Analysis** (60 min):
    ```bash
-   cd Exercise-Solutions/MLPredictTVFImplementation  
+   cd Exercise-Solutions/Exercise33  
    dotnet build
    dotnet run --configuration=LinkedInBehavioral
    ```
@@ -177,7 +177,7 @@ curl http://localhost:5000/ai/model/status
 **Steps:**
 1. **Dynamic Product Catalog Processing** (30 min):
    ```bash
-   cd Exercise-Solutions/MLNetIntegration
+   cd Exercise-Solutions/Exercise34
    dotnet build
    dotnet run --configuration=AmazonProductEngine
    ```
@@ -374,7 +374,7 @@ Stream Data → Native AI Processing → Immediate Action
 
 The **AI Model DDL** enables flexible AI model management through Flink SQL and Table API, providing enterprise-grade model governance and deployment patterns used by Netflix for managing 200+ ML models in production.
 
-**🎯 Hands-on Implementation:** This revolutionary AI model management capability is implemented in **[Exercise 2.1: Netflix Content Recommendation Model Management](Exercise-Solutions/AIModelDDLMastery/)** where you'll build Netflix-style model lifecycle management for their recommendation system that serves 250+ million users globally.
+**🎯 Hands-on Implementation:** This revolutionary AI model management capability is implemented in **[Exercise 2.1: Netflix Content Recommendation Model Management](Exercise-Solutions/Exercise31/)** where you'll build Netflix-style model lifecycle management for their recommendation system that serves 250+ million users globally.
 
 ### 1.1 AI Model Registration and Lifecycle Management
 
@@ -542,7 +542,7 @@ CREATE MODEL staging.fraud_detection_candidate (
 
 The **ML_PREDICT TVF** enables real-time AI model invocation directly within Flink SQL, providing sub-millisecond inference capabilities used by Uber to process 15+ million ride requests daily with real-time risk assessment.
 
-**🎯 Hands-on Implementation:** This cutting-edge AI inference capability is demonstrated in **[Exercise 2.2: Uber Fraud Detection Pipeline](Exercise-Solutions/FraudDetectionSystem/)** where you'll build Uber-scale real-time fraud detection using ML_PREDICT TVF for their payment processing system that handles billions of transactions.
+**🎯 Hands-on Implementation:** This cutting-edge AI inference capability is demonstrated in **[Exercise 2.2: Uber Fraud Detection Pipeline](Exercise-Solutions/Exercise32/)** where you'll build Uber-scale real-time fraud detection using ML_PREDICT TVF for their payment processing system that handles billions of transactions.
 
 ### 2.1 Basic ML_PREDICT Usage Patterns
 
@@ -679,7 +679,7 @@ FROM enriched_transactions;
 
 **Process Table Functions** open up the Flink SQL engine for sophisticated event-driven AI applications with full access to Flink's managed state, event-time services, and table changelogs. LinkedIn uses this pattern to process 900+ million user behavioral events for real-time personalization.
 
-**🎯 Hands-on Implementation:** Advanced event-driven AI patterns are implemented in **[Exercise 2.3: LinkedIn Behavioral Analytics Engine](Exercise-Solutions/MLPredictTVFImplementation/)** where you'll build LinkedIn-scale behavioral analytics using PTFs for their content personalization system that processes billions of user interactions daily.
+**🎯 Hands-on Implementation:** Advanced event-driven AI patterns are implemented in **[Exercise 2.3: LinkedIn Behavioral Analytics Engine](Exercise-Solutions/Exercise33/)** where you'll build LinkedIn-scale behavioral analytics using PTFs for their content personalization system that processes billions of user interactions daily.
 
 ### 3.1 Stateful AI Processing with PTFs
 
@@ -782,7 +782,7 @@ GROUP BY user_id;
 
 **VARIANT data types** enable efficient handling of semi-structured data like JSON, enabling dynamic schema AI feature engineering. Amazon uses this pattern to process complex product catalog data and user behavior events for their recommendation system serving 310+ million customers.
 
-**🎯 Hands-on Implementation:** Dynamic schema AI processing is demonstrated in **[Exercise 2.4: Amazon Product Recommendation Engine](Exercise-Solutions/MLNetIntegration/)** where you'll build Amazon-scale product recommendation using VARIANT types for their e-commerce platform that handles diverse product catalogs and behavioral data.
+**🎯 Hands-on Implementation:** Dynamic schema AI processing is demonstrated in **[Exercise 2.4: Amazon Product Recommendation Engine](Exercise-Solutions/Exercise34/)** where you'll build Amazon-scale product recommendation using VARIANT types for their e-commerce platform that handles diverse product catalogs and behavioral data.
 
 ### 4.1 VARIANT Data Type Fundamentals
 
@@ -1240,8 +1240,8 @@ These exercises implement the **specific Flink 2.1.0 AI concepts** covered in to
 cd LearningCourse/Day02-AI-Stream-Processing/Exercise-Solutions/
 
 # Create Netflix AI Model DDL project (implements theory concepts)
-dotnet new console -n AIModelDDLMastery
-cd AIModelDDLMastery
+dotnet new console -n Exercise31
+cd Exercise31
 
 # Add reference to FlinkDotNet SQL components from the repository
 dotnet add reference ../../../../FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj

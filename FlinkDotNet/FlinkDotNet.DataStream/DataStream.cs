@@ -497,6 +497,23 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
+        /// Assigns timestamps and watermarks to this DataStream using a WatermarkStrategy.
+        /// Corresponds to org.apache.flink.streaming.api.datastream.DataStream.assignTimestampsAndWatermarks in Java Flink.
+        /// </summary>
+        /// <param name="strategy">The watermark strategy</param>
+        /// <returns>This DataStream with timestamps assigned</returns>
+        public DataStream<T> AssignTimestampsAndWatermarks(Watermarks.WatermarkStrategy<T> strategy)
+        {
+            if (strategy == null)
+                throw new ArgumentNullException(nameof(strategy));
+
+            // In a full implementation, this would configure the stream's time characteristic
+            // and work with the watermark strategy to extract timestamps and generate watermarks
+            // For now, we return the stream to maintain API compatibility
+            return this;
+        }
+
+        /// <summary>
         /// Creates time windows over all elements in the stream.
         /// Corresponds to org.apache.flink.streaming.api.datastream.DataStream.timeWindowAll in Java Flink.
         /// </summary>
@@ -603,6 +620,23 @@ namespace FlinkDotNet.DataStream
         {
             // This would apply the aggregation function based on the type and field
             return _dataStream;
+        }
+
+        /// <summary>
+        /// Applies a window assigner to this KeyedStream, creating a WindowedStream.
+        /// Corresponds to org.apache.flink.streaming.api.datastream.KeyedStream.window in Java Flink.
+        /// </summary>
+        /// <typeparam name="TWindow">The type of window</typeparam>
+        /// <param name="assigner">The window assigner</param>
+        /// <returns>A WindowedStream</returns>
+        public Window.WindowedStream<T, TKey, TWindow> Window<TWindow>(
+            Window.Assigners.IWindowAssigner<T, TWindow> assigner)
+            where TWindow : Window.IWindow
+        {
+            if (assigner == null)
+                throw new ArgumentNullException(nameof(assigner));
+
+            return new Window.WindowedStream<T, TKey, TWindow>(this, assigner);
         }
 
         /// <summary>

@@ -5,10 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    
+    <!-- Disable parallel test execution to prevent TaskManager resource contention -->
+    <ParallelizeAssembly>false</ParallelizeAssembly>
+    <ParallelizeTestCollections>false</ParallelizeTestCollections>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.48.0" />
     <PackageReference Include="NUnit" Version="4.3.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
@@ -16,6 +21,82 @@
   <ItemGroup>
     <ProjectReference Include="..\LearningCourse.Common\LearningCourse.Common.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+    
+    <!-- Day 03: AI Stream Processing -->
+    <ProjectReference Include="..\Day03-AI-Stream-Processing\Exercise-Solutions\Exercise31\Exercise31.csproj" />
+    <ProjectReference Include="..\Day03-AI-Stream-Processing\Exercise-Solutions\Exercise32\Exercise32.csproj" />
+    <ProjectReference Include="..\Day03-AI-Stream-Processing\Exercise-Solutions\Exercise33\Exercise33.csproj" />
+    <ProjectReference Include="..\Day03-AI-Stream-Processing\Exercise-Solutions\Exercise34\Exercise34.csproj" />
+    
+    <!-- Day 04: Production Backpressure -->
+    <ProjectReference Include="..\Day04-Production-Backpressure\Exercise-Solutions\Exercise41\Exercise41.csproj" />
+    <ProjectReference Include="..\Day04-Production-Backpressure\Exercise-Solutions\Exercise42\Exercise42.csproj" />
+    <ProjectReference Include="..\Day04-Production-Backpressure\Exercise-Solutions\Exercise43\Exercise43.csproj" />
+    <ProjectReference Include="..\Day04-Production-Backpressure\Exercise-Solutions\Exercise44\Exercise44.csproj" />
+    <ProjectReference Include="..\Day04-Production-Backpressure\Exercise-Solutions\Exercise45\Exercise45.csproj" />
+    
+    <!-- Day 05: Enterprise Observability -->
+    <ProjectReference Include="..\Day05-Enterprise-Observability\Exercise-Solutions\Exercise51\Exercise51.csproj" />
+    
+    <!-- Day 06: Temporal Workflows -->
+    <ProjectReference Include="..\Day06-Temporal-Workflows\Exercise-Solutions\Exercise61\Exercise61.csproj" />
+    <ProjectReference Include="..\Day06-Temporal-Workflows\Exercise-Solutions\Exercise62\Exercise62.csproj" />
+    <ProjectReference Include="..\Day06-Temporal-Workflows\Exercise-Solutions\Exercise63\Exercise63.csproj" />
+    <ProjectReference Include="..\Day06-Temporal-Workflows\Exercise-Solutions\Exercise64\Exercise64.csproj" />
+    
+    <!-- Day 07: Advanced Windows & Joins -->
+    <ProjectReference Include="..\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise71\Exercise71.csproj" />
+    <ProjectReference Include="..\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise72\Exercise72.csproj" />
+    <ProjectReference Include="..\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise73\Exercise73.csproj" />
+    <ProjectReference Include="..\Day07-Advanced-Windows-Joins\Exercise-Solutions\Exercise74\Exercise74.csproj" />
+    
+    <!-- Day 08: Stress Testing -->
+    <ProjectReference Include="..\Day08-Stress-Testing\Exercise-Solutions\Exercise81\Exercise81.csproj" />
+    <ProjectReference Include="..\Day08-Stress-Testing\Exercise-Solutions\Exercise82\Exercise82.csproj" />
+    <ProjectReference Include="..\Day08-Stress-Testing\Exercise-Solutions\Exercise83\Exercise83.csproj" />
+    <ProjectReference Include="..\Day08-Stress-Testing\Exercise-Solutions\Exercise84\Exercise84.csproj" />
+    
+    <!-- Day 09: Exactly-Once Semantics -->
+    <ProjectReference Include="..\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise91\Exercise91.csproj" />
+    <ProjectReference Include="..\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise92\Exercise92.csproj" />
+    <ProjectReference Include="..\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise93\Exercise93.csproj" />
+    <ProjectReference Include="..\Day09-Exactly-Once-Semantics\Exercise-Solutions\Exercise94\Exercise94.csproj" />
+    
+    <!-- Day 10: Performance Optimization & Scaling -->
+    <ProjectReference Include="..\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise101\Exercise101.csproj" />
+    <ProjectReference Include="..\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise102\Exercise102.csproj" />
+    <ProjectReference Include="..\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise103\Exercise103.csproj" />
+    <ProjectReference Include="..\Day10-Performance-Optimization-Scaling\Exercise-Solutions\Exercise104\Exercise104.csproj" />
+    
+    <!-- Day 11: Security, Privacy & Compliance -->
+    <ProjectReference Include="..\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise111\Exercise111.csproj" />
+    <ProjectReference Include="..\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise112\Exercise112.csproj" />
+    <ProjectReference Include="..\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise113\Exercise113.csproj" />
+    <ProjectReference Include="..\Day11-Security-Privacy-Compliance\Exercise-Solutions\Exercise114\Exercise114.csproj" />
+    
+    <!-- Day 12: Disaster Recovery & Multi-Region -->
+    <ProjectReference Include="..\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise121\Exercise121.csproj" />
+    <ProjectReference Include="..\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise122\Exercise122.csproj" />
+    <ProjectReference Include="..\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise123\Exercise123.csproj" />
+    <ProjectReference Include="..\Day12-Disaster-Recovery-Multi-Region\Exercise-Solutions\Exercise124\Exercise124.csproj" />
+    
+    <!-- Day 13: Advanced Streaming Patterns -->
+    <ProjectReference Include="..\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise131\Exercise131.csproj" />
+    <ProjectReference Include="..\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise132\Exercise132.csproj" />
+    <ProjectReference Include="..\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise133\Exercise133.csproj" />
+    <ProjectReference Include="..\Day13-Advanced-Streaming-Patterns\Exercise-Solutions\Exercise134\Exercise134.csproj" />
+    
+    <!-- Day 14: Advanced Testing & Chaos Engineering -->
+    <ProjectReference Include="..\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise141\Exercise141.csproj" />
+    <ProjectReference Include="..\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise142\Exercise142.csproj" />
+    <ProjectReference Include="..\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise143\Exercise143.csproj" />
+    <ProjectReference Include="..\Day14-Advanced-Testing-Chaos-Engineering\Exercise-Solutions\Exercise144\Exercise144.csproj" />
+    
+    <!-- Day 15: Capstone Project -->
+    <ProjectReference Include="..\Day15-Capstone-Project\Exercise-Solutions\Exercise151\Exercise151.csproj" />
+    <ProjectReference Include="..\Day15-Capstone-Project\Exercise-Solutions\Exercise152\Exercise152.csproj" />
+    <ProjectReference Include="..\Day15-Capstone-Project\Exercise-Solutions\Exercise153\Exercise153.csproj" />
+    <ProjectReference Include="..\Day15-Capstone-Project\Exercise-Solutions\Exercise154\Exercise154.csproj" />
   </ItemGroup>
 
 </Project>

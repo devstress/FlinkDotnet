@@ -18,7 +18,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka-\" --format \"{{.Names}}\"");
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka- --format \"{{.Names}}\"");
             var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             
             if (string.IsNullOrWhiteSpace(kafkaContainer))
@@ -59,6 +59,41 @@ public static class DockerInfrastructure
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to get Kafka container IP: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Logs the current state of all Docker containers using docker ps.
+    /// Useful for debugging container discovery and connectivity issues.
+    /// </summary>
+    /// <param name="context">Context description for the log entry</param>
+    /// <param name="logWriter">Optional StreamWriter for writing to debug log file</param>
+    public static async Task LogDockerPsAsync(string context, StreamWriter? logWriter = null)
+    {
+        try
+        {
+            var header = $"\n🐳 === DOCKER PS ({context}) ===";
+            var footer = $"🐳 === END DOCKER PS ({context}) ===\n";
+            
+            Console.WriteLine(header);
+            logWriter?.WriteLine(header);
+            
+            var dockerPs = await RunDockerCommandAsync("ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+            
+            Console.WriteLine(dockerPs);
+            logWriter?.WriteLine(dockerPs);
+            
+            Console.WriteLine(footer);
+            logWriter?.WriteLine(footer);
+            
+            logWriter?.Flush();  // Ensure it's written immediately
+        }
+        catch (Exception ex)
+        {
+            var errorMsg = $"⚠️ Failed to run docker ps for {context}: {ex.Message}";
+            Console.WriteLine(errorMsg);
+            logWriter?.WriteLine(errorMsg);
+            logWriter?.Flush();
         }
     }
 
@@ -107,13 +142,18 @@ public static class DockerInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka --format {{.Ports}}");
             Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
+            
+            // Log docker ps after discovering Kafka ports
+            await LogDockerPsAsync("After Kafka Port Discovery");
             
             return ExtractKafkaEndpointFromPorts(kafkaContainers);
         }
         catch (Exception ex)
         {
+            // Log docker ps if Kafka discovery fails
+            await LogDockerPsAsync("Kafka Discovery Failed");
             throw new InvalidOperationException($"Failed to discover Kafka endpoint from Docker: {ex.Message}", ex);
         }
     }
@@ -131,10 +171,281 @@ public static class DockerInfrastructure
             {
                 var port = match.Groups[1].Value;
                 Console.WriteLine($"🔍 Found Kafka port mapping: host {port} -> container 9092");
-                return $"localhost:{port}";
+                return $"127.0.0.1:{port}";
             }
         }
 
         throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}");
+    }
+
+    /// <summary>
+    /// Discovers the Temporal gRPC endpoint from Docker port mappings for host-to-Temporal connections.
+    /// This finds the dynamically allocated host port that maps to Temporal's gRPC port (7233).
+    /// </summary>
+    /// <returns>Temporal endpoint for host access (e.g., "localhost:43210")</returns>
+    public static async Task<string> GetTemporalHostEndpointAsync()
+    {
+        try
+        {
+            var temporalContainers = await RunDockerCommandAsync("ps --filter name=temporal-server --format {{.Ports}}");
+            Console.WriteLine($"🔍 Temporal container port mappings: {temporalContainers.Trim()}");
+            
+            // Log docker ps after discovering Temporal ports
+            await LogDockerPsAsync("After Temporal Port Discovery");
+            
+            return ExtractTemporalEndpointFromPorts(temporalContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if Temporal discovery fails
+            await LogDockerPsAsync("Temporal Discovery Failed");
+            throw new InvalidOperationException($"Failed to discover Temporal endpoint from Docker: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractTemporalEndpointFromPorts(string temporalContainers)
+    {
+        var lines = temporalContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 7233 (Temporal's gRPC port)
+            // Format: 127.0.0.1:PORT->7233/tcp or 0.0.0.0:PORT->7233/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->7233");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Temporal gRPC port mapping: host {port} -> container 7233");
+                return $"127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Temporal endpoint from Docker/Podman ports: {temporalContainers}");
+    }
+
+    /// <summary>
+    /// Discovers the Redis endpoint from Docker port mappings for host-to-Redis connections.
+    /// This finds the dynamically allocated host port that maps to Redis's port (6379).
+    /// </summary>
+    /// <returns>Redis endpoint for host access (e.g., "localhost:43211")</returns>
+    public static async Task<string> GetRedisHostEndpointAsync()
+    {
+        try
+        {
+            var redisContainers = await RunDockerCommandAsync("ps --filter name=redis --format {{.Ports}}");
+            Console.WriteLine($"🔍 Redis container port mappings: {redisContainers.Trim()}");
+            
+            // Log docker ps after discovering Redis ports
+            await LogDockerPsAsync("After Redis Port Discovery");
+            
+            return ExtractRedisEndpointFromPorts(redisContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if Redis discovery fails
+            await LogDockerPsAsync("Redis Discovery Failed");
+            throw new InvalidOperationException($"Failed to discover Redis endpoint from Docker: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractRedisEndpointFromPorts(string redisContainers)
+    {
+        var lines = redisContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 6379 (Redis's default port)
+            // Format: 127.0.0.1:PORT->6379/tcp or 0.0.0.0:PORT->6379/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->6379");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Redis port mapping: host {port} -> container 6379");
+                return $"127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Redis endpoint from Docker/Podman ports: {redisContainers}");
+    }
+
+    /// <summary>
+    /// Discovers the Prometheus endpoint from Docker port mappings for host-to-Prometheus connections.
+    /// This finds the dynamically allocated host port that maps to Prometheus's port (9090).
+    /// </summary>
+    /// <returns>Prometheus endpoint for host access (e.g., "localhost:43212")</returns>
+    public static async Task<string> GetPrometheusHostEndpointAsync()
+    {
+        try
+        {
+            var prometheusContainers = await RunDockerCommandAsync("ps --filter name=prometheus --format {{.Ports}}");
+            Console.WriteLine($"🔍 Prometheus container port mappings: {prometheusContainers.Trim()}");
+            
+            // Log docker ps after discovering Prometheus ports
+            await LogDockerPsAsync("After Prometheus Port Discovery");
+            
+            return ExtractPrometheusEndpointFromPorts(prometheusContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if Prometheus discovery fails
+            await LogDockerPsAsync("Prometheus Discovery Failed");
+            throw new InvalidOperationException($"Failed to discover Prometheus endpoint from Docker: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractPrometheusEndpointFromPorts(string prometheusContainers)
+    {
+        var lines = prometheusContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 9090 (Prometheus's HTTP port)
+            // Format: 127.0.0.1:PORT->9090/tcp or 0.0.0.0:PORT->9090/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9090");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Prometheus port mapping: host {port} -> container 9090");
+                return $"http://127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Prometheus endpoint from Docker/Podman ports: {prometheusContainers}");
+    }
+
+    /// <summary>
+    /// Discovers the Grafana endpoint from Docker port mappings for host-to-Grafana connections.
+    /// This finds the dynamically allocated host port that maps to Grafana's port (3000).
+    /// </summary>
+    /// <returns>Grafana endpoint for host access (e.g., "localhost:43213")</returns>
+    public static async Task<string> GetGrafanaHostEndpointAsync()
+    {
+        try
+        {
+            var grafanaContainers = await RunDockerCommandAsync("ps --filter name=grafana --format {{.Ports}}");
+            Console.WriteLine($"🔍 Grafana container port mappings: {grafanaContainers.Trim()}");
+            
+            // Log docker ps after discovering Grafana ports
+            await LogDockerPsAsync("After Grafana Port Discovery");
+            
+            return ExtractGrafanaEndpointFromPorts(grafanaContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if Grafana discovery fails
+            await LogDockerPsAsync("Grafana Discovery Failed");
+            throw new InvalidOperationException($"Failed to discover Grafana endpoint from Docker: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractGrafanaEndpointFromPorts(string grafanaContainers)
+    {
+        var lines = grafanaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 3000 (Grafana's HTTP port)
+            // Format: 127.0.0.1:PORT->3000/tcp or 0.0.0.0:PORT->3000/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->3000");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Grafana port mapping: host {port} -> container 3000");
+                return $"http://127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Grafana endpoint from Docker/Podman ports: {grafanaContainers}");
+    }
+
+    /// <summary>
+    /// Discovers the Flink REST API endpoint from Docker port mappings.
+    /// This finds the dynamically allocated host port that maps to Flink JobManager's REST API port (8081).
+    /// </summary>
+    /// <returns>Flink REST API endpoint for host access (e.g., "http://localhost:41451")</returns>
+    public static async Task<string> GetFlinkRestApiEndpointAsync()
+    {
+        try
+        {
+            var flinkContainers = await RunDockerCommandAsync("ps --filter name=flink-jobmanager --format {{.Ports}}");
+            Console.WriteLine($"🔍 Flink JobManager port mappings: {flinkContainers.Trim()}");
+            
+            // Log docker ps after discovering Flink ports
+            await LogDockerPsAsync("After Flink REST API Discovery");
+            
+            return ExtractFlinkRestApiEndpointFromPorts(flinkContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if Flink discovery fails
+            await LogDockerPsAsync("Flink REST API Discovery Failed");
+            throw new InvalidOperationException($"Failed to discover Flink REST API endpoint from Docker: {ex.Message}", ex);
+        }
+    }
+
+    private static string ExtractFlinkRestApiEndpointFromPorts(string flinkContainers)
+    {
+        var lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 8081 (Flink JobManager REST API port)
+            // Format: 127.0.0.1:PORT->8081/tcp or 0.0.0.0:PORT->8081/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->8081");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Flink REST API port mapping: host {port} -> container 8081");
+                return $"http://127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Flink REST API endpoint from Docker/Podman ports: {flinkContainers}");
+    }
+
+    /// <summary>
+    /// Discovers the Kafka JMX Exporter endpoint from Docker port mappings for debugging metrics export.
+    /// This finds the dynamically allocated host port that maps to JMX Exporter's HTTP port (5556).
+    /// </summary>
+    /// <returns>Kafka JMX Exporter endpoint for host access (e.g., "http://localhost:43214") or null if not found</returns>
+    public static async Task<string?> GetKafkaExporterHostEndpointAsync()
+    {
+        try
+        {
+            var exporterContainers = await RunDockerCommandAsync("ps --filter name=kafka-exporter --format {{.Ports}}");
+            Console.WriteLine($"🔍 Kafka JMX Exporter port mappings: {exporterContainers.Trim()}");
+            
+            if (string.IsNullOrWhiteSpace(exporterContainers))
+            {
+                Console.WriteLine("⚠️  kafka-exporter container not found");
+                return null;
+            }
+            
+            // Log docker ps after discovering exporter ports
+            await LogDockerPsAsync("After Kafka Exporter Port Discovery");
+            
+            return ExtractKafkaExporterEndpointFromPorts(exporterContainers);
+        }
+        catch (Exception ex)
+        {
+            // Log docker ps if exporter discovery fails
+            await LogDockerPsAsync("Kafka Exporter Discovery Failed");
+            Console.WriteLine($"⚠️  Failed to discover Kafka JMX Exporter endpoint from Docker: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string ExtractKafkaExporterEndpointFromPorts(string exporterContainers)
+    {
+        var lines = exporterContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var line in lines)
+        {
+            // Look for port mapping to 5556 (JMX Exporter's HTTP port)
+            // Format: 127.0.0.1:PORT->5556/tcp or 0.0.0.0:PORT->5556/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->5556");
+            if (match.Success)
+            {
+                var port = match.Groups[1].Value;
+                Console.WriteLine($"🔍 Found Kafka JMX Exporter port mapping: host {port} -> container 5556");
+                return $"http://127.0.0.1:{port}";
+            }
+        }
+
+        throw new InvalidOperationException($"Could not determine Kafka JMX Exporter endpoint from Docker/Podman ports: {exporterContainers}");
     }
 }

@@ -37,14 +37,14 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 ## 📋 Today's Exercises (Completion Order)
 
 ### Foundation Stress Testing
-- **[Exercise 7.1: Volume Stress Testing (60 min)](#exercise-71-volume-stress-testing)** - Million+ message throughput
-- **[Exercise 7.2: Velocity Stress Testing (75 min)](#exercise-72-velocity-stress-testing)** - Burst traffic and latency
-- **[Exercise 7.3: Variety Stress Testing (60 min)](#exercise-73-variety-stress-testing)** - Complex data scenarios
+- **[Exercise 8.1: Volume Stress Testing (60 min)](#exercise-71-volume-stress-testing)** - Million+ message throughput
+- **[Exercise 8.2: Velocity Stress Testing (75 min)](#exercise-72-velocity-stress-testing)** - Burst traffic and latency
+- **[Exercise 8.3: Variety Stress Testing (60 min)](#exercise-73-variety-stress-testing)** - Complex data scenarios
 
 ### Advanced Reliability Testing
-- **[Exercise 7.4: Fault Injection Testing (90 min)](#exercise-74-fault-injection-testing)** - Chaos engineering patterns
-- **[Exercise 7.5: Resource Exhaustion Testing (75 min)](#exercise-75-resource-exhaustion-testing)** - Memory and CPU limits
-- **[Exercise 7.6: Production Readiness Validation (60 min)](#exercise-76-production-readiness-validation)** - Enterprise validation
+- **[Exercise 8.4: Fault Injection Testing (90 min)](#exercise-74-fault-injection-testing)** - Chaos engineering patterns
+- **[Exercise 8.5: Resource Exhaustion Testing (75 min)](#exercise-75-resource-exhaustion-testing)** - Memory and CPU limits
+- **[Exercise 8.6: Production Readiness Validation (60 min)](#exercise-76-production-readiness-validation)** - Enterprise validation
 
 **Total Time: 4-5 hours** | **Focus:** Complex logic under extreme conditions
 
@@ -52,7 +52,7 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 
 ## 📝 Exercise Instructions
 
-### Exercise 7.1: Volume Stress Testing (60 minutes)
+### Exercise 8.1: Volume Stress Testing (60 minutes)
 **Business Context**: High-Throughput Data Processing  
 **Objective**: Test system under massive volume scenarios
 
@@ -87,7 +87,7 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 
 **Expected Results**: System handles 1M+ messages/second, maintains stability under memory pressure
 
-### Exercise 7.2: Velocity Stress Testing (75 minutes)
+### Exercise 8.2: Velocity Stress Testing (75 minutes)
 **Business Context**: Real-Time Processing Under Variable Load  
 **Objective**: Test burst traffic and latency requirements
 
@@ -131,7 +131,7 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 
 **Expected Results**: Handles 10x traffic bursts, maintains <1ms P99 latency, adapts to variable rates
 
-### Exercise 7.3: Variety Stress Testing (60 minutes)
+### Exercise 8.3: Variety Stress Testing (60 minutes)
 **Business Context**: Complex Data Scenario Handling  
 **Objective**: Test diverse data types, schemas, and quality issues
 
@@ -175,7 +175,7 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 
 **Expected Results**: Handles schema changes gracefully, processes malformed data, maintains performance under complex transformations
 
-### Exercise 7.4: Fault Injection Testing (90 minutes)
+### Exercise 8.4: Fault Injection Testing (90 minutes)
 **Business Context**: Chaos Engineering for Resilience  
 **Objective**: Test system behavior under various failure scenarios
 
@@ -220,7 +220,7 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 
 **Expected Results**: System recovers from failures automatically, maintains data consistency, demonstrates fault tolerance
 
-### Exercise 7.5: Resource Exhaustion Testing (75 minutes)
+### Exercise 8.5: Resource Exhaustion Testing (75 minutes)
 **Business Context**: Resource Limit Validation  
 **Objective**: Test behavior when approaching resource limits
 
@@ -266,7 +266,7 @@ curl http://localhost:5000/api/ComplexLogicStressTest/baseline-metrics
 
 **Expected Results**: Graceful degradation under resource pressure, no system crashes, proper resource management
 
-### Exercise 7.6: Production Readiness Validation (60 minutes)
+### Exercise 8.6: Production Readiness Validation (60 minutes)
 **Business Context**: Enterprise Deployment Validation  
 **Objective**: Comprehensive production readiness assessment
 
@@ -456,7 +456,7 @@ Let's explore the comprehensive testing framework:
 
 Let's implement comprehensive stress testing for Flink 2.1.0 applications:
 
-### Exercise 7.1: Million Message Stress Test
+### Exercise 8.1: Million Message Stress Test
 
 Create `Day07_ComplexStressTest.cs`:
 
@@ -1591,7 +1591,7 @@ namespace LearningCourse.Day07
 
 ## 🎯 Day 7 Exercises
 
-### Exercise 7.2: Fault Injection Testing
+### Exercise 8.2: Fault Injection Testing
 
 Create a fault injection framework:
 
@@ -1607,7 +1607,7 @@ public class FaultInjectionFramework
 }
 ```
 
-### Exercise 7.3: Performance Benchmark Suite
+### Exercise 8.3: Performance Benchmark Suite
 
 Build comprehensive performance benchmarks:
 

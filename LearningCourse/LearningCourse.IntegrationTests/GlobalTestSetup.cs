@@ -17,8 +17,8 @@ public class GlobalTestSetup
     }
 
     [OneTimeTearDown]
-    public static void GlobalTeardown()
+    public static async Task GlobalTeardown()
     {
-        LearningCourse.IntegrationTests.LearningCourseTestBase.GlobalTearDown();
+        await LearningCourse.IntegrationTests.LearningCourseTestBase.GlobalTearDownAsync();
     }
 }

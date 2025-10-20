@@ -1,0 +1,48 @@
+# Prometheus configuration for FlinkDotNet (Aspire-compatible)
+# Scrapes metrics from Flink, Kafka, Gateway, and Prometheus itself
+
+global:
+  scrape_interval: 1s
+  evaluation_interval: 1s
+  external_labels:
+    monitor: 'flinkdotnet-monitor'
+    environment: 'development'
+
+scrape_configs:
+  # Flink JobManager metrics (Prometheus reporter on port 9250)
+  - job_name: 'flink-jobmanager'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flink-jobmanager:9250']
+        labels:
+          component: 'flink'
+          role: 'jobmanager'
+
+  # Flink TaskManager metrics (Prometheus reporter on port 9251)
+  - job_name: 'flink-taskmanager'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flink-taskmanager:9251']
+        labels:
+          component: 'flink'
+          role: 'taskmanager'
+
+  # Kafka JMX metrics via JMX Exporter
+  # NOTE: Container name pattern is kafka-exporter-{random} from Aspire
+  # Using dynamic DNS resolution from Aspire's Docker network
+  - job_name: 'kafka'
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['kafka-exporter:5556']
+        labels:
+          component: 'kafka'
+          role: 'broker'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          component: 'prometheus'
+          role: 'server'

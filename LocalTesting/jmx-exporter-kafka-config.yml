@@ -1,0 +1,106 @@
+# Kafka JMX Exporter Configuration for Prometheus
+# This file configures which Kafka JMX metrics to export to Prometheus
+# Used by bitnami/jmx-exporter container to scrape kafka:9101 JMX endpoint
+
+# JMX connection configuration
+# Format: hostPort: "hostname:port" for JMX RMI connection
+hostPort: kafka:9101
+
+# Lower case output names for consistency
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+# Whitelist patterns for Kafka metrics to export
+whitelistObjectNames:
+  - "kafka.server:*"
+  - "kafka.controller:*"
+  - "kafka.network:*"
+  - "kafka.log:*"
+  - "java.lang:*"
+
+# Rules to transform JMX bean names to Prometheus metrics
+rules:
+  # Kafka Server BrokerTopicMetrics with topic label (MOST SPECIFIC - must be first)
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+), topic=(.+)><>Count
+    name: kafka_server_BrokerTopicMetrics_$1_Count
+    type: COUNTER
+    labels:
+      topic: "$2"
+  
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+), topic=(.+)><>(.+)
+    name: kafka_server_BrokerTopicMetrics_$1_$3
+    type: GAUGE
+    labels:
+      topic: "$2"
+  
+  # Kafka Server BrokerTopicMetrics without topic (aggregate metrics)
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>Count
+    name: kafka_server_BrokerTopicMetrics_$1_Count
+    type: COUNTER
+  
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>(.+)
+    name: kafka_server_BrokerTopicMetrics_$1_$2
+    type: GAUGE
+  
+  # Kafka Server metrics (general patterns)
+  - pattern: kafka.server<type=(.+), name=(.+), clientId=(.+), topic=(.+), partition=(.*)><>Value
+    name: kafka_server_$1_$2
+    type: GAUGE
+    labels:
+      clientId: "$3"
+      topic: "$4"
+      partition: "$5"
+  
+  - pattern: kafka.server<type=(.+), name=(.+), clientId=(.+), brokerHost=(.+), brokerPort=(.+)><>Value
+    name: kafka_server_$1_$2
+    type: GAUGE
+    labels:
+      clientId: "$3"
+      broker: "$4:$5"
+  
+  - pattern: kafka.server<type=(.+), name=(.+)><>Value
+    name: kafka_server_$1_$2
+    type: GAUGE
+  
+  # Kafka Controller metrics
+  - pattern: kafka.controller<type=(.+), name=(.+)><>Value
+    name: kafka_controller_$1_$2
+    type: GAUGE
+  
+  # Kafka Network metrics
+  - pattern: kafka.network<type=(.+), name=(.+)><>Value
+    name: kafka_network_$1_$2
+    type: GAUGE
+  
+  # Kafka Log metrics
+  - pattern: kafka.log<type=(.+), name=(.+), topic=(.+), partition=(.*)><>Value
+    name: kafka_log_$1_$2
+    type: GAUGE
+    labels:
+      topic: "$3"
+      partition: "$4"
+  
+  - pattern: kafka.log<type=(.+), name=(.+)><>Value
+    name: kafka_log_$1_$2
+    type: GAUGE
+  
+  # JVM metrics
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>(.+)'
+    name: java_lang_memory_heap_$1
+    type: GAUGE
+  
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>(.+)'
+    name: java_lang_memory_nonheap_$1
+    type: GAUGE
+  
+  - pattern: 'java.lang<name=(.+), type=GarbageCollector><>CollectionCount'
+    name: java_lang_gc_collection_count
+    type: COUNTER
+    labels:
+      gc: "$1"
+  
+  - pattern: 'java.lang<name=(.+), type=GarbageCollector><>CollectionTime'
+    name: java_lang_gc_collection_time_ms
+    type: COUNTER
+    labels:
+      gc: "$1"

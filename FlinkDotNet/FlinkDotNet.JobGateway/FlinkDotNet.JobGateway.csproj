@@ -48,6 +48,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -365,6 +366,11 @@
   <!-- Keep item for IDE visibility; do not rely on evaluation-time Exists for copying to output -->
   <ItemGroup>
     <None Include="flink-ir-runner-java17.jar" Condition="Exists('$(LocalJarPath)')" />
+  </ItemGroup>
+
+  <!-- Copy appsettings files to output directory -->
+  <ItemGroup>
+    <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
