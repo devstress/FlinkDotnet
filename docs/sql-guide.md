@@ -47,8 +47,13 @@ Uses Flink SQL Gateway REST API to submit SQL statements directly without requir
 ## Example: Kafka → Kafka (TableEnvironment Mode)
 
 ```csharp
-var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(
-  @"CREATE TABLE input (
+using FlinkDotNet.DataStream;
+
+// Create execution environment
+var env = Flink.GetExecutionEnvironment();
+
+// Define SQL statements for table creation and transformation
+var createInputTable = @"CREATE TABLE input (
        `key` STRING,
        `value` STRING
      ) WITH (
@@ -58,8 +63,9 @@ var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(
        'properties.group.id'='flink-sql',
        'scan.startup.mode'='latest-offset',
        'format'='json'
-     )",
-  @"CREATE TABLE output (
+     )";
+
+var createOutputTable = @"CREATE TABLE output (
        `key` STRING,
        `value` STRING
      ) WITH (
@@ -67,20 +73,32 @@ var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(
        'topic'='output',
        'properties.bootstrap.servers'='kafka:9092',
        'format'='json'
-     )",
-  @"INSERT INTO output SELECT `key`, UPPER(`value`) as `value` FROM input"
-);
+     )";
 
-// TableEnvironment mode is the default
-var result = await sqlJob.Submit("kafka-sql-transform");
+var insertStatement = @"INSERT INTO output SELECT `key`, UPPER(`value`) as `value` FROM input";
+
+// Execute SQL statements via TableEnvironment
+var tEnv = env.GetTableEnvironment();
+tEnv.ExecuteSql(createInputTable);
+tEnv.ExecuteSql(createOutputTable);
+tEnv.ExecuteSql(insertStatement);
+
+// Execute the job
+await env.ExecuteAsync("kafka-sql-transform");
 ```
 
 ## Example: Kafka → Kafka (SQL Gateway Mode)
 
 ```csharp
-// Build SQL job with statements
-var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(
-  @"CREATE TABLE input (
+using FlinkDotNet.DataStream;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+
+// Define SQL statements
+var statements = new[]
+{
+    @"CREATE TABLE input (
        `key` STRING,
        `value` STRING
      ) WITH (
@@ -91,7 +109,7 @@ var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(
        'scan.startup.mode'='latest-offset',
        'format'='json'
      )",
-  @"CREATE TABLE output (
+    @"CREATE TABLE output (
        `key` STRING,
        `value` STRING
      ) WITH (
@@ -100,19 +118,20 @@ var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(
        'properties.bootstrap.servers'='kafka:9092',
        'format'='json'
      )",
-  @"INSERT INTO output SELECT `key`, `value` FROM input"
-);
+    @"INSERT INTO output SELECT `key`, `value` FROM input"
+};
 
-// Set execution mode to SQL Gateway
-var jobDef = sqlJob.BuildJobDefinition();
-if (jobDef.Source is SqlSourceDefinition sqlSource)
+// Submit directly to SQL Gateway REST API
+using var httpClient = new HttpClient();
+var gatewayUrl = "http://flink-sql-gateway:8083/v1/statements";
+
+foreach (var statement in statements)
 {
-    sqlSource.ExecutionMode = "gateway";
+    var payload = JsonSerializer.Serialize(new { statement });
+    var content = new StringContent(payload, Encoding.UTF8, "application/json");
+    var response = await httpClient.PostAsync(gatewayUrl, content);
+    response.EnsureSuccessStatusCode();
 }
-
-// Submit via Gateway service
-var gatewayService = new Flink.JobBuilder.Services.FlinkJobGatewayService();
-var result = await gatewayService.SubmitJobAsync(jobDef, CancellationToken.None);
 ```
 
 Notes:

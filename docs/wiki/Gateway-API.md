@@ -8,7 +8,7 @@ The FlinkDotnet Gateway provides a REST API that bridges .NET applications with 
 ┌─────────────────┐    HTTP     ┌─────────────────┐    REST     ┌─────────────────┐
 │   .NET App      │─────────────▶│ FlinkDotNet     │─────────────▶│ Apache Flink    │
 │                 │             │ Gateway         │             │ JobManager      │
-│ FlinkJobBuilder │◀─────────────│                 │◀─────────────│                 │
+│  DataStream API │◀─────────────│                 │◀─────────────│                 │
 └─────────────────┘   JSON IR   └─────────────────┘  JobGraph   └─────────────────┘
 ```
 
@@ -16,8 +16,8 @@ The FlinkDotnet Gateway provides a REST API that bridges .NET applications with 
 
 ### Job Submission
 
-1. **.NET Application** creates job using FlinkJobBuilder DSL
-2. **JSON IR Generation** - Job serialized to intermediate representation  
+1. **.NET Application** creates job using FlinkDotNet DataStream API
+2. **JSON IR Generation** - Job serialized to intermediate representation
 3. **HTTP Request** - IR sent to Gateway via REST API
 4. **Translation** - Gateway converts JSON IR to Flink JobGraph
 5. **Submission** - Gateway submits JobGraph to Flink cluster
@@ -198,8 +198,10 @@ Returns Prometheus-compatible metrics for monitoring gateway performance.
 ### .NET Client
 
 ```csharp
-services.AddFlinkJobBuilder(config =>
+// Job Gateway configuration for job submission
+services.AddHttpClient("FlinkGateway", client =>
 {
+    client.BaseAddress = new Uri("http://localhost:18000");
     config.BaseUrl = "http://localhost:8080";
     config.ApiKey = "your-api-key";
     config.Timeout = TimeSpan.FromSeconds(30);

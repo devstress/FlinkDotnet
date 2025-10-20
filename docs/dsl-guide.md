@@ -1,6 +1,6 @@
 # DSL Guide
 
-The .NET SDK (`Flink.JobBuilder`) produces an Intermediate Representation (IR) describing a Flink job. This guide maps the DSL objects to IR and highlights constraints enforced by validation.
+FlinkDotNet uses an Intermediate Representation (IR) to describe Flink jobs. This guide documents the IR schema and validation constraints enforced by the system.
 
 ## Core Types
 
@@ -121,4 +121,4 @@ The validator now provides specific, actionable error messages:
 - Retry: at least one `delayMs`, all positive
 - SQL: at least one statement; sink may be omitted when using SQL
 
-Validation is enforced pre-submit by the SDK and at the Gateway. See `Flink.JobBuilder.Services.JobDefinitionValidator`.
+Validation is enforced pre-submit and at the Gateway. See validation implementation in [`FlinkDotNet.JobGateway`](../FlinkDotNet/FlinkDotNet.JobGateway/).

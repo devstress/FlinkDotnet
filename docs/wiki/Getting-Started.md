@@ -35,7 +35,7 @@ dotnet new console -n MyFlinkJobApp
 cd MyFlinkJobApp
 
 # Reference the FlinkDotNet projects locally
-dotnet add reference ../FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj
+dotnet add reference ../FlinkDotNet/FlinkDotNet/FlinkDotNet.csproj
 
 # Build the Gateway to prebuild and bundle the IR Runner jar
 dotnet build ../FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj -c Release
@@ -45,33 +45,28 @@ dotnet build ../FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj
 ### 2. Write a Streaming Job
 
 ```csharp
-using Flink.JobBuilder;
-using Microsoft.Extensions.DependencyInjection;
+using FlinkDotNet.DataStream;
 
 public class Program
 {
     public static async Task Main(string[] args)
     {
-        // Configure FlinkDotnet
-        var services = new ServiceCollection();
-        services.AddFlinkJobBuilder(config =>
-        {
-            config.BaseUrl = "http://localhost:18000"; // Flink Job Gateway
-        });
+        // Get Flink execution environment
+        var env = Flink.GetExecutionEnvironment();
 
-        var serviceProvider = services.BuildServiceProvider();
+        // Create streaming job using DataStream API
+        var orders = env.FromKafka("orders", "kafka:9093", "order-consumer-group");
+        
+        var highValueOrders = orders
+            .Filter(order => order.Amount > 100)
+            .KeyBy(order => order.Region)
+            .Map(order => new { order.Region, order.Amount });
 
-        // Create streaming job
-        var job = serviceProvider.CreateJobBuilder()
-            .FromKafka("orders")
-            .Where("Amount > 100")
-            .GroupBy("Region")
-            .Aggregate("SUM", "Amount")
-            .ToKafka("high-value-orders");
+        highValueOrders.SinkToKafka("high-value-orders", "kafka:9093");
 
-        // Submit to Flink cluster
-        var result = await job.Submit("OrderProcessingJob");
-        Console.WriteLine($"Job ID: {result.FlinkJobId}");
+        // Execute the job
+        await env.ExecuteAsync("OrderProcessingJob");
+        Console.WriteLine("Job submitted successfully");
     }
 }
 ```

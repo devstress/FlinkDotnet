@@ -49,6 +49,7 @@ ScaffoldingReadMe.txt
 CodeCoverage/
 CoverageReport/
 coverage-report*/
+coverage-report/
 
 # SonarQube local analysis
 .sonarqube/

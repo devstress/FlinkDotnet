@@ -1,4 +1,10 @@
 using Flink.JobBuilder.Models;
+<<<<<<< Updated upstream
+=======
+using FlinkDotNet.DataStream;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
+>>>>>>> Stashed changes
 
 namespace LocalTesting.IntegrationTests;
 
@@ -100,6 +106,7 @@ public static class FlinkDotNetJobs
         string inputTopic,
         string outputTopic,
         string kafka,
+        string sqlGatewayUrl,
         string jobName,
         CancellationToken ct)
     {
@@ -125,18 +132,39 @@ public static class FlinkDotNetJobs
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
         
-        // Use SQL Gateway for direct SQL execution
-        var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(sqlStatements);
-        var jobDef = sqlJob.BuildJobDefinition();
-        if (jobDef.Source is SqlSourceDefinition sqlSource)
+        // Create JobDefinition with SqlSourceDefinition for SQL Gateway execution
+        var jobDef = new JobDefinition
         {
-            sqlSource.ExecutionMode = "gateway";
-        }
-        jobDef.Metadata.JobName = jobName;
+            Source = new SqlSourceDefinition
+            {
+                Statements = new List<string>(sqlStatements),
+                Mode = "streaming",
+                ExecutionMode = "gateway"  // Use SQL Gateway for direct execution
+            },
+            Metadata = new JobMetadata
+            {
+                JobId = Guid.NewGuid().ToString(),
+                JobName = jobName,
+                CreatedAt = DateTime.UtcNow,
+                Version = "1.0"
+            }
+        };
         
-        // Submit via gateway service
-        var gatewayService = new Flink.JobBuilder.Services.FlinkJobGatewayService();
-        return await gatewayService.SubmitJobAsync(jobDef, ct);
+        // Submit via FlinkJobManager with SQL Gateway endpoint configuration
+        // FlinkJobManager reads from "Flink:SqlGateway:BaseUrl" configuration key
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Flink:SqlGateway:BaseUrl"] = sqlGatewayUrl
+            })
+            .Build();
+        
+        var jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
+            NullLogger<FlinkDotNet.JobGateway.Services.FlinkJobManager>.Instance,
+            configuration,
+            new HttpClient());
+        
+        return await jobManager.SubmitJobAsync(jobDef);
     }
     
     /// <summary>
@@ -146,6 +174,7 @@ public static class FlinkDotNetJobs
         string inputTopic,
         string outputTopic,
         string kafka,
+        string sqlGatewayUrl,
         string jobName,
         CancellationToken ct)
     {
@@ -171,8 +200,39 @@ public static class FlinkDotNetJobs
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
         };
         
-        var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(sqlStatements);
-        return await sqlJob.Submit(jobName, ct);
+        // Create JobDefinition with SqlSourceDefinition for SQL Gateway execution
+        var jobDef = new JobDefinition
+        {
+            Source = new SqlSourceDefinition
+            {
+                Statements = new List<string>(sqlStatements),
+                Mode = "streaming",
+                ExecutionMode = "gateway"  // Use SQL Gateway for direct execution
+            },
+            Metadata = new JobMetadata
+            {
+                JobId = Guid.NewGuid().ToString(),
+                JobName = jobName,
+                CreatedAt = DateTime.UtcNow,
+                Version = "1.0"
+            }
+        };
+        
+        // Submit via FlinkJobManager with SQL Gateway endpoint configuration
+        // FlinkJobManager reads from "Flink:SqlGateway:BaseUrl" configuration key
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Flink:SqlGateway:BaseUrl"] = sqlGatewayUrl
+            })
+            .Build();
+        
+        var jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
+            NullLogger<FlinkDotNet.JobGateway.Services.FlinkJobManager>.Instance,
+            configuration,
+            new HttpClient());
+        
+        return await jobManager.SubmitJobAsync(jobDef);
     }
     
     /// <summary>

@@ -7,24 +7,17 @@ This page demonstrates common patterns for using FlinkDotnet to build streaming 
 ### 1. Simple Data Pipeline
 
 ```csharp
-using Flink.JobBuilder;
-using Microsoft.Extensions.DependencyInjection;
+using FlinkDotNet.DataStream;
 
-var services = new ServiceCollection();
-services.AddFlinkJobBuilder(config =>
-{
-    config.BaseUrl = "http://localhost:18000";
-});
-
-var serviceProvider = services.BuildServiceProvider();
+// Get Flink execution environment
+var env = Flink.GetExecutionEnvironment();
 
 // Create a basic stream processing job
-var job = serviceProvider.CreateJobBuilder()
-    .FromKafka("input-topic")
-    .Map("message => message.toUpperCase()")
-    .ToKafka("output-topic");
+var input = env.FromKafka("input-topic", "kafka:9093", "consumer-group");
+var processed = input.Map(message => message.ToUpperInvariant());
+processed.SinkToKafka("output-topic", "kafka:9093");
 
-await job.Submit("SimpleDataPipeline");
+await env.ExecuteAsync("SimpleDataPipeline");
 ```
 
 ## Windowing and Aggregation
@@ -32,28 +25,32 @@ await job.Submit("SimpleDataPipeline");
 ### 2. Tumbling Window Example
 
 ```csharp
-var windowedJob = serviceProvider.CreateJobBuilder()
-    .FromKafka("orders")
-    .KeyBy("customerId")
-    .Window(TimeWindow.Tumbling(TimeSpan.FromMinutes(5)))
-    .Aggregate("SUM", "amount")
-    .ToKafka("order-totals");
+var env = Flink.GetExecutionEnvironment();
 
-await windowedJob.Submit("OrderAggregation");
+var orders = env.FromKafka("orders", "kafka:9093", "order-group");
+var aggregated = orders
+    .KeyBy(order => order.CustomerId)
+    .Window(TumblingTimeWindow.Of(TimeSpan.FromMinutes(5)))
+    .Reduce((a, b) => new Order { Amount = a.Amount + b.Amount });
+
+aggregated.SinkToKafka("order-totals", "kafka:9093");
+await env.ExecuteAsync("OrderAggregation");
 ```
 
 ### 3. Sliding Window with Complex Processing
 
 ```csharp
-var complexJob = serviceProvider.CreateJobBuilder()
-    .FromKafka("sensor-data")
-    .Filter("temperature > 25.0")
-    .KeyBy("sensorId")
-    .Window(TimeWindow.Sliding(TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(2)))
-    .Process(new TemperatureAggregator())
-    .ToKafka("temperature-alerts");
+var env = Flink.GetExecutionEnvironment();
 
-await complexJob.Submit("TemperatureMonitoring");
+var sensorData = env.FromKafka("sensor-data", "kafka:9093", "sensor-group");
+var alerts = sensorData
+    .Filter(data => data.Temperature > 25.0)
+    .KeyBy(data => data.SensorId)
+    .Window(SlidingTimeWindow.Of(TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(2)))
+    .Process(new TemperatureAggregator());
+
+alerts.SinkToKafka("temperature-alerts", "kafka:9093");
+await env.ExecuteAsync("TemperatureMonitoring");
 ```
 
 ## Configuration Examples
@@ -100,31 +97,32 @@ await complexJob.Submit("TemperatureMonitoring");
 ### 6. Job with Error Handling
 
 ```csharp
-var robustJob = serviceProvider.CreateJobBuilder()
-    .FromKafka("transactions")
-    .Map("transaction => ValidateTransaction(transaction)")
-    .Filter("isValid == true")
-    .KeyBy("accountId")
-    .Process(new TransactionProcessor())
-    .ToKafka("validated-transactions")
-    .OnError(ErrorStrategy.DeadLetter("failed-transactions"));
+var env = Flink.GetExecutionEnvironment();
 
-await robustJob.Submit("TransactionProcessor");
+var transactions = env.FromKafka("transactions", "kafka:9093", "tx-group");
+var validated = transactions
+    .Map(tx => ValidateTransaction(tx))
+    .Filter(tx => tx.IsValid)
+    .KeyBy(tx => tx.AccountId)
+    .Process(new TransactionProcessor());
+
+validated.SinkToKafka("validated-transactions", "kafka:9093");
+await env.ExecuteAsync("TransactionProcessor");
 ```
 
 ### 7. Job Monitoring
 
 ```csharp
-// Submit job and get handle for monitoring
-var jobResult = await job.Submit("MonitoredJob");
+var env = Flink.GetExecutionEnvironment();
 
-// Check job status
-var status = await jobResult.GetStatus();
-Console.WriteLine($"Job Status: {status.State}");
+// Create and execute job
+var stream = env.FromKafka("input", "kafka:9093", "group");
+stream.SinkToKafka("output", "kafka:9093");
 
-// Get job metrics
-var metrics = await jobResult.GetMetrics();
-Console.WriteLine($"Records processed: {metrics.RecordsIn}");
+var jobClient = await env.ExecuteAsync("MonitoredJob");
+
+// Monitor via Flink REST API (http://flink-jobmanager:8081)
+Console.WriteLine($"Job submitted: {jobClient.JobId}");
 ```
 
 ## Advanced Patterns
@@ -132,33 +130,43 @@ Console.WriteLine($"Records processed: {metrics.RecordsIn}");
 ### 8. Join Operations
 
 ```csharp
-var joinJob = serviceProvider.CreateJobBuilder()
-    .FromKafka("orders")
-    .Join(
-        other: serviceProvider.CreateStream().FromKafka("customers"),
-        condition: "orders.customerId == customers.id",
-        window: TimeWindow.Tumbling(TimeSpan.FromMinutes(1))
-    )
-    .Map("joined => EnrichOrder(joined)")
-    .ToKafka("enriched-orders");
+var env = Flink.GetExecutionEnvironment();
 
-await joinJob.Submit("OrderEnrichment");
+var orders = env.FromKafka("orders", "kafka:9093", "order-group");
+var customers = env.FromKafka("customers", "kafka:9093", "customer-group");
+
+var enriched = orders
+    .Join(customers)
+    .Where(order => order.CustomerId)
+    .EqualTo(customer => customer.Id)
+    .Window(TumblingTimeWindow.Of(TimeSpan.FromMinutes(1)))
+    .Apply((order, customer) => EnrichOrder(order, customer));
+
+enriched.SinkToKafka("enriched-orders", "kafka:9093");
+await env.ExecuteAsync("OrderEnrichment");
 ```
 
 ### 9. Multi-Output Job
 
 ```csharp
-var multiOutputJob = serviceProvider.CreateJobBuilder()
-    .FromKafka("events")
-    .Branch(
-        condition: "eventType == 'order'",
-        thenTo: "order-events",
-        elseTo: "other-events"
-    )
-    .Process("order-events", new OrderProcessor())
-    .Process("other-events", new GeneralProcessor());
+var env = Flink.GetExecutionEnvironment();
 
-await multiOutputJob.Submit("EventRouter");
+var events = env.FromKafka("events", "kafka:9093", "event-group");
+
+// Split stream based on condition
+var splitStream = events.Split(
+    new OutputSelector<Event>() {
+        event => event.EventType == "order" ? new[] { "orders" } : new[] { "others" }
+    }
+);
+
+var orderEvents = splitStream.Select("orders").Process(new OrderProcessor());
+var otherEvents = splitStream.Select("others").Process(new GeneralProcessor());
+
+orderEvents.SinkToKafka("order-events", "kafka:9093");
+otherEvents.SinkToKafka("other-events", "kafka:9093");
+
+await env.ExecuteAsync("EventRouter");
 ```
 
 ## Testing Integration
@@ -170,25 +178,18 @@ await multiOutputJob.Submit("EventRouter");
 public async Task JobSubmission_WithValidConfiguration_ShouldSucceed()
 {
     // Arrange
-    var services = new ServiceCollection();
-    services.AddFlinkJobBuilder(config =>
-    {
-        config.BaseUrl = TestConfig.FlinkGatewayUrl;
-    });
-    
-    var serviceProvider = services.BuildServiceProvider();
+    var env = Flink.GetExecutionEnvironment();
     
     // Act
-    var job = serviceProvider.CreateJobBuilder()
-        .FromKafka("test-input")
-        .Map("message => message.toUpperCase()")
-        .ToKafka("test-output");
+    var input = env.FromKafka("test-input", "kafka:9093", "test-group");
+    var processed = input.Map(msg => msg.ToUpperInvariant());
+    processed.SinkToKafka("test-output", "kafka:9093");
         
-    var result = await job.Submit("TestJob");
+    var jobClient = await env.ExecuteAsync("TestJob");
     
     // Assert
-    Assert.IsTrue(result.IsSuccess);
-    Assert.IsNotEmpty(result.FlinkJobId);
+    Assert.IsNotNull(jobClient);
+    Assert.IsNotEmpty(jobClient.JobId.ToString());
 }
 ```
 

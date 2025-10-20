@@ -6,4 +6,4 @@
   - Ensure Java and Maven are installed and on PATH.
   - You can disable with `/p:BuildFlinkRunner=false` if providing a prebuilt jar.
   - `FLINK_RUNNER_JAR_PATH` remains supported as an override but is no longer required.
-- Preferred usage: build jobs via `Flink.JobBuilder` or `FlinkDotNet.Pipelines` helpers.
+- Preferred usage: build jobs via the [`FlinkDotNet.DataStream`](../FlinkDotNet/FlinkDotNet/) API with direct Flink execution environment.

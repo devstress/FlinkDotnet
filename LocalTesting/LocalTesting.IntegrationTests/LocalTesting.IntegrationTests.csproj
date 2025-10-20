@@ -23,21 +23,22 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LocalTesting.FlinkSqlAppHost\LocalTesting.FlinkSqlAppHost.csproj" />
-    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" SetConfiguration="Configuration=Release" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" SetConfiguration="Configuration=Release" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj" SetConfiguration="Configuration=Release" />
   </ItemGroup>
 
   <!-- MSBuild Target: Force Release configuration for cross-solution FlinkDotNet references -->
   <Target Name="EnsureFlinkDotNetReleaseBuilds" BeforeTargets="ResolveProjectReferences">
     <Message Text="[LocalTesting.IntegrationTests] Ensuring FlinkDotNet projects build in Release configuration..." Importance="high" />
     
-    <!-- Build FlinkDotNet in Release -->
-    <MSBuild Projects="..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj"
+    <!-- Build Flink.JobBuilder in Release -->
+    <MSBuild Projects="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj"
              Properties="Configuration=Release"
              Targets="Build" />
     
-    <!-- Build Flink.JobBuilder in Release -->
-    <MSBuild Projects="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj"
+    <!-- Build FlinkDotNet.DataStream in Release -->
+    <MSBuild Projects="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj"
              Properties="Configuration=Release"
              Targets="Build" />
     
