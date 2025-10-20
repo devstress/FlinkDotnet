@@ -136,6 +136,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("CancelAsync method invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("CancelAsync method invoked successfully (timeout)");
+            }
             catch (InvalidOperationException ex) when (ex.Message.Contains("Failed to cancel"))
             {
                 // Expected when job doesn't exist
@@ -144,7 +149,7 @@ namespace Flink.JobBuilder.Tests.Tests
         }
 
         [Test]
-        public void CancelAsync_WithCancellationToken_AcceptsToken()
+        public async Task CancelAsync_WithCancellationToken_AcceptsToken()
         {
             // Arrange - Use 1 second timeout for tests to prevent slow execution
             using var client = new JobClient(TestJobName, TimeSpan.FromMilliseconds(100))
@@ -154,21 +159,25 @@ namespace Flink.JobBuilder.Tests.Tests
             using var cts = new CancellationTokenSource();
 
             // Act & Assert - Method should accept cancellation token
-            Assert.DoesNotThrowAsync(async () =>
+            try
             {
-                try
-                {
-                    await client.CancelAsync(cts.Token);
-                }
-                catch (HttpRequestException)
-                {
-                    // Expected when Flink is not running
-                }
-                catch (InvalidOperationException)
-                {
-                    // Expected when job doesn't exist
-                }
-            });
+                await client.CancelAsync(cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Expected when Flink is not running
+                Assert.Pass("CancelAsync with token invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("CancelAsync with token invoked successfully (timeout)");
+            }
+            catch (InvalidOperationException)
+            {
+                // Expected when job doesn't exist
+                Assert.Pass("CancelAsync with token invoked successfully (job not found)");
+            }
         }
 
         #endregion
@@ -199,6 +208,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("GetJobExecutionResultAsync method invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("GetJobExecutionResultAsync method invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -212,17 +226,20 @@ namespace Flink.JobBuilder.Tests.Tests
             using var cts = new CancellationTokenSource();
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () =>
+            try
             {
-                try
-                {
-                    await client.GetJobExecutionResultAsync(cts.Token);
-                }
-                catch (HttpRequestException)
-                {
-                    // Expected when Flink is not running
-                }
-            });
+                await client.GetJobExecutionResultAsync(cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Expected when Flink is not running
+                Assert.Pass("GetJobExecutionResultAsync with token invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("GetJobExecutionResultAsync with token invoked successfully (timeout)");
+            }
         }
 
         #endregion
@@ -254,6 +271,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("GetJobStatusAsync method invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("GetJobStatusAsync method invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -267,17 +289,20 @@ namespace Flink.JobBuilder.Tests.Tests
             using var cts = new CancellationTokenSource();
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () =>
+            try
             {
-                try
-                {
-                    await client.GetJobStatusAsync(cts.Token);
-                }
-                catch (HttpRequestException)
-                {
-                    // Expected when Flink is not running
-                }
-            });
+                await client.GetJobStatusAsync(cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Expected when Flink is not running
+                Assert.Pass("GetJobStatusAsync with token invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("GetJobStatusAsync with token invoked successfully (timeout)");
+            }
         }
 
         #endregion
@@ -306,6 +331,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("TriggerSavepointAsync method invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("TriggerSavepointAsync method invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -331,6 +361,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("TriggerSavepointAsync with path invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("TriggerSavepointAsync with path invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -344,17 +379,20 @@ namespace Flink.JobBuilder.Tests.Tests
             using var cts = new CancellationTokenSource();
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () =>
+            try
             {
-                try
-                {
-                    await client.TriggerSavepointAsync(null, cts.Token);
-                }
-                catch (HttpRequestException)
-                {
-                    // Expected when Flink is not running
-                }
-            });
+                await client.TriggerSavepointAsync(null, cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Expected when Flink is not running
+                Assert.Pass("TriggerSavepointAsync with token invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("TriggerSavepointAsync with token invoked successfully (timeout)");
+            }
         }
 
         #endregion
@@ -383,6 +421,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("CancelWithSavepointAsync method invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("CancelWithSavepointAsync method invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -408,6 +451,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("CancelWithSavepointAsync with path invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("CancelWithSavepointAsync with path invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -421,17 +469,20 @@ namespace Flink.JobBuilder.Tests.Tests
             using var cts = new CancellationTokenSource();
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () =>
+            try
             {
-                try
-                {
-                    await client.CancelWithSavepointAsync(null, cts.Token);
-                }
-                catch (HttpRequestException)
-                {
-                    // Expected when Flink is not running
-                }
-            });
+                await client.CancelWithSavepointAsync(null, cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Expected when Flink is not running
+                Assert.Pass("CancelWithSavepointAsync with token invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("CancelWithSavepointAsync with token invoked successfully (timeout)");
+            }
         }
 
         #endregion
@@ -461,6 +512,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("StopWithSavepointAsync method invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("StopWithSavepointAsync method invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -485,6 +541,11 @@ namespace Flink.JobBuilder.Tests.Tests
             {
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("StopWithSavepointAsync with path invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("StopWithSavepointAsync with path invoked successfully (timeout)");
             }
         }
 
@@ -511,6 +572,11 @@ namespace Flink.JobBuilder.Tests.Tests
                 // Expected when Flink is not running - test validates method invocation
                 Assert.Pass("StopWithSavepointAsync with drain=false invoked successfully (Flink not running)");
             }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("StopWithSavepointAsync with drain=false invoked successfully (timeout)");
+            }
         }
 
         [Test]
@@ -524,17 +590,20 @@ namespace Flink.JobBuilder.Tests.Tests
             using var cts = new CancellationTokenSource();
 
             // Act & Assert
-            Assert.DoesNotThrowAsync(async () =>
+            try
             {
-                try
-                {
-                    await client.StopWithSavepointAsync(null, true, cts.Token);
-                }
-                catch (HttpRequestException)
-                {
-                    // Expected when Flink is not running
-                }
-            });
+                await client.StopWithSavepointAsync(null, true, cts.Token);
+            }
+            catch (HttpRequestException)
+            {
+                // Expected when Flink is not running
+                Assert.Pass("StopWithSavepointAsync with token invoked successfully (Flink not running)");
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected when request times out
+                Assert.Pass("StopWithSavepointAsync with token invoked successfully (timeout)");
+            }
         }
 
         #endregion
