@@ -331,12 +331,12 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: 8080, name: "gateway-http")
+    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080") // Overwrite default random port of ASP.NET Core
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)  // Host path to connectors
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
-    .WithReference(sqlGateway.GetEndpoint("sg-http"))  // Reference SQL Gateway endpoint for service discovery
-    .WithReference(kafka);  // Reference Kafka for service discovery and connection string injection
+    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server

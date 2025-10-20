@@ -16,6 +16,7 @@ namespace FlinkDotNet.JobGateway.Services;
 public class FlinkJobManager : IFlinkJobManager
 {
     private readonly ILogger<FlinkJobManager> _logger;
+    private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
     
@@ -41,10 +42,12 @@ public class FlinkJobManager : IFlinkJobManager
     /// Initializes a new instance of the <see cref="FlinkJobManager"/> class.
     /// </summary>
     /// <param name="logger">Logger for tracking job management operations.</param>
+    /// <param name="configuration">Configuration for reading Flink endpoints.</param>
     /// <param name="httpClient">HTTP client configured for Flink REST API communication.</param>
-    public FlinkJobManager(ILogger<FlinkJobManager> logger, HttpClient httpClient)
+    public FlinkJobManager(ILogger<FlinkJobManager> logger, IConfiguration configuration, HttpClient httpClient)
     {
         _logger = logger;
+        _configuration = configuration;
         _httpClient = httpClient;
 
         // Try multiple Flink endpoint discovery strategies
@@ -61,7 +64,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     /// <summary>
     /// Discover Flink endpoint using multiple strategies for maximum compatibility.
-    /// Priority: Aspire service discovery > Environment variables > Default fallback
+    /// Priority: Aspire service discovery > appsettings.json configuration > Environment variables > Default fallback
     /// </summary>
     private string DiscoverFlinkEndpoint()
     {
@@ -83,7 +86,15 @@ public class FlinkJobManager : IFlinkJobManager
             return aspireEndpoint;
         }
 
-        // Strategy 2: Explicit environment variables (Docker Compose)
+        // Strategy 2: Configuration from appsettings.json
+        var configEndpoint = _configuration["Flink:JobManager:BaseUrl"];
+        if (!string.IsNullOrEmpty(configEndpoint))
+        {
+            _logger.LogInformation("Using configuration endpoint: {Endpoint}", configEndpoint);
+            return configEndpoint;
+        }
+
+        // Strategy 3: Explicit environment variables (Docker Compose)
         var envHost = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST");
         var envPort = Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT");
 
@@ -95,7 +106,7 @@ public class FlinkJobManager : IFlinkJobManager
             return envEndpoint;
         }
 
-        // Strategy 3: Default fallback for Docker Compose with standard ports
+        // Strategy 4: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-jobmanager:8081";
         _logger.LogInformation("Using default Docker Compose endpoint: {Endpoint}", defaultEndpoint);
         _logger.LogWarning("Aspire service discovery not found - Gateway may not be able to connect to Flink in testing mode");
@@ -104,7 +115,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     /// <summary>
     /// Discover Flink SQL Gateway endpoint using multiple strategies for maximum compatibility.
-    /// Priority: Aspire service discovery > Environment variables > Default fallback
+    /// Priority: Aspire service discovery > appsettings.json configuration > Environment variables > Default fallback
     /// SQL Gateway runs on port 8083 (separate from JobManager REST API on 8081)
     /// </summary>
     private string DiscoverSqlGatewayEndpoint()
@@ -127,7 +138,15 @@ public class FlinkJobManager : IFlinkJobManager
             return aspireEndpoint;
         }
 
-        // Strategy 2: Explicit environment variables
+        // Strategy 2: Configuration from appsettings.json
+        var configEndpoint = _configuration["Flink:SqlGateway:BaseUrl"];
+        if (!string.IsNullOrEmpty(configEndpoint))
+        {
+            _logger.LogInformation("Using configuration for SQL Gateway: {Endpoint}", configEndpoint);
+            return configEndpoint;
+        }
+
+        // Strategy 3: Explicit environment variables
         var envHost = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST");
         var envPort = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT");
 
@@ -139,7 +158,7 @@ public class FlinkJobManager : IFlinkJobManager
             return envEndpoint;
         }
 
-        // Strategy 3: Default fallback for Docker Compose with standard ports
+        // Strategy 4: Default fallback for Docker Compose with standard ports
         var defaultEndpoint = "http://flink-sql-gateway:8083";
         _logger.LogInformation("Using default Docker network for SQL Gateway: {Endpoint}", defaultEndpoint);
         _logger.LogWarning("Aspire service discovery not found for SQL Gateway - may not be accessible in testing mode");
