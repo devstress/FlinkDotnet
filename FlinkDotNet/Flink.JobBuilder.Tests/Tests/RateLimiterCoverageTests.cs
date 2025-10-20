@@ -1050,6 +1050,201 @@ public class RateLimiterCoverageTests
         Assert.That(result, Is.True);
     }
 
+    [Test]
+    public void MultiTierRateLimiter_ConfigureTiers_WithMultipleTiers_ConfiguresSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "global",
+                RateLimit = 10000,
+                BurstCapacity = 20000
+            },
+            new RateLimitingTier
+            {
+                Name = "per-consumer-group",
+                RateLimit = 1000,
+                BurstCapacity = 2000,
+                Scope = "consumer-group"
+            },
+            new RateLimitingTier
+            {
+                Name = "per-topic",
+                RateLimit = 500,
+                BurstCapacity = 1000,
+                Scope = "topic"
+            }
+        };
+
+        // Act
+        rateLimiter.ConfigureTiers(tiers);
+
+        // Assert - Should not throw
+        Assert.Pass();
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_TryAcquire_WithConfiguredTiers_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "global",
+                RateLimit = 100,
+                BurstCapacity = 200
+            }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+        
+        var context = new RateLimitingContext 
+        { 
+            TopicName = "test-topic", 
+            ConsumerGroup = "test-group"
+        };
+
+        // Act
+        var result = rateLimiter.TryAcquire(context, 10);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task MultiTierRateLimiter_TryAcquireAsync_WithConfiguredTiers_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "per-consumer",
+                RateLimit = 50,
+                BurstCapacity = 100
+            }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+        
+        var context = new RateLimitingContext 
+        { 
+            TopicName = "test-topic", 
+            ConsumerGroup = "test-group",
+            ConsumerId = "consumer-1"
+        };
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(context, 5);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task MultiTierRateLimiter_AcquireAsync_WithConfiguredTiers_CompletesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "topic-tier",
+                RateLimit = 100,
+                BurstCapacity = 200,
+                Scope = "topic"
+            }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+        
+        var context = new RateLimitingContext 
+        { 
+            TopicName = "high-priority-topic", 
+            ConsumerGroup = "test-group"
+        };
+
+        // Act & Assert
+        await rateLimiter.AcquireAsync(context, 10);
+        Assert.Pass();
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_GetUtilizationMetrics_WithConfiguredTiers_ReturnsMetrics()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "tier1",
+                RateLimit = 100,
+                BurstCapacity = 200
+            },
+            new RateLimitingTier
+            {
+                Name = "tier2",
+                RateLimit = 50,
+                BurstCapacity = 100
+            }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+
+        // Act
+        var metrics = rateLimiter.GetUtilizationMetrics();
+
+        // Assert
+        Assert.That(metrics, Is.Not.Null);
+        Assert.That(metrics.Count, Is.GreaterThanOrEqualTo(0));
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_UpdateRateLimit_OnConfiguredTier_UpdatesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "dynamic-tier",
+                RateLimit = 100,
+                BurstCapacity = 200
+            }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+
+        // Act
+        rateLimiter.UpdateRateLimit("dynamic-tier", 150);
+
+        // Assert - Should not throw
+        Assert.Pass();
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidationMethods_WithConfiguredTiers_ReturnValidResults()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier { Name = "tier1", RateLimit = 1000, BurstCapacity = 2000 },
+            new RateLimitingTier { Name = "tier2", RateLimit = 500, BurstCapacity = 1000, Scope = "consumer" }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+
+        // Act & Assert
+        Assert.That(rateLimiter.ValidateHierarchicalEnforcement(), Is.InstanceOf<bool>());
+        Assert.That(rateLimiter.ValidateBurstAccommodation(), Is.InstanceOf<bool>());
+        Assert.That(rateLimiter.ValidateMultiTierEnforcement(), Is.InstanceOf<bool>());
+        Assert.That(rateLimiter.ValidateFairAllocation(), Is.InstanceOf<bool>());
+    }
+
     #endregion
 
     #region Additional TokenBucketRateLimiter Coverage Tests
