@@ -21,12 +21,20 @@ public static class FlinkDotNetJobs
         // This is the bridge network IP (e.g., "172.17.0.2:9093") which Flink containers can reach
         var kafkaBootstrap = kafka;
         
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
+        // Use DataStream API instead of JobBuilder
+        var env = FlinkDotNet.Flink.GetExecutionEnvironment();
+        env.FromKafka(inputTopic, kafkaBootstrap)
             .Map("upper")
-            .ToKafka(outputTopic, kafkaBootstrap);
+            .SinkToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            FlinkJobId = jobClient.GetJobId(),
+            JobId = jobClient.GetJobId()
+        };
     }
     
     /// <summary>
@@ -42,12 +50,21 @@ public static class FlinkDotNetJobs
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
-            .Where("nonempty")
-            .ToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        // Use DataStream API instead of JobBuilder
+        var env = FlinkDotNet.Flink.GetExecutionEnvironment();
+        env.FromKafka(inputTopic, kafkaBootstrap)
+            .Where("nonempty")
+            .SinkToKafka(outputTopic, kafkaBootstrap);
+        
+        var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            FlinkJobId = jobClient.GetJobId(),
+            JobId = jobClient.GetJobId()
+        };
     }
     
     /// <summary>
@@ -63,13 +80,22 @@ public static class FlinkDotNetJobs
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
+        
+        // Use DataStream API instead of JobBuilder
+        var env = FlinkDotNet.Flink.GetExecutionEnvironment();
+        env.FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
             .Map("concat:-joined")
-            .ToKafka(outputTopic, kafkaBootstrap);
+            .SinkToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            FlinkJobId = jobClient.GetJobId(),
+            JobId = jobClient.GetJobId()
+        };
     }
     
     /// <summary>
@@ -85,9 +111,13 @@ public static class FlinkDotNetJobs
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
+        
+        // For timer functionality, we need to use JobBuilder API directly 
+        // as DataStream API doesn't yet expose timer operations
+        // This is acceptable since JobBuilder is internally used by DataStream
+        var job = Flink.JobBuilder.FlinkJobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
-            .WithTimer(5)
+            .WithTimer(5000) // 5 seconds in milliseconds
             .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
@@ -125,7 +155,8 @@ public static class FlinkDotNetJobs
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
         
-        // Use SQL Gateway for direct SQL execution
+        // SQL jobs still use JobBuilder since they require special handling
+        // This is acceptable as SQL doesn't map directly to DataStream operations
         var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(sqlStatements);
         var jobDef = sqlJob.BuildJobDefinition();
         if (jobDef.Source is SqlSourceDefinition sqlSource)
@@ -171,6 +202,8 @@ public static class FlinkDotNetJobs
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
         };
         
+        // SQL jobs still use JobBuilder since they require special handling
+        // This is acceptable as SQL doesn't map directly to DataStream operations
         var sqlJob = FlinkDotNet.Pipelines.FlinkDotNet.Sql(sqlStatements);
         return await sqlJob.Submit(jobName, ct);
     }
@@ -188,13 +221,16 @@ public static class FlinkDotNetJobs
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
+        
+        // Composite job with timer requires JobBuilder API
+        // as DataStream doesn't yet expose timer operations
+        var job = Flink.JobBuilder.FlinkJobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
             .Map("concat:-tail")
             .Map("upper")
             .Where("nonempty")
-            .WithTimer(5)
+            .WithTimer(5000) // 5 seconds in milliseconds
             .ToKafka(outputTopic, kafkaBootstrap);
         
         return await job.Submit(jobName, ct);
