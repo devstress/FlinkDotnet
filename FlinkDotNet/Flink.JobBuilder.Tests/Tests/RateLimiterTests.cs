@@ -576,7 +576,7 @@ public class RateLimiterTests
 
     #endregion
 
-    #region RateLimiterFactory Tests (5 tests)
+    #region RateLimiterFactory Tests (15 tests)
 
     [Test]
     public void RateLimiterFactory_CreateLagBasedBucket_ValidParameters_CreatesInstance()
@@ -585,6 +585,21 @@ public class RateLimiterTests
 
         Assert.That(rateLimiter, Is.Not.Null);
         Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(10.0));
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateLagBasedBucket_WithAllParameters_CreatesInstance()
+    {
+        var lagThreshold = TimeSpan.FromSeconds(10);
+        var rateLimiter = RateLimiterFactory.CreateLagBasedBucket(
+            rateLimit: 50.0,
+            burstCapacity: 100.0,
+            consumerGroup: "production-group",
+            lagThreshold: lagThreshold
+        );
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(50.0));
     }
 
     [Test]
@@ -598,6 +613,23 @@ public class RateLimiterTests
     }
 
     [Test]
+    public void RateLimiterFactory_CreateProductionConfiguration_WithCustomParameters_ReturnsConfigured()
+    {
+        var (rateLimiter, config) = RateLimiterFactory.CreateProductionConfiguration(
+            rateLimit: 2000.0,
+            burstCapacity: 4000.0,
+            consumerGroup: "custom-consumer-group",
+            lagThreshold: TimeSpan.FromSeconds(10)
+        );
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(2000.0));
+        Assert.That(config, Contains.Substring("2000"));
+        Assert.That(config, Contains.Substring("4000"));
+        Assert.That(config, Contains.Substring("custom-consumer-group"));
+    }
+
+    [Test]
     public void RateLimiterFactory_CreateDevelopmentConfiguration_ReturnsConfiguredLimiter()
     {
         var (rateLimiter, config) = RateLimiterFactory.CreateDevelopmentConfiguration();
@@ -605,6 +637,22 @@ public class RateLimiterTests
         Assert.That(rateLimiter, Is.Not.Null);
         Assert.That(config, Is.Not.Null);
         Assert.That(config, Is.Not.Empty);
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateDevelopmentConfiguration_WithCustomParameters_ReturnsConfigured()
+    {
+        var (rateLimiter, config) = RateLimiterFactory.CreateDevelopmentConfiguration(
+            rateLimit: 50.0,
+            burstCapacity: 100.0,
+            consumerGroup: "dev-test-group"
+        );
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(50.0));
+        Assert.That(config, Contains.Substring("50"));
+        Assert.That(config, Contains.Substring("100"));
+        Assert.That(config, Contains.Substring("dev-test-group"));
     }
 
     [Test]
@@ -617,9 +665,84 @@ public class RateLimiterTests
     }
 
     [Test]
+    public void RateLimiterFactory_CreateWithInMemoryStorage_WithRateLimiterId_CreatesInstance()
+    {
+        var rateLimiter = RateLimiterFactory.CreateWithInMemoryStorage(
+            rateLimit: 15.0,
+            burstCapacity: 30.0,
+            rateLimiterId: "custom-limiter-id"
+        );
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(15.0));
+    }
+
+    [Test]
     public void RateLimiterFactory_CreateMultiTierWithInMemoryStorage_CreatesInstance()
     {
         var rateLimiter = RateLimiterFactory.CreateMultiTierWithInMemoryStorage();
+
+        Assert.That(rateLimiter, Is.Not.Null);
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateProductionKafkaConfig_WithBootstrapServers_ReturnsConfig()
+    {
+        var config = RateLimiterFactory.CreateProductionKafkaConfig("localhost:9092");
+
+        Assert.That(config, Is.Not.Null);
+        Assert.That(config.BootstrapServers, Is.EqualTo("localhost:9092"));
+        Assert.That(config.Performance, Is.Not.Null);
+        Assert.That(config.Performance.ReplicationFactor, Is.EqualTo(3));
+        Assert.That(config.Performance.PartitionCount, Is.EqualTo(12));
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateProductionKafkaConfig_WithCustomTopicName_ReturnsConfig()
+    {
+        var config = RateLimiterFactory.CreateProductionKafkaConfig(
+            "kafka.example.com:9092",
+            "custom-state-topic"
+        );
+
+        Assert.That(config, Is.Not.Null);
+        Assert.That(config.BootstrapServers, Is.EqualTo("kafka.example.com:9092"));
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateWithKafkaStorage_CreatesInstance()
+    {
+        var kafkaConfig = RateLimiterFactory.CreateProductionKafkaConfig("localhost:9092");
+        var rateLimiter = RateLimiterFactory.CreateWithKafkaStorage(
+            rateLimit: 100.0,
+            burstCapacity: 200.0,
+            kafkaConfig: kafkaConfig
+        );
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(100.0));
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateWithKafkaStorage_WithRateLimiterId_CreatesInstance()
+    {
+        var kafkaConfig = RateLimiterFactory.CreateProductionKafkaConfig("localhost:9092");
+        var rateLimiter = RateLimiterFactory.CreateWithKafkaStorage(
+            rateLimit: 150.0,
+            burstCapacity: 300.0,
+            kafkaConfig: kafkaConfig,
+            rateLimiterId: "kafka-limiter-id"
+        );
+
+        Assert.That(rateLimiter, Is.Not.Null);
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(150.0));
+    }
+
+    [Test]
+    public void RateLimiterFactory_CreateMultiTierWithKafkaStorage_CreatesInstance()
+    {
+        var kafkaConfig = RateLimiterFactory.CreateProductionKafkaConfig("localhost:9092");
+        var rateLimiter = RateLimiterFactory.CreateMultiTierWithKafkaStorage(kafkaConfig);
 
         Assert.That(rateLimiter, Is.Not.Null);
     }
