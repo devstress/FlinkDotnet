@@ -17,16 +17,24 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
+        Console.WriteLine($"[CreateUppercaseJob] START - jobName={jobName}, inputTopic={inputTopic}, outputTopic={outputTopic}");
+        Console.WriteLine($"[CreateUppercaseJob] Kafka bootstrap servers: {kafka}");
+        
         // Use the Kafka container IP passed from test infrastructure
         // This is the bridge network IP (e.g., "172.17.0.2:9093") which Flink containers can reach
         var kafkaBootstrap = kafka;
         
+        Console.WriteLine($"[CreateUppercaseJob] Building job with JobBuilder...");
         var job = FlinkDotNet.Flink.JobBuilder
             .FromKafka(inputTopic, kafkaBootstrap)
             .Map("upper")
             .ToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        Console.WriteLine($"[CreateUppercaseJob] Submitting job to Gateway...");
+        var result = await job.Submit(jobName, ct);
+        Console.WriteLine($"[CreateUppercaseJob] Job submission result - Success: {result.Success}, JobId: {result.FlinkJobId}, Error: {result.ErrorMessage}");
+        
+        return result;
     }
     
     /// <summary>
@@ -39,6 +47,9 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
+        Console.WriteLine($"[CreateFilterJob] START - jobName={jobName}");
+        Console.WriteLine($"[CreateFilterJob] Building job with filter operation...");
+        
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
@@ -47,7 +58,11 @@ public static class FlinkDotNetJobs
             .Where("nonempty")
             .ToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        Console.WriteLine($"[CreateFilterJob] Submitting job to Gateway...");
+        var result = await job.Submit(jobName, ct);
+        Console.WriteLine($"[CreateFilterJob] Result - Success: {result.Success}, JobId: {result.FlinkJobId}");
+        
+        return result;
     }
     
     /// <summary>
