@@ -370,4 +370,113 @@ public class WindowComponentsTests
     }
 
     #endregion
+
+    #region Static Factory Method Tests for Window Assigners
+
+    [Test]
+    public void SessionWindows_StaticWithGap_CreatesTypedAssigner()
+    {
+        // Act - Using the static factory method
+        var assigner = SessionWindows.WithGap<int>(Time.Minutes(5));
+
+        // Assert
+        Assert.That(assigner, Is.Not.Null);
+        Assert.That(assigner, Is.InstanceOf<SessionWindows<int>>());
+    }
+
+    [Test]
+    public void TumblingEventTimeWindows_StaticOf_CreatesTypedAssigner()
+    {
+        // Act - Using the static factory method
+        var assigner = TumblingEventTimeWindows.Of<int>(Time.Seconds(5));
+
+        // Assert
+        Assert.That(assigner, Is.Not.Null);
+        Assert.That(assigner, Is.InstanceOf<TumblingEventTimeWindows<int>>());
+    }
+
+    [Test]
+    public void TumblingEventTimeWindows_StaticOfWithOffset_CreatesTypedAssigner()
+    {
+        // Act - Using the static factory method with offset
+        var assigner = TumblingEventTimeWindows.Of<int>(Time.Seconds(5), Time.Seconds(1));
+
+        // Assert
+        Assert.That(assigner, Is.Not.Null);
+        Assert.That(assigner, Is.InstanceOf<TumblingEventTimeWindows<int>>());
+    }
+
+    [Test]
+    public void SlidingEventTimeWindows_StaticOf_CreatesTypedAssigner()
+    {
+        // Act - Using the static factory method
+        var assigner = SlidingEventTimeWindows.Of<int>(Time.Seconds(10), Time.Seconds(5));
+
+        // Assert
+        Assert.That(assigner, Is.Not.Null);
+        Assert.That(assigner, Is.InstanceOf<SlidingEventTimeWindows<int>>());
+    }
+
+    [Test]
+    public void SlidingEventTimeWindows_StaticOfWithOffset_CreatesTypedAssigner()
+    {
+        // Act - Using the static factory method with offset
+        var assigner = SlidingEventTimeWindows.Of<int>(Time.Seconds(10), Time.Seconds(5), Time.Seconds(2));
+
+        // Assert
+        Assert.That(assigner, Is.Not.Null);
+        Assert.That(assigner, Is.InstanceOf<SlidingEventTimeWindows<int>>());
+    }
+
+    [Test]
+    public void SessionWindows_StaticWithGap_CanAssignWindows()
+    {
+        // Arrange
+        var assigner = SessionWindows.WithGap<string>(Time.Minutes(5));
+        string element = "test";
+        long timestamp = 10000;
+
+        // Act
+        var windows = assigner.AssignWindows(element, timestamp);
+
+        // Assert
+        Assert.That(windows, Is.Not.Null);
+        Assert.That(windows, Is.Not.Empty);
+        var window = windows.First();
+        Assert.That(window.Start, Is.EqualTo(timestamp));
+    }
+
+    [Test]
+    public void TumblingEventTimeWindows_StaticOf_CanAssignWindows()
+    {
+        // Arrange
+        var assigner = TumblingEventTimeWindows.Of<string>(Time.Seconds(5));
+        string element = "test";
+        long timestamp = 12000; // 12 seconds
+
+        // Act
+        var windows = assigner.AssignWindows(element, timestamp);
+
+        // Assert
+        Assert.That(windows, Is.Not.Null);
+        Assert.That(windows, Is.Not.Empty);
+    }
+
+    [Test]
+    public void SlidingEventTimeWindows_StaticOf_CanAssignWindows()
+    {
+        // Arrange
+        var assigner = SlidingEventTimeWindows.Of<string>(Time.Seconds(10), Time.Seconds(5));
+        string element = "test";
+        long timestamp = 12000;
+
+        // Act
+        var windows = assigner.AssignWindows(element, timestamp);
+
+        // Assert
+        Assert.That(windows, Is.Not.Null);
+        Assert.That(windows.Count(), Is.GreaterThan(0));
+    }
+
+    #endregion
 }
