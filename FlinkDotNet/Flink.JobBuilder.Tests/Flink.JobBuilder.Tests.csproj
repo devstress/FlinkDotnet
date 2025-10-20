@@ -5,6 +5,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <!-- Disable XML documentation warnings for test projects -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Suppress test-specific warnings that are acceptable in test code:
+         CS8602: Dereference of a possibly null reference (common in test assertions)
+         CS8625: Cannot convert null literal to non-nullable reference type (testing null scenarios)
+         CS8425: Async-iterator missing EnumeratorCancellation attribute (test helper methods)
+         S4144: Methods should not have identical implementations (test duplication is acceptable)
+         S2094: Classes should not be empty (test fixture placeholders)
+         S2681: Multiline blocks should be enclosed in curly braces (test formatting)
+         S6610: StartsWith overload preference (test readability over performance)
+         S2925: Thread.Sleep in tests (acceptable for timing tests)
+         EnableGenerateDocumentationFile: Informational message about enabling doc generation
+    -->
+    <NoWarn>$(NoWarn);CS8602;CS8625;CS8425;S4144;S2094;S2681;S6610;S2925;EnableGenerateDocumentationFile</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

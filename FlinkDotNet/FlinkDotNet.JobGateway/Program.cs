@@ -10,8 +10,15 @@ using Serilog;
 
 namespace FlinkDotNet.JobGateway;
 
+/// <summary>
+/// Main program entry point for the Flink Job Gateway API.
+/// </summary>
 public static class Program
 {
+    /// <summary>
+    /// Main entry point for the application. Configures logging, services, and HTTP pipeline.
+    /// </summary>
+    /// <param name="args">Command-line arguments.</param>
     public static async Task Main(string[] args)
     {
         // Configure Serilog early for startup logging
