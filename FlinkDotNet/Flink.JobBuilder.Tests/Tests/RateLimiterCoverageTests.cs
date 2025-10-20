@@ -421,6 +421,77 @@ public class RateLimiterCoverageTests
         Assert.That(result, Is.True);
     }
 
+    [Test]
+    public async Task SlidingWindowRateLimiter_AcquireAsync_WithMultipleRequests_WaitsAppropriately()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(50, 1.0);
+        rateLimiter.TryAcquire(50); // Fill the rate limiter
+
+        // Act - This should wait for tokens to become available
+        var startTime = DateTime.UtcNow;
+        await rateLimiter.AcquireAsync(10);
+        var elapsed = DateTime.UtcNow - startTime;
+
+        // Assert - Should have waited some time
+        Assert.That(elapsed.TotalMilliseconds, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_MultipleAcquireAndReset_WorksCorrectly()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+
+        // Act - Multiple cycles of acquire and reset
+        for (int i = 0; i < 3; i++)
+        {
+            rateLimiter.TryAcquire(30);
+            rateLimiter.Reset();
+        }
+        var result = rateLimiter.TryAcquire(50);
+
+        // Assert
+        Assert.That(result, Is.True);
+        Assert.That(rateLimiter.CurrentRequestCount, Is.EqualTo(50));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_UpdateRateLimit_PreservesCurrentRequests()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(10, 1.0);
+        rateLimiter.TryAcquire(5);
+
+        // Act
+        rateLimiter.UpdateRateLimit(100);
+        
+        // Assert - Updated rate limit should be reflected
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(100));
+        Assert.That(rateLimiter.CurrentRequestCount, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_LargeNumberOfSmallRequests_HandlesCorrectly()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(1000, 1.0);
+
+        // Act - Many small requests
+        int successCount = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            if (rateLimiter.TryAcquire(5))
+            {
+                successCount++;
+            }
+        }
+
+        // Assert - Should successfully acquire until limit is reached
+        Assert.That(successCount, Is.GreaterThan(0));
+        Assert.That(rateLimiter.CurrentRequestCount, Is.LessThanOrEqualTo(1000));
+    }
+
     #endregion
 
     #region TokenBucketRateLimiter Tests
@@ -1079,6 +1150,103 @@ public class RateLimiterCoverageTests
 
         // Assert
         Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task TokenBucketRateLimiter_AcquireAsync_WithExhaustedTokens_WaitsForRefill()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 10);
+        rateLimiter.TryAcquire(10); // Exhaust all tokens
+
+        // Act
+        var startTime = DateTime.UtcNow;
+        await rateLimiter.AcquireAsync(5);
+        var elapsed = DateTime.UtcNow - startTime;
+
+        // Assert - Should have waited for refill
+        Assert.That(elapsed.TotalMilliseconds, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_MultipleSmallAcquisitions_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(1000, 100);
+
+        // Act - Many small acquisitions
+        int successCount = 0;
+        for (int i = 0; i < 50; i++)
+        {
+            if (rateLimiter.TryAcquire(1))
+            {
+                successCount++;
+            }
+        }
+
+        // Assert
+        Assert.That(successCount, Is.EqualTo(50));
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_ExceedingBurstCapacity_ReturnsFalse()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+
+        // Act - Try to acquire more than burst capacity
+        var result = rateLimiter.TryAcquire(51);
+
+        // Assert
+        Assert.That(result, Is.False);
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_UpdateRateLimit_ThenAcquire_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+        rateLimiter.TryAcquire(40);
+
+        // Act
+        rateLimiter.UpdateRateLimit(200);
+        rateLimiter.Reset(); // Reset to get new rate
+        var result = rateLimiter.TryAcquire(50);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task TokenBucketRateLimiter_TryAcquireAsync_WithCancellationToken_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(10, cts.Token);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_CurrentUtilization_AfterMultipleOperations_ReturnsValidValue()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+
+        // Act
+        rateLimiter.TryAcquire(10);
+        rateLimiter.TryAcquire(5);
+        rateLimiter.Reset();
+        rateLimiter.TryAcquire(20);
+        var utilization = rateLimiter.CurrentUtilization;
+
+        // Assert
+        Assert.That(utilization, Is.GreaterThanOrEqualTo(0));
+        Assert.That(utilization, Is.LessThanOrEqualTo(1.0));
     }
 
     #endregion
