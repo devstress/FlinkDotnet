@@ -39,6 +39,9 @@ public class GlobalTestInfrastructure
 
         try
         {
+            // Clean up test-logs directory from previous test runs
+            CleanupTestLogsDirectory();
+            
             // Capture initial network state before infrastructure starts
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("0-before-setup");
             
@@ -65,9 +68,9 @@ public class GlobalTestInfrastructure
             Console.WriteLine("🔍 Using optimized polling (check every 2s, max 20s)...");
             
             bool containersDetected = false;
-            for (int attempt = 1; attempt <= 10; attempt++) // 10 attempts × 2s = 20s max
+            for (int attempt = 1; attempt <= 10; attempt++) // 10 attempts × 3s = 30s max
             {
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(3));
                 
                 var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
@@ -241,13 +244,66 @@ public class GlobalTestInfrastructure
     }
 
     /// <summary>
-    /// Capture logs from all containers before teardown
+    /// Clean up the test-logs directory at the start of test execution.
+    /// Ensures old logs from previous test runs don't accumulate.
+    /// </summary>
+    private static void CleanupTestLogsDirectory()
+    {
+        try
+        {
+            Console.WriteLine("🧹 Cleaning up test-logs directory...");
+            
+            var repoRoot = FindRepositoryRoot(Environment.CurrentDirectory);
+            if (repoRoot == null)
+            {
+                Console.WriteLine("⚠️ Cannot find repository root, skipping test-logs cleanup");
+                return;
+            }
+            
+            var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
+            
+            if (Directory.Exists(testLogsDir))
+            {
+                try
+                {
+                    // Delete all files and subdirectories
+                    Directory.Delete(testLogsDir, recursive: true);
+                    Console.WriteLine($"✅ Deleted existing test-logs directory");
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine($"⚠️ Could not delete some files (may be locked): {ex.Message}");
+                    // Continue anyway - we'll try to clean up what we can
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.WriteLine($"⚠️ Access denied when deleting test-logs: {ex.Message}");
+                    // Continue anyway
+                }
+            }
+            
+            // Recreate the directory for this test run
+            Directory.CreateDirectory(testLogsDir);
+            Console.WriteLine($"✅ Created fresh test-logs directory: {testLogsDir}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error during test-logs cleanup: {ex.Message}");
+            // Don't fail the test run if cleanup fails
+        }
+    }
+
+    /// <summary>
+    /// Capture logs from Flink containers only before teardown.
+    /// Only captures logs from JobManager and TaskManager to improve performance.
+    /// Skips containers with no log output.
     /// </summary>
     private static async Task CaptureAllContainerLogsAsync()
     {
         try
         {
-            Console.WriteLine("📋 Capturing container logs before teardown...");
+            Console.WriteLine("📋 Capturing Flink container logs before teardown...");
+            Console.WriteLine("   ℹ️ Only capturing JobManager and TaskManager logs for performance");
             
             var repoRoot = FindRepositoryRoot(Environment.CurrentDirectory);
             if (repoRoot == null)
@@ -259,15 +315,12 @@ public class GlobalTestInfrastructure
             var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
             
-            // Capture logs from all key containers (containers log to stdout/stderr, not files)
-            await CaptureContainerLogAsync("kafka", Path.Combine(testLogsDir, $"Kafka.container.log.{timestamp}"));
+            // PERFORMANCE OPTIMIZATION: Only capture logs from Flink JobManager and TaskManager
+            // Skip Kafka, Temporal, Redis, Gateway, and other containers to reduce teardown time
             await CaptureContainerLogAsync("flink-taskmanager", Path.Combine(testLogsDir, $"Flink.TaskManager.container.log.{timestamp}"));
             await CaptureContainerLogAsync("flink-jobmanager", Path.Combine(testLogsDir, $"Flink.JobManager.container.log.{timestamp}"));
-            await CaptureContainerLogAsync("temporal-server", Path.Combine(testLogsDir, $"temporal-server.container.log.{timestamp}"));
-            await CaptureContainerLogAsync("temporal-postgres", Path.Combine(testLogsDir, $"temporal-postgres.container.log.{timestamp}"));
-            await CaptureContainerLogAsync("redis", Path.Combine(testLogsDir, $"Redis.container.log.{timestamp}"));
             
-            Console.WriteLine("✅ Container logs captured");
+            Console.WriteLine("✅ Flink container logs captured");
         }
         catch (Exception ex)
         {
@@ -276,7 +329,8 @@ public class GlobalTestInfrastructure
     }
     
     /// <summary>
-    /// Capture logs from a specific container
+    /// Capture logs from a specific container with optimized log checking.
+    /// Skips containers that have no log output to improve performance.
     /// </summary>
     private static async Task CaptureContainerLogAsync(string containerNameFilter, string outputPath)
     {
@@ -292,23 +346,34 @@ public class GlobalTestInfrastructure
             
             if (containers.Count == 0)
             {
-                Console.WriteLine($"⚠️ No container matching '{containerNameFilter}' found");
+                Console.WriteLine($"⏭️ Skipping: No container matching '{containerNameFilter}' found");
                 return;
             }
             
             // Take the first matching container
             var containerName = containers[0];
-            Console.WriteLine($"🔍 Found container: {containerName}");
+            Console.WriteLine($"🔍 Processing container: {containerName}");
             
-            // Get container logs (stdout + stderr, using 2>&1 redirect)
-            var logs = await RunDockerCommandAsync($"logs {containerName} 2>&1");
+            // PERFORMANCE OPTIMIZATION: Check if container has logs before attempting to read them
+            // Use --tail 1 to quickly check if there's any output
+            var logCheck = await RunDockerCommandAsync($"logs {containerName} --tail 1 2>&1");
             
             // Check if logs contain error about container not found
-            if (logs.Contains("no container with name or ID", StringComparison.OrdinalIgnoreCase))
+            if (logCheck.Contains("no container with name or ID", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine($"⚠️ Container {containerName} was already removed, cannot capture logs");
+                Console.WriteLine($"⏭️ Skipping: Container {containerName} was already removed");
                 return;
             }
+            
+            // If log check is empty, skip full log capture
+            if (string.IsNullOrWhiteSpace(logCheck))
+            {
+                Console.WriteLine($"⏭️ Skipping: Container {containerName} has no log output");
+                return;
+            }
+            
+            // Container has logs, proceed with full capture
+            var logs = await RunDockerCommandAsync($"logs {containerName} 2>&1");
             
             if (!string.IsNullOrWhiteSpace(logs))
             {
@@ -318,7 +383,7 @@ public class GlobalTestInfrastructure
             }
             else
             {
-                Console.WriteLine($"⚠️ No logs available for {containerName}");
+                Console.WriteLine($"⏭️ Skipping: No logs available for {containerName}");
             }
         }
         catch (Exception ex)
