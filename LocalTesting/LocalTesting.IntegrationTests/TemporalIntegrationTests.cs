@@ -28,6 +28,13 @@ public class TemporalIntegrationTests : LocalTestingTestBase
     [Test]
     public async Task Temporal_BizTalkStyleOrchestration_ComplexOrderProcessing()
     {
+        // Skip if Temporal is not initialized (when SKIP_TEMPORAL_INIT=true)
+        if (string.IsNullOrEmpty(TemporalEndpoint))
+        {
+            Assert.Ignore("Temporal server not initialized (SKIP_TEMPORAL_INIT=true or initialization failed)");
+            return;
+        }
+        
         TestPrerequisites.EnsureDockerAvailable();
         
         var baseToken = TestContext.CurrentContext.CancellationToken;

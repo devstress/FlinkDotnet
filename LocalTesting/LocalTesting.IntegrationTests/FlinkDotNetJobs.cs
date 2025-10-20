@@ -17,17 +17,25 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
+        Console.WriteLine($"[CreateUppercaseJob] START - jobName={jobName}, inputTopic={inputTopic}, outputTopic={outputTopic}, kafka={kafka}");
+        
         // Use the Kafka container IP passed from test infrastructure
         // This is the bridge network IP (e.g., "172.17.0.2:9093") which Flink containers can reach
         var kafkaBootstrap = kafka;
         
         // Use DataStream API instead of JobBuilder
+        Console.WriteLine($"[CreateUppercaseJob] Creating execution environment...");
         var env = FlinkDotNet.Flink.GetExecutionEnvironment();
+        
+        Console.WriteLine($"[CreateUppercaseJob] Building DataStream pipeline...");
         env.FromKafka(inputTopic, kafkaBootstrap)
             .Map("upper")
             .SinkToKafka(outputTopic, kafkaBootstrap);
         
+        Console.WriteLine($"[CreateUppercaseJob] Executing job async...");
         var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        Console.WriteLine($"[CreateUppercaseJob] Job executed successfully, JobId={jobClient.GetJobId()}");
         
         return new JobSubmissionResult
         {
@@ -47,6 +55,8 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
+        Console.WriteLine($"[CreateFilterJob] START - jobName={jobName}");
+        
         // Flink jobs run inside containers and must use container network name 'kafka:9092'
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
@@ -57,7 +67,10 @@ public static class FlinkDotNetJobs
             .Where("nonempty")
             .SinkToKafka(outputTopic, kafkaBootstrap);
         
+        Console.WriteLine($"[CreateFilterJob] Executing job async...");
         var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        Console.WriteLine($"[CreateFilterJob] Job executed successfully, JobId={jobClient.GetJobId()}");
         
         return new JobSubmissionResult
         {
