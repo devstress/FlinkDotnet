@@ -147,7 +147,33 @@ public class GlobalTestInfrastructure
             Console.WriteLine("✅ Gateway resource reported healthy");
 
             var gatewayEndpoint = await GetGatewayEndpointAsync();
-            Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
+            Console.WriteLine($"🔍 Gateway endpoint (Docker discovery): {gatewayEndpoint}");
+            
+            // CRITICAL FIX: For .NET projects (not containers), try to get endpoint from Aspire configuration first
+            // The Gateway is a .NET project, not a Docker container, so it may not appear in Docker ps
+            var gatewayFromConfig = app.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()
+                .GetConnectionString("flink-job-gateway");
+            
+            if (!string.IsNullOrEmpty(gatewayFromConfig))
+            {
+                gatewayEndpoint = gatewayFromConfig;
+                Console.WriteLine($"✅ Gateway endpoint from Aspire config: {gatewayEndpoint}");
+            }
+            else
+            {
+                // Fallback: Try to construct from known resource endpoints
+                // Gateway project should have an HTTP endpoint we can discover
+                try
+                {
+                    var resourceNotifications = app.Services.GetRequiredService<Aspire.Hosting.ApplicationModel.ResourceNotificationService>();
+                    // For now, use the discovered/fallback endpoint
+                    Console.WriteLine($"⚠️ Gateway endpoint not in config, using discovered: {gatewayEndpoint}");
+                }
+                catch
+                {
+                    Console.WriteLine($"⚠️ Could not get Gateway endpoint from Aspire, using: {gatewayEndpoint}");
+                }
+            }
             
             // Set environment variable for FlinkJobGatewayService configuration
             Environment.SetEnvironmentVariable("FLINK_GATEWAY_URL", gatewayEndpoint);
@@ -547,21 +573,31 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
-
-            if (!string.IsNullOrWhiteSpace(gatewayContainers))
+            // Get all containers and filter in C# to handle Aspire's random suffixes
+            // We want "flink-job-gateway-*" but NOT "flink-sql-gateway-*"
+            var allContainers = await RunDockerCommandAsync("ps --format \"{{.Names}} {{.Ports}}\"");
+            
+            if (!string.IsNullOrWhiteSpace(allContainers))
             {
-                var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var lines = allContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 foreach (var line in lines)
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
-                    if (match.Success)
+                    // Look for lines containing "flink-job-gateway" (but not "sql")
+                    if (line.Contains("flink-job-gateway", StringComparison.OrdinalIgnoreCase) && 
+                        !line.Contains("sql", StringComparison.OrdinalIgnoreCase))
                     {
-                        return $"http://localhost:{match.Groups[1].Value}/";
+                        var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
+                        if (match.Success)
+                        {
+                            var endpoint = $"http://localhost:{match.Groups[1].Value}/";
+                            Console.WriteLine($"🔍 Discovered FlinkDotNet Gateway endpoint: {endpoint}");
+                            return endpoint;
+                        }
                     }
                 }
             }
 
+            Console.WriteLine($"⚠️ Could not discover Gateway endpoint dynamically, using configured port {Ports.GatewayHostPort}");
             return $"http://localhost:{Ports.GatewayHostPort}/";
         }
         catch (Exception ex)

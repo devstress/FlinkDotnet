@@ -96,9 +96,9 @@ namespace Flink.JobBuilder.Services
 
         public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, CancellationToken cancellationToken = default)
         {
-            _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway", jobDefinition.Metadata.JobId);
-            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}",
-                jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway at {BaseUrl}", jobDefinition.Metadata.JobId, _configuration.BaseUrl);
+            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId} to {BaseUrl}, Source.BootstrapServers={BootstrapServers}",
+                jobDefinition.Metadata.JobId, _configuration.BaseUrl, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             var validation = ValidateJobDefinition(jobDefinition);
             if (validation != null)
