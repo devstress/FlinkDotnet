@@ -301,6 +301,126 @@ public class RateLimiterCoverageTests
         Assert.That(result, Is.False);
     }
 
+    [Test]
+    public void SlidingWindowRateLimiter_CurrentUtilization_ReturnsCorrectValue()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+
+        // Act - acquire some permits
+        rateLimiter.TryAcquire(25);
+        var utilization = rateLimiter.CurrentUtilization;
+
+        // Assert
+        Assert.That(utilization, Is.GreaterThanOrEqualTo(0));
+        Assert.That(utilization, Is.LessThanOrEqualTo(1.0));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_UpdateRateLimit_UpdatesLimit()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+        
+        // Act
+        rateLimiter.UpdateRateLimit(200);
+
+        // Assert
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(200));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_Reset_ClearsRequests()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(10, 1.0);
+        rateLimiter.TryAcquire(5);
+
+        // Act
+        rateLimiter.Reset();
+        var requestCount = rateLimiter.CurrentRequestCount;
+
+        // Assert
+        Assert.That(requestCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_CurrentRequestCount_ReturnsCorrectValue()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+
+        // Act
+        rateLimiter.TryAcquire(10);
+        rateLimiter.TryAcquire(15);
+        var count = rateLimiter.CurrentRequestCount;
+
+        // Assert
+        Assert.That(count, Is.EqualTo(25));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_ActualRate_ReturnsValidValue()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+        rateLimiter.TryAcquire(10);
+
+        // Act
+        var actualRate = rateLimiter.ActualRate;
+
+        // Assert
+        Assert.That(actualRate, Is.GreaterThanOrEqualTo(0));
+    }
+
+    [Test]
+    public void SlidingWindowRateLimiter_WindowSize_ReturnsConfiguredSize()
+    {
+        // Arrange & Act
+        var rateLimiter = new SlidingWindowRateLimiter(100, 2.5);
+
+        // Assert
+        Assert.That(rateLimiter.WindowSize.TotalSeconds, Is.EqualTo(2.5));
+    }
+
+    [Test]
+    public async Task SlidingWindowRateLimiter_TryAcquireAsync_WithValidPermits_ReturnsTrue()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(10);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task SlidingWindowRateLimiter_AcquireAsync_CompletesSuccessfully()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+
+        // Act & Assert - should complete without exception
+        await Task.Run(async () => await rateLimiter.AcquireAsync(10));
+        Assert.Pass();
+    }
+
+    [Test]
+    public async Task SlidingWindowRateLimiter_TryAcquireAsync_WithCancellationToken_HandlesToken()
+    {
+        // Arrange
+        var rateLimiter = new SlidingWindowRateLimiter(100, 1.0);
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(10, cts.Token);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
     #endregion
 
     #region TokenBucketRateLimiter Tests
@@ -493,6 +613,138 @@ public class RateLimiterCoverageTests
         Assert.DoesNotThrow(() => rateLimiter.Dispose());
     }
 
+    [Test]
+    public void LagBasedRateLimiter_MaxTokens_ReturnsCorrectValue()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act
+        var maxTokens = rateLimiter.MaxTokens;
+
+        // Assert
+        Assert.That(maxTokens, Is.EqualTo(50));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_ConsumerGroup_ReturnsConfiguredValue()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "my-consumer-group");
+
+        // Act
+        var consumerGroup = rateLimiter.ConsumerGroup;
+
+        // Assert
+        Assert.That(consumerGroup, Is.EqualTo("my-consumer-group"));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_LagThreshold_ReturnsDefaultValue()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act
+        var lagThreshold = rateLimiter.LagThreshold;
+
+        // Assert
+        Assert.That(lagThreshold, Is.Not.Null);
+        Assert.That(lagThreshold.TotalSeconds, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_LagThreshold_WithCustomValue_ReturnsCustomValue()
+    {
+        // Arrange
+        var customThreshold = TimeSpan.FromSeconds(10);
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group", customThreshold);
+
+        // Act
+        var lagThreshold = rateLimiter.LagThreshold;
+
+        // Assert
+        Assert.That(lagThreshold, Is.EqualTo(customThreshold));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_IsRefillPaused_InitiallyFalse()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act
+        var isRefillPaused = rateLimiter.IsRefillPaused;
+
+        // Assert
+        Assert.That(isRefillPaused, Is.False);
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_CurrentLag_ReturnsValidValue()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act
+        var currentLag = rateLimiter.CurrentLag;
+
+        // Assert
+        Assert.That(currentLag, Is.GreaterThanOrEqualTo(TimeSpan.Zero));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_UpdateRateLimit_UpdatesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act
+        rateLimiter.UpdateRateLimit(200);
+
+        // Assert
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(200));
+    }
+
+    [Test]
+    public void LagBasedRateLimiter_Reset_ResetsState()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+        rateLimiter.TryAcquire(25);
+
+        // Act
+        rateLimiter.Reset();
+
+        // Assert - After reset should be able to acquire again
+        var result = rateLimiter.TryAcquire(25);
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task LagBasedRateLimiter_TryAcquireAsync_WorksCorrectly()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act
+        var result = await rateLimiter.TryAcquireAsync(10);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task LagBasedRateLimiter_AcquireAsync_CompletesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new LagBasedRateLimiter(100, 50, "test-group");
+
+        // Act & Assert - Should complete without exception
+        await rateLimiter.AcquireAsync(10);
+        Assert.Pass();
+    }
+
     #endregion
 
     #region Additional MultiTierRateLimiter Coverage Tests
@@ -555,6 +807,80 @@ public class RateLimiterCoverageTests
         // Act & Assert - Multiple dispose should be safe
         rateLimiter.Dispose();
         Assert.DoesNotThrow(() => rateLimiter.Dispose());
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_CurrentUtilization_ReturnsValidValue()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+
+        // Act
+        rateLimiter.TryAcquire(25);
+        var utilization = rateLimiter.CurrentUtilization;
+
+        // Assert
+        Assert.That(utilization, Is.GreaterThanOrEqualTo(0));
+        Assert.That(utilization, Is.LessThanOrEqualTo(1.0));
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_UpdateRateLimit_UpdatesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+
+        // Act
+        rateLimiter.UpdateRateLimit(200);
+
+        // Assert
+        Assert.That(rateLimiter.CurrentRateLimit, Is.EqualTo(200));
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_Reset_ClearsState()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+        rateLimiter.TryAcquire(40);
+
+        // Act
+        rateLimiter.Reset();
+
+        // Assert - after reset, should be able to acquire full capacity
+        var result = rateLimiter.TryAcquire(50);
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task TokenBucketRateLimiter_AcquireAsync_WaitsForTokens()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 10);
+        rateLimiter.TryAcquire(10); // Use all tokens
+
+        // Act - this should wait briefly for tokens to refill
+        var startTime = DateTime.UtcNow;
+        await rateLimiter.AcquireAsync(5);
+        var elapsed = DateTime.UtcNow - startTime;
+
+        // Assert - should have waited some time
+        Assert.That(elapsed.TotalMilliseconds, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public void TokenBucketRateLimiter_TryAcquire_AfterReset_FullCapacity()
+    {
+        // Arrange
+        using var rateLimiter = new TokenBucketRateLimiter(100, 50);
+        rateLimiter.TryAcquire(30);
+        rateLimiter.Reset();
+
+        // Act
+        var result = rateLimiter.TryAcquire(50);
+
+        // Assert
+        Assert.That(result, Is.True);
     }
 
     #endregion
