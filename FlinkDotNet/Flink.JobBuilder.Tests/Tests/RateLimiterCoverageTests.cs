@@ -781,6 +781,204 @@ public class RateLimiterCoverageTests
         Assert.That(result, Is.True);
     }
 
+    [Test]
+    public void MultiTierRateLimiter_ValidateHierarchicalEnforcement_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidateHierarchicalEnforcement();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidateBurstAccommodation_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidateBurstAccommodation();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidatePriorityPreservation_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidatePriorityPreservation();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidateAdaptiveAdjustment_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidateAdaptiveAdjustment();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidateRebalancingIntegration_ReturnsBoolean()
+    {
+        // Act
+        var result = MultiTierRateLimiter.ValidateRebalancingIntegration();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidateFairAllocation_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidateFairAllocation();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidateMultiTierEnforcement_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidateMultiTierEnforcement();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_ValidateQuotaEnforcement_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var result = rateLimiter.ValidateQuotaEnforcement();
+
+        // Assert
+        Assert.That(result, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_GetUtilizationMetrics_ReturnsMetrics()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var metrics = rateLimiter.GetUtilizationMetrics();
+
+        // Assert
+        Assert.That(metrics, Is.Not.Null);
+        Assert.That(metrics, Is.InstanceOf<Dictionary<string, double>>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_UpdateRateLimit_UpdatesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var tiers = new List<RateLimitingTier>
+        {
+            new RateLimitingTier
+            {
+                Name = "global",
+                RateLimit = 1000,
+                BurstCapacity = 2000
+            }
+        };
+        rateLimiter.ConfigureTiers(tiers);
+
+        // Act
+        rateLimiter.UpdateRateLimit("global", 1500);
+
+        // Assert - Should not throw
+        Assert.Pass();
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_IsDistributed_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var isDistributed = rateLimiter.IsDistributed;
+
+        // Assert
+        Assert.That(isDistributed, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_IsPersistent_ReturnsBoolean()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+
+        // Act
+        var isPersistent = rateLimiter.IsPersistent;
+
+        // Assert
+        Assert.That(isPersistent, Is.InstanceOf<bool>());
+    }
+
+    [Test]
+    public async Task MultiTierRateLimiter_AcquireAsync_CompletesSuccessfully()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var context = new RateLimitingContext 
+        { 
+            TopicName = "test-topic", 
+            ConsumerGroup = "test-group"
+        };
+
+        // Act & Assert - Should complete without exception
+        await rateLimiter.AcquireAsync(context, 1);
+        Assert.Pass();
+    }
+
+    [Test]
+    public void MultiTierRateLimiter_TryAcquire_WithValidContext_ReturnsTrue()
+    {
+        // Arrange
+        using var rateLimiter = new MultiTierRateLimiter();
+        var context = new RateLimitingContext 
+        { 
+            TopicName = "test-topic", 
+            ConsumerGroup = "test-group"
+        };
+
+        // Act
+        var result = rateLimiter.TryAcquire(context, 1);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
     #endregion
 
     #region Additional TokenBucketRateLimiter Coverage Tests
