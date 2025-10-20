@@ -259,6 +259,31 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
+        /// Adds a timer operation for delayed or scheduled processing.
+        /// </summary>
+        /// <param name="delayMs">Delay in milliseconds</param>
+        /// <param name="timerName">Optional name for the timer</param>
+        /// <param name="timerType">Type of timer: "processing" (default) or "event"</param>
+        /// <returns>This DataStream</returns>
+        public DataStream<T> WithTimer(long delayMs, string? timerName = null, string timerType = "processing")
+        {
+            if (_job == null)
+            {
+                // For non-IR streams, timers would need special handling
+                // For now, return this to maintain API compatibility
+                return this;
+            }
+            
+            _job.Operations.Add(new Flink.JobBuilder.Models.TimerOperationDefinition
+            {
+                DelayMs = delayMs,
+                TimerName = timerName,
+                TimerType = timerType
+            });
+            return this;
+        }
+
+        /// <summary>
         /// Sets a Kafka sink on the stream (Flink-compatible when using IR-backed stream or native API).
         /// </summary>
         public DataStream<T> SinkToKafka(string topic, string? bootstrapServers = null, System.Func<T, string>? serializer = null)

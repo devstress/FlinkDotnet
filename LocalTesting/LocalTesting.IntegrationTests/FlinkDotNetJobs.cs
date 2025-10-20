@@ -112,15 +112,20 @@ public static class FlinkDotNetJobs
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
         
-        // For timer functionality, we need to use JobBuilder API directly 
-        // as DataStream API doesn't yet expose timer operations
-        // This is acceptable since JobBuilder is internally used by DataStream
-        var job = Flink.JobBuilder.FlinkJobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
+        // Use DataStream API with timer support
+        var env = FlinkDotNet.Flink.GetExecutionEnvironment();
+        env.FromKafka(inputTopic, kafkaBootstrap)
             .WithTimer(5000) // 5 seconds in milliseconds
-            .ToKafka(outputTopic, kafkaBootstrap);
+            .SinkToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            FlinkJobId = jobClient.GetJobId(),
+            JobId = jobClient.GetJobId()
+        };
     }
     
     /// <summary>
@@ -222,18 +227,24 @@ public static class FlinkDotNetJobs
         // NOT the host connection string (e.g., localhost:17901)
         var kafkaBootstrap = kafka;
         
-        // Composite job with timer requires JobBuilder API
-        // as DataStream doesn't yet expose timer operations
-        var job = Flink.JobBuilder.FlinkJobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
+        // Use DataStream API for composite operations including timer
+        var env = FlinkDotNet.Flink.GetExecutionEnvironment();
+        env.FromKafka(inputTopic, kafkaBootstrap)
             .Map("split:,")
             .Map("concat:-tail")
             .Map("upper")
             .Where("nonempty")
             .WithTimer(5000) // 5 seconds in milliseconds
-            .ToKafka(outputTopic, kafkaBootstrap);
+            .SinkToKafka(outputTopic, kafkaBootstrap);
         
-        return await job.Submit(jobName, ct);
+        var jobClient = await env.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            FlinkJobId = jobClient.GetJobId(),
+            JobId = jobClient.GetJobId()
+        };
     }
 }
 
