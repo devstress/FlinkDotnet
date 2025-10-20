@@ -336,8 +336,7 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
-    .WithReference(sqlGateway.GetEndpoint("sg-http"))  // Reference SQL Gateway endpoint for service discovery
-    .WithReference(kafka);  // Reference Kafka for service discovery and connection string injection
+    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server

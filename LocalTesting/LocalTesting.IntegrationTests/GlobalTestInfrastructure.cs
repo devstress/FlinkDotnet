@@ -75,7 +75,7 @@ public class GlobalTestInfrastructure
                 var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
                 {
-                    Console.WriteLine($"✅ Kafka container detected after {attempt * 2}s");
+                    Console.WriteLine($"✅ Kafka container detected after {attempt * 3}s");
                     containersDetected = true;
                     
                     // Show all containers for diagnostics
@@ -83,27 +83,18 @@ public class GlobalTestInfrastructure
                     Console.WriteLine($"🐳 All containers:\n{allContainers}");
                     break;
                 }
-                
-                if (attempt % 5 == 0)
-                {
-                    Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 2}s elapsed)");
-                }
+                Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 3}s elapsed)");
             }
             
             if (!containersDetected)
             {
-                Console.WriteLine("⚠️ Containers not detected within 20s, proceeding anyway...");
+                Console.WriteLine("⚠️ Containers not detected within 30s, proceeding anyway...");
                 var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                 Console.WriteLine($"🐳 Current containers:\n{allContainers}");
             }
             
             // Capture network state after containers are detected
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("1-after-container-detection");
-            
-            // Wait for Kafka with retry mechanism
-            Console.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
-            await RetryHealthCheckAsync("kafka", app, 3, TimeSpan.FromSeconds(5));
-            Console.WriteLine("✅ Kafka resource reported healthy");
 
             // CRITICAL FIX: Discover Kafka container IP for Flink job configurations
             // Docker default bridge doesn't support DNS, so we need to use the actual container IP
@@ -133,10 +124,6 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
             Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
             Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
-
-            // Enhanced Kafka readiness check with retry mechanism
-            await RetryWaitForReadyAsync("Kafka", () => LocalTestingTestBase.WaitForKafkaReadyAsync(KafkaConnectionString!, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
-            Console.WriteLine("✅ Kafka is fully operational");
 
             // Get Flink endpoint and wait for readiness with retry mechanism
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();

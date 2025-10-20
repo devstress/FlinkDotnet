@@ -136,7 +136,8 @@ public static class Program
             var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
             var httpClient = httpClientFactory.CreateClient(nameof(FlinkJobManager));
             var logger = sp.GetRequiredService<ILogger<FlinkJobManager>>();
-            return new FlinkJobManager(logger, httpClient);
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            return new FlinkJobManager(logger, configuration, httpClient);
         });
         
         // Register MetricsService as singleton for persistent metrics across requests
