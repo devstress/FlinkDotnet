@@ -18,6 +18,10 @@ public class MetricsService
     private readonly Counter _requestsTotal;
     private readonly Histogram _requestDuration;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MetricsService"/> class.
+    /// Configures Prometheus counters, gauges, and histograms for job and request tracking.
+    /// </summary>
     public MetricsService()
     {
         // Job metrics
@@ -64,31 +68,52 @@ public class MetricsService
             });
     }
     
-    // Job tracking methods
+    /// <summary>
+    /// Records a job submission and increments the running jobs counter.
+    /// </summary>
+    /// <param name="mode">The submission mode (LOCAL or REMOTE).</param>
     public void RecordJobSubmitted(string mode)
     {
         _jobsSubmittedTotal.WithLabels(mode).Inc();
         _jobsRunning.Inc();
     }
     
+    /// <summary>
+    /// Records a successful job completion and decrements the running jobs counter.
+    /// </summary>
     public void RecordJobSucceeded()
     {
         _jobsSucceededTotal.Inc();
         _jobsRunning.Dec();
     }
     
+    /// <summary>
+    /// Records a job failure and decrements the running jobs counter.
+    /// </summary>
+    /// <param name="errorType">The type or category of the error that caused the failure.</param>
     public void RecordJobFailed(string errorType)
     {
         _jobsFailedTotal.WithLabels(errorType).Inc();
         _jobsRunning.Dec();
     }
     
-    // Request tracking methods
+    /// <summary>
+    /// Records an API request with endpoint, method, and status code.
+    /// </summary>
+    /// <param name="endpoint">The API endpoint path.</param>
+    /// <param name="method">The HTTP method (GET, POST, etc.).</param>
+    /// <param name="statusCode">The HTTP status code returned.</param>
     public void RecordRequest(string endpoint, string method, int statusCode)
     {
         _requestsTotal.WithLabels(endpoint, method, statusCode.ToString()).Inc();
     }
     
+    /// <summary>
+    /// Creates a timer to measure the duration of an API request.
+    /// </summary>
+    /// <param name="endpoint">The API endpoint path.</param>
+    /// <param name="method">The HTTP method (GET, POST, etc.).</param>
+    /// <returns>A disposable timer that records the duration when disposed.</returns>
     public IDisposable MeasureRequestDuration(string endpoint, string method)
     {
         return _requestDuration.WithLabels(endpoint, method).NewTimer();

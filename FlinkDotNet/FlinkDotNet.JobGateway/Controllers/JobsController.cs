@@ -18,6 +18,11 @@ public class JobsController : ControllerBase
     private readonly ILogger<JobsController> _logger;
     private readonly IFlinkJobManager _flinkJobManager;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JobsController"/> class.
+    /// </summary>
+    /// <param name="logger">Logger for tracking controller operations.</param>
+    /// <param name="flinkJobManager">The Flink job manager service for job operations.</param>
     public JobsController(ILogger<JobsController> logger, IFlinkJobManager flinkJobManager)
     {
         _logger = logger;

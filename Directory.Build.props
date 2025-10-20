@@ -7,7 +7,16 @@
 
     <!-- Enable compiler analysis warnings like IDE0005 -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);1591;1711,CS1574,CS1570;S6966;S3400;S3267;S2139;S4487</NoWarn>
+    <!-- Suppress specific warnings:
+         1711: Type parameter name is not specified in XML comment
+         CS1574: XML comment has cref attribute that could not be resolved
+         CS1570: XML comment has badly formed XML
+         S6966: Sonar: Awaitable method should be used
+         S3400: Sonar: Methods should not return constants
+         S3267: Sonar: Loops should be simplified
+         S4487: Sonar: Unread private fields should be removed
+    -->
+    <NoWarn>$(NoWarn);1711;CS1574;CS1570;S6966;S3400;S3267;S4487</NoWarn>
 
     <!-- Warning enforcement relaxed: do not fail build on analyzer warnings -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>

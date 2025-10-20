@@ -9,18 +9,39 @@ using Flink.JobBuilder.Models;
 
 namespace FlinkDotNet.JobGateway.Services;
 
-// Note: This gateway intentionally converts exceptions into domain objects with selective rethrowing
+/// <summary>
+/// Manages Apache Flink job lifecycle including submission, status monitoring, and cancellation.
+/// Note: This gateway intentionally converts exceptions into domain objects with selective rethrowing.
+/// </summary>
 public class FlinkJobManager : IFlinkJobManager
 {
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
     
-    // Static delay fields for testability (can be set to 1ms in tests)
+    /// <summary>
+    /// Gets or sets the delay between SQL Gateway retry attempts.
+    /// Static field for testability (can be set to 1ms in tests).
+    /// </summary>
     public static TimeSpan SqlGatewayRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+    
+    /// <summary>
+    /// Gets or sets the delay between JAR registration polling attempts.
+    /// Static field for testability (can be set to 1ms in tests).
+    /// </summary>
     public static TimeSpan JarRegistrationPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
+    
+    /// <summary>
+    /// Gets or sets the delay between job recovery polling attempts.
+    /// Static field for testability (can be set to 1ms in tests).
+    /// </summary>
     public static TimeSpan JobRecoveryPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FlinkJobManager"/> class.
+    /// </summary>
+    /// <param name="logger">Logger for tracking job management operations.</param>
+    /// <param name="httpClient">HTTP client configured for Flink REST API communication.</param>
     public FlinkJobManager(ILogger<FlinkJobManager> logger, HttpClient httpClient)
     {
         _logger = logger;
@@ -162,6 +183,11 @@ public class FlinkJobManager : IFlinkJobManager
         throw new InvalidOperationException($"SQL Gateway at {client.BaseAddress} did not become ready after {maxRetries} seconds");
     }
 
+    /// <summary>
+    /// Submits a Flink job to the cluster based on the provided job definition.
+    /// </summary>
+    /// <param name="jobDefinition">The job definition containing SQL or JAR source configuration.</param>
+    /// <returns>A task containing the job submission result with success status and Flink job ID.</returns>
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
         _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
@@ -295,6 +321,11 @@ public class FlinkJobManager : IFlinkJobManager
         };
     }
 
+    /// <summary>
+    /// Retrieves the current status of a Flink job.
+    /// </summary>
+    /// <param name="flinkJobId">The Flink job identifier.</param>
+    /// <returns>A task containing the job status, or null if the job is not found.</returns>
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
@@ -328,6 +359,11 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
+    /// <summary>
+    /// Retrieves metrics for a running Flink job including vertex and checkpoint statistics.
+    /// </summary>
+    /// <param name="flinkJobId">The Flink job identifier.</param>
+    /// <returns>A task containing the job metrics, or null if metrics cannot be retrieved.</returns>
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
 
@@ -344,6 +380,11 @@ public class FlinkJobManager : IFlinkJobManager
         }
     }
 
+    /// <summary>
+    /// Cancels a running Flink job.
+    /// </summary>
+    /// <param name="flinkJobId">The Flink job identifier to cancel.</param>
+    /// <returns>A task containing true if the job was successfully cancelled, false otherwise.</returns>
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
         if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
@@ -609,7 +650,7 @@ public class FlinkJobManager : IFlinkJobManager
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Failed to submit jar to Flink REST API: {Message}", ex.Message);
-            throw;
+            throw new InvalidOperationException($"Failed to submit jar to Flink REST API for job {jobDefinition.Metadata.JobId}", ex);
         }
     }
 
