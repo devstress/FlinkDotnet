@@ -98,8 +98,11 @@ public class GlobalTestInfrastructure
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("1-after-container-detection");
             
             // Wait for Kafka with retry mechanism
+            // CRITICAL: Kafka can take 60-90s to initialize, especially on first run
+            // Use longer timeout per attempt (60s) with retries for transient failures
             Console.WriteLine("⏳ Waiting for Kafka resource to be healthy...");
-            await RetryHealthCheckAsync("kafka", app, 3, TimeSpan.FromSeconds(5));
+            Console.WriteLine("   ℹ️  Kafka initialization can take 60-90 seconds on first run");
+            await RetryHealthCheckAsync("kafka", app, 3, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(60));
             Console.WriteLine("✅ Kafka resource reported healthy");
 
             // CRITICAL FIX: Discover Kafka container IP for Flink job configurations
@@ -786,20 +789,21 @@ public class GlobalTestInfrastructure
     /// <summary>
     /// Retry health check for a resource with configurable retries and delay
     /// </summary>
-    private static async Task RetryHealthCheckAsync(string resourceName, DistributedApplication app, int maxRetries, TimeSpan delayBetweenRetries)
+    private static async Task RetryHealthCheckAsync(string resourceName, DistributedApplication app, int maxRetries, TimeSpan delayBetweenRetries, TimeSpan? timeoutPerAttempt = null)
     {
         Exception? lastException = null;
+        var timeout = timeoutPerAttempt ?? TimeSpan.FromSeconds(30);
         
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
             {
-                Console.WriteLine($"🔄 Health check attempt {attempt}/{maxRetries} for '{resourceName}'...");
+                Console.WriteLine($"🔄 Health check attempt {attempt}/{maxRetries} for '{resourceName}' (timeout: {timeout.TotalSeconds}s)...");
                 
-                // Wait for resource to be healthy (with a reasonable timeout per attempt)
+                // Wait for resource to be healthy (with configurable timeout per attempt)
                 await app.ResourceNotifications
                     .WaitForResourceHealthyAsync(resourceName)
-                    .WaitAsync(TimeSpan.FromSeconds(30));
+                    .WaitAsync(timeout);
                 
                 Console.WriteLine($"✅ '{resourceName}' became healthy on attempt {attempt}");
                 return; // Success!
@@ -808,6 +812,14 @@ public class GlobalTestInfrastructure
             {
                 lastException = ex;
                 Console.WriteLine($"⚠️ Attempt {attempt}/{maxRetries} failed for '{resourceName}': {ex.Message}");
+                
+                // Capture container diagnostics on failure for better debugging
+                if (attempt == maxRetries)
+                {
+                    Console.WriteLine($"📋 Capturing container diagnostics after final failed attempt...");
+                    var diagnostics = await GetContainerDiagnosticsAsync();
+                    Console.WriteLine(diagnostics);
+                }
                 
                 if (attempt < maxRetries)
                 {
