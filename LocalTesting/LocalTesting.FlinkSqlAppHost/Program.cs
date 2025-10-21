@@ -100,6 +100,9 @@ if (isLearningCourseMode)
 // Kafka JMX Exporter - only in LEARNINGCOURSE mode
 // Uses the Bitnami JMX Exporter (latest version 1.5.0) as a standalone HTTP server
 // Connects to Kafka's JMX endpoint (kafka:9101) and exposes metrics on port 5556
+// Note: Not using #pragma warning disable S1481 because kafkaExporter IS used by Prometheus
+IResourceBuilder<ContainerResource>? kafkaExporter = null;
+
 if (isLearningCourseMode)
 {
     Console.WriteLine("   📊 Deploying Kafka JMX Exporter for metrics collection");
@@ -108,8 +111,9 @@ if (isLearningCourseMode)
     
     if (File.Exists(jmxConfigPath))
     {
-#pragma warning disable S1481 // Kafka exporter is created but not directly referenced - accessed via Prometheus
-        var kafkaExporter = builder.AddContainer("kafka-exporter", "bitnami/jmx-exporter", "latest")
+        // Store kafkaExporter at broader scope for Prometheus reference
+        // This ensures both containers are on the same Docker network for DNS resolution
+        kafkaExporter = builder.AddContainer("kafka-exporter", "bitnami/jmx-exporter", "latest")
             .WithBindMount(jmxConfigPath, "/opt/bitnami/jmx-exporter/exporter.yml", isReadOnly: true)
             .WithHttpEndpoint(targetPort: 5556, name: "metrics")
             .WithReference(kafka)  // Keep reference for network connectivity
@@ -119,7 +123,6 @@ if (isLearningCourseMode)
                 // CRITICAL: Add 10-second delay to allow Kafka JMX port to be fully initialized
                 // Kafka container starts quickly but JMX port takes time to become available
                 "sleep 10 && java -jar /opt/bitnami/jmx-exporter/jmx_prometheus_standalone.jar 5556 /opt/bitnami/jmx-exporter/exporter.yml");
-        #pragma warning restore S1481
         
         Console.WriteLine("   📊 Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
         Console.WriteLine("   ⏳ JMX Exporter will wait 10s after Kafka starts for JMX port initialization");
@@ -329,13 +332,27 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 
 // Flink.JobGateway - Add Flink Job Gateway
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
-var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
+var gatewayBuilder = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
+    .WithHttpEndpoint(port: 8080, name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080") // Overwrite default random port of ASP.NET Core
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)  // Host path to connectors
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
     .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
+
+// Enable Prometheus metrics for JobGateway only in LEARNINGCOURSE mode
+// Configuration is injected via environment variables (ASP.NET Core configuration binding)
+// This follows the same pattern as Flink's FLINK_PROPERTIES approach
+if (isLearningCourseMode)
+{
+    gatewayBuilder = gatewayBuilder
+        .WithEnvironment("Metrics__Prometheus__Enabled", "true")
+        .WithEnvironment("Metrics__Prometheus__Path", "/metrics");
+    Console.WriteLine("   📊 JobGateway Prometheus metrics enabled at /metrics");
+}
+
+var gateway = gatewayBuilder;
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
@@ -396,10 +413,20 @@ if (isLearningCourse)
     Console.WriteLine($"   📊 Prometheus config: prometheus.yml");
     Console.WriteLine($"   ⚠️  Gateway port (17105) may need updating - check Aspire dashboard for actual port");
     
+    // CRITICAL: Prometheus needs kafka-exporter dependency for Docker network DNS resolution
+    // Using WaitFor() establishes network connectivity and ensures containers can resolve each other
     var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
         .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
-    // Note: Gateway is accessed via host.docker.internal, not service name, so no WithReference needed
+    
+    // Add kafka-exporter dependency if it was deployed
+    // WaitFor() ensures Prometheus and kafka-exporter are on the same Docker network for DNS resolution
+    if (kafkaExporter is not null)
+    {
+        prometheusBuilder = prometheusBuilder.WaitFor(kafkaExporter);
+        Console.WriteLine("   📊 Prometheus configured with kafka-exporter network dependency");
+    }
+    // Note: Gateway is accessed via host.docker.internal, not service name, so no dependency needed
     
     // Add explicit port mapping for Podman/Docker compatibility
     if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")

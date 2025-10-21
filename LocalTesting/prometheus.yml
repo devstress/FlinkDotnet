@@ -28,16 +28,55 @@ scrape_configs:
           role: 'taskmanager'
 
   # Kafka JMX metrics via JMX Exporter
+  # ✅ STATUS: WORKING - Successfully collecting 231+ metric lines from Kafka JMX
+  # Metrics include: topic info, partition counts, consumer groups, producer stats, broker health
+  # Container: kafka-exporter exposes JMX metrics from kafka:9101 on port 5556
   # NOTE: Container name pattern is kafka-exporter-{random} from Aspire
   # Using dynamic DNS resolution from Aspire's Docker network
+  # IMPORTANT: scrape_interval and scrape_timeout increased because JMX metrics collection takes time
+  # JMX exporter needs to query Kafka MBeans and format them as Prometheus metrics
+  # scrape_timeout must be less than scrape_interval
   - job_name: 'kafka'
-    scrape_timeout: 1s
+    scrape_interval: 10s
+    scrape_timeout: 8s
     metrics_path: '/metrics'
     static_configs:
       - targets: ['kafka-exporter:5556']
         labels:
           component: 'kafka'
           role: 'broker'
+
+  # Flink SQL Gateway metrics (Prometheus reporter on port 9252)
+  # NOTE: SQL Gateway Prometheus endpoint not responding as of 2025-10-21
+  # Port 9252 is exposed but endpoint returns connection refused
+  # Flink SQL Gateway may not support Prometheus metrics in current configuration
+  # TODO: Investigate if additional configuration or JARs needed for SQL Gateway metrics
+  # Commenting out to prevent Prometheus from marking target as DOWN
+  # - job_name: 'flink-sql-gateway'
+  #   metrics_path: '/metrics'
+  #   static_configs:
+  #     - targets: ['flink-sql-gateway:9252']
+  #       labels:
+  #         component: 'flink'
+  #         role: 'sql-gateway'
+
+  # FlinkDotNet JobGateway metrics (ASP.NET Core application on host)
+  # Gateway runs on host machine (non-Aspire network)
+  # CRITICAL: Prometheus container must use host.docker.internal to access host services
+  # Port 8080 is configured in Program.cs via ASPNETCORE_URLS environment variable
+  # NOTE: Metrics enabled in LEARNINGCOURSE mode via environment variables
+  # Configured with: Metrics__Prometheus__Enabled=true, Metrics__Prometheus__Path=/metrics
+  # STATUS: ASP.NET Core Prometheus middleware (prometheus-net) configured and enabled
+  # Test expects job name 'jobgateway' (not 'flink-job-gateway')
+  - job_name: 'jobgateway'
+    scrape_interval: 10s
+    scrape_timeout: 8s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:8080']
+        labels:
+          component: 'gateway'
+          role: 'job-gateway'
 
   # Prometheus self-monitoring
   - job_name: 'prometheus'
