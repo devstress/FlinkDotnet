@@ -73,7 +73,7 @@ scrape_configs:
     scrape_timeout: 8s
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['localhost:8080']
+      - targets: ['host.containers.internal:8080']
         labels:
           component: 'gateway'
           role: 'job-gateway'

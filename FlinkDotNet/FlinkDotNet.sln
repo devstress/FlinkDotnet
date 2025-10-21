@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -18,6 +19,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flink.JobBuilder.Tests", "Flink.JobBuilder.Tests\Flink.JobBuilder.Tests.csproj", "{11111111-2222-3333-4444-555555555555}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobGateway.Tests", "FlinkDotNet.JobGateway.Tests\FlinkDotNet.JobGateway.Tests.csproj", "{A5F8A6B6-3BB1-4EDE-BC4A-3FC1C80E5074}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Common.Tests", "FlinkDotNet.Common.Tests\FlinkDotNet.Common.Tests.csproj", "{05866196-5C54-4FD9-91F2-0575DAB42A83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.DataStream.Tests", "FlinkDotNet.DataStream.Tests\FlinkDotNet.DataStream.Tests.csproj", "{22B14D34-E2A4-436C-BEF6-2824390B24A4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -70,7 +75,6 @@ Global
 		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}.Debug|x64.Build.0 = Debug|Any CPU
 		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A8B5C6D7E}.Debug|x86.Build.0 = Debug|Any CPU
 		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}.Release|x64.ActiveCfg = Release|Any CPU
@@ -101,6 +105,30 @@ Global
 		{A5F8A6B6-3BB1-4EDE-BC4A-3FC1C80E5074}.Release|x64.Build.0 = Release|Any CPU
 		{A5F8A6B6-3BB1-4EDE-BC4A-3FC1C80E5074}.Release|x86.ActiveCfg = Release|Any CPU
 		{A5F8A6B6-3BB1-4EDE-BC4A-3FC1C80E5074}.Release|x86.Build.0 = Release|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Debug|x64.Build.0 = Debug|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Debug|x86.Build.0 = Debug|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Release|x64.ActiveCfg = Release|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Release|x64.Build.0 = Release|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Release|x86.ActiveCfg = Release|Any CPU
+		{05866196-5C54-4FD9-91F2-0575DAB42A83}.Release|x86.Build.0 = Release|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Debug|x64.Build.0 = Debug|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Debug|x86.Build.0 = Debug|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Release|x64.ActiveCfg = Release|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Release|x64.Build.0 = Release|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Release|x86.ActiveCfg = Release|Any CPU
+		{22B14D34-E2A4-436C-BEF6-2824390B24A4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

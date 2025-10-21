@@ -504,6 +504,7 @@ public class Day05Tests : LearningCourseTestBase
             if (queryInput == null)
             {
                 Assert.Fail("CRITICAL: Cannot find Prometheus query input - UI structure may have changed");
+                return; // This line will never be reached due to Assert.Fail, but satisfies null-safety
             }
             
             TestContext.WriteLine("   🔍 Validating JobGateway CPU metric in UI...");
