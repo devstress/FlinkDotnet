@@ -353,9 +353,11 @@ public abstract class LearningCourseTestBase
             
             // Core infrastructure must be ready: Kafka (healthy) and Flink
             // Temporal is optional (not all tests need it - e.g., Day05 Prometheus metrics test)
-            // LearningCourse infrastructure: Redis is required, Prometheus/Grafana are optional (may fail to start)
+            // LearningCourse infrastructure: Redis, Prometheus, and Grafana are ALL REQUIRED
+            // Day 05 observability tests specifically need Prometheus/Grafana endpoints
             var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && kafkaReady && flinkReady;
-            var learningCourseReady = !isLearningCourse || (redisEndpoint != null);
+            var learningCourseReady = !isLearningCourse ||
+                (redisEndpoint != null && prometheusEndpoint != null && grafanaEndpoint != null);
             
             if (coreReady && learningCourseReady)
             {
@@ -370,15 +372,10 @@ public abstract class LearningCourseTestBase
                 TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
                 if (isLearningCourse)
                 {
-                    TestContext.WriteLine($"   📚 LearningCourse infrastructure: Redis={redisEndpoint} (required)");
-                    if (prometheusEndpoint != null || grafanaEndpoint != null)
-                    {
-                        TestContext.WriteLine($"   📊 Optional observability: Prometheus={prometheusEndpoint ?? "not available"}, Grafana={grafanaEndpoint ?? "not available"}");
-                    }
-                    else
-                    {
-                        TestContext.WriteLine($"   ⚠️  Optional observability not available: Prometheus and Grafana did not start (this is OK for most tests)");
-                    }
+                    TestContext.WriteLine($"   📚 LearningCourse infrastructure verified:");
+                    TestContext.WriteLine($"      • Redis: {redisEndpoint} ✓");
+                    TestContext.WriteLine($"      • Prometheus: {prometheusEndpoint} ✓");
+                    TestContext.WriteLine($"      • Grafana: {grafanaEndpoint} ✓");
                 }
                 
                 // Log optimization metrics
@@ -395,7 +392,7 @@ public abstract class LearningCourseTestBase
             $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
             $"KafkaReady: {kafkaReady}, " +
             $"FlinkReady: {flinkReady}" +
-            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"} (required), Prometheus: {PrometheusHostEndpoint ?? "null"} (optional), Grafana: {GrafanaHostEndpoint ?? "null"} (optional)" : "") +
+            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"} (REQUIRED), Prometheus: {PrometheusHostEndpoint ?? "null"} (REQUIRED), Grafana: {GrafanaHostEndpoint ?? "null"} (REQUIRED)" : "") +
             $" (Temporal is optional: {TemporalHostEndpoint ?? "not discovered"}, TemporalReady: {temporalReady})");
     }
     

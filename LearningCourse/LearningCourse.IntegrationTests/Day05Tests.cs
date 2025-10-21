@@ -512,21 +512,33 @@ public class Day05Tests : LearningCourseTestBase
                 "Buffers in local processing");
 
             // ═══════════════════════════════════════════════════════════════════════
-            // PART 5: Kafka Aggregate Metrics via JMX Exporter
+            // PART 5: Kafka Topic-Specific Metrics via JMX Exporter
             // ═══════════════════════════════════════════════════════════════════════
-            TestContext.WriteLine("   📊 6. Kafka Aggregate Metrics via JMX Exporter:");
+            TestContext.WriteLine("   📊 6. Kafka Topic-Specific Metrics via JMX Exporter:");
             
-            // Show Kafka broker-level metrics (not topic-specific)
+            // Show topic-specific metrics for our observability topics
+            const string InputTopic = "observability_input_day05";
+            const string OutputTopic = "observability_output_day05";
+            
+            TestContext.WriteLine($"      🔹 Input Topic: {InputTopic}");
             await QueryAndDisplayMetric(queryInput!, executeButton, page,
-                "kafka_server_brokertopicmetrics_messagesinpersec_count_total",
-                "Total messages received by Kafka broker (all topics)");
+                $"kafka_server_brokertopicmetrics_messagesinpersec_count_total{{topic=\"{InputTopic}\"}}",
+                $"Messages received in topic '{InputTopic}'");
             
             await QueryAndDisplayMetric(queryInput!, executeButton, page,
-                "kafka_server_brokertopicmetrics_bytesinpersec_count_total",
-                "Total bytes received by Kafka broker");
+                $"kafka_server_brokertopicmetrics_bytesinpersec_count_total{{topic=\"{InputTopic}\"}}",
+                $"Bytes received in topic '{InputTopic}'");
             
-            TestContext.WriteLine("      💡 Note: Topic-specific metrics require static topic names");
-            TestContext.WriteLine("      ✅ Aggregate broker metrics show overall Kafka activity");
+            TestContext.WriteLine($"      🔹 Output Topic: {OutputTopic}");
+            await QueryAndDisplayMetric(queryInput!, executeButton, page,
+                $"kafka_server_brokertopicmetrics_messagesinpersec_count_total{{topic=\"{OutputTopic}\"}}",
+                $"Messages sent to topic '{OutputTopic}'");
+            
+            await QueryAndDisplayMetric(queryInput!, executeButton, page,
+                $"kafka_server_brokertopicmetrics_bytesinpersec_count_total{{topic=\"{OutputTopic}\"}}",
+                $"Bytes sent to topic '{OutputTopic}'");
+            
+            TestContext.WriteLine("      ✅ Topic-specific JMX metrics validate Kafka → Flink → Kafka pipeline");
 
             // ═══════════════════════════════════════════════════════════════════════
             // PART 3: Grafana Dashboards with Data Visualization

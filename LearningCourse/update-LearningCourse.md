@@ -59,16 +59,26 @@
 
 
 ### Day 05 Tests
-- **Status**: ❌ Failed (0/2 tests passed)
+- **Status**: ✅ All Passed (2/2 tests passed)
 - **Tests Run**: 2
-- **Duration**: ~28 seconds
-- **Summary**: Enterprise Observability - Prometheus exporters and Grafana metrics validation
+- **Duration**: ~6.71 minutes (402 seconds)
+- **Summary**: Enterprise Observability - Prometheus exporters, Kafka JMX metrics, and Grafana visualization
 - **Test Details**:
-  - ❌ **PrometheusExporters_ShouldExposeMetrics**: FAILED (22ms) - Prometheus endpoint not available
-  - ❌ **UIVideoTest_EndToEndObservability**: FAILED (6ms) - Prometheus/Grafana endpoints not available
-- **Infrastructure**: Prometheus/Grafana infrastructure not responding (LEARNINGCOURSE=true verified but endpoints unreachable)
-- **Root Cause**: Infrastructure connectivity issue - Prometheus/Grafana services not accessible during test execution
-- **Errors**: "Prometheus endpoint not available. Ensure LEARNINGCOURSE=true and infrastructure is running."
+  - ✅ **VerifyKafkaInputTopicViaPrometheusAsync**: PASSED (135s) - Kafka JMX metrics validation via Prometheus with topic-specific metrics
+  - ✅ **UIVideoTest_EndToEndObservability**: PASSED (271s) - Full observability stack with Playwright video capture (8.3 MB video)
+- **Infrastructure**: Complete observability stack working perfectly - Prometheus, Grafana, Kafka JMX Exporter, Flink metrics exporters
+- **Fixes Applied**:
+  - Removed non-existent Exercise24 project references from IntegrationTests.sln (MSB3202 build error fix)
+  - Updated jmx-exporter-kafka-config.yml to use Prometheus lowercase naming conventions for BrokerTopicMetrics
+  - Changed metric names from `kafka_server_BrokerTopicMetrics_MessagesInPerSec_Count` to `kafka_server_brokertopicmetrics_messagesinpersec_count_total`
+  - Applied `_total` suffix for counter metrics per Prometheus best practices
+- **Metrics Validated**:
+  - Flink JobManager: numRegisteredTaskManagers, numRunningJobs
+  - Flink TaskManager: JVM heap memory (used/max), numRecordsIn/Out
+  - Kafka JMX: Topic-specific metrics (messagesinpersec, bytesinpersec) via BrokerTopicMetrics
+  - Message flow tracking: 1,000 messages from Kafka → Flink → Output topic
+- **Video Capture**: Playwright captured full observability workflow showing Prometheus queries, Grafana dashboards, and Flink UI
+- **Errors**: None
 
 
 ### Day 06 Tests
