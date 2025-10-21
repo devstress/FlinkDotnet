@@ -334,12 +334,26 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gatewayBuilder = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: 8080, name: "gateway-http")
-    .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080") // Bind to all interfaces for container access (Podman gateway)
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)  // Host path to connectors
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
     .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
     .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
+
+// Configure JobGateway binding based on container runtime
+if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
+{
+    // Podman: Bind to all interfaces so containers can reach JobGateway via gateway IP
+    gatewayBuilder = gatewayBuilder
+        .WithEnvironment("ASPNETCORE_URLS", "http://0.0.0.0:8080");
+    Console.WriteLine("   🔧 JobGateway: Binding to 0.0.0.0:8080 for Podman container access");
+}
+else
+{
+    // Docker Desktop: localhost binding is sufficient
+    gatewayBuilder = gatewayBuilder
+        .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080");
+}
 
 // Enable Prometheus metrics for JobGateway only in LEARNINGCOURSE mode
 // Configuration is injected via environment variables (ASP.NET Core configuration binding)
