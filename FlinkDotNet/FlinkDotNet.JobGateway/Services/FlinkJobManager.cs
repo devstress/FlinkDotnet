@@ -411,6 +411,9 @@ public class FlinkJobManager : IFlinkJobManager
     /// <returns>A task containing true if the job was successfully cancelled, false otherwise.</returns>
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
+        // Validate input before attempting HTTP calls to prevent injection attacks
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+
         if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
         {
             info.Status = "LOCAL-CANCELED";
@@ -422,7 +425,7 @@ public class FlinkJobManager : IFlinkJobManager
             _logger.LogInformation("Attempting to cancel Flink job: {FlinkJobId}", flinkJobId);
 
             // Try Flink 2.x style first: PATCH /jobs/{jobId}?mode=cancel
-            var patchResponse = await _httpClient.PatchAsync($"/jobs/{flinkJobId}?mode=cancel", null);
+            var patchResponse = await _httpClient.PatchAsync($"/jobs/{sanitizedJobId}?mode=cancel", null);
             if (patchResponse.IsSuccessStatusCode)
             {
                 _logger.LogInformation("Successfully canceled job {FlinkJobId} using PATCH /jobs/{{jobId}}?mode=cancel", flinkJobId);
@@ -436,7 +439,7 @@ public class FlinkJobManager : IFlinkJobManager
             _logger.LogWarning("PATCH /jobs/{{jobId}}?mode=cancel returned {StatusCode}, trying POST endpoint", patchResponse.StatusCode);
 
             // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
-            var postResponse = await _httpClient.PostAsync($"/jobs/{flinkJobId}/cancel", null);
+            var postResponse = await _httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
             if (postResponse.IsSuccessStatusCode)
             {
                 _logger.LogInformation("Successfully canceled job {FlinkJobId} using POST /jobs/{{jobId}}/cancel", flinkJobId);
@@ -619,8 +622,11 @@ public class FlinkJobManager : IFlinkJobManager
 
             using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
+            // Validate jarId from Flink response to prevent injection attacks
+            var sanitizedJarId = ValidateAndSanitizePathSegment(jarId, nameof(jarId));
+            
             _logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", _httpClient.BaseAddress, jarId);
-            using var response = await _httpClient.PostAsync($"/v1/jars/{jarId}/run", content);
+            using var response = await _httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
             _logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) response.StatusCode, response.ReasonPhrase);
 
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
@@ -812,7 +818,9 @@ public class FlinkJobManager : IFlinkJobManager
         var jsonContent = JsonSerializer.Serialize(requestBody);
         using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-        var statementEndpoint = $"/v1/sessions/{sessionHandle}/statements";
+        // Validate sessionHandle from SQL Gateway response to prevent injection attacks
+        var sanitizedSessionHandle = ValidateAndSanitizePathSegment(sessionHandle, nameof(sessionHandle));
+        var statementEndpoint = $"/v1/sessions/{sanitizedSessionHandle}/statements";
         using var response = await client.PostAsync(statementEndpoint, content);
 
         if (!response.IsSuccessStatusCode)
@@ -1656,9 +1664,11 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectCheckpointMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        
         try
         {
-            var cps = await _httpClient.GetAsync($"/v1/jobs/{flinkJobId}/checkpoints");
+            var cps = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/checkpoints");
             if (!cps.IsSuccessStatusCode)
                 return;
 
