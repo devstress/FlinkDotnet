@@ -433,6 +433,23 @@ if (isLearningCourse)
     {
         prometheusBuilder = prometheusBuilder
             .WithContainerRuntimeArgs("--publish", $"{Ports.PrometheusHostPort}:9090");
+        
+        // CRITICAL: Fix Podman host.containers.internal resolution
+        // In Podman on Windows, host.containers.internal resolves to Podman VM, not physical host
+        // Need to map it to the VM's gateway IP so containers can reach host services (JobGateway)
+        var gatewayIP = GetPodmanGatewayIP();
+        if (!string.IsNullOrEmpty(gatewayIP))
+        {
+            prometheusBuilder = prometheusBuilder
+                .WithContainerRuntimeArgs("--add-host", $"host.containers.internal:{gatewayIP}");
+            Console.WriteLine($"   🔧 Podman: Mapping host.containers.internal to gateway IP {gatewayIP}");
+            Console.WriteLine($"   🔧 This allows Prometheus to reach JobGateway on host");
+        }
+        else
+        {
+            Console.WriteLine($"   ⚠️  Could not detect Podman gateway IP - host.containers.internal may not work");
+            Console.WriteLine($"   ⚠️  JobGateway metrics may be unavailable in Prometheus");
+        }
     }
     
     var prometheus = prometheusBuilder;
@@ -739,5 +756,67 @@ static void SetPodmanDockerHost()
     {
         Console.WriteLine($"   ⚠️ Could not set DOCKER_HOST: {ex.Message}");
     }
+}
+
+// Get the gateway IP for the Podman VM on Windows.
+// This is required to allow containers to reach host services via host.containers.internal.
+// In Podman, host.containers.internal resolves to the Podman VM, not the physical host.
+// The gateway IP is the address the Podman VM uses to reach the physical host.
+// Returns: Gateway IP address (e.g., "172.20.112.1") or null if not found
+static string? GetPodmanGatewayIP()
+{
+    try
+    {
+        // Query the default route inside the Podman VM to get gateway IP
+        // Command: wsl -d podman-machine-default -- ip -4 route show default
+        // Expected output: default via 172.20.112.1 dev eth0 ...
+        var psi = new ProcessStartInfo
+        {
+            FileName = "wsl",
+            Arguments = "-d podman-machine-default -- ip -4 route show default",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(psi);
+        if (process != null)
+        {
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            var error = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit(5000);
+            
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                // Parse output: "default via 172.20.112.1 dev eth0 ..."
+                // Extract the IP after "via"
+                var parts = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var viaIndex = Array.IndexOf(parts, "via");
+                
+                if (viaIndex >= 0 && viaIndex + 1 < parts.Length)
+                {
+                    var gatewayIP = parts[viaIndex + 1];
+                    
+                    // Validate IP format (simple check)
+                    if (System.Net.IPAddress.TryParse(gatewayIP, out _))
+                    {
+                        return gatewayIP;
+                    }
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                Console.WriteLine($"   ⚠️ WSL command error: {error}");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"   ⚠️ Could not get Podman gateway IP: {ex.Message}");
+        Console.WriteLine($"   ℹ️ Manual workaround: Run 'wsl -d podman-machine-default -- ip -4 route show default'");
+    }
+    
+    return null;
 }
 
