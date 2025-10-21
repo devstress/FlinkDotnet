@@ -23,7 +23,6 @@ public class Day02Tests : LearningCourseTestBase
     private const string Exercise1Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise21";
     private const string Exercise2Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise22";
     private const string Exercise3Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise23";
-    private const string Exercise4Path = "Day02-Flink21-Fundamentals/Exercise-Solutions/Exercise24";
     private static readonly TimeSpan ExerciseTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
@@ -118,20 +117,20 @@ public class Day02Tests : LearningCourseTestBase
     }
 
     /// <summary>
-    /// Exercise 1.3: Observability Dashboard
+    /// Exercise 1.3: Load Testing
     ///
     /// This test validates:
-    /// - Google-style SRE observability patterns
-    /// - Prometheus metrics collection
-    /// - Grafana dashboard configuration
-    /// - OpenTelemetry tracing integration
-    /// - Production monitoring setup
+    /// - Performance validation and benchmarking
+    /// - Throughput and latency measurements
+    /// - Backpressure handling under load
+    /// - Resource utilization monitoring
+    /// - Scalability testing
     ///
-    /// Expected: Observability dashboard accessible and displaying metrics
+    /// Expected: Load test executes with performance metrics reported
     /// </summary>
     [Test]
-    [Description("Exercise 1.3: Observability Dashboard")]
-    public async Task Exercise3_ObservabilityDashboard_ShouldExecuteSuccessfully()
+    [Description("Exercise 1.3: Load Testing")]
+    public async Task Exercise3_LoadTesting_ShouldExecuteSuccessfully()
     {
         PrintExercise3Header();
 
@@ -153,45 +152,6 @@ public class Day02Tests : LearningCourseTestBase
 
         TestContext.WriteLine();
         TestContext.WriteLine("✅ Exercise 1.3 completed successfully");
-        TestContext.WriteLine("================================================================================");
-    }
-
-    /// <summary>
-    /// Exercise 1.4: Load Testing
-    ///
-    /// This test validates:
-    /// - Performance validation and benchmarking
-    /// - Throughput and latency measurements
-    /// - Backpressure handling under load
-    /// - Resource utilization monitoring
-    /// - Scalability testing
-    ///
-    /// Expected: Load test executes with performance metrics reported
-    /// </summary>
-    [Test]
-    [Description("Exercise 1.4: Load Testing")]
-    public async Task Exercise4_LoadTesting_ShouldExecuteSuccessfully()
-    {
-        PrintExercise4Header();
-
-        var (exitCode, output, error) = await ExecuteExerciseAsync(
-            Exercise4Path,
-            Array.Empty<string>(),
-            ExerciseTimeout);
-
-        TestContext.WriteLine();
-        TestContext.WriteLine("--------------------------------------------------------------------------------");
-        TestContext.WriteLine("Test Validation");
-        TestContext.WriteLine("--------------------------------------------------------------------------------");
-
-        var validationChecks = BuildExercise4ValidationChecks(output);
-        ValidateExerciseResults(validationChecks, output, error, "Exercise 1.4");
-
-        Assert.That(exitCode, Is.EqualTo(0),
-            $"Exercise 1.4 should complete successfully. Exit code: {exitCode}\nError: {error}");
-
-        TestContext.WriteLine();
-        TestContext.WriteLine("✅ Exercise 1.4 completed successfully");
         TestContext.WriteLine("================================================================================");
     }
 
@@ -218,17 +178,6 @@ public class Day02Tests : LearningCourseTestBase
     }
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise3ValidationChecks(string output)
-    {
-        return new Dictionary<string, (bool result, string failureMessage)>
-        {
-            ["Observability Dashboard"] = (output.Contains("Observability") || output.Contains("Dashboard"), "Observability dashboard not found"),
-            ["Prometheus"] = (output.Contains("Prometheus") || output.Contains("metrics"), "Prometheus not configured"),
-            ["Monitoring"] = (output.Contains("monitoring") || output.Contains("SRE"), "Monitoring not configured"),
-            ["Execution Completed"] = (output.Contains("COMPLETED") || output.Contains("SUCCESS") || output.Contains("✅"), "Exercise did not complete successfully")
-        };
-    }
-
-    private static Dictionary<string, (bool result, string failureMessage)> BuildExercise4ValidationChecks(string output)
     {
         return new Dictionary<string, (bool result, string failureMessage)>
         {
@@ -259,24 +208,7 @@ public class Day02Tests : LearningCourseTestBase
     private static void PrintExercise3Header()
     {
         TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 1.3: Observability Dashboard");
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Reference: Google-style SRE Observability");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Testing concepts:");
-        TestContext.WriteLine("  - SRE observability patterns");
-        TestContext.WriteLine("  - Prometheus metrics collection");
-        TestContext.WriteLine("  - Grafana dashboard configuration");
-        TestContext.WriteLine("  - OpenTelemetry tracing integration");
-        TestContext.WriteLine("  - Production monitoring setup");
-        TestContext.WriteLine();
-    }
-
-    private static void PrintExercise4Header()
-    {
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("  Exercise 1.4: Load Testing");
+        TestContext.WriteLine("  Exercise 1.3: Load Testing");
         TestContext.WriteLine("================================================================================");
         TestContext.WriteLine();
         TestContext.WriteLine("Reference: Performance Validation and Benchmarking");

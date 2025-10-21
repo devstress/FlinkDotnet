@@ -79,28 +79,26 @@ public class ThroughputScenario
         producer.Flush(TimeSpan.FromSeconds(5));
         serializationStopwatch.Stop();
 
-        // Consume events
+        // Consume events - OPTIMIZED: Smart early exit
         var deserializationStopwatch = Stopwatch.StartNew();
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
-                {
-                    _ = JsonSerializer.Deserialize<ThroughputEvent>(consumeResult.Message.Value);
-                    processedCount++;
-                    consumer.Commit(consumeResult);
-                }
+                _ = JsonSerializer.Deserialize<ThroughputEvent>(consumeResult.Message.Value);
+                processedCount++;
+                consumer.Commit(consumeResult);
+                lastMessageTime = DateTime.UtcNow;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         deserializationStopwatch.Stop();
@@ -177,27 +175,25 @@ public class ThroughputScenario
         producer.Flush(TimeSpan.FromSeconds(5));
         serializationStopwatch.Stop();
 
-        // Consume events
+        // Consume events - OPTIMIZED: Smart early exit
         var deserializationStopwatch = Stopwatch.StartNew();
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
-                {
-                    processedCount++;
-                    consumer.Commit(consumeResult);
-                }
+                processedCount++;
+                consumer.Commit(consumeResult);
+                lastMessageTime = DateTime.UtcNow;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         deserializationStopwatch.Stop();
@@ -274,27 +270,25 @@ public class ThroughputScenario
         producer.Flush(TimeSpan.FromSeconds(5));
         serializationStopwatch.Stop();
 
-        // Consume events
+        // Consume events - OPTIMIZED: Smart early exit
         var deserializationStopwatch = Stopwatch.StartNew();
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
-                {
-                    processedCount++;
-                    consumer.Commit(consumeResult);
-                }
+                processedCount++;
+                consumer.Commit(consumeResult);
+                lastMessageTime = DateTime.UtcNow;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         deserializationStopwatch.Stop();
@@ -380,29 +374,27 @@ public class ThroughputScenario
         producer.Flush(TimeSpan.FromSeconds(5));
         serializationStopwatch.Stop();
 
-        // Consume batches
+        // Consume batches - OPTIMIZED: Smart early exit
         var deserializationStopwatch = Stopwatch.StartNew();
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
-                {
-                    var decompressed = SerializationTester.Decompress(consumeResult.Message.Value, CompressionType.GZip);
-                    var events = SerializationTester.BatchDeserialize(decompressed, SerializationFormat.MessagePack);
-                    processedCount += events.Count;
-                    consumer.Commit(consumeResult);
-                }
+                var decompressed = SerializationTester.Decompress(consumeResult.Message.Value, CompressionType.GZip);
+                var events = SerializationTester.BatchDeserialize(decompressed, SerializationFormat.MessagePack);
+                processedCount += events.Count;
+                consumer.Commit(consumeResult);
+                lastMessageTime = DateTime.UtcNow;
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         deserializationStopwatch.Stop();

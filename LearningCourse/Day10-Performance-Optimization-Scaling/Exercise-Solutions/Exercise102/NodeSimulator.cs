@@ -164,13 +164,11 @@ public class NodeSimulator
         consumer.Subscribe(_outputTopic);
 
         var processedEvents = new List<ProcessedScalingEvent>();
-        var timeoutCount = 0;
-        const int maxTimeouts = 10;
+        var lastMessageTime = DateTime.UtcNow;
         var stopwatch = Stopwatch.StartNew();
         const int maxWaitSeconds = 30;
 
         while (processedEvents.Count < expectedCount &&
-               timeoutCount < maxTimeouts &&
                stopwatch.Elapsed.TotalSeconds < maxWaitSeconds)
         {
             try
@@ -185,7 +183,7 @@ public class NodeSimulator
                         if (processedEvent != null && processedEvent.Scenario == scenarioName)
                         {
                             processedEvents.Add(processedEvent);
-                            timeoutCount = 0;
+                            lastMessageTime = DateTime.UtcNow;
                         }
                     }
                     catch
@@ -204,7 +202,11 @@ public class NodeSimulator
                 }
                 else
                 {
-                    timeoutCount++;
+                    // Smart early exit: If no messages for 2 seconds, assume done
+                    if ((DateTime.UtcNow - lastMessageTime) > TimeSpan.FromSeconds(2))
+                    {
+                        break;
+                    }
                 }
 
                 // Yield to other async operations every iteration
@@ -282,9 +284,6 @@ public class NodeProcessingFunction : IMapFunction<string, string>
     {
         var stopwatch = Stopwatch.StartNew();
 
-        // Base processing time
-        var baseProcessingMs = payloadSize / 10;
-
         // Efficiency factor: More nodes = slightly better per-event processing
         // But with diminishing returns to simulate resource contention
         var efficiencyFactor = nodeCount switch
@@ -296,16 +295,14 @@ public class NodeProcessingFunction : IMapFunction<string, string>
             _ => 1.0 / Math.Sqrt(nodeCount)
         };
 
-        var adjustedProcessingMs = (int)(baseProcessingMs * efficiencyFactor);
-
-        // Simulate CPU work
-        Thread.Sleep(Math.Max(3, adjustedProcessingMs));
-
-        // Add computational work
+        // Computational work scales with payload size and efficiency
+        var iterations = (int)(payloadSize * efficiencyFactor);
+        
+        // Add computational work (no Thread.Sleep blocking!)
         double result = 0;
-        for (int i = 0; i < payloadSize / 2; i++)
+        for (int i = 0; i < iterations; i++)
         {
-            result += Math.Sqrt(i) * Math.Sin(i);
+            result += Math.Sqrt(i + 1) * Math.Sin(i);
         }
 
         stopwatch.Stop();

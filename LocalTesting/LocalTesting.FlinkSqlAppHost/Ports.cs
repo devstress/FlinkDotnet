@@ -38,6 +38,9 @@ public static class Ports
     public const string RedisHostAddress = "localhost:6379";  // For SDK clients
     
     // Observability Stack - Monitoring and metrics
-    public const int PrometheusHostPort = 9090;  // Prometheus metrics collection
+    // Note: Port 9090 is in Windows excluded port range (9038-9137)
+    // Ports 9250-9252 are used by Flink metrics (JobManager, TaskManager, SQL Gateway)
+    // Using 9253 for Prometheus to avoid conflicts
+    public const int PrometheusHostPort = 9253;  // Prometheus metrics collection
     public const int GrafanaHostPort = 3000;     // Grafana visualization dashboard
 }

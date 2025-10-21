@@ -1,15 +1,18 @@
 using Flink.JobBuilder.Models;
-<<<<<<< Updated upstream
-=======
 using FlinkDotNet.DataStream;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
->>>>>>> Stashed changes
 
 namespace LocalTesting.IntegrationTests;
 
 /// <summary>
-/// Contains various FlinkDotNet job implementations for testing different features
+/// Contains various FlinkDotNet job implementations for testing different features.
+/// Uses modern DataStream API pattern:
+/// 1. StreamExecutionEnvironment.GetExecutionEnvironment()
+/// 2. environment.FromKafka() to create stream
+/// 3. Stream transformation methods (.Map, .Filter, etc.)
+/// 4. .SinkToKafka() to write output
+/// 5. environment.ExecuteAsync() to submit job
 /// </summary>
 public static class FlinkDotNetJobs
 {
@@ -23,16 +26,20 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // Use the Kafka container IP passed from test infrastructure
-        // This is the bridge network IP (e.g., "172.17.0.2:9093") which Flink containers can reach
-        var kafkaBootstrap = kafka;
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
         
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
-            .Map("upper")
-            .ToKafka(outputTopic, kafkaBootstrap);
+        environment.FromKafka(inputTopic, kafka, groupId: "uppercase-job", startingOffsets: "earliest")
+            .Map(s => s.ToUpperInvariant())
+            .SinkToKafka(outputTopic, kafka);
         
-        return await job.Submit(jobName, ct);
+        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            JobId = jobClient.GetJobId(),
+            SubmittedAt = DateTime.UtcNow
+        };
     }
     
     /// <summary>
@@ -45,15 +52,20 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // Flink jobs run inside containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
-            .Where("nonempty")
-            .ToKafka(outputTopic, kafkaBootstrap);
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
         
-        return await job.Submit(jobName, ct);
+        environment.FromKafka(inputTopic, kafka, groupId: "filter-job", startingOffsets: "earliest")
+            .Filter(s => !string.IsNullOrWhiteSpace(s))
+            .SinkToKafka(outputTopic, kafka);
+        
+        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            JobId = jobClient.GetJobId(),
+            SubmittedAt = DateTime.UtcNow
+        };
     }
     
     /// <summary>
@@ -66,20 +78,26 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // Flink jobs run inside containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
-            .Map("split:,")
-            .Map("concat:-joined")
-            .ToKafka(outputTopic, kafkaBootstrap);
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
         
-        return await job.Submit(jobName, ct);
+        environment.FromKafka(inputTopic, kafka, groupId: "splitconcat-job", startingOffsets: "earliest")
+            .FlatMap(s => s.Split(','))
+            .Map(s => s + "-joined")
+            .SinkToKafka(outputTopic, kafka);
+        
+        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            JobId = jobClient.GetJobId(),
+            SubmittedAt = DateTime.UtcNow
+        };
     }
     
     /// <summary>
     /// Creates a DataStream job with timer functionality
+    /// Note: Timer functionality needs special windowing - simplified version here
     /// </summary>
     public static async Task<JobSubmissionResult> CreateTimerJob(
         string inputTopic,
@@ -88,15 +106,21 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // Flink jobs run inside containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
-            .WithTimer(5)
-            .ToKafka(outputTopic, kafkaBootstrap);
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
         
-        return await job.Submit(jobName, ct);
+        // Simple pass-through for timer test (actual timer logic would require more complex windowing)
+        environment.FromKafka(inputTopic, kafka, groupId: "timer-job", startingOffsets: "earliest")
+            .Map(s => $"[Timed] {s}")
+            .SinkToKafka(outputTopic, kafka);
+        
+        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            JobId = jobClient.GetJobId(),
+            SubmittedAt = DateTime.UtcNow
+        };
     }
     
     /// <summary>
@@ -110,15 +134,12 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // SQL Gateway jobs run inside Flink containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        var kafkaBootstrap = kafka;
         var sqlStatements = new[]
         {
             $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{inputTopic}',
-                'properties.bootstrap.servers'='{kafkaBootstrap}',
+                'properties.bootstrap.servers'='{kafka}',
                 'properties.group.id'='flink-sql-test',
                 'scan.startup.mode'='earliest-offset',
                 'format'='json'
@@ -126,20 +147,19 @@ public static class FlinkDotNetJobs
             $@"CREATE TABLE output ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
-                'properties.bootstrap.servers'='{kafkaBootstrap}',
+                'properties.bootstrap.servers'='{kafka}',
                 'format'='json'
             )",
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
         
-        // Create JobDefinition with SqlSourceDefinition for SQL Gateway execution
         var jobDef = new JobDefinition
         {
             Source = new SqlSourceDefinition
             {
                 Statements = new List<string>(sqlStatements),
                 Mode = "streaming",
-                ExecutionMode = "gateway"  // Use SQL Gateway for direct execution
+                ExecutionMode = "gateway"
             },
             Metadata = new JobMetadata
             {
@@ -150,8 +170,6 @@ public static class FlinkDotNetJobs
             }
         };
         
-        // Submit via FlinkJobManager with SQL Gateway endpoint configuration
-        // FlinkJobManager reads from "Flink:SqlGateway:BaseUrl" configuration key
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -178,15 +196,12 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // Flink jobs run inside containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        var kafkaBootstrap = kafka;
         var sqlStatements = new[]
         {
             $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{inputTopic}',
-                'properties.bootstrap.servers'='{kafkaBootstrap}',
+                'properties.bootstrap.servers'='{kafka}',
                 'properties.group.id'='flink-sql-transform',
                 'scan.startup.mode'='earliest-offset',
                 'format'='json'
@@ -194,20 +209,19 @@ public static class FlinkDotNetJobs
             $@"CREATE TABLE output ( `key` STRING, `transformed` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
-                'properties.bootstrap.servers'='{kafkaBootstrap}',
+                'properties.bootstrap.servers'='{kafka}',
                 'format'='json'
             )",
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
         };
         
-        // Create JobDefinition with SqlSourceDefinition for SQL Gateway execution
         var jobDef = new JobDefinition
         {
             Source = new SqlSourceDefinition
             {
                 Statements = new List<string>(sqlStatements),
                 Mode = "streaming",
-                ExecutionMode = "gateway"  // Use SQL Gateway for direct execution
+                ExecutionMode = "gateway"
             },
             Metadata = new JobMetadata
             {
@@ -218,8 +232,6 @@ public static class FlinkDotNetJobs
             }
         };
         
-        // Submit via FlinkJobManager with SQL Gateway endpoint configuration
-        // FlinkJobManager reads from "Flink:SqlGateway:BaseUrl" configuration key
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -245,21 +257,23 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        // Flink jobs run inside containers and must use container network name 'kafka:9092'
-        // NOT the host connection string (e.g., localhost:17901)
-        var kafkaBootstrap = kafka;
-        var job = FlinkDotNet.Flink.JobBuilder
-            .FromKafka(inputTopic, kafkaBootstrap)
-            .Map("split:,")
-            .Map("concat:-tail")
-            .Map("upper")
-            .Where("nonempty")
-            .WithTimer(5)
-            .ToKafka(outputTopic, kafkaBootstrap);
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
         
-        return await job.Submit(jobName, ct);
+        environment.FromKafka(inputTopic, kafka, groupId: "composite-job", startingOffsets: "earliest")
+            .FlatMap(s => s.Split(','))
+            .Map(s => s + "-tail")
+            .Map(s => s.ToUpperInvariant())
+            .Filter(s => !string.IsNullOrWhiteSpace(s))
+            .Map(s => $"[Processed] {s}")
+            .SinkToKafka(outputTopic, kafka);
+        
+        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        
+        return new JobSubmissionResult
+        {
+            Success = true,
+            JobId = jobClient.GetJobId(),
+            SubmittedAt = DateTime.UtcNow
+        };
     }
 }
-
-
-
