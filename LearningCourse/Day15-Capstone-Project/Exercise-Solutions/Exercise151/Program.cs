@@ -109,7 +109,7 @@ static Task<bool> ValidateKafkaClusterAsync(string bootstrapServers)
     });
 }
 
-// Validate Flink cluster by checking REST API
+// Validate Flink Job Gateway by checking health endpoint
 static async Task<bool> ValidateFlinkClusterAsync(string gatewayUrl)
 {
     try
@@ -117,12 +117,13 @@ static async Task<bool> ValidateFlinkClusterAsync(string gatewayUrl)
         using var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(5);
         
-        var response = await client.GetAsync($"{gatewayUrl}/v1/overview");
+        // Check JobGateway health endpoint: /api/v1/jobs/health
+        var response = await client.GetAsync($"{gatewayUrl}/api/v1/jobs/health");
         return response.IsSuccessStatusCode;
     }
     catch (Exception ex)
     {
-        Log.Warning(ex, "Flink validation failed");
+        Log.Warning(ex, "Flink Job Gateway validation failed");
         return false;
     }
 }

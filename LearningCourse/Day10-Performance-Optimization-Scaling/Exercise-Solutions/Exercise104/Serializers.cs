@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Text.Json;
 using MessagePack;
@@ -123,9 +122,10 @@ public class SerializationTester
         
         if (compressionType == CompressionType.GZip)
         {
-            using (var gzipStream = new GZipStream(outputMs, CompressionLevel.Fastest))
+            using (var gzipStream = new GZipStream(outputMs, CompressionLevel.Fastest, leaveOpen: true))
             {
                 gzipStream.Write(data, 0, data.Length);
+                gzipStream.Flush();
             }
         }
         
@@ -152,8 +152,9 @@ public class SerializationTester
         
         if (compressionType == CompressionType.GZip)
         {
-            using var gzipStream = new GZipStream(inputMs, CompressionMode.Decompress);
+            using var gzipStream = new GZipStream(inputMs, CompressionMode.Decompress, leaveOpen: true);
             gzipStream.CopyTo(outputMs);
+            outputMs.Flush();
         }
         
         return outputMs.ToArray();
