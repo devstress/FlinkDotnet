@@ -1,6 +1,6 @@
 # Release Packages Testing - Published
 
-This folder validates that **published** packages from NuGet.org and Docker Hub work together correctly.
+This folder validates that **published** packages from NuGet.org and Docker Hub work together correctly using Microsoft Aspire integration tests.
 
 ## Purpose
 
@@ -26,14 +26,33 @@ This validates the published artifacts are compatible and working.
 
 ## Usage
 
+### Using Aspire Integration Tests
+
+The testing is done through Microsoft Aspire's integration testing framework, identical to LocalTesting:
+
+```bash
+# Pull Docker image from Docker Hub
+docker pull flinkdotnet/jobgateway:VERSION
+
+# Tag as latest if needed
+docker tag flinkdotnet/jobgateway:VERSION flinkdotnet/jobgateway:latest
+
+# Clear NuGet cache to force download from NuGet.org
+dotnet nuget locals all --clear
+
+# Run Aspire integration tests
+cd ReleasePackagesTesting.Published
+dotnet test --configuration Release
+```
+
 ### In Release Workflow (Recommended)
 
 Add as the final step after publishing:
 
 ```yaml
 validate-published-packages:
-  name: Validate Published Packages
-  needs: [publish-nuget, publish-docker]
+  name: Validate Published Packages (Post-Release)
+  needs: [calculate-version, publish-nuget, publish-docker]
   runs-on: ubuntu-latest
   steps:
     - name: Checkout code
@@ -55,32 +74,30 @@ validate-published-packages:
       with:
         maven-version: '3.9.6'
     
-    - name: Validate published packages
-      shell: pwsh
+    - name: Pull Docker image from Docker Hub
+      run: |
+        docker pull flinkdotnet/jobgateway:${{ needs.calculate-version.outputs.new_version }}
+        docker tag flinkdotnet/jobgateway:${{ needs.calculate-version.outputs.new_version }} flinkdotnet/jobgateway:latest
+    
+    - name: Clear NuGet cache
+      run: dotnet nuget locals all --clear
+    
+    - name: Run Aspire integration tests
       run: |
         cd ReleasePackagesTesting.Published
-        ./test-published-packages.ps1 -DockerTag "${{ needs.calculate-version.outputs.new_version }}"
+        dotnet test --configuration Release --verbosity normal
 ```
 
-### Manual Testing
+## What It Tests
 
-```bash
-# Test latest published packages
-cd ReleasePackagesTesting.Published
-./test-published-packages.ps1
-
-# Test specific version
-./test-published-packages.ps1 -DockerTag "1.0.0"
-```
-
-## What It Does
-
-1. Pulls `flinkdotnet/jobgateway:VERSION` from Docker Hub
-2. Clears NuGet cache
-3. Restores `FlinkDotnet` package from NuGet.org
-4. Builds the solution
-5. Runs all integration tests
-6. Reports success or failure
+Uses Microsoft Aspire integration testing framework to:
+1. Pull Docker image from Docker Hub
+2. Start Aspire AppHost with published Docker image
+3. Deploy Flink cluster, Kafka, and other infrastructure
+4. Install NuGet packages from NuGet.org
+5. Run integration tests against JobGateway
+6. Verify all Flink job patterns work correctly
+7. Validate end-to-end functionality with published packages
 
 ## Validation
 
@@ -88,12 +105,13 @@ cd ReleasePackagesTesting.Published
 ✅ Validates Docker image from Docker Hub works with Flink cluster  
 ✅ Validates NuGet package from NuGet.org has correct dependencies  
 ✅ Confirms published packages are compatible  
+✅ Uses same Aspire testing infrastructure as LocalTesting  
 
 ## Difference from ReleasePackagesTesting
 
 - **ReleasePackagesTesting**: Tests local artifacts BEFORE publishing (pre-release validation)
-- **ReleasePackagesTesting.Published**: Tests published packages AFTER publishing (post-release validation)
+- **ReleasePackagesTesting.Published** (this folder): Tests published packages AFTER publishing (post-release validation)
 
-Both are important:
+Both use Microsoft Aspire integration testing framework:
 - Pre-release prevents publishing broken packages
 - Post-release confirms the release actually works

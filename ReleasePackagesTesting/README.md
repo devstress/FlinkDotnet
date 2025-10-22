@@ -1,6 +1,6 @@
 # Release Packages Testing - Pre-Release
 
-This folder validates release artifacts **BEFORE** publishing to NuGet.org and Docker Hub.
+This folder validates release artifacts **BEFORE** publishing to NuGet.org and Docker Hub using Microsoft Aspire integration tests.
 
 ## Purpose
 
@@ -26,6 +26,22 @@ This prevents publishing broken packages to NuGet.org and Docker Hub.
 
 ## Usage
 
+### Using Aspire Integration Tests
+
+The testing is done through Microsoft Aspire's integration testing framework, identical to LocalTesting:
+
+```bash
+# Set up local NuGet source
+dotnet nuget add source ./packages --name LocalFeed
+
+# Load Docker image
+gunzip -c ./docker/jobgateway-VERSION.tar.gz | docker load
+
+# Run Aspire integration tests
+cd ReleasePackagesTesting
+dotnet test --configuration Release
+```
+
 ### In Release Workflow (Recommended)
 
 Add before publishing:
@@ -44,6 +60,17 @@ test-release-packages:
       with:
         dotnet-version: '9.0.x'
     
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Install Maven
+      uses: stCarolas/setup-maven@v4
+      with:
+        maven-version: '3.9.6'
+    
     - name: Download NuGet packages
       uses: actions/download-artifact@v4
       with:
@@ -56,33 +83,33 @@ test-release-packages:
         name: docker-image
         path: ./docker
     
-    - name: Test release packages
-      shell: pwsh
+    - name: Add local NuGet source
+      run: dotnet nuget add source ./packages --name LocalFeed
+    
+    - name: Load Docker image
+      run: gunzip -c ./docker/jobgateway-${{ needs.calculate-version.outputs.new_version }}.tar.gz | docker load
+    
+    - name: Run Aspire integration tests
       run: |
-        ./ReleasePackagesTesting/test-release-packages.ps1 -Version ${{ needs.calculate-version.outputs.new_version }}
+        cd ReleasePackagesTesting
+        dotnet test --configuration Release --verbosity normal
 ```
 
-### Manual Testing
+## What It Tests
 
-```bash
-# Test local release artifacts
-./ReleasePackagesTesting/test-release-packages.ps1 -Version 1.0.0
-```
-
-## What It Does
-
-1. Loads Docker image from `./docker/jobgateway-VERSION.tar.gz`
-2. Adds `./packages` as local NuGet source
-3. Restores packages from local feed
-4. Builds the solution
-5. Runs all integration tests
-6. Reports success or failure
+Uses Microsoft Aspire integration testing framework to:
+1. Start Aspire AppHost with local Docker image
+2. Deploy Flink cluster, Kafka, and other infrastructure
+3. Run integration tests against JobGateway using local NuGet packages
+4. Verify all Flink job patterns work correctly
+5. Validate end-to-end functionality
 
 ## Validation
 
 ✅ All tests must pass BEFORE publishing to NuGet.org and Docker Hub  
 ✅ Validates local Docker image works with Flink cluster  
 ✅ Validates local NuGet packages have correct dependencies  
+✅ Uses same Aspire testing infrastructure as LocalTesting  
 ✅ Prevents publishing broken releases  
 
 ## Difference from ReleasePackagesTesting.Published
@@ -90,6 +117,4 @@ test-release-packages:
 - **ReleasePackagesTesting** (this folder): Tests local artifacts BEFORE publishing (pre-release validation)
 - **ReleasePackagesTesting.Published**: Tests published packages AFTER publishing (post-release validation)
 
-Both are important:
-- Pre-release prevents publishing broken packages (**this folder**)
-- Post-release confirms the release actually works
+Both use Microsoft Aspire integration testing framework for comprehensive validation.
