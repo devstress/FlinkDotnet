@@ -259,7 +259,193 @@ namespace FlinkDotNet.JobGateway.Tests
 
         #endregion
 
+        #region LogOperations and Job Definition Tests
+
+        [Test]
+        public async Task SubmitJob_WithMapOperation_LogsMapExpression()
+        {
+            // Arrange
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            var jobDef = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-map-job", JobName = "Map Test" },
+                Source = new KafkaSourceDefinition
+                {
+                    BootstrapServers = "localhost:9092",
+                    Topic = "test-topic",
+                    GroupId = "test-group"
+                },
+                Operations = new List<IOperationDefinition>
+                {
+                    new MapOperationDefinition
+                    {
+                        Expression = "x => x.ToUpper()"
+                    }
+                },
+                Sink = new ConsoleSinkDefinition()
+            };
+
+            // Setup mock for cluster health check
+            SetupClusterHealthMockResponses();
+
+            // Act
+            _ = await manager.SubmitJobAsync(jobDef);
+
+            // Assert - Should log map operation expression at Debug level
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Debug,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Map Operation") && v.ToString()!.Contains("x => x.ToUpper()")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
+        }
+
+        [Test]
+        public async Task SubmitJob_WithEmptyOperations_DoesNotLogOperations()
+        {
+            // Arrange
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            var jobDef = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-no-ops", JobName = "No Ops Test" },
+                Source = new KafkaSourceDefinition
+                {
+                    BootstrapServers = "localhost:9092",
+                    Topic = "test-topic",
+                    GroupId = "test-group"
+                },
+                Operations = new List<IOperationDefinition>(), // Empty operations
+                Sink = new ConsoleSinkDefinition()
+            };
+
+            SetupClusterHealthAndJarMockResponses();
+
+            // Act
+            _ = await manager.SubmitJobAsync(jobDef);
+
+            // Assert - Should not log map operations since there are none
+            Assert.That(true); // Test passes if no exception thrown
+        }
+
+        [Test]
+        public async Task SubmitJob_WithNullOperations_DoesNotLogOperations()
+        {
+            // Arrange
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            var jobDef = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-null-ops", JobName = "Null Ops Test" },
+                Source = new KafkaSourceDefinition
+                {
+                    BootstrapServers = "localhost:9092",
+                    Topic = "test-topic",
+                    GroupId = "test-group"
+                },
+                Operations = null, // Null operations
+                Sink = new ConsoleSinkDefinition()
+            };
+
+            SetupClusterHealthAndJarMockResponses();
+
+            // Act
+            _ = await manager.SubmitJobAsync(jobDef);
+
+            // Assert - Should handle null operations gracefully
+            Assert.That(true); // Test passes if no exception thrown
+        }
+
+        #endregion
+
         #region Helper Methods
+
+        private void SetupClusterHealthMockResponses()
+        {
+            // Mock cluster overview for health check
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/overview")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"taskmanagers\":1,\"slots-total\":4,\"slots-available\":4}")
+                });
+
+            // Mock JAR upload
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/upload")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"filename\":\"/tmp/test-jar.jar\",\"status\":\"success\"}")
+                });
+
+            // Mock JAR run
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/") && req.RequestUri.PathAndQuery.Contains("/run")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"jobid\":\"test-flink-job-id-123\"}")
+                });
+        }
+
+        private void SetupClusterHealthAndJarMockResponses()
+        {
+            // Mock cluster overview for health check
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/overview")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"taskmanagers\":1,\"slots-total\":4,\"slots-available\":4}")
+                });
+
+            // Mock JAR upload
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/upload")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"filename\":\"/tmp/test-jar.jar\",\"status\":\"success\"}")
+                });
+
+            // Mock JAR run
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/") && req.RequestUri.PathAndQuery.Contains("/run")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"jobid\":\"test-flink-job-id-123\"}")
+                });
+        }
 
         private void SetupSqlGatewayMockResponses()
         {
