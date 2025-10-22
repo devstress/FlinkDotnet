@@ -19,18 +19,11 @@ We welcome contributions from everyone! Similar to Apache Flink, our contributio
 Before submitting your pull request, ensure all tests pass:
 
 ```bash
-# Run all tests
-dotnet test
-
 # Run unit tests
-dotnet test --filter "Category=unit_test"
+dotnet test FlinkDotnet/FlinkDotnet.sln
 
-# Run integration tests  
-dotnet test --filter "Category=integration_test"
-
-# Run BDD tests
-cd Sample/FlinkDotNet.Aspire.IntegrationTests
-dotnet test
+# Run integration tests
+dotnet test LocalTesting/LocalTesting.sln
 ```
 
 All tests must pass locally before submitting your PR. If tests fail, fix them before proceeding.
