@@ -4,7 +4,7 @@ Thank you for your interest in contributing to FlinkDotNet!
 
 ## How to Become a Contributor
 
-We welcome contributions from everyone! Similar to Apache Flink, our contribution process follows these steps:
+We welcome contributions from everyone! Our contribution process follows these steps:
 
 1. **Discuss**: Start by opening a GitHub issue to discuss your idea or bugfix. This helps reach consensus on the approach and ensures your contribution will be accepted.
 
@@ -13,6 +13,20 @@ We welcome contributions from everyone! Similar to Apache Flink, our contributio
 3. **Review**: Submit a pull request and collaborate with reviewers to address feedback.
 
 4. **Merge**: After approval, a maintainer will merge your contribution.
+
+## How to Become a Maintainer
+
+Maintainers are trusted contributors with commit access to the repository. To become a maintainer:
+
+1. **Contribute Regularly**: Make consistent, high-quality contributions to the project through code, documentation, bug fixes, and community support.
+
+2. **Engage with the Community**: Participate actively in GitHub discussions, help review pull requests, and support other contributors.
+
+3. **Demonstrate Expertise**: Show deep understanding of the project architecture, coding standards, and best practices.
+
+4. **Nomination**: Existing maintainers will nominate active contributors based on their sustained contributions and community involvement.
+
+Maintainers are expected to uphold project standards, review contributions, and help guide the project's direction.
 
 ## Make Sure Tests Work
 
