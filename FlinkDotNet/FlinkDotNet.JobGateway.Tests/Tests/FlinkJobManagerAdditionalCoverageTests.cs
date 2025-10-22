@@ -361,6 +361,106 @@ namespace FlinkDotNet.JobGateway.Tests
 
         #endregion
 
+        #region SQL Gateway Error Path Tests
+
+        [Test]
+        public async Task SqlGateway_WithInvalidSessionResponse_ThrowsException()
+        {
+            // Arrange
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            var jobDef = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-invalid-session", JobName = "Invalid Session Test" },
+                Source = new SqlSourceDefinition
+                {
+                    Statements = new List<string> { "SELECT 1" },
+                    ExecutionMode = "gateway"
+                },
+                Sink = new ConsoleSinkDefinition()
+            };
+
+            // Mock SQL Gateway info endpoint
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/v1/info")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"productName\":\"Apache Flink SQL Gateway\"}")
+                });
+
+            // Mock SQL Gateway session creation with INVALID response (missing sessionHandle)
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/v1/sessions") && req.Method == HttpMethod.Post),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"invalidField\":\"no-session-handle\"}") // Missing sessionHandle
+                });
+
+            // Act & Assert - Should throw due to invalid session response
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await manager.SubmitJobAsync(jobDef));
+            Assert.That(ex!.Message, Does.Contain("sessionHandle"));
+        }
+
+        [Test]
+        public async Task SqlGateway_WithMalformedJson_ThrowsException()
+        {
+            // Arrange
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            var jobDef = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-malformed-json", JobName = "Malformed JSON Test" },
+                Source = new SqlSourceDefinition
+                {
+                    Statements = new List<string> { "SELECT 1" },
+                    ExecutionMode = "gateway"
+                },
+                Sink = new ConsoleSinkDefinition()
+            };
+
+            // Mock SQL Gateway info endpoint
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/v1/info")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"productName\":\"Apache Flink SQL Gateway\"}")
+                });
+
+            // Mock SQL Gateway session creation with MALFORMED JSON
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/v1/sessions") && req.Method == HttpMethod.Post),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{invalid json") // Malformed JSON
+                });
+
+            // Act & Assert - Should throw due to malformed JSON
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await manager.SubmitJobAsync(jobDef));
+            Assert.That(ex!.Message, Does.Contain("Failed to parse").Or.Contains("SQL Gateway"));
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private void SetupClusterHealthMockResponses()
