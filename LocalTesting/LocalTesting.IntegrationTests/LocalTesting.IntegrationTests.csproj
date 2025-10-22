@@ -28,28 +28,6 @@
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj" SetConfiguration="Configuration=Release" />
   </ItemGroup>
 
-  <!-- MSBuild Target: Force Release configuration for cross-solution FlinkDotNet references -->
-  <Target Name="EnsureFlinkDotNetReleaseBuilds" BeforeTargets="ResolveProjectReferences">
-    <Message Text="[LocalTesting.IntegrationTests] Ensuring FlinkDotNet projects build in Release configuration..." Importance="high" />
-    
-    <!-- Build Flink.JobBuilder in Release -->
-    <MSBuild Projects="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj"
-             Properties="Configuration=Release"
-             Targets="Build" />
-    
-    <!-- Build FlinkDotNet.DataStream in Release -->
-    <MSBuild Projects="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj"
-             Properties="Configuration=Release"
-             Targets="Build" />
-    
-    <!-- Build Flink.JobGateway in Release (required dependency) -->
-    <MSBuild Projects="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj"
-             Properties="Configuration=Release"
-             Targets="Build" />
-    
-    <Message Text="[LocalTesting.IntegrationTests] FlinkDotNet projects built in Release configuration successfully" Importance="high" />
-  </Target>
-
   <!-- Import Maven configuration from FlinkDotNet.JobGateway (reuse auto-download logic) -->
   <PropertyGroup>
     <MavenVersion>3.9.11</MavenVersion>
