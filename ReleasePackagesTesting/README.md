@@ -1,62 +1,95 @@
-# Release Packages Testing
+# Release Packages Testing - Pre-Release
 
-This folder validates release packages before and after publishing to NuGet.org and Docker Hub.
+This folder validates release artifacts **BEFORE** publishing to NuGet.org and Docker Hub.
 
 ## Purpose
 
-Tests the actual release artifacts to ensure they work correctly:
-- NuGet packages (FlinkDotnet)
-- Docker image (flinkdotnet/jobgateway)
+This is a **PRE-RELEASE** validation step that runs **BEFORE** publishing to prevent broken releases.
+
+Tests local artifacts:
+- NuGet packages from `./packages/*.nupkg` (not NuGet.org)
+- Docker image from `./docker/*.tar.gz` (not Docker Hub)
+
+## When to Use
+
+**Run this in the release workflow BEFORE publishing** after:
+1. ✅ Building NuGet packages
+2. ✅ Building Docker image
+
+This prevents publishing broken packages to NuGet.org and Docker Hub.
 
 ## Structure
 
-- `ReleasePackagesTesting.FlinkSqlAppHost` - Aspire AppHost using Docker image
-- `ReleasePackagesTesting.IntegrationTests` - Integration tests using NuGet packages
-- Same test scenarios as LocalTesting but using release artifacts
+- `ReleasePackagesTesting.FlinkSqlAppHost` - Aspire AppHost using local Docker image
+- `ReleasePackagesTesting.IntegrationTests` - Integration tests using local NuGet packages
+- Same test scenarios as LocalTesting but using release artifacts (before publishing)
 
 ## Usage
 
-### Pre-Release Validation
+### In Release Workflow (Recommended)
 
-Run from release workflows after building packages and Docker image (before publishing):
+Add before publishing:
 
-```bash
-# Load Docker image
-gunzip -c ./docker/jobgateway-VERSION.tar.gz | docker load
-
-# Add local NuGet feed
-dotnet nuget add source ./packages --name LocalFeed
-
-# Run tests
-dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln
+```yaml
+test-release-packages:
+  name: Test Release Packages (Pre-Release)
+  needs: [calculate-version, build-docker-image, build-and-package]
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Download NuGet packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./packages
+    
+    - name: Download Docker image
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-image
+        path: ./docker
+    
+    - name: Test release packages
+      shell: pwsh
+      run: |
+        ./ReleasePackagesTesting/test-release-packages.ps1 -Version ${{ needs.calculate-version.outputs.new_version }}
 ```
 
-Or use the automated script:
+### Manual Testing
 
 ```bash
+# Test local release artifacts
 ./ReleasePackagesTesting/test-release-packages.ps1 -Version 1.0.0
 ```
 
-### Post-Release Validation
+## What It Does
 
-Run after publishing to verify latest packages work together:
-
-```bash
-# Validates latest published packages from NuGet.org and Docker Hub
-./ReleasePackagesTesting/validate-latest-release.ps1
-
-# Or test a specific Docker tag
-./ReleasePackagesTesting/validate-latest-release.ps1 -DockerTag "1.0.0"
-```
-
-This ensures:
-- Latest FlinkDotnet package on NuGet.org
-- Latest flinkdotnet/jobgateway image on Docker Hub
-- Both packages work together correctly
+1. Loads Docker image from `./docker/jobgateway-VERSION.tar.gz`
+2. Adds `./packages` as local NuGet source
+3. Restores packages from local feed
+4. Builds the solution
+5. Runs all integration tests
+6. Reports success or failure
 
 ## Validation
 
-- All tests must pass before publishing to NuGet.org
-- Validates Docker image works with Flink cluster
-- Validates NuGet packages have correct dependencies
-- Post-release validation ensures published packages are compatible
+✅ All tests must pass BEFORE publishing to NuGet.org and Docker Hub  
+✅ Validates local Docker image works with Flink cluster  
+✅ Validates local NuGet packages have correct dependencies  
+✅ Prevents publishing broken releases  
+
+## Difference from ReleasePackagesTesting.Published
+
+- **ReleasePackagesTesting** (this folder): Tests local artifacts BEFORE publishing (pre-release validation)
+- **ReleasePackagesTesting.Published**: Tests published packages AFTER publishing (post-release validation)
+
+Both are important:
+- Pre-release prevents publishing broken packages (**this folder**)
+- Post-release confirms the release actually works

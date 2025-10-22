@@ -1,0 +1,66 @@
+# Flink Configuration for LEARNINGCOURSE Mode with Prometheus Metrics
+# This configuration enables Prometheus metrics export for observability
+
+# JobManager Configuration
+jobmanager.rpc.address: flink-jobmanager
+jobmanager.rpc.port: 6123
+jobmanager.memory.process.size: 1600m
+
+# TaskManager Configuration
+taskmanager.memory.process.size: 1728m
+taskmanager.memory.jvm-metaspace.size: 512m
+taskmanager.numberOfTaskSlots: 10
+
+# High Availability
+high-availability.type: none
+
+# Checkpointing
+state.backend: hashmap
+state.checkpoints.dir: file:///tmp/flink-checkpoints
+state.savepoints.dir: file:///tmp/flink-savepoints
+
+# Metrics Reporters - PROMETHEUS CONFIGURATION
+# Port will be overridden per component via FLINK_PROPERTIES environment variable
+# JobManager: 9250, TaskManager: 9251, SQL Gateway: 9252
+metrics.reporters: prom
+metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+metrics.reporter.prom.port: 9250-9252
+metrics.reporter.prom.filterLabelValueCharacters: false
+
+# Rest API
+rest.port: 8081
+rest.address: 0.0.0.0
+rest.bind-address: 0.0.0.0
+
+# SQL Gateway Configuration (required for Flink 2.1.0)
+sql-gateway.endpoint.rest.address: flink-sql-gateway
+sql-gateway.endpoint.rest.bind-address: 0.0.0.0
+sql-gateway.endpoint.rest.port: 8083
+sql-gateway.endpoint.rest.bind-port: 8083
+sql-gateway.endpoint.type: rest
+sql-gateway.session.check-interval: 60000
+sql-gateway.session.idle-timeout: 600000
+sql-gateway.worker.threads.max: 10
+
+# Parallelism
+parallelism.default: 1
+
+# Heartbeat
+heartbeat.interval: 5000
+heartbeat.timeout: 30000
+
+# Pekko Configuration
+pekko.ask.timeout: 30s
+
+# Classloader Configuration
+classloader.resolve-order: parent-first
+classloader.parent-first-patterns.default: org.apache.flink.;org.apache.kafka.;com.fasterxml.jackson.
+
+# Java Options
+env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+
+# Monitoring Scope Templates
+metrics.scope.jm: <host>.jobmanager
+metrics.scope.jm.job: <host>.jobmanager.<job_name>
+metrics.scope.tm: <host>.taskmanager.<tm_id>
+metrics.scope.task: <host>.taskmanager.<tm_id>.<job_name>.<task_name>.<subtask_index>
