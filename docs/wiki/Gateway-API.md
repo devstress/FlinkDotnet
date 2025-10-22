@@ -16,7 +16,7 @@ The FlinkDotnet Gateway provides a REST API that bridges .NET applications with 
 
 ### Job Submission
 
-1. **.NET Application** creates job using FlinkDotNet DataStream API
+1. **.NET Application** creates job using FlinkDotnet DataStream API
 2. **JSON IR Generation** - Job serialized to intermediate representation
 3. **HTTP Request** - IR sent to Gateway via REST API
 4. **Translation** - Gateway converts JSON IR to Flink JobGraph

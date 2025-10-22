@@ -22,7 +22,7 @@ Flink.NET provides an integration architecture that connects .NET applications w
 
 *   **Integration Philosophy:** Flink.NET acts as a bridge to Apache Flink clusters rather than reimplementing stream processing in .NET
 *   **Key Components:**
-    *   **.NET SDK (FlinkDotNet.DataStream):** Provides complete Apache Flink 2.1 DataStream API in C#
+    *   **.NET SDK (FlinkDotnet):** Unified package providing complete Apache Flink 2.1 DataStream API, Kafka connectors, and job submission in C#
     *   **Job Gateway (.NET ASP.NET Core):** Service for job submission and management with Apache Flink clusters
     *   **Apache Flink Cluster:** Handles actual stream processing execution
 
