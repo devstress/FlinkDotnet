@@ -30,15 +30,57 @@ jobs:
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION (minor bump from $CURRENT)"
 
+  update-version:
+    name: Update Version in Project Files
+    needs: calculate-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update PackageVersion in .csproj files
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          echo "Updating project files to version: $VERSION"
+          
+          # Update FlinkDotNet.Common
+          sed -i "s|<PackageVersion>.*</PackageVersion>|<PackageVersion>$VERSION</PackageVersion>|g" \
+            FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
+          
+          # Update FlinkDotNet.DataStream
+          sed -i "s|<PackageVersion>.*</PackageVersion>|<PackageVersion>$VERSION</PackageVersion>|g" \
+            FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
+          
+          echo "Updated project files:"
+          grep "PackageVersion" FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
+          grep "PackageVersion" FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
+
+      - name: Commit version updates
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
+          git add FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
+          git commit -m "Bump version to $VERSION"
+          git tag -a "v$VERSION" -m "Release version $VERSION"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v$VERSION"
+
   build-and-package:
     name: Build and Package FlinkDotNet
-    needs: calculate-version
+    needs: [calculate-version, update-version]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - name: Set up .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
@@ -105,11 +147,13 @@ jobs:
 
   build-docker-image:
     name: Build Docker Image for JobGateway
-    needs: calculate-version
+    needs: [calculate-version, update-version]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -136,13 +180,15 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [calculate-version, build-and-package, build-docker-image]
+    needs: [calculate-version, update-version, build-and-package, build-docker-image]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Download NuGet packages
         uses: actions/download-artifact@v4
@@ -205,7 +251,7 @@ jobs:
 
   publish-packages:
     name: Publish NuGet Packages and Docker Image
-    needs: [calculate-version, create-release]
+    needs: [calculate-version, update-version, create-release]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -213,6 +259,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4

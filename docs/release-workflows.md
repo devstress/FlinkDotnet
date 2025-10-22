@@ -18,16 +18,19 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 **When to use**: Breaking changes, major refactoring, or significant architectural updates.
 
 **What it does**:
-- Bumps the major version (e.g., 1.0.0 → 2.0.0)
+- Calculates the new version by bumping the major number (e.g., 1.0.0 → 2.0.0)
+- Updates the `<PackageVersion>` in project files (.csproj) to the new version
+- Commits the version changes to the repository
+- Creates a git tag (e.g., `v2.0.0`)
 - Builds and tests the solution
 - Creates NuGet packages for:
   - FlinkDotNet.Common
   - FlinkDotNet.DataStream
   - Flink.JobBuilder
-- Builds Docker image for JobGateway
+- Builds Docker image for JobGateway with the new version tag
 - Creates a GitHub release with all artifacts
 - Publishes NuGet packages to NuGet.org
-- Publishes Docker image to Docker Hub
+- Publishes Docker image to Docker Hub (with version tag and `latest`)
 
 **How to trigger**:
 1. Go to Actions tab in GitHub
@@ -41,8 +44,11 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 **When to use**: New features that are backward compatible.
 
 **What it does**:
-- Bumps the minor version (e.g., 1.0.0 → 1.1.0)
-- Same steps as major version release
+- Calculates the new version by bumping the minor number (e.g., 1.0.0 → 1.1.0)
+- Updates the `<PackageVersion>` in project files (.csproj) to the new version
+- Commits the version changes to the repository
+- Creates a git tag (e.g., `v1.1.0`)
+- Same build and publish steps as major version release
 - Creates a "Feature Release" with appropriate release notes
 
 **How to trigger**:
@@ -57,8 +63,11 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 **When to use**: Bug fixes and minor improvements.
 
 **What it does**:
-- Bumps the patch version (e.g., 1.0.0 → 1.0.1)
-- Same steps as major version release
+- Calculates the new version by bumping the patch number (e.g., 1.0.0 → 1.0.1)
+- Updates the `<PackageVersion>` in project files (.csproj) to the new version
+- Commits the version changes to the repository
+- Creates a git tag (e.g., `v1.0.1`)
+- Same build and publish steps as major version release
 - Creates a "Bug Fix Release" with appropriate release notes
 
 **How to trigger**:
@@ -125,10 +134,13 @@ Each release includes:
 All version bump workflows follow these steps:
 
 1. **Calculate Version**: Determines the new version number based on input
-2. **Build and Package**: Builds solution, runs tests, creates NuGet packages
-3. **Build Docker Image**: Builds and saves Docker image for JobGateway
-4. **Create Release**: Uses GitHub CLI to create release with artifacts
-5. **Publish Packages**: Publishes NuGet packages and Docker image
+2. **Update Version**: Updates `<PackageVersion>` in .csproj files, commits changes, and creates git tag
+3. **Build and Package**: Builds solution, runs tests, creates NuGet packages with the new version
+4. **Build Docker Image**: Builds and saves Docker image for JobGateway with the new version tag
+5. **Create Release**: Uses GitHub CLI to create GitHub release with all artifacts
+6. **Publish Packages**: Publishes NuGet packages to NuGet.org and Docker image to Docker Hub
+
+**Important**: The workflow automatically commits the version changes to your repository and creates a git tag. This ensures that the source code version stays in sync with the released version.
 
 ## Version Bumping Examples
 
