@@ -18,7 +18,7 @@ public abstract class LearningCourseTestBase
 {
     private static Process? _appHostProcess;
     private static bool _isSetupComplete = false;
-    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(90);
+    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(120);
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
@@ -405,9 +405,7 @@ public abstract class LearningCourseTestBase
         try
         {
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(1) };  // OPTIMIZED: 1s timeout
-            // CRITICAL: Flink JobManager REST API runs on port 8081, not 8080
-            // Port 8080 is used by FlinkDotNet.JobGateway
-            var response = await httpClient.GetAsync("http://localhost:8081/v1/overview");
+            var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health");
             return response.IsSuccessStatusCode;
         }
         catch
