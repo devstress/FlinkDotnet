@@ -1,8 +1,9 @@
 using NUnit.Framework;
 using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FlinkDotNet.DataStream;
-using System.Linq;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -163,7 +164,7 @@ namespace FlinkDotNet.DataStream.Tests
         // Helper classes
         private class TestSourceFunction : ISourceFunction<string>
         {
-            public async System.Collections.Generic.IAsyncEnumerable<string> RunAsync(System.Threading.CancellationToken cancellationToken = default)
+            public async System.Collections.Generic.IAsyncEnumerable<string> RunAsync([EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default)
             {
                 yield return "test-data";
                 await Task.CompletedTask;

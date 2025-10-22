@@ -6,6 +6,7 @@ using FlinkDotNet.DataStream.Checkpoint;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -742,7 +743,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestSourceFunction : ISourceFunction<int>
         {
-            public async IAsyncEnumerable<int> RunAsync(CancellationToken cancellationToken = default)
+            public async IAsyncEnumerable<int> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
                 for (int i = 0; i < 10; i++)
                 {

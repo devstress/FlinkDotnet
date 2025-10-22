@@ -3,6 +3,7 @@ using FlinkDotNet.DataStream;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -349,7 +350,7 @@ namespace FlinkDotNet.DataStream.Tests
                 _data = data;
             }
 
-            public async IAsyncEnumerable<T> RunAsync(CancellationToken cancellationToken)
+            public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 foreach (var item in _data)
                 {
