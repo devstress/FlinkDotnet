@@ -405,7 +405,9 @@ public abstract class LearningCourseTestBase
         try
         {
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(1) };  // OPTIMIZED: 1s timeout
-            var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health");
+            // CRITICAL: Flink JobManager REST API runs on port 8081, not 8080
+            // Port 8080 is used by FlinkDotNet.JobGateway
+            var response = await httpClient.GetAsync("http://localhost:8081/v1/overview");
             return response.IsSuccessStatusCode;
         }
         catch
