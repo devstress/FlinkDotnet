@@ -14,8 +14,18 @@
 ## What You Need
 
 ### Before First Release
+
+#### NuGet Trusted Publishing Setup
+Configure Trusted Publishing on NuGet.org (no API keys needed):
+1. Go to https://www.nuget.org/ and navigate to your packages
+2. Go to "Trusted Publishers" section
+3. Add GitHub Actions as trusted publisher:
+   - Owner: `devstress`
+   - Repository: `FlinkDotnet`
+   - Workflow: Each workflow file name (`release-major.yml`, `release-minor.yml`, `release-patch.yml`, `retry-publish.yml`)
+
+#### Docker Hub Secrets
 Add these secrets in repository Settings → Secrets → Actions:
-- `NUGET_API_KEY` - From https://www.nuget.org/account/apikeys
 - `DOCKER_USERNAME` - Your Docker Hub username
 - `DOCKER_PASSWORD` - Your Docker Hub password/token
 

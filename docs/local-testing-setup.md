@@ -143,12 +143,6 @@ If Prometheus cannot connect to JobGateway (target shows as DOWN):
    # jobgateway should be UP (green)
    ```
 
-4. **Run Diagnostics Script**:
-   ```bash
-   ./debug-prometheus-connectivity.ps1
-   # Shows detailed connectivity status
-   ```
-
 ### Why This Is Needed
 
 - **Docker Desktop**: `host.containers.internal` automatically resolves to physical host
