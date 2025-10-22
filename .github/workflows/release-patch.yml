@@ -180,9 +180,78 @@ jobs:
           path: jobgateway-*.tar.gz
           retention-days: 30
 
+  test-release-packages:
+    name: Test Release Packages (Pre-Release Validation)
+    needs: [calculate-version, update-version, build-and-package, build-docker-image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./packages
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: ./docker
+
+      - name: Add local NuGet source
+        run: |
+          dotnet nuget add source $(pwd)/packages --name LocalFeed
+          echo "Added local NuGet source"
+
+      - name: Load Docker image
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
+          echo "Loaded Docker image for version $VERSION"
+
+      - name: Run Pre-Release Validation Tests
+        timeout-minutes: 12
+        run: |
+          echo "=== Running Pre-Release Validation Tests ==="
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PreReleaseTestResults
+          path: TestResults/
+        if: always()
+
   create-release:
     name: Create GitHub Release
-    needs: [calculate-version, update-version, build-and-package, build-docker-image]
+    needs: [calculate-version, update-version, build-and-package, build-docker-image, test-release-packages]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -308,3 +377,67 @@ jobs:
           docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
           
           echo "✅ Docker image published successfully!"
+
+  validate-published-packages:
+    name: Validate Published Packages (Post-Release Validation)
+    needs: [calculate-version, publish-packages]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Wait for NuGet.org indexing
+        run: |
+          echo "⏳ Waiting 2 minutes for NuGet.org to index the new package..."
+          sleep 120
+
+      - name: Clear NuGet cache
+        run: |
+          dotnet nuget locals all --clear
+          echo "Cleared NuGet cache to force download from NuGet.org"
+
+      - name: Pull Docker image from Docker Hub
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          echo "Pulling Docker image from Docker Hub..."
+          docker pull ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
+          echo "✅ Docker image pulled from Docker Hub"
+
+      - name: Run Post-Release Validation Tests
+        timeout-minutes: 12
+        run: |
+          echo "=== Running Post-Release Validation Tests ==="
+          dotnet test ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PostReleaseTestResults
+          path: TestResults/
+        if: always()
