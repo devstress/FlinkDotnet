@@ -13,8 +13,14 @@ namespace FlinkDotNet.JobGateway;
 /// <summary>
 /// Main program entry point for the Flink Job Gateway API.
 /// </summary>
-public static class Program
+public class Program
 {
+    /// <summary>
+    /// Protected constructor for WebApplicationFactory testing.
+    /// </summary>
+    protected Program()
+    {
+    }
     /// <summary>
     /// Main entry point for the application. Configures logging, services, and HTTP pipeline.
     /// </summary>
