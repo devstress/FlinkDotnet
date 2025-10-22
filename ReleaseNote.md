@@ -136,6 +136,5 @@ Thank you to all contributors who made this release possible!
 
 ## 🔗 Additional Resources
 
-- [Full Changelog](CHANGELOG.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Release Workflows Documentation](docs/release-workflows.md)
