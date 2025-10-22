@@ -325,10 +325,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupClusterHealthAndJarMockResponses();
 
             // Act
-            _ = await manager.SubmitJobAsync(jobDef);
+            var result = await manager.SubmitJobAsync(jobDef);
 
             // Assert - Should not log map operations since there are none
-            Assert.That(true); // Test passes if no exception thrown
+            Assert.That(result, Is.Not.Null);
         }
 
         [Test]
@@ -353,10 +353,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupClusterHealthAndJarMockResponses();
 
             // Act
-            _ = await manager.SubmitJobAsync(jobDef);
+            var result = await manager.SubmitJobAsync(jobDef);
 
             // Assert - Should handle null operations gracefully
-            Assert.That(true); // Test passes if no exception thrown
+            Assert.That(result, Is.Not.Null);
         }
 
         #endregion

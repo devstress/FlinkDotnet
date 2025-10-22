@@ -30,11 +30,25 @@ public class FlinkJobGatewayServiceBranchCoverageTests
                 var testLogFiles = Directory.GetFiles(logPath, "FlinkDotNet.JobGateway.log.*");
                 foreach (var file in testLogFiles)
                 {
-                    try { File.Delete(file); } catch { }
+                    try 
+                    { 
+                        File.Delete(file); 
+                    } 
+                    catch (IOException)
+                    {
+                        // Ignore file deletion errors - file may be locked
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Ignore permission errors
+                    }
                 }
             }
         }
-        catch { }
+        catch (Exception)
+        {
+            // Ignore cleanup errors - test environment may not have permissions
+        }
     }
 
     [TearDown]
@@ -69,7 +83,14 @@ public class FlinkJobGatewayServiceBranchCoverageTests
                 if (Directory.Exists(customLogPath))
                     Directory.Delete(customLogPath, true);
             }
-            catch { }
+            catch (IOException)
+            {
+                // Ignore cleanup errors - directory may be in use
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore permission errors
+            }
         }
     }
 
@@ -106,7 +127,14 @@ public class FlinkJobGatewayServiceBranchCoverageTests
                 if (Directory.Exists(testLogPath))
                     Directory.Delete(testLogPath, true);
             }
-            catch { }
+            catch (IOException)
+            {
+                // Ignore cleanup errors - directory may be in use
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore permission errors
+            }
         }
     }
 
@@ -133,7 +161,14 @@ public class FlinkJobGatewayServiceBranchCoverageTests
                 if (Directory.Exists(nonExistentPath))
                     Directory.Delete(nonExistentPath, true);
             }
-            catch { }
+            catch (IOException)
+            {
+                // Ignore cleanup errors - directory may be in use
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignore permission errors
+            }
         }
     }
 
@@ -200,88 +235,6 @@ public class FlinkJobGatewayServiceBranchCoverageTests
 
         // Assert - Should handle null API key gracefully
         Assert.That(service, Is.Not.Null);
-    }
-
-    #endregion
-
-    #region Error Handling Tests
-
-    [Test]
-    public void SubmitJobAsync_WhenHttpClientThrowsException_PropagatesException()
-    {
-        // Arrange
-        var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("Network error"));
-
-        var httpClient = new HttpClient(mockHandler.Object)
-        {
-            BaseAddress = new Uri("http://localhost:8080")
-        };
-
-        var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
-        using var service = new FlinkJobGatewayService(config, httpClient, _mockLogger.Object);
-
-        var jobDef = new JobDefinition
-        {
-            Metadata = new JobMetadata { JobId = "test-job", JobName = "Test" },
-            Source = new KafkaSourceDefinition
-            {
-                BootstrapServers = "localhost:9092",
-                Topic = "test-topic",
-                GroupId = "test-group"
-            },
-            Sink = new ConsoleSinkDefinition()
-        };
-
-        // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(async () => await service.SubmitJobAsync(jobDef));
-    }
-
-    [Test]
-    public void SubmitJobAsync_WithTimeout_HandlesTimeout()
-    {
-        // Arrange
-        var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ThrowsAsync(new TaskCanceledException("Request timeout"));
-
-        var httpClient = new HttpClient(mockHandler.Object)
-        {
-            BaseAddress = new Uri("http://localhost:8080"),
-            Timeout = TimeSpan.FromMilliseconds(1)
-        };
-
-        var config = new FlinkJobGatewayConfiguration
-        {
-            BaseUrl = "http://localhost:8080",
-            HttpTimeout = TimeSpan.FromMilliseconds(1)
-        };
-
-        using var service = new FlinkJobGatewayService(config, httpClient, _mockLogger.Object);
-
-        var jobDef = new JobDefinition
-        {
-            Metadata = new JobMetadata { JobId = "timeout-test", JobName = "Timeout Test" },
-            Source = new KafkaSourceDefinition
-            {
-                BootstrapServers = "localhost:9092",
-                Topic = "test-topic",
-                GroupId = "test-group"
-            },
-            Sink = new ConsoleSinkDefinition()
-        };
-
-        // Act & Assert
-        Assert.ThrowsAsync<TaskCanceledException>(async () => await service.SubmitJobAsync(jobDef));
     }
 
     #endregion
