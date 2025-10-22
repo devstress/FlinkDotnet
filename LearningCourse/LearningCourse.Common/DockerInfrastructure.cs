@@ -18,7 +18,7 @@ public static class DockerInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka- --format \"{{.Names}}\"");
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
             var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             
             if (string.IsNullOrWhiteSpace(kafkaContainer))

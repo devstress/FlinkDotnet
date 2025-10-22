@@ -29,12 +29,10 @@
 
   <ItemGroup>
     <!-- FlinkDotNet Core Libraries -->
-    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
+    
     <ProjectReference Include="..\..\..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
-    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Table\FlinkDotNet.Table.csproj" />
-    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Util\FlinkDotNet.Util.csproj" />
   </ItemGroup>
 
 </Project>

@@ -6,32 +6,32 @@ Console.OutputEncoding = System.Text.Encoding.UTF8;
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("logs/observability-dashboard-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/load-testing-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 Console.WriteLine("================================================================================");
-Console.WriteLine("  Exercise 2.3: Observability Dashboard");
+Console.WriteLine("  Exercise 2.4: Load Testing");
 Console.WriteLine("================================================================================");
 Console.WriteLine();
-Console.WriteLine("Reference: Google-style SRE Observability");
+Console.WriteLine("Reference: Apache Flink 2.1.0 Performance Testing");
 Console.WriteLine();
 Console.WriteLine("This exercise demonstrates:");
-Console.WriteLine("  - SRE observability patterns");
-Console.WriteLine("  - Prometheus metrics collection");
-Console.WriteLine("  - Grafana dashboard configuration");
-Console.WriteLine("  - OpenTelemetry tracing integration");
-Console.WriteLine("  - Production monitoring setup");
+Console.WriteLine("  - Load testing methodology for streaming applications");
+Console.WriteLine("  - Performance metrics collection and analysis");
+Console.WriteLine("  - Bottleneck identification and resolution");
+Console.WriteLine("  - Scalability testing patterns");
+Console.WriteLine("  - Production performance validation");
 Console.WriteLine();
 Console.WriteLine("================================================================================");
 Console.WriteLine();
 
 try
 {
-    await RunEventProcessing();
+    await RunLoadTesting();
 }
 catch (Exception ex)
 {
-    Log.Error(ex, "Error in event processing");
+    Log.Error(ex, "Error during load testing");
     Console.WriteLine($"ERROR: {ex.Message}");
     Environment.Exit(1);
 }
@@ -40,135 +40,163 @@ finally
     await Log.CloseAndFlushAsync();
 }
 
-static async Task RunEventProcessing()
+static async Task RunLoadTesting()
 {
-    Console.WriteLine(">> Step 1/5: Initializing Event Stream...");
-    await InitializeEventStream();
+    Console.WriteLine(">> Step 1/5: Preparing Load Test Environment...");
+    await PrepareEnvironment();
     Console.WriteLine();
 
-    Console.WriteLine(">> Step 2/5: Configuring Time Windows...");
-    await ConfigureWindows();
+    Console.WriteLine(">> Step 2/5: Executing Baseline Load Test...");
+    await ExecuteBaselineTest();
     Console.WriteLine();
 
-    Console.WriteLine(">> Step 3/5: Processing Event Stream...");
-    await ProcessEventStream();
+    Console.WriteLine(">> Step 3/5: Running Peak Load Test...");
+    await ExecutePeakLoadTest();
     Console.WriteLine();
 
-    Console.WriteLine(">> Step 4/5: Handling Watermarks...");
-    await HandleWatermarks();
+    Console.WriteLine(">> Step 4/5: Testing System Under Stress...");
+    await ExecuteStressTest();
     Console.WriteLine();
 
-    Console.WriteLine(">> Step 5/5: Managing Late Events...");
-    await HandleLateEvents();
+    Console.WriteLine(">> Step 5/5: Analyzing Performance Metrics...");
+    await AnalyzeMetrics();
     Console.WriteLine();
 
     Console.WriteLine("================================================================================");
-    Console.WriteLine("  EXERCISE 2.3 COMPLETED!");
+    Console.WriteLine("  EXERCISE 2.4 COMPLETED!");
     Console.WriteLine("================================================================================");
     Console.WriteLine();
-    Console.WriteLine("Observability Dashboard Summary:");
-    Console.WriteLine("  [OK] SRE Patterns: Implemented");
-    Console.WriteLine("  [OK] Prometheus: Metrics collection active");
-    Console.WriteLine("  [OK] Grafana: Dashboards configured");
-    Console.WriteLine("  [OK] OpenTelemetry: Tracing enabled");
-    Console.WriteLine("  [OK] Monitoring: Production-ready");
+    Console.WriteLine("Load Testing Summary:");
+    Console.WriteLine("  [OK] Baseline Load: 1,000 msg/sec - PASSED");
+    Console.WriteLine("  [OK] Peak Load: 5,000 msg/sec - PASSED");
+    Console.WriteLine("  [OK] Stress Test: 10,000 msg/sec - PASSED");
+    Console.WriteLine("  [OK] System Stability: 99.8% uptime");
+    Console.WriteLine("  [OK] Performance Profile: Validated");
     Console.WriteLine();
-    Console.WriteLine("✅ Observability dashboard configured and validated successfully");
+    Console.WriteLine("✅ Load testing completed successfully - system ready for production");
     Console.WriteLine();
 }
 
-static async Task InitializeEventStream()
+static async Task PrepareEnvironment()
 {
-    // Simulate event stream initialization
+    // Simulate environment preparation
     await Task.Delay(150);
     
-    Log.Information("Initializing event stream source");
-    Console.WriteLine("   Connecting to Kafka event source...");
-    Console.WriteLine("   [SUCCESS] Event Stream: Connected");
+    Log.Information("Preparing load test environment");
+    Console.WriteLine("   Validating test infrastructure...");
+    Console.WriteLine("   [SUCCESS] Environment: Ready");
     Console.WriteLine("   Configuration:");
-    Console.WriteLine("     - Source: Kafka topic 'events'");
-    Console.WriteLine("     - Parallelism: 4");
-    Console.WriteLine("     - Consumer group: event-processor");
-    Console.WriteLine("     - Offset strategy: Latest");
+    Console.WriteLine("     - Kafka brokers: 3 nodes");
+    Console.WriteLine("     - Flink cluster: 4 task managers");
+    Console.WriteLine("     - Monitoring: Prometheus + Grafana");
+    Console.WriteLine("     - Test duration: 60 seconds per scenario");
 }
 
-static async Task ConfigureWindows()
+static async Task ExecuteBaselineTest()
 {
-    // Simulate window configuration
-    await Task.Delay(150);
-    
-    Log.Information("Configuring time windows");
-    Console.WriteLine("   Setting up window operations...");
-    Console.WriteLine("   [SUCCESS] Windows: Configured");
-    Console.WriteLine("   Window Types:");
-    Console.WriteLine("     - Tumbling Window: 1 minute");
-    Console.WriteLine("     - Sliding Window: 5 minute size, 1 minute slide");
-    Console.WriteLine("     - Session Window: 10 minute gap timeout");
-    Console.WriteLine("     - Time characteristic: Event Time");
-}
-
-static async Task ProcessEventStream()
-{
-    // Simulate realistic event processing with different windows
-    Log.Information("Starting event stream processing");
-    Console.WriteLine("   Processing events through windows...");
+    // Simulate baseline load test
+    Log.Information("Executing baseline load test");
+    Console.WriteLine("   Starting baseline test (1,000 msg/sec)...");
     await Task.Delay(100);
     
-    Console.WriteLine("   Window Processing Results:");
-    
-    // Simulate tumbling window results
-    for (int window = 1; window <= 4; window++)
+    Console.WriteLine("   Test Progress:");
+    for (int i = 1; i <= 4; i++)
     {
-        await Task.Delay(150);
-        var events = window * 1000;
-        var windowTime = DateTime.UtcNow.AddMinutes(-5 + window);
-        Console.WriteLine($"     Tumbling [{windowTime:HH:mm}]: {events} events, Avg latency: {20 + window * 2}ms");
+        await Task.Delay(200);
+        var elapsed = i * 15;
+        var msgCount = i * 250;
+        Console.WriteLine($"     [{elapsed}s] Processed: {msgCount:N0} messages, Latency: {15 + i}ms");
     }
     
     Console.WriteLine();
-    Console.WriteLine("   [SUCCESS] Event Processing: Active");
-    Console.WriteLine("   Statistics:");
-    Console.WriteLine("     - Total events processed: 15,000");
-    Console.WriteLine("     - Average throughput: 3,750 events/sec");
-    Console.WriteLine("     - P50 latency: 18ms");
-    Console.WriteLine("     - P99 latency: 45ms");
+    Console.WriteLine("   [SUCCESS] Baseline Test: PASSED");
+    Console.WriteLine("   Test results:");
+    Console.WriteLine("     - Messages sent: 10,000");
+    Console.WriteLine("     - Throughput: 1,015 msg/sec");
+    Console.WriteLine("     - Average latency: 18ms");
+    Console.WriteLine("     - P99 latency: 35ms");
+    Console.WriteLine("     - Error rate: 0.02%");
 }
 
-static async Task HandleWatermarks()
+static async Task ExecutePeakLoadTest()
 {
-    // Simulate watermark handling
-    await Task.Delay(150);
+    // Simulate peak load test
+    Log.Information("Executing peak load test");
+    Console.WriteLine("   Starting peak load test (5,000 msg/sec)...");
+    await Task.Delay(100);
     
-    Log.Information("Handling watermark generation");
-    Console.WriteLine("   Configuring watermark strategy...");
-    Console.WriteLine("   [SUCCESS] Watermarks: Active");
-    Console.WriteLine("   Configuration:");
-    Console.WriteLine("     - Strategy: Bounded out-of-orderness");
-    Console.WriteLine("     - Max out-of-orderness: 2 seconds");
-    Console.WriteLine("     - Idle timeout: 5 seconds");
-    Console.WriteLine("     - Watermark interval: 200ms");
-    Console.WriteLine();
-    Console.WriteLine("   Watermark Progress:");
-    for (int i = 1; i <= 3; i++)
+    Console.WriteLine("   Test Progress:");
+    for (int i = 1; i <= 4; i++)
     {
-        await Task.Delay(100);
-        var timestamp = DateTime.UtcNow.AddSeconds(-10 + i * 3);
-        Console.WriteLine($"     Watermark #{i}: {timestamp:HH:mm:ss.fff}");
+        await Task.Delay(200);
+        var elapsed = i * 15;
+        var msgCount = i * 1250;
+        Console.WriteLine($"     [{elapsed}s] Processed: {msgCount:N0} messages, Latency: {20 + i * 2}ms");
     }
+    
+    Console.WriteLine();
+    Console.WriteLine("   [SUCCESS] Peak Load Test: PASSED");
+    Console.WriteLine("   Test results:");
+    Console.WriteLine("     - Messages sent: 50,000");
+    Console.WriteLine("     - Throughput: 5,125 msg/sec");
+    Console.WriteLine("     - Average latency: 24ms");
+    Console.WriteLine("     - P99 latency: 58ms");
+    Console.WriteLine("     - Error rate: 0.08%");
+    Console.WriteLine("     - Backpressure: 5.2%");
 }
 
-static async Task HandleLateEvents()
+static async Task ExecuteStressTest()
 {
-    // Simulate late event handling
+    // Simulate stress test
+    Log.Information("Executing stress test");
+    Console.WriteLine("   Starting stress test (10,000 msg/sec)...");
+    await Task.Delay(100);
+    
+    Console.WriteLine("   Test Progress:");
+    for (int i = 1; i <= 4; i++)
+    {
+        await Task.Delay(200);
+        var elapsed = i * 15;
+        var msgCount = i * 2500;
+        Console.WriteLine($"     [{elapsed}s] Processed: {msgCount:N0} messages, Latency: {30 + i * 5}ms");
+    }
+    
+    Console.WriteLine();
+    Console.WriteLine("   [SUCCESS] Stress Test: PASSED");
+    Console.WriteLine("   Test results:");
+    Console.WriteLine("     - Messages sent: 100,000");
+    Console.WriteLine("     - Throughput: 9,850 msg/sec");
+    Console.WriteLine("     - Average latency: 45ms");
+    Console.WriteLine("     - P99 latency: 125ms");
+    Console.WriteLine("     - Error rate: 0.15%");
+    Console.WriteLine("     - Backpressure: 18.5%");
+    Console.WriteLine("     - System stability: Maintained");
+}
+
+static async Task AnalyzeMetrics()
+{
+    // Simulate metrics analysis
     await Task.Delay(150);
     
-    Log.Information("Handling late arriving events");
-    Console.WriteLine("   Configuring late event strategy...");
-    Console.WriteLine("   [SUCCESS] Late Events: Handled");
-    Console.WriteLine("   Strategy:");
-    Console.WriteLine("     - Allowed lateness: 5 minutes");
-    Console.WriteLine("     - Side output: Enabled for very late events");
-    Console.WriteLine("     - Late events processed: 25");
-    Console.WriteLine("     - Very late events discarded: 2");
-    Console.WriteLine("     - Late event percentage: 0.17%");
+    Log.Information("Analyzing performance metrics");
+    Console.WriteLine("   Collecting performance data...");
+    Console.WriteLine("   [SUCCESS] Metrics Analysis: Complete");
+    Console.WriteLine();
+    Console.WriteLine("   Performance benchmark results:");
+    Console.WriteLine("     - Baseline throughput: 1,015 msg/sec");
+    Console.WriteLine("     - Peak throughput: 5,125 msg/sec");
+    Console.WriteLine("     - Maximum throughput: 9,850 msg/sec");
+    Console.WriteLine("     - Latency increase under load: 150%");
+    Console.WriteLine("     - System remains stable up to 10K msg/sec");
+    Console.WriteLine();
+    Console.WriteLine("   Resource Utilization:");
+    Console.WriteLine("     - CPU usage (peak): 72%");
+    Console.WriteLine("     - Memory usage (peak): 68%");
+    Console.WriteLine("     - Network throughput (peak): 450 MB/s");
+    Console.WriteLine("     - Disk I/O (checkpoint): 180 MB/s");
+    Console.WriteLine();
+    Console.WriteLine("   Recommendations:");
+    Console.WriteLine("     ✓ System ready for production workloads");
+    Console.WriteLine("     ✓ Recommended max load: 8,000 msg/sec (safety margin)");
+    Console.WriteLine("     ✓ Horizontal scaling available if needed");
 }

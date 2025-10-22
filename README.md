@@ -190,8 +190,8 @@ See [**Architecture & Use Cases**](docs/architecture-and-usecases.md) for detail
 
 ```
 FlinkDotNet/
-├── FlinkDotNet.DataStream/      # Apache Flink 2.1 compatible streaming API
-├── Flink.JobBuilder/            # Fluent DSL for rapid development
+├── FlinkDotNet.DataStream/      # Apache Flink 2.1 compatible streaming API (REMOVED)
+├── FlinkDotNet/                 # Core FlinkDotNet DataStream API implementation
 ├── FlinkDotNet.JobGateway/      # Job submission service
 ├── FlinkDotNet.Common/          # Shared utilities and models
 ├── FlinkDotNet.Table/           # Table API support

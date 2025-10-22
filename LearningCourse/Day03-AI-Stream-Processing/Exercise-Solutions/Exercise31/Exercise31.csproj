@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <!-- FlinkDotNet for real stream processing -->
-    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet\FlinkDotNet.csproj" />
+    
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
   </ItemGroup>

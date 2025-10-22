@@ -270,6 +270,7 @@ public abstract class LearningCourseTestBase
         string? prometheusEndpoint = null;
         string? grafanaEndpoint = null;
         bool flinkReady = false;
+        bool kafkaReady = false;
         bool temporalReady = false;
         
         // Check if LearningCourse mode is enabled for optional infrastructure
@@ -279,7 +280,7 @@ public abstract class LearningCourseTestBase
         while (stopwatch.Elapsed < maxWait)
         {
             iteration++;
-            LogDebug($"[POLL] Iteration {iteration} at {stopwatch.Elapsed.TotalSeconds:F1}s: FlinkReady={flinkReady}, TemporalReady={temporalReady}");
+            LogDebug($"[POLL] Iteration {iteration} at {stopwatch.Elapsed.TotalSeconds:F1}s: KafkaReady={kafkaReady}, FlinkReady={flinkReady}, TemporalReady={temporalReady}");
             
             // Log docker ps 30 seconds after AppHost started (once only)
             var timeSinceAppHostStart = (DateTime.UtcNow - appHostStartTime).TotalSeconds;
@@ -297,6 +298,10 @@ public abstract class LearningCourseTestBase
                 redisEndpoint, prometheusEndpoint, grafanaEndpoint,
                 isLearningCourse, stopwatch, iteration);
             
+            var kafkaHealthTask = (kafkaHostEndpoint != null && !kafkaReady)
+                ? IsKafkaHealthyAsync(kafkaHostEndpoint)
+                : Task.FromResult(kafkaReady);
+            
             var flinkHealthTask = (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
                 ? IsFlinkHealthyAsync()
                 : Task.FromResult(flinkReady);
@@ -306,7 +311,7 @@ public abstract class LearningCourseTestBase
                 : Task.FromResult(temporalReady);
             
             // Wait for all checks in parallel
-            await Task.WhenAll(discoveryTask, flinkHealthTask, temporalHealthTask);
+            await Task.WhenAll(discoveryTask, kafkaHealthTask, flinkHealthTask, temporalHealthTask);
             
             // Update discovered endpoints
             var discovered = await discoveryTask;
@@ -318,6 +323,13 @@ public abstract class LearningCourseTestBase
             grafanaEndpoint = discovered.grafana ?? grafanaEndpoint;
             
             // Update health check results
+            var newKafkaReady = await kafkaHealthTask;
+            if (newKafkaReady && !kafkaReady)
+            {
+                kafkaReady = true;
+                TestContext.WriteLine($"✅ Kafka is healthy and ready (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
+            }
+            
             var newFlinkReady = await flinkHealthTask;
             if (newFlinkReady && !flinkReady)
             {
@@ -339,11 +351,13 @@ public abstract class LearningCourseTestBase
                 TestContext.WriteLine($"⏳ Temporal not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
             }
             
-            // Core infrastructure must be ready: Kafka and Flink
+            // Core infrastructure must be ready: Kafka (healthy) and Flink
             // Temporal is optional (not all tests need it - e.g., Day05 Prometheus metrics test)
-            // LearningCourse infrastructure (Redis, Prometheus, Grafana) is optional
-            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && flinkReady;
-            var learningCourseReady = !isLearningCourse || (redisEndpoint != null && prometheusEndpoint != null && grafanaEndpoint != null);
+            // LearningCourse infrastructure: Redis, Prometheus, and Grafana are ALL REQUIRED
+            // Day 05 observability tests specifically need Prometheus/Grafana endpoints
+            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && kafkaReady && flinkReady;
+            var learningCourseReady = !isLearningCourse ||
+                (redisEndpoint != null && prometheusEndpoint != null && grafanaEndpoint != null);
             
             if (coreReady && learningCourseReady)
             {
@@ -355,10 +369,13 @@ public abstract class LearningCourseTestBase
                 GrafanaHostEndpoint = grafanaEndpoint;
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
-                TestContext.WriteLine($"✅ All infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
+                TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
                 if (isLearningCourse)
                 {
-                    TestContext.WriteLine($"   📚 LearningCourse infrastructure: Redis={redisEndpoint}, Prometheus={prometheusEndpoint}, Grafana={grafanaEndpoint}");
+                    TestContext.WriteLine($"   📚 LearningCourse infrastructure verified:");
+                    TestContext.WriteLine($"      • Redis: {redisEndpoint} ✓");
+                    TestContext.WriteLine($"      • Prometheus: {prometheusEndpoint} ✓");
+                    TestContext.WriteLine($"      • Grafana: {grafanaEndpoint} ✓");
                 }
                 
                 // Log optimization metrics
@@ -373,8 +390,9 @@ public abstract class LearningCourseTestBase
             $"Infrastructure not ready within {maxWait.TotalSeconds}s. " +
             $"KafkaFlinkIp: {KafkaFlinkBootstrapServers ?? "null"}, " +
             $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
+            $"KafkaReady: {kafkaReady}, " +
             $"FlinkReady: {flinkReady}" +
-            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"}, Prometheus: {PrometheusHostEndpoint ?? "null"}, Grafana: {GrafanaHostEndpoint ?? "null"}" : "") +
+            (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"} (REQUIRED), Prometheus: {PrometheusHostEndpoint ?? "null"} (REQUIRED), Grafana: {GrafanaHostEndpoint ?? "null"} (REQUIRED)" : "") +
             $" (Temporal is optional: {TemporalHostEndpoint ?? "not discovered"}, TemporalReady: {temporalReady})");
     }
     
@@ -394,6 +412,64 @@ public abstract class LearningCourseTestBase
         {
             return false;
         }
+    }
+    
+    /// <summary>
+    /// Check if Kafka is healthy and ready to accept connections.
+    /// Verifies both broker connectivity and topic metadata availability.
+    /// Implements 4 retries with 5-second delays for robust validation.
+    /// </summary>
+    private static async Task<bool> IsKafkaHealthyAsync(string kafkaHostEndpoint)
+    {
+        const int maxRetries = 4;
+        const int retryDelaySeconds = 5;
+        
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            try
+            {
+                LogDebug($"[KAFKA-HEALTH] Checking Kafka health at {kafkaHostEndpoint} (attempt {attempt + 1}/{maxRetries})");
+                TestContext.WriteLine($"🔍 [Kafka Health] Attempt {attempt + 1}/{maxRetries}: Checking endpoint {kafkaHostEndpoint}");
+                
+                var config = new AdminClientConfig
+                {
+                    BootstrapServers = kafkaHostEndpoint,
+                    SocketTimeoutMs = 5000
+                };
+                
+                using var adminClient = new AdminClientBuilder(config).Build();
+                
+                // Try to get cluster metadata - this validates Kafka is ready
+                var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(5));
+                
+                if (metadata != null && metadata.Brokers.Count > 0)
+                {
+                    LogDebug($"[KAFKA-HEALTH] Kafka is healthy: {metadata.Brokers.Count} broker(s) available");
+                    TestContext.WriteLine($"✅ [Kafka Health] Kafka is READY: {metadata.Brokers.Count} broker(s) available");
+                    return true;
+                }
+                
+                LogDebug($"[KAFKA-HEALTH] Kafka metadata available but no brokers found (attempt {attempt + 1}/{maxRetries})");
+                TestContext.WriteLine($"⚠️ [Kafka Health] No brokers found (attempt {attempt + 1}/{maxRetries})");
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"[KAFKA-HEALTH] Kafka connection error (attempt {attempt + 1}/{maxRetries}): {ex.Message}");
+                TestContext.WriteLine($"⚠️ [Kafka Health] Connection error (attempt {attempt + 1}/{maxRetries}): {ex.Message}");
+            }
+            
+            // Retry after delay (except on last attempt)
+            if (attempt < maxRetries - 1)
+            {
+                LogDebug($"[KAFKA-HEALTH] Retrying Kafka health check in {retryDelaySeconds}s...");
+                TestContext.WriteLine($"⏳ [Kafka Health] Retrying in {retryDelaySeconds}s...");
+                await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+            }
+        }
+        
+        LogDebug($"[KAFKA-HEALTH] Kafka health check failed after {maxRetries} attempts");
+        TestContext.WriteLine($"❌ [Kafka Health] Failed after {maxRetries} attempts");
+        return false;
     }
     
     /// <summary>
@@ -473,7 +549,81 @@ public abstract class LearningCourseTestBase
     }
     
     /// <summary>
-    /// Try to discover all infrastructure endpoints with logging
+    /// Helper method to discover endpoints with retry logic.
+    /// Implements 4 retries with 5-second delays between attempts.
+    /// </summary>
+    private static async Task<string?> DiscoverWithRetryAsync(
+        Func<Task<string?>> discoveryFunc,
+        string endpointName,
+        Stopwatch stopwatch,
+        int iteration,
+        Func<string?, Task>? onSuccessCallback = null)
+    {
+        const int maxRetries = 4;
+        const int retryDelaySeconds = 5;
+        
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            try
+            {
+                var result = await discoveryFunc();
+                if (result != null)
+                {
+                    LogDebug($"[DISCOVERY] {endpointName} discovered: {result} (attempt {attempt + 1}/{maxRetries})");
+                    TestContext.WriteLine($"✅ {endpointName} discovered: {result} (after {stopwatch.Elapsed.TotalSeconds:F1}s, attempt {attempt + 1}/{maxRetries})");
+                    
+                    // Execute success callback if provided
+                    if (onSuccessCallback != null)
+                    {
+                        await onSuccessCallback(result);
+                    }
+                    
+                    return result;
+                }
+                
+                // Result was null, retry after delay (except on last attempt)
+                if (attempt < maxRetries - 1)
+                {
+                    LogDebug($"[DISCOVERY] {endpointName} not found (attempt {attempt + 1}/{maxRetries}), retrying in {retryDelaySeconds}s...");
+                    if (iteration % 5 == 1) // Log every 5th iteration to reduce noise
+                    {
+                        TestContext.WriteLine($"⏳ {endpointName} not found yet (attempt {attempt + 1}/{maxRetries}), retrying in {retryDelaySeconds}s...");
+                    }
+                    await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"[DISCOVERY] Failed to get {endpointName} (attempt {attempt + 1}/{maxRetries}): {ex.Message}");
+                
+                // Only retry if not the last attempt
+                if (attempt < maxRetries - 1)
+                {
+                    if (iteration % 5 == 1) // Log every 5th iteration to reduce noise
+                    {
+                        TestContext.WriteLine($"⚠️ {endpointName} discovery error (attempt {attempt + 1}/{maxRetries}): {ex.Message}, retrying in {retryDelaySeconds}s...");
+                    }
+                    await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+                }
+                else
+                {
+                    // Log final failure
+                    if (iteration % 10 == 1)
+                    {
+                        TestContext.WriteLine($"❌ {endpointName} discovery failed after {maxRetries} attempts: {ex.Message}");
+                    }
+                }
+            }
+        }
+        
+        // All retries exhausted
+        LogDebug($"[DISCOVERY] {endpointName} not discovered after {maxRetries} attempts");
+        return null;
+    }
+    
+    /// <summary>
+    /// Try to discover all infrastructure endpoints with logging and retry logic.
+    /// Implements 4 retries with 5-second delays between attempts for robust discovery.
     /// </summary>
     private static async Task<(
         string? flinkIp,
@@ -501,137 +651,70 @@ public abstract class LearningCourseTestBase
             string? prometheus = currentPrometheus;
             string? grafana = currentGrafana;
             
-            // Kafka discovery (always required)
+            // Kafka discovery (always required) - with retry logic
             if (flinkIp == null)
             {
-                try
-                {
-                    flinkIp = await DockerInfrastructure.GetKafkaContainerIpAsync();
-                    if (flinkIp != null)
-                    {
-                        LogDebug($"[DISCOVERY] Kafka container IP discovered: {flinkIp}");
-                        TestContext.WriteLine($"✅ Kafka container IP discovered: {flinkIp} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                        // Log docker ps after successful Kafka IP discovery
-                        await DockerInfrastructure.LogDockerPsAsync("After Kafka IP Discovery", _debugLogWriter);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogDebug($"[DISCOVERY] Failed to get Kafka container IP: {ex.Message}");
-                    if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
-                    {
-                        TestContext.WriteLine($"⚠️ Kafka container IP discovery failed (iteration {iteration}): {ex.Message}");
-                    }
-                }
+                flinkIp = await DiscoverWithRetryAsync(
+                    async () => await DockerInfrastructure.GetKafkaContainerIpAsync(),
+                    "Kafka container IP",
+                    stopwatch,
+                    iteration,
+                    async (result) => {
+                        if (result != null)
+                        {
+                            // Log docker ps after successful Kafka IP discovery
+                            await DockerInfrastructure.LogDockerPsAsync("After Kafka IP Discovery", _debugLogWriter);
+                        }
+                    });
             }
             
             if (hostEndpoint == null)
             {
-                try
-                {
-                    hostEndpoint = await DockerInfrastructure.GetKafkaHostEndpointAsync();
-                    if (hostEndpoint != null)
-                    {
-                        LogDebug($"[DISCOVERY] Kafka host endpoint discovered: {hostEndpoint}");
-                        TestContext.WriteLine($"✅ Kafka host endpoint discovered: {hostEndpoint} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogDebug($"[DISCOVERY] Failed to get Kafka host endpoint: {ex.Message}");
-                    if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
-                    {
-                        TestContext.WriteLine($"⚠️ Kafka host endpoint discovery failed (iteration {iteration}): {ex.Message}");
-                    }
-                }
+                hostEndpoint = await DiscoverWithRetryAsync(
+                    async () => await DockerInfrastructure.GetKafkaHostEndpointAsync(),
+                    "Kafka host endpoint",
+                    stopwatch,
+                    iteration);
             }
             
-            // Temporal discovery (always required)
+            // Temporal discovery (always required) - with retry logic
             if (temporal == null)
             {
-                try
-                {
-                    temporal = await DockerInfrastructure.GetTemporalHostEndpointAsync();
-                    if (temporal != null)
-                    {
-                        LogDebug($"[DISCOVERY] Temporal endpoint discovered: {temporal}");
-                        TestContext.WriteLine($"✅ Temporal endpoint discovered: {temporal} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogDebug($"[DISCOVERY] Failed to get Temporal endpoint: {ex.Message}");
-                    if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
-                    {
-                        TestContext.WriteLine($"⚠️ Temporal endpoint discovery failed (iteration {iteration}): {ex.Message}");
-                    }
-                }
+                temporal = await DiscoverWithRetryAsync(
+                    async () => await DockerInfrastructure.GetTemporalHostEndpointAsync(),
+                    "Temporal endpoint",
+                    stopwatch,
+                    iteration);
             }
             
-            // LearningCourse infrastructure discovery (only when LEARNINGCOURSE=true)
+            // LearningCourse infrastructure discovery (only when LEARNINGCOURSE=true) - with retry logic
             if (isLearningCourse)
             {
                 if (redis == null)
                 {
-                    try
-                    {
-                        redis = await DockerInfrastructure.GetRedisHostEndpointAsync();
-                        if (redis != null)
-                        {
-                            LogDebug($"[DISCOVERY] Redis endpoint discovered: {redis}");
-                            TestContext.WriteLine($"✅ Redis endpoint discovered: {redis} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogDebug($"[DISCOVERY] Failed to get Redis endpoint: {ex.Message}");
-                        if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
-                        {
-                            TestContext.WriteLine($"⚠️ Redis endpoint discovery failed (iteration {iteration}): {ex.Message}");
-                        }
-                    }
+                    redis = await DiscoverWithRetryAsync(
+                        async () => await DockerInfrastructure.GetRedisHostEndpointAsync(),
+                        "Redis endpoint",
+                        stopwatch,
+                        iteration);
                 }
                 
                 if (prometheus == null)
                 {
-                    try
-                    {
-                        prometheus = await DockerInfrastructure.GetPrometheusHostEndpointAsync();
-                        if (prometheus != null)
-                        {
-                            LogDebug($"[DISCOVERY] Prometheus endpoint discovered: {prometheus}");
-                            TestContext.WriteLine($"✅ Prometheus endpoint discovered: {prometheus} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogDebug($"[DISCOVERY] Failed to get Prometheus endpoint: {ex.Message}");
-                        if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
-                        {
-                            TestContext.WriteLine($"⚠️ Prometheus endpoint discovery failed (iteration {iteration}): {ex.Message}");
-                        }
-                    }
+                    prometheus = await DiscoverWithRetryAsync(
+                        async () => await DockerInfrastructure.GetPrometheusHostEndpointAsync(),
+                        "Prometheus endpoint",
+                        stopwatch,
+                        iteration);
                 }
                 
                 if (grafana == null)
                 {
-                    try
-                    {
-                        grafana = await DockerInfrastructure.GetGrafanaHostEndpointAsync();
-                        if (grafana != null)
-                        {
-                            LogDebug($"[DISCOVERY] Grafana endpoint discovered: {grafana}");
-                            TestContext.WriteLine($"✅ Grafana endpoint discovered: {grafana} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogDebug($"[DISCOVERY] Failed to get Grafana endpoint: {ex.Message}");
-                        if (iteration % 10 == 1) // Log every 10th iteration to reduce noise
-                        {
-                            TestContext.WriteLine($"⚠️ Grafana endpoint discovery failed (iteration {iteration}): {ex.Message}");
-                        }
-                    }
+                    grafana = await DiscoverWithRetryAsync(
+                        async () => await DockerInfrastructure.GetGrafanaHostEndpointAsync(),
+                        "Grafana endpoint",
+                        stopwatch,
+                        iteration);
                 }
             }
             

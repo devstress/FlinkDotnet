@@ -272,9 +272,6 @@ public class PerformanceProcessingFunction : IMapFunction<string, string>
     {
         var stopwatch = Stopwatch.StartNew();
 
-        // Base processing time depends on payload size
-        var baseProcessingMs = payloadSize / 10;
-
         // Parallelism efficiency: Higher parallelism reduces per-event processing time
         // But with diminishing returns (simulates resource contention)
         var efficiencyFactor = parallelism switch
@@ -285,16 +282,14 @@ public class PerformanceProcessingFunction : IMapFunction<string, string>
             _ => 1.0 / Math.Sqrt(parallelism)
         };
 
-        var adjustedProcessingMs = (int)(baseProcessingMs * efficiencyFactor);
+        // Computational work scales with payload size and parallelism efficiency
+        var iterations = (int)(payloadSize * efficiencyFactor);
 
-        // Simulate CPU work
-        Thread.Sleep(Math.Max(5, adjustedProcessingMs));
-
-        // Add some computational work to simulate real processing
+        // Add computational work (no Thread.Sleep blocking!)
         double result = 0;
-        for (int i = 0; i < payloadSize / 2; i++)
+        for (int i = 0; i < iterations; i++)
         {
-            result += Math.Sqrt(i) * Math.Sin(i);
+            result += Math.Sqrt(i + 1) * Math.Sin(i);
         }
 
         stopwatch.Stop();

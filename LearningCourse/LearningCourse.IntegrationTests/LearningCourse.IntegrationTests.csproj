@@ -22,6 +22,12 @@
     <ProjectReference Include="..\LearningCourse.Common\LearningCourse.Common.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
     
+    <!-- Ensure LocalTesting AppHost is built before tests run -->
+    <!-- ReferenceOutputAssembly=false means we only need it built, not referenced in tests -->
+    <ProjectReference Include="..\..\LocalTesting\LocalTesting.FlinkSqlAppHost\LocalTesting.FlinkSqlAppHost.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    
     <!-- Day 03: AI Stream Processing -->
     <ProjectReference Include="..\Day03-AI-Stream-Processing\Exercise-Solutions\Exercise31\Exercise31.csproj" />
     <ProjectReference Include="..\Day03-AI-Stream-Processing\Exercise-Solutions\Exercise32\Exercise32.csproj" />

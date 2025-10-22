@@ -180,12 +180,12 @@ class Program
                 Log.Information("   Processing Time: {Time:F0} ms", metrics.ProcessingTimeMs);
                 Log.Information("   ✅ Scenario completed");
 
-                // Cool-down between scenarios
+                // Cool-down between scenarios - OPTIMIZED: Reduced from 3s to 0.5s
                 if (i < scenarios.Length - 1)
                 {
                     Log.Information("");
-                    Log.Information("⏸️  Cool-down period: 3 seconds...");
-                    await Task.Delay(3000);
+                    Log.Information("⏸️  Cool-down period: 0.5 seconds...");
+                    await Task.Delay(500);
                     
                     // Force GC to clean state
                     GC.Collect();

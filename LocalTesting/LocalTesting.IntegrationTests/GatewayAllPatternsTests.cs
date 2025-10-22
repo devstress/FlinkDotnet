@@ -75,10 +75,11 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     [Test]
     public async Task Gateway_Pattern5_DirectFlinkSQL_ShouldWork()
     {
+        var sqlGatewayUrl = await GetSqlGatewayEndpointAsync();
         await RunGatewayPatternTest(
             patternName: "DirectFlinkSQL",
             jobCreator: (input, output, kafka, ct) =>
-                FlinkDotNetJobs.CreateDirectFlinkSQLJob(input, output, kafka, "gateway-direct-flink-sql", ct),
+                FlinkDotNetJobs.CreateDirectFlinkSQLJob(input, output, kafka, sqlGatewayUrl, "gateway-direct-flink-sql", ct),
             inputMessages: new[] { "{\"key\":\"k1\",\"value\":\"v1\"}" },
             expectedOutputCount: 1,
             description: "Direct Flink SQL via Gateway",
@@ -89,10 +90,11 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     [Test]
     public async Task Gateway_Pattern6_SqlTransform_ShouldWork()
     {
+        var sqlGatewayUrl = await GetSqlGatewayEndpointAsync();
         await RunGatewayPatternTest(
             patternName: "SqlTransform",
             jobCreator: (input, output, kafka, ct) =>
-                FlinkDotNetJobs.CreateSqlTransformJob(input, output, kafka, "gateway-sql-transform", ct),
+                FlinkDotNetJobs.CreateSqlTransformJob(input, output, kafka, sqlGatewayUrl, "gateway-sql-transform", ct),
             inputMessages: new[] { "{\"key\":\"k1\",\"value\":\"test\"}" },
             expectedOutputCount: 1,
             description: "SQL transformation via Gateway",
@@ -415,6 +417,90 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         return false;
     }
 
+
+    /// <summary>
+    /// Get SQL Gateway endpoint URL from Docker port mappings.
+    /// SQL Gateway runs on container port 8083, mapped to dynamic host port.
+    /// </summary>
+    private static async Task<string> GetSqlGatewayEndpointAsync()
+    {
+        try
+        {
+            var sqlGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-sql-gateway\" --format \"{{.Ports}}\"");
+            var lines = sqlGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                // Look for port mapping to 8083 (SQL Gateway's default listener port)
+                if (line.Contains("->8083/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8083");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}/";
+                    }
+                }
+            }
+
+            // Fallback to configured port if discovery fails
+            return $"http://localhost:{Ports.SqlGatewayHostPort}/";
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ SQL Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.SqlGatewayHostPort}");
+            return $"http://localhost:{Ports.SqlGatewayHostPort}/";
+        }
+    }
+    
+    private static async Task<string> RunDockerCommandAsync(string arguments)
+    {
+        // Try Docker first, then Podman if Docker fails or returns empty
+        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
+        if (!string.IsNullOrWhiteSpace(dockerOutput))
+        {
+            return dockerOutput;
+        }
+
+        // Fallback to Podman if Docker didn't return results
+        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
+        return podmanOutput ?? string.Empty;
+    }
+
+    private static async Task<string?> TryRunContainerCommandAsync(string command, string arguments)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(psi);
+            if (process == null)
+            {
+                return null;
+            }
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                return output;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     #endregion
 }

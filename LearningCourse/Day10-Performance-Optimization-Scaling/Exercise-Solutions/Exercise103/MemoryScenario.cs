@@ -63,35 +63,34 @@ public class MemoryScenario
 
         producer.Flush(TimeSpan.FromSeconds(5));
 
-        // Consume and process (no optimization)
+        // Consume and process (no optimization) - OPTIMIZED: Smart early exit
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2); // Exit if no messages for 2 seconds
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
+                // Deserialize (creates new objects each time)
+                var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
+                
+                // Simulate processing
+                if (evt != null)
                 {
-                    // Deserialize (creates new objects each time)
-                    var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
-                    
-                    // Simulate processing
-                    if (evt != null)
-                    {
-                        ProcessEvent(evt);
-                        processedCount++;
-                    }
-
-                    consumer.Commit(consumeResult);
+                    ProcessEvent(evt);
+                    processedCount++;
+                    lastMessageTime = DateTime.UtcNow; // Reset timeout on message
                 }
+
+                consumer.Commit(consumeResult);
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                // No messages for 2 seconds - exit early
+                break;
+            }
         }
 
         stopwatch.Stop();
@@ -166,35 +165,33 @@ public class MemoryScenario
 
         producer.Flush(TimeSpan.FromSeconds(5));
 
-        // Consume and process with pooling
+        // Consume and process with pooling - OPTIMIZED: Smart early exit
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
+                var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
+                
+                if (evt != null)
                 {
-                    var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
-                    
-                    if (evt != null)
-                    {
-                        // Use pooled StringBuilder for string operations
-                        using var pooledSb = stringBuilderPool.AcquireScoped();
-                        ProcessEventWithPooling(evt, pooledSb.Object);
-                        processedCount++;
-                    }
-
-                    consumer.Commit(consumeResult);
+                    // Use pooled StringBuilder for string operations
+                    using var pooledSb = stringBuilderPool.AcquireScoped();
+                    ProcessEventWithPooling(evt, pooledSb.Object);
+                    processedCount++;
+                    lastMessageTime = DateTime.UtcNow;
                 }
+
+                consumer.Commit(consumeResult);
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         stopwatch.Stop();
@@ -267,35 +264,33 @@ public class MemoryScenario
 
         producer.Flush(TimeSpan.FromSeconds(5));
 
-        // Consume and process with caching
+        // Consume and process with caching - OPTIMIZED: Smart early exit
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
+                var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
+                
+                if (evt != null)
                 {
-                    var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
-                    
-                    if (evt != null)
-                    {
-                        // Use cache for user lookups
-                        var userData = userCache.GetOrAdd(evt.UserId, userId => $"UserData_{userId}");
-                        ProcessEventWithCache(evt, userData);
-                        processedCount++;
-                    }
-
-                    consumer.Commit(consumeResult);
+                    // Use cache for user lookups
+                    var userData = userCache.GetOrAdd(evt.UserId, userId => $"UserData_{userId}");
+                    ProcessEventWithCache(evt, userData);
+                    processedCount++;
+                    lastMessageTime = DateTime.UtcNow;
                 }
+
+                consumer.Commit(consumeResult);
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         stopwatch.Stop();
@@ -374,35 +369,33 @@ public class MemoryScenario
 
         producer.Flush(TimeSpan.FromSeconds(5));
 
-        // Consume and process with all optimizations
+        // Consume and process with all optimizations - OPTIMIZED: Smart early exit
         int processedCount = 0;
-        var timeout = TimeSpan.FromSeconds(15);
-        var cts = new CancellationTokenSource(timeout);
+        var lastMessageTime = DateTime.UtcNow;
+        var noMessageTimeout = TimeSpan.FromSeconds(2);
 
-        try
+        while (processedCount < eventCount)
         {
-            while (processedCount < eventCount && !cts.Token.IsCancellationRequested)
+            var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
+            if (consumeResult != null)
             {
-                var consumeResult = consumer.Consume(TimeSpan.FromMilliseconds(100));
-                if (consumeResult != null)
+                var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
+                
+                if (evt != null)
                 {
-                    var evt = JsonSerializer.Deserialize<MemoryEvent>(consumeResult.Message.Value);
-                    
-                    if (evt != null)
-                    {
-                        using var pooledSb = stringBuilderPool.AcquireScoped();
-                        var userData = userCache.GetOrAdd(evt.UserId, userId => $"UserData_{userId}");
-                        ProcessEventOptimized(evt, pooledSb.Object, userData);
-                        processedCount++;
-                    }
-
-                    consumer.Commit(consumeResult);
+                    using var pooledSb = stringBuilderPool.AcquireScoped();
+                    var userData = userCache.GetOrAdd(evt.UserId, userId => $"UserData_{userId}");
+                    ProcessEventOptimized(evt, pooledSb.Object, userData);
+                    processedCount++;
+                    lastMessageTime = DateTime.UtcNow;
                 }
+
+                consumer.Commit(consumeResult);
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout reached
+            else if ((DateTime.UtcNow - lastMessageTime) > noMessageTimeout)
+            {
+                break;
+            }
         }
 
         stopwatch.Stop();
