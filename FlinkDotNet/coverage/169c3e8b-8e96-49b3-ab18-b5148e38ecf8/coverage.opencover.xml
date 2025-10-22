@@ -1,0 +1,480 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CoverageSession>
+  <Summary numSequencePoints="82" visitedSequencePoints="82" numBranchPoints="32" visitedBranchPoints="30" sequenceCoverage="100" branchCoverage="93.75" maxCyclomaticComplexity="58" minCyclomaticComplexity="58" visitedClasses="2" numClasses="2" visitedMethods="33" numMethods="33" />
+  <Modules>
+    <Module hash="9DEAE1E9-6FFA-4427-AF24-0D92C3BC0173">
+      <ModulePath>FlinkDotNet.Common.dll</ModulePath>
+      <ModuleTime>2025-10-22T03:47:50</ModuleTime>
+      <ModuleName>FlinkDotNet.Common</ModuleName>
+      <Files>
+        <File uid="1" fullPath="/home/runner/work/FlinkDotnet/FlinkDotnet/FlinkDotNet/FlinkDotNet.Common/Configuration.cs" />
+        <File uid="2" fullPath="/home/runner/work/FlinkDotnet/FlinkDotnet/FlinkDotNet/FlinkDotNet.Common/ExecutionConfig.cs" />
+      </Files>
+      <Classes>
+        <Class>
+          <Summary numSequencePoints="47" visitedSequencePoints="47" numBranchPoints="32" visitedBranchPoints="30" sequenceCoverage="100" branchCoverage="93.75" maxCyclomaticComplexity="8" minCyclomaticComplexity="1" visitedClasses="1" numClasses="1" visitedMethods="17" numMethods="17" />
+          <FullName>FlinkDotNet.Common.Configuration</FullName>
+          <Methods>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.Configuration::SetString(System.String,System.String)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="21" uspid="57" ordinal="0" sl="57" sc="1" el="57" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="21" uspid="58" ordinal="1" sl="58" sc="1" el="58" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="0" offset="0" sc="0" sl="57" ec="1" el="58" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.Configuration::SetInteger(System.String,System.Int32)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="6" uspid="69" ordinal="0" sl="69" sc="1" el="69" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="6" uspid="70" ordinal="1" sl="70" sc="1" el="70" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="1" offset="1" sc="0" sl="69" ec="1" el="70" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.Configuration::SetBoolean(System.String,System.Boolean)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="5" uspid="81" ordinal="0" sl="81" sc="1" el="81" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="5" uspid="82" ordinal="1" sl="82" sc="1" el="82" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="2" offset="2" sc="0" sl="81" ec="1" el="82" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.Configuration::SetLong(System.String,System.Int64)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="93" ordinal="0" sl="93" sc="1" el="93" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="2" uspid="94" ordinal="1" sl="94" sc="1" el="94" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="3" offset="3" sc="0" sl="93" ec="1" el="94" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="8" nPathComplexity="8" sequenceCoverage="100" branchCoverage="75" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="3" visitedSequencePoints="3" numBranchPoints="8" visitedBranchPoints="6" sequenceCoverage="100" branchCoverage="75" maxCyclomaticComplexity="8" minCyclomaticComplexity="8" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.String FlinkDotNet.Common.Configuration::GetString(System.String,System.String)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="15" uspid="105" ordinal="0" sl="105" sc="1" el="105" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="11" uspid="107" ordinal="1" sl="107" sc="1" el="107" ec="2" bec="4" bev="2" fileid="1" />
+                <SequencePoint vc="4" uspid="109" ordinal="2" sl="109" sc="1" el="109" ec="2" bec="2" bev="2" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="11" uspid="105" ordinal="0" path="0" offset="14" offsetend="16" sl="105" fileid="1" />
+                <BranchPoint vc="0" uspid="107" ordinal="2" path="0" offset="23" offsetend="25" sl="107" fileid="1" />
+                <BranchPoint vc="0" uspid="107" ordinal="4" path="0" offset="28" offsetend="30" sl="107" fileid="1" />
+                <BranchPoint vc="11" uspid="107" ordinal="3" path="1" offset="23" offsetend="36" sl="107" fileid="1" />
+                <BranchPoint vc="11" uspid="107" ordinal="5" path="1" offset="28" offsetend="36" sl="107" fileid="1" />
+                <BranchPoint vc="4" uspid="105" ordinal="1" path="1" offset="14" offsetend="37" sl="105" fileid="1" />
+                <BranchPoint vc="2" uspid="109" ordinal="6" path="0" offset="39" offsetend="41" sl="109" fileid="1" />
+                <BranchPoint vc="4" uspid="109" ordinal="7" path="1" offset="39" offsetend="47" sl="109" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="3" uspid="0" p8:type="SequencePoint" ordinal="4" offset="4" sc="0" sl="105" ec="1" el="109" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="6" nPathComplexity="6" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="6" visitedSequencePoints="6" numBranchPoints="6" visitedBranchPoints="6" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="6" minCyclomaticComplexity="6" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Int32 FlinkDotNet.Common.Configuration::GetInteger(System.String,System.Int32)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="5" uspid="120" ordinal="0" sl="120" sc="1" el="120" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="4" uspid="122" ordinal="1" sl="122" sc="1" el="122" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="3" uspid="123" ordinal="2" sl="123" sc="1" el="123" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="1" uspid="124" ordinal="3" sl="124" sc="1" el="124" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="1" uspid="125" ordinal="4" sl="125" sc="1" el="125" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="1" uspid="127" ordinal="5" sl="127" sc="1" el="127" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="4" uspid="120" ordinal="0" path="0" offset="14" offsetend="16" sl="120" fileid="1" />
+                <BranchPoint vc="3" uspid="122" ordinal="2" path="0" offset="22" offsetend="24" sl="122" fileid="1" />
+                <BranchPoint vc="1" uspid="122" ordinal="3" path="1" offset="22" offsetend="33" sl="122" fileid="1" />
+                <BranchPoint vc="1" uspid="124" ordinal="4" path="0" offset="46" offsetend="48" sl="124" fileid="1" />
+                <BranchPoint vc="1" uspid="120" ordinal="1" path="1" offset="14" offsetend="50" sl="120" fileid="1" />
+                <BranchPoint vc="1" uspid="124" ordinal="5" path="1" offset="46" offsetend="50" sl="124" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="6" uspid="0" p8:type="SequencePoint" ordinal="5" offset="5" sc="0" sl="120" ec="1" el="127" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="6" nPathComplexity="6" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="6" visitedSequencePoints="6" numBranchPoints="6" visitedBranchPoints="6" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="6" minCyclomaticComplexity="6" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Boolean FlinkDotNet.Common.Configuration::GetBoolean(System.String,System.Boolean)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="4" uspid="138" ordinal="0" sl="138" sc="1" el="138" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="3" uspid="140" ordinal="1" sl="140" sc="1" el="140" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="2" uspid="141" ordinal="2" sl="141" sc="1" el="141" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="1" uspid="142" ordinal="3" sl="142" sc="1" el="142" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="1" uspid="143" ordinal="4" sl="143" sc="1" el="143" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="1" uspid="145" ordinal="5" sl="145" sc="1" el="145" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="3" uspid="138" ordinal="0" path="0" offset="14" offsetend="16" sl="138" fileid="1" />
+                <BranchPoint vc="2" uspid="140" ordinal="2" path="0" offset="22" offsetend="24" sl="140" fileid="1" />
+                <BranchPoint vc="1" uspid="140" ordinal="3" path="1" offset="22" offsetend="33" sl="140" fileid="1" />
+                <BranchPoint vc="1" uspid="142" ordinal="4" path="0" offset="46" offsetend="48" sl="142" fileid="1" />
+                <BranchPoint vc="1" uspid="138" ordinal="1" path="1" offset="14" offsetend="50" sl="138" fileid="1" />
+                <BranchPoint vc="1" uspid="142" ordinal="5" path="1" offset="46" offsetend="50" sl="142" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="6" uspid="0" p8:type="SequencePoint" ordinal="6" offset="6" sc="0" sl="138" ec="1" el="145" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="6" nPathComplexity="6" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="6" visitedSequencePoints="6" numBranchPoints="6" visitedBranchPoints="6" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="6" minCyclomaticComplexity="6" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Int64 FlinkDotNet.Common.Configuration::GetLong(System.String,System.Int64)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="4" uspid="156" ordinal="0" sl="156" sc="1" el="156" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="3" uspid="158" ordinal="1" sl="158" sc="1" el="158" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="2" uspid="159" ordinal="2" sl="159" sc="1" el="159" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="1" uspid="160" ordinal="3" sl="160" sc="1" el="160" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="1" uspid="161" ordinal="4" sl="161" sc="1" el="161" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="1" uspid="163" ordinal="5" sl="163" sc="1" el="163" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="3" uspid="156" ordinal="0" path="0" offset="14" offsetend="16" sl="156" fileid="1" />
+                <BranchPoint vc="2" uspid="158" ordinal="2" path="0" offset="22" offsetend="24" sl="158" fileid="1" />
+                <BranchPoint vc="1" uspid="158" ordinal="3" path="1" offset="22" offsetend="33" sl="158" fileid="1" />
+                <BranchPoint vc="1" uspid="160" ordinal="4" path="0" offset="46" offsetend="48" sl="160" fileid="1" />
+                <BranchPoint vc="1" uspid="156" ordinal="1" path="1" offset="14" offsetend="50" sl="156" fileid="1" />
+                <BranchPoint vc="1" uspid="160" ordinal="5" path="1" offset="46" offsetend="50" sl="160" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="6" uspid="0" p8:type="SequencePoint" ordinal="7" offset="7" sc="0" sl="156" ec="1" el="163" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Boolean FlinkDotNet.Common.Configuration::ContainsKey(System.String)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="12" uspid="173" ordinal="0" sl="173" sc="1" el="173" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="8" offset="8" sc="0" sl="173" ec="1" el="173" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Boolean FlinkDotNet.Common.Configuration::RemoveKey(System.String)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="183" ordinal="0" sl="183" sc="1" el="183" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="9" offset="9" sc="0" sl="183" ec="1" el="183" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Collections.Generic.IEnumerable`1&lt;System.String&gt; FlinkDotNet.Common.Configuration::GetKeys()</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="192" ordinal="0" sl="192" sc="1" el="192" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="10" offset="10" sc="0" sl="192" ec="1" el="192" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.Configuration::Clone()</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="1" uspid="201" ordinal="0" sl="201" sc="1" el="201" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="11" offset="11" sc="0" sl="201" ec="1" el="201" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="2" nPathComplexity="2" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="3" visitedSequencePoints="3" numBranchPoints="2" visitedBranchPoints="2" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="2" minCyclomaticComplexity="2" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.Configuration::AddAll(FlinkDotNet.Common.Configuration)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="10" uspid="211" ordinal="0" sl="211" sc="1" el="211" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="3" uspid="213" ordinal="1" sl="213" sc="1" el="213" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="2" uspid="215" ordinal="2" sl="215" sc="1" el="215" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="3" uspid="211" ordinal="1" path="1" offset="54" offsetend="14" sl="211" fileid="1" />
+                <BranchPoint vc="2" uspid="211" ordinal="0" path="0" offset="54" offsetend="56" sl="211" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="3" uspid="0" p8:type="SequencePoint" ordinal="12" offset="12" sc="0" sl="211" ec="1" el="215" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Collections.Generic.IDictionary`2&lt;System.String,System.Object&gt; FlinkDotNet.Common.Configuration::ToMap()</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="1" uspid="224" ordinal="0" sl="224" sc="1" el="224" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="13" offset="13" sc="0" sl="224" ec="1" el="224" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="2" nPathComplexity="2" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="3" visitedSequencePoints="3" numBranchPoints="2" visitedBranchPoints="2" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="2" minCyclomaticComplexity="2" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Collections.Generic.IList`1&lt;System.String&gt; FlinkDotNet.Common.Configuration::ParseListValue(System.String)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="6" uspid="234" ordinal="0" sl="234" sc="1" el="234" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="3" uspid="235" ordinal="1" sl="235" sc="1" el="235" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="3" uspid="237" ordinal="2" sl="237" sc="1" el="237" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="3" uspid="234" ordinal="0" path="0" offset="6" offsetend="8" sl="234" fileid="1" />
+                <BranchPoint vc="3" uspid="234" ordinal="1" path="1" offset="6" offsetend="14" sl="234" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="3" uspid="0" p8:type="SequencePoint" ordinal="14" offset="14" sc="0" sl="234" ec="1" el="237" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="True" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="3" visitedSequencePoints="3" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Void FlinkDotNet.Common.Configuration::.ctor()</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="59" uspid="28" ordinal="0" sl="28" sc="1" el="28" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="57" uspid="33" ordinal="1" sl="33" sc="1" el="33" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="57" uspid="35" ordinal="2" sl="35" sc="1" el="35" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="3" uspid="0" p8:type="SequencePoint" ordinal="15" offset="15" sc="0" sl="28" ec="1" el="35" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="2" nPathComplexity="2" sequenceCoverage="100" branchCoverage="100" isConstructor="True" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="4" visitedSequencePoints="4" numBranchPoints="2" visitedBranchPoints="2" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="2" minCyclomaticComplexity="2" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Void FlinkDotNet.Common.Configuration::.ctor(System.Collections.Generic.IDictionary`2&lt;System.String,System.Object&gt;)</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="41" ordinal="0" sl="41" sc="1" el="41" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="14" uspid="43" ordinal="1" sl="43" sc="1" el="43" ec="2" bec="2" bev="2" fileid="1" />
+                <SequencePoint vc="5" uspid="45" ordinal="2" sl="45" sc="1" el="45" ec="2" bec="0" bev="0" fileid="1" />
+                <SequencePoint vc="2" uspid="47" ordinal="3" sl="47" sc="1" el="47" ec="2" bec="0" bev="0" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="5" uspid="43" ordinal="1" path="1" offset="64" offsetend="26" sl="43" fileid="1" />
+                <BranchPoint vc="2" uspid="43" ordinal="0" path="0" offset="64" offsetend="66" sl="43" fileid="1" />
+              </BranchPoints>
+              <MethodPoint vc="4" uspid="0" p8:type="SequencePoint" ordinal="16" offset="16" sc="0" sl="41" ec="1" el="47" bec="0" bev="0" fileid="1" xmlns:p8="xsi" />
+            </Method>
+          </Methods>
+        </Class>
+        <Class>
+          <Summary numSequencePoints="35" visitedSequencePoints="35" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="1" numClasses="1" visitedMethods="16" numMethods="16" />
+          <FullName>FlinkDotNet.Common.ExecutionConfig</FullName>
+          <Methods>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::SetParallelism(System.Int32)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="103" ordinal="0" sl="103" sc="1" el="103" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="2" uspid="104" ordinal="1" sl="104" sc="1" el="104" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="0" offset="0" sc="0" sl="103" ec="1" el="104" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::SetMaxParallelism(System.Int32)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="114" ordinal="0" sl="114" sc="1" el="114" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="2" uspid="115" ordinal="1" sl="115" sc="1" el="115" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="1" offset="1" sc="0" sl="114" ec="1" el="115" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::SetAutoWatermarkInterval(System.Int64)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="125" ordinal="0" sl="125" sc="1" el="125" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="2" uspid="126" ordinal="1" sl="126" sc="1" el="126" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="2" offset="2" sc="0" sl="125" ec="1" el="126" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::EnableObjectReuse(System.Boolean)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="7" uspid="136" ordinal="0" sl="136" sc="1" el="136" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="7" uspid="137" ordinal="1" sl="137" sc="1" el="137" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="3" offset="3" sc="0" sl="136" ec="1" el="137" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::DisableObjectReuse()</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="1" uspid="146" ordinal="0" sl="146" sc="1" el="146" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="4" offset="4" sc="0" sl="146" ec="1" el="146" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::EnableClosureCleaner(System.Boolean)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="6" uspid="156" ordinal="0" sl="156" sc="1" el="156" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="6" uspid="157" ordinal="1" sl="157" sc="1" el="157" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="5" offset="5" sc="0" sl="156" ec="1" el="157" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::DisableClosureCleaner()</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="1" uspid="166" ordinal="0" sl="166" sc="1" el="166" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="6" offset="6" sc="0" sl="166" ec="1" el="166" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::SetRestartStrategy(System.String)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="3" uspid="177" ordinal="0" sl="177" sc="1" el="177" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="3" uspid="178" ordinal="1" sl="178" sc="1" el="178" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="7" offset="7" sc="0" sl="177" ec="1" el="178" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::EnableSlotSharing(System.Boolean)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="5" uspid="189" ordinal="0" sl="189" sc="1" el="189" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="5" uspid="190" ordinal="1" sl="190" sc="1" el="190" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="8" offset="8" sc="0" sl="189" ec="1" el="190" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::EnableAdaptiveScheduler(System.Boolean)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="5" uspid="202" ordinal="0" sl="202" sc="1" el="202" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="5" uspid="203" ordinal="1" sl="203" sc="1" el="203" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="9" offset="9" sc="0" sl="202" ec="1" el="203" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::EnableReactiveMode(System.Boolean)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="5" uspid="215" ordinal="0" sl="215" sc="1" el="215" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="5" uspid="216" ordinal="1" sl="216" sc="1" el="216" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="10" offset="10" sc="0" sl="215" ec="1" el="216" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.Configuration FlinkDotNet.Common.ExecutionConfig::GetConfiguration()</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="2" uspid="225" ordinal="0" sl="225" sc="1" el="225" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="11" offset="11" sc="0" sl="225" ec="1" el="225" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>FlinkDotNet.Common.ExecutionConfig FlinkDotNet.Common.ExecutionConfig::SetProperty(System.String,System.Object)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="4" uspid="236" ordinal="0" sl="236" sc="1" el="236" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="4" uspid="237" ordinal="1" sl="237" sc="1" el="237" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="12" offset="12" sc="0" sl="236" ec="1" el="237" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="False" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="1" visitedSequencePoints="1" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.String FlinkDotNet.Common.ExecutionConfig::GetProperty(System.String,System.String)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="7" uspid="248" ordinal="0" sl="248" sc="1" el="248" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="1" uspid="0" p8:type="SequencePoint" ordinal="13" offset="13" sc="0" sl="248" ec="1" el="248" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="True" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="2" visitedSequencePoints="2" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Void FlinkDotNet.Common.ExecutionConfig::.ctor()</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="30" uspid="30" ordinal="0" sl="30" sc="1" el="30" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="30" uspid="32" ordinal="1" sl="32" sc="1" el="32" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="2" uspid="0" p8:type="SequencePoint" ordinal="14" offset="14" sc="0" sl="30" ec="1" el="32" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+            <Method cyclomaticComplexity="1" nPathComplexity="1" sequenceCoverage="100" branchCoverage="100" isConstructor="True" isGetter="False" isSetter="False" isStatic="True">
+              <Summary numSequencePoints="9" visitedSequencePoints="9" numBranchPoints="0" visitedBranchPoints="0" sequenceCoverage="100" branchCoverage="100" maxCyclomaticComplexity="1" minCyclomaticComplexity="1" visitedClasses="0" numClasses="0" visitedMethods="1" numMethods="1" />
+              <MetadataToken />
+              <Name>System.Void FlinkDotNet.Common.ExecutionConfig::.ctor(FlinkDotNet.Common.Configuration)</Name>
+              <FileRef uid="2" />
+              <SequencePoints>
+                <SequencePoint vc="32" uspid="38" ordinal="0" sl="38" sc="1" el="38" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="40" ordinal="1" sl="40" sc="1" el="40" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="41" ordinal="2" sl="41" sc="1" el="41" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="46" ordinal="3" sl="46" sc="1" el="46" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="51" ordinal="4" sl="51" sc="1" el="51" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="56" ordinal="5" sl="56" sc="1" el="56" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="70" ordinal="6" sl="70" sc="1" el="70" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="76" ordinal="7" sl="76" sc="1" el="76" ec="2" bec="0" bev="0" fileid="2" />
+                <SequencePoint vc="32" uspid="82" ordinal="8" sl="82" sc="1" el="82" ec="2" bec="0" bev="0" fileid="2" />
+              </SequencePoints>
+              <BranchPoints />
+              <MethodPoint vc="9" uspid="0" p8:type="SequencePoint" ordinal="15" offset="15" sc="0" sl="38" ec="1" el="82" bec="0" bev="0" fileid="2" xmlns:p8="xsi" />
+            </Method>
+          </Methods>
+        </Class>
+      </Classes>
+    </Module>
+  </Modules>
+</CoverageSession>
