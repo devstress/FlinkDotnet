@@ -34,14 +34,18 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 1. Go to Actions tab in GitHub
 2. Select "Release - Major Version"
 3. Click "Run workflow"
-4. Enter the current version (e.g., `1.0.0`)
-5. Click "Run workflow"
+4. Click "Run workflow" to confirm
+
+**Note**: The workflow automatically detects the latest release version from git tags. If no previous releases exist, it starts from 1.0.0. For example:
+- First major release (no tags): Creates v1.0.0
+- Subsequent major releases: Bumps major version (e.g., v1.x.x → v2.0.0)
 
 ### 2. Release - Minor Version
 
 **When to use**: New features that are backward compatible.
 
 **What it does**:
+- Automatically detects the latest release version from git tags
 - Calculates the new version by bumping the minor number (e.g., 1.0.0 → 1.1.0)
 - Updates the `<PackageVersion>` in project files (.csproj) to the new version
 - Commits the version changes to the repository
@@ -53,14 +57,14 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 1. Go to Actions tab in GitHub
 2. Select "Release - Minor Version"
 3. Click "Run workflow"
-4. Enter the current version (e.g., `1.0.0`)
-5. Click "Run workflow"
+4. Click "Run workflow" to confirm
 
 ### 3. Release - Patch Version
 
 **When to use**: Bug fixes and minor improvements.
 
 **What it does**:
+- Automatically detects the latest release version from git tags
 - Calculates the new version by bumping the patch number (e.g., 1.0.0 → 1.0.1)
 - Updates the `<PackageVersion>` in project files (.csproj) to the new version
 - Commits the version changes to the repository
@@ -72,8 +76,7 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 1. Go to Actions tab in GitHub
 2. Select "Release - Patch Version"
 3. Click "Run workflow"
-4. Enter the current version (e.g., `1.0.0`)
-5. Click "Run workflow"
+4. Click "Run workflow" to confirm
 
 ### 4. Retry Publish (Bonus Workflow)
 
