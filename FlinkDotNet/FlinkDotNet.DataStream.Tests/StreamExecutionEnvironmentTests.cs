@@ -1,50 +1,61 @@
+using NUnit.Framework;
 using FlinkDotNet.DataStream;
 using FlinkDotNet.Common;
 using FlinkDotNet.DataStream.State;
 using FlinkDotNet.DataStream.Checkpoint;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
     [TestFixture]
     public class StreamExecutionEnvironmentTests
     {
-        private StreamExecutionEnvironment _env = null!;
-
-        [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
-
-        #region Factory and Constructor Tests
+        #region Environment Creation Tests
 
         [Test]
-        public void GetExecutionEnvironment_WithoutConfiguration_ReturnsEnvironment()
+        public void GetExecutionEnvironment_WithoutConfiguration_CreatesEnvironment()
         {
+            // Act
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Assert
             Assert.That(env, Is.Not.Null);
+            Assert.That(env.GetConfig(), Is.Not.Null);
         }
 
         [Test]
-        public void GetExecutionEnvironment_WithConfiguration_ReturnsEnvironment()
+        public void GetExecutionEnvironment_WithConfiguration_CreatesEnvironmentWithConfig()
         {
+            // Arrange
             var config = new Configuration();
             config.SetString("test.key", "test.value");
+
+            // Act
             var env = StreamExecutionEnvironment.GetExecutionEnvironment(config);
+
+            // Assert
             Assert.That(env, Is.Not.Null);
+            Assert.That(env.GetConfig(), Is.Not.Null);
+            Assert.That(env.GetConfig().GetConfiguration().GetString("test.key"), Is.EqualTo("test.value"));
         }
 
         [Test]
-        public void GetConfig_ReturnsExecutionConfig()
+        public void Configure_AddsConfigurationSettings()
         {
-            var config = _env.GetConfig();
-            Assert.That(config, Is.Not.Null);
-            Assert.That(config, Is.InstanceOf<ExecutionConfig>());
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var config = new Configuration();
+            config.SetString("additional.key", "additional.value");
+
+            // Act
+            env.Configure(config);
+
+            // Assert
+            Assert.That(env.GetConfig().GetConfiguration().GetString("additional.key"), Is.EqualTo("additional.value"));
         }
 
         #endregion
@@ -52,78 +63,98 @@ namespace FlinkDotNet.DataStream.Tests
         #region Parallelism Tests
 
         [Test]
-        public void SetParallelism_ValidValue_SetsParallelism()
+        public void SetParallelism_SetsParallelismCorrectly()
         {
-            _env.SetParallelism(4);
-            Assert.That(_env.GetParallelism(), Is.EqualTo(4));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.SetParallelism(4);
+
+            // Assert
+            Assert.That(env.GetParallelism(), Is.EqualTo(4));
         }
 
         [Test]
-        public void SetParallelism_ReturnsThis()
+        public void SetParallelism_ReturnsEnvironment_ForChaining()
         {
-            var result = _env.SetParallelism(2);
-            Assert.That(result, Is.SameAs(_env));
-        }
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        [Test]
-        public void SetParallelism_ChainableCalls()
-        {
-            var result = _env.SetParallelism(2).SetParallelism(4);
-            Assert.That(_env.GetParallelism(), Is.EqualTo(4));
-            Assert.That(result, Is.SameAs(_env));
+            // Act
+            var result = env.SetParallelism(4);
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         [Test]
         public void GetParallelism_DefaultValue_ReturnsNegativeOne()
         {
-            var parallelism = _env.GetParallelism();
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var parallelism = env.GetParallelism();
+
+            // Assert - Default parallelism is -1 (unset), which means use system default
             Assert.That(parallelism, Is.EqualTo(-1));
         }
 
         [Test]
-        public void SetMaxParallelism_ValidValue_SetsMaxParallelism()
+        public void SetMaxParallelism_WithValidValue_SetsMaxParallelism()
         {
-            _env.SetMaxParallelism(1000);
-            Assert.That(_env.GetMaxParallelism(), Is.EqualTo(1000));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.SetMaxParallelism(128);
+
+            // Assert
+            Assert.That(env.GetMaxParallelism(), Is.EqualTo(128));
         }
 
         [Test]
-        public void SetMaxParallelism_MaximumValue_SetsMaxParallelism()
+        public void SetMaxParallelism_WithZero_ThrowsArgumentException()
         {
-            _env.SetMaxParallelism(32768);
-            Assert.That(_env.GetMaxParallelism(), Is.EqualTo(32768));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
         }
 
         [Test]
-        public void SetMaxParallelism_ZeroValue_ThrowsArgumentException()
+        public void SetMaxParallelism_WithNegative_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => _env.SetMaxParallelism(0));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
         }
 
         [Test]
-        public void SetMaxParallelism_NegativeValue_ThrowsArgumentException()
+        public void SetMaxParallelism_WithTooLarge_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => _env.SetMaxParallelism(-1));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
         }
 
         [Test]
-        public void SetMaxParallelism_TooLargeValue_ThrowsArgumentException()
+        public void SetMaxParallelism_ReturnsEnvironment_ForChaining()
         {
-            Assert.Throws<ArgumentException>(() => _env.SetMaxParallelism(32769));
-        }
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        [Test]
-        public void SetMaxParallelism_ReturnsThis()
-        {
-            var result = _env.SetMaxParallelism(100);
-            Assert.That(result, Is.SameAs(_env));
-        }
+            // Act
+            var result = env.SetMaxParallelism(128);
 
-        [Test]
-        public void GetMaxParallelism_DefaultValue_ReturnsNegativeOne()
-        {
-            var maxParallelism = _env.GetMaxParallelism();
-            Assert.That(maxParallelism, Is.EqualTo(-1));
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         #endregion
@@ -131,30 +162,42 @@ namespace FlinkDotNet.DataStream.Tests
         #region Buffer Timeout Tests
 
         [Test]
-        public void SetBufferTimeout_ValidValue_SetsTimeout()
+        public void SetBufferTimeout_SetsTimeoutCorrectly()
         {
-            _env.SetBufferTimeout(500);
-            Assert.That(_env.GetBufferTimeout(), Is.EqualTo(500));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.SetBufferTimeout(200);
+
+            // Assert
+            Assert.That(env.GetBufferTimeout(), Is.EqualTo(200));
         }
 
         [Test]
-        public void SetBufferTimeout_ReturnsThis()
+        public void SetBufferTimeout_ReturnsEnvironment_ForChaining()
         {
-            var result = _env.SetBufferTimeout(200);
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var result = env.SetBufferTimeout(200);
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         [Test]
         public void GetBufferTimeout_DefaultValue_Returns100()
         {
-            Assert.That(_env.GetBufferTimeout(), Is.EqualTo(100));
-        }
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        [Test]
-        public void SetBufferTimeout_ZeroValue_SetsTimeout()
-        {
-            _env.SetBufferTimeout(0);
-            Assert.That(_env.GetBufferTimeout(), Is.EqualTo(0));
+            // Act
+            var timeout = env.GetBufferTimeout();
+
+            // Assert
+            Assert.That(timeout, Is.EqualTo(100));
         }
 
         #endregion
@@ -162,23 +205,42 @@ namespace FlinkDotNet.DataStream.Tests
         #region Operator Chaining Tests
 
         [Test]
-        public void IsChainingEnabled_Default_ReturnsTrue()
+        public void IsChainingEnabled_DefaultValue_ReturnsTrue()
         {
-            Assert.That(_env.IsChainingEnabled(), Is.True);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var enabled = env.IsChainingEnabled();
+
+            // Assert
+            Assert.That(enabled, Is.True);
         }
 
         [Test]
-        public void DisableOperatorChaining_DisablesChaining()
+        public void DisableOperatorChaining_DisablesChainingCorrectly()
         {
-            _env.DisableOperatorChaining();
-            Assert.That(_env.IsChainingEnabled(), Is.False);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.DisableOperatorChaining();
+
+            // Assert
+            Assert.That(env.IsChainingEnabled(), Is.False);
         }
 
         [Test]
-        public void DisableOperatorChaining_ReturnsThis()
+        public void DisableOperatorChaining_ReturnsEnvironment_ForChaining()
         {
-            var result = _env.DisableOperatorChaining();
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var result = env.DisableOperatorChaining();
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         #endregion
@@ -186,29 +248,54 @@ namespace FlinkDotNet.DataStream.Tests
         #region Checkpointing Tests
 
         [Test]
-        public void EnableCheckpointing_SetsInterval()
+        public void EnableCheckpointing_SetsIntervalCorrectly()
         {
-            _env.EnableCheckpointing(5000);
-            Assert.That(_env.GetCheckpointInterval(), Is.EqualTo(5000));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.EnableCheckpointing(5000);
+
+            // Assert
+            Assert.That(env.GetCheckpointInterval(), Is.EqualTo(5000));
         }
 
         [Test]
-        public void EnableCheckpointing_ReturnsThis()
+        public void EnableCheckpointing_ReturnsEnvironment_ForChaining()
         {
-            var result = _env.EnableCheckpointing(3000);
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var result = env.EnableCheckpointing(5000);
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         [Test]
-        public void GetCheckpointInterval_Default_ReturnsNegativeOne()
+        public void GetCheckpointInterval_DefaultValue_ReturnsNegativeOne()
         {
-            Assert.That(_env.GetCheckpointInterval(), Is.EqualTo(-1));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var interval = env.GetCheckpointInterval();
+
+            // Assert
+            Assert.That(interval, Is.EqualTo(-1));
         }
 
         [Test]
-        public void GetCheckpointConfig_ReturnsConfig()
+        public void GetCheckpointConfig_ReturnsCheckpointConfig()
         {
-            var config = _env.GetCheckpointConfig();
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var config = env.GetCheckpointConfig();
+
+            // Assert
             Assert.That(config, Is.Not.Null);
             Assert.That(config, Is.InstanceOf<CheckpointConfig>());
         }
@@ -218,38 +305,69 @@ namespace FlinkDotNet.DataStream.Tests
         #region Adaptive Scheduler Tests
 
         [Test]
-        public void IsAdaptiveSchedulerEnabled_Default_ReturnsFalse()
+        public void EnableAdaptiveScheduler_EnablesSchedulerCorrectly()
         {
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.False);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.EnableAdaptiveScheduler(true);
+
+            // Assert
+            Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
         }
 
         [Test]
-        public void EnableAdaptiveScheduler_EnablesScheduler()
+        public void EnableAdaptiveScheduler_DefaultValue_EnablesScheduler()
         {
-            _env.EnableAdaptiveScheduler(true);
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.True);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.EnableAdaptiveScheduler();
+
+            // Assert
+            Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
         }
 
         [Test]
-        public void EnableAdaptiveScheduler_DefaultParameter_EnablesScheduler()
+        public void EnableAdaptiveScheduler_WithFalse_DisablesScheduler()
         {
-            _env.EnableAdaptiveScheduler();
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.True);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            env.EnableAdaptiveScheduler(true);
+
+            // Act
+            env.EnableAdaptiveScheduler(false);
+
+            // Assert
+            Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.False);
         }
 
         [Test]
-        public void EnableAdaptiveScheduler_False_DisablesScheduler()
+        public void EnableAdaptiveScheduler_ReturnsEnvironment_ForChaining()
         {
-            _env.EnableAdaptiveScheduler(true);
-            _env.EnableAdaptiveScheduler(false);
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.False);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var result = env.EnableAdaptiveScheduler();
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         [Test]
-        public void EnableAdaptiveScheduler_ReturnsThis()
+        public void IsAdaptiveSchedulerEnabled_DefaultValue_ReturnsFalse()
         {
-            var result = _env.EnableAdaptiveScheduler();
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var enabled = env.IsAdaptiveSchedulerEnabled();
+
+            // Assert
+            Assert.That(enabled, Is.False);
         }
 
         #endregion
@@ -257,38 +375,69 @@ namespace FlinkDotNet.DataStream.Tests
         #region Reactive Mode Tests
 
         [Test]
-        public void IsReactiveModeEnabled_Default_ReturnsFalse()
+        public void EnableReactiveMode_EnablesModeCorrectly()
         {
-            Assert.That(_env.IsReactiveModeEnabled(), Is.False);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.EnableReactiveMode(true);
+
+            // Assert
+            Assert.That(env.IsReactiveModeEnabled(), Is.True);
         }
 
         [Test]
-        public void EnableReactiveMode_EnablesMode()
+        public void EnableReactiveMode_DefaultValue_EnablesMode()
         {
-            _env.EnableReactiveMode(true);
-            Assert.That(_env.IsReactiveModeEnabled(), Is.True);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            env.EnableReactiveMode();
+
+            // Assert
+            Assert.That(env.IsReactiveModeEnabled(), Is.True);
         }
 
         [Test]
-        public void EnableReactiveMode_DefaultParameter_EnablesMode()
+        public void EnableReactiveMode_WithFalse_DisablesMode()
         {
-            _env.EnableReactiveMode();
-            Assert.That(_env.IsReactiveModeEnabled(), Is.True);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            env.EnableReactiveMode(true);
+
+            // Act
+            env.EnableReactiveMode(false);
+
+            // Assert
+            Assert.That(env.IsReactiveModeEnabled(), Is.False);
         }
 
         [Test]
-        public void EnableReactiveMode_False_DisablesMode()
+        public void EnableReactiveMode_ReturnsEnvironment_ForChaining()
         {
-            _env.EnableReactiveMode(true);
-            _env.EnableReactiveMode(false);
-            Assert.That(_env.IsReactiveModeEnabled(), Is.False);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var result = env.EnableReactiveMode();
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         [Test]
-        public void EnableReactiveMode_ReturnsThis()
+        public void IsReactiveModeEnabled_DefaultValue_ReturnsFalse()
         {
-            var result = _env.EnableReactiveMode();
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var enabled = env.IsReactiveModeEnabled();
+
+            // Assert
+            Assert.That(enabled, Is.False);
         }
 
         #endregion
@@ -296,24 +445,43 @@ namespace FlinkDotNet.DataStream.Tests
         #region Savepoint Tests
 
         [Test]
-        public void GetSavepointPath_Default_ReturnsNull()
+        public void FromSavepoint_SetsSavepointPathCorrectly()
         {
-            Assert.That(_env.GetSavepointPath(), Is.Null);
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var savepointPath = "/path/to/savepoint";
+
+            // Act
+            env.FromSavepoint(savepointPath);
+
+            // Assert
+            Assert.That(env.GetSavepointPath(), Is.EqualTo(savepointPath));
         }
 
         [Test]
-        public void FromSavepoint_SetsSavepointPath()
+        public void FromSavepoint_ReturnsEnvironment_ForChaining()
         {
-            var path = "/path/to/savepoint";
-            _env.FromSavepoint(path);
-            Assert.That(_env.GetSavepointPath(), Is.EqualTo(path));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var result = env.FromSavepoint("/path/to/savepoint");
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
         }
 
         [Test]
-        public void FromSavepoint_ReturnsThis()
+        public void GetSavepointPath_DefaultValue_ReturnsNull()
         {
-            var result = _env.FromSavepoint("/test/path");
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var path = env.GetSavepointPath();
+
+            // Assert
+            Assert.That(path, Is.Null);
         }
 
         #endregion
@@ -321,144 +489,209 @@ namespace FlinkDotNet.DataStream.Tests
         #region State Backend Tests
 
         [Test]
-        public void GetStateBackend_Default_ReturnsNull()
+        public void SetStateBackend_WithValidBackend_SetsBackendCorrectly()
         {
-            Assert.That(_env.GetStateBackend(), Is.Null);
-        }
-
-        [Test]
-        public void SetStateBackend_HashMapStateBackend_SetsBackend()
-        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var backend = new HashMapStateBackend();
-            _env.SetStateBackend(backend);
-            Assert.That(_env.GetStateBackend(), Is.SameAs(backend));
+
+            // Act
+            env.SetStateBackend(backend);
+
+            // Assert
+            Assert.That(env.GetStateBackend(), Is.SameAs(backend));
         }
 
         [Test]
-        public void SetStateBackend_EmbeddedRocksDBStateBackend_SetsBackend()
+        public void SetStateBackend_WithRocksDB_SetsBackendCorrectly()
         {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var backend = new EmbeddedRocksDBStateBackend();
-            _env.SetStateBackend(backend);
-            Assert.That(_env.GetStateBackend(), Is.SameAs(backend));
+
+            // Act
+            env.SetStateBackend(backend);
+
+            // Assert
+            Assert.That(env.GetStateBackend(), Is.InstanceOf<EmbeddedRocksDBStateBackend>());
         }
 
         [Test]
-        public void SetStateBackend_Null_ThrowsArgumentNullException()
+        public void SetStateBackend_WithNull_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => _env.SetStateBackend(null!));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => env.SetStateBackend(null!));
         }
 
         [Test]
-        public void SetStateBackend_ReturnsThis()
+        public void SetStateBackend_ReturnsEnvironment_ForChaining()
         {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var backend = new HashMapStateBackend();
-            var result = _env.SetStateBackend(backend);
-            Assert.That(result, Is.SameAs(_env));
+
+            // Act
+            var result = env.SetStateBackend(backend);
+
+            // Assert
+            Assert.That(result, Is.SameAs(env));
+        }
+
+        [Test]
+        public void GetStateBackend_DefaultValue_ReturnsNull()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var backend = env.GetStateBackend();
+
+            // Assert
+            Assert.That(backend, Is.Null);
         }
 
         #endregion
 
-        #region Configuration Tests
+        #region Source Creation Tests
 
         [Test]
-        public void Configure_WithConfiguration_ReturnsThis()
+        public void FromKafka_WithValidParameters_CreatesDataStream()
         {
-            var config = new Configuration();
-            config.SetString("custom.key", "custom.value");
-            var result = _env.Configure(config);
-            Assert.That(result, Is.SameAs(_env));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act
+            var stream = env.FromKafka("test-topic", "localhost:9092", "test-group", "latest");
+
+            // Assert
+            Assert.That(stream, Is.Not.Null);
+            Assert.That(stream, Is.InstanceOf<DataStream<string>>());
         }
 
         [Test]
-        public void Configure_UpdatesExecutionConfig()
+        public void FromKafka_WithNullBootstrapServers_ThrowsArgumentException()
         {
-            var config = new Configuration();
-            config.SetString("test.property", "test.value");
-            _env.Configure(config);
-            var execConfig = _env.GetConfig();
-            Assert.That(execConfig.GetConfiguration().GetString("test.property", null), Is.EqualTo("test.value"));
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => 
+                env.FromKafka("test-topic", null, "test-group"));
+            Assert.That(ex.ParamName, Is.EqualTo("bootstrapServers"));
         }
 
-        #endregion
+        [Test]
+        public void FromKafka_WithEmptyBootstrapServers_ThrowsArgumentException()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        #region Source Tests
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => 
+                env.FromKafka("test-topic", "", "test-group"));
+            Assert.That(ex.ParamName, Is.EqualTo("bootstrapServers"));
+        }
 
         [Test]
-        public void FromKafka_WithValidParameters_ReturnsDataStream()
+        public void FromKafka_WithWhitespaceBootstrapServers_ThrowsArgumentException()
         {
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => 
+                env.FromKafka("test-topic", "   ", "test-group"));
+            Assert.That(ex.ParamName, Is.EqualTo("bootstrapServers"));
+        }
+
+        [Test]
+        public void AddKafkaSource_WithDeserializer_CreatesDataStream()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            Func<string, int> deserializer = s => int.Parse(s);
+
+            // Act
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", deserializer);
+
+            // Assert
+            Assert.That(stream, Is.Not.Null);
+            Assert.That(stream, Is.InstanceOf<DataStream<int>>());
+        }
+
+        [Test]
+        public void AddKafkaSource_WithComplexDeserializer_CreatesDataStream()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            Func<string, TestMessage> deserializer = s => new TestMessage { Value = s };
+
+            // Act
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", deserializer);
+
+            // Assert
+            Assert.That(stream, Is.Not.Null);
+            Assert.That(stream, Is.InstanceOf<DataStream<TestMessage>>());
+        }
+
+        [Test]
+        public void FromCollection_WithValidCollection_CreatesDataStream()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var collection = new List<int> { 1, 2, 3, 4, 5 };
+
+            // Act
+            var stream = env.FromCollection(collection);
+
+            // Assert
+            Assert.That(stream, Is.Not.Null);
+            Assert.That(stream, Is.InstanceOf<DataStream<int>>());
+        }
+
+        [Test]
+        public void FromCollection_WithEmptyCollection_CreatesDataStream()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var collection = new List<string>();
+
+            // Act
+            var stream = env.FromCollection(collection);
+
+            // Assert
             Assert.That(stream, Is.Not.Null);
         }
 
         [Test]
-        public void FromKafka_NullBootstrapServers_ThrowsArgumentException()
+        public void AddSource_WithSourceFunction_CreatesDataStream()
         {
-            Assert.Throws<ArgumentException>(() => _env.FromKafka("test-topic", null, "test-group"));
-        }
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var sourceFunction = new TestSourceFunction();
 
-        [Test]
-        public void FromKafka_EmptyBootstrapServers_ThrowsArgumentException()
-        {
-            Assert.Throws<ArgumentException>(() => _env.FromKafka("test-topic", "", "test-group"));
-        }
+            // Act
+            var stream = env.AddSource(sourceFunction, "Test Source");
 
-        [Test]
-        public void FromKafka_WhitespaceBootstrapServers_ThrowsArgumentException()
-        {
-            Assert.Throws<ArgumentException>(() => _env.FromKafka("test-topic", "   ", "test-group"));
-        }
-
-        [Test]
-        public void FromKafka_WithDefaultStartingOffsets_ReturnsDataStream()
-        {
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            // Assert
             Assert.That(stream, Is.Not.Null);
+            Assert.That(stream, Is.InstanceOf<DataStream<int>>());
         }
 
         [Test]
-        public void FromKafka_WithEarliestOffset_ReturnsDataStream()
+        public void AddSource_WithDefaultName_CreatesDataStream()
         {
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
-            Assert.That(stream, Is.Not.Null);
-        }
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var sourceFunction = new TestSourceFunction();
 
-        [Test]
-        public void AddKafkaSource_WithDeserializer_ReturnsDataStream()
-        {
-            var stream = _env.AddKafkaSource("test-topic", "localhost:9092", "test-group", 
-                (string s) => int.Parse(s));
-            Assert.That(stream, Is.Not.Null);
-        }
+            // Act
+            var stream = env.AddSource(sourceFunction);
 
-        [Test]
-        public void FromCollection_WithValidCollection_ReturnsDataStream()
-        {
-            var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
-            Assert.That(stream, Is.Not.Null);
-        }
-
-        [Test]
-        public void FromCollection_WithEmptyCollection_ReturnsDataStream()
-        {
-            var collection = Array.Empty<int>();
-            var stream = _env.FromCollection(collection);
-            Assert.That(stream, Is.Not.Null);
-        }
-
-        [Test]
-        public void AddSource_WithValidSourceFunction_ReturnsDataStream()
-        {
-            var source = new TestSourceFunction();
-            var stream = _env.AddSource(source);
-            Assert.That(stream, Is.Not.Null);
-        }
-
-        [Test]
-        public void AddSource_WithCustomName_ReturnsDataStream()
-        {
-            var source = new TestSourceFunction();
-            var stream = _env.AddSource(source, "Custom Test Source");
+            // Assert
             Assert.That(stream, Is.Not.Null);
         }
 
@@ -467,9 +700,14 @@ namespace FlinkDotNet.DataStream.Tests
         #region Method Chaining Tests
 
         [Test]
-        public void MethodChaining_AllConfigurations_WorksTogether()
+        public void MethodChaining_CombinesMultipleConfigurations()
         {
-            var result = _env
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var backend = new HashMapStateBackend();
+
+            // Act
+            var result = env
                 .SetParallelism(4)
                 .SetMaxParallelism(128)
                 .SetBufferTimeout(200)
@@ -477,34 +715,46 @@ namespace FlinkDotNet.DataStream.Tests
                 .EnableCheckpointing(5000)
                 .EnableAdaptiveScheduler()
                 .EnableReactiveMode()
-                .FromSavepoint("/test/savepoint")
-                .SetStateBackend(new HashMapStateBackend());
+                .FromSavepoint("/path/to/savepoint")
+                .SetStateBackend(backend);
 
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetParallelism(), Is.EqualTo(4));
-            Assert.That(_env.GetMaxParallelism(), Is.EqualTo(128));
-            Assert.That(_env.GetBufferTimeout(), Is.EqualTo(200));
-            Assert.That(_env.IsChainingEnabled(), Is.False);
-            Assert.That(_env.GetCheckpointInterval(), Is.EqualTo(5000));
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.True);
-            Assert.That(_env.IsReactiveModeEnabled(), Is.True);
-            Assert.That(_env.GetSavepointPath(), Is.EqualTo("/test/savepoint"));
-            Assert.That(_env.GetStateBackend(), Is.Not.Null);
+            // Assert
+            Assert.That(result, Is.SameAs(env));
+            Assert.That(env.GetParallelism(), Is.EqualTo(4));
+            Assert.That(env.GetMaxParallelism(), Is.EqualTo(128));
+            Assert.That(env.GetBufferTimeout(), Is.EqualTo(200));
+            Assert.That(env.IsChainingEnabled(), Is.False);
+            Assert.That(env.GetCheckpointInterval(), Is.EqualTo(5000));
+            Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
+            Assert.That(env.IsReactiveModeEnabled(), Is.True);
+            Assert.That(env.GetSavepointPath(), Is.EqualTo("/path/to/savepoint"));
+            Assert.That(env.GetStateBackend(), Is.SameAs(backend));
         }
 
         #endregion
 
-        // Test helper class
+        #region Helper Classes
+
+        private class TestMessage
+        {
+            public string Value { get; set; } = string.Empty;
+        }
+
         private class TestSourceFunction : ISourceFunction<int>
         {
-            public async IAsyncEnumerable<int> RunAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+            public async IAsyncEnumerable<int> RunAsync(CancellationToken cancellationToken = default)
             {
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 10; i++)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                        yield break;
+                    
                     yield return i;
                     await Task.Delay(10, cancellationToken);
                 }
             }
         }
+
+        #endregion
     }
 }

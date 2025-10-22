@@ -1,400 +1,627 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using Moq;
+using Moq.Protected;
+using NUnit.Framework;
 using FlinkDotNet.DataStream;
 using Flink.JobBuilder.Models;
-using NUnit.Framework;
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace FlinkDotNet.DataStream.Tests
 {
     [TestFixture]
     public class JobClientTests
     {
-        [Test]
-        public void Constructor_WithJobName_CreatesJobClient()
+        private Mock<HttpMessageHandler> _mockHttpHandler = null!;
+        private HttpClient _mockHttpClient = null!;
+
+        [SetUp]
+        public void Setup()
         {
-            var client = new JobClient("Test Job");
+            _mockHttpHandler = new Mock<HttpMessageHandler>();
+            _mockHttpClient = new HttpClient(_mockHttpHandler.Object)
+            {
+                BaseAddress = new Uri("http://test-flink:8081")
+            };
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _mockHttpClient?.Dispose();
+        }
+
+        #region Constructor Tests
+
+        [Test]
+        public void Constructor_WithDefaultParameters_CreatesClient()
+        {
+            // Act
+            using var client = new JobClient("test-job");
+
+            // Assert
             Assert.That(client, Is.Not.Null);
-            Assert.That(client.JobName, Is.EqualTo("Test Job"));
+            Assert.That(client.JobName, Is.EqualTo("test-job"));
         }
 
         [Test]
-        public void Constructor_WithCustomTimeout_CreatesJobClient()
+        public void Constructor_WithCustomTimeout_SetsTimeout()
         {
-            var timeout = TimeSpan.FromSeconds(30);
-            var client = new JobClient("Test Job", timeout);
+            // Arrange
+            var timeout = TimeSpan.FromSeconds(10);
+
+            // Act
+            using var client = new JobClient("test-job", timeout);
+
+            // Assert
             Assert.That(client, Is.Not.Null);
+            Assert.That(client.JobName, Is.EqualTo("test-job"));
         }
 
         [Test]
-        public void Constructor_WithGatewayConfig_CreatesJobClient()
+        public void Constructor_WithEnvironmentVariables_UsesEnvVars()
         {
+            // Arrange
+            Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
+            Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9090");
+            Environment.SetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS", "30");
+
+            try
+            {
+                // Act
+                using var client = new JobClient("test-job");
+
+                // Assert
+                Assert.That(client, Is.Not.Null);
+            }
+            finally
+            {
+                // Cleanup
+                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
+                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
+                Environment.SetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS", null);
+            }
+        }
+
+        [Test]
+        public void Constructor_WithGatewayConfig_UsesConfig()
+        {
+            // Arrange
             var config = new FlinkJobGatewayConfiguration
             {
-                HttpTimeout = TimeSpan.FromSeconds(10)
+                HttpTimeout = TimeSpan.FromSeconds(5),
+                MaxRetries = 2,
+                RetryDelay = TimeSpan.FromSeconds(1)
             };
-            var client = new JobClient("Test Job", gatewayConfig: config);
+
+            // Act
+            using var client = new JobClient("test-job", gatewayConfig: config);
+
+            // Assert
             Assert.That(client, Is.Not.Null);
         }
 
-        [Test]
-        public void JobId_CanSetAndGet()
-        {
-            var client = new JobClient("Test Job");
-            var jobId = Guid.NewGuid().ToString();
-            client.JobId = jobId;
-            Assert.That(client.JobId, Is.EqualTo(jobId));
-        }
+        #endregion
+
+        #region GetJobId Tests
 
         [Test]
         public void GetJobId_ReturnsJobId()
         {
-            var client = new JobClient("Test Job");
-            var jobId = "test-job-123";
-            client.JobId = jobId;
-            Assert.That(client.GetJobId(), Is.EqualTo(jobId));
-        }
-
-        [Test]
-        public void JobName_CanSetAndGet()
-        {
-            var client = new JobClient("Initial Job");
-            client.JobName = "Updated Job";
-            Assert.That(client.JobName, Is.EqualTo("Updated Job"));
-        }
-
-        [Test]
-        public void Dispose_DoesNotThrow()
-        {
-            var client = new JobClient("Test Job");
-            Assert.DoesNotThrow(() => client.Dispose());
-        }
-
-        [Test]
-        public void Dispose_CanBeCalledMultipleTimes()
-        {
-            var client = new JobClient("Test Job");
-            client.Dispose();
-            Assert.DoesNotThrow(() => client.Dispose());
-        }
-
-        [Test]
-        public void Constructor_UsesEnvironmentVariables()
-        {
-            // This test verifies that the constructor can handle environment variables
-            // Even if they're not set, it should use defaults
-            var client = new JobClient("Test Job");
-            Assert.That(client, Is.Not.Null);
-        }
-    }
-
-    [TestFixture]
-    public class JobExecutionResultTests
-    {
-        [Test]
-        public void Constructor_InitializesProperties()
-        {
-            var result = new JobExecutionResult();
-            Assert.That(result, Is.Not.Null);
-        }
-
-        [Test]
-        public void JobId_CanSetAndGet()
-        {
-            var result = new JobExecutionResult();
-            result.JobId = "test-job-123";
-            Assert.That(result.JobId, Is.EqualTo("test-job-123"));
-        }
-
-        [Test]
-        public void JobId_DefaultIsEmptyString()
-        {
-            var result = new JobExecutionResult();
-            Assert.That(result.JobId, Is.EqualTo(string.Empty));
-        }
-
-        [Test]
-        public void JobName_CanSetAndGet()
-        {
-            var result = new JobExecutionResult();
-            result.JobName = "Test Job";
-            Assert.That(result.JobName, Is.EqualTo("Test Job"));
-        }
-
-        [Test]
-        public void JobName_DefaultIsEmptyString()
-        {
-            var result = new JobExecutionResult();
-            Assert.That(result.JobName, Is.EqualTo(string.Empty));
-        }
-
-        [Test]
-        public void Success_CanSetAndGet()
-        {
-            var result = new JobExecutionResult();
-            result.Success = true;
-            Assert.That(result.Success, Is.True);
-        }
-
-        [Test]
-        public void Success_DefaultIsFalse()
-        {
-            var result = new JobExecutionResult();
-            Assert.That(result.Success, Is.False);
-        }
-
-        [Test]
-        public void StartTime_CanSetAndGet()
-        {
-            var result = new JobExecutionResult();
-            var startTime = DateTime.UtcNow;
-            result.StartTime = startTime;
-            Assert.That(result.StartTime, Is.EqualTo(startTime));
-        }
-
-        [Test]
-        public void EndTime_CanSetAndGet()
-        {
-            var result = new JobExecutionResult();
-            var endTime = DateTime.UtcNow;
-            result.EndTime = endTime;
-            Assert.That(result.EndTime, Is.EqualTo(endTime));
-        }
-
-        [Test]
-        public void Error_CanSetAndGet()
-        {
-            var result = new JobExecutionResult();
-            result.Error = "Test error message";
-            Assert.That(result.Error, Is.EqualTo("Test error message"));
-        }
-
-        [Test]
-        public void Error_CanBeNull()
-        {
-            var result = new JobExecutionResult();
-            result.Error = null;
-            Assert.That(result.Error, Is.Null);
-        }
-
-        [Test]
-        public void AllProperties_CanBeSetTogether()
-        {
-            var result = new JobExecutionResult
+            // Arrange
+            using var client = new JobClient("test-job")
             {
-                JobId = "job-123",
-                JobName = "Test Job",
-                Success = true,
-                StartTime = DateTime.UtcNow.AddMinutes(-5),
-                EndTime = DateTime.UtcNow,
-                Error = null
+                JobId = "test-job-id-123"
             };
 
-            Assert.That(result.JobId, Is.EqualTo("job-123"));
-            Assert.That(result.JobName, Is.EqualTo("Test Job"));
-            Assert.That(result.Success, Is.True);
-            Assert.That(result.Error, Is.Null);
-        }
-    }
+            // Act
+            var jobId = client.GetJobId();
 
-    [TestFixture]
-    public class JobStatusTests
-    {
-        [Test]
-        public void Constructor_InitializesProperties()
-        {
-            var status = new JobStatus();
-            Assert.That(status, Is.Not.Null);
+            // Assert
+            Assert.That(jobId, Is.EqualTo("test-job-id-123"));
         }
 
         [Test]
-        public void JobId_CanSetAndGet()
+        public void GetJobId_WithEmptyJobId_ReturnsEmptyString()
         {
-            var status = new JobStatus();
-            status.JobId = "test-job-123";
-            Assert.That(status.JobId, Is.EqualTo("test-job-123"));
+            // Arrange
+            using var client = new JobClient("test-job");
+
+            // Act
+            var jobId = client.GetJobId();
+
+            // Assert
+            Assert.That(jobId, Is.Empty);
         }
 
-        [Test]
-        public void JobName_CanSetAndGet()
-        {
-            var status = new JobStatus();
-            status.JobName = "Test Job";
-            Assert.That(status.JobName, Is.EqualTo("Test Job"));
-        }
+        #endregion
+
+        #region TriggerSavepointAsync Tests with HTTP Mocking
 
         [Test]
-        public void State_CanSetAndGet()
+        public async Task TriggerSavepointAsync_WithSuccessResponse_ReturnsSavepointResult()
         {
-            var status = new JobStatus();
-            status.State = "RUNNING";
-            Assert.That(status.State, Is.EqualTo("RUNNING"));
-        }
+            // Arrange
+            var jobId = "test-job-id";
+            var savepointPath = "/test/savepoint/path";
+            var triggerId = "trigger-123";
 
-        [Test]
-        public void Parallelism_CanSetAndGet()
-        {
-            var status = new JobStatus();
-            status.Parallelism = 4;
-            Assert.That(status.Parallelism, Is.EqualTo(4));
-        }
+            var responseJson = JsonSerializer.Serialize(new { requestId = triggerId });
+            var responseContent = new StringContent(responseJson, Encoding.UTF8, "application/json");
 
-        [Test]
-        public void MaxParallelism_CanSetAndGet()
-        {
-            var status = new JobStatus();
-            status.MaxParallelism = 128;
-            Assert.That(status.MaxParallelism, Is.EqualTo(128));
-        }
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == HttpMethod.Post &&
+                        req.RequestUri!.ToString().Contains($"/v1/jobs/{jobId}/savepoints")),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = responseContent
+                });
 
-        [Test]
-        public void StartTime_CanSetAndGet()
-        {
-            var status = new JobStatus();
-            var startTime = DateTime.UtcNow;
-            status.StartTime = startTime;
-            Assert.That(status.StartTime, Is.EqualTo(startTime));
-        }
+            using var client = CreateTestJobClient(jobId);
 
-        [Test]
-        public void EndTime_CanSetAndGet()
-        {
-            var status = new JobStatus();
-            var endTime = DateTime.UtcNow;
-            status.EndTime = endTime;
-            Assert.That(status.EndTime, Is.EqualTo(endTime));
-        }
+            // Act
+            var result = await client.TriggerSavepointAsync(savepointPath);
 
-        [Test]
-        public void Error_CanSetAndGet()
-        {
-            var status = new JobStatus();
-            status.Error = "Test error";
-            Assert.That(status.Error, Is.EqualTo("Test error"));
-        }
-
-        [Test]
-        public void AllProperties_DefaultValues()
-        {
-            var status = new JobStatus();
-            Assert.That(status.JobId, Is.EqualTo(string.Empty));
-            Assert.That(status.JobName, Is.EqualTo(string.Empty));
-            Assert.That(status.State, Is.EqualTo(string.Empty));
-            Assert.That(status.Parallelism, Is.EqualTo(0));
-            Assert.That(status.MaxParallelism, Is.EqualTo(0));
-        }
-    }
-
-    [TestFixture]
-    public class SavepointResultTests
-    {
-        [Test]
-        public void Constructor_InitializesProperties()
-        {
-            var result = new SavepointResult();
+            // Assert
             Assert.That(result, Is.Not.Null);
-        }
-
-        [Test]
-        public void SavepointPath_CanSetAndGet()
-        {
-            var result = new SavepointResult();
-            result.SavepointPath = "/path/to/savepoint";
-            Assert.That(result.SavepointPath, Is.EqualTo("/path/to/savepoint"));
-        }
-
-        [Test]
-        public void Success_CanSetAndGet()
-        {
-            var result = new SavepointResult();
-            result.Success = true;
             Assert.That(result.Success, Is.True);
         }
 
         [Test]
-        public void TriggerId_CanSetAndGet()
+        public async Task TriggerSavepointAsync_WithNullPath_SendsNullTargetDirectory()
         {
-            var result = new SavepointResult();
-            result.TriggerId = "trigger-123";
-            Assert.That(result.TriggerId, Is.EqualTo("trigger-123"));
+            // Arrange
+            var jobId = "test-job-id";
+            
+            var responseJson = JsonSerializer.Serialize(new { requestId = "trigger-123" });
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.TriggerSavepointAsync(null);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.True);
         }
 
         [Test]
-        public void Error_CanSetAndGet()
+        public async Task TriggerSavepointAsync_WithErrorResponse_ReturnsFailure()
         {
-            var result = new SavepointResult();
-            result.Error = "Test error";
-            Assert.That(result.Error, Is.EqualTo("Test error"));
-        }
+            // Arrange
+            var jobId = "test-job-id";
+            var errorMessage = "Savepoint trigger failed";
 
-        [Test]
-        public void AllProperties_DefaultValues()
-        {
-            var result = new SavepointResult();
-            Assert.That(result.SavepointPath, Is.EqualTo(string.Empty));
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    Content = new StringContent(errorMessage, Encoding.UTF8, "text/plain")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.TriggerSavepointAsync("/test/path");
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
             Assert.That(result.Success, Is.False);
-            Assert.That(result.TriggerId, Is.EqualTo(string.Empty));
+            Assert.That(result.Error, Is.Not.Null);
         }
-    }
 
-    [TestFixture]
-    public class StopWithSavepointResultTests
-    {
         [Test]
-        public void Constructor_InitializesProperties()
+        public async Task TriggerSavepointAsync_WithMalformedJson_HandlesGracefully()
         {
-            var result = new StopWithSavepointResult();
+            // Arrange
+            var jobId = "test-job-id";
+            var malformedJson = "{ invalid json }";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(malformedJson, Encoding.UTF8, "application/json")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.TriggerSavepointAsync("/test/path");
+
+            // Assert
             Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.TriggerId, Is.Empty); // Should be empty due to JSON parse failure
         }
 
         [Test]
-        public void SavepointPath_CanSetAndGet()
+        public void TriggerSavepointAsync_WithCancellationToken_PropagatesToken()
         {
-            var result = new StopWithSavepointResult();
-            result.SavepointPath = "/path/to/savepoint";
-            Assert.That(result.SavepointPath, Is.EqualTo("/path/to/savepoint"));
+            // Arrange
+            var jobId = "test-job-id";
+            using var cts = new System.Threading.CancellationTokenSource();
+            cts.Cancel(); // Cancel immediately
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ThrowsAsync(new TaskCanceledException());
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act & Assert
+            Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                await client.TriggerSavepointAsync("/test/path", cts.Token));
         }
 
+        #endregion
+
+        #region CancelWithSavepointAsync Tests with HTTP Mocking
+
         [Test]
-        public void Success_CanSetAndGet()
+        public async Task CancelWithSavepointAsync_WithSuccessResponse_ReturnsSavepointResult()
         {
-            var result = new StopWithSavepointResult();
-            result.Success = true;
+            // Arrange
+            var jobId = "test-job-id";
+            var savepointPath = "/test/savepoint/path";
+            var triggerId = "trigger-456";
+
+            var responseJson = JsonSerializer.Serialize(new { requestId = triggerId });
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == HttpMethod.Post &&
+                        req.RequestUri!.ToString().Contains($"/v1/jobs/{jobId}/savepoints")),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.CancelWithSavepointAsync(savepointPath);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
             Assert.That(result.Success, Is.True);
         }
 
         [Test]
-        public void TriggerId_CanSetAndGet()
+        public async Task CancelWithSavepointAsync_WithErrorResponse_ReturnsFailure()
         {
-            var result = new StopWithSavepointResult();
-            result.TriggerId = "trigger-123";
-            Assert.That(result.TriggerId, Is.EqualTo("trigger-123"));
+            // Arrange
+            var jobId = "test-job-id";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Content = new StringContent("Job not found", Encoding.UTF8, "text/plain")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.CancelWithSavepointAsync("/test/path");
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
         }
 
+        #endregion
+
+        #region StopWithSavepointAsync Tests with HTTP Mocking
+
         [Test]
-        public void Drained_CanSetAndGet()
+        public async Task StopWithSavepointAsync_WithSuccessResponse_ReturnsResult()
         {
-            var result = new StopWithSavepointResult();
-            result.Drained = true;
+            // Arrange
+            var jobId = "test-job-id";
+            var savepointPath = "/test/savepoint/path";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == HttpMethod.Post &&
+                        req.RequestUri!.ToString().Contains($"/v1/jobs/{jobId}/stop")),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.StopWithSavepointAsync(savepointPath, drain: true);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.True);
             Assert.That(result.Drained, Is.True);
+            Assert.That(result.SavepointPath, Is.EqualTo(savepointPath));
         }
 
         [Test]
-        public void Error_CanSetAndGet()
+        public async Task StopWithSavepointAsync_WithNoDrain_SetsDrainedFalse()
         {
-            var result = new StopWithSavepointResult();
-            result.Error = "Test error";
-            Assert.That(result.Error, Is.EqualTo("Test error"));
-        }
+            // Arrange
+            var jobId = "test-job-id";
 
-        [Test]
-        public void AllProperties_DefaultValues()
-        {
-            var result = new StopWithSavepointResult();
-            Assert.That(result.SavepointPath, Is.EqualTo(string.Empty));
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.TriggerId, Is.EqualTo(string.Empty));
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.StopWithSavepointAsync(null, drain: false);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
             Assert.That(result.Drained, Is.False);
         }
+
+        [Test]
+        public async Task StopWithSavepointAsync_WithErrorResponse_ReturnsFailure()
+        {
+            // Arrange
+            var jobId = "test-job-id";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Content = new StringContent("Invalid request", Encoding.UTF8, "text/plain")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.StopWithSavepointAsync("/test/path");
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.Not.Null);
+        }
+
+        #endregion
+
+        #region Dispose Tests
+
+        [Test]
+        public void Dispose_CalledOnce_DisposesResources()
+        {
+            // Arrange
+            var client = new JobClient("test-job", TimeSpan.FromSeconds(1));
+
+            // Act
+            client.Dispose();
+
+            // Assert - Should not throw
+            Assert.Pass("Dispose completed without exceptions");
+        }
+
+        [Test]
+        public void Dispose_CalledMultipleTimes_HandlesGracefully()
+        {
+            // Arrange
+            var client = new JobClient("test-job", TimeSpan.FromSeconds(1));
+
+            // Act
+            client.Dispose();
+            client.Dispose(); // Second dispose should be safe
+
+            // Assert
+            Assert.Pass("Multiple dispose calls handled gracefully");
+        }
+
+        [Test]
+        public void Dispose_AfterOperations_Completes()
+        {
+            // Arrange
+            var client = new JobClient("test-job", TimeSpan.FromSeconds(1))
+            {
+                JobId = "test-id"
+            };
+
+            // Act
+            var jobId = client.GetJobId();
+            client.Dispose();
+
+            // Assert
+            Assert.That(jobId, Is.EqualTo("test-id"));
+        }
+
+        #endregion
+
+        #region IJobClient Interface Tests
+
+        [Test]
+        public void JobClient_ImplementsIJobClient()
+        {
+            // Arrange & Act
+            using var client = new JobClient("test-job");
+
+            // Assert
+            Assert.That(client, Is.InstanceOf<IJobClient>());
+        }
+
+        [Test]
+        public void JobClient_IJobClientGetJobId_MatchesImplementation()
+        {
+            // Arrange
+            using var client = new JobClient("test-job") { JobId = "abc-123" };
+            IJobClient interfaceClient = client;
+
+            // Act
+            var directJobId = client.GetJobId();
+            var interfaceJobId = interfaceClient.GetJobId();
+
+            // Assert
+            Assert.That(directJobId, Is.EqualTo(interfaceJobId));
+        }
+
+        #endregion
+
+        #region Edge Cases and Error Handling
+
+        [Test]
+        public void TriggerSavepointAsync_WithHttpRequestException_Throws()
+        {
+            // Arrange
+            var jobId = "test-job-id";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ThrowsAsync(new HttpRequestException("Network error"));
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act & Assert
+            Assert.ThrowsAsync<HttpRequestException>(async () =>
+                await client.TriggerSavepointAsync("/test/path"));
+        }
+
+        [Test]
+        public void CancelWithSavepointAsync_WithTimeout_Throws()
+        {
+            // Arrange
+            var jobId = "test-job-id";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ThrowsAsync(new TaskCanceledException("Request timeout"));
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act & Assert
+            Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                await client.CancelWithSavepointAsync("/test/path"));
+        }
+
+        [Test]
+        public async Task StopWithSavepointAsync_WithEmptyResponse_HandlesGracefully()
+        {
+            // Arrange
+            var jobId = "test-job-id";
+
+            _mockHttpHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("", Encoding.UTF8, "application/json")
+                });
+
+            using var client = CreateTestJobClient(jobId);
+
+            // Act
+            var result = await client.StopWithSavepointAsync("/test/path");
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Success, Is.True);
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private JobClient CreateTestJobClient(string jobId)
+        {
+            // Use reflection to inject the mocked HTTP client
+            var client = new JobClient("test-job", TimeSpan.FromSeconds(1))
+            {
+                JobId = jobId
+            };
+
+            // Set the private _flinkHttp field using reflection
+            var httpField = typeof(JobClient).GetField("_flinkHttp", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (httpField != null)
+            {
+                httpField.SetValue(client, _mockHttpClient);
+            }
+
+            return client;
+        }
+
+        #endregion
     }
 }

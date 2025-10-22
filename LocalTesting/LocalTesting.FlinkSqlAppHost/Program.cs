@@ -330,29 +330,18 @@ if (isLearningCourseMode)
 
 sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
-// Flink.JobGateway - Add Flink Job Gateway
+// Flink.JobGateway - Add Flink Job Gateway as .NET project
+// CRITICAL: Using .AddProject() for proper Aspire service discovery and endpoint management
+// JobGateway runs as a host process (not containerized) for reliable endpoint discovery
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
-var gatewayBuilder = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
+var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: 8080, name: "gateway-http")
-    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080") // Overwrite default random port of ASP.NET Core
-    .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)  // Host path to connectors
-    .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)  // Host path to JAR
-    .WithEnvironment("LOG_FILE_PATH", testLogsDir)  // Host path to logs
-    .WithReference(jobManager.GetEndpoint("jm-http"))  // Reference JobManager endpoint for service discovery
-    .WithReference(sqlGateway.GetEndpoint("sg-http"));  // Reference SQL Gateway endpoint for service discovery
-
-// Enable Prometheus metrics for JobGateway only in LEARNINGCOURSE mode
-// Configuration is injected via environment variables (ASP.NET Core configuration binding)
-// This follows the same pattern as Flink's FLINK_PROPERTIES approach
-if (isLearningCourseMode)
-{
-    gatewayBuilder = gatewayBuilder
-        .WithEnvironment("Metrics__Prometheus__Enabled", "true")
-        .WithEnvironment("Metrics__Prometheus__Path", "/metrics");
-    Console.WriteLine("   📊 JobGateway Prometheus metrics enabled at /metrics");
-}
-
-var gateway = gatewayBuilder;
+    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080")
+    .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
+    .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
+    .WithEnvironment("LOG_FILE_PATH", testLogsDir)
+    .WithReference(jobManager.GetEndpoint("jm-http"))
+    .WithReference(sqlGateway.GetEndpoint("sg-http"));
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
@@ -406,18 +395,15 @@ if (isLearningCourse)
     
     // Observability Stack - Prometheus for metrics collection
     // Required for monitoring and performance analysis exercises
-    // CRITICAL: Gateway runs as .NET project on host, accessible via host.docker.internal
-    // Gateway port must be manually updated in prometheus.yml after checking Aspire dashboard
     var prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
-    
-    Console.WriteLine($"   📊 Prometheus config: prometheus.yml");
-    Console.WriteLine($"   ⚠️  Gateway port (17105) may need updating - check Aspire dashboard for actual port");
     
     // CRITICAL: Prometheus needs kafka-exporter dependency for Docker network DNS resolution
     // Using WaitFor() establishes network connectivity and ensures containers can resolve each other
     var prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus", "latest")
         .WithHttpEndpoint(port: Ports.PrometheusHostPort, targetPort: 9090, name: "prometheus-http")
         .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
+    // NOTE: Using 172.17.0.1 (Docker bridge gateway) to reach host from container
+    // This is the most reliable cross-platform solution for standard Docker
     
     // Add kafka-exporter dependency if it was deployed
     // WaitFor() ensures Prometheus and kafka-exporter are on the same Docker network for DNS resolution
@@ -426,40 +412,15 @@ if (isLearningCourse)
         prometheusBuilder = prometheusBuilder.WaitFor(kafkaExporter);
         Console.WriteLine("   📊 Prometheus configured with kafka-exporter network dependency");
     }
-    // Note: Gateway is accessed via host.docker.internal, not service name, so no dependency needed
     
     // Add explicit port mapping for Podman/Docker compatibility
     if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
     {
         prometheusBuilder = prometheusBuilder
             .WithContainerRuntimeArgs("--publish", $"{Ports.PrometheusHostPort}:9090");
-        
-        // CRITICAL: Fix Podman host.containers.internal resolution
-        // In Podman on Windows, host.containers.internal resolves to Podman VM, not physical host
-        // Need to map it to the VM's gateway IP so containers can reach host services (JobGateway)
-        var gatewayIP = GetPodmanGatewayIP();
-        if (!string.IsNullOrEmpty(gatewayIP))
-        {
-            prometheusBuilder = prometheusBuilder
-                .WithContainerRuntimeArgs("--add-host", $"host.containers.internal:{gatewayIP}");
-            Console.WriteLine($"   🔧 Podman: Mapping host.containers.internal to gateway IP {gatewayIP}");
-            Console.WriteLine($"   🔧 This allows Prometheus to reach JobGateway on host");
-        }
-        else
-        {
-            Console.WriteLine($"   ⚠️  Could not detect Podman gateway IP - host.containers.internal may not work");
-            Console.WriteLine($"   ⚠️  JobGateway metrics may be unavailable in Prometheus");
-        }
     }
     
     var prometheus = prometheusBuilder;
-    
-    // Note: Prometheus uses static_configs in prometheus.yml for scraping
-    // Container DNS resolution works automatically within Aspire's shared Docker network
-    
-    // Note: Prometheus will scrape Flink metrics using container DNS names (flink-jobmanager, flink-taskmanager, etc.)
-    // Aspire automatically creates a shared Docker network where containers can resolve each other by name
-    // Gateway is scraped via host.docker.internal since it runs as a .NET project on the host
     
     Console.WriteLine($"✅ Prometheus deployed on port {Ports.PrometheusHostPort} for metrics collection");
     
@@ -541,6 +502,9 @@ static void LogConfiguredPorts()
 static void SetupEnvironment()
 {
     Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
+    // CRITICAL: Set ASPNETCORE_URLS for Aspire Dashboard (required by Aspire SDK)
+    // This will be inherited by child processes, but we override it per-project using WithEnvironment()
+    // JobGateway explicitly sets ASPNETCORE_URLS=http://0.0.0.0:8080 via WithEnvironment()
     Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:15888");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:16686");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:16687");
@@ -758,65 +722,4 @@ static void SetPodmanDockerHost()
     }
 }
 
-// Get the gateway IP for the Podman VM on Windows.
-// This is required to allow containers to reach host services via host.containers.internal.
-// In Podman, host.containers.internal resolves to the Podman VM, not the physical host.
-// The gateway IP is the address the Podman VM uses to reach the physical host.
-// Returns: Gateway IP address (e.g., "172.20.112.1") or null if not found
-static string? GetPodmanGatewayIP()
-{
-    try
-    {
-        // Query the default route inside the Podman VM to get gateway IP
-        // Command: wsl -d podman-machine-default -- ip -4 route show default
-        // Expected output: default via 172.20.112.1 dev eth0 ...
-        var psi = new ProcessStartInfo
-        {
-            FileName = "wsl",
-            Arguments = "-d podman-machine-default -- ip -4 route show default",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(psi);
-        if (process != null)
-        {
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            var error = process.StandardError.ReadToEnd().Trim();
-            process.WaitForExit(5000);
-            
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-            {
-                // Parse output: "default via 172.20.112.1 dev eth0 ..."
-                // Extract the IP after "via"
-                var parts = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                var viaIndex = Array.IndexOf(parts, "via");
-                
-                if (viaIndex >= 0 && viaIndex + 1 < parts.Length)
-                {
-                    var gatewayIP = parts[viaIndex + 1];
-                    
-                    // Validate IP format (simple check)
-                    if (System.Net.IPAddress.TryParse(gatewayIP, out _))
-                    {
-                        return gatewayIP;
-                    }
-                }
-            }
-            else if (!string.IsNullOrWhiteSpace(error))
-            {
-                Console.WriteLine($"   ⚠️ WSL command error: {error}");
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"   ⚠️ Could not get Podman gateway IP: {ex.Message}");
-        Console.WriteLine($"   ℹ️ Manual workaround: Run 'wsl -d podman-machine-default -- ip -4 route show default'");
-    }
-    
-    return null;
-}
 
