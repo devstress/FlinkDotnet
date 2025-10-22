@@ -23,13 +23,11 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 - Commits the version changes to the repository
 - Creates a git tag (e.g., `v2.0.0`)
 - Builds and tests the solution
-- Creates NuGet packages for:
-  - FlinkDotNet.Common
-  - FlinkDotNet.DataStream
-  - Flink.JobBuilder
+- Creates NuGet package:
+  - FlinkDotnet (unified package with DataStream API, Common components, and JobBuilder)
 - Builds Docker image for JobGateway with the new version tag
 - Creates a GitHub release with all artifacts
-- Publishes NuGet packages to NuGet.org
+- Publishes NuGet package to NuGet.org
 - Publishes Docker image to Docker Hub (with version tag and `latest`)
 
 **How to trigger**:
@@ -134,9 +132,7 @@ The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which 
 Each release includes:
 
 ### NuGet Packages
-- `FlinkDotNet.Common.{version}.nupkg` - Core common components
-- `FlinkDotNet.DataStream.{version}.nupkg` - DataStream API
-- `Flink.JobBuilder.{version}.nupkg` - Job builder with JSON IR
+- `FlinkDotnet.{version}.nupkg` - Complete unified package with DataStream API, Kafka connectors, common components, and job builder
 
 ### Docker Image
 - `jobgateway-{version}.tar.gz` - Docker image tarball for JobGateway
@@ -205,8 +201,7 @@ If the build fails:
 
 ### NuGet Packages
 ```bash
-dotnet add package FlinkDotNet.Common --version 1.0.0
-dotnet add package FlinkDotNet.DataStream --version 1.0.0
+dotnet add package FlinkDotnet --version 1.0.0
 ```
 
 ### Docker Image
