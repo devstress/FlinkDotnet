@@ -184,16 +184,12 @@ jobs:
     name: Test Release Packages (Pre-Release Validation)
     needs: [calculate-version, update-version, build-and-package, build-docker-image]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-
-      - name: Set up .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -205,6 +201,17 @@ jobs:
         uses: stCarolas/setup-maven@v4
         with:
           maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
 
       - name: Download NuGet packages
         uses: actions/download-artifact@v4
@@ -229,12 +236,18 @@ jobs:
           gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
           echo "Loaded Docker image for version $VERSION"
 
-      - name: Run Aspire integration tests (Pre-Release)
+      - name: Run Pre-Release Validation Tests
+        timeout-minutes: 12
         run: |
-          cd ReleasePackagesTesting
-          echo "Running pre-release validation tests..."
-          dotnet test --configuration Release --verbosity normal
-          echo "✅ Pre-release validation tests passed!"
+          echo "=== Running Pre-Release Validation Tests ==="
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PreReleaseTestResults
+          path: TestResults/
+        if: always()
 
   create-release:
     name: Create GitHub Release
@@ -369,16 +382,12 @@ jobs:
     name: Validate Published Packages (Post-Release Validation)
     needs: [calculate-version, publish-packages]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-
-      - name: Set up .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -390,6 +399,17 @@ jobs:
         uses: stCarolas/setup-maven@v4
         with:
           maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
 
       - name: Wait for NuGet.org indexing
         run: |
@@ -409,9 +429,15 @@ jobs:
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
           echo "✅ Docker image pulled from Docker Hub"
 
-      - name: Run Aspire integration tests (Post-Release)
+      - name: Run Post-Release Validation Tests
+        timeout-minutes: 12
         run: |
-          cd ReleasePackagesTesting.Published
-          echo "Running post-release validation tests with published packages..."
-          dotnet test --configuration Release --verbosity normal
-          echo "✅ Post-release validation tests passed!"
+          echo "=== Running Post-Release Validation Tests ==="
+          dotnet test ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PostReleaseTestResults
+          path: TestResults/
+        if: always()
