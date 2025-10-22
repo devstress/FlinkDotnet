@@ -8,7 +8,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 # Install Java and Maven for FlinkIRRunner build
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk maven && \
+    apt-get install --no-install-recommends -y openjdk-17-jdk maven && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -41,7 +41,7 @@ FROM base AS final
 # Install Java and Maven for on-demand JAR building capability
 # This must be done before switching to non-root user
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk maven && \
+    apt-get install --no-install-recommends -y openjdk-17-jdk maven && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
