@@ -431,4 +431,120 @@ public class ConfigurationTests
         Assert.That(config.GetBoolean("key3"), Is.True);
         Assert.That(config.GetLong("key4"), Is.EqualTo(9876543210L));
     }
+
+    [Test]
+    public void GetString_WithNullObjectValue_ReturnsDefaultValue()
+    {
+        // Arrange
+        var config = new Configuration(new Dictionary<string, object>
+        {
+            { "nullKey", null! }
+        });
+
+        // Act
+        var result = config.GetString("nullKey", "default");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("default"));
+    }
+
+    [Test]
+    public void GetString_WithNullObjectValueNoDefault_ReturnsEmptyString()
+    {
+        // Arrange
+        var config = new Configuration(new Dictionary<string, object>
+        {
+            { "nullKey", null! }
+        });
+
+        // Act
+        var result = config.GetString("nullKey");
+
+        // Assert
+        Assert.That(result, Is.EqualTo(string.Empty));
+    }
+
+    [Test]
+    public void GetInteger_UnparsableStringValue_ReturnsDefaultValue()
+    {
+        // Arrange
+        var config = new Configuration();
+        config.SetString("badInt", "not-a-number");
+
+        // Act
+        var result = config.GetInteger("badInt", 999);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(999));
+    }
+
+    [Test]
+    public void GetInteger_UnparsableStringValueNoDefault_ReturnsZero()
+    {
+        // Arrange
+        var config = new Configuration();
+        config.SetString("badInt", "not-a-number");
+
+        // Act
+        var result = config.GetInteger("badInt");
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void GetBoolean_UnparsableStringValue_ReturnsDefaultValue()
+    {
+        // Arrange
+        var config = new Configuration();
+        config.SetString("badBool", "not-a-boolean");
+
+        // Act
+        var result = config.GetBoolean("badBool", true);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void GetBoolean_UnparsableStringValueNoDefault_ReturnsFalse()
+    {
+        // Arrange
+        var config = new Configuration();
+        config.SetString("badBool", "not-a-boolean");
+
+        // Act
+        var result = config.GetBoolean("badBool");
+
+        // Assert
+        Assert.That(result, Is.False);
+    }
+
+    [Test]
+    public void GetLong_UnparsableStringValue_ReturnsDefaultValue()
+    {
+        // Arrange
+        var config = new Configuration();
+        config.SetString("badLong", "not-a-number");
+
+        // Act
+        var result = config.GetLong("badLong", 12345L);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(12345L));
+    }
+
+    [Test]
+    public void GetLong_UnparsableStringValueNoDefault_ReturnsZero()
+    {
+        // Arrange
+        var config = new Configuration();
+        config.SetString("badLong", "not-a-number");
+
+        // Act
+        var result = config.GetLong("badLong");
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0L));
+    }
 }
