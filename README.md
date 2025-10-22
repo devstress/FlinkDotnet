@@ -190,13 +190,9 @@ See [**Architecture & Use Cases**](docs/architecture-and-usecases.md) for detail
 
 ```
 FlinkDotNet/
-├── FlinkDotNet.DataStream/      # Apache Flink 2.1 compatible streaming API (REMOVED)
-├── FlinkDotNet/                 # Core FlinkDotNet DataStream API implementation
+├── FlinkDotNet.DataStream/      # Core FlinkDotnet unified package (DataStream API, Common, JobBuilder)
 ├── FlinkDotNet.JobGateway/      # Job submission service
-├── FlinkDotNet.Common/          # Shared utilities and models
-├── FlinkDotNet.Table/           # Table API support
-├── FlinkDotNet.Testing/         # Test infrastructure
-└── FlinkDotNet.Util/            # Utility functions
+└── Test Projects/               # Unit and integration tests
 
 LocalTesting/                     # Complete local dev environment
 ├── LocalTesting.FlinkSqlAppHost/    # .NET Aspire orchestration

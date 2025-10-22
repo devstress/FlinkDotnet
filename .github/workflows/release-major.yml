@@ -2,11 +2,6 @@ name: Release - Major Version
 
 on:
   workflow_dispatch:
-    inputs:
-      current_version:
-        description: 'Current version (e.g., 1.0.0)'
-        required: true
-        default: '1.0.0'
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -20,10 +15,29 @@ jobs:
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest version from tags
+        id: get_version
+        run: |
+          # Get the latest tag, or use 0.0.0 if no tags exist
+          LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            CURRENT="0.0.0"
+            echo "No previous releases found, starting from 0.0.0"
+          else
+            CURRENT="${LATEST_TAG#v}"
+            echo "Found latest release: $CURRENT"
+          fi
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+      
       - name: Bump major version
         id: bump
         run: |
-          CURRENT="${{ github.event.inputs.current_version }}"
+          CURRENT="${{ steps.get_version.outputs.current }}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           NEW_MAJOR=$((MAJOR + 1))
           NEW_VERSION="${NEW_MAJOR}.0.0"
@@ -47,16 +61,11 @@ jobs:
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           echo "Updating project files to version: $VERSION"
           
-          # Update FlinkDotNet.Common
-          sed -i "s|<PackageVersion>.*</PackageVersion>|<PackageVersion>$VERSION</PackageVersion>|g" \
-            FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
-          
-          # Update FlinkDotNet.DataStream
+          # Update FlinkDotnet (unified package)
           sed -i "s|<PackageVersion>.*</PackageVersion>|<PackageVersion>$VERSION</PackageVersion>|g" \
             FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
           
           echo "Updated project files:"
-          grep "PackageVersion" FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
           grep "PackageVersion" FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
 
       - name: Commit version updates
@@ -64,7 +73,6 @@ jobs:
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
           git add FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
           git commit -m "Bump version to $VERSION"
           git tag -a "v$VERSION" -m "Release version $VERSION"
@@ -112,22 +120,8 @@ jobs:
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           echo "Creating packages with version: $VERSION"
           
-          # Package FlinkDotNet.Common
-          dotnet pack FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj \
-            --configuration ${{ env.CONFIGURATION }} \
-            --no-build \
-            --output ./packages \
-            -p:PackageVersion=$VERSION
-          
-          # Package FlinkDotNet.DataStream
+          # Package FlinkDotnet (unified package)
           dotnet pack FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj \
-            --configuration ${{ env.CONFIGURATION }} \
-            --no-build \
-            --output ./packages \
-            -p:PackageVersion=$VERSION
-          
-          # Package Flink.JobBuilder
-          dotnet pack FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj \
             --configuration ${{ env.CONFIGURATION }} \
             --no-build \
             --output ./packages \
@@ -219,9 +213,7 @@ jobs:
           
           ### 📦 NuGet Packages
           
-          - **FlinkDotNet.Common** - Core common components
-          - **FlinkDotNet.DataStream** - DataStream API
-          - **Flink.JobBuilder** - Job builder with JSON IR generation
+          - **FlinkDotnet** - Complete unified package with DataStream API, Kafka connectors, and job submission
           
           ### 🐳 Docker Image
           
@@ -230,8 +222,7 @@ jobs:
           ### Installation
           
           \`\`\`bash
-          dotnet add package FlinkDotNet.Common --version $VERSION
-          dotnet add package FlinkDotNet.DataStream --version $VERSION
+          dotnet add package FlinkDotnet --version $VERSION
           \`\`\`
           
           ### Docker

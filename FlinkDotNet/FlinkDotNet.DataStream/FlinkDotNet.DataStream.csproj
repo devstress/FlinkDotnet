@@ -4,11 +4,11 @@
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <PackageId>FlinkDotNet.DataStream</PackageId>
+    <PackageId>FlinkDotnet</PackageId>
     <PackageVersion>1.0.0</PackageVersion>
     <Authors>FlinkDotnet Team</Authors>
-    <Description>.NET DataStream API for Apache Flink - Core streaming APIs, state management, and connectors matching PyFlink datastream module</Description>
-    <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;DataStream</PackageTags>
+    <Description>FlinkDotnet - Complete .NET SDK for Apache Flink 2.1. Build streaming jobs with C# fluent API, including DataStream API, Kafka connectors, state management, and job submission. All-in-one package for Apache Flink development in .NET.</Description>
+    <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;DataStream;Kafka;FlinkDotnet</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
   </PropertyGroup>
