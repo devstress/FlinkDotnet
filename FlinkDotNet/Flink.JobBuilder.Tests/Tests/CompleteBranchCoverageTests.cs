@@ -239,5 +239,107 @@ namespace Flink.JobBuilder.Tests.Tests
             Assert.That(result.IsValid, Is.False);
             Assert.That(result.Errors, Contains.Item("sink.database.connectionString is required"));
         }
+
+        [Test]
+        public void ValidateConsoleSink_ValidDefinition_Passes()
+        {
+            // Test ConsoleSinkDefinition (covers the missing sink case in switch)
+            var job = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Source = new KafkaSourceDefinition { Topic = "input" },
+                Sink = new ConsoleSinkDefinition { Format = "json" }
+            };
+
+            var result = JobDefinitionValidator.Validate(job);
+
+            // ConsoleSink doesn't have specific validation, so should be valid
+            Assert.That(result.IsValid, Is.True);
+        }
+
+        [Test]
+        public void ValidateHttpSink_ValidDefinition_Passes()
+        {
+            // Test HttpSinkDefinition to ensure switch case is covered
+            var job = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Source = new KafkaSourceDefinition { Topic = "input" },
+                Sink = new HttpSinkDefinition { Url = "http://example.com", TimeoutMs = 5000 }
+            };
+
+            var result = JobDefinitionValidator.Validate(job);
+
+            Assert.That(result.IsValid, Is.True);
+        }
+
+        [Test]
+        public void ValidateRedisSink_ValidDefinition_Passes()
+        {
+            // Test RedisSinkDefinition to ensure switch case is covered
+            var job = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Source = new KafkaSourceDefinition { Topic = "input" },
+                Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "SET" }
+            };
+
+            var result = JobDefinitionValidator.Validate(job);
+
+            Assert.That(result.IsValid, Is.True);
+        }
+
+        [Test]
+        public void ValidateHttpSource_ValidDefinition_Passes()
+        {
+            // Test HttpSourceDefinition to ensure switch case coverage
+            var job = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Source = new HttpSourceDefinition { Url = "http://example.com/api", IntervalSeconds = 60 },
+                Sink = new KafkaSinkDefinition { Topic = "output" }
+            };
+
+            var result = JobDefinitionValidator.Validate(job);
+
+            Assert.That(result.IsValid, Is.True);
+        }
+
+        [Test]
+        public void ValidateDatabaseSource_ValidDefinition_Passes()
+        {
+            // Test DatabaseSourceDefinition to ensure all source types are covered
+            var job = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Source = new DatabaseSourceDefinition 
+                { 
+                    ConnectionString = "Server=localhost;Database=test", 
+                    Query = "SELECT * FROM users",
+                    PollingIntervalSeconds = 60
+                },
+                Sink = new KafkaSinkDefinition { Topic = "output" }
+            };
+
+            var result = JobDefinitionValidator.Validate(job);
+
+            Assert.That(result.IsValid, Is.True);
+        }
+
+        [Test]
+        public void ValidateFileSource_ValidDefinition_Passes()
+        {
+            // Test FileSourceDefinition to ensure all source types are covered
+            var job = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Source = new FileSourceDefinition { Path = "/data/input.json", Format = "json" },
+                Sink = new KafkaSinkDefinition { Topic = "output" }
+            };
+
+            var result = JobDefinitionValidator.Validate(job);
+
+            Assert.That(result.IsValid, Is.True);
+        }
     }
 }
