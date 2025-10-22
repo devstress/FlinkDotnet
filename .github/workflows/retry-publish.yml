@@ -1,0 +1,113 @@
+name: Retry Publish (NuGet & Docker)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+      release_tag:
+        description: 'Release tag to fetch artifacts from (e.g., v1.0.0)'
+        required: true
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  CONFIGURATION: 'Release'
+  DOCKER_IMAGE_NAME: 'flinkdotnet/jobgateway'
+
+jobs:
+  publish-packages:
+    name: Retry Publish NuGet Packages and Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.inputs.release_tag }}"
+          VERSION="${{ github.event.inputs.version }}"
+          
+          echo "Downloading release assets from $TAG..."
+          
+          # Create directories
+          mkdir -p ./packages
+          mkdir -p ./docker
+          
+          # Download all .nupkg files from the release
+          gh release download "$TAG" --pattern "*.nupkg" --dir ./packages
+          
+          # Download Docker image tarball from the release
+          gh release download "$TAG" --pattern "jobgateway-*.tar.gz" --dir ./docker
+          
+          echo "Downloaded assets:"
+          ls -la ./packages/
+          ls -la ./docker/
+
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "❌ ERROR: NUGET_API_KEY not found in repository secrets."
+            echo "Please add NUGET_API_KEY to repository secrets to publish packages."
+            exit 1
+          else
+            echo "📦 Publishing packages to NuGet.org..."
+            dotnet nuget push "./packages/*.nupkg" \
+              --api-key $NUGET_API_KEY \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+            echo "✅ NuGet packages published successfully!"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Load and push Docker image
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          
+          echo "Loading Docker image..."
+          # Find and load the Docker image tarball
+          DOCKER_TAR=$(find ./docker -name "jobgateway-*.tar.gz" | head -n 1)
+          
+          if [ -z "$DOCKER_TAR" ]; then
+            echo "❌ ERROR: Docker image tarball not found in release assets"
+            exit 1
+          fi
+          
+          echo "Loading image from: $DOCKER_TAR"
+          gunzip -c "$DOCKER_TAR" | docker load
+          
+          echo "📦 Pushing Docker image to Docker Hub..."
+          # Push to Docker Hub
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
+          
+          echo "✅ Docker image published successfully!"
+
+      - name: Summary
+        run: |
+          echo "✅ Publishing completed successfully!"
+          echo ""
+          echo "Published:"
+          echo "  - NuGet packages version ${{ github.event.inputs.version }}"
+          echo "  - Docker image ${{ env.DOCKER_IMAGE_NAME }}:${{ github.event.inputs.version }}"
+          echo "  - Docker image ${{ env.DOCKER_IMAGE_NAME }}:latest"
