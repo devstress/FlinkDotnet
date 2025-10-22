@@ -104,7 +104,7 @@ namespace FlinkDotNet.Common
         {
             if (_configuration.TryGetValue(key, out var value))
             {
-                return value.ToString() ?? defaultValue ?? string.Empty;
+                return value?.ToString() ?? defaultValue ?? string.Empty;
             }
             return defaultValue ?? string.Empty;
         }
