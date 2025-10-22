@@ -14,10 +14,8 @@ public class ConfigurationBranchCoverageTests
     public void GetInteger_WithActualIntValue_ReturnsValue()
     {
         // Arrange - Store actual int type (not string)
-        var config = new Configuration(new Dictionary<string, object>
-        {
-            { "intKey", 42 }
-        });
+        var config = new Configuration();
+        config.SetInteger("intKey", 42);
 
         // Act
         var result = config.GetInteger("intKey");
@@ -30,16 +28,54 @@ public class ConfigurationBranchCoverageTests
     public void GetInteger_WithActualIntValueAndDefault_ReturnsValue()
     {
         // Arrange - Store actual int type (not string)
-        var config = new Configuration(new Dictionary<string, object>
-        {
-            { "intKey", 123 }
-        });
+        var config = new Configuration();
+        config.SetInteger("intKey", 123);
 
         // Act
         var result = config.GetInteger("intKey", 999);
 
         // Assert
         Assert.That(result, Is.EqualTo(123));
+    }
+
+    [Test]
+    public void GetInteger_WithStringValue_ParsesCorrectly()
+    {
+        // Arrange - Store string that can be parsed
+        var config = new Configuration();
+        config.SetString("strKey", "789");
+
+        // Act
+        var result = config.GetInteger("strKey", 999);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(789));
+    }
+
+    [Test]
+    public void GetInteger_WithMissingKey_ReturnsDefault()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetInteger("missingKey", 999);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(999));
+    }
+
+    [Test]
+    public void GetInteger_WithMissingKeyNoDefault_ReturnsZero()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetInteger("missingKey");
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
     }
 
     [Test]
@@ -65,11 +101,9 @@ public class ConfigurationBranchCoverageTests
     [Test]
     public void GetBoolean_WithActualBoolValue_ReturnsValue()
     {
-        // Arrange - Store actual bool type (not string)
-        var config = new Configuration(new Dictionary<string, object>
-        {
-            { "boolKey", true }
-        });
+        // Arrange - Store actual bool type using SetBoolean
+        var config = new Configuration();
+        config.SetBoolean("boolKey", true);
 
         // Act
         var result = config.GetBoolean("boolKey");
@@ -81,14 +115,52 @@ public class ConfigurationBranchCoverageTests
     [Test]
     public void GetBoolean_WithActualBoolValueAndDefault_ReturnsValue()
     {
-        // Arrange - Store actual bool type (not string)
-        var config = new Configuration(new Dictionary<string, object>
-        {
-            { "boolKey", false }
-        });
+        // Arrange - Store actual bool type using SetBoolean
+        var config = new Configuration();
+        config.SetBoolean("boolKey", false);
 
         // Act
         var result = config.GetBoolean("boolKey", true);
+
+        // Assert
+        Assert.That(result, Is.False);
+    }
+
+    [Test]
+    public void GetBoolean_WithStringValue_ParsesCorrectly()
+    {
+        // Arrange - Store string that can be parsed
+        var config = new Configuration();
+        config.SetString("strKey", "true");
+
+        // Act
+        var result = config.GetBoolean("strKey", false);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void GetBoolean_WithMissingKey_ReturnsDefault()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetBoolean("missingKey", true);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public void GetBoolean_WithMissingKeyNoDefault_ReturnsFalse()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetBoolean("missingKey");
 
         // Assert
         Assert.That(result, Is.False);
@@ -117,11 +189,9 @@ public class ConfigurationBranchCoverageTests
     [Test]
     public void GetLong_WithActualLongValue_ReturnsValue()
     {
-        // Arrange - Store actual long type (not string)
-        var config = new Configuration(new Dictionary<string, object>
-        {
-            { "longKey", 9876543210L }
-        });
+        // Arrange - Store actual long type using SetLong
+        var config = new Configuration();
+        config.SetLong("longKey", 9876543210L);
 
         // Act
         var result = config.GetLong("longKey");
@@ -133,17 +203,55 @@ public class ConfigurationBranchCoverageTests
     [Test]
     public void GetLong_WithActualLongValueAndDefault_ReturnsValue()
     {
-        // Arrange - Store actual long type (not string)
-        var config = new Configuration(new Dictionary<string, object>
-        {
-            { "longKey", 1234567890L }
-        });
+        // Arrange - Store actual long type using SetLong
+        var config = new Configuration();
+        config.SetLong("longKey", 1234567890L);
 
         // Act
         var result = config.GetLong("longKey", 999L);
 
         // Assert
         Assert.That(result, Is.EqualTo(1234567890L));
+    }
+
+    [Test]
+    public void GetLong_WithStringValue_ParsesCorrectly()
+    {
+        // Arrange - Store string that can be parsed
+        var config = new Configuration();
+        config.SetString("strKey", "5555555555");
+
+        // Act
+        var result = config.GetLong("strKey", 999L);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(5555555555L));
+    }
+
+    [Test]
+    public void GetLong_WithMissingKey_ReturnsDefault()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetLong("missingKey", 999L);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(999L));
+    }
+
+    [Test]
+    public void GetLong_WithMissingKeyNoDefault_ReturnsZero()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetLong("missingKey");
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0L));
     }
 
     [Test]
@@ -310,6 +418,64 @@ public class ConfigurationBranchCoverageTests
         Assert.That(result[0], Is.EqualTo("value1"));
         Assert.That(result[1], Is.EqualTo("value2"));
         Assert.That(result[2], Is.EqualTo("value3"));
+    }
+
+    [Test]
+    public void GetString_WithNullValue_ReturnsDefault()
+    {
+        // Arrange - Store null value explicitly
+        var config = new Configuration(new Dictionary<string, object>
+        {
+            { "nullKey", null! }
+        });
+
+        // Act
+        var result = config.GetString("nullKey", "myDefault");
+
+        // Assert - Should return the default value when stored value is null
+        Assert.That(result, Is.EqualTo("myDefault"));
+    }
+
+    [Test]
+    public void GetString_WithNullValueAndNullDefault_ReturnsEmpty()
+    {
+        // Arrange - Store null value explicitly
+        var config = new Configuration(new Dictionary<string, object>
+        {
+            { "nullKey", null! }
+        });
+
+        // Act
+        var result = config.GetString("nullKey", null);
+
+        // Assert - Should return empty string when both value and default are null
+        Assert.That(result, Is.EqualTo(string.Empty));
+    }
+
+    [Test]
+    public void GetString_WithMissingKeyAndNullDefault_ReturnsEmpty()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetString("missingKey", null);
+
+        // Assert - Should return empty string when key missing and default is null
+        Assert.That(result, Is.EqualTo(string.Empty));
+    }
+
+    [Test]
+    public void GetString_WithMissingKeyNoDefault_ReturnsEmpty()
+    {
+        // Arrange
+        var config = new Configuration();
+
+        // Act
+        var result = config.GetString("missingKey");
+
+        // Assert - Should return empty string when key missing and no default
+        Assert.That(result, Is.EqualTo(string.Empty));
     }
 
     #endregion
