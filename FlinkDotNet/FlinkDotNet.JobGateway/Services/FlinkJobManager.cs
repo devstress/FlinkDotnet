@@ -1504,13 +1504,14 @@ public class FlinkJobManager : IFlinkJobManager
             throw new ArgumentException($"Path segment contains invalid path traversal sequence: {segment}", parameterName);
         }
 
-        // Check for invalid characters - only allow alphanumeric, hyphens, and underscores
+        // Check for invalid characters - only allow alphanumeric, hyphens, underscores, and dots
         // This prevents: /, \, ?, #, @, :, and other special characters
+        // Dots are allowed for file extensions (e.g., .jar)
         foreach (char c in segment)
         {
-            if (!char.IsLetterOrDigit(c) && c != '-' && c != '_')
+            if (!char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.')
             {
-                throw new ArgumentException($"Path segment contains invalid character '{c}'. Only alphanumeric, hyphens, and underscores are allowed.", parameterName);
+                throw new ArgumentException($"Path segment contains invalid character '{c}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
             }
         }
 
