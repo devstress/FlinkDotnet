@@ -9,7 +9,6 @@ WORKDIR /src
 
 # Copy project files
 COPY ["FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj", "FlinkDotNet/FlinkDotNet.JobGateway/"]
-COPY ["FlinkDotNet/Flink.JobRunner/Flink.JobRunner.csproj", "FlinkDotNet/Flink.JobRunner/"]
 COPY ["FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj", "FlinkDotNet/Flink.JobBuilder/"]
 
 # Restore dependencies
@@ -20,10 +19,10 @@ COPY FlinkDotNet/ FlinkDotNet/
 
 # Build
 WORKDIR "/src/FlinkDotNet/FlinkDotNet.JobGateway"
-RUN dotnet build "FlinkDotNet.JobGateway.csproj" -c Release -o /app/build
+RUN dotnet build "FlinkDotNet.JobGateway.csproj" -c Release -o /app/build -p:BuildFlinkRunner=false
 
 FROM build AS publish
-RUN dotnet publish "FlinkDotNet.JobGateway.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "FlinkDotNet.JobGateway.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:BuildFlinkRunner=false
 
 FROM base AS final
 WORKDIR /app
