@@ -1,0 +1,318 @@
+name: Release - Minor Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      current_version:
+        description: 'Current version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  CONFIGURATION: 'Release'
+  DOCKER_IMAGE_NAME: 'flinkdotnet/jobgateway'
+
+jobs:
+  calculate-version:
+    name: Calculate New Minor Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - name: Bump minor version
+        id: bump
+        run: |
+          CURRENT="${{ github.event.inputs.current_version }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="${MAJOR}.${NEW_MINOR}.0"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION (minor bump from $CURRENT)"
+
+  update-version:
+    name: Update Version in Project Files
+    needs: calculate-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update PackageVersion in .csproj files
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          echo "Updating project files to version: $VERSION"
+          
+          # Update FlinkDotNet.Common
+          sed -i "s|<PackageVersion>.*</PackageVersion>|<PackageVersion>$VERSION</PackageVersion>|g" \
+            FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
+          
+          # Update FlinkDotNet.DataStream
+          sed -i "s|<PackageVersion>.*</PackageVersion>|<PackageVersion>$VERSION</PackageVersion>|g" \
+            FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
+          
+          echo "Updated project files:"
+          grep "PackageVersion" FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
+          grep "PackageVersion" FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
+
+      - name: Commit version updates
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj
+          git add FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
+          git commit -m "Bump version to $VERSION"
+          git tag -a "v$VERSION" -m "Release version $VERSION"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v$VERSION"
+
+  build-and-package:
+    name: Build and Package FlinkDotNet
+    needs: [calculate-version, update-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Restore dependencies
+        run: dotnet restore FlinkDotNet/FlinkDotNet.sln
+
+      - name: Build solution
+        run: dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+
+      - name: Run unit tests
+        run: dotnet test FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal
+
+      - name: Create NuGet packages
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          echo "Creating packages with version: $VERSION"
+          
+          # Package FlinkDotNet.Common
+          dotnet pack FlinkDotNet/FlinkDotNet.Common/FlinkDotNet.Common.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --no-build \
+            --output ./packages \
+            -p:PackageVersion=$VERSION
+          
+          # Package FlinkDotNet.DataStream
+          dotnet pack FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --no-build \
+            --output ./packages \
+            -p:PackageVersion=$VERSION
+          
+          # Package Flink.JobBuilder
+          dotnet pack FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --no-build \
+            --output ./packages \
+            -p:PackageVersion=$VERSION
+
+      - name: List generated packages
+        run: |
+          echo "Generated NuGet packages:"
+          ls -la ./packages/*.nupkg
+
+      - name: Upload NuGet packages as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./packages/*.nupkg
+          retention-days: 30
+
+  build-docker-image:
+    name: Build Docker Image for JobGateway
+    needs: [calculate-version, update-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          docker build \
+            -f FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile \
+            -t ${{ env.DOCKER_IMAGE_NAME }}:$VERSION \
+            -t ${{ env.DOCKER_IMAGE_NAME }}:latest \
+            .
+          
+          # Save image to tarball for release
+          docker save ${{ env.DOCKER_IMAGE_NAME }}:$VERSION -o jobgateway-$VERSION.tar
+          gzip jobgateway-$VERSION.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: jobgateway-*.tar.gz
+          retention-days: 30
+
+  create-release:
+    name: Create GitHub Release
+    needs: [calculate-version, update-version, build-and-package, build-docker-image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./packages
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: ./docker
+
+      - name: Create Release with GitHub CLI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          TAG="v$VERSION"
+          
+          # Create release notes
+          cat > release-notes.md << EOF
+          ## FlinkDotNet $VERSION (Minor Release)
+          
+          ### ✨ Feature Release
+          
+          This is a minor version release with new features and improvements.
+          
+          ### 📦 NuGet Packages
+          
+          - **FlinkDotNet.Common** - Core common components
+          - **FlinkDotNet.DataStream** - DataStream API
+          - **Flink.JobBuilder** - Job builder with JSON IR generation
+          
+          ### 🐳 Docker Image
+          
+          - **JobGateway** - Docker image for FlinkDotNet JobGateway
+          
+          ### Installation
+          
+          \`\`\`bash
+          dotnet add package FlinkDotNet.Common --version $VERSION
+          dotnet add package FlinkDotNet.DataStream --version $VERSION
+          \`\`\`
+          
+          ### Docker
+          
+          \`\`\`bash
+          docker load < jobgateway-$VERSION.tar.gz
+          docker run -p 8080:8080 ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
+          \`\`\`
+          EOF
+          
+          # Create release using GitHub CLI
+          gh release create "$TAG" \
+            --title "FlinkDotNet $VERSION" \
+            --notes-file release-notes.md \
+            ./packages/*.nupkg \
+            ./docker/jobgateway-*.tar.gz
+
+  publish-packages:
+    name: Publish NuGet Packages and Docker Image
+    needs: [calculate-version, update-version, create-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./packages
+
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "⚠️ NUGET_API_KEY not found. Skipping NuGet publish."
+            echo "To publish packages, add NUGET_API_KEY to repository secrets."
+          else
+            echo "📦 Publishing packages to NuGet.org..."
+            dotnet nuget push "./packages/*.nupkg" \
+              --api-key $NUGET_API_KEY \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+            echo "✅ NuGet packages published successfully!"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: ./docker
+
+      - name: Load and push Docker image
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          
+          # Load the image
+          gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
+          
+          # Push to Docker Hub
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
+          docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
+          
+          echo "✅ Docker image published successfully!"
