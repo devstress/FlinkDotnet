@@ -94,21 +94,36 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 5. Enter the release tag (e.g., `v1.0.0`)
 6. Click "Run workflow"
 
-## Required Secrets
+## Required Configuration
 
-The workflows require the following repository secrets to be configured:
+The workflows require the following configuration:
 
-### NuGet Publishing
-- **NUGET_API_KEY**: API key for publishing to NuGet.org
-  - Get from: https://www.nuget.org/account/apikeys
-  - Permissions needed: Push packages
+### NuGet Publishing (Trusted Publishing)
+The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which eliminates the need for API keys.
+
+**Setup Steps:**
+1. Go to https://www.nuget.org/
+2. Navigate to your account settings
+3. Select the package you want to configure
+4. Go to "Trusted Publishers" section
+5. Add a new trusted publisher with:
+   - **Source**: GitHub Actions
+   - **Owner**: devstress
+   - **Repository**: FlinkDotnet
+   - **Workflow**: The workflow file name (e.g., `release-major.yml`, `release-minor.yml`, `release-patch.yml`, `retry-publish.yml`)
+
+**Benefits:**
+- ✅ No API keys to manage or rotate
+- ✅ More secure - tokens are short-lived and scoped
+- ✅ Better audit trail
+- ✅ Automatic authentication via GitHub OIDC
 
 ### Docker Publishing
 - **DOCKER_USERNAME**: Docker Hub username
 - **DOCKER_PASSWORD**: Docker Hub password or access token
   - Get from: https://hub.docker.com/settings/security
 
-### How to add secrets:
+### How to add Docker secrets:
 1. Go to repository Settings
 2. Navigate to Secrets and variables → Actions
 3. Click "New repository secret"
@@ -153,7 +168,14 @@ All version bump workflows follow these steps:
 ## Troubleshooting
 
 ### NuGet Publish Fails
-If NuGet publish fails but release was created:
+
+**If NuGet publish fails due to authentication:**
+1. Verify Trusted Publishing is configured correctly on NuGet.org
+2. Check that the workflow name matches exactly in the NuGet Trusted Publisher configuration
+3. Ensure the repository owner and name are correct in the configuration
+4. Verify that the workflow has `id-token: write` permission
+
+**If NuGet publish fails but release was created:**
 1. Use the "Retry Publish" workflow
 2. Enter the version and release tag
 3. The workflow will download artifacts from the release and retry publishing

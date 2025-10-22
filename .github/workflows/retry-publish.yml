@@ -22,6 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,21 +56,12 @@ jobs:
           ls -la ./docker/
 
       - name: Publish to NuGet.org
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "❌ ERROR: NUGET_API_KEY not found in repository secrets."
-            echo "Please add NUGET_API_KEY to repository secrets to publish packages."
-            exit 1
-          else
-            echo "📦 Publishing packages to NuGet.org..."
-            dotnet nuget push "./packages/*.nupkg" \
-              --api-key $NUGET_API_KEY \
-              --source https://api.nuget.org/v3/index.json \
-              --skip-duplicate
-            echo "✅ NuGet packages published successfully!"
-          fi
+          echo "📦 Publishing packages to NuGet.org using Trusted Publishing..."
+          dotnet nuget push "./packages/*.nupkg" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+          echo "✅ NuGet packages published successfully!"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
