@@ -18,16 +18,35 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" />
-    <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" />
+    <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" PrivateAssets="All" />
+    <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" PrivateAssets="All" />
+    <ProjectReference Include="../FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj" PrivateAssets="All" />
   </ItemGroup>
+
+  <!-- Include referenced project DLLs in the package -->
+  <Target Name="IncludeReferencedProjectsInPackage" DependsOnTargets="ResolveReferences" BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_PackageFiles Include="$(OutDir)FlinkDotNet.Common.dll">
+        <PackagePath>lib/$(TargetFramework)</PackagePath>
+        <Visible>false</Visible>
+      </_PackageFiles>
+      <_PackageFiles Include="$(OutDir)Flink.JobBuilder.dll">
+        <PackagePath>lib/$(TargetFramework)</PackagePath>
+        <Visible>false</Visible>
+      </_PackageFiles>
+      <_PackageFiles Include="$(OutDir)FlinkDotNet.JobGateway.dll">
+        <PackagePath>lib/$(TargetFramework)</PackagePath>
+        <Visible>false</Visible>
+      </_PackageFiles>
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="System.IO.Abstractions" Version="22.0.16" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     <PackageReference Include="Serilog" Version="4.2.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />

@@ -19,15 +19,20 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
     <PackageReference Include="Temporalio" Version="1.1.2" />
     
-    <!-- Use NuGet packages instead of project references -->
+    <!-- Use NuGet packages when testing release packages -->
     <!-- NOTE: FlinkDotnet package must be available in a local feed or NuGet.org -->
     <!-- During release testing, add ./packages as a local NuGet source -->
-    <!-- VERSION will be set by test-release-packages.ps1 script -->
     <PackageReference Include="FlinkDotnet" Version="*" Condition="'$(UseReleasePackages)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ReleasePackagesTesting.FlinkSqlAppHost\ReleasePackagesTesting.FlinkSqlAppHost.csproj" />
+    
+    <!-- Fallback to project references when not testing release packages -->
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" Condition="'$(UseReleasePackages)' != 'true'" />
+    <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" Condition="'$(UseReleasePackages)' != 'true'" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" Condition="'$(UseReleasePackages)' != 'true'" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj" Condition="'$(UseReleasePackages)' != 'true'" />
   </ItemGroup>
 
   <!-- Import Maven configuration (same as LocalTesting) -->
