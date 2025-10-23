@@ -171,7 +171,6 @@ namespace FlinkDotNet.DataStream.Tests
         public void SessionWindows_Instance_MergeWindows_WithOverlappingWindows_MergesThem()
         {
             // Arrange
-            var sessionWindows = SessionWindows<string>.WithGap(Time.Seconds(5));
             var windows = new List<TimeWindow>
             {
                 new TimeWindow(1000, 3000),
@@ -179,7 +178,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = sessionWindows.MergeWindows(windows).ToList();
+            var result = SessionWindows<string>.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result, Has.Count.EqualTo(1));
@@ -207,21 +206,6 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(windows, Is.Not.Empty);
             // Elements should be assigned to multiple overlapping windows
             Assert.That(windows.Count, Is.GreaterThan(1));
-        }
-
-        [Test]
-        public void SlidingEventTimeWindows_GetDefaultTrigger_ReturnsEventTimeTrigger()
-        {
-            // Arrange
-            var windowSize = Time.Seconds(10);
-            var slide = Time.Seconds(5);
-            var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-
-            // Act
-            var trigger = assigner.GetDefaultTrigger();
-
-            // Assert
-            Assert.That(trigger, Is.Not.Null);
         }
 
         #endregion
@@ -266,20 +250,6 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(windows[0].End, Is.EqualTo(22000));
         }
 
-        [Test]
-        public void TumblingEventTimeWindows_GetDefaultTrigger_ReturnsEventTimeTrigger()
-        {
-            // Arrange
-            var windowSize = Time.Seconds(10);
-            var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
-
-            // Act
-            var trigger = assigner.GetDefaultTrigger();
-
-            // Assert
-            Assert.That(trigger, Is.Not.Null);
-        }
-
         #endregion
 
         #region SessionWindows Generic Instance Tests
@@ -311,19 +281,6 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(windows, Has.Count.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(10000));
             Assert.That(windows[0].End, Is.EqualTo(15000)); // 10000 + 5000
-        }
-
-        [Test]
-        public void SessionWindows_GetDefaultTrigger_ReturnsEventTimeTrigger()
-        {
-            // Arrange
-            var sessionWindows = SessionWindows<string>.WithGap(Time.Seconds(5));
-
-            // Act
-            var trigger = sessionWindows.GetDefaultTrigger();
-
-            // Assert
-            Assert.That(trigger, Is.Not.Null);
         }
 
         #endregion
