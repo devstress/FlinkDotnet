@@ -53,7 +53,7 @@ public class GlobalTestInfrastructure
 
             // Build and start Aspire application
             Console.WriteLine("🔧 Building Aspire ApplicationHost...");
-            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.LocalTesting_FlinkSqlAppHost>();
+            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.ReleasePackagesTesting_Published_FlinkSqlAppHost>();
             Console.WriteLine("🔧 Building application...");
             var app = await appHost.BuildAsync().WaitAsync(DefaultTimeout);
             Console.WriteLine("🔧 Starting application...");
