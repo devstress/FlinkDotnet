@@ -21,8 +21,7 @@ This directory contains scripts for testing the release workflow locally before 
 - ✅ FlinkDotNet solution builds successfully
 - ✅ NuGet packages are created correctly
 - ✅ Docker image builds successfully
-- ✅ Pre-release validation projects can restore and build with local packages
-- ✅ Post-release validation projects can restore and build with local packages
+- ✅ Release validation project can restore and build with local packages
 
 **Execution time**: ~3 minutes
 
@@ -64,17 +63,18 @@ This directory contains scripts for testing the release workflow locally before 
 
 ## What the Release Workflows Test
 
-### Pre-Release Validation (ReleasePackagesTesting/)
-Tests packages BEFORE publishing to ensure quality:
+### Release Package Validation (ReleasePackagesTesting/)
+Tests packages with configurable modes:
+
+**Pre-Release Mode** (default - `RELEASE_VALIDATION_MODE=PreRelease`):
 - Uses local NuGet packages from `./packages/`
 - Uses local Docker image from `./docker/`
 - Validates packages work with Flink and Kafka
 - Prevents publishing broken releases
 
-### Post-Release Validation (ReleasePackagesTesting.Published/)
-Tests published packages AFTER release:
-- Downloads packages from NuGet.org (or uses local as substitute)
-- Pulls Docker images from Docker Hub (or uses local as substitute)
+**Post-Release Mode** (`RELEASE_VALIDATION_MODE=PostRelease`):
+- Downloads packages from NuGet.org
+- Pulls Docker images from Docker Hub
 - Validates published artifacts are compatible
 - Confirms release actually works
 
@@ -95,8 +95,7 @@ dotnet add package Confluent.Kafka --version 2.11.1
 **Solution**: Verify AppHost class name matches project name with underscores
 ```csharp
 // Correct pattern:
-Projects.ReleasePackagesTesting_FlinkSqlAppHost          // for ReleasePackagesTesting.FlinkSqlAppHost
-Projects.ReleasePackagesTesting_Published_FlinkSqlAppHost // for ReleasePackagesTesting.Published.FlinkSqlAppHost
+Projects.ReleasePackagesTesting_FlinkSqlAppHost  // for ReleasePackagesTesting.FlinkSqlAppHost
 ```
 
 ### Issue: Docker Out of Memory
@@ -171,8 +170,7 @@ docker system prune -a  # Warning: removes all unused Docker images
 
 ## Related Documentation
 
-- [ReleasePackagesTesting README](./ReleasePackagesTesting/README.md) - Pre-release validation details
-- [ReleasePackagesTesting.Published README](./ReleasePackagesTesting.Published/README.md) - Post-release validation details
+- [ReleasePackagesTesting README](./ReleasePackagesTesting/README.md) - Release validation details
 - [Release Workflows](./.github/workflows/) - Actual CI/CD workflows
 
 ## Support

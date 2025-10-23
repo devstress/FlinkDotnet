@@ -112,9 +112,18 @@ Uses Microsoft Aspire integration testing framework to:
 ✅ Uses same Aspire testing infrastructure as LocalTesting  
 ✅ Prevents publishing broken releases  
 
-## Difference from ReleasePackagesTesting.Published
+## Validation Modes
 
-- **ReleasePackagesTesting** (this folder): Tests local artifacts BEFORE publishing (pre-release validation)
-- **ReleasePackagesTesting.Published**: Tests published packages AFTER publishing (post-release validation)
+This project supports two validation modes controlled by the `RELEASE_VALIDATION_MODE` environment variable:
 
-Both use Microsoft Aspire integration testing framework for comprehensive validation.
+- **PreRelease Mode** (default): Tests local artifacts BEFORE publishing (pre-release validation)
+  - Uses local NuGet packages from `./packages/`
+  - Uses local Docker image
+  - Prevents publishing broken releases
+
+- **PostRelease Mode**: Tests published packages AFTER publishing (post-release validation)
+  - Downloads packages from NuGet.org
+  - Pulls Docker images from Docker Hub
+  - Confirms the release actually works
+
+Both modes use the same Microsoft Aspire integration testing framework for comprehensive validation.

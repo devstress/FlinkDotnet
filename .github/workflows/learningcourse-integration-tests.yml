@@ -76,12 +76,18 @@ jobs:
         echo "🔨 Building LocalTesting solution (includes all LearningCourse projects)..."
         dotnet restore LocalTesting/LocalTesting.sln
         dotnet build LocalTesting/LocalTesting.sln --configuration Release --no-restore
+
+    - name: Build LearningCourse IntegrationTests solution
+      run: |
+        echo "🔨 Building LearningCourse IntegrationTests solution..."
+        dotnet restore LearningCourse/IntegrationTests.sln
+        dotnet build LearningCourse/IntegrationTests.sln --configuration Release --no-restore
       
     - name: Run LearningCourse Integration Tests
       timeout-minutes: 25  # Increased timeout for CI environment with LEARNINGCOURSE mode
       run: |
         echo "=== Starting LearningCourse Integration Tests ==="
-        dotnet test LearningCourse/IntegrationTests.sln --configuration Release --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
+        dotnet test LearningCourse/IntegrationTests.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=LearningCourseTestResults.trx" --results-directory TestResults
       env:
         DOTNET_ENVIRONMENT: Testing
         ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
