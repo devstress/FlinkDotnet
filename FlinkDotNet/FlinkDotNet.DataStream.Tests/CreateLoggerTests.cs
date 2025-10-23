@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using FlinkDotNet.DataStream;
+using FlinkDotNet.Common.Logging;
 using System;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -18,7 +18,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // Act
-            var logger = StreamExecutionEnvironment.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -35,7 +35,7 @@ namespace FlinkDotNet.DataStream.Tests
             try
             {
                 // Act
-                var logger = StreamExecutionEnvironment.CreateLogger(mockFileSystem);
+                var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
                 // Assert
                 Assert.That(logger, Is.Not.Null);
@@ -58,7 +58,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.File.WriteAllText(oldLogPath, "old log content");
 
             // Act
-            var logger = StreamExecutionEnvironment.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -73,7 +73,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Don't create the directory - test that it handles missing directory
 
             // Act
-            var logger = StreamExecutionEnvironment.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -102,7 +102,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
 
             // Act
-            var logger = StreamExecutionEnvironment.CreateLogger(mockFileSystem.Object);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem.Object);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -116,7 +116,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // Act
-            var logger = OperationCapture.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -133,7 +133,7 @@ namespace FlinkDotNet.DataStream.Tests
             try
             {
                 // Act
-                var logger = OperationCapture.CreateLogger(mockFileSystem);
+                var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
                 // Assert
                 Assert.That(logger, Is.Not.Null);
@@ -156,7 +156,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.File.WriteAllText(recentLogPath, "recent log content");
 
             // Act
-            var logger = OperationCapture.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -171,7 +171,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Don't create the directory
 
             // Act
-            var logger = OperationCapture.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -198,7 +198,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
 
             // Act
-            var logger = OperationCapture.CreateLogger(mockFileSystem.Object);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem.Object);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
@@ -212,7 +212,7 @@ namespace FlinkDotNet.DataStream.Tests
             mockFileSystem.Directory.CreateDirectory("test-logs");
             
             // This test verifies the cleanup logic without mocking complex file info behavior
-            var logger = StreamExecutionEnvironment.CreateLogger(mockFileSystem);
+            var logger = LoggerFactory.CreateLogger(mockFileSystem);
 
             // Assert
             Assert.That(logger, Is.Not.Null);
