@@ -76,7 +76,7 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("environment variable endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using environment variable for")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -101,7 +101,7 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("environment variable endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using environment variable for")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -279,7 +279,7 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("configuration endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using configuration for")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
@@ -301,7 +301,7 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("default Docker Compose endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using default Docker network")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);

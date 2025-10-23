@@ -66,7 +66,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     x => x.Log(
                         LogLevel.Information,
                         It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Aspire service discovery endpoint")),
+                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using Aspire service discovery for")),
                         It.IsAny<Exception>(),
                         It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                     Times.AtLeastOnce);
@@ -119,7 +119,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 x => x.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("configuration endpoint")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using configuration for")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);
@@ -142,7 +142,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     x => x.Log(
                         LogLevel.Information,
                         It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment variable endpoint")),
+                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using environment variable for")),
                         It.IsAny<Exception>(),
                         It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                     Times.AtLeastOnce);
@@ -167,7 +167,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 x => x.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("default Docker Compose endpoint")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using default Docker network")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);
