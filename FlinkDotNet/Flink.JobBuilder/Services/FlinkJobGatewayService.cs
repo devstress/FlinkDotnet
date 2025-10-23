@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Flink.JobBuilder.Models;
 using Microsoft.Extensions.Logging;
-using Serilog;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Flink.JobBuilder.Services
@@ -24,42 +23,10 @@ namespace Flink.JobBuilder.Services
 
         private static Serilog.ILogger CreateLogger()
         {
-            var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
-            var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
-            var logFile = System.IO.Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
-
-            // Clean up old log files (older than 1 day)
-            try
-            {
-                if (System.IO.Directory.Exists(logFilePath))
-                {
-                    var logFiles = System.IO.Directory.GetFiles(logFilePath, "FlinkDotNet.JobGateway.log.*");
-                    foreach (var file in logFiles)
-                    {
-                        var fileInfo = new System.IO.FileInfo(file);
-                        if (fileInfo.LastWriteTimeUtc < System.DateTime.UtcNow.AddDays(-1))
-                        {
-                            System.IO.File.Delete(file);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore cleanup errors
-            }
-
-            return new LoggerConfiguration()
-                .WriteTo.File(
-                    path: logFile,
-                    rollingInterval: RollingInterval.Infinite,
-                    rollOnFileSizeLimit: false,
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-                    fileSizeLimitBytes: 100_000_000,
-                    shared: true)
-                .WriteTo.Console()
-                .MinimumLevel.Debug()
-                .CreateLogger();
+            var fileSystem = new System.IO.Abstractions.FileSystem();
+            return global::FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(
+                fileSystem, 
+                "FlinkDotNet.JobGateway.log");
         }
 
         private readonly JsonSerializerOptions _jsonOptions;

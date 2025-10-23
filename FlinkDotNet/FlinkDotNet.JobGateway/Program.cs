@@ -1,3 +1,4 @@
+using System.IO.Abstractions;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -27,47 +28,15 @@ public class Program
     /// <param name="args">Command-line arguments.</param>
     public static async Task Main(string[] args)
     {
-        // Configure Serilog early for startup logging
-        var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
-        // To achieve FlinkDotNet.JobGateway.log.YYYYMMDD pattern:
-        // Use the filename with explicit date, and let Serilog handle it with Infinite rolling
-        var today = DateTime.UtcNow.ToString("yyyyMMdd");
-        var logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
-
-        // Clean up old log files (older than 1 day)
-        try
-        {
-            if (Directory.Exists(logFilePath))
-            {
-                var logFiles = Directory.GetFiles(logFilePath, "FlinkDotNet.JobGateway.log.*");
-                foreach (var file in logFiles)
-                {
-                    var fileInfo = new FileInfo(file);
-                    if (fileInfo.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1))
-                    {
-                        File.Delete(file);
-                    }
-                }
-            }
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
-
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .WriteTo.Console()
-            .WriteTo.File(
-                logFile,
-                rollingInterval: RollingInterval.Infinite,
-                rollOnFileSizeLimit: false,
-                shared: true,
-                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
+        // Configure Serilog early for startup logging using shared LoggerFactory
+        Log.Logger = FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(new FileSystem(), "FlinkDotNet.JobGateway.log");
 
         try
         {
+            var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
+            var today = DateTime.UtcNow.ToString("yyyyMMdd");
+            var logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
+            
             Log.Information("=== Gateway Starting ===");
             Log.Information("LOG_FILE_PATH: {LogPath}", logFilePath);
             Log.Information("Log file: {LogFile}", logFile);
