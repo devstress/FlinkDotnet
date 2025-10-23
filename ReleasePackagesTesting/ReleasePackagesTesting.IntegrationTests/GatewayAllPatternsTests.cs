@@ -452,6 +452,36 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         }
     }
     
+    private static async Task<string> GetJobGatewayEndpointAsync()
+    {
+        try
+        {
+            var jobGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-job-gateway\" --format \"{{.Ports}}\"");
+            var lines = jobGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                // Look for port mapping to 8080 (Job Gateway's default listener port)
+                if (line.Contains("->8080/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8080");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}/";
+                    }
+                }
+            }
+
+            // Fallback to configured port if discovery fails
+            return $"http://localhost:{Ports.GatewayHostPort}/";
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"⚠️ Job Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.GatewayHostPort}");
+            return $"http://localhost:{Ports.GatewayHostPort}/";
+        }
+    }
+    
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
         // Try Docker first, then Podman if Docker fails or returns empty
