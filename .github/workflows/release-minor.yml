@@ -14,47 +14,76 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
+      release_branch: ${{ steps.bump.outputs.release_branch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
-      - name: Get latest version from tags
+      - name: Get latest version from NuGet.org
         id: get_version
         run: |
-          # Get the latest tag, or use 0.0.0 if no tags exist
-          LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
-          if [ -z "$LATEST_TAG" ]; then
-            CURRENT="0.0.0"
-            echo "No previous releases found, starting from 0.0.0"
+          # Check NuGet.org for published versions
+          echo "Checking NuGet.org for published versions of FlinkDotnet..."
+          NUGET_VERSIONS=$(curl -s "https://api.nuget.org/v3-flatcontainer/flinkdotnet/index.json" 2>/dev/null)
+          
+          if echo "$NUGET_VERSIONS" | jq -e '.versions' > /dev/null 2>&1; then
+            # Package exists, get the latest version
+            CURRENT=$(echo "$NUGET_VERSIONS" | jq -r '.versions[-1]')
+            echo "Found published version on NuGet.org: $CURRENT"
           else
-            CURRENT="${LATEST_TAG#v}"
-            echo "Found latest release: $CURRENT"
+            # Package not published yet, start from 1.0.0
+            CURRENT="1.0.0"
+            echo "No package found on NuGet.org, will start from 1.0.0"
           fi
+          
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
       
       - name: Bump minor version
         id: bump
         run: |
           CURRENT="${{ steps.get_version.outputs.current }}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          NEW_MINOR=$((MINOR + 1))
-          NEW_VERSION="${MAJOR}.${NEW_MINOR}.0"
+          
+          # If starting fresh at 1.0.0, use it as-is for first release
+          if [ "$CURRENT" = "1.0.0" ]; then
+            NEW_VERSION="1.0.0"
+            echo "Starting with initial version: $NEW_VERSION"
+          else
+            # Bump minor version
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            NEW_MINOR=$((MINOR + 1))
+            NEW_VERSION="${MAJOR}.${NEW_MINOR}.0"
+            echo "New version: $NEW_VERSION (minor bump from $CURRENT)"
+          fi
+          
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION (minor bump from $CURRENT)"
+          echo "release_branch=release/v$NEW_VERSION" >> $GITHUB_OUTPUT
 
   update-version:
-    name: Update Version in Project Files
+    name: Update Version in Release Branch
     needs: calculate-version
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Create release branch
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create and checkout release branch
+          git checkout -b "$RELEASE_BRANCH"
+          echo "Created release branch: $RELEASE_BRANCH"
 
       - name: Update PackageVersion in .csproj files
         run: |
@@ -68,9 +97,11 @@ jobs:
           echo "Updated project files:"
           grep "PackageVersion" FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
 
-      - name: Commit version updates
+      - name: Commit version updates to release branch
         run: |
           VERSION=${{ needs.calculate-version.outputs.new_version }}
+          RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
+          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj
@@ -78,14 +109,12 @@ jobs:
           # Only commit if there are staged changes
           if ! git diff --staged --quiet; then
             git commit -m "Bump version to $VERSION"
-            git push origin HEAD:${{ github.ref_name }}
+            git push origin "$RELEASE_BRANCH"
+            echo "Pushed version update to $RELEASE_BRANCH"
           else
             echo "No version changes to commit (already at version $VERSION)"
+            git push origin "$RELEASE_BRANCH"
           fi
-          
-          # Create and push tag
-          git tag -a "v$VERSION" -m "Release version $VERSION"
-          git push origin "v$VERSION"
 
   build-and-package:
     name: Build and Package FlinkDotNet
@@ -96,7 +125,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
 
       - name: Set up .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
@@ -155,7 +184,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -189,7 +218,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -259,7 +288,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
 
       - name: Download NuGet packages
         uses: actions/download-artifact@v4
@@ -316,6 +345,19 @@ jobs:
             --notes-file release-notes.md \
             ./packages/*.nupkg \
             ./docker/jobgateway-*.tar.gz
+      
+      - name: Create and push tag
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create and push tag from release branch
+          git tag -a "v$VERSION" -m "Release version $VERSION"
+          git push origin "v$VERSION"
+          echo "Created and pushed tag v$VERSION"
 
   publish-packages:
     name: Publish NuGet Packages and Docker Image
@@ -329,7 +371,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -387,7 +429,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -441,3 +483,48 @@ jobs:
           name: PostReleaseTestResults
           path: TestResults/
         if: always()
+
+  merge-to-main:
+    name: Merge Release Branch to Main
+    needs: [calculate-version, validate-published-packages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
+      
+      - name: Create Pull Request to Main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
+          
+          # Create PR to merge release branch to main
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "$RELEASE_BRANCH" \
+            --title "Release v$VERSION" \
+            --body "This PR merges the release branch for version $VERSION back to main.
+
+          ## Release Summary
+          - Version: $VERSION
+          - Type: Minor Release
+          - Packages published to NuGet.org
+          - Docker image published to Docker Hub
+          - GitHub release created with tag v$VERSION
+          
+          ## Validation
+          - ✅ Pre-release tests passed
+          - ✅ Packages published successfully
+          - ✅ Post-release validation passed
+          
+          This PR can be merged to complete the release process.")
+          
+          echo "Created PR: $PR_URL"
+          echo "Please review and merge the PR to complete the release process."
