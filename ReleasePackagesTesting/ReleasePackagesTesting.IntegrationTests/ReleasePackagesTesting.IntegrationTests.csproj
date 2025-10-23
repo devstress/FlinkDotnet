@@ -22,8 +22,7 @@
     <!-- Use NuGet packages instead of project references -->
     <!-- NOTE: FlinkDotnet package must be available in a local feed or NuGet.org -->
     <!-- During release testing, add ./packages as a local NuGet source -->
-    <!-- VERSION will be set by test-release-packages.ps1 script -->
-    <PackageReference Include="FlinkDotnet" Version="*" Condition="'$(UseReleasePackages)' == 'true'" />
+    <PackageReference Include="FlinkDotnet" Version="*" />
   </ItemGroup>
 
   <ItemGroup>
