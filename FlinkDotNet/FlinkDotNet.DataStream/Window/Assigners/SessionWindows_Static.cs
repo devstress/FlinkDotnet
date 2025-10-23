@@ -14,6 +14,8 @@
 //  See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+
 namespace FlinkDotNet.DataStream.Window.Assigners
 {
     /// <summary>
@@ -31,6 +33,17 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         public static SessionWindows<T> WithGap<T>(Time sessionGap)
         {
             return SessionWindows<T>.WithGap(sessionGap);
+        }
+
+        /// <summary>
+        /// Merges overlapping session windows.
+        /// This is a convenience method that delegates to SessionWindows&lt;T&gt;.MergeWindows.
+        /// </summary>
+        /// <param name="windows">The windows to merge</param>
+        /// <returns>Merged windows</returns>
+        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows)
+        {
+            return SessionWindows<object>.MergeWindows(windows);
         }
     }
 }
