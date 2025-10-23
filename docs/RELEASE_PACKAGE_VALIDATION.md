@@ -56,31 +56,17 @@ Can be triggered manually with custom version:
 
 ## Local Testing
 
-### Using the Test Script
-
-A local test script is provided to run the same validation locally:
+You can run the validation tests locally by executing `dotnet test` on the ReleasePackagesTesting projects:
 
 ```bash
-# Run with default version (99.99.99)
-./test-release-package-validation.sh
+# Run pre-release validation tests
+cd ReleasePackagesTesting
+dotnet test --configuration Release
 
-# Run with specific version
-./test-release-package-validation.sh 1.2.3
+# Run post-release validation tests
+cd ../ReleasePackagesTesting.Published
+dotnet test --configuration Release
 ```
-
-### What the Test Script Does
-
-1. Builds FlinkDotNet solution
-2. Runs unit tests
-3. Creates NuGet packages
-4. Builds Docker image
-5. Saves Docker image to tarball
-6. Sets up local NuGet feed
-7. Loads Docker image
-8. Runs pre-release validation tests
-9. Clears NuGet cache (simulates fresh environment)
-10. Runs post-release validation tests
-11. Cleans up Docker containers
 
 ### Prerequisites for Local Testing
 
@@ -89,6 +75,7 @@ A local test script is provided to run the same validation locally:
 - Java 17 JDK
 - Maven 3.9.6+
 - 8GB+ RAM allocated to Docker
+- Local NuGet packages and Docker images (if testing with local artifacts)
 
 ## Differences from Release Workflows
 
@@ -105,10 +92,10 @@ A local test script is provided to run the same validation locally:
 
 ### When to Use
 
-- **Before Opening PR**: Run locally to catch issues early
+- **Before Opening PR**: Run `dotnet test` in ReleasePackagesTesting locally to catch issues early
 - **During PR Review**: Automatically runs on push
 - **Before Release**: Manual trigger with release version for final validation
-- **Debugging Release Issues**: Reproduce release environment locally
+- **Debugging Release Issues**: Run tests locally with specific configurations
 
 ### CI/CD Integration
 
@@ -117,7 +104,7 @@ The workflow integrates with the development process:
 1. Developer pushes code
 2. Workflow automatically runs validation
 3. If validation fails, developer sees failure immediately
-4. Developer can debug locally using test script
+4. Developer can debug locally by running `dotnet test` in ReleasePackagesTesting
 5. Once validation passes, code is ready for merge
 
 ## Monitoring and Debugging
@@ -165,7 +152,7 @@ The workflow automatically collects:
 
 ## Best Practices
 
-1. **Run Locally First**: Use test script before pushing
+1. **Test Locally First**: Run `dotnet test` in ReleasePackagesTesting before pushing
 2. **Monitor CI**: Check workflow status after push
 3. **Review Logs**: Investigate failures using diagnostic logs
 4. **Clean Environment**: Workflow simulates clean environment automatically
