@@ -110,6 +110,12 @@ jobs:
           dotnet nuget add source $(pwd)/packages --name LocalTestFeed
           echo "Added local NuGet source"
 
+      - name: Build ReleasePackagesTesting solution
+        run: |
+          echo "🔨 Building ReleasePackagesTesting solution..."
+          dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
+          dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
+
       - name: Run ReleasePackagesTesting validation
         timeout-minutes: 20
         env:
@@ -120,6 +126,7 @@ jobs:
           echo "🧪 Running Release Package Validation Tests..."
           dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln \
             --configuration Release \
+            --no-build \
             --verbosity normal \
             --logger "trx;LogFileName=TestResults.trx" \
             --results-directory TestResults

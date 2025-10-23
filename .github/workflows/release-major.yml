@@ -265,11 +265,38 @@ jobs:
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
           echo "Loaded Docker image for version $VERSION and tagged as latest"
 
+      - name: Configure system for optimal performance
+        run: |
+          echo "=== Configuring system for optimal performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker info
+          docker ps -a
+
+      - name: Build ReleasePackagesTesting solution
+        run: |
+          echo "🔨 Building ReleasePackagesTesting solution..."
+          dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
+          dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
+
       - name: Run Pre-Release Validation Tests
         timeout-minutes: 12
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
         run: |
           echo "=== Running Pre-Release Validation Tests ==="
-          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -471,11 +498,38 @@ jobs:
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
           echo "✅ Docker image pulled from Docker Hub"
 
+      - name: Configure system for optimal performance
+        run: |
+          echo "=== Configuring system for optimal performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker info
+          docker ps -a
+
+      - name: Build ReleasePackagesTesting.Published solution
+        run: |
+          echo "🔨 Building ReleasePackagesTesting.Published solution..."
+          dotnet restore ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln
+          dotnet build ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --no-restore
+
       - name: Run Post-Release Validation Tests
         timeout-minutes: 12
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
         run: |
           echo "=== Running Post-Release Validation Tests ==="
-          dotnet test ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
