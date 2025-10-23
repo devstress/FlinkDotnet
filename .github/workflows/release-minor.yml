@@ -262,7 +262,8 @@ jobs:
         run: |
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
-          echo "Loaded Docker image for version $VERSION"
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
+          echo "Loaded Docker image for version $VERSION and tagged as latest"
 
       - name: Run Pre-Release Validation Tests
         timeout-minutes: 12
