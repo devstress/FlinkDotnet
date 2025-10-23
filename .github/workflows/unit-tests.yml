@@ -66,21 +66,41 @@ jobs:
 
       - name: Begin SonarQube Cloud analysis
         if: github.event_name == 'push' || github.event_name == 'pull_request'
-        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
         run: |
           cd FlinkDotNet
-          ${{ runner.temp }}/scanner/dotnet-sonarscanner begin \
-            /k:"devstress_flinkdotnet" \
-            /o:"devstress" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
-            /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/**/coverage.cobertura.xml" \
-            /d:sonar.sources="." \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs"
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          RETRY_DELAY=5
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES: Starting SonarQube Cloud analysis..."
+            
+            if ${{ runner.temp }}/scanner/dotnet-sonarscanner begin \
+              /k:"devstress_flinkdotnet" \
+              /o:"devstress" \
+              /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+              /d:sonar.host.url="https://sonarcloud.io" \
+              /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+              /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/**/coverage.cobertura.xml" \
+              /d:sonar.sources="." \
+              /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs"; then
+              echo "SonarQube Cloud analysis started successfully"
+              exit 0
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "Failed to start SonarQube analysis. Retrying in ${RETRY_DELAY} seconds..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            else
+              echo "Failed to start SonarQube analysis after $MAX_RETRIES attempts"
+              exit 1
+            fi
+          done
 
       - name: Build FlinkDotNet solution
         shell: bash
@@ -140,13 +160,33 @@ jobs:
 
       - name: End SonarQube Cloud analysis
         if: github.event_name == 'push' || github.event_name == 'pull_request'
-        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
         run: |
           cd FlinkDotNet
-          ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          RETRY_DELAY=5
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES: Ending SonarQube Cloud analysis..."
+            
+            if ${{ runner.temp }}/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"; then
+              echo "SonarQube Cloud analysis completed successfully"
+              exit 0
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "Failed to complete SonarQube analysis. Retrying in ${RETRY_DELAY} seconds..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            else
+              echo "Failed to complete SonarQube analysis after $MAX_RETRIES attempts"
+              exit 1
+            fi
+          done
 
       - name: Verify Test Results
         run: |
