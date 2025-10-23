@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using Flink.JobBuilder.Models;
+using FlinkDotNet.Common.Logging;
 using Serilog;
 
 namespace FlinkDotNet.DataStream
@@ -28,47 +29,7 @@ namespace FlinkDotNet.DataStream
     internal class OperationCapture
     {
         private static readonly IFileSystem _fileSystem = new FileSystem();
-        private static readonly ILogger _logger = CreateLogger(_fileSystem);
-
-        internal static ILogger CreateLogger(IFileSystem fileSystem)
-        {
-            var logFilePath = System.Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
-            var today = System.DateTime.UtcNow.ToString("yyyyMMdd");
-            var logFile = fileSystem.Path.Combine(logFilePath, $"FlinkDotnet.log.{today}");
-
-            // Clean up old log files (older than 1 day)
-            try
-            {
-                if (fileSystem.Directory.Exists(logFilePath))
-                {
-                    var logFiles = fileSystem.Directory.GetFiles(logFilePath, "FlinkDotnet.log.*");
-                    foreach (var file in logFiles)
-                    {
-                        var fileInfo = fileSystem.FileInfo.New(file);
-                        if (fileInfo.LastWriteTimeUtc < System.DateTime.UtcNow.AddDays(-1))
-                        {
-                            fileSystem.File.Delete(file);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore cleanup errors
-            }
-
-            return new LoggerConfiguration()
-                .WriteTo.File(
-                    path: logFile,
-                    rollingInterval: RollingInterval.Infinite,
-                    rollOnFileSizeLimit: false,
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-                    fileSizeLimitBytes: 100_000_000,
-                    shared: true)
-                .WriteTo.Console()
-                .MinimumLevel.Debug()
-                .CreateLogger();
-        }
+        private static readonly ILogger _logger = LoggerFactory.CreateLogger(_fileSystem);
 
         private readonly List<CapturedOperation> _operations = new();
         private KafkaSourceDefinition? _kafkaSource;
