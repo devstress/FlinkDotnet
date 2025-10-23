@@ -337,55 +337,36 @@ jobs:
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           TAG="v$VERSION"
           
-          # Create release notes
-          cat > release-notes.md << EOF
-          ## FlinkDotNet $VERSION (Patch Release)
+          # Use ReleaseNote.md content for release notes
+          if [ -f ReleaseNote.md ]; then
+            cp ReleaseNote.md release-notes.md
+          else
+            echo "## FlinkDotNet $VERSION" > release-notes.md
+            echo "" >> release-notes.md
+            echo "Release notes not provided." >> release-notes.md
+          fi
           
-          ### 🐛 Bug Fix Release
-          
-          This is a patch release with bug fixes and minor improvements.
-          
-          ### 📦 NuGet Packages
-          
-          - **FlinkDotnet** - Complete unified package with DataStream API, Kafka connectors, and job submission
-          
-          ### 🐳 Docker Image
-          
-          - **JobGateway** - Docker image for FlinkDotNet JobGateway
-          
-          ### Installation
-          
-          \`\`\`bash
-          dotnet add package FlinkDotnet --version $VERSION
-          \`\`\`
-          
-          ### Docker
-          
-          \`\`\`bash
-          docker load < jobgateway-$VERSION.tar.gz
-          docker run -p 8080:8080 ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
-          \`\`\`
-          EOF
-          
-          # Create release using GitHub CLI
+          # Create release using GitHub CLI (this automatically creates the tag)
           gh release create "$TAG" \
             --title "FlinkDotNet $VERSION" \
             --notes-file release-notes.md \
             ./packages/*.nupkg \
             ./docker/jobgateway-*.tar.gz
       
-      - name: Create and push tag
+      - name: Clear ReleaseNote.md after release
         run: |
-          VERSION=${{ needs.calculate-version.outputs.new_version }}
-          RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
-          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create and push tag from release branch
-          git tag -a "v$VERSION" -m "Release version $VERSION"
-          git push origin "v$VERSION"
-          echo "Created and pushed tag v$VERSION"
+          # Empty ReleaseNote.md with placeholder text
+          echo "<!-- This is a placeholder to automatically put release notes. -->" > ReleaseNote.md
+          echo "" >> ReleaseNote.md
+          echo "Add release notes here for the next release." >> ReleaseNote.md
+          
+          git add ReleaseNote.md
+          git commit -m "Clear ReleaseNote.md after v${{ needs.calculate-version.outputs.new_version }} release"
+          git push origin ${{ needs.calculate-version.outputs.release_branch }}
+          echo "Cleared ReleaseNote.md with placeholder text"
 
   publish-packages:
     name: Publish NuGet Packages and Docker Image
@@ -580,7 +561,16 @@ jobs:
           - ✅ Packages published successfully
           - ✅ Post-release validation passed
           
-          This PR can be merged to complete the release process.")
+          This PR will be auto-merged and the release branch will be automatically deleted.")
           
           echo "Created PR: $PR_URL"
-          echo "Please review and merge the PR to complete the release process."
+          
+          # Enable auto-merge with branch deletion
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
+          
+          # Enable auto-merge (will merge when all checks pass) and delete branch after merge
+          gh pr merge "$PR_NUMBER" --auto --delete-branch --squash
+          
+          echo "Auto-merge enabled for PR #$PR_NUMBER"
+          echo "The release branch $RELEASE_BRANCH will be automatically deleted after merge."
