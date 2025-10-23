@@ -13,30 +13,15 @@ The **Release Package Validation** workflow is designed to validate NuGet packag
 
 ## Workflow Structure
 
-### Jobs
+The workflow consists of a single job that performs all validation steps:
 
-1. **build-test-artifacts** (20 min timeout)
-   - Builds FlinkDotNet solution
-   - Runs unit tests
-   - Creates NuGet packages with test version
-   - Builds Docker image
-   - Uploads artifacts for testing
-
-2. **pre-release-validation** (20 min timeout)
-   - Downloads local NuGet packages and Docker image
-   - Sets up test environment with Aspire, Java, Maven
-   - Runs ReleasePackagesTesting integration tests
-   - Validates packages work before publishing
-
-3. **post-release-validation** (20 min timeout)
-   - Simulates fresh environment (clears NuGet cache)
-   - Downloads artifacts (simulating NuGet.org and Docker Hub)
-   - Runs ReleasePackagesTesting.Published integration tests
-   - Validates packages work after publishing
-
-4. **summary**
-   - Reports overall validation status
-   - Fails if any validation fails
+**validate-release-packages** (30 min timeout)
+- Builds FlinkDotNet solution
+- Creates NuGet packages with test version
+- Builds Docker image
+- Sets up local NuGet feed
+- Runs ReleasePackagesTesting integration tests
+- Validates packages work correctly
 
 ## Triggering the Workflow
 
@@ -83,9 +68,9 @@ dotnet test --configuration Release
 |--------|---------------------------|------------------------|
 | **Purpose** | Test packages before release | Publish packages to production |
 | **Version** | Test version (99.99.99) | Real version (e.g., 1.2.0) |
+| **Jobs** | Single job (Build + Test) | Multiple jobs (Build, Test, Publish) |
 | **Publishing** | No publishing, only testing | Publishes to NuGet.org and Docker Hub |
-| **Artifacts** | Uploaded for validation only | Uploaded as release assets |
-| **Retention** | 1 day | 30 days |
+| **Artifacts** | Not uploaded | Uploaded as release assets |
 | **Trigger** | Every push + manual | Manual only (workflow_dispatch) |
 
 ## Integration with Development Workflow
@@ -143,12 +128,12 @@ The workflow automatically collects:
 
 ## Comparison with Other Testing Workflows
 
-| Workflow | Purpose | Artifacts | Duration |
-|----------|---------|-----------|----------|
-| **Unit Tests** | Test individual components | None | 5-10 min |
-| **LocalTesting Integration Tests** | Test with project references | None | 15 min |
-| **Release Package Validation** | Test with built packages | NuGet + Docker | 40-60 min |
-| **Release Workflows** | Publish to production | NuGet + Docker + Release | 60-90 min |
+| Workflow | Purpose | Jobs | Duration |
+|----------|---------|------|----------|
+| **Unit Tests** | Test individual components | Single job | 5-10 min |
+| **LocalTesting Integration Tests** | Test with project references | Single job | 15 min |
+| **Release Package Validation** | Test with built packages | Single job | 20-30 min |
+| **Release Workflows** | Publish to production | Multiple jobs | 60-90 min |
 
 ## Best Practices
 
