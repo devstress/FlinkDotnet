@@ -66,6 +66,7 @@ jobs:
 
       - name: Begin SonarQube Cloud analysis
         if: github.event_name == 'push' || github.event_name == 'pull_request'
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
@@ -139,6 +140,7 @@ jobs:
 
       - name: End SonarQube Cloud analysis
         if: github.event_name == 'push' || github.event_name == 'pull_request'
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
