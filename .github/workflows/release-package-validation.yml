@@ -122,6 +122,7 @@ jobs:
           DOTNET_ENVIRONMENT: Testing
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          RELEASE_VALIDATION_MODE: "PreRelease"
         run: |
           echo "🧪 Running Release Package Validation Tests..."
           dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln \

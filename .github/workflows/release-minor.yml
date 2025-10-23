@@ -294,6 +294,7 @@ jobs:
           DOTNET_ENVIRONMENT: Testing
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          RELEASE_VALIDATION_MODE: "PreRelease"
         run: |
           echo "=== Running Pre-Release Validation Tests ==="
           dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
@@ -515,11 +516,11 @@ jobs:
           docker info
           docker ps -a
 
-      - name: Build ReleasePackagesTesting.Published solution
+      - name: Build ReleasePackagesTesting solution
         run: |
-          echo "🔨 Building ReleasePackagesTesting.Published solution..."
-          dotnet restore ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln
-          dotnet build ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --no-restore
+          echo "🔨 Building ReleasePackagesTesting solution..."
+          dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
+          dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
 
       - name: Run Post-Release Validation Tests
         timeout-minutes: 12
@@ -527,9 +528,10 @@ jobs:
           DOTNET_ENVIRONMENT: Testing
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          RELEASE_VALIDATION_MODE: "PostRelease"
         run: |
           echo "=== Running Post-Release Validation Tests ==="
-          dotnet test ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
