@@ -160,7 +160,6 @@ jobs:
           # Package FlinkDotnet (unified package)
           dotnet pack FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj \
             --configuration ${{ env.CONFIGURATION }} \
-            --no-build \
             --output ./packages \
             -p:PackageVersion=$VERSION
 
