@@ -15,6 +15,7 @@
          S6966: Sonar: Awaitable method should be used
          S3400: Sonar: Methods should not return constants
          S3267: Sonar: Loops should be simplified
+         S3776: Sonar: Cognitive Complexity too high (infrastructure/bootstrapping code in Program.cs with top-level statements)
          S4487: Sonar: Unread private fields should be removed
          S6664: Sonar: Too many logging calls in a code block (excessive logging is acceptable for diagnostics)
          S2436: Sonar: Too many generic parameters (API design constraint - breaking change to fix)
@@ -23,7 +24,7 @@
          S6669: Sonar: Logger field name pattern (existing naming convention)
          S4036: Sonar: PATH environment variable usage (required for Java runtime discovery)
     -->
-    <NoWarn>$(NoWarn);CS1591;1711;CS1574;CS1570;S6966;S3400;S3267;S4487;S6664;S2436;S1192;S5332;S6669;S4036</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;1711;CS1574;CS1570;S6966;S3400;S3267;S3776;S4487;S6664;S2436;S1192;S5332;S6669;S4036</NoWarn>
 
     <!-- Warning enforcement relaxed: do not fail build on analyzer warnings -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
