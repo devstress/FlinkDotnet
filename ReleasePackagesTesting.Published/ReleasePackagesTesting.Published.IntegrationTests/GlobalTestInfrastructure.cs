@@ -594,7 +594,7 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-job-gateway\" --format \"{{.Ports}}\"");
 
             if (!string.IsNullOrWhiteSpace(gatewayContainers))
             {
