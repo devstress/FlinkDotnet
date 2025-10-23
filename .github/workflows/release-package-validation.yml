@@ -1,0 +1,382 @@
+name: Release Package Validation
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to test (e.g., 99.99.99)'
+        required: false
+        default: '99.99.99'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  CONFIGURATION: 'Release'
+  DOCKER_IMAGE_NAME: 'flinkdotnet/jobgateway'
+
+concurrency:
+  group: release-validation-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-artifacts:
+    name: Build Test Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      test_version: ${{ steps.set-version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set test version
+        id: set-version
+        run: |
+          VERSION="${{ github.event.inputs.version || '99.99.99' }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using test version: $VERSION"
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Restore dependencies
+        run: dotnet restore FlinkDotNet/FlinkDotNet.sln
+
+      - name: Build solution
+        run: dotnet build FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+
+      - name: Run unit tests
+        run: dotnet test FlinkDotNet/FlinkDotNet.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal
+
+      - name: Create NuGet packages
+        run: |
+          VERSION=${{ steps.set-version.outputs.version }}
+          echo "Creating packages with version: $VERSION"
+          
+          dotnet pack FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --output ./packages \
+            -p:PackageVersion=$VERSION
+
+      - name: List generated packages
+        run: |
+          echo "Generated NuGet packages:"
+          ls -la ./packages/*.nupkg
+
+      - name: Upload NuGet packages as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-nuget-packages
+          path: ./packages/*.nupkg
+          retention-days: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          VERSION=${{ steps.set-version.outputs.version }}
+          docker build \
+            -f FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile \
+            -t ${{ env.DOCKER_IMAGE_NAME }}:$VERSION \
+            -t ${{ env.DOCKER_IMAGE_NAME }}:latest \
+            .
+          
+          # Save image to tarball
+          docker save ${{ env.DOCKER_IMAGE_NAME }}:$VERSION -o jobgateway-$VERSION.tar
+          gzip jobgateway-$VERSION.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-docker-image
+          path: jobgateway-*.tar.gz
+          retention-days: 1
+
+  pre-release-validation:
+    name: Pre-Release Validation
+    needs: build-test-artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker compose version
+          docker info
+          docker ps -a
+          echo "Docker service status:"
+          sudo systemctl status docker --no-pager || true
+          echo "Starting Docker if not running..."
+          sudo systemctl start docker || true
+          sleep 5
+          docker ps
+          echo "✅ Docker is ready"
+
+      - name: Configure system for optimal performance
+        run: |
+          echo "=== Configuring system for optimal performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Current ulimit -n: $(ulimit -n)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: test-nuget-packages
+          path: ./packages
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: test-docker-image
+          path: ./docker
+
+      - name: Add local NuGet source
+        run: |
+          dotnet nuget add source $(pwd)/packages --name LocalTestFeed
+          echo "Added local NuGet source"
+          dotnet nuget list source
+
+      - name: Load Docker image
+        run: |
+          VERSION=${{ needs.build-test-artifacts.outputs.test_version }}
+          echo "Loading Docker image for version: $VERSION"
+          gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
+          echo "Loaded Docker image and tagged as latest"
+          docker images | grep ${{ env.DOCKER_IMAGE_NAME }}
+
+      - name: Run Pre-Release Validation Tests
+        timeout-minutes: 15
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+        run: |
+          echo "=== Running Pre-Release Validation Tests ==="
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln \
+            --configuration Release \
+            --verbosity normal \
+            --logger "trx;LogFileName=PreReleaseTestResults.trx" \
+            --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PreReleaseValidationResults
+          path: TestResults/
+        if: always()
+
+      - name: Show Docker containers (diagnostic)
+        if: always()
+        run: |
+          echo "=== Docker containers status ==="
+          docker ps -a
+          echo "=== Docker logs for JobGateway ==="
+          docker logs $(docker ps -aq --filter "name=flink-job-gateway") 2>&1 | tail -200 || echo "No JobGateway container found"
+          echo "=== Docker logs for JobManager ==="
+          docker logs $(docker ps -aq --filter "name=flink-jobmanager") 2>&1 | tail -200 || echo "No JobManager container found"
+          echo "=== Docker logs for Kafka ==="
+          docker logs $(docker ps -aq --filter "name=kafka") 2>&1 | tail -200 || echo "No Kafka container found"
+
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker ps -a | grep -E 'flink|kafka|redis|postgres|temporal' | awk '{print $1}' | xargs -r docker rm -f || true
+
+  post-release-validation:
+    name: Post-Release Validation (Simulated)
+    needs: [build-test-artifacts, pre-release-validation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker info
+          docker ps -a
+
+      - name: Configure system for optimal performance
+        run: |
+          echo "=== Configuring system for optimal performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Available memory: $(free -h)"
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: test-nuget-packages
+          path: ./packages
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: test-docker-image
+          path: ./docker
+
+      - name: Clear NuGet cache (simulate fresh environment)
+        run: |
+          dotnet nuget locals all --clear
+          echo "Cleared NuGet cache to simulate fresh environment"
+
+      - name: Add local NuGet source (simulating NuGet.org)
+        run: |
+          dotnet nuget add source $(pwd)/packages --name LocalTestFeed
+          echo "Added local NuGet source (simulating NuGet.org)"
+          dotnet nuget list source
+
+      - name: Load Docker image (simulating Docker Hub)
+        run: |
+          VERSION=${{ needs.build-test-artifacts.outputs.test_version }}
+          echo "Loading Docker image for version: $VERSION (simulating Docker Hub pull)"
+          gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
+          echo "Loaded Docker image and tagged as latest"
+          docker images | grep ${{ env.DOCKER_IMAGE_NAME }}
+
+      - name: Run Post-Release Validation Tests
+        timeout-minutes: 15
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+        run: |
+          echo "=== Running Post-Release Validation Tests ==="
+          echo "Note: Using local packages as substitute for published packages"
+          dotnet test ReleasePackagesTesting.Published/ReleasePackagesTesting.Published.sln \
+            --configuration Release \
+            --verbosity normal \
+            --logger "trx;LogFileName=PostReleaseTestResults.trx" \
+            --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PostReleaseValidationResults
+          path: TestResults/
+        if: always()
+
+      - name: Show Docker containers (diagnostic)
+        if: always()
+        run: |
+          echo "=== Docker containers status ==="
+          docker ps -a
+          echo "=== Docker logs for JobGateway ==="
+          docker logs $(docker ps -aq --filter "name=flink-job-gateway") 2>&1 | tail -200 || echo "No JobGateway container found"
+          echo "=== Docker logs for JobManager ==="
+          docker logs $(docker ps -aq --filter "name=flink-jobmanager") 2>&1 | tail -200 || echo "No JobManager container found"
+          echo "=== Docker logs for Kafka ==="
+          docker logs $(docker ps -aq --filter "name=kafka") 2>&1 | tail -200 || echo "No Kafka container found"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker ps -a | grep -E 'flink|kafka|redis|postgres|temporal' | awk '{print $1}' | xargs -r docker rm -f || true
+          docker system prune -f || true
+          docker volume prune -f || true
+
+  summary:
+    name: Validation Summary
+    needs: [build-test-artifacts, pre-release-validation, post-release-validation]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check validation results
+        run: |
+          echo "=========================================="
+          echo "Release Package Validation Summary"
+          echo "=========================================="
+          echo ""
+          echo "Test Version: ${{ needs.build-test-artifacts.outputs.test_version }}"
+          echo ""
+          echo "Build Artifacts: ${{ needs.build-test-artifacts.result }}"
+          echo "Pre-Release Validation: ${{ needs.pre-release-validation.result }}"
+          echo "Post-Release Validation: ${{ needs.post-release-validation.result }}"
+          echo ""
+          
+          if [ "${{ needs.build-test-artifacts.result }}" = "success" ] && \
+             [ "${{ needs.pre-release-validation.result }}" = "success" ] && \
+             [ "${{ needs.post-release-validation.result }}" = "success" ]; then
+            echo "✅ All validations PASSED"
+            exit 0
+          else
+            echo "❌ Some validations FAILED"
+            exit 1
+          fi
