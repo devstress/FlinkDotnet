@@ -240,7 +240,7 @@ jobs:
         timeout-minutes: 12
         run: |
           echo "=== Running Pre-Release Validation Tests ==="
-          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release -p:UseReleasePackages=true --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
