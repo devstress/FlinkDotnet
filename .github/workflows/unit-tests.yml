@@ -97,8 +97,8 @@ jobs:
               sleep $RETRY_DELAY
               RETRY_DELAY=$((RETRY_DELAY * 2))
             else
-              echo "Failed to start SonarQube analysis after $MAX_RETRIES attempts"
-              exit 1
+              echo "WARNING: Failed to start SonarQube analysis after $MAX_RETRIES attempts. Continuing without SonarQube analysis."
+              exit 0
             fi
           done
 
@@ -183,8 +183,8 @@ jobs:
               sleep $RETRY_DELAY
               RETRY_DELAY=$((RETRY_DELAY * 2))
             else
-              echo "Failed to complete SonarQube analysis after $MAX_RETRIES attempts"
-              exit 1
+              echo "WARNING: Failed to complete SonarQube analysis after $MAX_RETRIES attempts. Continuing without completing SonarQube analysis."
+              exit 0
             fi
           done
 
