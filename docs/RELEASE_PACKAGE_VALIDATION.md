@@ -41,16 +41,16 @@ Can be triggered manually with custom version:
 
 ## Local Testing
 
-You can run the validation tests locally by executing `dotnet test` on the ReleasePackagesTesting projects:
+You can run the validation tests locally by executing `dotnet test` on the ReleasePackagesTesting project:
 
 ```bash
-# Run pre-release validation tests
+# Run pre-release validation tests (default mode)
 cd ReleasePackagesTesting
 dotnet test --configuration Release
 
-# Run post-release validation tests
-cd ../ReleasePackagesTesting.Published
-dotnet test --configuration Release
+# Run post-release validation tests (use PostRelease mode)
+cd ReleasePackagesTesting
+RELEASE_VALIDATION_MODE=PostRelease dotnet test --configuration Release
 ```
 
 ### Prerequisites for Local Testing
@@ -156,5 +156,4 @@ Potential improvements:
 
 - [Release Workflows](.github/workflows/release-*.yml) - Production release processes
 - [LocalTesting README](LocalTesting/README.md) - Local development testing
-- [ReleasePackagesTesting README](ReleasePackagesTesting/README.md) - Pre-release validation
-- [ReleasePackagesTesting.Published README](ReleasePackagesTesting.Published/README.md) - Post-release validation
+- [ReleasePackagesTesting README](ReleasePackagesTesting/README.md) - Release validation (pre and post)
