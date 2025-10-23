@@ -136,14 +136,8 @@ if (isLearningCourseMode)
 // Flink JobManager with named HTTP endpoint for service references
 // All ports are hardcoded - no WaitFor dependencies needed for parallel startup
 var jobManagerBuilder = builder.AddContainer("flink-jobmanager", "flink:2.1.0-java17")
-    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "jm-http");
-
-// Only add Podman-specific container runtime args if Podman is detected
-if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
-{
-    jobManagerBuilder = jobManagerBuilder
-        .WithContainerRuntimeArgs("--publish", $"{Ports.JobManagerHostPort}:8081");
-}
+    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: 8081, name: "jm-http")
+    .WithContainerRuntimeArgs("--publish", $"{Ports.JobManagerHostPort}:8081");  // Explicit port publishing for test access
 
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
@@ -253,13 +247,8 @@ taskManager = taskManager
 // CRITICAL: SQL Gateway must wait for JobManager to be ready before starting
 var sqlGatewayBuilder = builder.AddContainer("flink-sql-gateway", "flink:2.1.0-java17")
     .WithHttpEndpoint(port: Ports.SqlGatewayHostPort, targetPort: 8083, name: "sg-http")
+    .WithContainerRuntimeArgs("--publish", $"{Ports.SqlGatewayHostPort}:8083")  // Explicit port publishing for test access
     .WaitFor(jobManager);  // Wait for JobManager to be ready before starting SQL Gateway
-
-if (Environment.GetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME") == "podman")
-{
-    sqlGatewayBuilder = sqlGatewayBuilder
-        .WithContainerRuntimeArgs("--publish", $"{Ports.SqlGatewayHostPort}:8083");
-}
 
 // Build base Flink properties for SQL Gateway
 // CRITICAL: sql-gateway.endpoint.rest.address is REQUIRED by Flink 2.1.0
