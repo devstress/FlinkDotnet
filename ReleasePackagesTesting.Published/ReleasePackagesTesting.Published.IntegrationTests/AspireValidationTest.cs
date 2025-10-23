@@ -126,7 +126,8 @@ public static class AspireValidationTest
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://localhost:8080/api/v1/health");
+            var gatewayEndpoint = await DiscoverGatewayEndpointAsync();
+            var response = await _httpClient.GetAsync($"{gatewayEndpoint}api/v1/health");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -162,5 +163,96 @@ public static class AspireValidationTest
     {
         var status = success ? "✅ PASS" : "❌ FAIL";
         Console.WriteLine($"   {serviceName}: {status}");
+    }
+
+    /// <summary>
+    /// Discover the Gateway endpoint from Docker port mappings.
+    /// Gateway runs as a container with dynamic port allocation in Aspire.
+    /// </summary>
+    private static async Task<string> DiscoverGatewayEndpointAsync()
+    {
+        try
+        {
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
+
+            if (!string.IsNullOrWhiteSpace(gatewayContainers))
+            {
+                var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines)
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
+                    if (match.Success)
+                    {
+                        var endpoint = $"http://localhost:{match.Groups[1].Value}/";
+                        Console.WriteLine($"   🔍 Discovered Gateway endpoint: {endpoint}");
+                        return endpoint;
+                    }
+                }
+            }
+
+            // Fallback to default port if discovery fails
+            Console.WriteLine($"   ⚠️ Gateway endpoint discovery failed, using default: http://localhost:8080/");
+            return "http://localhost:8080/";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"   ⚠️ Gateway endpoint discovery error: {ex.Message}, using default port");
+            return "http://localhost:8080/";
+        }
+    }
+
+    /// <summary>
+    /// Run a Docker or Podman command and return the output.
+    /// </summary>
+    private static async Task<string> RunDockerCommandAsync(string arguments)
+    {
+        // Try Docker first, then Podman if Docker fails
+        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
+        if (!string.IsNullOrWhiteSpace(dockerOutput))
+        {
+            return dockerOutput;
+        }
+
+        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
+        return podmanOutput ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Try to run a container command (docker or podman).
+    /// </summary>
+    private static async Task<string?> TryRunContainerCommandAsync(string command, string arguments)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(psi);
+            if (process == null)
+            {
+                return null;
+            }
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                return output;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
