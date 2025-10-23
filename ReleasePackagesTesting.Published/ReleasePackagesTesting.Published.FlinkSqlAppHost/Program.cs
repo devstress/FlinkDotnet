@@ -335,7 +335,7 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 // Uses flinkdotnet/jobgateway:latest Docker image from release artifacts
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddContainer("flink-job-gateway", "flinkdotnet/jobgateway", "latest")
-    .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "gateway-http")
+    .WithHttpEndpoint(port: Ports.GatewayHostPort, targetPort: 8080, name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", "http://+:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/opt/connectors")
     .WithEnvironment("LOG_FILE_PATH", "/opt/test-logs")
