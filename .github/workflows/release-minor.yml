@@ -208,9 +208,102 @@ jobs:
           path: jobgateway-*.tar.gz
           retention-days: 30
 
+  build-standalone-executables:
+    name: Build Standalone Executables for JobGateway
+    needs: [calculate-version, update-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.calculate-version.outputs.release_branch }}
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Build Windows x64 Standalone
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          echo "Building Windows x64 standalone executable for version $VERSION"
+          
+          dotnet publish FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --runtime win-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:EnableCompressionInSingleFile=true \
+            --output ./publish/win-x64
+          
+          # Copy startup scripts and README
+          cp FlinkDotNet/FlinkDotNet.JobGateway/start-gateway.bat ./publish/win-x64/
+          cp FlinkDotNet/FlinkDotNet.JobGateway/STANDALONE-README.md ./publish/win-x64/README.md
+          cp FlinkDotNet/FlinkDotNet.JobGateway/appsettings.json ./publish/win-x64/appsettings.json
+          
+          # Create ZIP archive
+          cd ./publish/win-x64
+          zip -r ../../jobgateway-win-x64-$VERSION.zip .
+          cd ../..
+          
+          echo "Windows x64 package created: jobgateway-win-x64-$VERSION.zip"
+
+      - name: Build Linux x64 Standalone
+        run: |
+          VERSION=${{ needs.calculate-version.outputs.new_version }}
+          echo "Building Linux x64 standalone executable for version $VERSION"
+          
+          dotnet publish FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --runtime linux-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:EnableCompressionInSingleFile=true \
+            --output ./publish/linux-x64
+          
+          # Copy startup scripts and README
+          cp FlinkDotNet/FlinkDotNet.JobGateway/start-gateway.sh ./publish/linux-x64/
+          chmod +x ./publish/linux-x64/start-gateway.sh
+          cp FlinkDotNet/FlinkDotNet.JobGateway/STANDALONE-README.md ./publish/linux-x64/README.md
+          cp FlinkDotNet/FlinkDotNet.JobGateway/appsettings.json ./publish/linux-x64/appsettings.json
+          
+          # Create tar.gz archive
+          cd ./publish/linux-x64
+          tar -czf ../../jobgateway-linux-x64-$VERSION.tar.gz .
+          cd ../..
+          
+          echo "Linux x64 package created: jobgateway-linux-x64-$VERSION.tar.gz"
+
+      - name: List generated packages
+        run: |
+          echo "Generated standalone executable packages:"
+          ls -lh jobgateway-*.zip jobgateway-*.tar.gz
+
+      - name: Upload standalone executables as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-executables
+          path: |
+            jobgateway-win-x64-*.zip
+            jobgateway-linux-x64-*.tar.gz
+          retention-days: 30
+
   test-release-packages:
     name: Test Release Packages (Pre-Release Validation)
-    needs: [calculate-version, update-version, build-and-package, build-docker-image]
+    needs: [calculate-version, update-version, build-and-package, build-docker-image, build-standalone-executables]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -308,7 +401,7 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [calculate-version, update-version, build-and-package, build-docker-image, test-release-packages]
+    needs: [calculate-version, update-version, build-and-package, build-docker-image, build-standalone-executables, test-release-packages]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -329,6 +422,12 @@ jobs:
         with:
           name: docker-image
           path: ./docker
+
+      - name: Download standalone executables
+        uses: actions/download-artifact@v4
+        with:
+          name: standalone-executables
+          path: ./standalone
 
       - name: Create Release with GitHub CLI
         env:
@@ -351,7 +450,9 @@ jobs:
             --title "FlinkDotNet $VERSION" \
             --notes-file release-notes.md \
             ./packages/*.nupkg \
-            ./docker/jobgateway-*.tar.gz
+            ./docker/jobgateway-*.tar.gz \
+            ./standalone/jobgateway-win-x64-*.zip \
+            ./standalone/jobgateway-linux-x64-*.tar.gz
       
       - name: Clear ReleaseNote.md after release
         run: |

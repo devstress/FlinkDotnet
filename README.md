@@ -121,6 +121,54 @@ processed.SinkToKafka("high-value-orders", "kafka:9093");
 await env.ExecuteAsync("fraud-detection");
 ```
 
+## Installation Options
+
+### 1. Install FlinkDotNet Client from NuGet
+
+Add the FlinkDotNet package to your .NET project:
+
+```bash
+dotnet add package FlinkDotNet
+```
+
+Use the fluent API to build and submit Flink jobs from your .NET application.
+
+### 2. Use FlinkJobGateway Docker Image
+
+Run FlinkJobGateway as a container:
+
+```bash
+docker pull flinkdotnet/jobgateway:latest
+docker run -p 5000:5000 \
+  -e FLINK_CLUSTER_HOST=your-flink-host \
+  -e FLINK_CLUSTER_PORT=8081 \
+  flinkdotnet/jobgateway:latest
+```
+
+Access the API at `http://localhost:5000`.
+
+### 3. Validate Release Packages
+
+For complete setup and validation instructions, see [ReleasePackagesTesting](ReleasePackagesTesting/README.md) - includes post-release validation examples and integration tests.
+
+### 4. Other FlinkJobGateway Installation Options
+
+Download standalone executables from [GitHub Releases](https://github.com/devstress/FlinkDotnet/releases):
+
+- **Windows**: `jobgateway-win-x64-VERSION.zip` - Extract, edit `start-gateway.bat`, run
+- **Linux**: `jobgateway-linux-x64-VERSION.tar.gz` - Extract, edit `start-gateway.sh`, run
+
+See the included `README.md` in each package for detailed setup instructions.
+
+### 5. Contributing & Development
+
+For local development and contributions:
+
+- **LocalTesting**: Complete local dev environment with .NET Aspire orchestration
+- **LearningCourse**: 15-day hands-on exercises and integration tests
+
+See [LocalTesting](LocalTesting/README.md) and [LearningCourse](LearningCourse/README.md) for details.
+
 ## Why FlinkDotNet?
 
 ### The Problem You're Solving
