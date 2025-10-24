@@ -580,32 +580,6 @@ namespace FlinkDotNet.DataStream.Tests
             return (DataStream<T>)constructor.Invoke(new object[] { sourceFunction, _env, "TestSource" });
         }
 
-        /// <summary>
-        /// Creates a DataStream with no valid source (all internal fields null).
-        /// Uses reflection to set fields to null.
-        /// </summary>
-        private DataStream<T> CreateDataStreamWithNoSource<T>()
-        {
-            // Create a collection-based stream first
-            var collection = new[] { default(T)! };
-            var stream = _env.FromCollection(collection);
-
-            // Use reflection to set _collection to null
-            var dataStreamType = typeof(DataStream<T>);
-            var collectionField = dataStreamType.GetField("_collection", BindingFlags.NonPublic | BindingFlags.Instance);
-            var jobField = dataStreamType.GetField("_job", BindingFlags.NonPublic | BindingFlags.Instance);
-            var opCaptureField = dataStreamType.GetField("_operationCapture", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (collectionField != null)
-                collectionField.SetValue(stream, null);
-            if (jobField != null)
-                jobField.SetValue(stream, null);
-            if (opCaptureField != null)
-                opCaptureField.SetValue(stream, null);
-
-            return stream;
-        }
-
         // Test sink function without Kafka properties
         private class CustomSinkFunction : ISinkFunction<string>
         {

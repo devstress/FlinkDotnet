@@ -181,7 +181,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestPunctuatedAssigner : IAssignerWithPunctuatedWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long recordTimestamp)
+            public long ExtractTimestamp(string element, long previousElementTimestamp)
             {
                 return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             }
@@ -194,7 +194,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestPeriodicAssigner : IAssignerWithPeriodicWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long recordTimestamp)
+            public long ExtractTimestamp(string element, long previousElementTimestamp)
             {
                 return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             }

@@ -86,7 +86,16 @@ jobs:
               /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
               /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/**/coverage.cobertura.xml" \
               /d:sonar.sources="." \
-              /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs"; then
+              /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs" \
+              /d:sonar.coverage.exclusions="**/*.Tests/**,**/TestResults/**" \
+              /d:sonar.cpd.exclusions="**/*.Tests/**" \
+              /d:sonar.issue.ignore.multicriteria="e1,e2,e3" \
+              /d:sonar.issue.ignore.multicriteria.e1.ruleKey="*" \
+              /d:sonar.issue.ignore.multicriteria.e1.resourceKey="**/*.Tests/**" \
+              /d:sonar.issue.ignore.multicriteria.e2.ruleKey="*" \
+              /d:sonar.issue.ignore.multicriteria.e2.resourceKey="**/FlinkDotNet.Common.Tests/**" \
+              /d:sonar.issue.ignore.multicriteria.e3.ruleKey="*" \
+              /d:sonar.issue.ignore.multicriteria.e3.resourceKey="**/FlinkDotNet.DataStream.Tests/**,**/FlinkDotNet.JobGateway.Tests/**,**/Flink.JobBuilder.Tests/**"; then
               echo "SonarQube Cloud analysis started successfully"
               exit 0
             fi

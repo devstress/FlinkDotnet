@@ -189,10 +189,15 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         /// <summary>
-        /// Test aggregate function class for testing purposes
+        /// Test aggregate function class for testing purposes.
+        /// Provides a simple placeholder implementation for aggregate testing.
         /// </summary>
-        private class TestAggregateFunction
+        private class TestAggregateFunction : IAggregateFunction<int, int, int>
         {
+            public int CreateAccumulator() => 0;
+            public int Add(int value, int accumulator) => accumulator + value;
+            public int GetResult(int accumulator) => accumulator;
+            public int Merge(int acc1, int acc2) => acc1 + acc2;
         }
     }
 }
