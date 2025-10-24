@@ -17,6 +17,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Use reflection to create OperationCapture since it's internal
             var type = typeof(DataStream<>).Assembly.GetType("FlinkDotNet.DataStream.OperationCapture");
+            if (type == null) throw new InvalidOperationException("OperationCapture type not found");
             return (OperationCapture)Activator.CreateInstance(type, true)!;
         }
 
@@ -24,6 +25,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Use reflection to set _windowDefinition private field
             var windowDefType = typeof(DataStream<>).Assembly.GetType("FlinkDotNet.DataStream.WindowDefinition");
+            if (windowDefType == null) throw new InvalidOperationException("WindowDefinition type not found");
             var windowDef = Activator.CreateInstance(windowDefType, true);
             
             var isCountProp = windowDefType!.GetProperty("IsCountBased");
@@ -39,6 +41,7 @@ namespace FlinkDotNet.DataStream.Tests
         private static object CreateCapturedOperation(string operationType, object? function)
         {
             var capturedOpType = typeof(DataStream<>).Assembly.GetType("FlinkDotNet.DataStream.CapturedOperation");
+            if (capturedOpType == null) throw new InvalidOperationException("CapturedOperation type not found");
             var capturedOp = Activator.CreateInstance(capturedOpType, true);
             
             var opTypeProp = capturedOpType!.GetProperty("OperationType");

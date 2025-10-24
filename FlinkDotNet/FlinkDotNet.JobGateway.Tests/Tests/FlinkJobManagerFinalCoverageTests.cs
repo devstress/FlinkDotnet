@@ -16,10 +16,10 @@ namespace FlinkDotNet.JobGateway.Tests.Tests;
 [TestFixture]
 public class FlinkJobManagerFinalCoverageTests
 {
-    private Mock<ILogger<FlinkJobManager>> _mockLogger;
-    private Mock<IConfiguration> _mockConfiguration;
-    private Mock<HttpMessageHandler> _mockHttpMessageHandler;
-    private HttpClient _httpClient;
+    private Mock<ILogger<FlinkJobManager>> _mockLogger = null!;
+    private Mock<IConfiguration> _mockConfiguration = null!;
+    private Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
+    private HttpClient _httpClient = null!;
 
     [SetUp]
     public void SetUp()
