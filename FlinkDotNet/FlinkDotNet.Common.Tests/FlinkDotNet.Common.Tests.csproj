@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <SonarQubeTestProject>true</SonarQubeTestProject>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS8602;CS8625;CS8425;S4144;S2094;S2681;S6610;S2925;EnableGenerateDocumentationFile</NoWarn>
   </PropertyGroup>

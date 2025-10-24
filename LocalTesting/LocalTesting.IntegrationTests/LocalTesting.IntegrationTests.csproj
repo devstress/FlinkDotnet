@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <SonarQubeTestProject>true</SonarQubeTestProject>
     <IsAspireIntegrationTest>true</IsAspireIntegrationTest>
     <!-- Disable code analysis for test projects -->
     <EnableNETAnalyzers>false</EnableNETAnalyzers>

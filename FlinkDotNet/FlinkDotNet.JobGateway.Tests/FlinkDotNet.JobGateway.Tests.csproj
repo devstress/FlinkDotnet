@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <SonarQubeTestProject>true</SonarQubeTestProject>
     <!-- Disable XML documentation warnings for test projects -->
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <!-- Suppress test-specific warnings that are acceptable in test code:
