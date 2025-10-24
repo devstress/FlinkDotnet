@@ -10,7 +10,7 @@ namespace Flink.JobBuilder.Models
     public class JobDefinition
     {
         public ISourceDefinition Source { get; set; } = null!;
-        public List<IOperationDefinition> Operations { get; set; } = new();
+        public List<IOperationDefinition> Operations { get; set; } = [];
         public ISinkDefinition? Sink
         {
             get; set;
@@ -37,7 +37,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
     public interface ISourceDefinition
     {
-        string Type
+        public string Type
         {
             get;
         }
@@ -74,7 +74,7 @@ namespace Flink.JobBuilder.Models
             get; set;
         }
         public string? StartingOffsets { get; set; } = "earliest"; // earliest, latest, or specific offsets
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ namespace Flink.JobBuilder.Models
         public string Type => "file";
         public string Path { get; set; } = string.Empty;
         public string Format { get; set; } = "text"; // text, json, csv, etc.
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ namespace Flink.JobBuilder.Models
         public string Type => "http";
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = "GET";
-        public Dictionary<string, string> Headers { get; set; } = new();
+        public Dictionary<string, string> Headers { get; set; } = [];
         public string? Body
         {
             get; set;
@@ -108,7 +108,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // Key for cached auth token
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ namespace Flink.JobBuilder.Models
         public string Query { get; set; } = string.Empty;
         public string? DatabaseType { get; set; } = "postgresql";
         public int PollingIntervalSeconds { get; set; } = 30;
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ namespace Flink.JobBuilder.Models
     {
         [JsonIgnore]
         public string Type => "sql";
-        public List<string> Statements { get; set; } = new();
+        public List<string> Statements { get; set; } = [];
         public string Mode { get; set; } = "streaming"; // streaming or batch (future)
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace Flink.JobBuilder.Models
         /// </summary>
         public string ExecutionMode { get; set; } = "tableenv";
 
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(SideOutputOperationDefinition), "sideOutput")]
     public interface IOperationDefinition
     {
-        string Type
+        public string Type
         {
             get;
         }
@@ -291,7 +291,7 @@ namespace Flink.JobBuilder.Models
         public string FunctionType { get; set; } = string.Empty; // http, database, etc.
         public string Url { get; set; } = string.Empty; // For HTTP calls
         public string Method { get; set; } = "GET";
-        public Dictionary<string, string> Headers { get; set; } = new();
+        public Dictionary<string, string> Headers { get; set; } = [];
         public string? BodyTemplate
         {
             get; set;
@@ -314,7 +314,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // Cache time-to-live
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -325,10 +325,10 @@ namespace Flink.JobBuilder.Models
         [JsonIgnore]
         public string Type => "processFunction";
         public string ProcessType { get; set; } = string.Empty; // authTokenManager, retryHandler, etc.
-        public Dictionary<string, object> Parameters { get; set; } = new();
-        public List<string> StateKeys { get; set; } = new();
-        public List<string> TimerNames { get; set; } = new();
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, object> Parameters { get; set; } = [];
+        public List<string> StateKeys { get; set; } = [];
+        public List<string> TimerNames { get; set; } = [];
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -349,7 +349,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -372,7 +372,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // What to do when timer fires
-        public Dictionary<string, object> Parameters { get; set; } = new();
+        public Dictionary<string, object> Parameters { get; set; } = [];
     }
 
     /// <summary>
@@ -383,7 +383,7 @@ namespace Flink.JobBuilder.Models
         [JsonIgnore]
         public string Type => "retry";
         public int MaxRetries { get; set; } = 5;
-        public List<long> DelayMs { get; set; } = new() { 300000, 600000, 1800000, 3600000, 86400000 }; // 5min, 10min, 30min, 1hr, 1day
+        public List<long> DelayMs { get; set; } = [300000, 600000, 1800000, 3600000, 86400000]; // 5min, 10min, 30min, 1hr, 1day
         public string? RetryCondition
         {
             get; set;
@@ -393,7 +393,7 @@ namespace Flink.JobBuilder.Models
             get; set;
         } // Topic for permanent failures
         public string StateKey { get; set; } = "retry_state";
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -406,7 +406,7 @@ namespace Flink.JobBuilder.Models
         public string OutputTag { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty; // When to route to side output
         public ISinkDefinition SideOutputSink { get; set; } = null!;
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -421,7 +421,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(RedisSinkDefinition), "redis")]
     public interface ISinkDefinition
     {
-        string Type
+        public string Type
         {
             get;
         }
@@ -440,7 +440,7 @@ namespace Flink.JobBuilder.Models
             get; set;
         }
         public string? Serializer { get; set; } = "json";
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -462,7 +462,7 @@ namespace Flink.JobBuilder.Models
         public string Type => "file";
         public string Path { get; set; } = string.Empty;
         public string Format { get; set; } = "json"; // json, csv, parquet, etc.
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -475,7 +475,7 @@ namespace Flink.JobBuilder.Models
         public string ConnectionString { get; set; } = string.Empty;
         public string Table { get; set; } = string.Empty;
         public string? DatabaseType { get; set; } = "postgresql"; // postgresql, mysql, etc.
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -487,7 +487,7 @@ namespace Flink.JobBuilder.Models
         public string Type => "http";
         public string Url { get; set; } = string.Empty;
         public string Method { get; set; } = "POST";
-        public Dictionary<string, string> Headers { get; set; } = new();
+        public Dictionary<string, string> Headers { get; set; } = [];
         public string? BodyTemplate
         {
             get; set;
@@ -497,7 +497,7 @@ namespace Flink.JobBuilder.Models
             get; set;
         } // Key for cached auth token
         public int TimeoutMs { get; set; } = 5000;
-        public Dictionary<string, string> Properties { get; set; } = new();
+        public Dictionary<string, string> Properties { get; set; } = [];
     }
 
     /// <summary>
@@ -513,6 +513,6 @@ namespace Flink.JobBuilder.Models
             get; set;
         } // Redis key for operations
         public string OperationType { get; set; } = "increment"; // increment, set, sadd, etc.
-        public Dictionary<string, object> Configuration { get; set; } = new();
+        public Dictionary<string, object> Configuration { get; set; } = [];
     }
 }
