@@ -23,11 +23,8 @@
          S5332: Sonar: HTTP instead of HTTPS (local development scenarios require HTTP)
          S6669: Sonar: Logger field name pattern (existing naming convention)
          S4036: Sonar: PATH environment variable usage (required for Java runtime discovery)
-         RCS1060: Roslynator: Declare each type in separate file (architectural choice - related types grouped together)
-         RCS1208: Roslynator: Reduce 'if' nesting (complex business logic requires nested conditions)
-         RCS1075: Roslynator: Avoid empty catch clause (intentional for test setup/teardown error suppression)
     -->
-    <NoWarn>$(NoWarn);CS1591;1711;CS1574;CS1570;S6966;S3400;S3267;S3776;S4487;S6664;S2436;S1192;S5332;S6669;S4036;RCS1060;RCS1208;RCS1075</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;1711;CS1574;CS1570;S6966;S3400;S3267;S3776;S4487;S6664;S2436;S1192;S5332;S6669;S4036</NoWarn>
 
     <!-- Warning enforcement relaxed: do not fail build on analyzer warnings -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
