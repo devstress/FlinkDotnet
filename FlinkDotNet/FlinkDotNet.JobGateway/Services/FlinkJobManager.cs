@@ -68,49 +68,18 @@ public class FlinkJobManager : IFlinkJobManager
     /// </summary>
     private string DiscoverFlinkEndpoint()
     {
-        // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-jobmanager__jm-http__0 = "http://localhost:63624"
-        // NOTE: The endpoint name is "jm-http" as defined in AppHost Program.cs
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__jm-http__0");
-        if (!string.IsNullOrEmpty(aspireEndpoint))
-        {
-            _logger.LogInformation("Using Aspire service discovery endpoint: {Endpoint}", aspireEndpoint);
-            return aspireEndpoint;
-        }
-
-        // Fallback: Try older format with "http" endpoint name
-        aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
-        if (!string.IsNullOrEmpty(aspireEndpoint))
-        {
-            _logger.LogInformation("Using Aspire service discovery endpoint (legacy format): {Endpoint}", aspireEndpoint);
-            return aspireEndpoint;
-        }
-
-        // Strategy 2: Configuration from appsettings.json
-        var configEndpoint = _configuration["Flink:JobManager:BaseUrl"];
-        if (!string.IsNullOrEmpty(configEndpoint))
-        {
-            _logger.LogInformation("Using configuration endpoint: {Endpoint}", configEndpoint);
-            return configEndpoint;
-        }
-
-        // Strategy 3: Explicit environment variables (Docker Compose)
-        var envHost = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST");
-        var envPort = Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT");
-
-        if (!string.IsNullOrEmpty(envHost))
-        {
-            var port = int.TryParse(envPort, out var p) ? p : 8081;
-            var envEndpoint = $"http://{envHost}:{port}";
-            _logger.LogInformation("Using environment variable endpoint: {Endpoint}", envEndpoint);
-            return envEndpoint;
-        }
-
-        // Strategy 4: Default fallback for Docker Compose with standard ports
-        var defaultEndpoint = "http://flink-jobmanager:8081";
-        _logger.LogInformation("Using default Docker Compose endpoint: {Endpoint}", defaultEndpoint);
-        _logger.LogWarning("Aspire service discovery not found - Gateway may not be able to connect to Flink in testing mode");
-        return defaultEndpoint;
+        return DiscoverEndpoint(
+            serviceName: "flink-jobmanager",
+            primaryEndpointName: "jm-http",
+            legacyEndpointName: "http",
+            configKey: "Flink:JobManager:BaseUrl",
+            envHostKey: "FLINK_CLUSTER_HOST",
+            envPortKey: "FLINK_CLUSTER_PORT",
+            defaultPort: 8081,
+            defaultHost: "flink-jobmanager",
+            serviceDisplayName: "Flink JobManager",
+            logAspireWarning: true
+        );
     }
 
     /// <summary>
@@ -120,48 +89,86 @@ public class FlinkJobManager : IFlinkJobManager
     /// </summary>
     private string DiscoverSqlGatewayEndpoint()
     {
-        // Strategy 1: Aspire service discovery (injected by .WithReference())
-        // Format: services__flink-sql-gateway__sg-http__0 = "http://localhost:xxxxx"
-        // NOTE: The endpoint name is "sg-http" as defined in AppHost Program.cs
-        var aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__sg-http__0");
+        return DiscoverEndpoint(
+            serviceName: "flink-sql-gateway",
+            primaryEndpointName: "sg-http",
+            legacyEndpointName: "http",
+            configKey: "Flink:SqlGateway:BaseUrl",
+            envHostKey: "FLINK_SQL_GATEWAY_HOST",
+            envPortKey: "FLINK_SQL_GATEWAY_PORT",
+            defaultPort: 8083,
+            defaultHost: "flink-sql-gateway",
+            serviceDisplayName: "SQL Gateway",
+            logAspireWarning: true
+        );
+    }
+
+    /// <summary>
+    /// Generic endpoint discovery using multiple strategies.
+    /// Reduces code duplication between Flink and SQL Gateway endpoint discovery.
+    /// </summary>
+    /// <remarks>
+    /// This method has 10 parameters to eliminate 98 lines of code duplication.
+    /// The trade-off is justified as it consolidates endpoint discovery logic.
+    /// </remarks>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "S107:Methods should not have too many parameters", Justification = "Generic method eliminates 98 lines of duplication between DiscoverFlinkEndpoint and DiscoverSqlGatewayEndpoint")]
+    private string DiscoverEndpoint(
+        string serviceName,
+        string primaryEndpointName,
+        string legacyEndpointName,
+        string configKey,
+        string envHostKey,
+        string envPortKey,
+        int defaultPort,
+        string defaultHost,
+        string serviceDisplayName,
+        bool logAspireWarning)
+    {
+        // Strategy 1: Aspire service discovery (primary endpoint name)
+        var aspireKey = $"services__{serviceName}__{primaryEndpointName}__0";
+        var aspireEndpoint = Environment.GetEnvironmentVariable(aspireKey);
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
-            _logger.LogInformation("Using Aspire service discovery for SQL Gateway: {Endpoint}", aspireEndpoint);
+            _logger.LogInformation("Using Aspire service discovery for {ServiceName}: {Endpoint}", serviceDisplayName, aspireEndpoint);
             return aspireEndpoint;
         }
 
-        // Fallback: Try older format with "http" endpoint name
-        aspireEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
+        // Fallback: Try legacy endpoint name format
+        var legacyKey = $"services__{serviceName}__{legacyEndpointName}__0";
+        aspireEndpoint = Environment.GetEnvironmentVariable(legacyKey);
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
-            _logger.LogInformation("Using Aspire service discovery for SQL Gateway (legacy format): {Endpoint}", aspireEndpoint);
+            _logger.LogInformation("Using Aspire service discovery for {ServiceName} (legacy format): {Endpoint}", serviceDisplayName, aspireEndpoint);
             return aspireEndpoint;
         }
 
         // Strategy 2: Configuration from appsettings.json
-        var configEndpoint = _configuration["Flink:SqlGateway:BaseUrl"];
+        var configEndpoint = _configuration[configKey];
         if (!string.IsNullOrEmpty(configEndpoint))
         {
-            _logger.LogInformation("Using configuration for SQL Gateway: {Endpoint}", configEndpoint);
+            _logger.LogInformation("Using configuration for {ServiceName}: {Endpoint}", serviceDisplayName, configEndpoint);
             return configEndpoint;
         }
 
         // Strategy 3: Explicit environment variables
-        var envHost = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST");
-        var envPort = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT");
+        var envHost = Environment.GetEnvironmentVariable(envHostKey);
+        var envPort = Environment.GetEnvironmentVariable(envPortKey);
 
         if (!string.IsNullOrEmpty(envHost))
         {
-            var port = int.TryParse(envPort, out var p) ? p : 8083;
+            var port = int.TryParse(envPort, out var p) ? p : defaultPort;
             var envEndpoint = $"http://{envHost}:{port}";
-            _logger.LogInformation("Using environment variable for SQL Gateway: {Endpoint}", envEndpoint);
+            _logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
             return envEndpoint;
         }
 
-        // Strategy 4: Default fallback for Docker Compose with standard ports
-        var defaultEndpoint = "http://flink-sql-gateway:8083";
-        _logger.LogInformation("Using default Docker network for SQL Gateway: {Endpoint}", defaultEndpoint);
-        _logger.LogWarning("Aspire service discovery not found for SQL Gateway - may not be accessible in testing mode");
+        // Strategy 4: Default fallback
+        var defaultEndpoint = $"http://{defaultHost}:{defaultPort}";
+        _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
+        if (logAspireWarning)
+        {
+            _logger.LogWarning("Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
+        }
         return defaultEndpoint;
     }
 
@@ -203,17 +210,29 @@ public class FlinkJobManager : IFlinkJobManager
     }
 
     /// <summary>
+    /// Logs a section header with box drawing for better visibility.
+    /// </summary>
+    private void LogSectionHeader(string title, params (string Label, string Value)[] details)
+    {
+        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+        _logger.LogInformation("║ {Title}", title);
+        foreach (var (label, value) in details)
+        {
+            _logger.LogInformation("║ {Label}: {Value}", label, value);
+        }
+        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+    }
+
+    /// <summary>
     /// Submits a Flink job to the cluster based on the provided job definition.
     /// </summary>
     /// <param name="jobDefinition">The job definition containing SQL or JAR source configuration.</param>
     /// <returns>A task containing the job submission result with success status and Flink job ID.</returns>
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
-        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-        _logger.LogInformation("║ 🔧 [FlinkJobManager] Processing job submission");
-        _logger.LogInformation("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
-        _logger.LogInformation("║ 📝 Job Name: {JobName}", jobDefinition.Metadata.JobName ?? "Unnamed");
-        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        LogSectionHeader("🔧 [FlinkJobManager] Processing job submission",
+            ("📋 JobId", jobDefinition.Metadata.JobId),
+            ("📝 Job Name", jobDefinition.Metadata.JobName ?? "Unnamed"));
 
         try
         {
@@ -587,10 +606,8 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-            _logger.LogInformation("║ 📡 [FlinkJobManager] Submitting job to Flink JobManager");
-            _logger.LogInformation("║ 🌐 Target: {BaseAddress}", _httpClient.BaseAddress);
-            _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+            LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
+                ("🌐 Target", _httpClient.BaseAddress?.ToString() ?? "unknown"));
 
             var jarId = await EnsureRunnerJarAsync();
             _logger.LogInformation("✅ Flink runner JAR ready: {JarId}", jarId);
@@ -670,10 +687,8 @@ public class FlinkJobManager : IFlinkJobManager
                 throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
             }
 
-            _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-            _logger.LogInformation("║ ✅ [FlinkJobManager] Job submitted to Flink successfully");
-            _logger.LogInformation("║ 🆔 Flink JobId: {JobId}", jobId);
-            _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+            LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
+                ("🆔 Flink JobId", jobId));
 
             return jobId;
         }
@@ -686,10 +701,8 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string> SubmitSqlGatewayJobAsync(SqlSourceDefinition sqlSource, JobDefinition jobDefinition)
     {
-        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-        _logger.LogInformation("║ 📡 [FlinkJobManager] Submitting SQL job to SQL Gateway");
-        _logger.LogInformation("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
-        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        LogSectionHeader("📡 [FlinkJobManager] Submitting SQL job to SQL Gateway",
+            ("📋 JobId", jobDefinition.Metadata.JobId));
 
         try
         {
@@ -706,10 +719,8 @@ public class FlinkJobManager : IFlinkJobManager
             var lastJobId = await ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
 
             var result = lastJobId ?? sessionHandle;
-            _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-            _logger.LogInformation("║ ✅ [FlinkJobManager] SQL job submitted successfully");
-            _logger.LogInformation("║ 🆔 JobId/SessionHandle: {Result}", result);
-            _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+            LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
+                ("🆔 JobId/SessionHandle", result));
 
             return result;
         }

@@ -16,10 +16,10 @@ namespace FlinkDotNet.JobGateway.Tests.Tests;
 [TestFixture]
 public class FlinkJobManagerFinalCoverageTests
 {
-    private Mock<ILogger<FlinkJobManager>> _mockLogger;
-    private Mock<IConfiguration> _mockConfiguration;
-    private Mock<HttpMessageHandler> _mockHttpMessageHandler;
-    private HttpClient _httpClient;
+    private Mock<ILogger<FlinkJobManager>> _mockLogger = null!;
+    private Mock<IConfiguration> _mockConfiguration = null!;
+    private Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
+    private HttpClient _httpClient = null!;
 
     [SetUp]
     public void SetUp()
@@ -64,7 +64,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -76,9 +76,9 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("environment variable endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using environment variable for")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -89,7 +89,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);  // No port specified
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -101,9 +101,9 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("environment variable endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using environment variable for")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -114,7 +114,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "invalid-port");  // Invalid port
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -138,7 +138,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "sql-gateway-host");
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", "7777");
         
-        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?)null);
 
         // This will exercise the DiscoverSqlGatewayEndpoint method
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -156,7 +156,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "sql-gateway-host");
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);  // No port
 
-        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?)null);
 
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
         
@@ -172,7 +172,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "sql-gateway-host");
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", "bad-port");  // Invalid port
 
-        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?)null);
 
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
         
@@ -245,7 +245,7 @@ public class FlinkJobManagerFinalCoverageTests
         // Arrange - Test legacy format fallback (line 82-83)
         Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", "http://localhost:12345");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -259,7 +259,7 @@ public class FlinkJobManagerFinalCoverageTests
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("legacy format")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -279,9 +279,9 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("configuration endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using configuration for")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -289,7 +289,7 @@ public class FlinkJobManagerFinalCoverageTests
     public void Constructor_WithNoConfiguration_UsesDefaultDockerComposeEndpoint()
     {
         // Arrange - All configuration sources return null
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -301,9 +301,9 @@ public class FlinkJobManagerFinalCoverageTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("default Docker Compose endpoint")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using default Docker network")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
         _mockLogger.Verify(
             x => x.Log(
@@ -311,7 +311,7 @@ public class FlinkJobManagerFinalCoverageTests
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Aspire service discovery not found")),
                 null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
