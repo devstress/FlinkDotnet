@@ -14,6 +14,20 @@ namespace FlinkDotNet.DataStream.Tests
     [TestFixture]
     public class StreamExecutionEnvironmentCompleteCoverageTests
     {
+        [SetUp]
+        public void SetUp()
+        {
+            // Set environment variable required by FlinkJobGatewayConfiguration
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            // Clean up environment variable
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
+        }
+
         [Test]
         public void StreamExecutionEnvironment_Constructor_WithConfiguration_ShouldInitialize()
         {

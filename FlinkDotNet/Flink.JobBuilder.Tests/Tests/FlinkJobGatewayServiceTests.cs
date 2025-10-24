@@ -17,6 +17,9 @@ public class FlinkJobGatewayServiceTests
     [SetUp]
     public void SetUp()
     {
+        // Set environment variable required by FlinkJobGatewayConfiguration
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+        
         _mockLogger = new Mock<ILogger>();
         _configuration = new FlinkJobGatewayConfiguration
         {
@@ -25,6 +28,13 @@ public class FlinkJobGatewayServiceTests
             MaxRetries = 3,
             RetryDelay = TimeSpan.FromMilliseconds(100)
         };
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        // Clean up environment variable
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }
 
     #region Constructor Tests

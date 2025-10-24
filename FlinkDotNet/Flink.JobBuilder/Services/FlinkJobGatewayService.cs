@@ -45,6 +45,8 @@ namespace Flink.JobBuilder.Services
 
         private HttpClient CreateDefaultHttpClient()
         {
+            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient with BaseUrl={BaseUrl}", _configuration.BaseUrl);
+            
             var client = new HttpClient
             {
                 BaseAddress = new Uri(_configuration.BaseUrl),
@@ -58,14 +60,16 @@ namespace Flink.JobBuilder.Services
                 client.DefaultRequestHeaders.Add("X-API-Key", _configuration.ApiKey);
             }
 
+            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] HttpClient created with BaseAddress={BaseAddress}", client.BaseAddress);
             return client;
         }
 
         public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, CancellationToken cancellationToken = default)
         {
-            _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway", jobDefinition.Metadata.JobId);
-            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}",
-                jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers);
+            var targetUrl = new Uri(_httpClient.BaseAddress!, "/api/v1/jobs/submit").ToString();
+            _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway at {Url}", jobDefinition.Metadata.JobId, targetUrl);
+            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}, TargetUrl={TargetUrl}",
+                jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers, targetUrl);
 
             var validation = ValidateJobDefinition(jobDefinition);
             if (validation != null)
@@ -77,7 +81,7 @@ namespace Flink.JobBuilder.Services
             var response = await ExecuteWithRetryAsync(async () =>
                 await _httpClient.PostAsync("/api/v1/jobs/submit", content, cancellationToken));
 
-            return await ProcessSubmissionResponseAsync(jobDefinition, response, cancellationToken);
+            return await ProcessSubmissionResponseAsync(jobDefinition, response, targetUrl, cancellationToken);
         }
 
         private JobSubmissionResult? ValidateJobDefinition(JobDefinition jobDefinition)
@@ -157,13 +161,14 @@ namespace Flink.JobBuilder.Services
         private async Task<JobSubmissionResult> ProcessSubmissionResponseAsync(
             JobDefinition jobDefinition,
             HttpResponseMessage response,
+            string targetUrl,
             CancellationToken cancellationToken)
         {
             var rawResponse = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(rawResponse))
             {
-                var errorMsg = "Gateway returned empty response body - this indicates a serialization problem in the Gateway";
+                var errorMsg = $"Gateway returned empty response body from {targetUrl} - this indicates a serialization problem in the Gateway";
                 _logger?.LogError(errorMsg);
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, errorMsg);
             }
@@ -173,7 +178,7 @@ namespace Flink.JobBuilder.Services
             if (response.IsSuccessStatusCode)
                 return await HandleSuccessResponseAsync(jobDefinition, rawResponse, responseSnippet);
 
-            return HandleFailureResponse(jobDefinition, response, responseSnippet);
+            return HandleFailureResponse(jobDefinition, response, responseSnippet, targetUrl);
         }
 
         private async Task<JobSubmissionResult> HandleSuccessResponseAsync(
@@ -215,18 +220,19 @@ namespace Flink.JobBuilder.Services
         private JobSubmissionResult HandleFailureResponse(
             JobDefinition jobDefinition,
             HttpResponseMessage response,
-            string responseSnippet)
+            string responseSnippet,
+            string targetUrl)
         {
-            _logger?.LogWarning("Job {JobId} submission failed HTTP {Status}. Raw response snippet: {Snippet}",
-                jobDefinition.Metadata.JobId, response.StatusCode, responseSnippet);
-            _logger?.LogError("Failed to submit job {JobId}. Status: {StatusCode}",
-                jobDefinition.Metadata.JobId, response.StatusCode);
+            _logger?.LogWarning("Job {JobId} submission failed HTTP {Status} to {Url}. Raw response snippet: {Snippet}",
+                jobDefinition.Metadata.JobId, response.StatusCode, targetUrl, responseSnippet);
+            _logger?.LogError("Failed to submit job {JobId}. Status: {StatusCode}, URL: {Url}",
+                jobDefinition.Metadata.JobId, response.StatusCode, targetUrl);
 
             return new JobSubmissionResult
             {
                 JobId = jobDefinition.Metadata.JobId,
                 Success = false,
-                ErrorMessage = $"HTTP {response.StatusCode}: {responseSnippet}",
+                ErrorMessage = $"HTTP {response.StatusCode} from {targetUrl}: {responseSnippet}",
                 SubmittedAt = DateTime.UtcNow
             };
         }

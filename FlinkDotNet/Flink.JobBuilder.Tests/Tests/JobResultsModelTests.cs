@@ -344,108 +344,206 @@ public class JobResultsModelTests
     #region FlinkJobGatewayConfiguration Tests
 
     [Test]
-    public void FlinkJobGatewayConfiguration_DefaultConstructor_SetsDefaults()
+    public void FlinkJobGatewayConfiguration_DefaultConstructor_RequiresEnvironmentVariable()
     {
-        var config = new FlinkJobGatewayConfiguration();
+        // Clear environment variable to test error case
+        var originalValue = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
+        try
+        {
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
+            
+            Assert.Throws<InvalidOperationException>(() => 
+            {
+                var config = new FlinkJobGatewayConfiguration();
+                _ = config.BaseUrl; // Access property to trigger evaluation
+            }, "FLINK_JOB_GATEWAY_URL environment variable must be set");
+        }
+        finally
+        {
+            // Restore original value
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", originalValue);
+        }
+    }
 
-        Assert.That(config.BaseUrl, Is.EqualTo("https://localhost:8080"));
-        Assert.That(config.ApiKey, Is.Null);
-        Assert.That(config.HttpTimeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
-        Assert.That(config.UseHttps, Is.False);
-        Assert.That(config.MaxRetries, Is.EqualTo(3));
-        Assert.That(config.RetryDelay, Is.EqualTo(TimeSpan.FromSeconds(1)));
+    [Test]
+    public void FlinkJobGatewayConfiguration_WithEnvironmentVariable_SetsBaseUrl()
+    {
+        var originalValue = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
+        try
+        {
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:9999");
+            var config = new FlinkJobGatewayConfiguration();
+
+            Assert.That(config.BaseUrl, Is.EqualTo("http://test-gateway:9999"));
+            Assert.That(config.ApiKey, Is.Null);
+            Assert.That(config.HttpTimeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
+            Assert.That(config.UseHttps, Is.False);
+            Assert.That(config.MaxRetries, Is.EqualTo(3));
+            Assert.That(config.RetryDelay, Is.EqualTo(TimeSpan.FromSeconds(1)));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", originalValue);
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetBaseUrl_ReturnsValue()
     {
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            BaseUrl = "http://flink-gateway:9090"
-        };
+            var config = new FlinkJobGatewayConfiguration
+            {
+                BaseUrl = "http://flink-gateway:9090"
+            };
 
-        Assert.That(config.BaseUrl, Is.EqualTo("http://flink-gateway:9090"));
+            Assert.That(config.BaseUrl, Is.EqualTo("http://flink-gateway:9090"));
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetApiKey_ReturnsValue()
     {
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            ApiKey = "secret-key-123"
-        };
+            var config = new FlinkJobGatewayConfiguration
+            {
+                ApiKey = "secret-key-123"
+            };
 
-        Assert.That(config.ApiKey, Is.EqualTo("secret-key-123"));
+            Assert.That(config.ApiKey, Is.EqualTo("secret-key-123"));
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetHttpTimeout_ReturnsValue()
     {
-        var timeout = TimeSpan.FromMinutes(10);
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            HttpTimeout = timeout
-        };
+            var timeout = TimeSpan.FromMinutes(10);
+            var config = new FlinkJobGatewayConfiguration
+            {
+                HttpTimeout = timeout
+            };
 
-        Assert.That(config.HttpTimeout, Is.EqualTo(timeout));
+            Assert.That(config.HttpTimeout, Is.EqualTo(timeout));
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetUseHttps_ReturnsValue()
     {
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            UseHttps = true
-        };
+            var config = new FlinkJobGatewayConfiguration
+            {
+                UseHttps = true
+            };
 
-        Assert.That(config.UseHttps, Is.True);
+            Assert.That(config.UseHttps, Is.True);
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetMaxRetries_ReturnsValue()
     {
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            MaxRetries = 5
-        };
+            var config = new FlinkJobGatewayConfiguration
+            {
+                MaxRetries = 5
+            };
 
-        Assert.That(config.MaxRetries, Is.EqualTo(5));
+            Assert.That(config.MaxRetries, Is.EqualTo(5));
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetRetryDelay_ReturnsValue()
     {
-        var delay = TimeSpan.FromSeconds(2);
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            RetryDelay = delay
-        };
+            var delay = TimeSpan.FromSeconds(2);
+            var config = new FlinkJobGatewayConfiguration
+            {
+                RetryDelay = delay
+            };
 
-        Assert.That(config.RetryDelay, Is.EqualTo(delay));
+            Assert.That(config.RetryDelay, Is.EqualTo(delay));
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
     }
 
     [Test]
     public void FlinkJobGatewayConfiguration_SetAllProperties_ReturnsValues()
     {
-        var timeout = TimeSpan.FromMinutes(15);
-        var delay = TimeSpan.FromSeconds(3);
-
-        var config = new FlinkJobGatewayConfiguration
+        SetTestEnvironmentVariable();
+        try
         {
-            BaseUrl = "https://flink.example.com",
-            ApiKey = "api-key-789",
-            HttpTimeout = timeout,
-            UseHttps = true,
-            MaxRetries = 10,
-            RetryDelay = delay
-        };
+            var timeout = TimeSpan.FromMinutes(15);
+            var delay = TimeSpan.FromSeconds(3);
 
-        Assert.That(config.BaseUrl, Is.EqualTo("https://flink.example.com"));
-        Assert.That(config.ApiKey, Is.EqualTo("api-key-789"));
-        Assert.That(config.HttpTimeout, Is.EqualTo(timeout));
-        Assert.That(config.UseHttps, Is.True);
-        Assert.That(config.MaxRetries, Is.EqualTo(10));
-        Assert.That(config.RetryDelay, Is.EqualTo(delay));
+            var config = new FlinkJobGatewayConfiguration
+            {
+                BaseUrl = "https://flink.example.com",
+                ApiKey = "api-key-789",
+                HttpTimeout = timeout,
+                UseHttps = true,
+                MaxRetries = 10,
+                RetryDelay = delay
+            };
+
+            Assert.That(config.BaseUrl, Is.EqualTo("https://flink.example.com"));
+            Assert.That(config.ApiKey, Is.EqualTo("api-key-789"));
+            Assert.That(config.HttpTimeout, Is.EqualTo(timeout));
+            Assert.That(config.UseHttps, Is.True);
+            Assert.That(config.MaxRetries, Is.EqualTo(10));
+            Assert.That(config.RetryDelay, Is.EqualTo(delay));
+        }
+        finally
+        {
+            ClearTestEnvironmentVariable();
+        }
+    }
+
+    // Helper methods for test environment variable management
+    private static void SetTestEnvironmentVariable()
+    {
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:8080");
+    }
+
+    private static void ClearTestEnvironmentVariable()
+    {
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }
 
     #endregion

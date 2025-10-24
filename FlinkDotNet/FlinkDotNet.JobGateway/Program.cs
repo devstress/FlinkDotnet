@@ -134,8 +134,6 @@ public class Program
 
     private static void ConfigurePipeline(WebApplication app)
     {
-        app.Use(BodyLoggingMiddleware);
-
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -157,6 +155,8 @@ public class Program
             Log.Information("Prometheus metrics endpoint enabled at {Path} (configured via appsettings)", metricsPath);
         }
 
+        app.UseRouting();
+        app.Use(BodyLoggingMiddleware);  // Moved AFTER UseRouting so routing can match endpoints
         app.UseAuthorization();
         app.MapControllers();
         app.MapGet("/health", () => Results.Ok("OK"));
