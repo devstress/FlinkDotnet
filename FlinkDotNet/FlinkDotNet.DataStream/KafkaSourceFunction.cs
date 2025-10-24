@@ -30,7 +30,6 @@ namespace FlinkDotNet.DataStream
         private readonly string _topic;
         private readonly string _bootstrapServers;
         private readonly string _groupId;
-        private readonly System.Func<string, T> _deserializer;
         private readonly string _startingOffsets;
 
         /// <summary>
@@ -63,7 +62,8 @@ namespace FlinkDotNet.DataStream
             _topic = topic ?? throw new System.ArgumentNullException(nameof(topic));
             _bootstrapServers = bootstrapServers ?? throw new System.ArgumentNullException(nameof(bootstrapServers));
             _groupId = groupId ?? throw new System.ArgumentNullException(nameof(groupId));
-            _deserializer = deserializer ?? throw new System.ArgumentNullException(nameof(deserializer));
+            // deserializer parameter kept for API compatibility but not stored
+            _ = deserializer ?? throw new System.ArgumentNullException(nameof(deserializer));
             _startingOffsets = startingOffsets;
         }
 

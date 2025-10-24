@@ -7,24 +7,9 @@
 
     <!-- Enable compiler analysis warnings like IDE0005 -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Suppress specific warnings:
-         CS1591: Missing XML comment for publicly visible type or member (informational)
-         1711: Type parameter name is not specified in XML comment
-         CS1574: XML comment has cref attribute that could not be resolved
-         CS1570: XML comment has badly formed XML
-         S6966: Sonar: Awaitable method should be used
-         S3400: Sonar: Methods should not return constants
-         S3267: Sonar: Loops should be simplified
-         S3776: Sonar: Cognitive Complexity too high (infrastructure/bootstrapping code in Program.cs with top-level statements)
-         S4487: Sonar: Unread private fields should be removed
-         S6664: Sonar: Too many logging calls in a code block (excessive logging is acceptable for diagnostics)
-         S2436: Sonar: Too many generic parameters (API design constraint - breaking change to fix)
-         S1192: Sonar: String literals repeated (acceptable for formatting/logging strings)
-         S5332: Sonar: HTTP instead of HTTPS (local development scenarios require HTTP)
-         S6669: Sonar: Logger field name pattern (existing naming convention)
-         S4036: Sonar: PATH environment variable usage (required for Java runtime discovery)
-    -->
-    <NoWarn>$(NoWarn);CS1591;1711;CS1574;CS1570;S6966;S3400;S3267;S3776;S4487;S6664;S2436;S1192;S5332;S6669;S4036</NoWarn>
+    <!-- Warning suppression removed to capture all code analysis warnings -->
+    <!-- Only suppress warnings that break the build or are false positives in test code -->
+    <NoWarn>$(NoWarn);S6966</NoWarn>
 
     <!-- Warning enforcement relaxed: do not fail build on analyzer warnings -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
