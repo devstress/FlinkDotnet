@@ -347,6 +347,8 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
+    // Note: Using ToString() instead of string interpolation due to Aspire ReferenceExpression limitations
+    // String interpolation fails with: "The type 'int' cannot be used as type parameter 'T' in the generic type"
     .WithEnvironment("services__flink-jobmanager__jm-http__0", "http://localhost:" + Ports.JobManagerHostPort.ToString())
     .WithEnvironment("services__flink-sql-gateway__sg-http__0", "http://localhost:" + Ports.SqlGatewayHostPort.ToString());
 #pragma warning restore S1481
