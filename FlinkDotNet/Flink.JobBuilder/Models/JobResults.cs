@@ -166,10 +166,24 @@ namespace Flink.JobBuilder.Models
 
     /// <summary>
     /// Gateway service configuration
+    /// Priority: Explicit configuration > Environment variables > Default values
+    /// For ASP.NET Core apps with DI, use ConfigureFlinkJobGateway() extension method to bind from appsettings
     /// </summary>
     public class FlinkJobGatewayConfiguration
     {
-        public string BaseUrl { get; set; } = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? throw new InvalidOperationException("FLINK_JOB_GATEWAY_URL environment variable must be set");
+        private string? _baseUrl;
+        
+        /// <summary>
+        /// Base URL for the Flink Job Gateway
+        /// Priority: Explicitly set value > FLINK_JOB_GATEWAY_URL environment variable > FlinkJobGateway:BaseUrl appsettings (when using DI)
+        /// </summary>
+        public string BaseUrl 
+        { 
+            get => _baseUrl ?? Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") 
+                   ?? throw new InvalidOperationException("BaseUrl must be configured via property, FLINK_JOB_GATEWAY_URL environment variable, or FlinkJobGateway:BaseUrl in appsettings");
+            set => _baseUrl = value;
+        }
+        
         public string? ApiKey
         {
             get; set;
