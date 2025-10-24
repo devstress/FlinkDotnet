@@ -136,8 +136,11 @@ public class GlobalTestInfrastructure
             await RetryHealthCheckAsync("flink-job-gateway", app, 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway resource reported healthy");
 
-            var gatewayEndpoint = await GetGatewayEndpointAsync();
-            Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
+            // FIXED: Use Aspire's proper endpoint resolution for .AddProject() resources
+            // Gateway is added via .AddProject() not .AddContainer(), so it's not a Docker container
+            // We need to get the endpoint from the Aspire resource model, not Docker inspection
+            var gatewayEndpoint = await GetGatewayEndpointFromAspireAsync(app);
+            Console.WriteLine($"🔍 Gateway endpoint (from Aspire): {gatewayEndpoint}");
             
             // Set environment variable for FlinkJobGatewayConfiguration to use discovered endpoint
             // Note: Keep trailing slash for proper URL combination in HttpClient
@@ -596,30 +599,50 @@ public class GlobalTestInfrastructure
         }
     }
 
-    private static async Task<string> GetGatewayEndpointAsync()
+    /// <summary>
+    /// Get Gateway endpoint from Aspire resource model (not Docker)
+    /// Gateway is added via .AddProject() so it's not a container
+    /// In test mode, Aspire uses dynamic port allocation, so we need to discover the actual endpoint
+    /// </summary>
+    private static async Task<string> GetGatewayEndpointFromAspireAsync(DistributedApplication app)
     {
         try
         {
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
-
-            if (!string.IsNullOrWhiteSpace(gatewayContainers))
+            // CRITICAL: Gateway is a .AddProject() resource, not a container
+            // We need to get its endpoint from Aspire's resource model, not Docker
+            // Wait a moment for endpoint allocation to complete
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            
+            // Try to get endpoint from Aspire configuration (project resources expose endpoints via config)
+            var config = app.Services.GetRequiredService<IConfiguration>();
+            
+            // Aspire injects endpoints for project resources in format: services__<resource-name>__http__0
+            var endpointKey = "services__flink-job-gateway__http__0";
+            var endpoint = config[endpointKey];
+            
+            if (!string.IsNullOrWhiteSpace(endpoint))
             {
-                var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines)
-                {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
-                    if (match.Success)
-                    {
-                        return $"http://localhost:{match.Groups[1].Value}/";
-                    }
-                }
+                Console.WriteLine($"🔍 Gateway endpoint from Aspire config: {endpoint}");
+                // Ensure trailing slash for proper URL combination
+                return endpoint.EndsWith('/') ? endpoint : $"{endpoint}/";
             }
-
+            
+            // Alternative config path format
+            endpoint = config.GetSection("services:flink-job-gateway:http:0").Value;
+            if (!string.IsNullOrWhiteSpace(endpoint))
+            {
+                Console.WriteLine($"🔍 Gateway endpoint from Aspire config (alt): {endpoint}");
+                return endpoint.EndsWith('/') ? endpoint : $"{endpoint}/";
+            }
+            
+            // Last resort: use configured port (works in normal run mode, may fail in test mode)
+            Console.WriteLine($"⚠️ Gateway endpoint not found in Aspire config, using configured port {Ports.GatewayHostPort}");
             return $"http://localhost:{Ports.GatewayHostPort}/";
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"⚠️ Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.GatewayHostPort}");
+            Console.WriteLine($"⚠️ Gateway endpoint discovery from Aspire failed: {ex.Message}");
+            Console.WriteLine($"⚠️ Using fallback port {Ports.GatewayHostPort}");
             return $"http://localhost:{Ports.GatewayHostPort}/";
         }
     }
