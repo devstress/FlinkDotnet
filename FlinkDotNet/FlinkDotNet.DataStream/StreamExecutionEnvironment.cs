@@ -555,7 +555,8 @@ namespace FlinkDotNet.DataStream
                     ? TimeSpan.FromSeconds(timeoutSeconds) 
                     : TimeSpan.FromMinutes(5));
             
-            _flinkHttp = new HttpClient { BaseAddress = new Uri($"http://{host}:{port}"), Timeout = timeout };
+            var protocol = GetProtocol();
+            _flinkHttp = new HttpClient { BaseAddress = new Uri($"{protocol}://{host}:{port}"), Timeout = timeout };
             
             // Use provided gateway configuration or default with same timeout for consistency
             _gateway = new FlinkJobGatewayService(gatewayConfig ?? new FlinkJobGatewayConfiguration
@@ -564,6 +565,27 @@ namespace FlinkDotNet.DataStream
                 MaxRetries = timeout.TotalSeconds < 5 ? 0 : 3, // No retries for short timeouts (tests)
                 RetryDelay = TimeSpan.FromSeconds(1)
             });
+        }
+
+        /// <summary>
+        /// Gets the protocol (http or https) from environment variable.
+        /// Defaults to http for backward compatibility.
+        /// </summary>
+        /// <returns>The protocol string ("http" or "https").</returns>
+        private static string GetProtocol()
+        {
+            var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+            if (!string.IsNullOrEmpty(envProtocol))
+            {
+                var protocol = envProtocol.Trim().ToLowerInvariant();
+                if (protocol == "https")
+                {
+                    return "https";
+                }
+            }
+            
+            // Default to http for backward compatibility
+            return "http";
         }
 
         /// <summary>

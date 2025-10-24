@@ -348,7 +348,7 @@ public class JobResultsModelTests
     {
         var config = new FlinkJobGatewayConfiguration();
 
-        Assert.That(config.BaseUrl, Is.EqualTo("http://localhost:8080"));
+        Assert.That(config.BaseUrl, Is.EqualTo("https://localhost:8080"));
         Assert.That(config.ApiKey, Is.Null);
         Assert.That(config.HttpTimeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
         Assert.That(config.UseHttps, Is.False);
