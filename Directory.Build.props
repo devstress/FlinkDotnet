@@ -41,6 +41,14 @@
     <SonarQubeExclude>false</SonarQubeExclude>
   </PropertyGroup>
 
+  <!-- Disable code analyzers for test projects -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <SonarQubeExclude>true</SonarQubeExclude>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
   <!-- SonarAnalyzer applied at repository level for systematic code quality analysis -->
   <ItemGroup Condition="'$(SonarQubeExclude)' != 'true'">
     <PackageReference Include="SonarAnalyzer.CSharp" Version="10.15.0.120848">
@@ -49,8 +57,8 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Roslynator analyzers for additional code quality checks -->
-  <ItemGroup>
+  <!-- Roslynator analyzers for additional code quality checks (not applied to test projects) -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
     <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
