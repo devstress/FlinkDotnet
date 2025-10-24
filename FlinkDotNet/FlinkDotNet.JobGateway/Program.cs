@@ -157,6 +157,7 @@ public class Program
             Log.Information("Prometheus metrics endpoint enabled at {Path} (configured via appsettings)", metricsPath);
         }
 
+        app.UseRouting();
         app.UseAuthorization();
         app.MapControllers();
         app.MapGet("/health", () => Results.Ok("OK"));
