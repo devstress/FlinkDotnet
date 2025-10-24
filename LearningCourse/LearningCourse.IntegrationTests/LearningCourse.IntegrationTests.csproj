@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <SonarQubeTestProject>true</SonarQubeTestProject>
     
     <!-- Disable parallel test execution to prevent TaskManager resource contention -->
     <ParallelizeAssembly>false</ParallelizeAssembly>

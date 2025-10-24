@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <SonarQubeTestProject>true</SonarQubeTestProject>
     <NoWarn>$(NoWarn);IDE0005</NoWarn>
   </PropertyGroup>
 
