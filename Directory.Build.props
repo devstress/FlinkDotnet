@@ -32,6 +32,9 @@
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
     <SonarQubeExclude>true</SonarQubeExclude>
     <RunAnalyzers>false</RunAnalyzers>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Suppress documentation and analyzer warnings for test projects -->
+    <NoWarn>$(NoWarn);CS1591;1711;CS1574;CS1570;RCS1060;RCS1208;S4144;S3267;IDE0300;IDE0301</NoWarn>
   </PropertyGroup>
 
   <!-- SonarAnalyzer applied at repository level for systematic code quality analysis -->
