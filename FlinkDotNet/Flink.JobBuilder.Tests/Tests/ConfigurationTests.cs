@@ -8,8 +8,18 @@ public class ConfigurationTests
     [Test]
     public void FlinkJobGatewayConfiguration_DefaultConstructor_CreatesInstance()
     {
-        var config = new FlinkJobGatewayConfiguration();
-        Assert.That(config, Is.Not.Null);
+        // Set environment variable for test
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:8080");
+        try
+        {
+            var config = new FlinkJobGatewayConfiguration();
+            Assert.That(config, Is.Not.Null);
+        }
+        finally
+        {
+            // Clean up
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
+        }
     }
 
     [Test]
