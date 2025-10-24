@@ -141,9 +141,7 @@ public class JobsController : ControllerBase
         // Ensure metadata basics
         jobDefinition.Metadata ??= new JobMetadata();
         if (string.IsNullOrWhiteSpace(jobDefinition.Metadata.JobId))
-        {
             jobDefinition.Metadata.JobId = Guid.NewGuid().ToString();
-        }
     }
 
     private async Task<ActionResult<JobSubmissionResult>> SubmitJobToFlinkAsync(JobDefinition jobDefinition)
