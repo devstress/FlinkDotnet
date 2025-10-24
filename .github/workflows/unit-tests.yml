@@ -85,10 +85,8 @@ jobs:
               /d:sonar.host.url="https://sonarcloud.io" \
               /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
               /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/**/coverage.cobertura.xml" \
-              /d:sonar.sources="." \
-              /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/*.Tests/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs" \
-              /d:sonar.tests="." \
-              /d:sonar.test.inclusions="**/*.Tests/**/*.cs" \
+              /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs" \
+              /d:sonar.test.exclusions="**/bin/**,**/obj/**" \
               /d:sonar.coverage.exclusions="**/*.Tests/**,**/TestResults/**" \
               /d:sonar.cpd.exclusions="**/*.Tests/**"; then
               echo "SonarQube Cloud analysis started successfully"
