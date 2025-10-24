@@ -140,8 +140,9 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
             
             // Set environment variable for FlinkJobGatewayConfiguration to use discovered endpoint
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint.TrimEnd('/'));
-            Console.WriteLine($"✅ FLINK_JOB_GATEWAY_URL set to: {gatewayEndpoint.TrimEnd('/')}");
+            // Note: Keep trailing slash for proper URL combination in HttpClient
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
+            Console.WriteLine($"✅ FLINK_JOB_GATEWAY_URL set to: {gatewayEndpoint}");
             
             await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway is ready");
