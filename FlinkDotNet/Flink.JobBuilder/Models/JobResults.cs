@@ -169,7 +169,7 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FlinkJobGatewayConfiguration
     {
-        public string BaseUrl { get; set; } = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "https://localhost:8080";
+        public string BaseUrl { get; set; } = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
         public string? ApiKey
         {
             get; set;
