@@ -334,14 +334,21 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 // CRITICAL: Using .AddProject() for proper Aspire service discovery and endpoint management
 // JobGateway runs as a host process (not containerized) for reliable endpoint discovery
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
+
+// CRITICAL FIX: Gateway runs on HOST, not in container, so it needs localhost URLs
+// Aspire .WithReference() injects container hostnames (e.g., flink-jobmanager:8081)
+// which are not resolvable from host processes. We must explicitly set localhost URLs.
+// FlinkJobManager.cs DiscoverFlinkEndpoint() reads these environment variables:
+// - services__flink-jobmanager__jm-http__0 for JobManager endpoint
+// - services__flink-sql-gateway__sg-http__0 for SQL Gateway endpoint
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: 8080, name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
-    .WithReference(jobManager.GetEndpoint("jm-http"))
-    .WithReference(sqlGateway.GetEndpoint("sg-http"));
+    .WithEnvironment("services__flink-jobmanager__jm-http__0", $"http://localhost:{Ports.JobManagerHostPort}")
+    .WithEnvironment("services__flink-sql-gateway__sg-http__0", $"http://localhost:{Ports.SqlGatewayHostPort}");
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
