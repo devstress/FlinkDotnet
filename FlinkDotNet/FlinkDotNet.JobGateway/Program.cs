@@ -2,9 +2,9 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using FlinkDotNet.JobGateway.Filters;
 using FlinkDotNet.JobGateway.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.OpenApi.Models;
 using Prometheus;
 using Serilog;
@@ -207,26 +207,5 @@ public class Program
 
         await mem.CopyToAsync(originalBody);
         ctx.Response.Body = originalBody;
-    }
-}
-
-internal sealed class ModelStateLoggingFilter : IActionFilter
-{
-    private readonly ILogger<ModelStateLoggingFilter> _logger;
-    public ModelStateLoggingFilter(ILogger<ModelStateLoggingFilter> logger) => _logger = logger;
-    public void OnActionExecuting(ActionExecutingContext context)
-    {
-        if (!context.ModelState.IsValid)
-        {
-            var errors = context.ModelState
-                .Where(kv => kv.Value?.Errors.Count > 0)
-                .Select(kv => $"{kv.Key}:{string.Join("|", kv.Value!.Errors.Select(e => e.ErrorMessage))}");
-            _logger.LogWarning("ModelState invalid for {Path}. Errors: {Errors}",
-                context.HttpContext.Request.Path,
-                string.Join("; ", errors));
-        }
-    }
-    public void OnActionExecuted(ActionExecutedContext context)
-    {
     }
 }

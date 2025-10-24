@@ -157,19 +157,64 @@ public class FlinkJobManager : IFlinkJobManager
         if (!string.IsNullOrEmpty(envHost))
         {
             var port = int.TryParse(envPort, out var p) ? p : defaultPort;
-            var envEndpoint = $"http://{envHost}:{port}";
+            var protocol = GetProtocol();
+            var envEndpoint = $"{protocol}://{envHost}:{port}";
             _logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
             return envEndpoint;
         }
 
         // Strategy 4: Default fallback
-        var defaultEndpoint = $"http://{defaultHost}:{defaultPort}";
+        var defaultProtocol = GetProtocol();
+        var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
         _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
             _logger.LogWarning("Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
         }
         return defaultEndpoint;
+    }
+
+    /// <summary>
+    /// Gets the protocol (http or https) from configuration or environment variable.
+    /// Defaults to http for backward compatibility.
+    /// </summary>
+    /// <returns>The protocol string ("http" or "https").</returns>
+    private string GetProtocol()
+    {
+        // Check environment variable first
+        var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+        if (!string.IsNullOrEmpty(envProtocol))
+        {
+            var protocol = envProtocol.Trim().ToLowerInvariant();
+            if (protocol == "https")
+            {
+                _logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
+                return "https";
+            }
+            if (protocol != "http")
+            {
+                _logger.LogWarning("Invalid FLINK_PROTOCOL value '{Protocol}', defaulting to http", envProtocol);
+            }
+        }
+
+        // Check configuration
+        var configProtocol = _configuration["Flink:Protocol"];
+        if (!string.IsNullOrEmpty(configProtocol))
+        {
+            var protocol = configProtocol.Trim().ToLowerInvariant();
+            if (protocol == "https")
+            {
+                _logger.LogInformation("Using HTTPS protocol from configuration");
+                return "https";
+            }
+            if (protocol != "http")
+            {
+                _logger.LogWarning("Invalid Flink:Protocol configuration value '{Protocol}', defaulting to http", configProtocol);
+            }
+        }
+
+        // Default to http
+        return "http";
     }
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
@@ -972,11 +1017,11 @@ public class FlinkJobManager : IFlinkJobManager
     private static void UpdateLastKnownJars(FlinkJarsList? jars, List<string> lastKnownJars)
     {
         lastKnownJars.Clear();
-        if (jars?.Files != null)
-        {
-            lastKnownJars.AddRange(jars.Files.Select(f =>
-                string.IsNullOrEmpty(f.Id) ? f.Name : $"{f.Name} ({f.Id})"));
-        }
+        if (jars?.Files == null)
+            return;
+
+        lastKnownJars.AddRange(jars.Files.Select(f =>
+            string.IsNullOrEmpty(f.Id) ? f.Name : $"{f.Name} ({f.Id})"));
     }
 
     private static string? FindMatchingJar(FlinkJarsList? jars, string fileName)
@@ -1338,17 +1383,21 @@ public class FlinkJobManager : IFlinkJobManager
 
     private static string? MatchJobEntry(JsonElement element, string jobName)
     {
-        if ((TryGetStringProperty(element, "name", out var name) || TryGetStringProperty(element, "jobName", out name))
-            && string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase)
-            && (TryGetStringProperty(element, "jid", out var jobId)
-                || TryGetStringProperty(element, "jobId", out jobId)
-                || TryGetStringProperty(element, "jobid", out jobId)
-                || TryGetStringProperty(element, "id", out jobId)))
+        if (!TryGetStringProperty(element, "name", out var name) && !TryGetStringProperty(element, "jobName", out name))
+            return null;
+
+        if (!string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (!TryGetStringProperty(element, "jid", out var jobId)
+            && !TryGetStringProperty(element, "jobId", out jobId)
+            && !TryGetStringProperty(element, "jobid", out jobId)
+            && !TryGetStringProperty(element, "id", out jobId))
         {
-            return jobId;
+            return null;
         }
 
-        return null;
+        return jobId;
     }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
@@ -1443,10 +1492,10 @@ public class FlinkJobManager : IFlinkJobManager
         }
 
         var isSqlJob = jobDefinition.Source is SqlSourceDefinition;
-        if (jobDefinition.Sink == null && !isSqlJob)
-        {
-            errors.Add("Job sink is required");
-        }
+        if (jobDefinition.Sink != null || isSqlJob)
+            return;
+
+        errors.Add("Job sink is required");
     }
 
     private static void ValidateSource(object? source, List<string> errors)
@@ -1456,17 +1505,11 @@ public class FlinkJobManager : IFlinkJobManager
 
         switch (source)
         {
-            case KafkaSourceDefinition kafkaSource:
-                if (string.IsNullOrEmpty(kafkaSource.Topic))
-                {
-                    errors.Add("Kafka source must specify a topic");
-                }
+            case KafkaSourceDefinition kafkaSource when string.IsNullOrEmpty(kafkaSource.Topic):
+                errors.Add("Kafka source must specify a topic");
                 break;
-            case FileSourceDefinition fileSource:
-                if (string.IsNullOrEmpty(fileSource.Path))
-                {
-                    errors.Add("File source must specify a path");
-                }
+            case FileSourceDefinition fileSource when string.IsNullOrEmpty(fileSource.Path):
+                errors.Add("File source must specify a path");
                 break;
         }
     }
@@ -1697,12 +1740,16 @@ public class FlinkJobManager : IFlinkJobManager
 
     private static void ProcessCheckpointCounts(JsonElement root, JobMetricsBuilder metrics)
     {
-        if (root.TryGetProperty("counts", out var counts)
-            && counts.TryGetProperty("completed", out var completedEl)
-            && completedEl.TryGetInt32(out var c))
-        {
-            metrics.SetCheckpoints(c);
-        }
+        if (!root.TryGetProperty("counts", out var counts))
+            return;
+
+        if (!counts.TryGetProperty("completed", out var completedEl))
+            return;
+
+        if (!completedEl.TryGetInt32(out var c))
+            return;
+
+        metrics.SetCheckpoints(c);
     }
 
     private static void ProcessCheckpointTimestamps(JsonElement root, JobMetricsBuilder metrics)
@@ -1710,22 +1757,24 @@ public class FlinkJobManager : IFlinkJobManager
         if (!root.TryGetProperty("latest", out var latest))
             return;
 
-        if (latest.TryGetProperty("completed", out var comp))
-        {
-            var ts = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
-            if (ts.HasValue)
-                metrics.SetLastCheckpoint(ts.Value);
-        }
+        if (!latest.TryGetProperty("completed", out var comp))
+            return;
+
+        var ts = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
+        if (ts.HasValue)
+            metrics.SetLastCheckpoint(ts.Value);
     }
 
     private static DateTime? ExtractTimestamp(JsonElement element, string propertyName)
     {
-        if (element.TryGetProperty(propertyName, out var timeEl) && timeEl.ValueKind == JsonValueKind.Number)
-        {
-            var ms = timeEl.GetInt64();
-            return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
-        }
-        return null;
+        if (!element.TryGetProperty(propertyName, out var timeEl))
+            return null;
+
+        if (timeEl.ValueKind != JsonValueKind.Number)
+            return null;
+
+        var ms = timeEl.GetInt64();
+        return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
     }
 
     private static string? ExtractBackpressureLevel(JsonElement root)
