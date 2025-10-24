@@ -84,6 +84,20 @@ await env.ExecuteAsync("order-processor");
 
 ## Quick Start
 
+### Option 1: Use FlinkJobGateway Standalone (Easiest)
+
+Download and run FlinkJobGateway without Docker or containers:
+
+1. Download the latest release from [GitHub Releases](https://github.com/devstress/FlinkDotnet/releases)
+   - Windows: `jobgateway-win-x64-VERSION.zip`
+   - Linux: `jobgateway-linux-x64-VERSION.tar.gz`
+
+2. Extract and configure (see [Running FlinkJobGateway Standalone](#running-flinkjobgateway-standalone) below)
+
+3. Start the gateway and submit jobs via REST API
+
+### Option 2: Build from Source
+
 **Prerequisites:** .NET 9.0 SDK, Docker Desktop (or Podman)
 
 ```bash
@@ -120,6 +134,95 @@ processed.SinkToKafka("high-value-orders", "kafka:9093");
 
 await env.ExecuteAsync("fraud-detection");
 ```
+
+## Running FlinkJobGateway Standalone
+
+FlinkJobGateway can run as a standalone executable without Docker or containers. Download the latest release from [GitHub Releases](https://github.com/devstress/FlinkDotnet/releases).
+
+### Windows Installation
+
+1. Download `jobgateway-win-x64-VERSION.zip` from the latest release
+2. Extract to a directory (e.g., `C:\FlinkJobGateway`)
+3. Edit `start-gateway.bat` to configure your Flink cluster:
+   ```batch
+   set FLINK_CLUSTER_HOST=your-flink-host
+   set FLINK_CLUSTER_PORT=8081
+   set KAFKA_BOOTSTRAP=your-kafka-host:9092
+   ```
+4. Run `start-gateway.bat`
+5. Access API at `http://localhost:5000`
+
+### Linux Installation
+
+1. Download `jobgateway-linux-x64-VERSION.tar.gz` from the latest release
+2. Extract to a directory (e.g., `/opt/flinkjobgateway`)
+   ```bash
+   tar -xzf jobgateway-linux-x64-VERSION.tar.gz -C /opt/flinkjobgateway
+   ```
+3. Edit `start-gateway.sh` to configure your Flink cluster:
+   ```bash
+   export FLINK_CLUSTER_HOST=your-flink-host
+   export FLINK_CLUSTER_PORT=8081
+   export KAFKA_BOOTSTRAP=your-kafka-host:9092
+   ```
+4. Run the gateway:
+   ```bash
+   cd /opt/flinkjobgateway
+   chmod +x start-gateway.sh
+   ./start-gateway.sh
+   ```
+5. Access API at `http://localhost:5000`
+
+### Configuration
+
+The gateway can be configured via environment variables or `appsettings.json`:
+
+**Required:**
+- `FLINK_CLUSTER_HOST` - Flink JobManager hostname (default: `localhost`)
+- `FLINK_CLUSTER_PORT` - Flink JobManager REST API port (default: `8081`)
+
+**Optional:**
+- `KAFKA_BOOTSTRAP` - Kafka bootstrap servers (default: `localhost:9092`)
+- `LOG_FILE_PATH` - Log file directory (default: `./logs`)
+- `ASPNETCORE_ENVIRONMENT` - Environment mode: `Development`, `Production`, `Testing`
+- `ASPNETCORE_URLS` - HTTP endpoints to listen on (default: `http://localhost:5000`)
+
+### Connecting to Flink Clusters
+
+**Local Flink:**
+```bash
+export FLINK_CLUSTER_HOST=localhost
+export FLINK_CLUSTER_PORT=8081
+```
+
+**Remote Flink:**
+```bash
+export FLINK_CLUSTER_HOST=flink.example.com
+export FLINK_CLUSTER_PORT=8081
+```
+
+**Kubernetes Flink (with port-forward):**
+```bash
+# Terminal 1: Forward Flink port
+kubectl port-forward service/flink-jobmanager 8081:8081
+
+# Terminal 2: Run gateway
+export FLINK_CLUSTER_HOST=localhost
+export FLINK_CLUSTER_PORT=8081
+./start-gateway.sh
+```
+
+**Docker Compose Flink:**
+```bash
+# Gateway on host, Flink in Docker
+export FLINK_CLUSTER_HOST=localhost
+export FLINK_CLUSTER_PORT=8081  # Mapped port
+
+# Or use service name if gateway also in Docker network
+export FLINK_CLUSTER_HOST=flink-jobmanager
+```
+
+For complete setup instructions and troubleshooting, see the `README.md` included in the standalone package or refer to [ReleasePackagesTesting](ReleasePackagesTesting/README.md) for testing examples.
 
 ## Why FlinkDotNet?
 
