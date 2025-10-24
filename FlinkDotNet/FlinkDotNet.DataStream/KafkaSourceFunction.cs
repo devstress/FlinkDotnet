@@ -30,7 +30,6 @@ namespace FlinkDotNet.DataStream
         private readonly string _topic;
         private readonly string _bootstrapServers;
         private readonly string _groupId;
-        private readonly System.Func<string, T> _deserializer;
         private readonly string _startingOffsets;
 
         /// <summary>
@@ -53,6 +52,14 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public string StartingOffsets => _startingOffsets;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KafkaSourceFunction{T}"/> class.
+        /// </summary>
+        /// <param name="topic">Kafka topic to consume from.</param>
+        /// <param name="bootstrapServers">Kafka bootstrap servers.</param>
+        /// <param name="groupId">Consumer group ID.</param>
+        /// <param name="deserializer">Function to deserialize messages.</param>
+        /// <param name="startingOffsets">Starting offsets strategy (earliest, latest, etc.).</param>
         public KafkaSourceFunction(
             string topic,
             string bootstrapServers,
@@ -63,10 +70,16 @@ namespace FlinkDotNet.DataStream
             _topic = topic ?? throw new System.ArgumentNullException(nameof(topic));
             _bootstrapServers = bootstrapServers ?? throw new System.ArgumentNullException(nameof(bootstrapServers));
             _groupId = groupId ?? throw new System.ArgumentNullException(nameof(groupId));
-            _deserializer = deserializer ?? throw new System.ArgumentNullException(nameof(deserializer));
+            // deserializer parameter kept for API compatibility but not stored
+            _ = deserializer ?? throw new System.ArgumentNullException(nameof(deserializer));
             _startingOffsets = startingOffsets;
         }
 
+        /// <summary>
+        /// Runs the Kafka source function to consume messages asynchronously.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Async enumerable of consumed messages.</returns>
         public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // This is a placeholder implementation

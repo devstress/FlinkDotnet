@@ -1518,12 +1518,10 @@ public class FlinkJobManager : IFlinkJobManager
         // Check for invalid characters - only allow alphanumeric, hyphens, underscores, and dots
         // This prevents: /, \, ?, #, @, :, and other special characters
         // Dots are allowed for file extensions (e.g., .jar)
-        foreach (char c in segment)
+        var invalidChar = segment.FirstOrDefault(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.');
+        if (invalidChar != '\0')
         {
-            if (!char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.')
-            {
-                throw new ArgumentException($"Path segment contains invalid character '{c}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
-            }
+            throw new ArgumentException($"Path segment contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
         }
 
         // Return URL-encoded segment for additional safety

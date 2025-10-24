@@ -22,7 +22,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        public Dictionary<string, string> Metadata { get; set; } = new();
+        public Dictionary<string, string> Metadata { get; set; } = [];
 
         /// <summary>
         /// Gets whether the submission was successful
@@ -161,7 +161,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        public Dictionary<string, object> CustomMetrics { get; set; } = new();
+        public Dictionary<string, object> CustomMetrics { get; set; } = [];
     }
 
     /// <summary>

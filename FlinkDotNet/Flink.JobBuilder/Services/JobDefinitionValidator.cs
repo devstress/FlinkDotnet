@@ -8,7 +8,7 @@ namespace Flink.JobBuilder.Services
     public sealed class IrValidationResult
     {
         public bool IsValid => Errors.Count == 0;
-        public List<string> Errors { get; } = new();
+        public List<string> Errors { get; } = [];
     }
 
     public static class JobDefinitionValidator

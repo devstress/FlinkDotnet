@@ -36,7 +36,7 @@ GATEWAY_BINARY="$SCRIPT_DIR/FlinkDotNet.JobGateway"
 mkdir -p "$LOG_FILE_PATH"
 
 # Check if binary exists
-if [ ! -f "$GATEWAY_BINARY" ]; then
+if [[ ! -f "$GATEWAY_BINARY" ]]; then
     echo "ERROR: FlinkJobGateway binary not found at $GATEWAY_BINARY"
     exit 1
 fi

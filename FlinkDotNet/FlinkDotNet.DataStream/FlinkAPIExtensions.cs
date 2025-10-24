@@ -131,7 +131,6 @@ namespace FlinkDotNet.DataStream
     {
         private readonly string _topic;
         private readonly string _bootstrapServers;
-        private readonly Func<T, byte[]> _serializer;
 
         /// <summary>
         /// Gets the Kafka topic to write to.
@@ -153,7 +152,7 @@ namespace FlinkDotNet.DataStream
         {
             _topic = topic;
             _bootstrapServers = bootstrapServers;
-            _serializer = serializer;
+            // serializer parameter kept for API compatibility but not stored
         }
 
         /// <summary>
