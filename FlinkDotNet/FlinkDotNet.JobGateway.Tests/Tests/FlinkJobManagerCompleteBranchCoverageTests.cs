@@ -660,5 +660,446 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+
+        #region Submit Job Cluster Health Tests
+
+        [Test]
+        public async Task SubmitJobAsync_WithUnhealthyCluster_ReturnsFailure()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            SetupHttpException("/v1/overview", new HttpRequestException("Connection refused"));
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("not healthy"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithClusterHealthTimeout_ReturnsFailure()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            SetupHttpException("/v1/overview", new TaskCanceledException("Timeout"));
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("not healthy"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithClusterHealth404_ReturnsFailure()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("not healthy"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithClusterHealth500_ReturnsFailure()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.InternalServerError, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Contain("not healthy"));
+        }
+
+        #endregion
+
+        #region GetJobMetricsAsync Edge Cases
+
+        [Test]
+        public void GetJobMetricsAsync_WithNullJobId_ThrowsArgumentException()
+        {
+            // Arrange
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () => 
+                await jobManager.GetJobMetricsAsync(null!));
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_WithEmptyJobId_ThrowsArgumentException()
+        {
+            // Arrange
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () => 
+                await jobManager.GetJobMetricsAsync(string.Empty));
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_WithWhitespaceJobId_ThrowsArgumentException()
+        {
+            // Arrange
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () => 
+                await jobManager.GetJobMetricsAsync("   "));
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_With404OnVertices_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+                await jobManager.GetJobMetricsAsync(flinkJobId));
+            Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_With500OnVertices_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.InternalServerError, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+                await jobManager.GetJobMetricsAsync(flinkJobId));
+            Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_With503OnVertices_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.ServiceUnavailable, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+                await jobManager.GetJobMetricsAsync(flinkJobId));
+            Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_WithMalformedJsonOnVertices_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK, "{ malformed json }");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+                await jobManager.GetJobMetricsAsync(flinkJobId));
+            Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
+        }
+
+        #endregion
+
+        #region CancelJobAsync Edge Cases
+
+        [Test]
+        public void CancelJobAsync_WithNullJobId_ThrowsArgumentException()
+        {
+            // Arrange
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () => 
+                await jobManager.CancelJobAsync(null!));
+        }
+
+        [Test]
+        public void CancelJobAsync_WithEmptyJobId_ThrowsArgumentException()
+        {
+            // Arrange
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () => 
+                await jobManager.CancelJobAsync(string.Empty));
+        }
+
+        [Test]
+        public void CancelJobAsync_WithWhitespaceJobId_ThrowsArgumentException()
+        {
+            // Arrange
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            Assert.ThrowsAsync<ArgumentException>(async () => 
+                await jobManager.CancelJobAsync("   "));
+        }
+
+        [Test]
+        public async Task CancelJobAsync_WithSuccessfulPatch_ReturnsTrue()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.CancelJobAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public async Task CancelJobAsync_WithPatch404AndPostSuccess_ReturnsTrue()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
+            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.CancelJobAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        [Test]
+        public async Task CancelJobAsync_WithPatch500AndPostSuccess_ReturnsTrue()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
+            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Accepted, "", "POST");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.CancelJobAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.True);
+        }
+
+        #endregion
+
+        #region Additional Validation Tests
+
+        [Test]
+        public async Task SubmitJobAsync_WithFileSink_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new FileSinkDefinition { Path = "/tmp/output" }
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithHttpSink_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new HttpSinkDefinition { Url = "http://localhost:8080/api" }
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithDatabaseSink_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost;Database=test" }
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithConsoleSink_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new ConsoleSinkDefinition()
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithRedisSink_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Sink = new RedisSinkDefinition()
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        #endregion
+
+        #region Source Validation Tests
+
+        [Test]
+        public async Task SubmitJobAsync_WithFileSource_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new FileSourceDefinition { Path = "/tmp/input" },
+                Sink = new ConsoleSinkDefinition()
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithHttpSource_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new HttpSourceDefinition { Url = "http://localhost:8080/api" },
+                Sink = new ConsoleSinkDefinition()
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithDatabaseSource_PassesValidation()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Source = new DatabaseSourceDefinition { ConnectionString = "Server=localhost;Database=test", Query = "SELECT * FROM table" },
+                Sink = new ConsoleSinkDefinition()
+            };
+            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert - Will fail on cluster health but passes validation
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.ErrorMessage, Does.Not.Contain("validation"));
+        }
+
+        #endregion
     }
 }
