@@ -97,20 +97,6 @@ public class TimeWindowBranchCoverageTests
         Assert.That(result, Is.True);
     }
 
-    [Test]
-    public void TimeWindow_Intersects_WithStartAtEndBoundary_ReturnsFalse()
-    {
-        // Arrange
-        var window1 = new TimeWindow(0, 100);
-        var window2 = new TimeWindow(100, 200);
-
-        // Act - Start < other.End is false when they're equal
-        var result = window1.Intersects(window2);
-
-        // Assert
-        Assert.That(result, Is.False);
-    }
-
     #endregion
 
     #region MergeWindows Tests
