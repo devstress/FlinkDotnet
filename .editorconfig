@@ -43,6 +43,7 @@ csharp_preferred_modifier_order = public,private,protected,internal,static,exter
 # Expression-level preferences
 dotnet_style_object_initializer = true:suggestion
 dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_collection_expression = true:suggestion
 dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion
@@ -224,6 +225,11 @@ csharp_using_directive_placement = outside_namespace:warning
 dotnet_sort_system_directives_first = true
 dotnet_diagnostic.IDE0005.severity = error
 dotnet_diagnostic.CS8019.severity = error
+
+# Collection expression preferences (C# 12+)
+dotnet_diagnostic.IDE0300.severity = suggestion # Use collection expression for array
+dotnet_diagnostic.IDE0301.severity = suggestion # Use collection expression for empty
+dotnet_diagnostic.IDE0305.severity = suggestion # Use collection expression for fluent
 
 # WARNING ENFORCEMENT: Critical code quality rules are now errors
 # Async/await patterns
