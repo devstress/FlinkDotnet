@@ -88,7 +88,8 @@ jobs:
               /d:sonar.exclusions="**/bin/**,**/obj/**,**/TestResults/**,**/CoverageReport/**,**/Demo/**,**/Backpressure/TestingSupportClasses.cs" \
               /d:sonar.test.exclusions="**/bin/**,**/obj/**" \
               /d:sonar.coverage.exclusions="**/*.Tests/**,**/TestResults/**" \
-              /d:sonar.cpd.exclusions="**/*.Tests/**"; then
+              /d:sonar.cpd.exclusions="**/*.Tests/**" \
+              /d:sonar.dotnet.excludeTestProjects=true; then
               echo "SonarQube Cloud analysis started successfully"
               exit 0
             fi
