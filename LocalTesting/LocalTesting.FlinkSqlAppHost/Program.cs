@@ -347,8 +347,8 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
-    .WithEnvironment("services__flink-jobmanager__jm-http__0", $"http://localhost:{Ports.JobManagerHostPort}")
-    .WithEnvironment("services__flink-sql-gateway__sg-http__0", $"http://localhost:{Ports.SqlGatewayHostPort}");
+    .WithEnvironment("services__flink-jobmanager__jm-http__0", "http://localhost:" + Ports.JobManagerHostPort.ToString())
+    .WithEnvironment("services__flink-sql-gateway__sg-http__0", "http://localhost:" + Ports.SqlGatewayHostPort.ToString());
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
