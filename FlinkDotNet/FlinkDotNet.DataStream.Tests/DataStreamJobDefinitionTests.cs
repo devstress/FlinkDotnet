@@ -111,6 +111,8 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(result, Is.Not.Null);
         }
 
+        // Separate test for Filter method with null job definition validation
+#pragma warning disable S4144 // Methods should not have identical implementations
         [Test]
         public void Filter_WithNullJobDefinition_ThrowsArgumentNullException()
         {
@@ -168,6 +170,7 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(result, Is.Not.Null);
         }
 
+        // Separate test for FlatMap method with null job definition validation
         [Test]
         public void FlatMap_WithNullJobDefinition_ThrowsArgumentNullException()
         {
@@ -241,5 +244,6 @@ namespace FlinkDotNet.DataStream.Tests
                 return System.Threading.Tasks.Task.CompletedTask;
             }
         }
+#pragma warning restore S4144 // Methods should not have identical implementations
     }
 }

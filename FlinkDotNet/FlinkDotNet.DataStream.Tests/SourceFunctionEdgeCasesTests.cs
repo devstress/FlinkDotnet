@@ -350,7 +350,7 @@ namespace FlinkDotNet.DataStream.Tests
                 _data = data;
             }
 
-            public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+            public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
                 foreach (var item in _data)
                 {

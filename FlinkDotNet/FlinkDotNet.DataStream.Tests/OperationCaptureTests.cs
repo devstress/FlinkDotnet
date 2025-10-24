@@ -391,6 +391,8 @@ namespace FlinkDotNet.DataStream.Tests
 
         #region LogCleanup Tests
 
+        // Separate test to verify logger cleanup behavior
+#pragma warning disable S4144 // Methods should not have identical implementations
         [Test]
         public void CreateLogger_WithOldLogFiles_CleansUpOldFiles()
         {
@@ -467,5 +469,6 @@ namespace FlinkDotNet.DataStream.Tests
             public (int, int) Merge((int, int) acc1, (int, int) acc2) => 
                 (acc1.Item1 + acc2.Item1, acc1.Item2 + acc2.Item2);
         }
+#pragma warning restore S4144 // Methods should not have identical implementations
     }
 }

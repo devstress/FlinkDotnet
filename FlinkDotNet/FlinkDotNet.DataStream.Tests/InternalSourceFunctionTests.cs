@@ -465,7 +465,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceData = Enumerable.Range(1, 1000);
             var sourceFunction = new TestSourceFunction<int>(sourceData);
             var mappedFunction = new MappedSourceFunction<int, int>(sourceFunction, i => i * 2);
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
 
             // Act
             var results = new List<int>();
@@ -555,7 +555,7 @@ namespace FlinkDotNet.DataStream.Tests
             var flatMappedFunction = new FlatMappedSourceFunction<int, int>(
                 sourceFunction,
                 i => Enumerable.Range(1, i));
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
 
             // Act
             var results = new List<int>();
@@ -637,7 +637,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceData = Enumerable.Range(1, 1000).Where(i => i % 2 == 0);
             var sourceFunction = new TestSourceFunction<int>(sourceData);
             var filteredFunction = new FilteredSourceFunction<int>(sourceFunction, i => i > 0);
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
 
             // Act
             var results = new List<int>();
@@ -752,7 +752,7 @@ namespace FlinkDotNet.DataStream.Tests
             var aggregatedFunction = new AggregatedSourceFunction<int, int, int>(
                 sourceFunction,
                 aggregateFunc);
-            var cts = new CancellationTokenSource();
+            using var cts = new CancellationTokenSource();
             cts.Cancel(); // Cancel immediately
 
             // Act

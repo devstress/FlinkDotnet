@@ -71,6 +71,8 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(result, Is.Not.Null);
         }
 
+        // Separate test for filter operation translation with function parameter
+#pragma warning disable S4144 // Methods should not have identical implementations
         [Test]
         public void OperationCapture_TranslateFilterOperation_WithFunction_ShouldAddFilterDefinition()
         {
@@ -116,6 +118,7 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(result, Is.Not.Null);
         }
 
+        // Separate test to verify HasOperations behavior with no operations
         [Test]
         public void OperationCapture_HasOperations_WithNoOperations_ShouldReturnTrue()
         {
@@ -238,7 +241,7 @@ namespace FlinkDotNet.DataStream.Tests
                 return new Watermark(extractedTimestamp);
             }
 
-            public long ExtractTimestamp(TestMessage element, long recordTimestamp)
+            public long ExtractTimestamp(TestMessage element, long previousElementTimestamp)
             {
                 return element.Timestamp;
             }
@@ -251,5 +254,6 @@ namespace FlinkDotNet.DataStream.Tests
             public int GetResult(int accumulator) => accumulator;
             public int Merge(int acc1, int acc2) => acc1 + acc2;
         }
+#pragma warning restore S4144 // Methods should not have identical implementations
     }
 }

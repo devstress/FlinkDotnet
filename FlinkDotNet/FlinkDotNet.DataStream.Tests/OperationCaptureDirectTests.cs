@@ -161,6 +161,8 @@ namespace FlinkDotNet.DataStream.Tests
 
         #region TranslateFilterOperation Tests
 
+        // Separate test for custom filter function operation translation
+#pragma warning disable S4144 // Methods should not have identical implementations
         [Test]
         public void TranslateFilterOperation_WithCustomFilterFunction_CreatesFilterOperation()
         {
@@ -366,6 +368,7 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(result, Is.Not.Null);
         }
 
+        // Separate test for upper operation type mapping
         [Test]
         public void CaptureMapOperation_WithUpperOperationType_ShouldCaptureCorrectly()
         {
@@ -378,6 +381,7 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(result, Is.Not.Null);
         }
 
+        // Separate test for lower operation type mapping
         [Test]
         public void CaptureMapOperation_WithLowerOperationType_ShouldCaptureCorrectly()
         {
@@ -418,6 +422,7 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(stream2, Is.Not.Null);
         }
 
+        // Separate test for Kafka sink with different serializers
         [Test]
         public void CaptureKafkaSink_WithDifferentSerializers_ShouldWork()
         {
@@ -430,14 +435,6 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert
             Assert.That(stream, Is.Not.Null);
-        }
-
-        private class TestSplitFlatMapFunction : IFlatMapFunction<string, string>
-        {
-            public System.Collections.Generic.IEnumerable<string> FlatMap(string value)
-            {
-                return value.Split(' ');
-            }
         }
 
         #endregion
@@ -473,19 +470,9 @@ namespace FlinkDotNet.DataStream.Tests
             public string Map(string value) => value.Trim();
         }
 
-        private class TestFilterFunction : IFilterFunction<string>
-        {
-            public bool Filter(string value) => value.Length > 3;
-        }
-
         private class TestMultiplyMapFunction : IMapFunction<int, int>
         {
             public int Map(int value) => value * 2;
-        }
-
-        private class TestPositiveFilterFunction : IFilterFunction<int>
-        {
-            public bool Filter(int value) => value > 0;
         }
 
         private class TestAggregateFunction : IAggregateFunction<int, int, int>
@@ -497,5 +484,6 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         #endregion
+#pragma warning restore S4144 // Methods should not have identical implementations
     }
 }
