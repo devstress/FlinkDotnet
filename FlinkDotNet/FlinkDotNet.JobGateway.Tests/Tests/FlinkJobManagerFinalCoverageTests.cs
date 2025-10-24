@@ -52,6 +52,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", null);
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", null);
         _httpClient?.Dispose();
     }
 
@@ -313,6 +314,168 @@ public class FlinkJobManagerFinalCoverageTests
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+    }
+
+    #endregion
+
+    #region Protocol Configuration Tests
+
+    [Test]
+    public void Constructor_WithHttpsProtocolFromEnvironment_UsesHttpsEndpoint()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "https");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "secure-host");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8443");
+
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+
+        // Act
+        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+        // Assert
+        Assert.That(manager, Is.Not.Null);
+        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("https://secure-host:8443/"));
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using HTTPS protocol")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // Cleanup
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", null);
+    }
+
+    [Test]
+    public void Constructor_WithHttpsProtocolFromConfiguration_UsesHttpsEndpoint()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "secure-host");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8443");
+
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns("https");
+
+        // Act
+        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+        // Assert
+        Assert.That(manager, Is.Not.Null);
+        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("https://secure-host:8443/"));
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using HTTPS protocol from configuration")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Test]
+    public void Constructor_WithoutProtocolConfiguration_DefaultsToHttp()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "default-host");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
+
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns((string?)null);
+
+        // Act
+        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+        // Assert
+        Assert.That(manager, Is.Not.Null);
+        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://default-host:8081/"));
+    }
+
+    [Test]
+    public void Constructor_WithInvalidProtocolEnvironmentVariable_DefaultsToHttp()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "ftp"); // Invalid protocol
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "test-host");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
+
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+
+        // Act
+        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+        // Assert
+        Assert.That(manager, Is.Not.Null);
+        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://test-host:8081/"));
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Invalid FLINK_PROTOCOL value")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // Cleanup
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", null);
+    }
+
+    [Test]
+    public void Constructor_WithInvalidProtocolConfiguration_DefaultsToHttp()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "test-host");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
+
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns("ftp"); // Invalid protocol
+
+        // Act
+        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+        // Assert
+        Assert.That(manager, Is.Not.Null);
+        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://test-host:8081/"));
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Invalid Flink:Protocol configuration value")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Test]
+    public void Constructor_EnvironmentProtocolTakesPrecedenceOverConfiguration()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "https");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "secure-host");
+        Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8443");
+
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns("http"); // Config says http
+
+        // Act
+        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+        // Assert - Environment variable should take precedence
+        Assert.That(manager, Is.Not.Null);
+        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("https://secure-host:8443/"));
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using HTTPS protocol from FLINK_PROTOCOL")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // Cleanup
+        Environment.SetEnvironmentVariable("FLINK_PROTOCOL", null);
     }
 
     #endregion

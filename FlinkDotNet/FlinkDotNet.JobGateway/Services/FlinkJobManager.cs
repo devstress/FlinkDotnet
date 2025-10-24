@@ -157,19 +157,64 @@ public class FlinkJobManager : IFlinkJobManager
         if (!string.IsNullOrEmpty(envHost))
         {
             var port = int.TryParse(envPort, out var p) ? p : defaultPort;
-            var envEndpoint = $"http://{envHost}:{port}";
+            var protocol = GetProtocol();
+            var envEndpoint = $"{protocol}://{envHost}:{port}";
             _logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
             return envEndpoint;
         }
 
         // Strategy 4: Default fallback
-        var defaultEndpoint = $"http://{defaultHost}:{defaultPort}";
+        var defaultProtocol = GetProtocol();
+        var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
         _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
             _logger.LogWarning("Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
         }
         return defaultEndpoint;
+    }
+
+    /// <summary>
+    /// Gets the protocol (http or https) from configuration or environment variable.
+    /// Defaults to http for backward compatibility.
+    /// </summary>
+    /// <returns>The protocol string ("http" or "https").</returns>
+    private string GetProtocol()
+    {
+        // Check environment variable first
+        var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+        if (!string.IsNullOrEmpty(envProtocol))
+        {
+            var protocol = envProtocol.Trim().ToLowerInvariant();
+            if (protocol == "https")
+            {
+                _logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
+                return "https";
+            }
+            if (protocol != "http")
+            {
+                _logger.LogWarning("Invalid FLINK_PROTOCOL value '{Protocol}', defaulting to http", envProtocol);
+            }
+        }
+
+        // Check configuration
+        var configProtocol = _configuration["Flink:Protocol"];
+        if (!string.IsNullOrEmpty(configProtocol))
+        {
+            var protocol = configProtocol.Trim().ToLowerInvariant();
+            if (protocol == "https")
+            {
+                _logger.LogInformation("Using HTTPS protocol from configuration");
+                return "https";
+            }
+            if (protocol != "http")
+            {
+                _logger.LogWarning("Invalid Flink:Protocol configuration value '{Protocol}', defaulting to http", configProtocol);
+            }
+        }
+
+        // Default to http
+        return "http";
     }
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
