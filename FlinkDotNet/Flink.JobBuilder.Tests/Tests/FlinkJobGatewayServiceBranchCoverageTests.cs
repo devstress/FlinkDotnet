@@ -19,6 +19,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     [SetUp]
     public void SetUp()
     {
+        // Set environment variable required by FlinkJobGatewayConfiguration
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+        
         _mockLogger = new Mock<ILogger>();
         
         // Clean up test log directory
@@ -55,6 +58,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     public void TearDown()
     {
         Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }
 
     #region Logger Creation and Cleanup Tests
