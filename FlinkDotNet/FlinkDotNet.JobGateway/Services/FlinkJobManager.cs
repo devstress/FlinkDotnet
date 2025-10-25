@@ -1547,19 +1547,20 @@ public class FlinkJobManager : IFlinkJobManager
     /// Rejects path traversal sequences, special characters, and URL-encoded attacks.
     /// </summary>
     /// <param name="segment">The path segment to validate.</param>
+    /// <param name="parameterName">Name of the parameter being validated (auto-populated via CallerArgumentExpression).</param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
-    private static string ValidateAndSanitizePathSegment(string segment)
+    private static string ValidateAndSanitizePathSegment(string segment, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(segment))] string? parameterName = null)
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
-            throw new ArgumentException($"Path segment cannot be null or empty.", nameof(segment));
+            throw new ArgumentException($"Path segment cannot be null or empty.", parameterName);
         }
 
         // Check for path traversal sequences
         if (segment.Contains("..") || segment.Contains("./") || segment.Contains(".\\"))
         {
-            throw new ArgumentException($"Path segment contains invalid path traversal sequence: {segment}", nameof(segment));
+            throw new ArgumentException($"Path segment contains invalid path traversal sequence: {segment}", parameterName);
         }
 
         // Check for invalid characters - only allow alphanumeric, hyphens, underscores, and dots
@@ -1568,7 +1569,7 @@ public class FlinkJobManager : IFlinkJobManager
         var invalidChar = segment.FirstOrDefault(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.');
         if (invalidChar != '\0')
         {
-            throw new ArgumentException($"Path segment contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", nameof(segment));
+            throw new ArgumentException($"Path segment contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
         }
 
         // Return URL-encoded segment for additional safety
