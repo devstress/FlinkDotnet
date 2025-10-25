@@ -519,6 +519,9 @@ namespace Flink.JobBuilder.Services
         {
             // ConsoleSink has optional format field, no required validation
             // Valid formats would be "json", "string", etc., but format is optional
+            // Parameters are required by the interface but not used in this specific validation
+            _ = sink;
+            _ = errors;
         }
     }
 }
