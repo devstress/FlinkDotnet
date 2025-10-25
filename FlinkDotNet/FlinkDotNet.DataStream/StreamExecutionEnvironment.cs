@@ -455,22 +455,7 @@ namespace FlinkDotNet.DataStream
                 var gatewayUrl = gatewayConfig.BaseUrl;
 
                 // Extract JobManager URL from error message if available
-                string? jobManagerUrl = "(not available in error message)";
-                if (submit.ErrorMessage?.Contains("at http") == true)
-                {
-                    var startIndex = submit.ErrorMessage.IndexOf("at http");
-                    if (startIndex >= 0)
-                    {
-                        var urlStart = submit.ErrorMessage.IndexOf("http", startIndex);
-                        if (urlStart >= 0)
-                        {
-                            var urlEnd = submit.ErrorMessage.IndexOfAny(new[] { ' ', '\n', '\r', '"', '\'' }, urlStart);
-                            jobManagerUrl = urlEnd > urlStart
-                                ? submit.ErrorMessage.Substring(urlStart, urlEnd - urlStart)
-                                : submit.ErrorMessage.Substring(urlStart);
-                        }
-                    }
-                }
+                string? jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
 
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
                 _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");
@@ -507,6 +492,31 @@ namespace FlinkDotNet.DataStream
         {
             _executionConfig.GetConfiguration().AddAll(configuration);
             return this;
+        }
+
+        private static string ExtractJobManagerUrlFromError(string? errorMessage)
+        {
+            if (string.IsNullOrEmpty(errorMessage) || !errorMessage.Contains("at http"))
+            {
+                return "(not available in error message)";
+            }
+
+            var startIndex = errorMessage.IndexOf("at http");
+            if (startIndex < 0)
+            {
+                return "(not available in error message)";
+            }
+
+            var urlStart = errorMessage.IndexOf("http", startIndex);
+            if (urlStart < 0)
+            {
+                return "(not available in error message)";
+            }
+
+            var urlEnd = errorMessage.IndexOfAny(new[] { ' ', '\n', '\r', '"', '\'' }, urlStart);
+            return urlEnd > urlStart
+                ? errorMessage.Substring(urlStart, urlEnd - urlStart)
+                : errorMessage.Substring(urlStart);
         }
     }
 
@@ -602,13 +612,16 @@ namespace FlinkDotNet.DataStream
         private static string GetProtocol()
         {
             var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
-            if (!string.IsNullOrEmpty(envProtocol))
+            if (string.IsNullOrEmpty(envProtocol))
             {
-                var protocol = envProtocol.Trim().ToLowerInvariant();
-                if (protocol == "https")
-                {
-                    return "https";
-                }
+                // Default to http for backward compatibility
+                return "http";
+            }
+
+            var protocol = envProtocol.Trim().ToLowerInvariant();
+            if (protocol == "https")
+            {
+                return "https";
             }
 
             // Default to http for backward compatibility

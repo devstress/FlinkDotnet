@@ -9,12 +9,27 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JobDefinition
     {
+        /// <summary>
+        /// Data source for the streaming job
+        /// </summary>
         public ISourceDefinition Source { get; set; } = null!;
+        
+        /// <summary>
+        /// List of operations to apply to the data stream
+        /// </summary>
         public List<IOperationDefinition> Operations { get; set; } = [];
+        
+        /// <summary>
+        /// Data sink for the streaming job (nullable for pure SQL jobs)
+        /// </summary>
         public ISinkDefinition? Sink
         {
             get; set;
         } // nullable to allow pure SQL jobs
+        
+        /// <summary>
+        /// Job metadata including ID, name, version, and properties
+        /// </summary>
         public JobMetadata Metadata { get; set; } = new();
     }
 
@@ -23,20 +38,43 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JobMetadata
     {
+        /// <summary>
+        /// Unique identifier for the job
+        /// </summary>
         public string JobId { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Human-readable name for the job
+        /// </summary>
         public string? JobName
         {
             get; set;
         }
+        
+        /// <summary>
+        /// Timestamp when the job was created
+        /// </summary>
         public DateTime CreatedAt
         {
             get; set;
         }
+        
+        /// <summary>
+        /// Version of the job definition
+        /// </summary>
         public string Version { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Parallelism level for job execution
+        /// </summary>
         public int? Parallelism
         {
             get; set;
         }
+        
+        /// <summary>
+        /// Additional properties for job configuration
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -51,6 +89,9 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
     public interface ISourceDefinition
     {
+        /// <summary>
+        /// Type discriminator for the source (kafka, file, http, database, sql)
+        /// </summary>
         public string Type
         {
             get;
