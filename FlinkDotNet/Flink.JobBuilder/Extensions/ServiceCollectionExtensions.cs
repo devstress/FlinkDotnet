@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
             // Bind from appsettings
             configuration.GetSection("FlinkJobGateway").Bind(options);
 
-            // If BaseUrl is set in appsettings, use it
+            // If BaseUrl is already configured in appsettings, use it
             if (!string.IsNullOrEmpty(options.BaseUrl))
             {
                 return;
