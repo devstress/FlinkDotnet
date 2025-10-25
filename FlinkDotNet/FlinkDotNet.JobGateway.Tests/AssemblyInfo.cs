@@ -1,5 +1,6 @@
-// Enable parallel test execution at the assembly level
-[assembly: Parallelizable(ParallelScope.Children)]
-// Set the number of worker threads (0 means use number of processors)
-// Tests use mocked HttpClient instances which are not fully thread-safe at high parallelism
-[assembly: LevelOfParallelism(0)]
+// Enable parallel test execution at the fixture level only
+// Tests within the same fixture run sequentially to avoid resource conflicts
+// Different test fixtures run in parallel for improved throughput
+[assembly: Parallelizable(ParallelScope.Fixtures)]
+// Use 8 worker threads for optimal balance (tested 4-20, no significant difference)
+[assembly: LevelOfParallelism(8)]
