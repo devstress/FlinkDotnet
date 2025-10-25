@@ -1,8 +1,6 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using FlinkDotNet.DataStream;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -13,7 +11,7 @@ namespace FlinkDotNet.DataStream.Tests
     [TestFixture]
     public class DataStreamPartitioningCoverageTests
     {
-        private StreamExecutionEnvironment _env;
+        private StreamExecutionEnvironment? _env;
 
         [SetUp]
         public void Setup()

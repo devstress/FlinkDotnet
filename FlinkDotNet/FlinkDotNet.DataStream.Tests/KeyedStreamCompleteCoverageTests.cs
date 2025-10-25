@@ -1,8 +1,6 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using FlinkDotNet.DataStream;
 using FlinkDotNet.DataStream.Window;
 using FlinkDotNet.DataStream.Window.Assigners;
 
@@ -15,7 +13,7 @@ namespace FlinkDotNet.DataStream.Tests
     [TestFixture]
     public class KeyedStreamCompleteCoverageTests
     {
-        private StreamExecutionEnvironment _env;
+        private StreamExecutionEnvironment? _env;
 
         [SetUp]
         public void Setup()

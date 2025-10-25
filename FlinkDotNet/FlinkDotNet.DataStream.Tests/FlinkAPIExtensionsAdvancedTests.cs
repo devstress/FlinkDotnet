@@ -1,7 +1,5 @@
 using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 

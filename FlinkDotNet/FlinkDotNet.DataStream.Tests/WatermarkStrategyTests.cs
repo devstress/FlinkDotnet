@@ -1,5 +1,4 @@
 using System;
-using FlinkDotNet.DataStream;
 using FlinkDotNet.DataStream.Watermarks;
 using NUnit.Framework;
 

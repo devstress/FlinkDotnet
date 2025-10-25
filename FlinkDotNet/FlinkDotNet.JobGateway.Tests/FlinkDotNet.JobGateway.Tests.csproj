@@ -18,8 +18,26 @@
          S6610: StartsWith overload preference (test readability over performance)
          S2925: Thread.Sleep in tests (acceptable for timing tests)
          EnableGenerateDocumentationFile: Informational message about enabling doc generation
+         RCS1060: Multiple types per file (test fixtures grouped together)
+         S113: Missing newlines at EOF (test files)
+         S2148: Numeric literal readability (test data)
+         S4004: Mutable collections (test setup)
+         S6354: DateTime.Now in tests (acceptable for testing)
+         S6605: Use Exists vs Any (test readability)
+         S2931: IDisposable in test fixtures (managed by test framework)
+         S4226: Extension method namespaces (test helpers)
+         S131: Switch default clauses (test pattern matching)
+         S103: Line length (test data and assertions)
+         S4040: ToUpperInvariant (test data)
+         S1192: Duplicate string literals (test data)
+         S104: File length (comprehensive test coverage)
+         S6602: Use Find (test clarity)
+         S2302: Use nameof (test messages)
+         S1144: Unused private members (test helpers)
+         S4041: Type name matches namespace (test fixtures)
+         RCS1263: Invalid XML documentation (test documentation)
     -->
-    <NoWarn>$(NoWarn);CS8602;CS8625;CS8425;S4144;S2094;S2681;S6610;S2925;EnableGenerateDocumentationFile</NoWarn>
+    <NoWarn>$(NoWarn);CS8602;CS8625;CS8425;S4144;S2094;S2681;S6610;S2925;EnableGenerateDocumentationFile;RCS1060;S113;S2148;S4004;S6354;S6605;S2931;S4226;S131;S103;S4040;S1192;S104;S6602;S2302;S1144;S4041;RCS1263</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 using Moq;
 using Moq.Protected;
 using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using Flink.JobBuilder.Models;
 using System;
 using System.Net;

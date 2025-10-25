@@ -45,8 +45,8 @@ namespace FlinkDotNet.DataStream
         private int _bufferTimeoutMillis = 100;
         private bool _operatorChainingEnabled = true;
         private long _checkpointInterval = -1;
-        private bool _adaptiveSchedulerEnabled = false;
-        private bool _reactiveModeEnabled = false;
+        private bool _adaptiveSchedulerEnabled;
+        private bool _reactiveModeEnabled;
         private string? _savepointPath;
         private IStateBackend? _stateBackend;
         private readonly CheckpointConfig _checkpointConfig = new();
@@ -420,7 +420,9 @@ namespace FlinkDotNet.DataStream
             else if (_activeJob != null)
             {
                 // Use existing JobDefinition (IR-backed stream)
-                _serilogLogger.Information("[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}", (_activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
+                _serilogLogger.Information(
+                    "[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}",
+                    (_activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
                 jobToSubmit = _activeJob;
                 jobToSubmit.Metadata.JobName = name;
             }
@@ -430,7 +432,9 @@ namespace FlinkDotNet.DataStream
                 throw new InvalidOperationException("No Flink-compatible job is defined. Use AddKafkaSource(...) or FromKafka(...) before Execute().");
             }
 
-            _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _serilogLogger.Information(
+                "[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}",
+                (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
             var gatewayConfig = new FlinkJobGatewayConfiguration();
             var gateway = new FlinkJobGatewayService(gatewayConfig);
 
@@ -478,7 +482,8 @@ namespace FlinkDotNet.DataStream
         public Task<JobClient> ExecuteAsyncJob(string jobName = "Flink Streaming Job")
         {
             if (_activeJob == null)
-                throw new InvalidOperationException("No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before ExecuteAsyncJob().");
+                throw new InvalidOperationException(
+                    "No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before ExecuteAsyncJob().");
             _activeJob.Metadata.JobName = jobName;
             return Task.FromResult(new JobClient(jobName));
         }
@@ -641,10 +646,12 @@ namespace FlinkDotNet.DataStream
         public async Task CancelAsync(CancellationToken cancellationToken = default)
         {
             var success = await _gateway.CancelJobAsync(JobId, cancellationToken);
-            if (!success)
+            if (success)
             {
-                throw new InvalidOperationException($"Failed to cancel job {JobId}");
+                return;
             }
+
+            throw new InvalidOperationException($"Failed to cancel job {JobId}");
         }
 
         /// <summary>
@@ -745,11 +752,13 @@ namespace FlinkDotNet.DataStream
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed && disposing)
+            if (_disposed || !disposing)
             {
-                _flinkHttp?.Dispose();
-                _disposed = true;
+                return;
             }
+
+            _flinkHttp?.Dispose();
+            _disposed = true;
         }
 
         public void Dispose()

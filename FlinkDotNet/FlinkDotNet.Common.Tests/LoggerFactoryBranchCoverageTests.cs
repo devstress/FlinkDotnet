@@ -1,6 +1,4 @@
-using NUnit.Framework;
 using FlinkDotNet.Common.Logging;
-using System;
 using System.IO.Abstractions.TestingHelpers;
 using Moq;
 using System.IO.Abstractions;

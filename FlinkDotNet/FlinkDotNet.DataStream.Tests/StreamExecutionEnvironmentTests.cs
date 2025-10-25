@@ -1,11 +1,9 @@
 using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using FlinkDotNet.Common;
 using FlinkDotNet.DataStream.State;
 using FlinkDotNet.DataStream.Checkpoint;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;

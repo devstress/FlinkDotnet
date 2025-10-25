@@ -2,7 +2,6 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Reflection;
-using FlinkDotNet.DataStream;
 using Flink.JobBuilder.Models;
 
 namespace FlinkDotNet.DataStream.Tests

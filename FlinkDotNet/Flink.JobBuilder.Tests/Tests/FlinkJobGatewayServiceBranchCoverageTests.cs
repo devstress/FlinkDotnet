@@ -1,9 +1,7 @@
-using System.Net;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Moq.Protected;
 
 namespace Flink.JobBuilder.Tests.Tests;
 

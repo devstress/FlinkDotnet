@@ -84,6 +84,9 @@ namespace Flink.JobBuilder.Services
                 case DatabaseSourceDefinition d:
                     ValidateDatabaseSource(d, errors);
                     break;
+                default:
+                    errors.Add($"Unknown source type: {source?.GetType().Name ?? "null"}");
+                    break;
             }
         }
 
@@ -164,6 +167,9 @@ namespace Flink.JobBuilder.Services
                     break;
                 case SideOutputOperationDefinition so:
                     ValidateSideOutputOperation(so, index, errors);
+                    break;
+                default:
+                    errors.Add($"Operation[{index}]: Unknown operation type: {operation?.GetType().Name ?? "null"}");
                     break;
             }
         }
@@ -330,6 +336,9 @@ namespace Flink.JobBuilder.Services
                     break;
                 case RedisSinkDefinition r:
                     ValidateRedisSink(r, errors);
+                    break;
+                default:
+                    errors.Add($"Unknown sink type: {sink?.GetType().Name ?? "null"}");
                     break;
             }
         }

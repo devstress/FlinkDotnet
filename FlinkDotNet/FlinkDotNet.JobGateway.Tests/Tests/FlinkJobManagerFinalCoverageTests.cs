@@ -2,10 +2,6 @@ using FlinkDotNet.JobGateway.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Moq.Protected;
-using NUnit.Framework;
-using System.Net;
-using System.Text.Json;
 
 namespace FlinkDotNet.JobGateway.Tests.Tests;
 

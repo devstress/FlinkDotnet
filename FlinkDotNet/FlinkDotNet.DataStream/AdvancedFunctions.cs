@@ -328,11 +328,12 @@ namespace FlinkDotNet.DataStream
 
         public override bool Equals(object? obj)
         {
-            if (obj is OutputTag<T> other)
+            if (obj is not OutputTag<T> other)
             {
-                return Id == other.Id;
+                return false;
             }
-            return false;
+
+            return Id == other.Id;
         }
 
         public override int GetHashCode()

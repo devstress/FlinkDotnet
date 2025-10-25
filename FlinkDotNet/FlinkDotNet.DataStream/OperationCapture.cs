@@ -41,7 +41,8 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureKafkaSource(string topic, string bootstrapServers, string groupId, string startingOffsets, object? deserializer = null)
         {
-            _logger.Information("[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
+            _logger.Information(
+                "[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
                 topic, bootstrapServers, groupId, startingOffsets);
 
             _kafkaSource = new KafkaSourceDefinition
@@ -167,7 +168,9 @@ namespace FlinkDotNet.DataStream
             _logger.Information("[OperationCapture.ToJobDefinition] After CreateJobDefinition: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             ConfigureJobMetadata(jobDef);
-            _logger.Information("[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _logger.Information(
+                "[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}",
+                (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             TranslateOperations(jobDef);
             _logger.Information("[OperationCapture.ToJobDefinition] After TranslateOperations: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
@@ -213,10 +216,12 @@ namespace FlinkDotNet.DataStream
                 jobDef.Metadata.Properties["deserializationFunction"] = _deserializationFunction.GetType().FullName ?? "Unknown";
             }
 
-            if (_serializationFunction != null)
+            if (_serializationFunction == null)
             {
-                jobDef.Metadata.Properties["serializationFunction"] = _serializationFunction.GetType().FullName ?? "Unknown";
+                return;
             }
+
+            jobDef.Metadata.Properties["serializationFunction"] = _serializationFunction.GetType().FullName ?? "Unknown";
         }
 
         private void TranslateOperations(JobDefinition jobDef)
@@ -239,6 +244,9 @@ namespace FlinkDotNet.DataStream
                         break;
                     case "Aggregate":
                         TranslateAggregateOperation(jobDef, operation);
+                        break;
+                    default:
+                        _logger.Warning("[OperationCapture.TranslateOperations] Unknown operation type: {OperationType}", operation.Type);
                         break;
                 }
             }
@@ -289,13 +297,15 @@ namespace FlinkDotNet.DataStream
 
         private void TranslateFilterOperation(JobDefinition jobDef, CapturedOperation operation)
         {
-            if (operation.Function != null)
+            if (operation.Function == null)
             {
-                jobDef.Operations.Add(new FilterOperationDefinition
-                {
-                    Expression = $"function:{operation.Function.GetType().FullName}"
-                });
+                return;
             }
+
+            jobDef.Operations.Add(new FilterOperationDefinition
+            {
+                Expression = $"function:{operation.Function.GetType().FullName}"
+            });
         }
 
         // NOTE: TranslateWindowOperation was removed as dead code.

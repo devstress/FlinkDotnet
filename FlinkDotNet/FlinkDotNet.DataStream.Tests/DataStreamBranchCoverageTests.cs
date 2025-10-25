@@ -1,11 +1,9 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using FlinkDotNet.DataStream;
 using Flink.JobBuilder.Models;
 
 namespace FlinkDotNet.DataStream.Tests

@@ -1,7 +1,5 @@
 using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace FlinkDotNet.DataStream.Tests
