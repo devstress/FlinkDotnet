@@ -1610,13 +1610,13 @@ public class FlinkJobManager : IFlinkJobManager
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
-            throw new ArgumentException($"Path {nameof(segment)} cannot be null or empty.", parameterName);
+            throw new ArgumentException($"Path parameter '{parameterName}' cannot be null or empty.", parameterName);
         }
 
         // Check for path traversal sequences
         if (segment.Contains("..") || segment.Contains("./") || segment.Contains(".\\"))
         {
-            throw new ArgumentException($"Path {nameof(segment)} contains invalid path traversal sequence: {segment}", parameterName);
+            throw new ArgumentException($"Path parameter '{parameterName}' contains invalid path traversal sequence: {segment}", parameterName);
         }
 
         // Check for invalid characters - only allow alphanumeric, hyphens, underscores, and dots
@@ -1625,7 +1625,7 @@ public class FlinkJobManager : IFlinkJobManager
         var invalidChar = segment.FirstOrDefault(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.');
         if (invalidChar != '\0')
         {
-            throw new ArgumentException($"Path {nameof(segment)} contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
+            throw new ArgumentException($"Path parameter '{parameterName}' contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
         }
 
         // Return URL-encoded segment for additional safety
