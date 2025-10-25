@@ -2,10 +2,6 @@ name: Day01 Integration Tests (Kafka-Flink Pipeline)
 
 on:
   push:
-    paths:
-      - 'LearningCourse/Day01-Kafka-Flink-Data-Pipeline/**'
-      - 'LearningCourse/LearningCourse.IntegrationTests/Day01Tests.cs'
-      - 'LearningCourse/LearningCourse.Common/**'
   workflow_dispatch:
 
 env:
