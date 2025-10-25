@@ -1505,6 +1505,9 @@ public class FlinkJobManager : IFlinkJobManager
             case FileSourceDefinition fileSource when string.IsNullOrEmpty(fileSource.Path):
                 errors.Add("File source must specify a path");
                 break;
+            default:
+                // Source is valid or not one of the validated types
+                break;
         }
     }
 
@@ -1526,6 +1529,9 @@ public class FlinkJobManager : IFlinkJobManager
                 {
                     errors.Add("File sink must specify a path");
                 }
+                break;
+            default:
+                // Sink is valid or not one of the validated types
                 break;
         }
     }
