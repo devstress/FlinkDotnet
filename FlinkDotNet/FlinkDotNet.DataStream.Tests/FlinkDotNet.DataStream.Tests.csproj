@@ -8,7 +8,8 @@
     <IsTestProject>true</IsTestProject>
     <SonarQubeTestProject>true</SonarQubeTestProject>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);IDE0005;CS1591</NoWarn>
+    <!-- Suppress code analysis warnings in test projects -->
+    <NoWarn>$(NoWarn);IDE0005;CS1591;CS8602;RCS1060;S113;S2148;S4004;S6354;S6605;S2931;S4226;S131;S103;S4040;S1192;S104;S6602;S2302;S1144;S4041;RCS1263</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
