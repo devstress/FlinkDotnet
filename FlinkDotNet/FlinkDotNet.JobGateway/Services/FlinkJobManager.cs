@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -1547,10 +1548,14 @@ public class FlinkJobManager : IFlinkJobManager
     /// Rejects path traversal sequences, special characters, and URL-encoded attacks.
     /// </summary>
     /// <param name="segment">The path segment to validate.</param>
-    /// <param name="parameterName">Name of the parameter being validated (auto-populated via CallerArgumentExpression).</param>
+    /// <param name="parameterName">
+    /// The name of the parameter being validated. This is automatically populated via CallerArgumentExpression 
+    /// and should not be provided by callers. It will capture the argument expression from the call site 
+    /// (e.g., "flinkJobId" when called as ValidateAndSanitizePathSegment(flinkJobId)).
+    /// </param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
-    private static string ValidateAndSanitizePathSegment(string segment, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(segment))] string? parameterName = null)
+    private static string ValidateAndSanitizePathSegment(string segment, [CallerArgumentExpression(nameof(segment))] string? parameterName = null)
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
