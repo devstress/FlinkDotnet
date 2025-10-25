@@ -107,7 +107,7 @@ using FlinkDotNet.DataStream;
 var env = Flink.GetExecutionEnvironment();
 
 // Read from Kafka
-var orders = env.FromKafka("orders", "kafka:9093", "my-group");
+var orders = env.FromKafka("orders", "kafka:9092", "my-group");
 
 // Transform with Flink operators
 var processed = orders
@@ -116,7 +116,7 @@ var processed = orders
     .KeyBy(o => o.CustomerId);
 
 // Write back to Kafka
-processed.SinkToKafka("high-value-orders", "kafka:9093");
+processed.SinkToKafka("high-value-orders", "kafka:9092");
 
 await env.ExecuteAsync("fraud-detection");
 ```
@@ -139,13 +139,13 @@ Run FlinkJobGateway as a container:
 
 ```bash
 docker pull flinkdotnet/jobgateway:latest
-docker run -p 5000:5000 \
+docker run -p 8080:8080 \
   -e FLINK_CLUSTER_HOST=your-flink-host \
   -e FLINK_CLUSTER_PORT=8081 \
   flinkdotnet/jobgateway:latest
 ```
 
-Access the API at `http://localhost:5000`.
+Access the API at `http://localhost:8080`.
 
 ### 3. Validate Release Packages
 
