@@ -62,6 +62,13 @@ public abstract class LearningCourseTestBase
     /// Only available when LEARNINGCOURSE=true.
     /// </summary>
     public static string? GrafanaHostEndpoint { get; private set; }
+    
+    /// <summary>
+    /// Flink REST API endpoint for job management (e.g., "http://localhost:43214").
+    /// Dynamically allocated host port mapped to Flink JobManager's REST API port 8081.
+    /// Required for Flink health checks and job submission.
+    /// </summary>
+    public static string? FlinkRestApiEndpoint { get; private set; }
 
     /// <summary>
     /// Start LocalTesting AppHost once for all tests.
@@ -80,6 +87,7 @@ public abstract class LearningCourseTestBase
         RedisHostEndpoint = null;
         PrometheusHostEndpoint = null;
         GrafanaHostEndpoint = null;
+        FlinkRestApiEndpoint = null;
         _isSetupComplete = false;
         
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Static endpoint properties reset for fresh discovery");
@@ -269,6 +277,7 @@ public abstract class LearningCourseTestBase
         string? redisEndpoint = null;
         string? prometheusEndpoint = null;
         string? grafanaEndpoint = null;
+        string? flinkRestApi = null;
         bool flinkReady = false;
         bool kafkaReady = false;
         bool temporalReady = false;
@@ -295,15 +304,15 @@ public abstract class LearningCourseTestBase
             // OPTIMIZED: Run endpoint discovery and health checks in parallel for faster detection
             var discoveryTask = TryDiscoverEndpointsAsync(
                 kafkaFlinkIp, kafkaHostEndpoint, temporalEndpoint,
-                redisEndpoint, prometheusEndpoint, grafanaEndpoint,
+                redisEndpoint, prometheusEndpoint, grafanaEndpoint, flinkRestApi,
                 isLearningCourse, stopwatch, iteration);
             
             var kafkaHealthTask = (kafkaHostEndpoint != null && !kafkaReady)
                 ? IsKafkaHealthyAsync(kafkaHostEndpoint)
                 : Task.FromResult(kafkaReady);
             
-            var flinkHealthTask = (kafkaFlinkIp != null && kafkaHostEndpoint != null && !flinkReady)
-                ? IsFlinkHealthyAsync()
+            var flinkHealthTask = (flinkRestApi != null && !flinkReady)
+                ? IsFlinkHealthyAsync(flinkRestApi)
                 : Task.FromResult(flinkReady);
             
             var temporalHealthTask = (temporalEndpoint != null && !temporalReady)
@@ -321,6 +330,7 @@ public abstract class LearningCourseTestBase
             redisEndpoint = discovered.redis ?? redisEndpoint;
             prometheusEndpoint = discovered.prometheus ?? prometheusEndpoint;
             grafanaEndpoint = discovered.grafana ?? grafanaEndpoint;
+            flinkRestApi = discovered.flinkRestApi ?? flinkRestApi;
             
             // Update health check results
             var newKafkaReady = await kafkaHealthTask;
@@ -367,6 +377,7 @@ public abstract class LearningCourseTestBase
                 RedisHostEndpoint = redisEndpoint;
                 PrometheusHostEndpoint = prometheusEndpoint;
                 GrafanaHostEndpoint = grafanaEndpoint;
+                FlinkRestApiEndpoint = flinkRestApi;
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
                 TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
@@ -400,12 +411,13 @@ public abstract class LearningCourseTestBase
     /// Check if Flink JobManager is healthy and ready to accept jobs
     /// OPTIMIZED: Reduced timeout to 1 second for faster failure detection
     /// </summary>
-    private static async Task<bool> IsFlinkHealthyAsync()
+    /// <param name="flinkRestApiEndpoint">Flink REST API endpoint discovered from Docker</param>
+    private static async Task<bool> IsFlinkHealthyAsync(string flinkRestApiEndpoint)
     {
         try
         {
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(1) };  // OPTIMIZED: 1s timeout
-            var response = await httpClient.GetAsync("http://localhost:8080/api/v1/health");
+            var response = await httpClient.GetAsync($"{flinkRestApiEndpoint}/v1/overview");
             return response.IsSuccessStatusCode;
         }
         catch
@@ -631,13 +643,15 @@ public abstract class LearningCourseTestBase
         string? temporal,
         string? redis,
         string? prometheus,
-        string? grafana)> TryDiscoverEndpointsAsync(
+        string? grafana,
+        string? flinkRestApi)> TryDiscoverEndpointsAsync(
         string? currentFlinkIp,
         string? currentHostEndpoint,
         string? currentTemporal,
         string? currentRedis,
         string? currentPrometheus,
         string? currentGrafana,
+        string? currentFlinkRestApi,
         bool isLearningCourse,
         Stopwatch stopwatch,
         int iteration)
@@ -650,6 +664,7 @@ public abstract class LearningCourseTestBase
             string? redis = currentRedis;
             string? prometheus = currentPrometheus;
             string? grafana = currentGrafana;
+            string? flinkRestApi = currentFlinkRestApi;
             
             // Kafka discovery (always required) - with retry logic
             if (flinkIp == null)
@@ -673,6 +688,16 @@ public abstract class LearningCourseTestBase
                 hostEndpoint = await DiscoverWithRetryAsync(
                     async () => await DockerInfrastructure.GetKafkaHostEndpointAsync(),
                     "Kafka host endpoint",
+                    stopwatch,
+                    iteration);
+            }
+            
+            // Flink REST API discovery (always required) - with retry logic
+            if (flinkRestApi == null)
+            {
+                flinkRestApi = await DiscoverWithRetryAsync(
+                    async () => await DockerInfrastructure.GetFlinkRestApiEndpointAsync(),
+                    "Flink REST API endpoint",
                     stopwatch,
                     iteration);
             }
@@ -718,13 +743,13 @@ public abstract class LearningCourseTestBase
                 }
             }
             
-            return (flinkIp, hostEndpoint, temporal, redis, prometheus, grafana);
+            return (flinkIp, hostEndpoint, temporal, redis, prometheus, grafana, flinkRestApi);
         }
         catch (Exception ex)
         {
             LogDebug($"[DISCOVERY] Unexpected error in TryDiscoverEndpointsAsync: {ex}");
             TestContext.WriteLine($"❌ Unexpected error in endpoint discovery: {ex.Message}");
-            return (null, null, null, null, null, null);
+            return (null, null, null, null, null, null, null);
         }
     }
 
