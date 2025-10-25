@@ -710,8 +710,10 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (string.IsNullOrEmpty(jobId))
             {
-                _logger.LogError("❌ Flink did not return a jobId");
-                throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
+                var errorMsg = $"Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
+                    $"Response status: {response.StatusCode}, Response body: {runContent}";
+                _logger.LogError("❌ {ErrorMessage}", errorMsg);
+                throw new InvalidOperationException(errorMsg);
             }
 
             LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
@@ -745,7 +747,16 @@ public class FlinkJobManager : IFlinkJobManager
 
             var lastJobId = await ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
 
+            // SQL Gateway jobs return session handle as tracking ID
+            // This is expected behavior for SQL Gateway - it manages jobs within sessions
             var result = lastJobId ?? sessionHandle;
+            
+            if (string.IsNullOrEmpty(result))
+            {
+                _logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
+                throw new InvalidOperationException("SQL Gateway did not return a job ID or session handle. This should not happen.");
+            }
+            
             LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
                 ("🆔 JobId/SessionHandle", result));
 
