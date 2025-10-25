@@ -1,8 +1,8 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -259,7 +259,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = _env.FromKafka("input-topic", "localhost:9092");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => 
+            Assert.Throws<ArgumentException>(() =>
                 stream.SinkToKafka("output-topic", "", s => s));
         }
 
@@ -271,7 +271,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = _env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => 
+            Assert.Throws<InvalidOperationException>(() =>
                 stream.SinkToKafka("output-topic", "localhost:9092", s => s));
         }
 
@@ -542,8 +542,8 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = _env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
-                stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<int>)null!));
+            Assert.Throws<ArgumentNullException>(() =>
+                stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<int>) null!));
         }
 
         #endregion

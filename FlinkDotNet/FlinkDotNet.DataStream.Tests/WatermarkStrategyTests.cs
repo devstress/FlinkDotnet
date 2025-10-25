@@ -74,7 +74,7 @@ namespace FlinkDotNet.DataStream.Tests
             var element = 42;
 
             // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => 
+            var ex = Assert.Throws<InvalidOperationException>(() =>
                 strategy.ExtractTimestamp(element, -1));
             Assert.That(ex.Message, Does.Contain("No timestamp assigner configured"));
         }
@@ -328,7 +328,10 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestEvent
         {
-            public long Timestamp { get; set; }
+            public long Timestamp
+            {
+                get; set;
+            }
             public string Data { get; set; } = string.Empty;
         }
 

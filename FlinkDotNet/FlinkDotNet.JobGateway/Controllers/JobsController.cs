@@ -17,7 +17,7 @@ public class JobsController : ControllerBase
 {
     private const string LogBorderTop = "╔══════════════════════════════════════════════════════════════";
     private const string LogBorderBottom = "╚══════════════════════════════════════════════════════════════";
-    
+
     private readonly ILogger<JobsController> _logger;
     private readonly IFlinkJobManager _flinkJobManager;
 

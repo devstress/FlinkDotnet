@@ -1,9 +1,9 @@
+using System.Net;
+using FlinkDotNet.JobGateway.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Net;
-using FlinkDotNet.JobGateway.Services;
 
 namespace FlinkDotNet.JobGateway.Tests
 {
@@ -219,12 +219,12 @@ namespace FlinkDotNet.JobGateway.Tests
 
                 // Assert
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                
+
                 // Give a moment for logger to initialize
                 await Task.Delay(100);
-                
+
                 // Log directory should exist (created by Serilog)
-                Assert.That(Directory.Exists(customLogPath) || File.Exists(Path.Combine(customLogPath, "*.log")), 
+                Assert.That(Directory.Exists(customLogPath) || File.Exists(Path.Combine(customLogPath, "*.log")),
                     "Log path should be created or log file should exist");
             }
             finally
@@ -252,12 +252,12 @@ namespace FlinkDotNet.JobGateway.Tests
             // Act
             var scope1 = _factory.Services.CreateScope();
             var scope2 = _factory.Services.CreateScope();
-            
+
             var manager1 = scope1.ServiceProvider.GetRequiredService<IFlinkJobManager>();
             var manager2 = scope2.ServiceProvider.GetRequiredService<IFlinkJobManager>();
 
             // Assert - Same instance should be returned (singleton)
-            Assert.That(ReferenceEquals(manager1, manager2), Is.True, 
+            Assert.That(ReferenceEquals(manager1, manager2), Is.True,
                 "FlinkJobManager should be registered as singleton");
         }
 
@@ -275,7 +275,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Assert - In the current setup, metrics will NOT be registered because appsettings.json
             // doesn't have the Metrics section, so it defaults to false
             // This test documents the current behavior
-            Assert.That(metricsService, Is.Null, 
+            Assert.That(metricsService, Is.Null,
                 "MetricsService is not registered because appsettings.json doesn't have Metrics:Prometheus:Enabled");
         }
 
@@ -301,9 +301,21 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDefinition = new
             {
-                metadata = new { jobId = "test-job-123", jobName = "Test Job" },
-                source = new { type = "kafka", bootstrapServers = "localhost:9092", topic = "test" },
-                sink = new { type = "console" }
+                metadata = new
+                {
+                    jobId = "test-job-123",
+                    jobName = "Test Job"
+                },
+                source = new
+                {
+                    type = "kafka",
+                    bootstrapServers = "localhost:9092",
+                    topic = "test"
+                },
+                sink = new
+                {
+                    type = "console"
+                }
             };
 
             var content = new StringContent(

@@ -28,7 +28,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.True);
@@ -53,7 +53,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -78,7 +78,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -103,7 +103,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.True);
@@ -127,7 +127,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.True);
@@ -151,7 +151,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -176,7 +176,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -201,7 +201,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -226,7 +226,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -251,7 +251,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -276,7 +276,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -301,7 +301,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -326,7 +326,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);
@@ -351,7 +351,7 @@ namespace Flink.JobBuilder.Tests
                 }
             };
 
-            
+
             var result = JobDefinitionValidator.Validate(jobDef);
 
             Assert.That(result.IsValid, Is.False);

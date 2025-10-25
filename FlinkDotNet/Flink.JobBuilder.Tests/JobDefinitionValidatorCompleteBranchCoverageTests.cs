@@ -219,9 +219,9 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
-                ConnectionString = null, 
+            Source = new DatabaseSourceDefinition
+            {
+                ConnectionString = null,
                 Query = "SELECT * FROM users",
                 PollingIntervalSeconds = 10
             },
@@ -243,9 +243,9 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
-                ConnectionString = "", 
+            Source = new DatabaseSourceDefinition
+            {
+                ConnectionString = "",
                 Query = "SELECT * FROM users",
                 PollingIntervalSeconds = 10
             },
@@ -267,8 +267,8 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
+            Source = new DatabaseSourceDefinition
+            {
                 ConnectionString = "Server=localhost;Database=test",
                 Query = null,
                 PollingIntervalSeconds = 10
@@ -291,8 +291,8 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
+            Source = new DatabaseSourceDefinition
+            {
                 ConnectionString = "Server=localhost;Database=test",
                 Query = "",
                 PollingIntervalSeconds = 10
@@ -315,8 +315,8 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
+            Source = new DatabaseSourceDefinition
+            {
                 ConnectionString = "Server=localhost;Database=test",
                 Query = "SELECT * FROM users",
                 PollingIntervalSeconds = 0
@@ -339,8 +339,8 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
+            Source = new DatabaseSourceDefinition
+            {
                 ConnectionString = "Server=localhost;Database=test",
                 Query = "SELECT * FROM users",
                 PollingIntervalSeconds = -5

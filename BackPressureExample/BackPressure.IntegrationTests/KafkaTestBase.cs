@@ -12,53 +12,53 @@ namespace BackPressure.IntegrationTests;
 
 public abstract class KafkaTestBase : IAsyncDisposable
 {
-	private static readonly TimeSpan defaultTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan defaultTimeout = TimeSpan.FromSeconds(60);
 
-	protected DistributedApplication? AppHost { get; private set; }
-	protected IHost? TestHost { get; private set; }
-	protected IProducer<string, string>? Producer { get; private set; }
-	protected IConsumer<string, string>? Consumer { get; private set; }
-	protected IAdminClient? AdminClient { get; private set; }
-	protected string? KafkaConnectionString { get; private set; }
+    protected DistributedApplication? AppHost { get; private set; }
+    protected IHost? TestHost { get; private set; }
+    protected IProducer<string, string>? Producer { get; private set; }
+    protected IConsumer<string, string>? Consumer { get; private set; }
+    protected IAdminClient? AdminClient { get; private set; }
+    protected string? KafkaConnectionString { get; private set; }
 
 
-	[OneTimeSetUp]
-	public virtual async Task OneTimeSetUp()
-	{
-		var cancellationToken = TestContext.CurrentContext.CancellationToken;
-		var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.BackPressure_AppHost>(cancellationToken);
-		var app = await appHost.BuildAsync(cancellationToken).WaitAsync(defaultTimeout, cancellationToken);
-		await app.StartAsync(cancellationToken).WaitAsync(defaultTimeout, cancellationToken);
+    [OneTimeSetUp]
+    public virtual async Task OneTimeSetUp()
+    {
+        var cancellationToken = TestContext.CurrentContext.CancellationToken;
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.BackPressure_AppHost>(cancellationToken);
+        var app = await appHost.BuildAsync(cancellationToken).WaitAsync(defaultTimeout, cancellationToken);
+        await app.StartAsync(cancellationToken).WaitAsync(defaultTimeout, cancellationToken);
 
-		await app.ResourceNotifications
-			.WaitForResourceHealthyAsync("kafka", cancellationToken)
-			.WaitAsync(defaultTimeout, cancellationToken);
+        await app.ResourceNotifications
+            .WaitForResourceHealthyAsync("kafka", cancellationToken)
+            .WaitAsync(defaultTimeout, cancellationToken);
 
-		KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
-		
-		TestContext.WriteLine($"✅ Kafka connection string: {KafkaConnectionString}");
+        KafkaConnectionString = await app.GetConnectionStringAsync("kafka");
 
-		
-		await WaitForKafkaReadyAsync(KafkaConnectionString!, TimeSpan.FromSeconds(30), cancellationToken);
+        TestContext.WriteLine($"✅ Kafka connection string: {KafkaConnectionString}");
 
-		await SetupKafkaClientsAsync();
 
-		TestContext.WriteLine(
-			$"🟢 Infrastructure initialized: Kafka={KafkaConnectionString}, " +
-			$"Clients=[Producer:{(Producer!=null)}, Consumer:{(Consumer!=null)}, Admin:{(AdminClient!=null)}]");
-		TestContext.WriteLine("✅ Aspire infrastructure setup completed");
-	}
+        await WaitForKafkaReadyAsync(KafkaConnectionString!, TimeSpan.FromSeconds(30), cancellationToken);
 
-	[OneTimeTearDown]
-	public virtual async Task OneTimeTearDown()
-	{
+        await SetupKafkaClientsAsync();
+
+        TestContext.WriteLine(
+            $"🟢 Infrastructure initialized: Kafka={KafkaConnectionString}, " +
+            $"Clients=[Producer:{(Producer != null)}, Consumer:{(Consumer != null)}, Admin:{(AdminClient != null)}]");
+        TestContext.WriteLine("✅ Aspire infrastructure setup completed");
+    }
+
+    [OneTimeTearDown]
+    public virtual async Task OneTimeTearDown()
+    {
         try
         {
             await DisposeAsync();
         }
         catch (Exception)
         {
-            
+
         }
     }
 
@@ -91,113 +91,113 @@ public abstract class KafkaTestBase : IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
-	protected async Task CreateTopicAsync(string topicName, int partitions = 8, short replicationFactor = 1)
-	{
-		if (AdminClient == null)
-			throw new InvalidOperationException("AdminClient is not initialized");
+    protected async Task CreateTopicAsync(string topicName, int partitions = 8, short replicationFactor = 1)
+    {
+        if (AdminClient == null)
+            throw new InvalidOperationException("AdminClient is not initialized");
 
-		try
-		{
-			var topicSpec = new TopicSpecification
-			{
-				Name = topicName,
-				NumPartitions = partitions,
-				ReplicationFactor = replicationFactor,
-				Configs = new Dictionary<string, string>
-				{
-					["min.insync.replicas"] = "1",
-					["unclean.leader.election.enable"] = "true"
-				}
-			};
+        try
+        {
+            var topicSpec = new TopicSpecification
+            {
+                Name = topicName,
+                NumPartitions = partitions,
+                ReplicationFactor = replicationFactor,
+                Configs = new Dictionary<string, string>
+                {
+                    ["min.insync.replicas"] = "1",
+                    ["unclean.leader.election.enable"] = "true"
+                }
+            };
 
-			await AdminClient.CreateTopicsAsync(new[] { topicSpec });
-			TestContext.WriteLine($"✅ Topic '{topicName}' created successfully");
-			await Task.Delay(2000);
-		}
-		catch (CreateTopicsException ex)
-		{
-			if (ex.Results?.Any(r => r.Error.Code == ErrorCode.TopicAlreadyExists) == true)
-			{
-				TestContext.WriteLine($"ℹ️ Topic '{topicName}' already exists");
-			}
-			else
-			{
-				TestContext.WriteLine($"❌ Error creating topic '{topicName}': {ex.Message}");
-				throw;
-			}
-		}
-	}
+            await AdminClient.CreateTopicsAsync(new[] { topicSpec });
+            TestContext.WriteLine($"✅ Topic '{topicName}' created successfully");
+            await Task.Delay(2000);
+        }
+        catch (CreateTopicsException ex)
+        {
+            if (ex.Results?.Any(r => r.Error.Code == ErrorCode.TopicAlreadyExists) == true)
+            {
+                TestContext.WriteLine($"ℹ️ Topic '{topicName}' already exists");
+            }
+            else
+            {
+                TestContext.WriteLine($"❌ Error creating topic '{topicName}': {ex.Message}");
+                throw;
+            }
+        }
+    }
 
-	private async Task SetupKafkaClientsAsync()
-	{
-		var hostBuilder = Host.CreateApplicationBuilder();
+    private async Task SetupKafkaClientsAsync()
+    {
+        var hostBuilder = Host.CreateApplicationBuilder();
 
-		hostBuilder.Services.AddSingleton<IProducer<string, string>>(provider =>
-		{
-			TestContext.WriteLine($"🟡 [Setup] Before creating global Producer (BootstrapServers={KafkaConnectionString})");
-			var config = new ProducerConfig
-			{
-				BootstrapServers = KafkaConnectionString,
-				EnableIdempotence = true,
-				MaxInFlight = 5,
-				Acks = Acks.All,
-				CompressionType = CompressionType.Snappy,
-				BatchSize = 16384,
-				LingerMs = 10,
-				RequestTimeoutMs = 30000,
-			};
-			var prod = new ProducerBuilder<string, string>(config)
-				.SetErrorHandler((_, __) => { })
-				.SetLogHandler((_, __) => { })
-				.Build();
-			TestContext.WriteLine("✅ [Setup] Global Producer created");
-			return prod;
-		});
+        hostBuilder.Services.AddSingleton<IProducer<string, string>>(provider =>
+        {
+            TestContext.WriteLine($"🟡 [Setup] Before creating global Producer (BootstrapServers={KafkaConnectionString})");
+            var config = new ProducerConfig
+            {
+                BootstrapServers = KafkaConnectionString,
+                EnableIdempotence = true,
+                MaxInFlight = 5,
+                Acks = Acks.All,
+                CompressionType = CompressionType.Snappy,
+                BatchSize = 16384,
+                LingerMs = 10,
+                RequestTimeoutMs = 30000,
+            };
+            var prod = new ProducerBuilder<string, string>(config)
+                .SetErrorHandler((_, __) => { })
+                .SetLogHandler((_, __) => { })
+                .Build();
+            TestContext.WriteLine("✅ [Setup] Global Producer created");
+            return prod;
+        });
 
-		hostBuilder.Services.AddSingleton<IConsumer<string, string>>(provider =>
-		{
-			TestContext.WriteLine($"🟡 [Setup] Before creating global Consumer (BootstrapServers={KafkaConnectionString})");
-			var config = new ConsumerConfig
-			{
-				BootstrapServers = KafkaConnectionString,
-				GroupId = $"test-group-{Guid.NewGuid()}",
-				AutoOffsetReset = AutoOffsetReset.Earliest,
-				EnableAutoCommit = false,
-				SessionTimeoutMs = 30000,
-				MaxPollIntervalMs = 300000,
-				FetchMinBytes = 1,
-			};
-			var cons = new ConsumerBuilder<string, string>(config)
-				.SetErrorHandler((_, __) => { })
-				.SetLogHandler((_, __) => { })
-				.Build();
-			TestContext.WriteLine("✅ [Setup] Global Consumer created");
-			return cons;
-		});
+        hostBuilder.Services.AddSingleton<IConsumer<string, string>>(provider =>
+        {
+            TestContext.WriteLine($"🟡 [Setup] Before creating global Consumer (BootstrapServers={KafkaConnectionString})");
+            var config = new ConsumerConfig
+            {
+                BootstrapServers = KafkaConnectionString,
+                GroupId = $"test-group-{Guid.NewGuid()}",
+                AutoOffsetReset = AutoOffsetReset.Earliest,
+                EnableAutoCommit = false,
+                SessionTimeoutMs = 30000,
+                MaxPollIntervalMs = 300000,
+                FetchMinBytes = 1,
+            };
+            var cons = new ConsumerBuilder<string, string>(config)
+                .SetErrorHandler((_, __) => { })
+                .SetLogHandler((_, __) => { })
+                .Build();
+            TestContext.WriteLine("✅ [Setup] Global Consumer created");
+            return cons;
+        });
 
-		hostBuilder.Services.AddSingleton<IAdminClient>(provider =>
-		{
-			TestContext.WriteLine($"🟡 [Setup] Before creating global AdminClient (BootstrapServers={KafkaConnectionString})");
-			var config = new AdminClientConfig
-			{
-				BootstrapServers = KafkaConnectionString,
-				SocketTimeoutMs = 60000,
-			};
-			var adm = new AdminClientBuilder(config)
-				.SetErrorHandler((_, __) => { })
-				.SetLogHandler((_, __) => { })
-				.Build();
-			TestContext.WriteLine("✅ [Setup] Global AdminClient created");
-			return adm;
-		});
+        hostBuilder.Services.AddSingleton<IAdminClient>(provider =>
+        {
+            TestContext.WriteLine($"🟡 [Setup] Before creating global AdminClient (BootstrapServers={KafkaConnectionString})");
+            var config = new AdminClientConfig
+            {
+                BootstrapServers = KafkaConnectionString,
+                SocketTimeoutMs = 60000,
+            };
+            var adm = new AdminClientBuilder(config)
+                .SetErrorHandler((_, __) => { })
+                .SetLogHandler((_, __) => { })
+                .Build();
+            TestContext.WriteLine("✅ [Setup] Global AdminClient created");
+            return adm;
+        });
 
-		TestHost = hostBuilder.Build();
-		await TestHost.StartAsync();
+        TestHost = hostBuilder.Build();
+        await TestHost.StartAsync();
 
-		Producer = TestHost.Services.GetRequiredService<IProducer<string, string>>();
-		Consumer = TestHost.Services.GetRequiredService<IConsumer<string, string>>();
-		AdminClient = TestHost.Services.GetRequiredService<IAdminClient>();
-	}
+        Producer = TestHost.Services.GetRequiredService<IProducer<string, string>>();
+        Consumer = TestHost.Services.GetRequiredService<IConsumer<string, string>>();
+        AdminClient = TestHost.Services.GetRequiredService<IAdminClient>();
+    }
 
     private static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
     {

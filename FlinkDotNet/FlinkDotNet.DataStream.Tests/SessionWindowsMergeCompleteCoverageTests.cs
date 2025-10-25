@@ -1,8 +1,8 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream.Window;
-using FlinkDotNet.DataStream.Window.Assigners;
 using System.Collections.Generic;
 using System.Linq;
+using FlinkDotNet.DataStream.Window;
+using FlinkDotNet.DataStream.Window.Assigners;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -18,10 +18,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var windows = new List<TimeWindow>();
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(result, Is.Empty);
             Assert.That(result.Count, Is.EqualTo(0));
@@ -35,10 +35,10 @@ namespace FlinkDotNet.DataStream.Tests
             {
                 new TimeWindow(1000, 5000)
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -54,10 +54,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 5000),
                 new TimeWindow(4000, 8000)  // Overlaps with first window
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -73,10 +73,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 3000),
                 new TimeWindow(5000, 8000)  // Does not overlap with first window
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(result.Count, Is.EqualTo(2));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -95,10 +95,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 3000),
                 new TimeWindow(2500, 6000)
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - Should be sorted and overlapping ones merged
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -117,10 +117,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(11000, 15000), // Overlaps with Window 2 -> merged
                 new TimeWindow(20000, 22000)  // Window 3 (separate)
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(result.Count, Is.EqualTo(3));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -141,10 +141,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(4000, 9000),
                 new TimeWindow(8000, 13000)
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(0));
@@ -160,10 +160,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 5000),
                 new TimeWindow(5000, 9000)  // Starts exactly where previous ends
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - Should merge since Start <= End (not < End)
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -179,10 +179,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 5000),
                 new TimeWindow(5001, 9000)  // Starts 1ms after previous ends
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - Should NOT merge since Start > End
             Assert.That(result.Count, Is.EqualTo(2));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -202,10 +202,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(5000, 9000),
                 new TimeWindow(0, 4000)
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - All non-overlapping, should have 4 windows in sorted order
             Assert.That(result.Count, Is.EqualTo(4));
             Assert.That(result[0].Start, Is.EqualTo(0));
@@ -224,10 +224,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 5000),
                 new TimeWindow(1000, 5000)
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - Should merge into one
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(1000));
@@ -243,10 +243,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(1000, 10000),
                 new TimeWindow(3000, 7000)  // Completely inside first window
             };
-            
+
             // Act
             var result = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - Should keep the larger window
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].Start, Is.EqualTo(1000));

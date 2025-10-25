@@ -27,13 +27,13 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-            
+
             _mockLogger = new Mock<ILogger<FlinkJobManager>>();
             _mockConfiguration = new Mock<IConfiguration>();
-            
+
             // Setup default configuration values
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
-            
+            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
@@ -45,7 +45,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TearDown()
         {
             _httpClient?.Dispose();
-            
+
             // Clean up environment variables
             Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", null);
             Environment.SetEnvironmentVariable("services__flink-sql-gateway__http__0", null);
@@ -60,7 +60,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             _mockConfiguration.Setup(x => x["Flink:SqlGateway:BaseUrl"]).Returns("http://config-sql-gateway:8083");
-            
+
             var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             var jobDef = new JobDefinition
@@ -77,7 +77,7 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupSqlGatewayMockResponses();
 
             // Act
-            _  = await manager.SubmitJobAsync(jobDef);
+            _ = await manager.SubmitJobAsync(jobDef);
 
             // Assert
             _mockLogger.Verify(
@@ -96,7 +96,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "env-sql-gateway");
             Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", "9999");
-            
+
             try
             {
                 var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -115,7 +115,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 SetupSqlGatewayMockResponses();
 
                 // Act
-                _  = await manager.SubmitJobAsync(jobDef);
+                _ = await manager.SubmitJobAsync(jobDef);
 
                 // Assert
                 _mockLogger.Verify(
@@ -154,7 +154,7 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupSqlGatewayMockResponses();
 
             // Act
-            _  = await manager.SubmitJobAsync(jobDef);
+            _ = await manager.SubmitJobAsync(jobDef);
 
             // Assert
             _mockLogger.Verify(

@@ -467,7 +467,7 @@ namespace Flink.JobBuilder.Services
             {
                 _httpClient?.Dispose();
             }
-            
+
             _disposed = true;
         }
     }

@@ -24,7 +24,7 @@ public class FlinkJobManagerFinalCoverageTests
         _mockConfiguration = new Mock<IConfiguration>();
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
-        
+
         // Reset all environment variables before each test
         Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);
         Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", null);
@@ -61,7 +61,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -86,7 +86,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);  // No port specified
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -111,7 +111,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "invalid-port");  // Invalid port
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -130,16 +130,16 @@ public class FlinkJobManagerFinalCoverageTests
     {
         // We need to test this through a method that calls DiscoverSqlGatewayEndpoint
         // This is a private method, so we test it indirectly through SQL Gateway job submission
-        
+
         // Arrange
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "sql-gateway-host");
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", "7777");
-        
-        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?)null);
+
+        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?) null);
 
         // This will exercise the DiscoverSqlGatewayEndpoint method
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-        
+
         // Assert - verify the log message was called (indirect verification)
         // The DiscoverSqlGatewayEndpoint will be called when submitting SQL Gateway jobs
         Assert.That(manager, Is.Not.Null);
@@ -153,10 +153,10 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "sql-gateway-host");
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);  // No port
 
-        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?) null);
 
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-        
+
         // The discovery happens lazily, so we just verify setup is correct
         Assert.That(manager, Is.Not.Null);
         Assert.Pass("Setup complete - will use default port 8083");
@@ -169,10 +169,10 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "sql-gateway-host");
         Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", "bad-port");  // Invalid port
 
-        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:SqlGateway:BaseUrl"]).Returns((string?) null);
 
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-        
+
         Assert.That(manager, Is.Not.Null);
         Assert.Pass("Setup complete - will use default port 8083 due to parse failure");
     }
@@ -186,7 +186,7 @@ public class FlinkJobManagerFinalCoverageTests
     {
         // This tests the inner JobMetricsBuilder class which has 2 uncovered branches
         // We need to trigger job metrics extraction with null/empty backpressure data
-        
+
         // This will be tested through GetJobMetricsAsync when backpressure data is missing
         Assert.Pass("JobMetricsBuilder coverage will be achieved through GetJobMetricsAsync with missing backpressure");
     }
@@ -200,7 +200,7 @@ public class FlinkJobManagerFinalCoverageTests
     {
         // This tests line 1714 branch in ExtractTimestamp
         // The method is private, but we can test it through job status retrieval
-        
+
         // When Flink returns null for timestamp fields, ExtractTimestamp should handle it
         Assert.Pass("ExtractTimestamp null handling will be tested through job status with missing timestamps");
     }
@@ -214,7 +214,7 @@ public class FlinkJobManagerFinalCoverageTests
     {
         // This tests lines 1724, 1726 branches in ExtractBackpressureLevel
         // The method handles unknown backpressure levels
-        
+
         Assert.Pass("ExtractBackpressureLevel edge cases will be tested through metrics extraction");
     }
 
@@ -227,7 +227,7 @@ public class FlinkJobManagerFinalCoverageTests
     {
         // This tests lines 994, 1011, 1035, 1038 in CollectConnectorJars
         // The method should handle missing connector directory gracefully
-        
+
         // This is tested through job submission when connector JARs are not found
         Assert.Pass("CollectConnectorJars directory handling will be tested through job submission");
     }
@@ -270,7 +270,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "secure-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8443");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -298,7 +298,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "secure-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8443");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
         _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns("https");
 
         // Act
@@ -324,8 +324,8 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "default-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
-        _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
+        _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns((string?) null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -343,7 +343,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "test-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
 
         // Act
         var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -371,7 +371,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "test-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
         _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns("ftp"); // Invalid protocol
 
         // Act
@@ -398,7 +398,7 @@ public class FlinkJobManagerFinalCoverageTests
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "secure-host");
         Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8443");
 
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
+        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?) null);
         _mockConfiguration.Setup(c => c["Flink:Protocol"]).Returns("http"); // Config says http
 
         // Act

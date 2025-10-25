@@ -27,13 +27,13 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-            
+
             _mockLogger = new Mock<ILogger<FlinkJobManager>>();
             _mockConfiguration = new Mock<IConfiguration>();
-            
+
             // Setup default configuration values (returns null for any key by default)
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
-            
+            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
@@ -55,7 +55,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             _mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
                 .Returns("http://config-endpoint:8081");
-            
+
             // Act
             _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -78,7 +78,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "env-host");
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
-                
+
                 // Act
                 _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -103,7 +103,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_WithNoDiscovery_UsesDefaultEndpoint()
         {
             // Arrange - No environment variables or configuration set
-            
+
             // Act
             _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -131,7 +131,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.GetJobStatusAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
         }
@@ -145,7 +145,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.GetJobStatusAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
         }
@@ -159,7 +159,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.GetJobMetricsAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
         }
@@ -174,7 +174,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.CancelJobAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to cancel job"));
         }
@@ -204,7 +204,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.CancelJobAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to cancel job"));
         }
@@ -287,8 +287,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => 
-                        req.RequestUri != null && 
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.RequestUri != null &&
                         req.RequestUri.PathAndQuery.Contains(requestUri) &&
                         req.Method.Method.Equals(method, StringComparison.OrdinalIgnoreCase)),
                     ItExpr.IsAny<CancellationToken>())
@@ -301,8 +301,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => 
-                        req.RequestUri != null && 
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.RequestUri != null &&
                         req.RequestUri.PathAndQuery.Contains(requestUri)),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(exception);

@@ -44,11 +44,11 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             // Use reflection to inject mocked HttpClient
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -76,10 +76,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -107,10 +107,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -138,10 +138,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -169,10 +169,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -202,10 +202,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -233,10 +233,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act
@@ -308,7 +308,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert - Should not throw
             Assert.DoesNotThrow(() => jobClient.Dispose());
-            
+
             // Dispose again should also not throw (idempotent)
             Assert.DoesNotThrow(() => jobClient.Dispose());
         }
@@ -320,7 +320,7 @@ namespace FlinkDotNet.DataStream.Tests
             var mockHandler = new Mock<HttpMessageHandler>();
             mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => 
+                    ItExpr.Is<HttpRequestMessage>(req =>
                         req.RequestUri!.ToString().Contains("/savepoints") &&
                         req.Content!.ReadAsStringAsync().Result.Contains("\"targetDirectory\":null")),
                     ItExpr.IsAny<CancellationToken>())
@@ -332,10 +332,10 @@ namespace FlinkDotNet.DataStream.Tests
 
             var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8081") };
             var jobClient = new JobClient("test-job", TimeSpan.FromSeconds(1));
-            
+
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
-            
+
             jobClient.JobId = "test-job-id";
 
             // Act

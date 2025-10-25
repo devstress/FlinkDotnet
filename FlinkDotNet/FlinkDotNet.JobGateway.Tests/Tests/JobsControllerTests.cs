@@ -38,7 +38,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            var badRequest = (BadRequestObjectResult)result.Result!;
+            var badRequest = (BadRequestObjectResult) result.Result!;
             Assert.That(badRequest.Value, Is.Not.Null);
         }
 
@@ -95,7 +95,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -132,8 +132,8 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = (OkObjectResult)result.Result!;
-            var submissionResult = (JobSubmissionResult)okResult.Value!;
+            var okResult = (OkObjectResult) result.Result!;
+            var submissionResult = (JobSubmissionResult) okResult.Value!;
             Assert.That(submissionResult.IsSuccess, Is.True);
             Assert.That(submissionResult.JobId, Is.EqualTo("test-job-1"));
         }
@@ -143,7 +143,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Source = new KafkaSourceDefinition
@@ -183,7 +183,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -225,7 +225,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -257,8 +257,8 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            var badRequest = (BadRequestObjectResult)result.Result!;
-            var submissionResult = (JobSubmissionResult)badRequest.Value!;
+            var badRequest = (BadRequestObjectResult) result.Result!;
+            var submissionResult = (JobSubmissionResult) badRequest.Value!;
             Assert.That(submissionResult.IsSuccess, Is.False);
             Assert.That(submissionResult.ErrorMessage, Is.EqualTo("Flink cluster unreachable"));
         }
@@ -268,7 +268,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -299,9 +299,9 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<ObjectResult>());
-            var objectResult = (ObjectResult)result.Result!;
+            var objectResult = (ObjectResult) result.Result!;
             Assert.That(objectResult.StatusCode, Is.EqualTo(500));
-            var submissionResult = (JobSubmissionResult)objectResult.Value!;
+            var submissionResult = (JobSubmissionResult) objectResult.Value!;
             Assert.That(submissionResult.IsSuccess, Is.False);
             Assert.That(submissionResult.ErrorMessage, Does.Contain("Internal server error"));
         }
@@ -327,7 +327,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -374,7 +374,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -422,7 +422,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
-            
+
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata
@@ -465,8 +465,8 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            var okResult = (OkObjectResult)result.Result!;
-            var submissionResult = (JobSubmissionResult)okResult.Value!;
+            var okResult = (OkObjectResult) result.Result!;
+            var submissionResult = (JobSubmissionResult) okResult.Value!;
             Assert.That(submissionResult.JobId, Is.EqualTo("db-job"));
         }
 
@@ -537,7 +537,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<StatusCodeResult>());
-            var statusCodeResult = (StatusCodeResult)result.Result!;
+            var statusCodeResult = (StatusCodeResult) result.Result!;
             Assert.That(statusCodeResult.StatusCode, Is.EqualTo(500));
         }
 
@@ -581,7 +581,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             _mockJobManager
                 .Setup(m => m.GetJobMetricsAsync(jobId))
-                .ReturnsAsync((JobMetrics)null!);
+                .ReturnsAsync((JobMetrics) null!);
 
             // Act
             var result = await controller.GetJobMetrics(jobId);
@@ -606,7 +606,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<StatusCodeResult>());
-            var statusCodeResult = (StatusCodeResult)result.Result!;
+            var statusCodeResult = (StatusCodeResult) result.Result!;
             Assert.That(statusCodeResult.StatusCode, Is.EqualTo(500));
         }
 
@@ -668,7 +668,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result, Is.InstanceOf<StatusCodeResult>());
-            var statusCodeResult = (StatusCodeResult)result;
+            var statusCodeResult = (StatusCodeResult) result;
             Assert.That(statusCodeResult.StatusCode, Is.EqualTo(500));
         }
 

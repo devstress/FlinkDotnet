@@ -21,9 +21,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = null, 
+                new WindowOperationDefinition
+                {
+                    WindowType = null,
                     Size = 60,
                     TimeUnit = "SECONDS"
                 }
@@ -49,9 +49,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "",
                     Size = 60,
                     TimeUnit = "SECONDS"
                 }
@@ -77,9 +77,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "INVALID", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "INVALID",
                     Size = 60,
                     TimeUnit = "SECONDS"
                 }
@@ -105,9 +105,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "TUMBLING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "TUMBLING",
                     Size = 0,
                     TimeUnit = "SECONDS"
                 }
@@ -133,9 +133,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "TUMBLING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "TUMBLING",
                     Size = -10,
                     TimeUnit = "SECONDS"
                 }
@@ -161,9 +161,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "TUMBLING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "TUMBLING",
                     Size = 60,
                     TimeUnit = null
                 }
@@ -189,9 +189,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "TUMBLING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "TUMBLING",
                     Size = 60,
                     TimeUnit = "DAYS"
                 }
@@ -217,9 +217,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "SLIDING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "SLIDING",
                     Size = 60,
                     TimeUnit = "SECONDS",
                     Slide = null
@@ -246,9 +246,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "SLIDING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "SLIDING",
                     Size = 60,
                     TimeUnit = "SECONDS",
                     Slide = 0
@@ -275,9 +275,9 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new WindowOperationDefinition 
-                { 
-                    WindowType = "SLIDING", 
+                new WindowOperationDefinition
+                {
+                    WindowType = "SLIDING",
                     Size = 60,
                     TimeUnit = "SECONDS",
                     Slide = -10
@@ -308,8 +308,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = null,
                     LeftKey = "id",
                     RightKey = "userId"
@@ -330,21 +330,21 @@ public class JobDefinitionValidatorWindowAndSinkTests
     public void ValidateJoinOperation_WithNullLeftKey_AddsError()
     {
         // Arrange
-        var rightSource = new KafkaSourceDefinition 
-        { 
-            Topic = "users", 
-            BootstrapServers = "localhost:9092", 
-            GroupId = "group2" 
+        var rightSource = new KafkaSourceDefinition
+        {
+            Topic = "users",
+            BootstrapServers = "localhost:9092",
+            GroupId = "group2"
         };
-        
+
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = rightSource,
                     LeftKey = null,
                     RightKey = "userId"
@@ -365,21 +365,21 @@ public class JobDefinitionValidatorWindowAndSinkTests
     public void ValidateJoinOperation_WithEmptyLeftKey_AddsError()
     {
         // Arrange
-        var rightSource = new KafkaSourceDefinition 
-        { 
-            Topic = "users", 
-            BootstrapServers = "localhost:9092", 
-            GroupId = "group2" 
+        var rightSource = new KafkaSourceDefinition
+        {
+            Topic = "users",
+            BootstrapServers = "localhost:9092",
+            GroupId = "group2"
         };
-        
+
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = rightSource,
                     LeftKey = "",
                     RightKey = "userId"
@@ -400,21 +400,21 @@ public class JobDefinitionValidatorWindowAndSinkTests
     public void ValidateJoinOperation_WithNullRightKey_AddsError()
     {
         // Arrange
-        var rightSource = new KafkaSourceDefinition 
-        { 
-            Topic = "users", 
-            BootstrapServers = "localhost:9092", 
-            GroupId = "group2" 
+        var rightSource = new KafkaSourceDefinition
+        {
+            Topic = "users",
+            BootstrapServers = "localhost:9092",
+            GroupId = "group2"
         };
-        
+
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = rightSource,
                     LeftKey = "id",
                     RightKey = null
@@ -435,21 +435,21 @@ public class JobDefinitionValidatorWindowAndSinkTests
     public void ValidateJoinOperation_WithEmptyRightKey_AddsError()
     {
         // Arrange
-        var rightSource = new KafkaSourceDefinition 
-        { 
-            Topic = "users", 
-            BootstrapServers = "localhost:9092", 
-            GroupId = "group2" 
+        var rightSource = new KafkaSourceDefinition
+        {
+            Topic = "users",
+            BootstrapServers = "localhost:9092",
+            GroupId = "group2"
         };
-        
+
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new JoinOperationDefinition 
-                { 
+                new JoinOperationDefinition
+                {
                     RightSource = rightSource,
                     LeftKey = "id",
                     RightKey = ""
@@ -480,8 +480,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = null,
                     TimeoutMs = 5000,
                     MaxRetries = 3
@@ -508,8 +508,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "",
                     TimeoutMs = 5000,
                     MaxRetries = 3
@@ -536,8 +536,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 0,
                     MaxRetries = 3
@@ -564,8 +564,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = -100,
                     MaxRetries = 3
@@ -592,8 +592,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 1_300_000, // > 1,200,000
                     MaxRetries = 3
@@ -620,8 +620,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 5000,
                     MaxRetries = -1
@@ -648,8 +648,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new AsyncFunctionOperationDefinition 
-                { 
+                new AsyncFunctionOperationDefinition
+                {
                     FunctionType = "http",
                     TimeoutMs = 5000,
                     MaxRetries = 101 // > 100
@@ -1067,8 +1067,8 @@ public class JobDefinitionValidatorWindowAndSinkTests
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
-            Sink = new KafkaSinkDefinition 
-            { 
+            Sink = new KafkaSinkDefinition
+            {
                 Topic = "output",
                 BootstrapServers = "localhost:9092",
                 Serializer = "invalid"

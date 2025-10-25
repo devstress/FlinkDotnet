@@ -1,6 +1,6 @@
 using System;
-using NUnit.Framework;
 using FlinkDotNet.DataStream.Checkpoint;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -300,7 +300,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             Assert.That(storage1.GetCheckpointPath(), Is.EqualTo("/path1"));
             Assert.That(storage1.GetFileSizeThreshold(), Is.EqualTo(1024));
-            
+
             Assert.That(storage2.GetCheckpointPath(), Is.EqualTo("/path2"));
             Assert.That(storage2.GetFileSizeThreshold(), Is.EqualTo(2048));
         }

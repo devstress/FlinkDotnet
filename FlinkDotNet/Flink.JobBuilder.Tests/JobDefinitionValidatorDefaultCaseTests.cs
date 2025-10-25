@@ -1,7 +1,5 @@
-using NUnit.Framework;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
-using System.Collections.Generic;
 
 namespace Flink.JobBuilder.Tests;
 
@@ -52,9 +50,9 @@ public class JobDefinitionValidatorDefaultCaseTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new KafkaSourceDefinition 
-            { 
-                Topic = "test", 
+            Source = new KafkaSourceDefinition
+            {
+                Topic = "test",
                 BootstrapServers = "localhost:9092",
                 GroupId = "group1"
             },
@@ -86,8 +84,8 @@ public class JobDefinitionValidatorDefaultCaseTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new KafkaSourceDefinition 
-            { 
+            Source = new KafkaSourceDefinition
+            {
                 Topic = "test",
                 BootstrapServers = "localhost:9092",
                 GroupId = "group1"

@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => config.SetCheckpointStorage((string)null!));
+            var ex = Assert.Throws<ArgumentException>(() => config.SetCheckpointStorage((string) null!));
             Assert.That(ex!.Message, Does.Contain("Checkpoint storage path cannot be null or empty"));
             Assert.That(ex.ParamName, Is.EqualTo("path"));
         }
@@ -104,7 +104,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => config.SetCheckpointStorage((ICheckpointStorage)null!));
+            var ex = Assert.Throws<ArgumentNullException>(() => config.SetCheckpointStorage((ICheckpointStorage) null!));
             Assert.That(ex!.ParamName, Is.EqualTo("storage"));
         }
 

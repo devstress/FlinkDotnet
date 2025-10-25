@@ -447,7 +447,7 @@ public class ConfigurationFullBranchCoverageTests
         // Arrange
         var config = new Configuration();
         config.SetString("key1", "value1");
-        
+
         var other = new Configuration();
         other.SetString("key2", "value2");
         other.SetInteger("key3", 42);
@@ -469,7 +469,7 @@ public class ConfigurationFullBranchCoverageTests
         // Arrange
         var config = new Configuration();
         config.SetString("key1", "original");
-        
+
         var other = new Configuration();
         other.SetString("key1", "updated");
 

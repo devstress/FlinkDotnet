@@ -1,6 +1,6 @@
-using NUnit.Framework;
 using System;
 using System.Reflection;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -26,7 +26,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 capture.ToJobDefinition("test-job-id", "test-job-name"));
-            
+
             Assert.That(ex!.Message, Does.Contain("No Kafka source defined"));
         }
 
@@ -316,14 +316,14 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
-            
+
             var strategy = Watermarks.WatermarkStrategy<int>.ForMonotonousTimestamps()
                 .WithTimestampAssigner(x => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            
+
             var withWatermarks = stream.AssignTimestampsAndWatermarks(strategy);
             var windowed = withWatermarks.TimeWindowAll(Time.Seconds(10));
             var result = windowed.Aggregate(new TestAggregateFunction());
-            
+
             result.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert
@@ -335,12 +335,12 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             var result = stream
                 .Map("upper")
                 .Map("lower")
                 .Map("upper");
-            
+
             result.SinkToKafka("output-topic", "localhost:9092");
 
             // Act & Assert
@@ -398,11 +398,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             var result = stream
                 .Map("upper")
                 .Map("lower");
-            
+
             result.SinkToKafka("output-topic", "localhost:9092");
 
             // Act & Assert
@@ -442,7 +442,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Use reflection to create an instance of internal OperationCapture class
             var type = typeof(StreamExecutionEnvironment).Assembly.GetType("FlinkDotNet.DataStream.OperationCapture");
-            return (OperationCapture)Activator.CreateInstance(type!, true)!;
+            return (OperationCapture) Activator.CreateInstance(type!, true)!;
         }
 
         #endregion

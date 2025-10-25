@@ -1,7 +1,7 @@
-using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -205,8 +205,14 @@ namespace FlinkDotNet.DataStream.Tests
         private class KafkaSinkWithNullProperties : ISinkFunction<string>
         {
             // Properties accessed via reflection by DataStream.AddSink
-            public string? Topic { get; }
-            public string? BootstrapServers { get; }
+            public string? Topic
+            {
+                get;
+            }
+            public string? BootstrapServers
+            {
+                get;
+            }
 
             public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
             {

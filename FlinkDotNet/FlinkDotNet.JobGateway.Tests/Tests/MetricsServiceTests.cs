@@ -369,7 +369,7 @@ namespace FlinkDotNet.JobGateway.Tests
             _metricsService.RecordJobSubmitted("LOCAL");
             _metricsService.RecordJobSubmitted("REMOTE");
             _metricsService.RecordJobSubmitted("LOCAL");
-            
+
             _metricsService.RecordJobSucceeded();
             _metricsService.RecordJobFailed("timeout_error");
             _metricsService.RecordJobSucceeded();

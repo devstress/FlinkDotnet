@@ -1,6 +1,5 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using System;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -21,9 +20,9 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(5);
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 new AllWindowedStream<string>(dataStream!, windowSize));
-            
+
             Assert.That(ex!.ParamName, Is.EqualTo("dataStream"));
         }
 
@@ -37,9 +36,9 @@ namespace FlinkDotNet.DataStream.Tests
             Time? windowSize = null;
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 new AllWindowedStream<string>(dataStream, windowSize!));
-            
+
             Assert.That(ex!.ParamName, Is.EqualTo("windowSize"));
         }
 
@@ -51,9 +50,9 @@ namespace FlinkDotNet.DataStream.Tests
             int windowCount = 100;
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 new AllWindowedStream<string>(dataStream!, windowCount));
-            
+
             Assert.That(ex!.ParamName, Is.EqualTo("dataStream"));
         }
 
@@ -117,7 +116,7 @@ namespace FlinkDotNet.DataStream.Tests
             var kafkaSource = new KafkaSourceFunction<int>("test-topic", "localhost:9092", "test-group", s => int.Parse(s), "earliest");
             var dataStream = new DataStream<int>(kafkaSource, env, "TestKafkaStream");
             var windowedStream = new AllWindowedStream<int>(dataStream, Time.Seconds(5));
-            
+
             var aggregateFunction = new SumAggregateFunction();
 
             // Act
@@ -138,12 +137,12 @@ namespace FlinkDotNet.DataStream.Tests
             var kafkaSource = new KafkaSourceFunction<string>("test-topic", "localhost:9092", "test-group", s => s, "earliest");
             var dataStream = new DataStream<string>(kafkaSource, env, "TestKafkaStream");
             var windowedStream = new AllWindowedStream<string>(dataStream, Time.Seconds(10));
-            
+
             // Attach operation capture using reflection to test line 697, 715
             var operationCapture = new OperationCapture();
             var attachMethod = windowedStream.GetType().GetMethod("AttachOperationCapture",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            
+
             Assert.That(attachMethod, Is.Not.Null, "AttachOperationCapture method should exist");
             attachMethod.Invoke(windowedStream, new object[] { operationCapture });
 

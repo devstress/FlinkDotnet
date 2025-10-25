@@ -78,7 +78,7 @@ public static class AspireValidationTest
 
             using var admin = new AdminClientBuilder(config).Build();
             var metadata = admin.GetMetadata(TimeSpan.FromSeconds(3));
-            
+
             if (metadata?.Brokers?.Count > 0)
             {
                 Console.WriteLine($"   ✅ Connected successfully (brokers: {metadata.Brokers.Count})");

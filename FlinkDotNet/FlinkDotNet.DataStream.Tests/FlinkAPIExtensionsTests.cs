@@ -1,6 +1,6 @@
-using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -21,9 +21,9 @@ namespace FlinkDotNet.DataStream.Tests
         public void TimeCharacteristic_EnumValues_ShouldBeDefined()
         {
             // Verify all time characteristic values exist
-            Assert.That((int)TimeCharacteristic.ProcessingTime, Is.EqualTo(0));
-            Assert.That((int)TimeCharacteristic.EventTime, Is.EqualTo(1));
-            Assert.That((int)TimeCharacteristic.IngestionTime, Is.EqualTo(2));
+            Assert.That((int) TimeCharacteristic.ProcessingTime, Is.EqualTo(0));
+            Assert.That((int) TimeCharacteristic.EventTime, Is.EqualTo(1));
+            Assert.That((int) TimeCharacteristic.IngestionTime, Is.EqualTo(2));
         }
 
         #endregion
@@ -95,7 +95,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act
             await sink.InvokeAsync("test-message");
-            
+
             // Assert - Method completed without throwing
             Assert.Pass("InvokeAsync completed successfully");
         }
@@ -319,7 +319,10 @@ namespace FlinkDotNet.DataStream.Tests
         private class TestResultFuture<T> : IResultFuture<T>
         {
             public System.Collections.Generic.List<T> Results { get; } = new();
-            public Exception? Exception { get; private set; }
+            public Exception? Exception
+            {
+                get; private set;
+            }
 
             public void Complete(System.Collections.Generic.IEnumerable<T> results)
             {

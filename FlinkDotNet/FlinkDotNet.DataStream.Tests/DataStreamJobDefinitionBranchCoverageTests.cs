@@ -1,8 +1,8 @@
-using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Reflection;
 using Flink.JobBuilder.Models;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -31,13 +31,13 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
-            
+
             var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the branch where _job != null but _operationCapture == null
@@ -72,13 +72,13 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
-            
+
             var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the branch where _job != null but _operationCapture == null
@@ -112,13 +112,13 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
-            
+
             var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the branch where _job != null but _operationCapture == null
@@ -165,7 +165,7 @@ namespace FlinkDotNet.DataStream.Tests
                 throw new InvalidOperationException("Could not find internal constructor for DataStream");
             }
 
-            var stream = (DataStream<T>)constructor.Invoke(new object[] { job, _env });
+            var stream = (DataStream<T>) constructor.Invoke(new object[] { job, _env });
             return stream;
         }
 
