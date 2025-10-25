@@ -31,10 +31,10 @@ namespace FlinkDotNet.DataStream.Checkpoint
         private ICheckpointStorage? _checkpointStorage;
         private string? _checkpointStoragePath;
         private long _checkpointTimeout = 600000; // 10 minutes default
-        private long _minPauseBetweenCheckpoints = 0;
+        private long _minPauseBetweenCheckpoints;
         private int _maxConcurrentCheckpoints = 1;
         private int _tolerableCheckpointFailureNumber = int.MaxValue;
-        private bool _externalizedCheckpointsEnabled = false;
+        private bool _externalizedCheckpointsEnabled;
         private ExternalizedCheckpointCleanup _externalizedCheckpointCleanup = ExternalizedCheckpointCleanup.DELETE_ON_CANCELLATION;
 
         /// <summary>

@@ -45,8 +45,8 @@ namespace FlinkDotNet.DataStream
         private int _bufferTimeoutMillis = 100;
         private bool _operatorChainingEnabled = true;
         private long _checkpointInterval = -1;
-        private bool _adaptiveSchedulerEnabled = false;
-        private bool _reactiveModeEnabled = false;
+        private bool _adaptiveSchedulerEnabled;
+        private bool _reactiveModeEnabled;
         private string? _savepointPath;
         private IStateBackend? _stateBackend;
         private readonly CheckpointConfig _checkpointConfig = new();
