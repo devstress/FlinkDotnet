@@ -431,7 +431,8 @@ namespace FlinkDotNet.DataStream
             }
 
             _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
-            var gateway = new FlinkJobGatewayService();
+            var gatewayConfig = new FlinkJobGatewayConfiguration();
+            var gateway = new FlinkJobGatewayService(gatewayConfig);
 
             JobSubmissionResult submit;
             try
@@ -450,23 +451,12 @@ namespace FlinkDotNet.DataStream
             if (!submit.Success)
             {
                 // Log diagnostic information about endpoints when job submission fails
-                var gatewayUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "(not set)";
-                
-                // Build JobManager URL from generic env vars
-                var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST");
-                var port = Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT");
-                var jobManagerUrl = (host != null && port != null) ? $"http://{host}:{port}" : "(not set)";
-                
-                // Build SqlGateway URL from generic env vars
-                var sqlHost = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST");
-                var sqlPort = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT");
-                var sqlGatewayUrl = (sqlHost != null && sqlPort != null) ? $"http://{sqlHost}:{sqlPort}" : "(not set)";
+                // Use actual gateway URL from the service configuration
+                var gatewayUrl = gatewayConfig.BaseUrl;
                 
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
                 _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");
                 _serilogLogger.Error("[ExecuteAsync]   - FlinkDotNet.JobGateway URL: {GatewayUrl}", gatewayUrl);
-                _serilogLogger.Error("[ExecuteAsync]   - Flink JobManager URL: {JobManagerUrl}", jobManagerUrl);
-                _serilogLogger.Error("[ExecuteAsync]   - Flink SqlGateway URL: {SqlGatewayUrl}", sqlGatewayUrl);
                 
                 throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");
             }
