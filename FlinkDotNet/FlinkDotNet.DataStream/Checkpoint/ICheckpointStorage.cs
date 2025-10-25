@@ -19,7 +19,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
     /// <summary>
     /// Checkpoint storage defines where completed checkpoints are persisted.
     /// This corresponds to org.apache.flink.runtime.state.storage.CheckpointStorage in Apache Flink.
-    /// 
+    ///
     /// Different checkpoint storage implementations:
     /// - FileSystemCheckpointStorage: Stores checkpoints on file system (local, HDFS, S3, etc.)
     /// - JobManagerCheckpointStorage: Stores small checkpoints in JobManager memory

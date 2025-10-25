@@ -19,7 +19,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
     /// <summary>
     /// Configuration for checkpointing behavior.
     /// This corresponds to org.apache.flink.streaming.api.environment.CheckpointConfig in Apache Flink.
-    /// 
+    ///
     /// Checkpoint configuration controls:
     /// - Where checkpoints are stored (checkpoint storage)
     /// - Checkpoint timeouts and failure tolerance
@@ -117,7 +117,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
 
         /// <summary>
         /// Sets the minimal pause between consecutive checkpoint attempts.
-        /// This defines how soon the checkpoint coordinator may trigger another checkpoint 
+        /// This defines how soon the checkpoint coordinator may trigger another checkpoint
         /// after the last checkpoint has completed.
         /// </summary>
         /// <param name="pauseMs">The minimum pause in milliseconds</param>

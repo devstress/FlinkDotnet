@@ -172,18 +172,18 @@ namespace Flink.JobBuilder.Models
     public class FlinkJobGatewayConfiguration
     {
         private string? _baseUrl;
-        
+
         /// <summary>
         /// Base URL for the Flink Job Gateway
         /// Priority: Explicitly set value > FLINK_JOB_GATEWAY_URL environment variable > FlinkJobGateway:BaseUrl appsettings (when using DI)
         /// </summary>
-        public string BaseUrl 
-        { 
-            get => _baseUrl ?? Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") 
+        public string BaseUrl
+        {
+            get => _baseUrl ?? Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL")
                    ?? throw new InvalidOperationException("BaseUrl must be configured via property, FLINK_JOB_GATEWAY_URL environment variable, or FlinkJobGateway:BaseUrl in appsettings");
             set => _baseUrl = value;
         }
-        
+
         public string? ApiKey
         {
             get; set;

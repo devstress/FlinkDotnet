@@ -32,7 +32,7 @@ namespace FlinkDotNet.DataStream
 {
     /// <summary>
     /// The StreamExecutionEnvironment is the context in which a streaming program is executed.
-    /// This is the main entry point for Flink DataStream API, equivalent to 
+    /// This is the main entry point for Flink DataStream API, equivalent to
     /// pyflink.datastream.StreamExecutionEnvironment in Python Flink.
     /// </summary>
     public class StreamExecutionEnvironment
@@ -453,7 +453,7 @@ namespace FlinkDotNet.DataStream
                 // Log diagnostic information about endpoints when job submission fails
                 // Use actual gateway URL from the service configuration
                 var gatewayUrl = gatewayConfig.BaseUrl;
-                
+
                 // Extract JobManager URL from error message if available
                 string? jobManagerUrl = "(not available in error message)";
                 if (submit.ErrorMessage?.Contains("at http") == true)
@@ -465,18 +465,18 @@ namespace FlinkDotNet.DataStream
                         if (urlStart >= 0)
                         {
                             var urlEnd = submit.ErrorMessage.IndexOfAny(new[] { ' ', '\n', '\r', '"', '\'' }, urlStart);
-                            jobManagerUrl = urlEnd > urlStart 
+                            jobManagerUrl = urlEnd > urlStart
                                 ? submit.ErrorMessage.Substring(urlStart, urlEnd - urlStart)
                                 : submit.ErrorMessage.Substring(urlStart);
                         }
                     }
                 }
-                
+
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
                 _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");
                 _serilogLogger.Error("[ExecuteAsync]   - FlinkDotNet.JobGateway URL: {GatewayUrl}", gatewayUrl);
                 _serilogLogger.Error("[ExecuteAsync]   - Flink JobManager URL (used by Gateway): {JobManagerUrl}", jobManagerUrl);
-                
+
                 throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");
             }
 
@@ -575,16 +575,16 @@ namespace FlinkDotNet.DataStream
             JobName = jobName;
             var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
             var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
-            
+
             // Use provided timeout, or check environment variable, or default to 5 minutes
-            var timeout = httpTimeout ?? 
-                (int.TryParse(Environment.GetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS"), out var timeoutSeconds) 
-                    ? TimeSpan.FromSeconds(timeoutSeconds) 
+            var timeout = httpTimeout ??
+                (int.TryParse(Environment.GetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS"), out var timeoutSeconds)
+                    ? TimeSpan.FromSeconds(timeoutSeconds)
                     : TimeSpan.FromMinutes(5));
-            
+
             var protocol = GetProtocol();
             _flinkHttp = new HttpClient { BaseAddress = new Uri($"{protocol}://{host}:{port}"), Timeout = timeout };
-            
+
             // Use provided gateway configuration or default with same timeout for consistency
             _gateway = new FlinkJobGatewayService(gatewayConfig ?? new FlinkJobGatewayConfiguration
             {
@@ -610,7 +610,7 @@ namespace FlinkDotNet.DataStream
                     return "https";
                 }
             }
-            
+
             // Default to http for backward compatibility
             return "http";
         }

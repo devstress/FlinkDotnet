@@ -12,7 +12,8 @@ namespace Flink.JobBuilder.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds Flink Job Gateway configuration from appsettings.json
+    /// Adds Flink Job Gateway configuration from appsettings.json.
+    /// <para>
     /// Configuration section: "FlinkJobGateway"
     /// Example appsettings.json:
     /// {
@@ -23,34 +24,38 @@ public static class ServiceCollectionExtensions
     ///     "RetryDelay": "00:00:01"
     ///   }
     /// }
-    /// 
+    /// </para>
+    /// <para>
     /// Priority: appsettings.json > FLINK_JOB_GATEWAY_URL environment variable > Exception
+    /// </para>
     /// </summary>
     public static IServiceCollection AddFlinkJobGatewayConfiguration(
-        this IServiceCollection services, 
+        this IServiceCollection services,
         IConfiguration configuration)
     {
         services.Configure<FlinkJobGatewayConfiguration>(options =>
         {
             var configSection = configuration.GetSection("FlinkJobGateway");
-            
+
             // Bind from appsettings
             configSection.Bind(options);
-            
+
             // If BaseUrl not in appsettings, try environment variable
-            if (string.IsNullOrEmpty(options.BaseUrl))
+            if (!string.IsNullOrEmpty(options.BaseUrl))
             {
-                var envUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
-                if (!string.IsNullOrEmpty(envUrl))
-                {
-                    options.BaseUrl = envUrl;
-                }
+                return;
+            }
+
+            var envUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
+            if (!string.IsNullOrEmpty(envUrl))
+            {
+                options.BaseUrl = envUrl;
             }
         });
-        
+
         return services;
     }
-    
+
     /// <summary>
     /// Adds Flink Job Gateway service with configuration
     /// </summary>
@@ -60,7 +65,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddFlinkJobGatewayConfiguration(configuration);
         services.AddTransient<IFlinkJobGatewayService, FlinkJobGatewayService>();
-        
+
         return services;
     }
 }
