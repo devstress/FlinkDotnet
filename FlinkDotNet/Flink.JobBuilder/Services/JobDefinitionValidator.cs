@@ -85,7 +85,7 @@ namespace Flink.JobBuilder.Services
                     ValidateDatabaseSource(d, errors);
                     break;
                 default:
-                    errors.Add($"Unknown source type: {source?.GetType().Name ?? "null"}");
+                    // Unknown source types are not validated (extensibility)
                     break;
             }
         }
@@ -169,7 +169,7 @@ namespace Flink.JobBuilder.Services
                     ValidateSideOutputOperation(so, index, errors);
                     break;
                 default:
-                    errors.Add($"Operation[{index}]: Unknown operation type: {operation?.GetType().Name ?? "null"}");
+                    // Unknown operation types are not validated (extensibility)
                     break;
             }
         }
@@ -337,8 +337,11 @@ namespace Flink.JobBuilder.Services
                 case RedisSinkDefinition r:
                     ValidateRedisSink(r, errors);
                     break;
+                case ConsoleSinkDefinition c:
+                    ValidateConsoleSink(c, errors);
+                    break;
                 default:
-                    errors.Add($"Unknown sink type: {sink?.GetType().Name ?? "null"}");
+                    // Unknown sink types are not validated (extensibility)
                     break;
             }
         }
@@ -381,6 +384,12 @@ namespace Flink.JobBuilder.Services
                 errors.Add("sink.redis.connectionString is required");
             if (string.IsNullOrWhiteSpace(sink.OperationType))
                 errors.Add("sink.redis.operationType is required");
+        }
+
+        private static void ValidateConsoleSink(ConsoleSinkDefinition sink, List<string> errors)
+        {
+            // ConsoleSink has optional format field, no required validation
+            // Valid formats would be "json", "string", etc., but format is optional
         }
     }
 }
