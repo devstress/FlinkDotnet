@@ -358,3 +358,51 @@ dotnet_diagnostic.S5332.severity = warning
 dotnet_diagnostic.S2933.severity = warning
 
 # End of SonarAnalyzer.CSharp metric rules
+
+# Enable Sonar code analysis warnings locally to match SonarCloud
+# Default severity for all Sonar rules not explicitly configured above
+# This makes local builds show the same warnings as SonarCloud
+
+# Set default severity to suggestion for most Sonar rules
+# (Rules already configured above with error/warning severity remain unchanged)
+
+# Disable rules that require massive refactoring or internationalization
+dotnet_diagnostic.S4055.severity = none # Literals should not be passed as localized parameters
+dotnet_diagnostic.S4056.severity = none # Use CultureInfo overloads
+dotnet_diagnostic.S4058.severity = none # Use StringComparison overloads
+dotnet_diagnostic.S1451.severity = none # Copyright/license headers
+dotnet_diagnostic.S3257.severity = none # Declarations should be concise
+dotnet_diagnostic.S4005.severity = none # URI arguments should not be strings
+dotnet_diagnostic.S3994.severity = none # URI return values should not be strings
+dotnet_diagnostic.S3995.severity = none # URI properties should not be strings
+dotnet_diagnostic.S3996.severity = none # URI properties should not be strings
+dotnet_diagnostic.S3997.severity = none # String URI overloads should call System.Uri overloads
+dotnet_diagnostic.S3242.severity = none # Method parameters with base types
+dotnet_diagnostic.S2360.severity = none # Optional parameters
+dotnet_diagnostic.S4049.severity = none # Methods as properties
+dotnet_diagnostic.S1309.severity = none # Track in-source suppressions
+dotnet_diagnostic.S1135.severity = none # Track TODO tags
+dotnet_diagnostic.S3217.severity = none # Track FIXME tags
+dotnet_diagnostic.S3872.severity = none # Parameter names should match base declaration
+
+# Enable important code quality and formatting rules as warnings
+dotnet_diagnostic.S113.severity = warning # Files should contain empty newline at end
+dotnet_diagnostic.S1128.severity = warning # Remove unused using directives
+dotnet_diagnostic.S2148.severity = warning # Underscores should be used for readable numbers
+dotnet_diagnostic.S3052.severity = warning # Remove redundant initializers
+dotnet_diagnostic.S4041.severity = warning # Type names should not match namespaces
+dotnet_diagnostic.S4004.severity = warning # Collection properties should be readonly
+dotnet_diagnostic.S2931.severity = warning # Classes with IDisposable members should implement IDisposable
+dotnet_diagnostic.S6605.severity = warning # Collection-specific Exists method should be used
+dotnet_diagnostic.S6354.severity = warning # Use a testable time provider
+dotnet_diagnostic.S6602.severity = warning # Find method should be used instead of FirstOrDefault
+dotnet_diagnostic.S2302.severity = warning # nameof should be used
+dotnet_diagnostic.S103.severity = warning # Lines should not be too long
+dotnet_diagnostic.S104.severity = warning # Files should not have too many lines
+dotnet_diagnostic.S131.severity = warning # Switch statements should end with default clause
+dotnet_diagnostic.S1192.severity = warning # String literals should not be duplicated
+dotnet_diagnostic.S4226.severity = warning # Extensions should be in separate namespaces
+dotnet_diagnostic.S4040.severity = warning # Strings should be normalized to uppercase
+
+# Enable Roslynator rules for better code organization
+# RCS1060 is already set to warning in the config above
