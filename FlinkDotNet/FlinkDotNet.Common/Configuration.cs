@@ -25,7 +25,7 @@ namespace FlinkDotNet.Common
     /// </summary>
     public class Configuration
     {
-        private readonly Dictionary<string, object> _configuration = new();
+        private readonly Dictionary<string, object> _configuration = [];
 
         /// <summary>
         /// Creates an empty configuration.
@@ -233,7 +233,7 @@ namespace FlinkDotNet.Common
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                return new List<string>();
+                return [];
             }
 
             return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
