@@ -78,6 +78,30 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
+        /// Helper method to create a new DataStream from JobDefinition-backed streams with operation capture.
+        /// </summary>
+        private DataStream<TResult> CreateJobDefinitionBackedStream<TResult>()
+        {
+            var result = new DataStream<TResult>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
+            if (_operationCapture != null)
+            {
+                result.AttachOperationCapture(_operationCapture);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Helper method to propagate operation capture to a windowed stream.
+        /// </summary>
+        private void PropagateOperationCapture(AllWindowedStream<T> windowedStream)
+        {
+            if (_operationCapture != null)
+            {
+                windowedStream.AttachOperationCapture(_operationCapture);
+            }
+        }
+
+        /// <summary>
         /// Applies a Map transformation on this DataStream using a Func delegate.
         /// </summary>
         /// <typeparam name="TOut">The type of the output elements</typeparam>
@@ -103,12 +127,7 @@ namespace FlinkDotNet.DataStream
                 // For streams created with FromKafka() or AddKafkaSource(), map operations are captured
                 // and translated to JobDefinition operations during ExecuteAsync()
                 // Return a new stream that maintains the operation capture chain
-                var result = new DataStream<TOut>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
-                if (_operationCapture != null)
-                {
-                    result.AttachOperationCapture(_operationCapture);
-                }
-                return result;
+                return CreateJobDefinitionBackedStream<TOut>();
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
@@ -172,12 +191,7 @@ namespace FlinkDotNet.DataStream
             // Handle JobDefinition-backed streams with OperationCapture
             if (_operationCapture != null || _job != null)
             {
-                var result = new DataStream<T>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
-                if (_operationCapture != null)
-                {
-                    result.AttachOperationCapture(_operationCapture);
-                }
-                return result;
+                return CreateJobDefinitionBackedStream<T>();
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
@@ -217,12 +231,7 @@ namespace FlinkDotNet.DataStream
             // Handle JobDefinition-backed streams with OperationCapture
             if (_operationCapture != null || _job != null)
             {
-                var result = new DataStream<TOut>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
-                if (_operationCapture != null)
-                {
-                    result.AttachOperationCapture(_operationCapture);
-                }
-                return result;
+                return CreateJobDefinitionBackedStream<TOut>();
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
@@ -525,13 +534,7 @@ namespace FlinkDotNet.DataStream
             _operationCapture?.CaptureTimeWindow(size);
 
             var windowedStream = new AllWindowedStream<T>(this, size);
-
-            // Propagate operation capture
-            if (_operationCapture != null)
-            {
-                windowedStream.AttachOperationCapture(_operationCapture);
-            }
-
+            PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
 
@@ -552,13 +555,7 @@ namespace FlinkDotNet.DataStream
 
             // Create a windowed stream with count-based windowing
             var windowedStream = new AllWindowedStream<T>(this, size);
-
-            // Propagate operation capture
-            if (_operationCapture != null)
-            {
-                windowedStream.AttachOperationCapture(_operationCapture);
-            }
-
+            PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
 
