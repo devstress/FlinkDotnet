@@ -143,7 +143,9 @@ namespace FlinkDotNet.DataStream.Tests
             var operationCapture = new OperationCapture();
             var attachMethod = windowedStream.GetType().GetMethod("AttachOperationCapture",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            attachMethod?.Invoke(windowedStream, new object[] { operationCapture });
+            
+            Assert.That(attachMethod, Is.Not.Null, "AttachOperationCapture method should exist");
+            attachMethod.Invoke(windowedStream, new object[] { operationCapture });
 
             var aggregateFunction = new CountAggregateFunction();
 
