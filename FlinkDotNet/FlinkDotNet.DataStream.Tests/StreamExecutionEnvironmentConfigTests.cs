@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using FlinkDotNet.DataStream.State;
 using FlinkDotNet.Common;
 using System;

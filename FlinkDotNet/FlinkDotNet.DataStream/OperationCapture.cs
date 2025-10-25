@@ -213,10 +213,12 @@ namespace FlinkDotNet.DataStream
                 jobDef.Metadata.Properties["deserializationFunction"] = _deserializationFunction.GetType().FullName ?? "Unknown";
             }
 
-            if (_serializationFunction != null)
+            if (_serializationFunction == null)
             {
-                jobDef.Metadata.Properties["serializationFunction"] = _serializationFunction.GetType().FullName ?? "Unknown";
+                return;
             }
+
+            jobDef.Metadata.Properties["serializationFunction"] = _serializationFunction.GetType().FullName ?? "Unknown";
         }
 
         private void TranslateOperations(JobDefinition jobDef)
@@ -289,13 +291,15 @@ namespace FlinkDotNet.DataStream
 
         private void TranslateFilterOperation(JobDefinition jobDef, CapturedOperation operation)
         {
-            if (operation.Function != null)
+            if (operation.Function == null)
             {
-                jobDef.Operations.Add(new FilterOperationDefinition
-                {
-                    Expression = $"function:{operation.Function.GetType().FullName}"
-                });
+                return;
             }
+
+            jobDef.Operations.Add(new FilterOperationDefinition
+            {
+                Expression = $"function:{operation.Function.GetType().FullName}"
+            });
         }
 
         // NOTE: TranslateWindowOperation was removed as dead code.

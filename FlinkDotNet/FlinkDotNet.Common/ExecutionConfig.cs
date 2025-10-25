@@ -60,7 +60,10 @@ namespace FlinkDotNet.Common
         /// When enabled, user functions that produce objects will be asked to reuse
         /// objects rather than allocating new ones.
         /// </summary>
-        public bool ObjectReuseEnabled { get; set; } = false;
+        public bool ObjectReuseEnabled
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Gets or sets whether closure cleaner is enabled.
@@ -85,13 +88,19 @@ namespace FlinkDotNet.Common
         /// Gets or sets the adaptive scheduler configuration.
         /// The adaptive scheduler is a key Apache Flink 2.1.0 feature for intelligent scaling.
         /// </summary>
-        public bool AdaptiveSchedulerEnabled { get; set; } = false;
+        public bool AdaptiveSchedulerEnabled
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Gets or sets reactive mode configuration.
         /// Reactive mode automatically adapts to available cluster resources.
         /// </summary>
-        public bool ReactiveModeEnabled { get; set; } = false;
+        public bool ReactiveModeEnabled
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Sets the parallelism for operations executed through this environment.

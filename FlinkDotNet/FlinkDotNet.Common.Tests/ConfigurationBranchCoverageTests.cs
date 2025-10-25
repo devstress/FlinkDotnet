@@ -1,5 +1,3 @@
-using FlinkDotNet.Common;
-
 namespace FlinkDotNet.Common.Tests;
 
 /// <summary>

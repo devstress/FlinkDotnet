@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using FlinkDotNet.DataStream.Window;
 using FlinkDotNet.DataStream.Window.Assigners;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 

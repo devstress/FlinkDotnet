@@ -87,13 +87,14 @@ namespace Flink.JobBuilder.Services
         private JobSubmissionResult? ValidateJobDefinition(JobDefinition jobDefinition)
         {
             var validation = JobDefinitionValidator.Validate(jobDefinition);
-            if (!validation.IsValid)
+            if (validation.IsValid)
             {
-                var msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
-                _logger?.LogWarning(msg);
-                return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, msg);
+                return null;
             }
-            return null;
+
+            var msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
+            _logger?.LogWarning(msg);
+            return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, msg);
         }
 
         private string SerializeAndLogJobDefinition(JobDefinition jobDefinition)
@@ -390,12 +391,12 @@ namespace Flink.JobBuilder.Services
             }
 
             // For client errors (4xx), only retry on specific conditions
-            if ((int) response.StatusCode >= 400 && (int) response.StatusCode < 500)
+            if ((int) response.StatusCode < 400 || (int) response.StatusCode >= 500)
             {
-                return await ShouldRetryClientErrorAsync(response, retryCount);
+                return false;
             }
 
-            return false;
+            return await ShouldRetryClientErrorAsync(response, retryCount);
         }
 
         private async Task<bool> ShouldRetryClientErrorAsync(HttpResponseMessage response, int retryCount)
@@ -408,23 +409,25 @@ namespace Flink.JobBuilder.Services
 
             // Retry on 400 (Bad Request) if Flink cluster is not ready
             var shouldRetryFlinkNotReady = await ShouldRetryFlinkClusterNotReadyAsync(response);
-            if (shouldRetryFlinkNotReady)
+            if (!shouldRetryFlinkNotReady)
             {
-                LogFlinkClusterNotReady(retryCount);
-                return true;
+                return false;
             }
 
-            return false;
+            LogFlinkClusterNotReady(retryCount);
+            return true;
         }
 
         private void LogFlinkClusterNotReady(int retryCount)
         {
-            if (retryCount < _configuration.MaxRetries)
+            if (retryCount >= _configuration.MaxRetries)
             {
-                var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{_configuration.MaxRetries}) after {_configuration.RetryDelay * (retryCount + 1)}ms";
-                _logger?.LogWarning(message);
-                _log.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] {Message}", message);
+                return;
             }
+
+            var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{_configuration.MaxRetries}) after {_configuration.RetryDelay * (retryCount + 1)}ms";
+            _logger?.LogWarning(message);
+            _log.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] {Message}", message);
         }
 
         private static async Task<bool> ShouldRetryFlinkClusterNotReadyAsync(HttpResponseMessage response)
@@ -445,7 +448,7 @@ namespace Flink.JobBuilder.Services
             }
         }
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         public void Dispose()
         {

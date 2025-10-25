@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using FlinkDotNet.DataStream;
 using Flink.JobBuilder.Models;
 using Moq;
 using Moq.Protected;

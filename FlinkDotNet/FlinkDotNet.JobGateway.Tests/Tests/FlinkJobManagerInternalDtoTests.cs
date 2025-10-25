@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.JobGateway.Services;
 using Microsoft.Extensions.Configuration;

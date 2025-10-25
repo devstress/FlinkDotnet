@@ -189,7 +189,10 @@ namespace Flink.JobBuilder.Models
             get; set;
         }
         public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromMinutes(5);
-        public bool UseHttps { get; set; } = false;
+        public bool UseHttps
+        {
+            get; set;
+        }
         public int MaxRetries { get; set; } = 3;
         public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
     }

@@ -641,10 +641,12 @@ namespace FlinkDotNet.DataStream
         public async Task CancelAsync(CancellationToken cancellationToken = default)
         {
             var success = await _gateway.CancelJobAsync(JobId, cancellationToken);
-            if (!success)
+            if (success)
             {
-                throw new InvalidOperationException($"Failed to cancel job {JobId}");
+                return;
             }
+
+            throw new InvalidOperationException($"Failed to cancel job {JobId}");
         }
 
         /// <summary>
@@ -745,11 +747,13 @@ namespace FlinkDotNet.DataStream
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed && disposing)
+            if (_disposed || !disposing)
             {
-                _flinkHttp?.Dispose();
-                _disposed = true;
+                return;
             }
+
+            _flinkHttp?.Dispose();
+            _disposed = true;
         }
 
         public void Dispose()
