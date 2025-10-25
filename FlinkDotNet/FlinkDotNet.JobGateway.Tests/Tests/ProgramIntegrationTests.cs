@@ -20,6 +20,11 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void Setup()
         {
+            // Set static delays to 1ms for fast test execution
+            FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+
             // Clean up environment variables before each test
             Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
             Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
