@@ -21,7 +21,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Arrange
         var services = new ServiceCollection();
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "FlinkJobGateway:BaseUrl", "http://config-url:8080/" },
             { "FlinkJobGateway:HttpTimeout", "00:05:00" },
@@ -31,7 +31,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var configuration = configBuilder.Build();
 
         // Act
-        services.AddFlinkJobGatewayConfiguration(configuration);
+        _ = services.AddFlinkJobGatewayConfiguration(configuration);
         var provider = services.BuildServiceProvider();
         var options = provider.GetRequiredService<IOptions<FlinkJobGatewayConfiguration>>().Value;
 
@@ -46,7 +46,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Arrange
         var services = new ServiceCollection();
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             // BaseUrl not set in config
             { "FlinkJobGateway:MaxRetries", "3" }
@@ -59,7 +59,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         try
         {
             // Act
-            services.AddFlinkJobGatewayConfiguration(configuration);
+            _ = services.AddFlinkJobGatewayConfiguration(configuration);
             var provider = services.BuildServiceProvider();
             var options = provider.GetRequiredService<IOptions<FlinkJobGatewayConfiguration>>().Value;
 
@@ -79,7 +79,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Arrange
         var services = new ServiceCollection();
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "FlinkJobGateway:BaseUrl", "" }, // Empty string
             { "FlinkJobGateway:MaxRetries", "3" }
@@ -92,7 +92,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         try
         {
             // Act
-            services.AddFlinkJobGatewayConfiguration(configuration);
+            _ = services.AddFlinkJobGatewayConfiguration(configuration);
             var provider = services.BuildServiceProvider();
             var options = provider.GetRequiredService<IOptions<FlinkJobGatewayConfiguration>>().Value;
 
@@ -112,7 +112,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Arrange
         var services = new ServiceCollection();
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             // No BaseUrl
             { "FlinkJobGateway:MaxRetries", "3" }
@@ -123,7 +123,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
 
         // Act
-        services.AddFlinkJobGatewayConfiguration(configuration);
+        _ = services.AddFlinkJobGatewayConfiguration(configuration);
         var provider = services.BuildServiceProvider();
 
         // Assert - Configuration is registered, but will throw when accessing BaseUrl
@@ -156,14 +156,14 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Arrange
         var services = new ServiceCollection();
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
         });
         var configuration = configBuilder.Build();
 
         // Act
-        services.AddFlinkJobGateway(configuration);
+        _ = services.AddFlinkJobGateway(configuration);
         var provider = services.BuildServiceProvider();
 
         // Assert
@@ -177,16 +177,16 @@ public class ServiceCollectionExtensionsBranchCoverageTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddHttpClient(); // FlinkJobGatewayService needs HttpClient
+        _ = services.AddHttpClient(); // FlinkJobGatewayService needs HttpClient
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
         });
         var configuration = configBuilder.Build();
 
         // Act
-        services.AddFlinkJobGateway(configuration);
+        _ = services.AddFlinkJobGateway(configuration);
         var provider = services.BuildServiceProvider();
 
         // Assert
@@ -214,16 +214,16 @@ public class ServiceCollectionExtensionsBranchCoverageTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddHttpClient();
+        _ = services.AddHttpClient();
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
         });
         var configuration = configBuilder.Build();
 
         // Act
-        services.AddFlinkJobGateway(configuration);
+        _ = services.AddFlinkJobGateway(configuration);
         var provider = services.BuildServiceProvider();
 
         // Assert - Get two instances to verify they are different (Transient)

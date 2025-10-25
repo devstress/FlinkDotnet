@@ -233,22 +233,16 @@ namespace FlinkDotNet.DataStream.Tests
 
             public TestKafkaSinkFunction(string topic, string bootstrapServers)
             {
-                Topic = topic;
-                BootstrapServers = bootstrapServers;
+                this.Topic = topic;
+                this.BootstrapServers = bootstrapServers;
             }
 
-            public System.Threading.Tasks.Task InvokeAsync(string element, System.Threading.CancellationToken cancellationToken = default)
-            {
-                return System.Threading.Tasks.Task.CompletedTask;
-            }
+            public System.Threading.Tasks.Task InvokeAsync(string element, System.Threading.CancellationToken cancellationToken = default) => System.Threading.Tasks.Task.CompletedTask;
         }
 
         private class TestGenericSinkFunction : ISinkFunction<string>
         {
-            public System.Threading.Tasks.Task InvokeAsync(string element, System.Threading.CancellationToken cancellationToken = default)
-            {
-                return System.Threading.Tasks.Task.CompletedTask;
-            }
+            public System.Threading.Tasks.Task InvokeAsync(string element, System.Threading.CancellationToken cancellationToken = default) => System.Threading.Tasks.Task.CompletedTask;
         }
 #pragma warning restore S4144 // Methods should not have identical implementations
     }

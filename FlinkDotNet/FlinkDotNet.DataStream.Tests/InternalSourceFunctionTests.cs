@@ -13,10 +13,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region MappedSourceFunction Tests
 
@@ -29,7 +26,7 @@ namespace FlinkDotNet.DataStream.Tests
             Func<int, string> mapFunc = i => $"Value: {i}";
 
             // Create DataStream using AddSource and apply map to test the transformation
-            _ = _env.AddSource(sourceFunction).Map(mapFunc);
+            _ = this._env.AddSource(sourceFunction).Map(mapFunc);
 
             // Act - Execute via source function directly to verify transformation logic
             var results = new List<string>();
@@ -54,7 +51,7 @@ namespace FlinkDotNet.DataStream.Tests
             Func<string, int> mapFunc = s => s.Length;
 
             // Create DataStream to test the transformation
-            _ = _env.AddSource(sourceFunction).Map(mapFunc);
+            _ = this._env.AddSource(sourceFunction).Map(mapFunc);
 
             // Act
             var results = new List<int>();
@@ -78,7 +75,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction<int>(sourceData);
 
             // Act
-            var stream = _env.AddSource(sourceFunction);
+            var stream = this._env.AddSource(sourceFunction);
             var mappedStream = stream.Map(i => i * 2);
 
             // Assert - Stream should be created successfully
@@ -387,19 +384,19 @@ namespace FlinkDotNet.DataStream.Tests
         {
             private readonly IEnumerable<T> _data;
 
-            public TestSourceFunction(IEnumerable<T> data)
-            {
-                _data = data;
-            }
+            public TestSourceFunction(IEnumerable<T> data) => this._data = data;
 
             public async IAsyncEnumerable<T> RunAsync(
                 [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
                 await Task.CompletedTask;
-                foreach (var item in _data)
+                foreach (var item in this._data)
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         yield break;
+                    }
+
                     yield return item;
                 }
             }
@@ -417,20 +414,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             public (int sum, int count) CreateAccumulator() => (0, 0);
 
-            public (int sum, int count) Add(int value, (int sum, int count) accumulator)
-            {
-                return (accumulator.sum + value, accumulator.count + 1);
-            }
+            public (int sum, int count) Add(int value, (int sum, int count) accumulator) => (accumulator.sum + value, accumulator.count + 1);
 
-            public double GetResult((int sum, int count) accumulator)
-            {
-                return accumulator.count == 0 ? 0.0 : (double) accumulator.sum / accumulator.count;
-            }
+            public double GetResult((int sum, int count) accumulator) => accumulator.count == 0 ? 0.0 : (double) accumulator.sum / accumulator.count;
 
-            public (int sum, int count) Merge((int sum, int count) acc1, (int sum, int count) acc2)
-            {
-                return (acc1.sum + acc2.sum, acc1.count + acc2.count);
-            }
+            public (int sum, int count) Merge((int sum, int count) acc1, (int sum, int count) acc2) => (acc1.sum + acc2.sum, acc1.count + acc2.count);
         }
 
         #region Direct Internal Source Function Tests
@@ -485,7 +473,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void MappedSourceFunction_WithNullSource_ShouldThrowArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new MappedSourceFunction<int, string>(null!, i => i.ToString()));
         }
 
@@ -496,7 +484,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction<int>(new[] { 1, 2, 3 });
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new MappedSourceFunction<int, string>(sourceFunction, null!));
         }
 
@@ -575,7 +563,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void FlatMappedSourceFunction_WithNullSource_ShouldThrowArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new FlatMappedSourceFunction<int, string>(null!, i => new[] { i.ToString() }));
         }
 
@@ -586,7 +574,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction<int>(new[] { 1, 2, 3 });
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new FlatMappedSourceFunction<int, string>(sourceFunction, null!));
         }
 
@@ -657,7 +645,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void FilteredSourceFunction_WithNullSource_ShouldThrowArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new FilteredSourceFunction<int>(null!, i => true));
         }
 
@@ -668,7 +656,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction<int>(new[] { 1, 2, 3 });
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new FilteredSourceFunction<int>(sourceFunction, null!));
         }
 
@@ -772,7 +760,7 @@ namespace FlinkDotNet.DataStream.Tests
             var aggregateFunc = new SumAggregateFunction();
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new AggregatedSourceFunction<int, int, int>(null!, aggregateFunc));
         }
 
@@ -783,7 +771,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction<int>(new[] { 1, 2, 3 });
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 new AggregatedSourceFunction<int, int, int>(sourceFunction, null!));
         }
 

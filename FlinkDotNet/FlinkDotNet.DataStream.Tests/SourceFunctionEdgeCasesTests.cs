@@ -48,7 +48,7 @@ namespace FlinkDotNet.DataStream.Tests
             );
 
             // Act & Assert
-            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            _ = Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
                 await foreach (var item in mappedFunction.RunAsync(CancellationToken.None))
                 {
@@ -120,7 +120,7 @@ namespace FlinkDotNet.DataStream.Tests
             );
 
             // Act & Assert
-            Assert.ThrowsAsync<NullReferenceException>(async () =>
+            _ = Assert.ThrowsAsync<NullReferenceException>(async () =>
             {
                 await foreach (var item in flatMappedFunction.RunAsync(CancellationToken.None))
                 {
@@ -344,14 +344,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             private readonly IEnumerable<T> _data;
 
-            public TestSourceFunction(IEnumerable<T> data)
-            {
-                _data = data;
-            }
+            public TestSourceFunction(IEnumerable<T> data) => this._data = data;
 
             public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
-                foreach (var item in _data)
+                foreach (var item in this._data)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     await Task.Yield();

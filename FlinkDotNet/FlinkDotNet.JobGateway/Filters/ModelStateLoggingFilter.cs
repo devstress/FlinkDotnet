@@ -13,7 +13,7 @@ internal sealed class ModelStateLoggingFilter : IActionFilter
     /// Initializes a new instance of the <see cref="ModelStateLoggingFilter"/> class.
     /// </summary>
     /// <param name="logger">The logger instance.</param>
-    public ModelStateLoggingFilter(ILogger<ModelStateLoggingFilter> logger) => _logger = logger;
+    public ModelStateLoggingFilter(ILogger<ModelStateLoggingFilter> logger) => this._logger = logger;
 
     /// <summary>
     /// Called before the action executes. Logs any model state validation errors.
@@ -22,12 +22,14 @@ internal sealed class ModelStateLoggingFilter : IActionFilter
     public void OnActionExecuting(ActionExecutingContext context)
     {
         if (context.ModelState.IsValid)
+        {
             return;
+        }
 
         var errors = context.ModelState
             .Where(kv => kv.Value?.Errors.Count > 0)
             .Select(kv => $"{kv.Key}:{string.Join("|", kv.Value!.Errors.Select(e => e.ErrorMessage))}");
-        _logger.LogWarning("ModelState invalid for {Path}. Errors: {Errors}",
+        this._logger.LogWarning("ModelState invalid for {Path}. Errors: {Errors}",
             context.HttpContext.Request.Path,
             string.Join("; ", errors));
     }

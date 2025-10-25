@@ -33,8 +33,8 @@ namespace FlinkDotNet.DataStream.Window
 
         internal WindowedStream(KeyedStream<T, TKey> keyedStream, IWindowAssigner<T, TWindow> windowAssigner)
         {
-            _keyedStream = keyedStream ?? throw new System.ArgumentNullException(nameof(keyedStream));
-            _windowAssigner = windowAssigner ?? throw new System.ArgumentNullException(nameof(windowAssigner));
+            this._keyedStream = keyedStream ?? throw new System.ArgumentNullException(nameof(keyedStream));
+            this._windowAssigner = windowAssigner ?? throw new System.ArgumentNullException(nameof(windowAssigner));
         }
 
         /// <summary>
@@ -48,11 +48,13 @@ namespace FlinkDotNet.DataStream.Window
         public DataStream<TResult> Aggregate<TAcc, TResult>(IAggregateFunction<T, TAcc, TResult> aggregateFunction)
         {
             if (aggregateFunction == null)
+            {
                 throw new System.ArgumentNullException(nameof(aggregateFunction));
+            }
 
             // In a production implementation, this would integrate with Flink's windowing engine
             // For now, return the underlying data stream to maintain API compatibility
-            var dataStream = _keyedStream.GetDataStream();
+            var dataStream = this._keyedStream.GetDataStream();
             return new DataStream<TResult>(
                 new System.Collections.Generic.List<TResult>(),
                 dataStream.GetExecutionEnvironment()
@@ -68,10 +70,12 @@ namespace FlinkDotNet.DataStream.Window
         public DataStream<T> Reduce(IReduceFunction<T> reduceFunction)
         {
             if (reduceFunction == null)
+            {
                 throw new System.ArgumentNullException(nameof(reduceFunction));
+            }
 
             // In a production implementation, this would integrate with Flink's windowing engine
-            return _keyedStream.GetDataStream();
+            return this._keyedStream.GetDataStream();
         }
 
         /// <summary>
@@ -82,9 +86,11 @@ namespace FlinkDotNet.DataStream.Window
         public DataStream<T> Reduce(System.Func<T, T, T> reduceFunction)
         {
             if (reduceFunction == null)
+            {
                 throw new System.ArgumentNullException(nameof(reduceFunction));
+            }
 
-            return _keyedStream.Reduce(reduceFunction);
+            return this._keyedStream.Reduce(reduceFunction);
         }
 
         /// <summary>
@@ -98,10 +104,12 @@ namespace FlinkDotNet.DataStream.Window
             IProcessWindowFunction<T, TResult, TKey, TWindow> processFunction)
         {
             if (processFunction == null)
+            {
                 throw new System.ArgumentNullException(nameof(processFunction));
+            }
 
             // In a production implementation, this would integrate with Flink's windowing engine
-            var dataStream = _keyedStream.GetDataStream();
+            var dataStream = this._keyedStream.GetDataStream();
             return new DataStream<TResult>(
                 new System.Collections.Generic.List<TResult>(),
                 dataStream.GetExecutionEnvironment()
@@ -111,11 +119,11 @@ namespace FlinkDotNet.DataStream.Window
         /// <summary>
         /// Gets the window assigner used by this windowed stream.
         /// </summary>
-        public IWindowAssigner<T, TWindow> GetWindowAssigner() => _windowAssigner;
+        public IWindowAssigner<T, TWindow> GetWindowAssigner() => this._windowAssigner;
 
         /// <summary>
         /// Gets the underlying keyed stream.
         /// </summary>
-        public KeyedStream<T, TKey> GetKeyedStream() => _keyedStream;
+        public KeyedStream<T, TKey> GetKeyedStream() => this._keyedStream;
     }
 }

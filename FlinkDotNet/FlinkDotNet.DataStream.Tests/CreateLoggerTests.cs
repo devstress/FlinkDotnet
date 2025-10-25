@@ -15,7 +15,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("test-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // Act
             var logger = LoggerFactory.CreateLogger(mockFileSystem);
@@ -30,7 +30,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             Environment.SetEnvironmentVariable("LOG_FILE_PATH", "custom-logs");
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("custom-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("custom-logs");
 
             try
             {
@@ -51,7 +51,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("test-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // Create an old log file (older than 1 day)
             var oldLogPath = mockFileSystem.Path.Combine("test-logs", "FlinkDotnet.log.20200101");
@@ -89,17 +89,17 @@ namespace FlinkDotNet.DataStream.Tests
             var mockFile = new Mock<IFile>();
 
             // Setup path operations
-            mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
+            _ = mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns((string path1, string path2) => $"{path1}/{path2}");
 
             // Setup directory to exist but throw on GetFiles
-            mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
-            mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
+            _ = mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
+            _ = mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
                 .Throws(new UnauthorizedAccessException("Access denied"));
 
-            mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
-            mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
-            mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
+            _ = mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
+            _ = mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
+            _ = mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
 
             // Act
             var logger = LoggerFactory.CreateLogger(mockFileSystem.Object);
@@ -115,7 +115,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("test-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // Act
             var logger = LoggerFactory.CreateLogger(mockFileSystem);
@@ -132,7 +132,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             Environment.SetEnvironmentVariable("LOG_FILE_PATH", "custom-logs");
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("custom-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("custom-logs");
 
             try
             {
@@ -153,7 +153,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("test-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // Create a recent log file (less than 1 day old)
             var recentLogPath = mockFileSystem.Path.Combine("test-logs", $"FlinkDotnet.log.{DateTime.UtcNow:yyyyMMdd}");
@@ -192,16 +192,16 @@ namespace FlinkDotNet.DataStream.Tests
             var mockPath = new Mock<IPath>();
             var mockFile = new Mock<IFile>();
 
-            mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
+            _ = mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns((string path1, string path2) => $"{path1}/{path2}");
 
-            mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
-            mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
+            _ = mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
+            _ = mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
                 .Throws(new System.IO.IOException("I/O error"));
 
-            mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
-            mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
-            mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
+            _ = mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
+            _ = mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
+            _ = mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
 
             // Act
             var logger = LoggerFactory.CreateLogger(mockFileSystem.Object);
@@ -217,7 +217,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockFileSystem = new MockFileSystem();
-            mockFileSystem.Directory.CreateDirectory("test-logs");
+            _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
             // This test verifies the cleanup logic without mocking complex file info behavior
             var logger = LoggerFactory.CreateLogger(mockFileSystem);

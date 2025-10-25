@@ -11,18 +11,14 @@ namespace FlinkDotNet.DataStream.Tests
     public class ModelPropertyTests
     {
         [SetUp]
-        public void SetUp()
-        {
+        public void SetUp() =>
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        }
 
         [TearDown]
-        public void TearDown()
-        {
+        public void TearDown() =>
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-        }
 
         #region JobExecutionResult Tests
 

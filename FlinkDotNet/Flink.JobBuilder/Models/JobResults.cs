@@ -27,7 +27,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets whether the submission was successful
         /// </summary>
-        public bool IsSuccess => Success;
+        public bool IsSuccess => this.Success;
 
         /// <summary>
         /// Creates a successful job submission result
@@ -100,7 +100,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        public TimeSpan? Duration => EndTime.HasValue && StartTime.HasValue ? EndTime.Value - StartTime.Value : null;
+        public TimeSpan? Duration => this.EndTime.HasValue && this.StartTime.HasValue ? this.EndTime.Value - this.StartTime.Value : null;
         public string? ErrorMessage
         {
             get; set;
@@ -179,9 +179,9 @@ namespace Flink.JobBuilder.Models
         /// </summary>
         public string BaseUrl
         {
-            get => _baseUrl ?? Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL")
+            get => this._baseUrl ?? Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL")
                    ?? throw new InvalidOperationException("BaseUrl must be configured via property, FLINK_JOB_GATEWAY_URL environment variable, or FlinkJobGateway:BaseUrl in appsettings");
-            set => _baseUrl = value;
+            set => this._baseUrl = value;
         }
 
         public string? ApiKey

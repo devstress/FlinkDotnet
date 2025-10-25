@@ -14,25 +14,21 @@ namespace FlinkDotNet.DataStream.Tests
     public class StreamExecutionEnvironmentCompleteCoverageTests
     {
         [SetUp]
-        public void SetUp()
-        {
+        public void SetUp() =>
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        }
 
         [TearDown]
-        public void TearDown()
-        {
+        public void TearDown() =>
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-        }
 
         [Test]
         public void StreamExecutionEnvironment_Constructor_WithConfiguration_ShouldInitialize()
         {
             // Arrange
             var config = new Configuration();
-            config.SetString("test.key", "test.value");
+            _ = config.SetString("test.key", "test.value");
 
             // Act
             var env = StreamExecutionEnvironment.GetExecutionEnvironment(config);
@@ -151,7 +147,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
+            _ = Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
         }
 
         [Test]
@@ -161,7 +157,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
+            _ = Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
         }
 
         [Test]
@@ -171,7 +167,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
+            _ = Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
         }
 
         [Test]
@@ -233,10 +229,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.FromKafka("test-topic", "localhost:9092", "test-group");
+            _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert - Will fail because no gateway, but tests the path
-            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            _ = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await env.ExecuteAsync());
         }
 
@@ -247,7 +243,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            _ = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await env.ExecuteAsyncJob("test-job"));
         }
 
@@ -257,7 +253,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var config = new Configuration();
-            config.SetString("new.key", "new.value");
+            _ = config.SetString("new.key", "new.value");
 
             // Act
             var result = env.Configure(config);
@@ -347,7 +343,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => env.SetStateBackend(null!));
+            _ = Assert.Throws<ArgumentNullException>(() => env.SetStateBackend(null!));
         }
 
         [Test]

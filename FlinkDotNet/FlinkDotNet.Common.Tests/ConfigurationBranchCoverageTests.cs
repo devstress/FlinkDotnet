@@ -13,7 +13,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store actual int type (not string)
         var config = new Configuration();
-        config.SetInteger("intKey", 42);
+        _ = config.SetInteger("intKey", 42);
 
         // Act
         var result = config.GetInteger("intKey");
@@ -27,7 +27,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store actual int type (not string)
         var config = new Configuration();
-        config.SetInteger("intKey", 123);
+        _ = config.SetInteger("intKey", 123);
 
         // Act
         var result = config.GetInteger("intKey", 999);
@@ -41,7 +41,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store string that can be parsed
         var config = new Configuration();
-        config.SetString("strKey", "789");
+        _ = config.SetString("strKey", "789");
 
         // Act
         var result = config.GetInteger("strKey", 999);
@@ -101,7 +101,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store actual bool type using SetBoolean
         var config = new Configuration();
-        config.SetBoolean("boolKey", true);
+        _ = config.SetBoolean("boolKey", true);
 
         // Act
         var result = config.GetBoolean("boolKey");
@@ -115,7 +115,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store actual bool type using SetBoolean
         var config = new Configuration();
-        config.SetBoolean("boolKey", false);
+        _ = config.SetBoolean("boolKey", false);
 
         // Act
         var result = config.GetBoolean("boolKey", true);
@@ -129,7 +129,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store string that can be parsed
         var config = new Configuration();
-        config.SetString("strKey", "true");
+        _ = config.SetString("strKey", "true");
 
         // Act
         var result = config.GetBoolean("strKey", false);
@@ -189,7 +189,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store actual long type using SetLong
         var config = new Configuration();
-        config.SetLong("longKey", 9876543210L);
+        _ = config.SetLong("longKey", 9876543210L);
 
         // Act
         var result = config.GetLong("longKey");
@@ -203,7 +203,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store actual long type using SetLong
         var config = new Configuration();
-        config.SetLong("longKey", 1234567890L);
+        _ = config.SetLong("longKey", 1234567890L);
 
         // Act
         var result = config.GetLong("longKey", 999L);
@@ -217,7 +217,7 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange - Store string that can be parsed
         var config = new Configuration();
-        config.SetString("strKey", "5555555555");
+        _ = config.SetString("strKey", "5555555555");
 
         // Act
         var result = config.GetLong("strKey", 999L);
@@ -347,12 +347,12 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange
         var config1 = new Configuration();
-        config1.SetString("key1", "value1");
+        _ = config1.SetString("key1", "value1");
 
         var emptyConfig = new Configuration();
 
         // Act
-        config1.AddAll(emptyConfig);
+        _ = config1.AddAll(emptyConfig);
 
         // Assert
         Assert.That(config1.ContainsKey("key1"), Is.True);
@@ -364,13 +364,13 @@ public class ConfigurationBranchCoverageTests
     {
         // Arrange
         var config1 = new Configuration();
-        config1.SetString("key1", "value1");
+        _ = config1.SetString("key1", "value1");
 
         var config2 = new Configuration();
-        config2.SetString("key2", "value2");
+        _ = config2.SetString("key2", "value2");
 
         // Act
-        config1.AddAll(config2);
+        _ = config1.AddAll(config2);
 
         // Assert
         Assert.That(config1.ContainsKey("key1"), Is.True);

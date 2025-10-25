@@ -23,9 +23,9 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void Setup()
         {
-            _mockJobManager = new Mock<IFlinkJobManager>();
-            _mockLogger = new Mock<ILogger<JobsController>>();
-            _controller = new JobsController(_mockLogger.Object, _mockJobManager.Object);
+            this._mockJobManager = new Mock<IFlinkJobManager>();
+            this._mockLogger = new Mock<ILogger<JobsController>>();
+            this._controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
         }
 
         #region Line 123 Branch Coverage - Long Error Message
@@ -38,16 +38,16 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(longInvalidJson));
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            this._controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
             // Act
-            var result = await _controller.SubmitJob();
+            var result = await this._controller.SubmitJob();
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
 
             // Verify the logger was called with truncated message (Line 123 branch: raw[..400])
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
@@ -65,16 +65,16 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(shortInvalidJson));
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            this._controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
             // Act
-            var result = await _controller.SubmitJob();
+            var result = await this._controller.SubmitJob();
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
 
             // Verify the logger was called (Line 123 branch: raw)
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
@@ -110,9 +110,9 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(jobDefJson));
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            this._controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            _mockJobManager
+            _ = this._mockJobManager
                 .Setup(x => x.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(new JobSubmissionResult
                 {
@@ -121,13 +121,13 @@ namespace FlinkDotNet.JobGateway.Tests
                 });
 
             // Act
-            var result = await _controller.SubmitJob();
+            var result = await this._controller.SubmitJob();
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
 
             // Verify metadata was created (Line 142 branch: ??= new JobMetadata())
-            _mockJobManager.Verify(
+            this._mockJobManager.Verify(
                 x => x.SubmitJobAsync(It.Is<JobDefinition>(j => j.Metadata != null)),
                 Times.Once);
         }
@@ -157,9 +157,9 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(jobDefJson));
-            _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
+            this._controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            _mockJobManager
+            _ = this._mockJobManager
                 .Setup(x => x.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(new JobSubmissionResult
                 {
@@ -168,13 +168,13 @@ namespace FlinkDotNet.JobGateway.Tests
                 });
 
             // Act
-            var result = await _controller.SubmitJob();
+            var result = await this._controller.SubmitJob();
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
 
             // Verify metadata was preserved (Line 142 branch: metadata already exists, no new creation)
-            _mockJobManager.Verify(
+            this._mockJobManager.Verify(
                 x => x.SubmitJobAsync(It.Is<JobDefinition>(j =>
                     j.Metadata != null &&
                     j.Metadata.JobId == "custom-job-id")),

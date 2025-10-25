@@ -48,37 +48,33 @@ namespace FlinkDotNet.DataStream.Window
         public TimeWindow(long start, long end)
         {
             if (start > end)
+            {
                 throw new ArgumentException("Start must be less than or equal to end");
+            }
 
-            Start = start;
-            End = end;
+            this.Start = start;
+            this.End = end;
         }
 
         /// <summary>
         /// Gets the largest timestamp that still belongs to this window.
         /// </summary>
         /// <returns>The largest timestamp that still belongs to this window (end - 1)</returns>
-        public long MaxTimestamp() => End - 1;
+        public long MaxTimestamp() => this.End - 1;
 
         /// <summary>
         /// Checks if this window intersects with another window.
         /// </summary>
         /// <param name="other">The other window to check</param>
         /// <returns>True if the windows intersect, false otherwise</returns>
-        public bool Intersects(TimeWindow other)
-        {
-            return Start < other.End && End > other.Start;
-        }
+        public bool Intersects(TimeWindow other) => this.Start < other.End && this.End > other.Start;
 
         /// <summary>
         /// Returns the minimal window that covers both this window and the given window.
         /// </summary>
         /// <param name="other">The other window to cover</param>
         /// <returns>The minimal window covering both windows</returns>
-        public TimeWindow Cover(TimeWindow other)
-        {
-            return new TimeWindow(Math.Min(Start, other.Start), Math.Max(End, other.End));
-        }
+        public TimeWindow Cover(TimeWindow other) => new TimeWindow(Math.Min(this.Start, other.Start), Math.Max(this.End, other.End));
 
         /// <summary>
         /// Gets the window that results from merging this window with the given windows.
@@ -88,7 +84,9 @@ namespace FlinkDotNet.DataStream.Window
         public static TimeWindow MergeWindows(params TimeWindow[] windows)
         {
             if (windows.Length == 0)
+            {
                 throw new ArgumentException("Cannot merge empty window collection");
+            }
 
             long minStart = long.MaxValue;
             long maxEnd = long.MinValue;
@@ -118,19 +116,15 @@ namespace FlinkDotNet.DataStream.Window
         public override bool Equals(object? obj)
         {
             if (obj is not TimeWindow other)
+            {
                 return false;
+            }
 
-            return Start == other.Start && End == other.End;
+            return this.Start == other.Start && this.End == other.End;
         }
 
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Start, End);
-        }
+        public override int GetHashCode() => HashCode.Combine(this.Start, this.End);
 
-        public override string ToString()
-        {
-            return $"TimeWindow[{Start}, {End})";
-        }
+        public override string ToString() => $"TimeWindow[{this.Start}, {this.End})";
     }
 }

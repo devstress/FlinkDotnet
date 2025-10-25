@@ -30,7 +30,7 @@ namespace FlinkDotNet.DataStream.State
         /// Gets the name of this state backend for configuration and logging purposes.
         /// </summary>
         /// <returns>The state backend name</returns>
-        string GetName();
+        public string GetName();
 
         /// <summary>
         /// Gets whether this state backend supports incremental checkpointing.
@@ -38,6 +38,6 @@ namespace FlinkDotNet.DataStream.State
         /// rather than the full state.
         /// </summary>
         /// <returns>True if incremental checkpointing is supported</returns>
-        bool SupportsIncrementalCheckpointing();
+        public bool SupportsIncrementalCheckpointing();
     }
 }

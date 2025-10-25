@@ -20,7 +20,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
         // Set environment variable required by FlinkJobGatewayConfiguration
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
 
-        _mockLogger = new Mock<ILogger>();
+        this._mockLogger = new Mock<ILogger>();
 
         // Clean up test log directory
         var logPath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
@@ -83,7 +83,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
             try
             {
                 if (Directory.Exists(customLogPath))
+                {
                     Directory.Delete(customLogPath, true);
+                }
             }
             catch (IOException)
             {
@@ -101,7 +103,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     {
         // Arrange
         var testLogPath = Path.Combine(Path.GetTempPath(), $"test-log-cleanup-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(testLogPath);
+        _ = Directory.CreateDirectory(testLogPath);
         Environment.SetEnvironmentVariable("LOG_FILE_PATH", testLogPath);
 
         try
@@ -127,7 +129,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
             try
             {
                 if (Directory.Exists(testLogPath))
+                {
                     Directory.Delete(testLogPath, true);
+                }
             }
             catch (IOException)
             {
@@ -161,7 +165,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
             try
             {
                 if (Directory.Exists(nonExistentPath))
+                {
                     Directory.Delete(nonExistentPath, true);
+                }
             }
             catch (IOException)
             {
@@ -189,7 +195,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
         };
 
         // Act - Passing null for httpClient should create default
-        using var service = new FlinkJobGatewayService(config, null, _mockLogger.Object);
+        using var service = new FlinkJobGatewayService(config, null, this._mockLogger.Object);
 
         // Assert
         Assert.That(service, Is.Not.Null);

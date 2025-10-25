@@ -44,9 +44,9 @@ namespace FlinkDotNet.DataStream
         /// <param name="environment">The execution environment</param>
         internal DataStream(IEnumerable<T> collection, StreamExecutionEnvironment environment)
         {
-            _collection = collection;
-            _environment = environment;
-            _sourceName = "Collection Source";
+            this._collection = collection;
+            this._environment = environment;
+            this._sourceName = "Collection Source";
         }
 
         /// <summary>
@@ -57,35 +57,32 @@ namespace FlinkDotNet.DataStream
         /// <param name="sourceName">Name of the source</param>
         internal DataStream(ISourceFunction<T> sourceFunction, StreamExecutionEnvironment environment, string sourceName)
         {
-            _sourceFunction = sourceFunction;
-            _environment = environment;
-            _sourceName = sourceName;
+            this._sourceFunction = sourceFunction;
+            this._environment = environment;
+            this._sourceName = sourceName;
         }
 
         internal DataStream(Flink.JobBuilder.Models.JobDefinition job, StreamExecutionEnvironment environment)
         {
-            _job = job ?? throw new ArgumentNullException(nameof(job));
-            _environment = environment;
-            _sourceName = "IR Source";
+            this._job = job ?? throw new ArgumentNullException(nameof(job));
+            this._environment = environment;
+            this._sourceName = "IR Source";
         }
 
         /// <summary>
         /// Attaches operation capture for native API translation.
         /// </summary>
-        internal void AttachOperationCapture(OperationCapture capture)
-        {
-            _operationCapture = capture;
-        }
+        internal void AttachOperationCapture(OperationCapture capture) => this._operationCapture = capture;
 
         /// <summary>
         /// Helper method to create a new DataStream from JobDefinition-backed streams with operation capture.
         /// </summary>
         private DataStream<TResult> CreateJobDefinitionBackedStream<TResult>()
         {
-            var result = new DataStream<TResult>(_job ?? new Flink.JobBuilder.Models.JobDefinition(), _environment);
-            if (_operationCapture != null)
+            var result = new DataStream<TResult>(this._job ?? new Flink.JobBuilder.Models.JobDefinition(), this._environment);
+            if (this._operationCapture != null)
             {
-                result.AttachOperationCapture(_operationCapture);
+                result.AttachOperationCapture(this._operationCapture);
             }
             return result;
         }
@@ -95,9 +92,9 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         private void PropagateOperationCapture(AllWindowedStream<T> windowedStream)
         {
-            if (_operationCapture != null)
+            if (this._operationCapture != null)
             {
-                windowedStream.AttachOperationCapture(_operationCapture);
+                windowedStream.AttachOperationCapture(this._operationCapture);
             }
         }
 
@@ -109,25 +106,25 @@ namespace FlinkDotNet.DataStream
         /// <returns>The transformed DataStream</returns>
         public DataStream<TOut> Map<TOut>(Func<T, TOut> mapFunction)
         {
-            if (_collection != null)
+            if (this._collection != null)
             {
-                var transformedCollection = _collection.Select(mapFunction);
-                return new DataStream<TOut>(transformedCollection, _environment);
+                var transformedCollection = this._collection.Select(mapFunction);
+                return new DataStream<TOut>(transformedCollection, this._environment);
             }
 
-            if (_sourceFunction != null)
+            if (this._sourceFunction != null)
             {
-                var mappedSource = new MappedSourceFunction<T, TOut>(_sourceFunction, mapFunction);
-                return new DataStream<TOut>(mappedSource, _environment, $"Map({_sourceName})");
+                var mappedSource = new MappedSourceFunction<T, TOut>(this._sourceFunction, mapFunction);
+                return new DataStream<TOut>(mappedSource, this._environment, $"Map({this._sourceName})");
             }
 
             // Handle JobDefinition-backed streams with OperationCapture (FromKafka, AddKafkaSource)
-            if (_operationCapture != null || _job != null)
+            if (this._operationCapture != null || this._job != null)
             {
                 // For streams created with FromKafka() or AddKafkaSource(), map operations are captured
                 // and translated to JobDefinition operations during ExecuteAsync()
                 // Return a new stream that maintains the operation capture chain
-                return CreateJobDefinitionBackedStream<TOut>();
+                return this.CreateJobDefinitionBackedStream<TOut>();
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
@@ -143,14 +140,14 @@ namespace FlinkDotNet.DataStream
         public DataStream<TOut> Map<TOut>(IMapFunction<T, TOut> mapFunction)
         {
             // Capture operation if using native API
-            _operationCapture?.CaptureMapOperation("custom", mapFunction);
+            this._operationCapture?.CaptureMapOperation("custom", mapFunction);
 
-            var result = Map(mapFunction.Map);
+            var result = this.Map(mapFunction.Map);
 
             // Propagate operation capture to result stream
-            if (_operationCapture != null)
+            if (this._operationCapture != null)
             {
-                result.AttachOperationCapture(_operationCapture);
+                result.AttachOperationCapture(this._operationCapture);
             }
 
             return result;
@@ -162,11 +159,17 @@ namespace FlinkDotNet.DataStream
         public DataStream<string> Map(string expression)
         {
             if (typeof(T) != typeof(string))
+            {
                 throw new NotSupportedException("Expression-based Map is currently supported for string streams only.");
-            if (_job == null)
+            }
+
+            if (this._job == null)
+            {
                 throw new InvalidOperationException("Expression-based Map requires an IR-backed stream created via environment.FromKafka(...)");
-            _job.Operations.Add(new Flink.JobBuilder.Models.MapOperationDefinition { Expression = expression });
-            return new DataStream<string>(_job, _environment);
+            }
+
+            this._job.Operations.Add(new Flink.JobBuilder.Models.MapOperationDefinition { Expression = expression });
+            return new DataStream<string>(this._job, this._environment);
         }
 
         /// <summary>
@@ -176,22 +179,22 @@ namespace FlinkDotNet.DataStream
         /// <returns>The filtered DataStream</returns>
         public DataStream<T> Filter(Func<T, bool> filterFunction)
         {
-            if (_collection != null)
+            if (this._collection != null)
             {
-                var filteredCollection = _collection.Where(filterFunction);
-                return new DataStream<T>(filteredCollection, _environment);
+                var filteredCollection = this._collection.Where(filterFunction);
+                return new DataStream<T>(filteredCollection, this._environment);
             }
 
-            if (_sourceFunction != null)
+            if (this._sourceFunction != null)
             {
-                var filteredSource = new FilteredSourceFunction<T>(_sourceFunction, filterFunction);
-                return new DataStream<T>(filteredSource, _environment, $"Filter({_sourceName})");
+                var filteredSource = new FilteredSourceFunction<T>(this._sourceFunction, filterFunction);
+                return new DataStream<T>(filteredSource, this._environment, $"Filter({this._sourceName})");
             }
 
             // Handle JobDefinition-backed streams with OperationCapture
-            if (_operationCapture != null || _job != null)
+            if (this._operationCapture != null || this._job != null)
             {
-                return CreateJobDefinitionBackedStream<T>();
+                return this.CreateJobDefinitionBackedStream<T>();
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
@@ -203,10 +206,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="filterFunction">The FilterFunction instance to apply</param>
         /// <returns>The filtered DataStream</returns>
-        public DataStream<T> Filter(IFilterFunction<T> filterFunction)
-        {
-            return Filter(filterFunction.Filter);
-        }
+        public DataStream<T> Filter(IFilterFunction<T> filterFunction) => this.Filter(filterFunction.Filter);
 
         /// <summary>
         /// Applies a FlatMap transformation on this DataStream using a Func delegate.
@@ -216,22 +216,22 @@ namespace FlinkDotNet.DataStream
         /// <returns>The transformed DataStream</returns>
         public DataStream<TOut> FlatMap<TOut>(Func<T, IEnumerable<TOut>> flatMapFunction)
         {
-            if (_collection != null)
+            if (this._collection != null)
             {
-                var transformedCollection = _collection.SelectMany(flatMapFunction);
-                return new DataStream<TOut>(transformedCollection, _environment);
+                var transformedCollection = this._collection.SelectMany(flatMapFunction);
+                return new DataStream<TOut>(transformedCollection, this._environment);
             }
 
-            if (_sourceFunction != null)
+            if (this._sourceFunction != null)
             {
-                var flatMappedSource = new FlatMappedSourceFunction<T, TOut>(_sourceFunction, flatMapFunction);
-                return new DataStream<TOut>(flatMappedSource, _environment, $"FlatMap({_sourceName})");
+                var flatMappedSource = new FlatMappedSourceFunction<T, TOut>(this._sourceFunction, flatMapFunction);
+                return new DataStream<TOut>(flatMappedSource, this._environment, $"FlatMap({this._sourceName})");
             }
 
             // Handle JobDefinition-backed streams with OperationCapture
-            if (_operationCapture != null || _job != null)
+            if (this._operationCapture != null || this._job != null)
             {
-                return CreateJobDefinitionBackedStream<TOut>();
+                return this.CreateJobDefinitionBackedStream<TOut>();
             }
 
             throw new InvalidOperationException("DataStream has no valid source");
@@ -244,10 +244,7 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="TOut">The type of output elements</typeparam>
         /// <param name="flatMapFunction">The FlatMapFunction instance to apply</param>
         /// <returns>The transformed DataStream</returns>
-        public DataStream<TOut> FlatMap<TOut>(IFlatMapFunction<T, TOut> flatMapFunction)
-        {
-            return FlatMap(flatMapFunction.FlatMap);
-        }
+        public DataStream<TOut> FlatMap<TOut>(IFlatMapFunction<T, TOut> flatMapFunction) => this.FlatMap(flatMapFunction.FlatMap);
 
         /// <summary>
         /// Creates a new DataStream that contains only the elements satisfying the given filter predicate.
@@ -258,12 +255,12 @@ namespace FlinkDotNet.DataStream
         /// <returns>The filtered DataStream</returns>
         public DataStream<T> Where(string filterExpression)
         {
-            if (_job == null)
+            if (this._job == null)
             {
                 // fallback/no-op for local stream usage
                 return this;
             }
-            _job.Operations.Add(new Flink.JobBuilder.Models.FilterOperationDefinition { Expression = filterExpression });
+            this._job.Operations.Add(new Flink.JobBuilder.Models.FilterOperationDefinition { Expression = filterExpression });
             return this;
         }
 
@@ -280,18 +277,20 @@ namespace FlinkDotNet.DataStream
             }
 
             // Support native API with operation capture
-            if (_operationCapture != null)
+            if (this._operationCapture != null)
             {
-                _operationCapture.CaptureKafkaSink(topic, bootstrapServers, serializer);
+                this._operationCapture.CaptureKafkaSink(topic, bootstrapServers, serializer);
                 return this;
             }
 
             // Support IR-backed streams
-            if (_job == null)
+            if (this._job == null)
+            {
                 throw new InvalidOperationException("SinkToKafka requires an IR-backed stream created via environment.FromKafka(...) or AddKafkaSource(...)");
+            }
 
-            _job.Sink = new Flink.JobBuilder.Models.KafkaSinkDefinition { Topic = topic, BootstrapServers = bootstrapServers };
-            _environment.SetActiveJob(_job);
+            this._job.Sink = new Flink.JobBuilder.Models.KafkaSinkDefinition { Topic = topic, BootstrapServers = bootstrapServers };
+            this._environment.SetActiveJob(this._job);
             return this;
         }
 
@@ -301,10 +300,7 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <param name="keySelector">The key selector function</param>
         /// <returns>A KeyedStream</returns>
-        public KeyedStream<T, TKey> KeyBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull
-        {
-            return new KeyedStream<T, TKey>(this, keySelector);
-        }
+        public KeyedStream<T, TKey> KeyBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull => new KeyedStream<T, TKey>(this, keySelector);
 
         /// <summary>
         /// Groups the elements of this DataStream by the given key field.
@@ -313,22 +309,18 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="keyField">The field name to group by</param>
         /// <returns>A KeyedStream with string keys</returns>
-        public KeyedStream<T, string> GroupBy(string keyField)
-        {
+        public KeyedStream<T, string> GroupBy(string keyField) =>
             // For basic field-based grouping, we'll create a simple key function
             // This allows the API to work for basic scenarios
-            return new KeyedStream<T, string>(this, _ => keyField);
-        }
+            new KeyedStream<T, string>(this, _ => keyField);
 
         /// <summary>
         /// Writes the DataStream to standard output.
         /// </summary>
         /// <returns>This DataStream</returns>
-        public DataStream<T> Print()
-        {
+        public DataStream<T> Print() =>
             // Print sink registered - actual output happens during execution
-            return this;
-        }
+            this;
 
         /// <summary>
         /// Adds a sink to this DataStream.
@@ -339,7 +331,7 @@ namespace FlinkDotNet.DataStream
         public DataStream<T> AddSink(ISinkFunction<T> sinkFunction)
         {
             // Capture sink operation if using native API
-            if (_operationCapture != null && sinkFunction != null)
+            if (this._operationCapture != null && sinkFunction != null)
             {
                 // Try to extract Kafka sink information from the sink function using public properties
                 string? topic = null;
@@ -358,7 +350,7 @@ namespace FlinkDotNet.DataStream
 
                 if (!string.IsNullOrEmpty(topic) && !string.IsNullOrEmpty(servers))
                 {
-                    _operationCapture.CaptureKafkaSink(topic, servers, null);
+                    this._operationCapture.CaptureKafkaSink(topic, servers, null);
                 }
             }
 
@@ -371,30 +363,21 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="parallelism">The parallelism for this operation</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> SetParallelism(int parallelism)
-        {
-            return this;
-        }
+        public DataStream<T> SetParallelism(int parallelism) => this;
 
         /// <summary>
         /// Sets the name for this operation.
         /// </summary>
         /// <param name="name">The name of this operation</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> Name(string name)
-        {
-            return this;
-        }
+        public DataStream<T> Name(string name) => this;
 
         /// <summary>
         /// Partitions the stream by uniformly distributing the data across all parallel operators.
         /// This corresponds to the rebalance() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The rebalanced DataStream</returns>
-        public DataStream<T> Rebalance()
-        {
-            return this;
-        }
+        public DataStream<T> Rebalance() => this;
 
         /// <summary>
         /// Partitions the stream by distributing the data to a subset of parallel operators.
@@ -402,10 +385,7 @@ namespace FlinkDotNet.DataStream
         /// This corresponds to the rescale() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The rescaled DataStream</returns>
-        public DataStream<T> Rescale()
-        {
-            return this;
-        }
+        public DataStream<T> Rescale() => this;
 
         /// <summary>
         /// Forwards elements to the next operator with the same parallelism.
@@ -413,30 +393,21 @@ namespace FlinkDotNet.DataStream
         /// This corresponds to the forward() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The forwarded DataStream</returns>
-        public DataStream<T> Forward()
-        {
-            return this;
-        }
+        public DataStream<T> Forward() => this;
 
         /// <summary>
         /// Partitions the stream randomly across all parallel operators.
         /// This corresponds to the shuffle() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The shuffled DataStream</returns>
-        public DataStream<T> Shuffle()
-        {
-            return this;
-        }
+        public DataStream<T> Shuffle() => this;
 
         /// <summary>
         /// Broadcasts the stream to all parallel operators of the next operation.
         /// This corresponds to the broadcast() operation in Apache Flink 2.1.0.
         /// </summary>
         /// <returns>The broadcasted DataStream</returns>
-        public DataStream<T> Broadcast()
-        {
-            return this;
-        }
+        public DataStream<T> Broadcast() => this;
 
         /// <summary>
         /// Partitions the stream using a custom partitioner.
@@ -446,10 +417,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="partitioner">The custom partitioner function</param>
         /// <param name="keySelector">The key selector function</param>
         /// <returns>The custom partitioned DataStream</returns>
-        public DataStream<T> PartitionCustom<TKey>(Func<TKey, int, int> partitioner, Func<T, TKey> keySelector)
-        {
-            return this;
-        }
+        public DataStream<T> PartitionCustom<TKey>(Func<TKey, int, int> partitioner, Func<T, TKey> keySelector) => this;
 
         /// <summary>
         /// Sets the maximum parallelism for this operation.
@@ -461,7 +429,10 @@ namespace FlinkDotNet.DataStream
         public DataStream<T> SetMaxParallelism(int maxParallelism)
         {
             if (maxParallelism <= 0 || maxParallelism > 32768)
+            {
                 throw new ArgumentException("Max parallelism must be between 1 and 32768");
+            }
+
             return this;
         }
 
@@ -471,10 +442,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="slotSharingGroup">The slot sharing group name</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> SlotSharingGroup(string slotSharingGroup)
-        {
-            return this;
-        }
+        public DataStream<T> SlotSharingGroup(string slotSharingGroup) => this;
 
         /// <summary>
         /// Assigns timestamps and watermarks to this DataStream.
@@ -485,7 +453,7 @@ namespace FlinkDotNet.DataStream
         public DataStream<T> AssignTimestampsAndWatermarks(IAssignerWithPunctuatedWatermarks<T> assigner)
         {
             // Capture operation if using native API
-            _operationCapture?.CaptureTimestampAssigner(assigner);
+            this._operationCapture?.CaptureTimestampAssigner(assigner);
 
             // In a full implementation, this would configure the stream's time characteristic
             // For now, we return the stream to maintain API compatibility
@@ -498,12 +466,10 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="assigner">The timestamp and watermark assigner</param>
         /// <returns>This DataStream with timestamps assigned</returns>
-        public DataStream<T> AssignTimestampsAndWatermarks(IAssignerWithPeriodicWatermarks<T> assigner)
-        {
+        public DataStream<T> AssignTimestampsAndWatermarks(IAssignerWithPeriodicWatermarks<T> assigner) =>
             // In a full implementation, this would configure the stream's time characteristic
             // For now, we return the stream to maintain API compatibility
-            return this;
-        }
+            this;
 
         /// <summary>
         /// Assigns timestamps and watermarks to this DataStream using a WatermarkStrategy.
@@ -514,7 +480,9 @@ namespace FlinkDotNet.DataStream
         public DataStream<T> AssignTimestampsAndWatermarks(Watermarks.WatermarkStrategy<T> strategy)
         {
             if (strategy == null)
+            {
                 throw new ArgumentNullException(nameof(strategy));
+            }
 
             // In a full implementation, this would configure the stream's time characteristic
             // and work with the watermark strategy to extract timestamps and generate watermarks
@@ -531,10 +499,10 @@ namespace FlinkDotNet.DataStream
         public AllWindowedStream<T> TimeWindowAll(Time size)
         {
             // Capture operation if using native API
-            _operationCapture?.CaptureTimeWindow(size);
+            this._operationCapture?.CaptureTimeWindow(size);
 
             var windowedStream = new AllWindowedStream<T>(this, size);
-            PropagateOperationCapture(windowedStream);
+            this.PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
 
@@ -548,14 +516,16 @@ namespace FlinkDotNet.DataStream
         public AllWindowedStream<T> CountWindowAll(int size)
         {
             if (size <= 0)
+            {
                 throw new ArgumentException("Window size must be greater than 0", nameof(size));
+            }
 
             // Capture operation if using native API
-            _operationCapture?.CaptureCountWindow(size);
+            this._operationCapture?.CaptureCountWindow(size);
 
             // Create a windowed stream with count-based windowing
             var windowedStream = new AllWindowedStream<T>(this, size);
-            PropagateOperationCapture(windowedStream);
+            this.PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
 
@@ -563,10 +533,7 @@ namespace FlinkDotNet.DataStream
         /// Gets the execution environment.
         /// </summary>
         /// <returns>The StreamExecutionEnvironment</returns>
-        public StreamExecutionEnvironment GetExecutionEnvironment()
-        {
-            return _environment;
-        }
+        public StreamExecutionEnvironment GetExecutionEnvironment() => this._environment;
     }
 
     /// <summary>
@@ -581,7 +548,7 @@ namespace FlinkDotNet.DataStream
 
         internal KeyedStream(DataStream<T> dataStream, Func<T, TKey> keySelector)
         {
-            _dataStream = dataStream;
+            this._dataStream = dataStream;
             _ = keySelector;
         }
 
@@ -590,11 +557,9 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="reduceFunction">The reduce function</param>
         /// <returns>The reduced DataStream</returns>
-        public DataStream<T> Reduce(Func<T, T, T> reduceFunction)
-        {
+        public DataStream<T> Reduce(Func<T, T, T> reduceFunction) =>
             // This would apply the reduce function to each key group
-            return _dataStream;
-        }
+            this._dataStream;
 
         /// <summary>
         /// Applies a reduce function to this KeyedStream using a ReduceFunction (Flink-compatible).
@@ -602,10 +567,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="reduceFunction">The ReduceFunction instance to apply</param>
         /// <returns>The reduced DataStream</returns>
-        public DataStream<T> Reduce(IReduceFunction<T> reduceFunction)
-        {
-            return Reduce(reduceFunction.Reduce);
-        }
+        public DataStream<T> Reduce(IReduceFunction<T> reduceFunction) => this.Reduce(reduceFunction.Reduce);
 
         /// <summary>
         /// Applies an aggregation function to this KeyedStream.
@@ -613,11 +575,9 @@ namespace FlinkDotNet.DataStream
         /// <param name="aggregationType">The type of aggregation</param>
         /// <param name="fieldName">The field to aggregate</param>
         /// <returns>The aggregated DataStream</returns>
-        public DataStream<T> Aggregate(string aggregationType, string fieldName)
-        {
+        public DataStream<T> Aggregate(string aggregationType, string fieldName) =>
             // This would apply the aggregation function based on the type and field
-            return _dataStream;
-        }
+            this._dataStream;
 
         /// <summary>
         /// Applies a window assigner to this KeyedStream, creating a WindowedStream.
@@ -631,7 +591,9 @@ namespace FlinkDotNet.DataStream
             where TWindow : Window.IWindow
         {
             if (assigner == null)
+            {
                 throw new ArgumentNullException(nameof(assigner));
+            }
 
             return new Window.WindowedStream<T, TKey, TWindow>(this, assigner);
         }
@@ -640,10 +602,7 @@ namespace FlinkDotNet.DataStream
         /// Gets the underlying DataStream.
         /// </summary>
         /// <returns>The underlying DataStream</returns>
-        public DataStream<T> GetDataStream()
-        {
-            return _dataStream;
-        }
+        public DataStream<T> GetDataStream() => this._dataStream;
     }
 
     /// <summary>
@@ -660,25 +619,22 @@ namespace FlinkDotNet.DataStream
 
         internal AllWindowedStream(DataStream<T> dataStream, Time windowSize)
         {
-            _dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
-            _windowSize = windowSize ?? throw new ArgumentNullException(nameof(windowSize));
-            _windowCount = null;
+            this._dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
+            this._windowSize = windowSize ?? throw new ArgumentNullException(nameof(windowSize));
+            this._windowCount = null;
         }
 
         internal AllWindowedStream(DataStream<T> dataStream, int windowCount)
         {
-            _dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
-            _windowSize = null;
-            _windowCount = windowCount;
+            this._dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
+            this._windowSize = null;
+            this._windowCount = windowCount;
         }
 
         /// <summary>
         /// Attaches operation capture for native API translation.
         /// </summary>
-        internal void AttachOperationCapture(OperationCapture capture)
-        {
-            _operationCapture = capture;
-        }
+        internal void AttachOperationCapture(OperationCapture capture) => this._operationCapture = capture;
 
         /// <summary>
         /// Applies an aggregate function to the windowed stream.
@@ -691,27 +647,27 @@ namespace FlinkDotNet.DataStream
         public DataStream<TResult> Aggregate<TAcc, TResult>(IAggregateFunction<T, TAcc, TResult> aggregateFunction)
         {
             // Capture operation if using native API
-            _operationCapture?.CaptureAggregateOperation(aggregateFunction);
+            this._operationCapture?.CaptureAggregateOperation(aggregateFunction);
 
             // In a full implementation, this would apply windowing and aggregation
             // For now, we create a transformed stream to maintain API compatibility
-            var environment = _dataStream.GetExecutionEnvironment();
+            var environment = this._dataStream.GetExecutionEnvironment();
 
             // This is a placeholder - in production, this would integrate with the Flink runtime
             // to perform actual windowed aggregation
             var result = new DataStream<TResult>(
                 new AggregatedSourceFunction<T, TAcc, TResult>(
-                    _dataStream._sourceFunction ?? throw new InvalidOperationException("Source function required"),
+                    this._dataStream._sourceFunction ?? throw new InvalidOperationException("Source function required"),
                     aggregateFunction
                 ),
                 environment,
-                $"Windowed Aggregate({_windowSize})"
+                $"Windowed Aggregate({this._windowSize})"
             );
 
             // Propagate operation capture
-            if (_operationCapture != null)
+            if (this._operationCapture != null)
             {
-                result.AttachOperationCapture(_operationCapture);
+                result.AttachOperationCapture(this._operationCapture);
             }
 
             return result;
@@ -720,12 +676,12 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the window size (for time-based windows).
         /// </summary>
-        public Time? GetWindowSize() => _windowSize;
+        public Time? GetWindowSize() => this._windowSize;
 
         /// <summary>
         /// Gets the window count (for count-based windows).
         /// </summary>
-        public int? GetWindowCount() => _windowCount;
+        public int? GetWindowCount() => this._windowCount;
     }
 
     #region Function Interfaces - Core Flink API
@@ -743,7 +699,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="value">The input value</param>
         /// <returns>The output value</returns>
-        TOut Map(TIn value);
+        public TOut Map(TIn value);
     }
 
     /// <summary>
@@ -758,7 +714,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="value">The input value</param>
         /// <returns>True if the element should be kept, false otherwise</returns>
-        bool Filter(T value);
+        public bool Filter(T value);
     }
 
     /// <summary>
@@ -774,7 +730,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="value">The input value</param>
         /// <returns>An enumerable of output values</returns>
-        IEnumerable<TOut> FlatMap(TIn value);
+        public IEnumerable<TOut> FlatMap(TIn value);
     }
 
     /// <summary>
@@ -790,7 +746,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="value1">The first value</param>
         /// <param name="value2">The second value</param>
         /// <returns>The combined value</returns>
-        T Reduce(T value1, T value2);
+        public T Reduce(T value1, T value2);
     }
 
     /// <summary>
@@ -806,7 +762,7 @@ namespace FlinkDotNet.DataStream
         /// Creates a new accumulator, starting a new aggregate.
         /// </summary>
         /// <returns>A new accumulator</returns>
-        TAcc CreateAccumulator();
+        public TAcc CreateAccumulator();
 
         /// <summary>
         /// Adds the given input value to the given accumulator, returning the new accumulator value.
@@ -814,14 +770,14 @@ namespace FlinkDotNet.DataStream
         /// <param name="value">The input value to add</param>
         /// <param name="accumulator">The accumulator to add the value to</param>
         /// <returns>The accumulator with the updated state</returns>
-        TAcc Add(TIn value, TAcc accumulator);
+        public TAcc Add(TIn value, TAcc accumulator);
 
         /// <summary>
         /// Gets the result of the accumulation.
         /// </summary>
         /// <param name="accumulator">The accumulator of the aggregation</param>
         /// <returns>The final aggregation result</returns>
-        TOut GetResult(TAcc accumulator);
+        public TOut GetResult(TAcc accumulator);
 
         /// <summary>
         /// Merges two accumulators, returning an accumulator with the merged state.
@@ -829,7 +785,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="acc1">The first accumulator to merge</param>
         /// <param name="acc2">The second accumulator to merge</param>
         /// <returns>The merged accumulator</returns>
-        TAcc Merge(TAcc acc1, TAcc acc2);
+        public TAcc Merge(TAcc acc1, TAcc acc2);
     }
 
     #endregion
@@ -846,7 +802,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="element">The element to process</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task representing the async operation</returns>
-        Task InvokeAsync(T element, CancellationToken cancellationToken = default);
+        public Task InvokeAsync(T element, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -861,15 +817,15 @@ namespace FlinkDotNet.DataStream
 
         public MappedSourceFunction(ISourceFunction<TIn> source, Func<TIn, TOut> mapFunction)
         {
-            _source = source ?? throw new ArgumentNullException(nameof(source));
-            _mapFunction = mapFunction ?? throw new ArgumentNullException(nameof(mapFunction));
+            this._source = source ?? throw new ArgumentNullException(nameof(source));
+            this._mapFunction = mapFunction ?? throw new ArgumentNullException(nameof(mapFunction));
         }
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
-                yield return _mapFunction(item);
+                yield return this._mapFunction(item);
             }
         }
     }
@@ -886,15 +842,15 @@ namespace FlinkDotNet.DataStream
 
         public FlatMappedSourceFunction(ISourceFunction<TIn> source, Func<TIn, IEnumerable<TOut>> flatMapFunction)
         {
-            _source = source ?? throw new ArgumentNullException(nameof(source));
-            _flatMapFunction = flatMapFunction ?? throw new ArgumentNullException(nameof(flatMapFunction));
+            this._source = source ?? throw new ArgumentNullException(nameof(source));
+            this._flatMapFunction = flatMapFunction ?? throw new ArgumentNullException(nameof(flatMapFunction));
         }
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
-                foreach (var output in _flatMapFunction(item))
+                foreach (var output in this._flatMapFunction(item))
                 {
                     yield return output;
                 }
@@ -913,16 +869,18 @@ namespace FlinkDotNet.DataStream
 
         public FilteredSourceFunction(ISourceFunction<T> source, Func<T, bool> filterFunction)
         {
-            _source = source ?? throw new ArgumentNullException(nameof(source));
-            _filterFunction = filterFunction ?? throw new ArgumentNullException(nameof(filterFunction));
+            this._source = source ?? throw new ArgumentNullException(nameof(source));
+            this._filterFunction = filterFunction ?? throw new ArgumentNullException(nameof(filterFunction));
         }
 
         public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
-                if (_filterFunction(item))
+                if (this._filterFunction(item))
+                {
                     yield return item;
+                }
             }
         }
     }
@@ -941,22 +899,22 @@ namespace FlinkDotNet.DataStream
 
         public AggregatedSourceFunction(ISourceFunction<TIn> source, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction)
         {
-            _source = source ?? throw new ArgumentNullException(nameof(source));
-            _aggregateFunction = aggregateFunction ?? throw new ArgumentNullException(nameof(aggregateFunction));
+            this._source = source ?? throw new ArgumentNullException(nameof(source));
+            this._aggregateFunction = aggregateFunction ?? throw new ArgumentNullException(nameof(aggregateFunction));
         }
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // This is a simplified implementation that aggregates all elements
             // In production, this would be handled by Flink's windowing mechanism
-            var accumulator = _aggregateFunction.CreateAccumulator();
+            var accumulator = this._aggregateFunction.CreateAccumulator();
 
-            await foreach (var item in _source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
-                accumulator = _aggregateFunction.Add(item, accumulator);
+                accumulator = this._aggregateFunction.Add(item, accumulator);
             }
 
-            yield return _aggregateFunction.GetResult(accumulator);
+            yield return this._aggregateFunction.GetResult(accumulator);
         }
     }
 }

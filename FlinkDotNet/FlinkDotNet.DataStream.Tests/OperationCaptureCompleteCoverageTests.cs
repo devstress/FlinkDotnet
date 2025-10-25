@@ -141,7 +141,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", deserializer);
 
             // Act - Trigger job definition creation
-            stream.SinkToKafka("output-topic", "localhost:9092");
+            _ = stream.SinkToKafka("output-topic", "localhost:9092");
 
             // Assert - ExecuteAsync would create the job definition
             // This test verifies the stream setup works
@@ -238,15 +238,9 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<TestMessage>
         {
-            public Watermark? CheckAndGetNextWatermark(TestMessage lastElement, long extractedTimestamp)
-            {
-                return new Watermark(extractedTimestamp);
-            }
+            public Watermark? CheckAndGetNextWatermark(TestMessage lastElement, long extractedTimestamp) => new Watermark(extractedTimestamp);
 
-            public long ExtractTimestamp(TestMessage element, long previousElementTimestamp)
-            {
-                return element.Timestamp;
-            }
+            public long ExtractTimestamp(TestMessage element, long previousElementTimestamp) => element.Timestamp;
         }
 
         private class TestAggregateFunction : IAggregateFunction<string, int, int>

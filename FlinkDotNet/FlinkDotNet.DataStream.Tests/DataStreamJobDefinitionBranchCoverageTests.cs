@@ -16,10 +16,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region Map Branch Coverage Tests
 
@@ -38,7 +35,7 @@ namespace FlinkDotNet.DataStream.Tests
                 }
             };
 
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the branch where _job != null but _operationCapture == null
             var mapped = stream.Map(s => s.ToUpper());
@@ -52,7 +49,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Create a scenario where _job is null but _operationCapture is not null
             // This is achieved through FromKafka which creates operation capture but no initial job
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - This should hit the branch where _job is null so new JobDefinition() is created
             var mapped = stream.Map(s => s.ToUpper());
@@ -79,7 +76,7 @@ namespace FlinkDotNet.DataStream.Tests
                 }
             };
 
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the branch where _job != null but _operationCapture == null
             var filtered = stream.Filter(s => s.Length > 0);
@@ -92,7 +89,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Filter_WithNullJobAndOperationCapture_CreatesNewJobDefinition()
         {
             // Arrange - Create a scenario where _job is null but _operationCapture is not null
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - This should hit the branch where _job is null so new JobDefinition() is created
             var filtered = stream.Filter(s => !string.IsNullOrEmpty(s));
@@ -119,7 +116,7 @@ namespace FlinkDotNet.DataStream.Tests
                 }
             };
 
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the branch where _job != null but _operationCapture == null
             var flatMapped = stream.FlatMap(s => s.Split(' '));
@@ -132,7 +129,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void FlatMap_WithNullJobAndOperationCapture_CreatesNewJobDefinition()
         {
             // Arrange - Create a scenario where _job is null but _operationCapture is not null
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - This should hit the branch where _job is null so new JobDefinition() is created
             var flatMapped = stream.FlatMap(s => s.ToCharArray().Select(c => c.ToString()));
@@ -165,7 +162,7 @@ namespace FlinkDotNet.DataStream.Tests
                 throw new InvalidOperationException("Could not find internal constructor for DataStream");
             }
 
-            var stream = (DataStream<T>) constructor.Invoke(new object[] { job, _env });
+            var stream = (DataStream<T>) constructor.Invoke(new object[] { job, this._env });
             return stream;
         }
 

@@ -288,7 +288,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var tempDir = Path.Combine(Path.GetTempPath(), $"test-log-cleanup-{Guid.NewGuid()}");
-            Directory.CreateDirectory(tempDir);
+            _ = Directory.CreateDirectory(tempDir);
 
             try
             {

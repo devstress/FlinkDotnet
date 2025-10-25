@@ -18,15 +18,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
 
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
         }
 
         [TearDown]
-        public void TearDown()
-        {
+        public void TearDown() =>
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-        }
 
         #region Parallelism Configuration Tests
 
@@ -34,18 +32,18 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetParallelism_WithValidValue_SetsParallelism()
         {
             // Act
-            var result = _env.SetParallelism(4);
+            var result = this._env.SetParallelism(4);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetParallelism(), Is.EqualTo(4));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetParallelism(), Is.EqualTo(4));
         }
 
         [Test]
         public void GetParallelism_ReturnsDefaultValue()
         {
             // Act
-            var parallelism = _env.GetParallelism();
+            var parallelism = this._env.GetParallelism();
 
             // Assert - Default is -1 (not set)
             Assert.That(parallelism, Is.EqualTo(-1).Or.GreaterThan(0));
@@ -55,40 +53,40 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetMaxParallelism_WithValidValue_SetsMaxParallelism()
         {
             // Act
-            var result = _env.SetMaxParallelism(128);
+            var result = this._env.SetMaxParallelism(128);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetMaxParallelism(), Is.EqualTo(128));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetMaxParallelism(), Is.EqualTo(128));
         }
 
         [Test]
         public void SetMaxParallelism_WithBoundaryValue1_Works()
         {
             // Act
-            var result = _env.SetMaxParallelism(1);
+            var result = this._env.SetMaxParallelism(1);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetMaxParallelism(), Is.EqualTo(1));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetMaxParallelism(), Is.EqualTo(1));
         }
 
         [Test]
         public void SetMaxParallelism_WithBoundaryValue32768_Works()
         {
             // Act
-            var result = _env.SetMaxParallelism(32768);
+            var result = this._env.SetMaxParallelism(32768);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetMaxParallelism(), Is.EqualTo(32768));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetMaxParallelism(), Is.EqualTo(32768));
         }
 
         [Test]
         public void SetMaxParallelism_WithZero_ThrowsArgumentException()
         {
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => _env.SetMaxParallelism(0));
+            var ex = Assert.Throws<ArgumentException>(() => this._env.SetMaxParallelism(0));
             Assert.That(ex!.Message, Does.Contain("Max parallelism must be between 1 and 32768"));
         }
 
@@ -96,7 +94,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetMaxParallelism_WithNegativeValue_ThrowsArgumentException()
         {
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => _env.SetMaxParallelism(-5));
+            var ex = Assert.Throws<ArgumentException>(() => this._env.SetMaxParallelism(-5));
             Assert.That(ex!.Message, Does.Contain("Max parallelism must be between 1 and 32768"));
         }
 
@@ -104,7 +102,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetMaxParallelism_WithValueTooLarge_ThrowsArgumentException()
         {
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => _env.SetMaxParallelism(32769));
+            var ex = Assert.Throws<ArgumentException>(() => this._env.SetMaxParallelism(32769));
             Assert.That(ex!.Message, Does.Contain("Max parallelism must be between 1 and 32768"));
         }
 
@@ -116,18 +114,18 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetBufferTimeout_WithValidValue_SetsTimeout()
         {
             // Act
-            var result = _env.SetBufferTimeout(200);
+            var result = this._env.SetBufferTimeout(200);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetBufferTimeout(), Is.EqualTo(200));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetBufferTimeout(), Is.EqualTo(200));
         }
 
         [Test]
         public void GetBufferTimeout_ReturnsDefaultValue()
         {
             // Act
-            var timeout = _env.GetBufferTimeout();
+            var timeout = this._env.GetBufferTimeout();
 
             // Assert
             Assert.That(timeout, Is.EqualTo(100)); // Default is 100ms
@@ -137,11 +135,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetBufferTimeout_WithZero_Works()
         {
             // Act
-            var result = _env.SetBufferTimeout(0);
+            var result = this._env.SetBufferTimeout(0);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetBufferTimeout(), Is.EqualTo(0));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetBufferTimeout(), Is.EqualTo(0));
         }
 
         #endregion
@@ -152,18 +150,18 @@ namespace FlinkDotNet.DataStream.Tests
         public void DisableOperatorChaining_DisablesChaining()
         {
             // Act
-            var result = _env.DisableOperatorChaining();
+            var result = this._env.DisableOperatorChaining();
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsChainingEnabled(), Is.False);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsChainingEnabled(), Is.False);
         }
 
         [Test]
         public void IsChainingEnabled_ReturnsTrueByDefault()
         {
             // Act
-            var isEnabled = _env.IsChainingEnabled();
+            var isEnabled = this._env.IsChainingEnabled();
 
             // Assert
             Assert.That(isEnabled, Is.True);
@@ -177,18 +175,18 @@ namespace FlinkDotNet.DataStream.Tests
         public void EnableCheckpointing_WithValidInterval_EnablesCheckpointing()
         {
             // Act
-            var result = _env.EnableCheckpointing(1000);
+            var result = this._env.EnableCheckpointing(1000);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetCheckpointInterval(), Is.EqualTo(1000));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetCheckpointInterval(), Is.EqualTo(1000));
         }
 
         [Test]
         public void GetCheckpointInterval_ReturnsNegativeOneWhenDisabled()
         {
             // Act
-            var interval = _env.GetCheckpointInterval();
+            var interval = this._env.GetCheckpointInterval();
 
             // Assert
             Assert.That(interval, Is.EqualTo(-1));
@@ -198,7 +196,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void GetCheckpointConfig_ReturnsNonNullConfig()
         {
             // Act
-            var config = _env.GetCheckpointConfig();
+            var config = this._env.GetCheckpointConfig();
 
             // Assert
             Assert.That(config, Is.Not.Null);
@@ -212,43 +210,43 @@ namespace FlinkDotNet.DataStream.Tests
         public void EnableAdaptiveScheduler_WithTrue_EnablesScheduler()
         {
             // Act
-            var result = _env.EnableAdaptiveScheduler(true);
+            var result = this._env.EnableAdaptiveScheduler(true);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.True);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsAdaptiveSchedulerEnabled(), Is.True);
         }
 
         [Test]
         public void EnableAdaptiveScheduler_WithFalse_DisablesScheduler()
         {
             // Arrange
-            _env.EnableAdaptiveScheduler(true);
+            _ = this._env.EnableAdaptiveScheduler(true);
 
             // Act
-            var result = _env.EnableAdaptiveScheduler(false);
+            var result = this._env.EnableAdaptiveScheduler(false);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.False);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsAdaptiveSchedulerEnabled(), Is.False);
         }
 
         [Test]
         public void EnableAdaptiveScheduler_WithoutParameter_EnablesScheduler()
         {
             // Act
-            var result = _env.EnableAdaptiveScheduler();
+            var result = this._env.EnableAdaptiveScheduler();
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsAdaptiveSchedulerEnabled(), Is.True);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsAdaptiveSchedulerEnabled(), Is.True);
         }
 
         [Test]
         public void IsAdaptiveSchedulerEnabled_ReturnsFalseByDefault()
         {
             // Act
-            var isEnabled = _env.IsAdaptiveSchedulerEnabled();
+            var isEnabled = this._env.IsAdaptiveSchedulerEnabled();
 
             // Assert
             Assert.That(isEnabled, Is.False);
@@ -262,43 +260,43 @@ namespace FlinkDotNet.DataStream.Tests
         public void EnableReactiveMode_WithTrue_EnablesReactiveMode()
         {
             // Act
-            var result = _env.EnableReactiveMode(true);
+            var result = this._env.EnableReactiveMode(true);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsReactiveModeEnabled(), Is.True);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsReactiveModeEnabled(), Is.True);
         }
 
         [Test]
         public void EnableReactiveMode_WithFalse_DisablesReactiveMode()
         {
             // Arrange
-            _env.EnableReactiveMode(true);
+            _ = this._env.EnableReactiveMode(true);
 
             // Act
-            var result = _env.EnableReactiveMode(false);
+            var result = this._env.EnableReactiveMode(false);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsReactiveModeEnabled(), Is.False);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsReactiveModeEnabled(), Is.False);
         }
 
         [Test]
         public void EnableReactiveMode_WithoutParameter_EnablesReactiveMode()
         {
             // Act
-            var result = _env.EnableReactiveMode();
+            var result = this._env.EnableReactiveMode();
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.IsReactiveModeEnabled(), Is.True);
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.IsReactiveModeEnabled(), Is.True);
         }
 
         [Test]
         public void IsReactiveModeEnabled_ReturnsFalseByDefault()
         {
             // Act
-            var isEnabled = _env.IsReactiveModeEnabled();
+            var isEnabled = this._env.IsReactiveModeEnabled();
 
             // Assert
             Assert.That(isEnabled, Is.False);
@@ -312,18 +310,18 @@ namespace FlinkDotNet.DataStream.Tests
         public void FromSavepoint_WithValidPath_SetsSavepointPath()
         {
             // Act
-            var result = _env.FromSavepoint("/path/to/savepoint");
+            var result = this._env.FromSavepoint("/path/to/savepoint");
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetSavepointPath(), Is.EqualTo("/path/to/savepoint"));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetSavepointPath(), Is.EqualTo("/path/to/savepoint"));
         }
 
         [Test]
         public void GetSavepointPath_ReturnsNullWhenNotSet()
         {
             // Act
-            var path = _env.GetSavepointPath();
+            var path = this._env.GetSavepointPath();
 
             // Assert
             Assert.That(path, Is.Null);
@@ -340,11 +338,11 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new HashMapStateBackend();
 
             // Act
-            var result = _env.SetStateBackend(backend);
+            var result = this._env.SetStateBackend(backend);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetStateBackend(), Is.SameAs(backend));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetStateBackend(), Is.SameAs(backend));
         }
 
         [Test]
@@ -354,25 +352,23 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new EmbeddedRocksDBStateBackend();
 
             // Act
-            var result = _env.SetStateBackend(backend);
+            var result = this._env.SetStateBackend(backend);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            Assert.That(_env.GetStateBackend(), Is.SameAs(backend));
+            Assert.That(result, Is.SameAs(this._env));
+            Assert.That(this._env.GetStateBackend(), Is.SameAs(backend));
         }
 
         [Test]
-        public void SetStateBackend_WithNull_ThrowsArgumentNullException()
-        {
+        public void SetStateBackend_WithNull_ThrowsArgumentNullException() =>
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => _env.SetStateBackend(null!));
-        }
+            _ = Assert.Throws<ArgumentNullException>(() => this._env.SetStateBackend(null!));
 
         [Test]
         public void GetStateBackend_ReturnsNullWhenNotSet()
         {
             // Act
-            var backend = _env.GetStateBackend();
+            var backend = this._env.GetStateBackend();
 
             // Assert
             Assert.That(backend, Is.Null);
@@ -387,20 +383,20 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var config = new Configuration();
-            config.SetString("test.key", "test.value");
+            _ = config.SetString("test.key", "test.value");
 
             // Act
-            var result = _env.Configure(config);
+            var result = this._env.Configure(config);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
+            Assert.That(result, Is.SameAs(this._env));
         }
 
         [Test]
         public void GetConfig_ReturnsNonNullConfig()
         {
             // Act
-            var config = _env.GetConfig();
+            var config = this._env.GetConfig();
 
             // Assert
             Assert.That(config, Is.Not.Null);
@@ -415,7 +411,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                await _env.ExecuteAsyncJob("test-job"));
+                await this._env.ExecuteAsyncJob("test-job"));
 
             Assert.That(ex!.Message, Does.Contain("No Flink-compatible job is defined"));
         }
@@ -424,11 +420,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ExecuteAsyncJob_WithActiveJob_ReturnsJobClient()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092");
-            stream.SinkToKafka("output-topic", "localhost:9092");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092");
+            _ = stream.SinkToKafka("output-topic", "localhost:9092");
 
             // Act
-            var jobClientTask = _env.ExecuteAsyncJob("test-job");
+            var jobClientTask = this._env.ExecuteAsyncJob("test-job");
 
             // Assert
             Assert.That(jobClientTask, Is.Not.Null);
@@ -446,7 +442,7 @@ namespace FlinkDotNet.DataStream.Tests
             var collection = new[] { 1, 2, 3, 4, 5 };
 
             // Act
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Assert
             Assert.That(stream, Is.Not.Null);
@@ -459,7 +455,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction();
 
             // Act
-            var stream = _env.AddSource(sourceFunction, "Test Source");
+            var stream = this._env.AddSource(sourceFunction, "Test Source");
 
             // Assert
             Assert.That(stream, Is.Not.Null);
@@ -472,7 +468,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction();
 
             // Act
-            var stream = _env.AddSource(sourceFunction);
+            var stream = this._env.AddSource(sourceFunction);
 
             // Assert
             Assert.That(stream, Is.Not.Null);
@@ -487,7 +483,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() =>
-                _env.FromKafka("test-topic", null));
+                this._env.FromKafka("test-topic", null));
 
             Assert.That(ex!.Message, Does.Contain("bootstrap servers"));
         }
@@ -497,7 +493,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() =>
-                _env.FromKafka("test-topic", ""));
+                this._env.FromKafka("test-topic", ""));
 
             Assert.That(ex!.Message, Does.Contain("bootstrap servers"));
         }
@@ -507,7 +503,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() =>
-                _env.FromKafka("test-topic", "   "));
+                this._env.FromKafka("test-topic", "   "));
 
             Assert.That(ex!.Message, Does.Contain("bootstrap servers"));
         }

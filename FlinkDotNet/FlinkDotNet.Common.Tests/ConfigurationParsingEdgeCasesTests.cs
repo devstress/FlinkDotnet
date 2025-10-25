@@ -14,7 +14,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetInteger("key", 42);
+        _ = config.SetInteger("key", 42);
 
         // Act
         var result = config.GetInteger("key", 0);
@@ -28,7 +28,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "123");
+        _ = config.SetString("key", "123");
 
         // Act
         var result = config.GetInteger("key", 0);
@@ -42,7 +42,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "not-a-number");
+        _ = config.SetString("key", "not-a-number");
 
         // Act
         var result = config.GetInteger("key", 42);
@@ -88,7 +88,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetBoolean("key", true);
+        _ = config.SetBoolean("key", true);
 
         // Act
         var result = config.GetBoolean("key", false);
@@ -102,7 +102,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "true");
+        _ = config.SetString("key", "true");
 
         // Act
         var result = config.GetBoolean("key", false);
@@ -116,7 +116,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "false");
+        _ = config.SetString("key", "false");
 
         // Act
         var result = config.GetBoolean("key", true);
@@ -130,7 +130,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "not-a-boolean");
+        _ = config.SetString("key", "not-a-boolean");
 
         // Act
         var result = config.GetBoolean("key", true);
@@ -176,7 +176,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetLong("key", 9876543210L);
+        _ = config.SetLong("key", 9876543210L);
 
         // Act
         var result = config.GetLong("key", 0L);
@@ -190,7 +190,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "123456789");
+        _ = config.SetString("key", "123456789");
 
         // Act
         var result = config.GetLong("key", 0L);
@@ -204,7 +204,7 @@ public class ConfigurationParsingEdgeCasesTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "not-a-number");
+        _ = config.SetString("key", "not-a-number");
 
         // Act
         var result = config.GetLong("key", 999L);

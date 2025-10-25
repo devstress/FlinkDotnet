@@ -27,7 +27,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var underlyingConfig = new Configuration();
-        underlyingConfig.SetString("test-key", "test-value");
+        _ = underlyingConfig.SetString("test-key", "test-value");
 
         // Act
         var config = new ExecutionConfig(underlyingConfig);
@@ -99,7 +99,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableObjectReuse(true); // First enable it
+        _ = config.EnableObjectReuse(true); // First enable it
 
         // Act
         var result = config.EnableObjectReuse(false);
@@ -128,7 +128,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableObjectReuse(true);
+        _ = config.EnableObjectReuse(true);
 
         // Act
         var result = config.DisableObjectReuse();
@@ -143,7 +143,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableClosureCleaner(false); // First disable it
+        _ = config.EnableClosureCleaner(false); // First disable it
 
         // Act
         var result = config.EnableClosureCleaner(true);
@@ -172,7 +172,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableClosureCleaner(false);
+        _ = config.EnableClosureCleaner(false);
 
         // Act
         var result = config.EnableClosureCleaner();
@@ -229,7 +229,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableSlotSharing(false);
+        _ = config.EnableSlotSharing(false);
 
         // Act
         var result = config.EnableSlotSharing(true);
@@ -258,7 +258,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableSlotSharing(false);
+        _ = config.EnableSlotSharing(false);
 
         // Act
         var result = config.EnableSlotSharing();
@@ -287,7 +287,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableAdaptiveScheduler(true);
+        _ = config.EnableAdaptiveScheduler(true);
 
         // Act
         var result = config.EnableAdaptiveScheduler(false);
@@ -330,7 +330,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.EnableReactiveMode(true);
+        _ = config.EnableReactiveMode(true);
 
         // Act
         var result = config.EnableReactiveMode(false);
@@ -359,7 +359,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var underlyingConfig = new Configuration();
-        underlyingConfig.SetString("key1", "value1");
+        _ = underlyingConfig.SetString("key1", "value1");
         var config = new ExecutionConfig(underlyingConfig);
 
         // Act
@@ -391,7 +391,7 @@ public class ExecutionConfigTests
         var config = new ExecutionConfig();
 
         // Act
-        config.SetProperty("number-key", 42);
+        _ = config.SetProperty("number-key", 42);
 
         // Assert
         Assert.That(config.GetProperty("number-key"), Is.EqualTo("42"));
@@ -402,7 +402,7 @@ public class ExecutionConfigTests
     {
         // Arrange
         var config = new ExecutionConfig();
-        config.SetProperty("test-key", "test-value");
+        _ = config.SetProperty("test-key", "test-value");
 
         // Act
         var value = config.GetProperty("test-key");
@@ -444,7 +444,7 @@ public class ExecutionConfigTests
         var config = new ExecutionConfig();
 
         // Act
-        config.SetParallelism(4)
+        _ = config.SetParallelism(4)
               .SetMaxParallelism(128)
               .SetAutoWatermarkInterval(1000L)
               .EnableObjectReuse()

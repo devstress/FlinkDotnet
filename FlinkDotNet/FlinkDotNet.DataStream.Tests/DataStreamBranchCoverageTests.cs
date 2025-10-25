@@ -18,10 +18,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region Where Method Branch Coverage
 
@@ -30,7 +27,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Create a stream without a job (collection-based stream)
             var collection = new[] { "test1", "test2", "test3" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act - Call Where with null job
             var result = stream.Where("length > 5");
@@ -43,7 +40,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Where_WithJob_AddsFilterOperation()
         {
             // Arrange - Create a stream with a job
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - Call Where with a job
             var result = stream.Where("length > 5");
@@ -60,37 +57,37 @@ namespace FlinkDotNet.DataStream.Tests
         public void SinkToKafka_WithNullBootstrapServers_ThrowsArgumentException()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", null));
+            _ = Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", null));
         }
 
         [Test]
         public void SinkToKafka_WithEmptyBootstrapServers_ThrowsArgumentException()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", ""));
+            _ = Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", ""));
         }
 
         [Test]
         public void SinkToKafka_WithWhitespaceBootstrapServers_ThrowsArgumentException()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", "   "));
+            _ = Assert.Throws<ArgumentException>(() => stream.SinkToKafka("output-topic", "   "));
         }
 
         [Test]
         public void SinkToKafka_WithOperationCapture_CapturesSink()
         {
             // Arrange - Stream with operation capture
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - This should hit the operationCapture != null branch
             var result = stream.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
@@ -104,10 +101,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Create a collection-based stream (no job, no operation capture)
             var collection = new[] { "test1", "test2" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert - Should throw because _job is null and _operationCapture is null
-            Assert.Throws<InvalidOperationException>(() =>
+            _ = Assert.Throws<InvalidOperationException>(() =>
                 stream.SinkToKafka("output-topic", "localhost:9092"));
         }
 
@@ -124,7 +121,7 @@ namespace FlinkDotNet.DataStream.Tests
                     BootstrapServers = "localhost:9092"
                 }
             };
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act - This should hit the _job != null branch
             var result = stream.SinkToKafka("output-topic", "localhost:9092");
@@ -142,7 +139,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void AddSink_WithNullSinkFunction_ReturnsStream()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - Pass null sink function to test sinkFunction != null branch
             var result = stream.AddSink(null!);
@@ -155,7 +152,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void AddSink_WithOperationCaptureAndKafkaSink_ExtractsKafkaInfo()
         {
             // Arrange - Create a stream with operation capture
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var kafkaSink = new KafkaSinkFunction<string>("output-topic", "localhost:9092", x => System.Text.Encoding.UTF8.GetBytes(x));
 
             // Act - This should hit the branch where topicProp and serversProp are not null
@@ -169,7 +166,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void AddSink_WithOperationCaptureAndNonKafkaSink_DoesNotExtractKafkaInfo()
         {
             // Arrange - Create a stream with operation capture
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var customSink = new CustomSinkFunction();
 
             // Act - This should hit the branch where topicProp or serversProp is null
@@ -183,7 +180,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void AddSink_WithOperationCaptureAndEmptyKafkaInfo_DoesNotCapture()
         {
             // Arrange - Create a stream with operation capture
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var kafkaSinkWithEmptyTopic = new KafkaSinkFunction<string>("", "localhost:9092", x => System.Text.Encoding.UTF8.GetBytes(x));
 
             // Act - This should hit the branch where topic or servers is empty
@@ -198,7 +195,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Create a collection-based stream (no operation capture)
             var collection = new[] { "test1", "test2" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var customSink = new CustomSinkFunction();
 
             // Act - This should hit the branch where _operationCapture is null
@@ -217,7 +214,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Collection-based stream
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.SetMaxParallelism(4);
@@ -231,7 +228,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Source function stream
             var sourceFunc = new TestSourceFunction();
-            var stream = CreateDataStreamWithSourceFunction(sourceFunc);
+            var stream = this.CreateDataStreamWithSourceFunction(sourceFunc);
 
             // Act
             var result = stream.SetMaxParallelism(4);
@@ -244,7 +241,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetMaxParallelism_WithOperationCapture_ReturnsStream()
         {
             // Arrange - Stream with operation capture
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act
             var result = stream.SetMaxParallelism(4);
@@ -266,7 +263,7 @@ namespace FlinkDotNet.DataStream.Tests
                     BootstrapServers = "localhost:9092"
                 }
             };
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Act
             var result = stream.SetMaxParallelism(4);
@@ -284,7 +281,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "test1", "test2" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var assigner = new TestPunctuatedWatermarksAssigner();
 
             // Act
@@ -299,7 +296,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var sourceFunc = new TestSourceFunctionString();
-            var stream = CreateDataStreamWithSourceFunction(sourceFunc);
+            var stream = this.CreateDataStreamWithSourceFunction(sourceFunc);
             var assigner = new TestPunctuatedWatermarksAssigner();
 
             // Act
@@ -314,7 +311,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "test1", "test2" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var strategy = Watermarks.WatermarkStrategy<string>.ForMonotonousTimestamps()
                 .WithTimestampAssigner(_ => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
@@ -330,7 +327,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var sourceFunc = new TestSourceFunctionString();
-            var stream = CreateDataStreamWithSourceFunction(sourceFunc);
+            var stream = this.CreateDataStreamWithSourceFunction(sourceFunc);
             var strategy = Watermarks.WatermarkStrategy<string>.ForMonotonousTimestamps()
                 .WithTimestampAssigner(_ => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
@@ -350,7 +347,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.TimeWindowAll(Time.Seconds(5));
@@ -364,7 +361,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var sourceFunc = new TestSourceFunction();
-            var stream = CreateDataStreamWithSourceFunction(sourceFunc);
+            var stream = this.CreateDataStreamWithSourceFunction(sourceFunc);
 
             // Act
             var result = stream.TimeWindowAll(Time.Seconds(5));
@@ -377,7 +374,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void TimeWindowAll_WithOperationCaptureStream_CreatesWindowedStream()
         {
             // Arrange - This will have _operationCapture or _job
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act
             var result = stream.TimeWindowAll(Time.Seconds(5));
@@ -399,7 +396,7 @@ namespace FlinkDotNet.DataStream.Tests
                     BootstrapServers = "localhost:9092"
                 }
             };
-            var stream = CreateDataStreamWithJobDefinition<int>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<int>(jobDef);
 
             // Act
             var result = stream.TimeWindowAll(Time.Seconds(5));
@@ -417,7 +414,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.CountWindowAll(3);
@@ -431,7 +428,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var sourceFunc = new TestSourceFunction();
-            var stream = CreateDataStreamWithSourceFunction(sourceFunc);
+            var stream = this.CreateDataStreamWithSourceFunction(sourceFunc);
 
             // Act
             var result = stream.CountWindowAll(3);
@@ -444,7 +441,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void CountWindowAll_WithOperationCaptureStream_CreatesWindowedStream()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act
             var result = stream.CountWindowAll(3);
@@ -466,7 +463,7 @@ namespace FlinkDotNet.DataStream.Tests
                     BootstrapServers = "localhost:9092"
                 }
             };
-            var stream = CreateDataStreamWithJobDefinition<int>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<int>(jobDef);
 
             // Act - CountWindowAll works with all stream types
             var result = stream.CountWindowAll(3);
@@ -480,11 +477,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
-            Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-1));
+            _ = Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
+            _ = Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-1));
         }
 
         #endregion
@@ -505,7 +502,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act - Constructor should initialize metadata if null
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Assert
             Assert.That(stream, Is.Not.Null);
@@ -527,7 +524,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act - Constructor should keep existing metadata
-            var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
+            var stream = this.CreateDataStreamWithJobDefinition<string>(jobDef);
 
             // Assert
             Assert.That(stream, Is.Not.Null);
@@ -553,9 +550,11 @@ namespace FlinkDotNet.DataStream.Tests
             );
 
             if (constructor == null)
+            {
                 throw new InvalidOperationException("Could not find internal constructor");
+            }
 
-            return (DataStream<T>) constructor.Invoke(new object[] { job, _env });
+            return (DataStream<T>) constructor.Invoke(new object[] { job, this._env });
         }
 
         /// <summary>
@@ -573,18 +572,17 @@ namespace FlinkDotNet.DataStream.Tests
             );
 
             if (constructor == null)
+            {
                 throw new InvalidOperationException("Could not find internal constructor");
+            }
 
-            return (DataStream<T>) constructor.Invoke(new object[] { sourceFunction, _env, "TestSource" });
+            return (DataStream<T>) constructor.Invoke(new object[] { sourceFunction, this._env, "TestSource" });
         }
 
         // Test sink function without Kafka properties
         private class CustomSinkFunction : ISinkFunction<string>
         {
-            public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
+            public Task InvokeAsync(string element, CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 
         // Test source function
@@ -612,15 +610,9 @@ namespace FlinkDotNet.DataStream.Tests
         // Test punctuated watermarks assigner
         private class TestPunctuatedWatermarksAssigner : IAssignerWithPunctuatedWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp)
-            {
-                return new Watermark(extractedTimestamp);
-            }
+            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp) => new Watermark(extractedTimestamp);
         }
 
         #endregion

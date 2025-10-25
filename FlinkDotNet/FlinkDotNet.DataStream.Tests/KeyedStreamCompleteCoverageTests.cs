@@ -16,10 +16,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment? _env;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region Reduce Tests
 
@@ -28,7 +25,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x % 2);
 
             // Act
@@ -44,7 +41,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x % 2);
             var reduceFunction = new SumReduceFunction();
 
@@ -61,7 +58,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<(string, int)> { ("a", 1), ("b", 2), ("a", 3), ("b", 4) };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x.Item1);
 
             // Act
@@ -81,7 +78,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x % 2);
 
             // Act
@@ -97,7 +94,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x % 2);
 
             // Act
@@ -113,7 +110,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<(string key, int value)> { ("a", 1), ("b", 2), ("a", 3) };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x.key);
 
             // Act
@@ -133,7 +130,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<string> { "a", "b", "c" };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x);
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10));
 
@@ -150,11 +147,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<string> { "a", "b", "c" };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 keyedStream.Window<TimeWindow>(null!)
             );
         }
@@ -164,7 +161,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<string> { "a", "b", "c" };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x);
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
 
@@ -181,7 +178,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<string> { "a", "b", "c" };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var keyedStream = stream.KeyBy(x => x);
             var assigner = SessionWindows<string>.WithGap(Time.Seconds(5));
 
@@ -202,7 +199,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var originalStream = _env.FromCollection(data);
+            var originalStream = this._env.FromCollection(data);
             var keyedStream = originalStream.KeyBy(x => x % 2);
 
             // Act
@@ -218,7 +215,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<(string, int)> { ("a", 1), ("b", 2) };
-            var originalStream = _env.FromCollection(data);
+            var originalStream = this._env.FromCollection(data);
             var keyedStream = originalStream.KeyBy(x => x.Item1);
 
             // Act
@@ -238,7 +235,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5, 6 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act - Chain multiple operations
             var result = stream
@@ -257,7 +254,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream
@@ -274,7 +271,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream
@@ -292,10 +289,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class SumReduceFunction : IReduceFunction<int>
         {
-            public int Reduce(int value1, int value2)
-            {
-                return value1 + value2;
-            }
+            public int Reduce(int value1, int value2) => value1 + value2;
         }
 
         #endregion

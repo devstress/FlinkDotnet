@@ -26,6 +26,6 @@ namespace FlinkDotNet.DataStream.Window
         /// Gets the largest timestamp that still belongs to this window.
         /// </summary>
         /// <returns>The largest timestamp that still belongs to this window</returns>
-        long MaxTimestamp();
+        public long MaxTimestamp();
     }
 }

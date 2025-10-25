@@ -35,22 +35,22 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the Kafka topic to consume from.
         /// </summary>
-        public string Topic => _topic;
+        public string Topic => this._topic;
 
         /// <summary>
         /// Gets the Kafka bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers => _bootstrapServers;
+        public string BootstrapServers => this._bootstrapServers;
 
         /// <summary>
         /// Gets the Kafka consumer group ID.
         /// </summary>
-        public string GroupId => _groupId;
+        public string GroupId => this._groupId;
 
         /// <summary>
         /// Gets the starting offsets strategy.
         /// </summary>
-        public string StartingOffsets => _startingOffsets;
+        public string StartingOffsets => this._startingOffsets;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KafkaSourceFunction{T}"/> class.
@@ -67,12 +67,12 @@ namespace FlinkDotNet.DataStream
             System.Func<string, T> deserializer,
             string startingOffsets)
         {
-            _topic = topic ?? throw new System.ArgumentNullException(nameof(topic));
-            _bootstrapServers = bootstrapServers ?? throw new System.ArgumentNullException(nameof(bootstrapServers));
-            _groupId = groupId ?? throw new System.ArgumentNullException(nameof(groupId));
+            this._topic = topic ?? throw new System.ArgumentNullException(nameof(topic));
+            this._bootstrapServers = bootstrapServers ?? throw new System.ArgumentNullException(nameof(bootstrapServers));
+            this._groupId = groupId ?? throw new System.ArgumentNullException(nameof(groupId));
             // deserializer parameter kept for API compatibility but not stored
             _ = deserializer ?? throw new System.ArgumentNullException(nameof(deserializer));
-            _startingOffsets = startingOffsets;
+            this._startingOffsets = startingOffsets;
         }
 
         /// <summary>

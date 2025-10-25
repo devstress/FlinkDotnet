@@ -29,8 +29,8 @@ namespace FlinkDotNet.DataStream.Watermarks
 
         private WatermarkStrategy(System.TimeSpan maxOutOfOrderness, bool isMonotonous)
         {
-            _maxOutOfOrderness = maxOutOfOrderness;
-            _isMonotonous = isMonotonous;
+            this._maxOutOfOrderness = maxOutOfOrderness;
+            this._isMonotonous = isMonotonous;
         }
 
         /// <summary>
@@ -39,20 +39,14 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// </summary>
         /// <param name="maxOutOfOrderness">The maximum out-of-orderness</param>
         /// <returns>A new WatermarkStrategy</returns>
-        public static WatermarkStrategy<T> ForBoundedOutOfOrderness(System.TimeSpan maxOutOfOrderness)
-        {
-            return new WatermarkStrategy<T>(maxOutOfOrderness, false);
-        }
+        public static WatermarkStrategy<T> ForBoundedOutOfOrderness(System.TimeSpan maxOutOfOrderness) => new WatermarkStrategy<T>(maxOutOfOrderness, false);
 
         /// <summary>
         /// Creates a watermark strategy for situations where timestamps are monotonously ascending
         /// (events always arrive in order).
         /// </summary>
         /// <returns>A new WatermarkStrategy</returns>
-        public static WatermarkStrategy<T> ForMonotonousTimestamps()
-        {
-            return new WatermarkStrategy<T>(System.TimeSpan.Zero, true);
-        }
+        public static WatermarkStrategy<T> ForMonotonousTimestamps() => new WatermarkStrategy<T>(System.TimeSpan.Zero, true);
 
         /// <summary>
         /// Sets the timestamp assigner function.
@@ -61,7 +55,7 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <returns>This WatermarkStrategy</returns>
         public WatermarkStrategy<T> WithTimestampAssigner(System.Func<T, long> assigner)
         {
-            _timestampAssigner = assigner;
+            this._timestampAssigner = assigner;
             return this;
         }
 
@@ -72,7 +66,7 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <returns>This WatermarkStrategy</returns>
         public WatermarkStrategy<T> WithTimestampAssigner(ITimestampAssigner<T> assigner)
         {
-            _timestampAssigner = (element) => assigner.ExtractTimestamp(element, -1);
+            this._timestampAssigner = (element) => assigner.ExtractTimestamp(element, -1);
             return this;
         }
 
@@ -84,13 +78,13 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <returns>The timestamp in milliseconds</returns>
         public long ExtractTimestamp(T element, long previousTimestamp)
         {
-            if (_timestampAssigner == null)
+            if (this._timestampAssigner == null)
             {
                 throw new System.InvalidOperationException(
                     "No timestamp assigner configured. Call WithTimestampAssigner() first.");
             }
 
-            return _timestampAssigner(element);
+            return this._timestampAssigner(element);
         }
 
         /// <summary>
@@ -100,7 +94,7 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <returns>The watermark timestamp</returns>
         public long GetCurrentWatermark(long currentMaxTimestamp)
         {
-            if (_isMonotonous)
+            if (this._isMonotonous)
             {
                 // For monotonous timestamps, watermark = current timestamp
                 return currentMaxTimestamp;
@@ -108,23 +102,23 @@ namespace FlinkDotNet.DataStream.Watermarks
             else
             {
                 // For bounded out-of-orderness, watermark = max timestamp - allowed delay
-                return currentMaxTimestamp - (long) _maxOutOfOrderness.TotalMilliseconds;
+                return currentMaxTimestamp - (long) this._maxOutOfOrderness.TotalMilliseconds;
             }
         }
 
         /// <summary>
         /// Gets whether this strategy is for monotonous timestamps.
         /// </summary>
-        public bool IsMonotonous => _isMonotonous;
+        public bool IsMonotonous => this._isMonotonous;
 
         /// <summary>
         /// Gets the maximum out-of-orderness allowed.
         /// </summary>
-        public System.TimeSpan MaxOutOfOrderness => _maxOutOfOrderness;
+        public System.TimeSpan MaxOutOfOrderness => this._maxOutOfOrderness;
 
         /// <summary>
         /// Gets whether a timestamp assigner has been configured.
         /// </summary>
-        public bool HasTimestampAssigner => _timestampAssigner != null;
+        public bool HasTimestampAssigner => this._timestampAssigner != null;
     }
 }

@@ -114,14 +114,14 @@ namespace FlinkDotNet.DataStream.Tests
 
             public CustomRangeSourceFunction(int start, int end)
             {
-                _start = start;
-                _end = end;
+                this._start = start;
+                this._end = end;
             }
 
             public async IAsyncEnumerable<int> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
                 await System.Threading.Tasks.Task.Yield();
-                for (int i = _start; i <= _end; i++)
+                for (int i = this._start; i <= this._end; i++)
                 {
                     yield return i;
                 }

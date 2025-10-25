@@ -35,10 +35,7 @@ namespace FlinkDotNet.Common
         /// Creates a new ExecutionConfig with the given configuration.
         /// </summary>
         /// <param name="configuration">The underlying configuration</param>
-        public ExecutionConfig(Configuration configuration)
-        {
-            _configuration = configuration;
-        }
+        public ExecutionConfig(Configuration configuration) => this._configuration = configuration;
 
         /// <summary>
         /// Gets or sets the parallelism for operations executed through this environment.
@@ -109,7 +106,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig SetParallelism(int parallelism)
         {
-            Parallelism = parallelism;
+            this.Parallelism = parallelism;
             return this;
         }
 
@@ -120,7 +117,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig SetMaxParallelism(int maxParallelism)
         {
-            MaxParallelism = maxParallelism;
+            this.MaxParallelism = maxParallelism;
             return this;
         }
 
@@ -131,7 +128,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig SetAutoWatermarkInterval(long interval)
         {
-            AutoWatermarkInterval = interval;
+            this.AutoWatermarkInterval = interval;
             return this;
         }
 
@@ -142,7 +139,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig EnableObjectReuse(bool enabled = true)
         {
-            ObjectReuseEnabled = enabled;
+            this.ObjectReuseEnabled = enabled;
             return this;
         }
 
@@ -150,10 +147,7 @@ namespace FlinkDotNet.Common
         /// Disables object reuse.
         /// </summary>
         /// <returns>This ExecutionConfig instance for method chaining</returns>
-        public ExecutionConfig DisableObjectReuse()
-        {
-            return EnableObjectReuse(false);
-        }
+        public ExecutionConfig DisableObjectReuse() => this.EnableObjectReuse(false);
 
         /// <summary>
         /// Enables or disables closure cleaner.
@@ -162,7 +156,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig EnableClosureCleaner(bool enabled = true)
         {
-            ClosureCleanerEnabled = enabled;
+            this.ClosureCleanerEnabled = enabled;
             return this;
         }
 
@@ -170,10 +164,7 @@ namespace FlinkDotNet.Common
         /// Disables closure cleaner.
         /// </summary>
         /// <returns>This ExecutionConfig instance for method chaining</returns>
-        public ExecutionConfig DisableClosureCleaner()
-        {
-            return EnableClosureCleaner(false);
-        }
+        public ExecutionConfig DisableClosureCleaner() => this.EnableClosureCleaner(false);
 
         /// <summary>
         /// Sets the restart strategy for failed jobs.
@@ -183,7 +174,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig SetRestartStrategy(string strategy)
         {
-            RestartStrategy = strategy;
+            this.RestartStrategy = strategy;
             return this;
         }
 
@@ -195,7 +186,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig EnableSlotSharing(bool enabled = true)
         {
-            SlotSharingEnabled = enabled;
+            this.SlotSharingEnabled = enabled;
             return this;
         }
 
@@ -208,7 +199,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig EnableAdaptiveScheduler(bool enabled = true)
         {
-            AdaptiveSchedulerEnabled = enabled;
+            this.AdaptiveSchedulerEnabled = enabled;
             return this;
         }
 
@@ -221,7 +212,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig EnableReactiveMode(bool enabled = true)
         {
-            ReactiveModeEnabled = enabled;
+            this.ReactiveModeEnabled = enabled;
             return this;
         }
 
@@ -229,10 +220,7 @@ namespace FlinkDotNet.Common
         /// Gets the underlying configuration.
         /// </summary>
         /// <returns>The configuration object</returns>
-        public Configuration GetConfiguration()
-        {
-            return _configuration;
-        }
+        public Configuration GetConfiguration() => this._configuration;
 
         /// <summary>
         /// Sets a configuration parameter.
@@ -242,7 +230,7 @@ namespace FlinkDotNet.Common
         /// <returns>This ExecutionConfig instance for method chaining</returns>
         public ExecutionConfig SetProperty(string key, object value)
         {
-            _configuration.SetString(key, value.ToString()!);
+            _ = this._configuration.SetString(key, value.ToString()!);
             return this;
         }
 
@@ -252,9 +240,6 @@ namespace FlinkDotNet.Common
         /// <param name="key">The configuration key</param>
         /// <param name="defaultValue">The default value if key is not found</param>
         /// <returns>The configuration value</returns>
-        public string GetProperty(string key, string? defaultValue = null)
-        {
-            return _configuration.GetString(key, defaultValue);
-        }
+        public string GetProperty(string key, string? defaultValue = null) => this._configuration.GetString(key, defaultValue);
     }
 }

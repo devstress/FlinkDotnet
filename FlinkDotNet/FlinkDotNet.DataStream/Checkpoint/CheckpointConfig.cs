@@ -56,8 +56,8 @@ namespace FlinkDotNet.DataStream.Checkpoint
             {
                 throw new System.ArgumentException("Checkpoint storage path cannot be null or empty", nameof(path));
             }
-            _checkpointStoragePath = path;
-            _checkpointStorage = new FileSystemCheckpointStorage(path);
+            this._checkpointStoragePath = path;
+            this._checkpointStorage = new FileSystemCheckpointStorage(path);
             return this;
         }
 
@@ -68,8 +68,8 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// <returns>This CheckpointConfig instance for method chaining</returns>
         public CheckpointConfig SetCheckpointStorage(ICheckpointStorage storage)
         {
-            _checkpointStorage = storage ?? throw new System.ArgumentNullException(nameof(storage));
-            _checkpointStoragePath = storage.GetCheckpointPath();
+            this._checkpointStorage = storage ?? throw new System.ArgumentNullException(nameof(storage));
+            this._checkpointStoragePath = storage.GetCheckpointPath();
             return this;
         }
 
@@ -77,19 +77,13 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets the configured checkpoint storage implementation.
         /// </summary>
         /// <returns>The checkpoint storage, or null if not configured</returns>
-        public ICheckpointStorage? GetCheckpointStorage()
-        {
-            return _checkpointStorage;
-        }
+        public ICheckpointStorage? GetCheckpointStorage() => this._checkpointStorage;
 
         /// <summary>
         /// Gets the checkpoint storage path.
         /// </summary>
         /// <returns>The storage path, or null if not configured</returns>
-        public string? GetCheckpointStoragePath()
-        {
-            return _checkpointStoragePath;
-        }
+        public string? GetCheckpointStoragePath() => this._checkpointStoragePath;
 
         /// <summary>
         /// Sets the maximum time that a checkpoint may take before being aborted.
@@ -102,7 +96,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
             {
                 throw new System.ArgumentException("Checkpoint timeout must be positive", nameof(timeoutMs));
             }
-            _checkpointTimeout = timeoutMs;
+            this._checkpointTimeout = timeoutMs;
             return this;
         }
 
@@ -110,10 +104,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets the checkpoint timeout in milliseconds.
         /// </summary>
         /// <returns>The checkpoint timeout</returns>
-        public long GetCheckpointTimeout()
-        {
-            return _checkpointTimeout;
-        }
+        public long GetCheckpointTimeout() => this._checkpointTimeout;
 
         /// <summary>
         /// Sets the minimal pause between consecutive checkpoint attempts.
@@ -128,7 +119,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
             {
                 throw new System.ArgumentException("Minimum pause must be non-negative", nameof(pauseMs));
             }
-            _minPauseBetweenCheckpoints = pauseMs;
+            this._minPauseBetweenCheckpoints = pauseMs;
             return this;
         }
 
@@ -136,10 +127,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets the minimum pause between checkpoints in milliseconds.
         /// </summary>
         /// <returns>The minimum pause</returns>
-        public long GetMinPauseBetweenCheckpoints()
-        {
-            return _minPauseBetweenCheckpoints;
-        }
+        public long GetMinPauseBetweenCheckpoints() => this._minPauseBetweenCheckpoints;
 
         /// <summary>
         /// Sets the maximum number of concurrent checkpoint attempts that may be in progress at the same time.
@@ -153,7 +141,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
             {
                 throw new System.ArgumentException("Max concurrent checkpoints must be at least 1", nameof(maxConcurrent));
             }
-            _maxConcurrentCheckpoints = maxConcurrent;
+            this._maxConcurrentCheckpoints = maxConcurrent;
             return this;
         }
 
@@ -161,10 +149,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets the maximum number of concurrent checkpoints.
         /// </summary>
         /// <returns>The maximum concurrent checkpoints</returns>
-        public int GetMaxConcurrentCheckpoints()
-        {
-            return _maxConcurrentCheckpoints;
-        }
+        public int GetMaxConcurrentCheckpoints() => this._maxConcurrentCheckpoints;
 
         /// <summary>
         /// Sets the tolerable checkpoint failure number.
@@ -178,7 +163,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
             {
                 throw new System.ArgumentException("Tolerable failures must be non-negative", nameof(tolerableFailures));
             }
-            _tolerableCheckpointFailureNumber = tolerableFailures;
+            this._tolerableCheckpointFailureNumber = tolerableFailures;
             return this;
         }
 
@@ -186,10 +171,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets the tolerable checkpoint failure number.
         /// </summary>
         /// <returns>The tolerable failure count</returns>
-        public int GetTolerableCheckpointFailureNumber()
-        {
-            return _tolerableCheckpointFailureNumber;
-        }
+        public int GetTolerableCheckpointFailureNumber() => this._tolerableCheckpointFailureNumber;
 
         /// <summary>
         /// Enables externalized checkpoints, which persist checkpoints after job termination.
@@ -199,8 +181,8 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// <returns>This CheckpointConfig instance for method chaining</returns>
         public CheckpointConfig EnableExternalizedCheckpoints(ExternalizedCheckpointCleanup cleanup)
         {
-            _externalizedCheckpointsEnabled = true;
-            _externalizedCheckpointCleanup = cleanup;
+            this._externalizedCheckpointsEnabled = true;
+            this._externalizedCheckpointCleanup = cleanup;
             return this;
         }
 
@@ -210,7 +192,7 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// <returns>This CheckpointConfig instance for method chaining</returns>
         public CheckpointConfig DisableExternalizedCheckpoints()
         {
-            _externalizedCheckpointsEnabled = false;
+            this._externalizedCheckpointsEnabled = false;
             return this;
         }
 
@@ -218,19 +200,13 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets whether externalized checkpoints are enabled.
         /// </summary>
         /// <returns>True if externalized checkpoints are enabled</returns>
-        public bool IsExternalizedCheckpointsEnabled()
-        {
-            return _externalizedCheckpointsEnabled;
-        }
+        public bool IsExternalizedCheckpointsEnabled() => this._externalizedCheckpointsEnabled;
 
         /// <summary>
         /// Gets the externalized checkpoint cleanup behavior.
         /// </summary>
         /// <returns>The cleanup behavior</returns>
-        public ExternalizedCheckpointCleanup GetExternalizedCheckpointCleanup()
-        {
-            return _externalizedCheckpointCleanup;
-        }
+        public ExternalizedCheckpointCleanup GetExternalizedCheckpointCleanup() => this._externalizedCheckpointCleanup;
     }
 
     /// <summary>

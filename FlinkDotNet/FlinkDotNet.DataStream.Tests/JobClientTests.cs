@@ -23,8 +23,8 @@ namespace FlinkDotNet.DataStream.Tests
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
 
-            _mockHttpHandler = new Mock<HttpMessageHandler>();
-            _mockHttpClient = new HttpClient(_mockHttpHandler.Object)
+            this._mockHttpHandler = new Mock<HttpMessageHandler>();
+            this._mockHttpClient = new HttpClient(this._mockHttpHandler.Object)
             {
                 BaseAddress = new Uri("http://test-flink:8081")
             };
@@ -35,7 +35,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-            _mockHttpClient?.Dispose();
+            this._mockHttpClient?.Dispose();
         }
 
         #region Constructor Tests
@@ -159,7 +159,7 @@ namespace FlinkDotNet.DataStream.Tests
             });
             var responseContent = new StringContent(responseJson, Encoding.UTF8, "application/json");
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -173,7 +173,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = responseContent
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.TriggerSavepointAsync(savepointPath);
@@ -193,7 +193,7 @@ namespace FlinkDotNet.DataStream.Tests
             {
                 requestId = "trigger-123"
             });
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -205,7 +205,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.TriggerSavepointAsync(null);
@@ -222,7 +222,7 @@ namespace FlinkDotNet.DataStream.Tests
             var jobId = "test-job-id";
             var errorMessage = "Savepoint trigger failed";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -234,7 +234,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent(errorMessage, Encoding.UTF8, "text/plain")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.TriggerSavepointAsync("/test/path");
@@ -252,7 +252,7 @@ namespace FlinkDotNet.DataStream.Tests
             var jobId = "test-job-id";
             var malformedJson = "{ invalid json }";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -264,7 +264,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent(malformedJson, Encoding.UTF8, "application/json")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.TriggerSavepointAsync("/test/path");
@@ -283,7 +283,7 @@ namespace FlinkDotNet.DataStream.Tests
             using var cts = new System.Threading.CancellationTokenSource();
             cts.Cancel(); // Cancel immediately
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -291,10 +291,10 @@ namespace FlinkDotNet.DataStream.Tests
                     ItExpr.IsAny<System.Threading.CancellationToken>())
                 .ThrowsAsync(new TaskCanceledException());
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act & Assert
-            Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            _ = Assert.ThrowsAsync<TaskCanceledException>(async () =>
                 await client.TriggerSavepointAsync("/test/path", cts.Token));
         }
 
@@ -314,7 +314,7 @@ namespace FlinkDotNet.DataStream.Tests
             {
                 requestId = triggerId
             });
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -328,7 +328,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.CancelWithSavepointAsync(savepointPath);
@@ -344,7 +344,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var jobId = "test-job-id";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -356,7 +356,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent("Job not found", Encoding.UTF8, "text/plain")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.CancelWithSavepointAsync("/test/path");
@@ -377,7 +377,7 @@ namespace FlinkDotNet.DataStream.Tests
             var jobId = "test-job-id";
             var savepointPath = "/test/savepoint/path";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -391,7 +391,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent("{}", Encoding.UTF8, "application/json")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.StopWithSavepointAsync(savepointPath, drain: true);
@@ -409,7 +409,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var jobId = "test-job-id";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -421,7 +421,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent("{}", Encoding.UTF8, "application/json")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.StopWithSavepointAsync(null, drain: false);
@@ -437,7 +437,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var jobId = "test-job-id";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -449,7 +449,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent("Invalid request", Encoding.UTF8, "text/plain")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.StopWithSavepointAsync("/test/path");
@@ -547,7 +547,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var jobId = "test-job-id";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -555,10 +555,10 @@ namespace FlinkDotNet.DataStream.Tests
                     ItExpr.IsAny<System.Threading.CancellationToken>())
                 .ThrowsAsync(new HttpRequestException("Network error"));
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act & Assert
-            Assert.ThrowsAsync<HttpRequestException>(async () =>
+            _ = Assert.ThrowsAsync<HttpRequestException>(async () =>
                 await client.TriggerSavepointAsync("/test/path"));
         }
 
@@ -568,7 +568,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var jobId = "test-job-id";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -576,10 +576,10 @@ namespace FlinkDotNet.DataStream.Tests
                     ItExpr.IsAny<System.Threading.CancellationToken>())
                 .ThrowsAsync(new TaskCanceledException("Request timeout"));
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act & Assert
-            Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            _ = Assert.ThrowsAsync<TaskCanceledException>(async () =>
                 await client.CancelWithSavepointAsync("/test/path"));
         }
 
@@ -589,7 +589,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var jobId = "test-job-id";
 
-            _mockHttpHandler
+            _ = this._mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -601,7 +601,7 @@ namespace FlinkDotNet.DataStream.Tests
                     Content = new StringContent("", Encoding.UTF8, "application/json")
                 });
 
-            using var client = CreateTestJobClient(jobId);
+            using var client = this.CreateTestJobClient(jobId);
 
             // Act
             var result = await client.StopWithSavepointAsync("/test/path");
@@ -629,7 +629,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             if (httpField != null)
             {
-                httpField.SetValue(client, _mockHttpClient);
+                httpField.SetValue(client, this._mockHttpClient);
             }
 
             return client;

@@ -14,10 +14,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment? _env;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region Partitioning Operations
 
@@ -26,7 +23,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.Rebalance();
@@ -42,7 +39,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.Rescale();
@@ -58,7 +55,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.Forward();
@@ -74,7 +71,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.Shuffle();
@@ -90,7 +87,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.Broadcast();
@@ -106,7 +103,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             Func<int, int, int> partitioner = (key, numPartitions) => key % numPartitions;
             Func<int, int> keySelector = x => x;
 
@@ -124,7 +121,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<(string, int)> { ("a", 1), ("b", 2), ("c", 3) };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             Func<string, int, int> partitioner = (key, numPartitions) => key.Length % numPartitions;
             Func<(string, int), string> keySelector = x => x.Item1;
 
@@ -145,7 +142,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.SetMaxParallelism(128);
@@ -161,7 +158,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.SetMaxParallelism(1);
@@ -176,7 +173,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.SetMaxParallelism(32768);
@@ -191,7 +188,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(0));
@@ -203,7 +200,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(-1));
@@ -215,7 +212,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(32769));
@@ -227,7 +224,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.SlotSharingGroup("group1");
@@ -243,7 +240,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream.SlotSharingGroup("");
@@ -262,7 +259,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream
@@ -282,7 +279,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream
@@ -301,7 +298,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new List<int> { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
 
             // Act
             var result = stream

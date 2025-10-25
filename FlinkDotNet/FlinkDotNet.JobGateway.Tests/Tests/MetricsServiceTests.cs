@@ -8,10 +8,7 @@ namespace FlinkDotNet.JobGateway.Tests
         private MetricsService _metricsService = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _metricsService = new MetricsService();
-        }
+        public void Setup() => this._metricsService = new MetricsService();
 
         #region RecordJobSubmitted Tests
 
@@ -19,7 +16,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobSubmitted_WithLocalMode_IncrementsCounters()
         {
             // Act
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
             // Assert - verify the method executes without throwing
             Assert.Pass("RecordJobSubmitted executed successfully");
@@ -29,7 +26,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobSubmitted_WithRemoteMode_IncrementsCounters()
         {
             // Act
-            _metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobSubmitted("REMOTE");
 
             // Assert
             Assert.Pass("RecordJobSubmitted with REMOTE mode executed successfully");
@@ -39,9 +36,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobSubmitted_MultipleCallsWithSameMode_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
             // Assert
             Assert.Pass("Multiple RecordJobSubmitted calls executed successfully");
@@ -51,10 +48,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobSubmitted_MultipleCallsWithDifferentModes_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("REMOTE");
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("REMOTE");
 
             // Assert
             Assert.Pass("RecordJobSubmitted with mixed modes executed successfully");
@@ -68,10 +65,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobSucceeded_IncrementsCounter()
         {
             // Arrange - first submit a job to increment the running count
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
             // Act
-            _metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobSucceeded();
 
             // Assert
             Assert.Pass("RecordJobSucceeded executed successfully");
@@ -81,14 +78,14 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobSucceeded_MultipleTimes_DoesNotThrow()
         {
             // Arrange
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
             // Act
-            _metricsService.RecordJobSucceeded();
-            _metricsService.RecordJobSucceeded();
-            _metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobSucceeded();
 
             // Assert
             Assert.Pass("Multiple RecordJobSucceeded calls executed successfully");
@@ -102,10 +99,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobFailed_WithValidationError_IncrementsCounter()
         {
             // Arrange
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
             // Act
-            _metricsService.RecordJobFailed("validation_error");
+            this._metricsService.RecordJobFailed("validation_error");
 
             // Assert
             Assert.Pass("RecordJobFailed with validation_error executed successfully");
@@ -115,10 +112,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobFailed_WithExecutionError_IncrementsCounter()
         {
             // Arrange
-            _metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobSubmitted("REMOTE");
 
             // Act
-            _metricsService.RecordJobFailed("execution_error");
+            this._metricsService.RecordJobFailed("execution_error");
 
             // Assert
             Assert.Pass("RecordJobFailed with execution_error executed successfully");
@@ -128,10 +125,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobFailed_WithTimeoutError_IncrementsCounter()
         {
             // Arrange
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
             // Act
-            _metricsService.RecordJobFailed("timeout_error");
+            this._metricsService.RecordJobFailed("timeout_error");
 
             // Assert
             Assert.Pass("RecordJobFailed with timeout_error executed successfully");
@@ -141,10 +138,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordJobFailed_WithNetworkError_IncrementsCounter()
         {
             // Arrange
-            _metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobSubmitted("REMOTE");
 
             // Act
-            _metricsService.RecordJobFailed("network_error");
+            this._metricsService.RecordJobFailed("network_error");
 
             // Assert
             Assert.Pass("RecordJobFailed with network_error executed successfully");
@@ -156,14 +153,14 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             for (int i = 0; i < 4; i++)
             {
-                _metricsService.RecordJobSubmitted("LOCAL");
+                this._metricsService.RecordJobSubmitted("LOCAL");
             }
 
             // Act
-            _metricsService.RecordJobFailed("validation_error");
-            _metricsService.RecordJobFailed("execution_error");
-            _metricsService.RecordJobFailed("timeout_error");
-            _metricsService.RecordJobFailed("network_error");
+            this._metricsService.RecordJobFailed("validation_error");
+            this._metricsService.RecordJobFailed("execution_error");
+            this._metricsService.RecordJobFailed("timeout_error");
+            this._metricsService.RecordJobFailed("network_error");
 
             // Assert
             Assert.Pass("RecordJobFailed with multiple error types executed successfully");
@@ -177,7 +174,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordRequest_WithValidParameters_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordRequest("/api/jobs", "POST", 200);
+            this._metricsService.RecordRequest("/api/jobs", "POST", 200);
 
             // Assert
             Assert.Pass("RecordRequest executed successfully");
@@ -187,9 +184,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordRequest_WithDifferentEndpoints_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordRequest("/api/jobs", "POST", 200);
-            _metricsService.RecordRequest("/api/jobs/123", "GET", 200);
-            _metricsService.RecordRequest("/api/jobs/456", "DELETE", 204);
+            this._metricsService.RecordRequest("/api/jobs", "POST", 200);
+            this._metricsService.RecordRequest("/api/jobs/123", "GET", 200);
+            this._metricsService.RecordRequest("/api/jobs/456", "DELETE", 204);
 
             // Assert
             Assert.Pass("RecordRequest with different endpoints executed successfully");
@@ -199,11 +196,11 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordRequest_WithDifferentMethods_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordRequest("/api/jobs", "GET", 200);
-            _metricsService.RecordRequest("/api/jobs", "POST", 201);
-            _metricsService.RecordRequest("/api/jobs", "PUT", 200);
-            _metricsService.RecordRequest("/api/jobs", "DELETE", 204);
-            _metricsService.RecordRequest("/api/jobs", "PATCH", 200);
+            this._metricsService.RecordRequest("/api/jobs", "GET", 200);
+            this._metricsService.RecordRequest("/api/jobs", "POST", 201);
+            this._metricsService.RecordRequest("/api/jobs", "PUT", 200);
+            this._metricsService.RecordRequest("/api/jobs", "DELETE", 204);
+            this._metricsService.RecordRequest("/api/jobs", "PATCH", 200);
 
             // Assert
             Assert.Pass("RecordRequest with different HTTP methods executed successfully");
@@ -213,11 +210,11 @@ namespace FlinkDotNet.JobGateway.Tests
         public void RecordRequest_WithDifferentStatusCodes_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordRequest("/api/jobs", "GET", 200); // OK
-            _metricsService.RecordRequest("/api/jobs", "POST", 201); // Created
-            _metricsService.RecordRequest("/api/jobs", "GET", 400); // Bad Request
-            _metricsService.RecordRequest("/api/jobs", "GET", 404); // Not Found
-            _metricsService.RecordRequest("/api/jobs", "POST", 500); // Server Error
+            this._metricsService.RecordRequest("/api/jobs", "GET", 200); // OK
+            this._metricsService.RecordRequest("/api/jobs", "POST", 201); // Created
+            this._metricsService.RecordRequest("/api/jobs", "GET", 400); // Bad Request
+            this._metricsService.RecordRequest("/api/jobs", "GET", 404); // Not Found
+            this._metricsService.RecordRequest("/api/jobs", "POST", 500); // Server Error
 
             // Assert
             Assert.Pass("RecordRequest with different status codes executed successfully");
@@ -229,7 +226,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Act
             for (int i = 0; i < 10; i++)
             {
-                _metricsService.RecordRequest("/api/jobs", "POST", 200);
+                this._metricsService.RecordRequest("/api/jobs", "POST", 200);
             }
 
             // Assert
@@ -244,7 +241,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void MeasureRequestDuration_ReturnsDisposable()
         {
             // Act
-            using var timer = _metricsService.MeasureRequestDuration("/api/jobs", "POST");
+            using var timer = this._metricsService.MeasureRequestDuration("/api/jobs", "POST");
 
             // Assert
             Assert.That(timer, Is.Not.Null);
@@ -255,7 +252,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void MeasureRequestDuration_DisposableCanBeDisposed()
         {
             // Act
-            var timer = _metricsService.MeasureRequestDuration("/api/jobs", "POST");
+            var timer = this._metricsService.MeasureRequestDuration("/api/jobs", "POST");
             timer.Dispose();
 
             // Assert
@@ -266,9 +263,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void MeasureRequestDuration_WithDifferentEndpoints_DoesNotThrow()
         {
             // Act
-            using var timer1 = _metricsService.MeasureRequestDuration("/api/jobs", "POST");
-            using var timer2 = _metricsService.MeasureRequestDuration("/api/jobs/123", "GET");
-            using var timer3 = _metricsService.MeasureRequestDuration("/api/status", "GET");
+            using var timer1 = this._metricsService.MeasureRequestDuration("/api/jobs", "POST");
+            using var timer2 = this._metricsService.MeasureRequestDuration("/api/jobs/123", "GET");
+            using var timer3 = this._metricsService.MeasureRequestDuration("/api/status", "GET");
 
             // Assert
             Assert.Pass("MeasureRequestDuration with different endpoints executed successfully");
@@ -278,10 +275,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void MeasureRequestDuration_WithDifferentMethods_DoesNotThrow()
         {
             // Act
-            using var timer1 = _metricsService.MeasureRequestDuration("/api/jobs", "GET");
-            using var timer2 = _metricsService.MeasureRequestDuration("/api/jobs", "POST");
-            using var timer3 = _metricsService.MeasureRequestDuration("/api/jobs", "PUT");
-            using var timer4 = _metricsService.MeasureRequestDuration("/api/jobs", "DELETE");
+            using var timer1 = this._metricsService.MeasureRequestDuration("/api/jobs", "GET");
+            using var timer2 = this._metricsService.MeasureRequestDuration("/api/jobs", "POST");
+            using var timer3 = this._metricsService.MeasureRequestDuration("/api/jobs", "PUT");
+            using var timer4 = this._metricsService.MeasureRequestDuration("/api/jobs", "DELETE");
 
             // Assert
             Assert.Pass("MeasureRequestDuration with different methods executed successfully");
@@ -291,12 +288,12 @@ namespace FlinkDotNet.JobGateway.Tests
         public void MeasureRequestDuration_MultipleSequentialTimers_DoesNotThrow()
         {
             // Act
-            using (var timer1 = _metricsService.MeasureRequestDuration("/api/jobs", "POST"))
+            using (var timer1 = this._metricsService.MeasureRequestDuration("/api/jobs", "POST"))
             {
                 // Simulate some work
             }
 
-            using (var timer2 = _metricsService.MeasureRequestDuration("/api/jobs", "GET"))
+            using (var timer2 = this._metricsService.MeasureRequestDuration("/api/jobs", "GET"))
             {
                 // Simulate some work
             }
@@ -309,9 +306,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void MeasureRequestDuration_NestedTimers_DoesNotThrow()
         {
             // Act
-            using (var timer1 = _metricsService.MeasureRequestDuration("/api/outer", "POST"))
+            using (var timer1 = this._metricsService.MeasureRequestDuration("/api/outer", "POST"))
             {
-                using (var timer2 = _metricsService.MeasureRequestDuration("/api/inner", "GET"))
+                using (var timer2 = this._metricsService.MeasureRequestDuration("/api/inner", "GET"))
                 {
                     // Simulate nested timing
                 }
@@ -329,8 +326,8 @@ namespace FlinkDotNet.JobGateway.Tests
         public void CompleteJobLifecycle_SubmitAndSucceed_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSucceeded();
 
             // Assert
             Assert.Pass("Complete successful job lifecycle executed successfully");
@@ -340,8 +337,8 @@ namespace FlinkDotNet.JobGateway.Tests
         public void CompleteJobLifecycle_SubmitAndFail_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordJobSubmitted("REMOTE");
-            _metricsService.RecordJobFailed("execution_error");
+            this._metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobFailed("execution_error");
 
             // Assert
             Assert.Pass("Complete failed job lifecycle executed successfully");
@@ -351,12 +348,12 @@ namespace FlinkDotNet.JobGateway.Tests
         public void CompleteRequestLifecycle_WithDurationMeasurement_DoesNotThrow()
         {
             // Act
-            using (var timer = _metricsService.MeasureRequestDuration("/api/jobs", "POST"))
+            using (var timer = this._metricsService.MeasureRequestDuration("/api/jobs", "POST"))
             {
                 // Simulate request processing
-                _metricsService.RecordJobSubmitted("LOCAL");
+                this._metricsService.RecordJobSubmitted("LOCAL");
             }
-            _metricsService.RecordRequest("/api/jobs", "POST", 200);
+            this._metricsService.RecordRequest("/api/jobs", "POST", 200);
 
             // Assert
             Assert.Pass("Complete request lifecycle with duration measurement executed successfully");
@@ -366,13 +363,13 @@ namespace FlinkDotNet.JobGateway.Tests
         public void ConcurrentJobOperations_MultipleJobsSimultaneously_DoesNotThrow()
         {
             // Act
-            _metricsService.RecordJobSubmitted("LOCAL");
-            _metricsService.RecordJobSubmitted("REMOTE");
-            _metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("LOCAL");
+            this._metricsService.RecordJobSubmitted("REMOTE");
+            this._metricsService.RecordJobSubmitted("LOCAL");
 
-            _metricsService.RecordJobSucceeded();
-            _metricsService.RecordJobFailed("timeout_error");
-            _metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobSucceeded();
+            this._metricsService.RecordJobFailed("timeout_error");
+            this._metricsService.RecordJobSucceeded();
 
             // Assert
             Assert.Pass("Concurrent job operations executed successfully");
@@ -384,16 +381,20 @@ namespace FlinkDotNet.JobGateway.Tests
             // Act - simulate high-volume scenario
             for (int i = 0; i < 100; i++)
             {
-                _metricsService.RecordJobSubmitted(i % 2 == 0 ? "LOCAL" : "REMOTE");
-                _metricsService.RecordRequest($"/api/jobs/{i}", "POST", 200);
+                this._metricsService.RecordJobSubmitted(i % 2 == 0 ? "LOCAL" : "REMOTE");
+                this._metricsService.RecordRequest($"/api/jobs/{i}", "POST", 200);
             }
 
             for (int i = 0; i < 100; i++)
             {
                 if (i % 3 == 0)
-                    _metricsService.RecordJobFailed("error");
+                {
+                    this._metricsService.RecordJobFailed("error");
+                }
                 else
-                    _metricsService.RecordJobSucceeded();
+                {
+                    this._metricsService.RecordJobSucceeded();
+                }
             }
 
             // Assert

@@ -38,7 +38,7 @@ namespace FlinkDotNet.DataStream.Window.Functions
         /// <param name="context">The context in which the window is being evaluated</param>
         /// <param name="elements">The elements in the window</param>
         /// <returns>The output elements</returns>
-        IEnumerable<TOutput> Process(TKey key, IProcessWindowContext context, IEnumerable<TInput> elements);
+        public IEnumerable<TOutput> Process(TKey key, IProcessWindowContext context, IEnumerable<TInput> elements);
 
         /// <summary>
         /// Context that provides information about the window being processed.
@@ -48,7 +48,7 @@ namespace FlinkDotNet.DataStream.Window.Functions
             /// <summary>
             /// Gets the window that is being processed.
             /// </summary>
-            IWindow Window
+            public IWindow Window
             {
                 get;
             }
@@ -56,7 +56,7 @@ namespace FlinkDotNet.DataStream.Window.Functions
             /// <summary>
             /// Gets the current processing time.
             /// </summary>
-            long CurrentProcessingTime
+            public long CurrentProcessingTime
             {
                 get;
             }
@@ -64,7 +64,7 @@ namespace FlinkDotNet.DataStream.Window.Functions
             /// <summary>
             /// Gets the current event time watermark.
             /// </summary>
-            long CurrentWatermark
+            public long CurrentWatermark
             {
                 get;
             }

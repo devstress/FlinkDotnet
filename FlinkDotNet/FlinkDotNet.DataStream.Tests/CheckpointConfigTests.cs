@@ -133,7 +133,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act
-            config.SetCheckpointTimeout(1);
+            _ = config.SetCheckpointTimeout(1);
 
             // Assert
             Assert.That(config.GetCheckpointTimeout(), Is.EqualTo(1));
@@ -187,7 +187,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act
-            config.SetMinPauseBetweenCheckpoints(0);
+            _ = config.SetMinPauseBetweenCheckpoints(0);
 
             // Assert
             Assert.That(config.GetMinPauseBetweenCheckpoints(), Is.EqualTo(0));
@@ -230,7 +230,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act
-            config.SetMaxConcurrentCheckpoints(1);
+            _ = config.SetMaxConcurrentCheckpoints(1);
 
             // Assert
             Assert.That(config.GetMaxConcurrentCheckpoints(), Is.EqualTo(1));
@@ -284,7 +284,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act
-            config.SetTolerableCheckpointFailureNumber(0);
+            _ = config.SetTolerableCheckpointFailureNumber(0);
 
             // Assert
             Assert.That(config.GetTolerableCheckpointFailureNumber(), Is.EqualTo(0));
@@ -341,7 +341,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var config = new CheckpointConfig();
-            config.EnableExternalizedCheckpoints(ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+            _ = config.EnableExternalizedCheckpoints(ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
 
             // Act
             var result = config.DisableExternalizedCheckpoints();
@@ -358,7 +358,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act
-            config.DisableExternalizedCheckpoints();
+            _ = config.DisableExternalizedCheckpoints();
 
             // Assert
             Assert.That(config.IsExternalizedCheckpointsEnabled(), Is.False);
@@ -406,8 +406,8 @@ namespace FlinkDotNet.DataStream.Tests
             var storage2 = new FileSystemCheckpointStorage("file:///tmp/checkpoints2");
 
             // Act
-            config.SetCheckpointStorage(storage1);
-            config.SetCheckpointStorage(storage2);
+            _ = config.SetCheckpointStorage(storage1);
+            _ = config.SetCheckpointStorage(storage2);
 
             // Assert
             Assert.That(config.GetCheckpointStorage(), Is.SameAs(storage2));
@@ -422,8 +422,8 @@ namespace FlinkDotNet.DataStream.Tests
             var storage = new FileSystemCheckpointStorage("hdfs:///checkpoints");
 
             // Act
-            config.SetCheckpointStorage(storage);
-            config.SetCheckpointStorage("s3://bucket/checkpoints");
+            _ = config.SetCheckpointStorage(storage);
+            _ = config.SetCheckpointStorage("s3://bucket/checkpoints");
 
             // Assert
             Assert.That(config.GetCheckpointStoragePath(), Is.EqualTo("s3://bucket/checkpoints"));

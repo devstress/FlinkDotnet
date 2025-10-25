@@ -337,10 +337,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestTimestampAssigner : ITimestampAssigner<TestEvent>
         {
-            public long ExtractTimestamp(TestEvent element, long previousElementTimestamp)
-            {
-                return element.Timestamp;
-            }
+            public long ExtractTimestamp(TestEvent element, long previousElementTimestamp) => element.Timestamp;
         }
     }
 }

@@ -27,7 +27,7 @@ namespace FlinkDotNet.DataStream.Tests
                     null,
                     new[] { typeof(Flink.JobBuilder.Models.JobDefinition), typeof(StreamExecutionEnvironment) },
                     null);
-                constructor?.Invoke(new object?[] { null, env });
+                _ = (constructor?.Invoke(new object?[] { null, env }));
             });
 
             Assert.That(ex!.InnerException, Is.InstanceOf<ArgumentNullException>());
@@ -53,7 +53,7 @@ namespace FlinkDotNet.DataStream.Tests
                     null,
                     new[] { typeof(Flink.JobBuilder.Models.JobDefinition), typeof(StreamExecutionEnvironment) },
                     null);
-                constructor?.Invoke(new object?[] { jobDef, null });
+                _ = (constructor?.Invoke(new object?[] { jobDef, null }));
             });
 
             Assert.That(ex!.InnerException, Is.InstanceOf<ArgumentNullException>());
@@ -73,7 +73,7 @@ namespace FlinkDotNet.DataStream.Tests
             Func<int, int>? nullFunc = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 stream.Map(nullFunc!));
         }
 
@@ -91,7 +91,7 @@ namespace FlinkDotNet.DataStream.Tests
             Func<int, bool>? nullFunc = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 stream.Filter(nullFunc!));
         }
 
@@ -109,7 +109,7 @@ namespace FlinkDotNet.DataStream.Tests
             Func<string, IEnumerable<char>>? nullFunc = null;
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 stream.FlatMap(nullFunc!));
         }
 

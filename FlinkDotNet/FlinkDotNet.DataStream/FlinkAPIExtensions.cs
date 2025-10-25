@@ -52,20 +52,20 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="bytes">The byte array to deserialize</param>
         /// <returns>The deserialized object</returns>
-        T Deserialize(byte[] bytes);
+        public T Deserialize(byte[] bytes);
 
         /// <summary>
         /// Checks if the given element signals the end of the stream.
         /// </summary>
         /// <param name="element">The element to check</param>
         /// <returns>True if the element signals end of stream</returns>
-        bool IsEndOfStream(T element);
+        public bool IsEndOfStream(T element);
 
         /// <summary>
         /// Gets the type information of the produced type.
         /// </summary>
         /// <returns>Type information of the produced type</returns>
-        TypeInformation<T> GetProducedType();
+        public TypeInformation<T> GetProducedType();
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="element">The element to serialize</param>
         /// <returns>The serialized byte array</returns>
-        byte[] Serialize(T element);
+        public byte[] Serialize(T element);
     }
 
     /// <summary>
@@ -92,34 +92,25 @@ namespace FlinkDotNet.DataStream
     {
         private readonly System.Type _type;
 
-        private TypeInformation(System.Type type)
-        {
-            _type = type;
-        }
+        private TypeInformation(System.Type type) => this._type = type;
 
         /// <summary>
         /// Creates type information for the given type.
         /// </summary>
         /// <returns>Type information for T</returns>
-        public static TypeInformation<T> Of()
-        {
-            return new TypeInformation<T>(typeof(T));
-        }
+        public static TypeInformation<T> Of() => new TypeInformation<T>(typeof(T));
 
         /// <summary>
         /// Creates type information for a specific type.
         /// </summary>
         /// <typeparam name="TType">The type</typeparam>
         /// <returns>Type information</returns>
-        public static TypeInformation<TType> Of<TType>()
-        {
-            return new TypeInformation<TType>(typeof(TType));
-        }
+        public static TypeInformation<TType> Of<TType>() => new TypeInformation<TType>(typeof(TType));
 
         /// <summary>
         /// Gets the .NET type.
         /// </summary>
-        public new System.Type GetType() => _type;
+        public new System.Type GetType() => this._type;
     }
 
     /// <summary>
@@ -135,12 +126,12 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the Kafka topic to write to.
         /// </summary>
-        public string Topic => _topic;
+        public string Topic => this._topic;
 
         /// <summary>
         /// Gets the Kafka bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers => _bootstrapServers;
+        public string BootstrapServers => this._bootstrapServers;
 
         /// <summary>
         /// Creates a Kafka sink function.
@@ -150,19 +141,17 @@ namespace FlinkDotNet.DataStream
         /// <param name="serializer">Serialization function</param>
         public KafkaSinkFunction(string topic, string bootstrapServers, Func<T, byte[]> serializer)
         {
-            _topic = topic;
-            _bootstrapServers = bootstrapServers;
+            this._topic = topic;
+            this._bootstrapServers = bootstrapServers;
             // serializer parameter kept for API compatibility but not stored
         }
 
         /// <summary>
         /// Invokes the sink function to write an element.
         /// </summary>
-        public System.Threading.Tasks.Task InvokeAsync(T element, System.Threading.CancellationToken cancellationToken = default)
-        {
+        public System.Threading.Tasks.Task InvokeAsync(T element, System.Threading.CancellationToken cancellationToken = default) =>
             // Placeholder - in production this would write to Kafka
-            return System.Threading.Tasks.Task.CompletedTask;
-        }
+            System.Threading.Tasks.Task.CompletedTask;
     }
 
     /// <summary>
@@ -191,7 +180,7 @@ namespace FlinkDotNet.DataStream
             TimeCharacteristic characteristic)
         {
             // Store the time characteristic in the execution config
-            env.GetConfig().GetConfiguration().SetString("stream.time-characteristic", characteristic.ToString());
+            _ = env.GetConfig().GetConfiguration().SetString("stream.time-characteristic", characteristic.ToString());
             return env;
         }
 
@@ -205,10 +194,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>A DataStream</returns>
         public static DataStream<T> AddSource<T>(
             this StreamExecutionEnvironment env,
-            ISourceFunction<T> sourceFunction)
-        {
-            return env.AddSource(sourceFunction, "Kafka Source");
-        }
+            ISourceFunction<T> sourceFunction) => env.AddSource(sourceFunction, "Kafka Source");
     }
 
     /// <summary>
@@ -226,10 +212,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>The data stream</returns>
         public static DataStream<T> AddSink<T>(
             this DataStream<T> stream,
-            KafkaSinkFunction<T> sinkFunction)
-        {
-            return stream.AddSink(sinkFunction);
-        }
+            KafkaSinkFunction<T> sinkFunction) => stream.AddSink(sinkFunction);
     }
 
     /// <summary>
@@ -244,11 +227,9 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="T">The type of elements</typeparam>
         /// <param name="source">The Kafka source function</param>
         /// <returns>The Kafka source function</returns>
-        public static KafkaSourceFunction<T> SetStartFromEarliest<T>(this KafkaSourceFunction<T> source)
-        {
+        public static KafkaSourceFunction<T> SetStartFromEarliest<T>(this KafkaSourceFunction<T> source) =>
             // Configuration is handled internally by KafkaSourceFunction
-            return source;
-        }
+            source;
 
         /// <summary>
         /// Assigns timestamps and watermarks to elements from this Kafka source.
@@ -260,12 +241,10 @@ namespace FlinkDotNet.DataStream
         /// <returns>The Kafka source function with timestamps configured</returns>
         public static KafkaSourceFunction<T> AssignTimestampsAndWatermarks<T>(
             this KafkaSourceFunction<T> source,
-            IAssignerWithPunctuatedWatermarks<T> assigner)
-        {
+            IAssignerWithPunctuatedWatermarks<T> assigner) =>
             // In production, this would configure the source to use the assigner
             // For now, we return the source to maintain API compatibility
-            return source;
-        }
+            source;
 
         /// <summary>
         /// Assigns timestamps and watermarks to elements from this Kafka source using periodic watermarks.
@@ -277,11 +256,9 @@ namespace FlinkDotNet.DataStream
         /// <returns>The Kafka source function with timestamps configured</returns>
         public static KafkaSourceFunction<T> AssignTimestampsAndWatermarks<T>(
             this KafkaSourceFunction<T> source,
-            IAssignerWithPeriodicWatermarks<T> assigner)
-        {
+            IAssignerWithPeriodicWatermarks<T> assigner) =>
             // In production, this would configure the source to use the assigner
             // For now, we return the source to maintain API compatibility
-            return source;
-        }
+            source;
     }
 }

@@ -14,25 +14,21 @@ namespace FlinkDotNet.DataStream.Tests
     public class JobClientAdvancedTests
     {
         [SetUp]
-        public void SetUp()
-        {
+        public void SetUp() =>
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        }
 
         [TearDown]
-        public void TearDown()
-        {
+        public void TearDown() =>
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-        }
 
         [Test]
         public async Task TriggerSavepointAsync_WhenJsonParsingFails_ReturnsResultWithEmptyTriggerId()
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/savepoints")),
                     ItExpr.IsAny<CancellationToken>())
@@ -64,7 +60,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/savepoints")),
                     ItExpr.IsAny<CancellationToken>())
@@ -95,7 +91,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/savepoints")),
                     ItExpr.IsAny<CancellationToken>())
@@ -126,7 +122,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/savepoints")),
                     ItExpr.IsAny<CancellationToken>())
@@ -157,7 +153,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/stop")),
                     ItExpr.IsAny<CancellationToken>())
@@ -190,7 +186,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/stop")),
                     ItExpr.IsAny<CancellationToken>())
@@ -221,7 +217,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/stop")),
                     ItExpr.IsAny<CancellationToken>())
@@ -318,7 +314,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mockHandler = new Mock<HttpMessageHandler>();
-            mockHandler.Protected()
+            _ = mockHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.Is<HttpRequestMessage>(req =>
                         req.RequestUri!.ToString().Contains("/savepoints") &&

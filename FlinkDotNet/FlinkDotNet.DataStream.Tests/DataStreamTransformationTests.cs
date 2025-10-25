@@ -12,10 +12,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region Map Tests
 
@@ -24,7 +21,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var mapped = stream.Map(x => x * 2);
@@ -38,7 +35,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var mapFunction = new TestMapFunction();
 
             // Act
@@ -52,7 +49,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Map_WithExpressionString_SupportsUpperExpression()
         {
             // Arrange - use FromKafka to create JobDefinition-backed stream
-            var stream = _env.FromKafka("test-topic", "localhost:9092");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092");
 
             // Act
             var mapped = stream.Map("upper");
@@ -65,10 +62,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void Map_WithExpressionOnNonStringType_ThrowsNotSupportedException()
         {
             // Arrange
-            var stream = _env.AddKafkaSource<int>("test-topic", "localhost:9092", "test-group", s => int.Parse(s));
+            var stream = this._env.AddKafkaSource<int>("test-topic", "localhost:9092", "test-group", s => int.Parse(s));
 
             // Act & Assert
-            Assert.Throws<NotSupportedException>(() => stream.Map("upper"));
+            _ = Assert.Throws<NotSupportedException>(() => stream.Map("upper"));
         }
 
         [Test]
@@ -76,10 +73,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "a", "b", "c" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => stream.Map("upper"));
+            _ = Assert.Throws<InvalidOperationException>(() => stream.Map("upper"));
         }
 
         [Test]
@@ -87,7 +84,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "hello", "world" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var mapped = stream.Map(s => s.ToUpper());
@@ -105,7 +102,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var filtered = stream.Filter(x => x > 3);
@@ -119,7 +116,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var filterFunction = new TestFilterFunction();
 
             // Act
@@ -134,7 +131,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var filtered = stream.Filter(x => x % 2 == 0);
@@ -152,7 +149,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "a,b", "c,d" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var flatMapped = stream.FlatMap(s => s.Split(','));
@@ -166,7 +163,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "a,b", "c,d" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var flatMapFunction = new TestFlatMapFunction();
 
             // Act
@@ -181,7 +178,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { new[] { 1, 2 }, new[] { 3, 4 } };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var flatMapped = stream.FlatMap(arr => arr);
@@ -199,7 +196,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { ("a", 1), ("b", 2), ("a", 3) };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var keyed = stream.KeyBy(x => x.Item1);
@@ -214,7 +211,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var grouped = stream.GroupBy("field");
@@ -232,7 +229,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void SinkToKafka_WithValidParameters_CreatesSink()
         {
             // Arrange
-            var stream = _env.FromKafka("input-topic", "localhost:9092");
+            var stream = this._env.FromKafka("input-topic", "localhost:9092");
 
             // Act
             var result = stream.SinkToKafka("output-topic", "localhost:9092", s => s);
@@ -245,10 +242,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void SinkToKafka_WithNullBootstrapServers_ThrowsArgumentException()
         {
             // Arrange
-            var stream = _env.FromKafka("input-topic", "localhost:9092");
+            var stream = this._env.FromKafka("input-topic", "localhost:9092");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() =>
+            _ = Assert.Throws<ArgumentException>(() =>
                 stream.SinkToKafka("output-topic", null, s => s));
         }
 
@@ -256,10 +253,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void SinkToKafka_WithEmptyBootstrapServers_ThrowsArgumentException()
         {
             // Arrange
-            var stream = _env.FromKafka("input-topic", "localhost:9092");
+            var stream = this._env.FromKafka("input-topic", "localhost:9092");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() =>
+            _ = Assert.Throws<ArgumentException>(() =>
                 stream.SinkToKafka("output-topic", "", s => s));
         }
 
@@ -268,10 +265,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "a", "b", "c" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() =>
+            _ = Assert.Throws<InvalidOperationException>(() =>
                 stream.SinkToKafka("output-topic", "localhost:9092", s => s));
         }
 
@@ -280,7 +277,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { "a", "b", "c" };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var sinkFunction = new TestKafkaSinkFunction();
 
             // Act
@@ -295,7 +292,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Print();
@@ -313,7 +310,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Rebalance();
@@ -327,7 +324,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Rescale();
@@ -341,7 +338,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Forward();
@@ -355,7 +352,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Shuffle();
@@ -369,7 +366,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Broadcast();
@@ -383,7 +380,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3, 4, 5 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.PartitionCustom((key, numPartitions) => key % numPartitions, x => x);
@@ -401,7 +398,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.SetParallelism(4);
@@ -415,7 +412,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Name("Test Stream");
@@ -429,7 +426,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.SetMaxParallelism(128);
@@ -443,10 +440,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(0));
+            _ = Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(0));
         }
 
         [Test]
@@ -454,10 +451,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(-1));
+            _ = Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(-1));
         }
 
         [Test]
@@ -465,10 +462,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(40000));
+            _ = Assert.Throws<ArgumentException>(() => stream.SetMaxParallelism(40000));
         }
 
         [Test]
@@ -476,7 +473,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.SlotSharingGroup("group1");
@@ -494,7 +491,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var assigner = new TestPunctuatedWatermarkAssigner();
 
             // Act
@@ -509,7 +506,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var assigner = new TestPeriodicWatermarkAssigner();
 
             // Act
@@ -524,7 +521,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
             var strategy = Watermarks.WatermarkStrategy<int>.ForBoundedOutOfOrderness(TimeSpan.FromSeconds(5));
 
             // Act
@@ -539,10 +536,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<int>) null!));
         }
 
@@ -555,7 +552,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var windowed = stream.TimeWindowAll(Time.Seconds(10));
@@ -570,7 +567,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var windowed = stream.CountWindowAll(5);
@@ -585,10 +582,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
+            _ = Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
         }
 
         [Test]
@@ -596,17 +593,17 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-1));
+            _ = Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-1));
         }
 
         [Test]
         public void Where_WithFilterExpression_ReturnsDataStream()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092");
 
             // Act
             var result = stream.Where("value > 10");
@@ -620,7 +617,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var result = stream.Where("value > 1");
@@ -639,13 +636,13 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var collection = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(collection);
+            var stream = this._env.FromCollection(collection);
 
             // Act
             var returnedEnv = stream.GetExecutionEnvironment();
 
             // Assert
-            Assert.That(returnedEnv, Is.SameAs(_env));
+            Assert.That(returnedEnv, Is.SameAs(this._env));
         }
 
         #endregion
@@ -672,10 +669,7 @@ namespace FlinkDotNet.DataStream.Tests
             public string Topic { get; } = "test-topic";
             public string BootstrapServers { get; } = "localhost:9092";
 
-            public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
+            public Task InvokeAsync(string element, CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 
         private class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<int>

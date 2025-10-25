@@ -28,14 +28,14 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
 
-            _mockLogger = new Mock<ILogger<FlinkJobManager>>();
-            _mockConfiguration = new Mock<IConfiguration>();
+            this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
+            this._mockConfiguration = new Mock<IConfiguration>();
 
             // Setup default configuration values
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+            _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
-            _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
+            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081")
             };
@@ -44,7 +44,7 @@ namespace FlinkDotNet.JobGateway.Tests
         [TearDown]
         public void TearDown()
         {
-            _httpClient?.Dispose();
+            this._httpClient?.Dispose();
 
             // Clean up environment variables
             Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", null);
@@ -61,7 +61,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 var jobDef = new JobDefinition
                 {
@@ -75,7 +75,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     Sink = new ConsoleSinkDefinition()
                 };
 
-                SetupClusterHealthAndJarMockResponses();
+                this.SetupClusterHealthAndJarMockResponses();
 
                 // Act
                 var result = await manager.SubmitJobAsync(jobDef);
@@ -94,7 +94,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithoutEnvironmentVariable_SearchesForJar()
         {
             // Arrange - No FLINK_RUNNER_JAR_PATH set
-            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             var jobDef = new JobDefinition
             {
@@ -108,7 +108,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new ConsoleSinkDefinition()
             };
 
-            SetupClusterHealthAndJarMockResponses();
+            this.SetupClusterHealthAndJarMockResponses();
 
             // Act
             var result = await manager.SubmitJobAsync(jobDef);
@@ -121,7 +121,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_SearchesMultiplePaths_ForRunnerJar()
         {
             // Arrange
-            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             var jobDef = new JobDefinition
             {
@@ -135,7 +135,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new ConsoleSinkDefinition()
             };
 
-            SetupClusterHealthAndJarMockResponses();
+            this.SetupClusterHealthAndJarMockResponses();
 
             // Act
             var result = await manager.SubmitJobAsync(jobDef);
@@ -155,7 +155,7 @@ namespace FlinkDotNet.JobGateway.Tests
         private void SetupClusterHealthAndJarMockResponses()
         {
             // Mock cluster overview for health check
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -168,7 +168,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 });
 
             // Mock JAR list endpoint
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -181,7 +181,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 });
 
             // Mock JAR upload
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -194,7 +194,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 });
 
             // Mock JAR run
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",

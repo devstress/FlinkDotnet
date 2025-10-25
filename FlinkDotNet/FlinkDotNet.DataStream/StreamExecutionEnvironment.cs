@@ -60,24 +60,18 @@ namespace FlinkDotNet.DataStream
         /// <param name="logger">Optional logger</param>
         protected StreamExecutionEnvironment(Configuration? configuration = null, ILogger? logger = null)
         {
-            _executionConfig = new ExecutionConfig(configuration ?? new Configuration());
-            _logger = logger;
+            this._executionConfig = new ExecutionConfig(configuration ?? new Configuration());
+            this._logger = logger;
             _serilogLogger.Information("[StreamExecutionEnvironment] Created new environment instance");
         }
 
-        internal void SetActiveJob(JobDefinition job)
-        {
-            _activeJob = job;
-        }
+        internal void SetActiveJob(JobDefinition job) => this._activeJob = job;
 
         /// <summary>
         /// Gets the config object.
         /// </summary>
         /// <returns>The ExecutionConfig object</returns>
-        public ExecutionConfig GetConfig()
-        {
-            return _executionConfig;
-        }
+        public ExecutionConfig GetConfig() => this._executionConfig;
 
         /// <summary>
         /// Creates a Kafka string source compatible with Apache Flink via the IR Runner.
@@ -97,9 +91,9 @@ namespace FlinkDotNet.DataStream
             }
 
             // Initialize operation capture for native API usage
-            _operationCapture = new OperationCapture();
+            this._operationCapture = new OperationCapture();
             _serilogLogger.Debug("[FromKafka] Calling OperationCapture.CaptureKafkaSource with bootstrapServers={BootstrapServers}", bootstrapServers);
-            _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
+            this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
 
             _serilogLogger.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
             var jd = new JobDefinition
@@ -114,18 +108,18 @@ namespace FlinkDotNet.DataStream
                 Metadata = new JobMetadata
                 {
                     JobId = Guid.NewGuid().ToString("n"),
-                    Parallelism = _executionConfig.Parallelism > 0 ? _executionConfig.Parallelism : null,
+                    Parallelism = this._executionConfig.Parallelism > 0 ? this._executionConfig.Parallelism : null,
                     CreatedAt = DateTime.UtcNow,
                     Version = "1.0"
                 }
             };
             _serilogLogger.Information("[FromKafka] JobDefinition created with Source.BootstrapServers={BootstrapServers}", (jd.Source as KafkaSourceDefinition)?.BootstrapServers);
-            SetActiveJob(jd);
+            this.SetActiveJob(jd);
 
             var dataStream = new DataStream<string>(jd, this);
 
             // Attach operation capture to enable native API (Map with IMapFunction)
-            dataStream.AttachOperationCapture(_operationCapture);
+            dataStream.AttachOperationCapture(this._operationCapture);
 
             _serilogLogger.Information("[FromKafka] Returning DataStream with bootstrap servers={BootstrapServers}", bootstrapServers);
             return dataStream;
@@ -151,15 +145,15 @@ namespace FlinkDotNet.DataStream
             string startingOffsets = "earliest")
         {
             // Initialize operation capture for native API usage
-            _operationCapture = new OperationCapture();
-            _operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId, startingOffsets, deserializer);
+            this._operationCapture = new OperationCapture();
+            this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId, startingOffsets, deserializer);
 
             // Create a source function that uses the deserializer
             var sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
             var dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
 
             // Attach operation capture to the stream
-            dataStream.AttachOperationCapture(_operationCapture);
+            dataStream.AttachOperationCapture(this._operationCapture);
 
             return dataStream;
         }
@@ -172,7 +166,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment SetParallelism(int parallelism)
         {
-            _executionConfig.SetParallelism(parallelism);
+            _ = this._executionConfig.SetParallelism(parallelism);
             return this;
         }
 
@@ -185,9 +179,11 @@ namespace FlinkDotNet.DataStream
         public StreamExecutionEnvironment SetMaxParallelism(int maxParallelism)
         {
             if (maxParallelism <= 0 || maxParallelism > 32768)
+            {
                 throw new ArgumentException("Max parallelism must be between 1 and 32768");
+            }
 
-            _executionConfig.SetMaxParallelism(maxParallelism);
+            _ = this._executionConfig.SetMaxParallelism(maxParallelism);
             return this;
         }
 
@@ -195,19 +191,13 @@ namespace FlinkDotNet.DataStream
         /// Gets the parallelism with which operations are executed by default.
         /// </summary>
         /// <returns>The parallelism used by operations</returns>
-        public int GetParallelism()
-        {
-            return _executionConfig.Parallelism;
-        }
+        public int GetParallelism() => this._executionConfig.Parallelism;
 
         /// <summary>
         /// Gets the maximum degree of parallelism defined for the program.
         /// </summary>
         /// <returns>Maximum degree of parallelism</returns>
-        public int GetMaxParallelism()
-        {
-            return _executionConfig.MaxParallelism;
-        }
+        public int GetMaxParallelism() => this._executionConfig.MaxParallelism;
 
         /// <summary>
         /// Sets the maximum time frequency (milliseconds) for the flushing of the output buffers.
@@ -216,7 +206,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment SetBufferTimeout(int timeoutMillis)
         {
-            _bufferTimeoutMillis = timeoutMillis;
+            this._bufferTimeoutMillis = timeoutMillis;
             return this;
         }
 
@@ -224,10 +214,7 @@ namespace FlinkDotNet.DataStream
         /// Gets the maximum time frequency (milliseconds) for the flushing of the output buffers.
         /// </summary>
         /// <returns>The timeout of the buffer</returns>
-        public int GetBufferTimeout()
-        {
-            return _bufferTimeoutMillis;
-        }
+        public int GetBufferTimeout() => this._bufferTimeoutMillis;
 
         /// <summary>
         /// Disables operator chaining for streaming operators.
@@ -235,7 +222,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment DisableOperatorChaining()
         {
-            _operatorChainingEnabled = false;
+            this._operatorChainingEnabled = false;
             return this;
         }
 
@@ -243,10 +230,7 @@ namespace FlinkDotNet.DataStream
         /// Returns whether operator chaining is enabled.
         /// </summary>
         /// <returns>True if chaining is enabled, false otherwise</returns>
-        public bool IsChainingEnabled()
-        {
-            return _operatorChainingEnabled;
-        }
+        public bool IsChainingEnabled() => this._operatorChainingEnabled;
 
         /// <summary>
         /// Enables checkpointing for the streaming job.
@@ -255,7 +239,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment EnableCheckpointing(long interval)
         {
-            _checkpointInterval = interval;
+            this._checkpointInterval = interval;
             return this;
         }
 
@@ -263,10 +247,7 @@ namespace FlinkDotNet.DataStream
         /// Returns the checkpointing interval or -1 if checkpointing is disabled.
         /// </summary>
         /// <returns>The checkpointing interval or -1</returns>
-        public long GetCheckpointInterval()
-        {
-            return _checkpointInterval;
-        }
+        public long GetCheckpointInterval() => this._checkpointInterval;
 
         /// <summary>
         /// Enables the Adaptive Scheduler for dynamic resource management.
@@ -277,7 +258,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment EnableAdaptiveScheduler(bool enabled = true)
         {
-            _adaptiveSchedulerEnabled = enabled;
+            this._adaptiveSchedulerEnabled = enabled;
             return this;
         }
 
@@ -285,10 +266,7 @@ namespace FlinkDotNet.DataStream
         /// Returns whether the Adaptive Scheduler is enabled.
         /// </summary>
         /// <returns>True if adaptive scheduler is enabled</returns>
-        public bool IsAdaptiveSchedulerEnabled()
-        {
-            return _adaptiveSchedulerEnabled;
-        }
+        public bool IsAdaptiveSchedulerEnabled() => this._adaptiveSchedulerEnabled;
 
         /// <summary>
         /// Enables Reactive Mode for automatic adaptation to available cluster resources.
@@ -299,7 +277,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment EnableReactiveMode(bool enabled = true)
         {
-            _reactiveModeEnabled = enabled;
+            this._reactiveModeEnabled = enabled;
             return this;
         }
 
@@ -307,10 +285,7 @@ namespace FlinkDotNet.DataStream
         /// Returns whether Reactive Mode is enabled.
         /// </summary>
         /// <returns>True if reactive mode is enabled</returns>
-        public bool IsReactiveModeEnabled()
-        {
-            return _reactiveModeEnabled;
-        }
+        public bool IsReactiveModeEnabled() => this._reactiveModeEnabled;
 
         /// <summary>
         /// Sets the path to a savepoint to restore the job from.
@@ -320,7 +295,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment FromSavepoint(string savepointPath)
         {
-            _savepointPath = savepointPath;
+            this._savepointPath = savepointPath;
             return this;
         }
 
@@ -328,10 +303,7 @@ namespace FlinkDotNet.DataStream
         /// Gets the savepoint path if configured.
         /// </summary>
         /// <returns>The savepoint path or null if not set</returns>
-        public string? GetSavepointPath()
-        {
-            return _savepointPath;
-        }
+        public string? GetSavepointPath() => this._savepointPath;
 
         /// <summary>
         /// Sets the state backend for this execution environment.
@@ -341,7 +313,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment SetStateBackend(IStateBackend stateBackend)
         {
-            _stateBackend = stateBackend ?? throw new System.ArgumentNullException(nameof(stateBackend));
+            this._stateBackend = stateBackend ?? throw new System.ArgumentNullException(nameof(stateBackend));
             return this;
         }
 
@@ -349,20 +321,14 @@ namespace FlinkDotNet.DataStream
         /// Gets the configured state backend.
         /// </summary>
         /// <returns>The state backend, or null if not configured</returns>
-        public IStateBackend? GetStateBackend()
-        {
-            return _stateBackend;
-        }
+        public IStateBackend? GetStateBackend() => this._stateBackend;
 
         /// <summary>
         /// Gets the checkpoint configuration for this execution environment.
         /// Use this to configure checkpoint storage, timeouts, and other checkpoint behavior.
         /// </summary>
         /// <returns>The checkpoint configuration</returns>
-        public CheckpointConfig GetCheckpointConfig()
-        {
-            return _checkpointConfig;
-        }
+        public CheckpointConfig GetCheckpointConfig() => this._checkpointConfig;
 
         /// <summary>
         /// Creates a data stream from the given collection.
@@ -371,10 +337,7 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="T">The type of elements in the collection</typeparam>
         /// <param name="collection">The collection of elements to create the data stream from</param>
         /// <returns>The data stream representing the given collection</returns>
-        public DataStream<T> FromCollection<T>(IEnumerable<T> collection)
-        {
-            return new DataStream<T>(collection, this);
-        }
+        public DataStream<T> FromCollection<T>(IEnumerable<T> collection) => new DataStream<T>(collection, this);
 
         /// <summary>
         /// Adds a data source to the streaming topology.
@@ -383,10 +346,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="sourceFunction">The user defined source function</param>
         /// <param name="sourceName">Name of the data source</param>
         /// <returns>The data stream constructed</returns>
-        public DataStream<T> AddSource<T>(ISourceFunction<T> sourceFunction, string sourceName = "Custom Source")
-        {
-            return new DataStream<T>(sourceFunction, this, sourceName);
-        }
+        public DataStream<T> AddSource<T>(ISourceFunction<T> sourceFunction, string sourceName = "Custom Source") => new DataStream<T>(sourceFunction, this, sourceName);
 
         /// <summary>
         /// Creates an execution environment that represents the context in which the program is executed.
@@ -394,36 +354,33 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="configuration">The configuration to instantiate the environment with</param>
         /// <returns>The execution environment of the context in which the program is executed</returns>
-        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null)
-        {
-            return new StreamExecutionEnvironment(configuration);
-        }
+        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null) => new StreamExecutionEnvironment(configuration);
 
         public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
-            var name = jobName ?? _activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
-            _logger?.LogInformation("Starting execution of job: {JobName}", name);
+            var name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
+            this._logger?.LogInformation("Starting execution of job: {JobName}", name);
             _serilogLogger.Information("[ExecuteAsync] Starting execution of job: {JobName}", name);
 
             JobDefinition jobToSubmit;
 
             // Check if we have captured operations from native API usage
-            if (_operationCapture != null && _operationCapture.HasOperations())
+            if (this._operationCapture != null && this._operationCapture.HasOperations())
             {
                 // Translate captured operations to JobDefinition
                 var jobId = System.Guid.NewGuid().ToString();
                 _serilogLogger.Information("[ExecuteAsync] Translating native DataStream API operations to JobDefinition with jobId={JobId}", jobId);
-                jobToSubmit = _operationCapture.ToJobDefinition(jobId, name);
+                jobToSubmit = this._operationCapture.ToJobDefinition(jobId, name);
                 _serilogLogger.Information("[ExecuteAsync] After translation: Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
-                _logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
+                this._logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
             }
-            else if (_activeJob != null)
+            else if (this._activeJob != null)
             {
                 // Use existing JobDefinition (IR-backed stream)
                 _serilogLogger.Information(
                     "[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}",
-                    (_activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
-                jobToSubmit = _activeJob;
+                    (this._activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
+                jobToSubmit = this._activeJob;
                 jobToSubmit.Metadata.JobName = name;
             }
             else
@@ -448,7 +405,7 @@ namespace FlinkDotNet.DataStream
             catch (Exception ex)
             {
                 _serilogLogger.Error(ex, "[ExecuteAsync] Exception during job submission to gateway for job {JobId}", jobToSubmit.Metadata.JobId);
-                _logger?.LogError(ex, "Failed to submit job {JobId} to gateway", jobToSubmit.Metadata.JobId);
+                this._logger?.LogError(ex, "Failed to submit job {JobId} to gateway", jobToSubmit.Metadata.JobId);
                 throw new InvalidOperationException($"Failed to submit job {jobToSubmit.Metadata.JobId} to Flink Job Gateway", ex);
             }
 
@@ -481,10 +438,13 @@ namespace FlinkDotNet.DataStream
 
         public Task<JobClient> ExecuteAsyncJob(string jobName = "Flink Streaming Job")
         {
-            if (_activeJob == null)
+            if (this._activeJob == null)
+            {
                 throw new InvalidOperationException(
                     "No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before ExecuteAsyncJob().");
-            _activeJob.Metadata.JobName = jobName;
+            }
+
+            this._activeJob.Metadata.JobName = jobName;
             return Task.FromResult(new JobClient(jobName));
         }
 
@@ -495,7 +455,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This object</returns>
         public StreamExecutionEnvironment Configure(Configuration configuration)
         {
-            _executionConfig.GetConfiguration().AddAll(configuration);
+            _ = this._executionConfig.GetConfiguration().AddAll(configuration);
             return this;
         }
 
@@ -557,21 +517,21 @@ namespace FlinkDotNet.DataStream
         /// Gets the Flink job ID.
         /// </summary>
         /// <returns>The job ID as a string</returns>
-        string GetJobId();
+        public string GetJobId();
 
         /// <summary>
         /// Cancels the Flink job.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task representing the cancellation operation</returns>
-        Task CancelAsync(CancellationToken cancellationToken = default);
+        public Task CancelAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets the job execution result with status and metrics.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Job execution result</returns>
-        Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default);
+        public Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default);
     }
 
     public class JobClient : IJobClient, IDisposable
@@ -587,7 +547,7 @@ namespace FlinkDotNet.DataStream
 
         public JobClient(string jobName, TimeSpan? httpTimeout = null, FlinkJobGatewayConfiguration? gatewayConfig = null)
         {
-            JobName = jobName;
+            this.JobName = jobName;
             var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
             var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
 
@@ -598,10 +558,10 @@ namespace FlinkDotNet.DataStream
                     : TimeSpan.FromMinutes(5));
 
             var protocol = GetProtocol();
-            _flinkHttp = new HttpClient { BaseAddress = new Uri($"{protocol}://{host}:{port}"), Timeout = timeout };
+            this._flinkHttp = new HttpClient { BaseAddress = new Uri($"{protocol}://{host}:{port}"), Timeout = timeout };
 
             // Use provided gateway configuration or default with same timeout for consistency
-            _gateway = new FlinkJobGatewayService(gatewayConfig ?? new FlinkJobGatewayConfiguration
+            this._gateway = new FlinkJobGatewayService(gatewayConfig ?? new FlinkJobGatewayConfiguration
             {
                 HttpTimeout = timeout,
                 MaxRetries = timeout.TotalSeconds < 5 ? 0 : 3, // No retries for short timeouts (tests)
@@ -637,7 +597,7 @@ namespace FlinkDotNet.DataStream
         /// Gets the Flink job ID.
         /// Implementation of IJobClient.GetJobId().
         /// </summary>
-        public string GetJobId() => JobId;
+        public string GetJobId() => this.JobId;
 
         /// <summary>
         /// Cancels the Flink job using the Flink REST API.
@@ -645,13 +605,13 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public async Task CancelAsync(CancellationToken cancellationToken = default)
         {
-            var success = await _gateway.CancelJobAsync(JobId, cancellationToken);
+            var success = await this._gateway.CancelJobAsync(this.JobId, cancellationToken);
             if (success)
             {
                 return;
             }
 
-            throw new InvalidOperationException($"Failed to cancel job {JobId}");
+            throw new InvalidOperationException($"Failed to cancel job {this.JobId}");
         }
 
         /// <summary>
@@ -660,11 +620,11 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public async Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default)
         {
-            var status = await GetJobStatusAsync(cancellationToken);
+            var status = await this.GetJobStatusAsync(cancellationToken);
             return new JobExecutionResult
             {
-                JobId = JobId,
-                JobName = JobName,
+                JobId = this.JobId,
+                JobName = this.JobName,
                 Success = status.State == "FINISHED",
                 StartTime = status.StartTime,
                 EndTime = status.EndTime ?? DateTime.UtcNow,
@@ -682,7 +642,7 @@ namespace FlinkDotNet.DataStream
                 targetDirectory = savepointPath,
                 cancelJob = cancelJob
             };
-            var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
+            var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -699,23 +659,23 @@ namespace FlinkDotNet.DataStream
             return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
         }
 
-        public async Task<SavepointResult> TriggerSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
-        {
-            return await TriggerSavepointInternalAsync(savepointPath, false, cancellationToken).ConfigureAwait(false);
-        }
+        public async Task<SavepointResult> TriggerSavepointAsync(
+            string? savepointPath = null,
+            CancellationToken cancellationToken = default) =>
+            await this.TriggerSavepointInternalAsync(savepointPath, false, cancellationToken).ConfigureAwait(false);
 
-        public async Task<SavepointResult> CancelWithSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
-        {
-            return await TriggerSavepointInternalAsync(savepointPath, true, cancellationToken).ConfigureAwait(false);
-        }
+        public async Task<SavepointResult> CancelWithSavepointAsync(
+            string? savepointPath = null,
+            CancellationToken cancellationToken = default) =>
+            await this.TriggerSavepointInternalAsync(savepointPath, true, cancellationToken).ConfigureAwait(false);
 
         public async Task<JobStatus> GetJobStatusAsync(CancellationToken cancellationToken = default)
         {
-            var status = await _gateway.GetJobStatusAsync(JobId, cancellationToken).ConfigureAwait(false);
+            var status = await this._gateway.GetJobStatusAsync(this.JobId, cancellationToken).ConfigureAwait(false);
             return new JobStatus
             {
-                JobId = JobId,
-                JobName = JobName,
+                JobId = this.JobId,
+                JobName = this.JobName,
                 State = status.State ?? "UNKNOWN",
                 Parallelism = status.Metrics?.Parallelism ?? 0,
                 MaxParallelism = 0,
@@ -732,7 +692,7 @@ namespace FlinkDotNet.DataStream
                 targetDirectory = savepointPath,
                 drain = drain
             };
-            var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/stop",
+            var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/stop",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -741,18 +701,18 @@ namespace FlinkDotNet.DataStream
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_disposed || !disposing)
+            if (this._disposed || !disposing)
             {
                 return;
             }
 
-            _flinkHttp?.Dispose();
-            _disposed = true;
+            this._flinkHttp?.Dispose();
+            this._disposed = true;
         }
 
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
     }
@@ -768,7 +728,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Enumerable of elements</returns>
-        IAsyncEnumerable<T> RunAsync(CancellationToken cancellationToken = default);
+        public IAsyncEnumerable<T> RunAsync(CancellationToken cancellationToken = default);
     }
 
     /// <summary>

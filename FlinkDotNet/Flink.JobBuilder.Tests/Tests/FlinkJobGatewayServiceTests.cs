@@ -20,8 +20,8 @@ public class FlinkJobGatewayServiceTests
         // Set environment variable required by FlinkJobGatewayConfiguration
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
 
-        _mockLogger = new Mock<ILogger>();
-        _configuration = new FlinkJobGatewayConfiguration
+        this._mockLogger = new Mock<ILogger>();
+        this._configuration = new FlinkJobGatewayConfiguration
         {
             BaseUrl = "http://localhost:8080",
             HttpTimeout = TimeSpan.FromSeconds(30),
@@ -31,11 +31,9 @@ public class FlinkJobGatewayServiceTests
     }
 
     [TearDown]
-    public void TearDown()
-    {
+    public void TearDown() =>
         // Clean up environment variable
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-    }
 
     #region Constructor Tests
 
@@ -89,7 +87,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var capturedRequest = (HttpRequestMessage?) null;
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -112,10 +110,10 @@ public class FlinkJobGatewayServiceTests
         // Use default client creation (not passing httpClient) to allow service to configure API key
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
         httpClient.DefaultRequestHeaders.Add("X-API-Key", config.ApiKey);
-        using var service = new FlinkJobGatewayService(config, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(config, httpClient, this._mockLogger?.Object);
 
         // Act
-        await service.HealthCheckAsync();
+        _ = await service.HealthCheckAsync();
 
         // Assert
         Assert.That(capturedRequest, Is.Not.Null);
@@ -134,7 +132,7 @@ public class FlinkJobGatewayServiceTests
         };
 
         // Act
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Assert
         Assert.That(service, Is.Not.Null);
@@ -148,9 +146,9 @@ public class FlinkJobGatewayServiceTests
     public async Task SubmitJobAsync_WithInvalidJobDefinition_ReturnsFailure()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "{}");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "{}");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         var invalidJob = new JobDefinition
         {
@@ -172,18 +170,18 @@ public class FlinkJobGatewayServiceTests
     public async Task SubmitJobAsync_WithValidJob_ReturnsSuccess()
     {
         // Arrange
-        var responseJson = SerializeJobSubmissionResult(new JobSubmissionResult
+        var responseJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
         {
             JobId = "test-job-1",
             FlinkJobId = "flink-123",
             Success = true
         });
 
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, responseJson);
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, responseJson);
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("test-job-1");
+        var validJob = this.CreateValidJobDefinition("test-job-1");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -198,11 +196,11 @@ public class FlinkJobGatewayServiceTests
     public async Task SubmitJobAsync_WithEmptyResponseBody_ReturnsFailure()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("test-job-2");
+        var validJob = this.CreateValidJobDefinition("test-job-2");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -216,11 +214,11 @@ public class FlinkJobGatewayServiceTests
     public async Task SubmitJobAsync_WithWhitespaceResponseBody_ReturnsFailure()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "   ");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "   ");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("test-job-3");
+        var validJob = this.CreateValidJobDefinition("test-job-3");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -234,11 +232,11 @@ public class FlinkJobGatewayServiceTests
     public async Task SubmitJobAsync_WithInvalidJson_ReturnsFailure()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "invalid json {{{");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "invalid json {{{");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("test-job-4");
+        var validJob = this.CreateValidJobDefinition("test-job-4");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -252,13 +250,13 @@ public class FlinkJobGatewayServiceTests
     {
         // Arrange
         var errorResponse = "Gateway error occurred";
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.InternalServerError, errorResponse);
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.InternalServerError, errorResponse);
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
 
-        _configuration!.MaxRetries = 0; // Disable retries for faster test
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        this._configuration!.MaxRetries = 0; // Disable retries for faster test
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("test-job-5");
+        var validJob = this.CreateValidJobDefinition("test-job-5");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -276,7 +274,7 @@ public class FlinkJobGatewayServiceTests
         cts.Cancel(); // Cancel immediately
 
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -284,14 +282,14 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new TaskCanceledException("Request was canceled"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("test-job-6");
+        var validJob = this.CreateValidJobDefinition("test-job-6");
 
         // Act & Assert
         await Task.Delay(1); // Make this truly async
         // The service throws TaskCanceledException when the request is canceled
-        Assert.ThrowsAsync<TaskCanceledException>(async () =>
+        _ = Assert.ThrowsAsync<TaskCanceledException>(async () =>
             await service.SubmitJobAsync(validJob, cts.Token));
     }
 
@@ -303,16 +301,16 @@ public class FlinkJobGatewayServiceTests
     public async Task GetJobStatusAsync_WithValidResponse_ReturnsStatus()
     {
         // Arrange
-        var statusJson = SerializeJobStatus(new JobStatus
+        var statusJson = this.SerializeJobStatus(new JobStatus
         {
             FlinkJobId = "flink-123",
             State = "RUNNING",
             StartTime = DateTime.UtcNow
         });
 
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, statusJson);
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, statusJson);
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var status = await service.GetJobStatusAsync("flink-123");
@@ -327,11 +325,11 @@ public class FlinkJobGatewayServiceTests
     public async Task GetJobStatusAsync_WithHttpError_ReturnsUnknownStatus()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "Job not found");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "Job not found");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
 
-        _configuration!.MaxRetries = 0;
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        this._configuration!.MaxRetries = 0;
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var status = await service.GetJobStatusAsync("non-existent-job");
@@ -346,12 +344,12 @@ public class FlinkJobGatewayServiceTests
     public void GetJobStatusAsync_WithInvalidJson_ThrowsJsonException()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "invalid json");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "invalid json");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert
-        Assert.ThrowsAsync<System.Text.Json.JsonException>(async () =>
+        _ = Assert.ThrowsAsync<System.Text.Json.JsonException>(async () =>
             await service.GetJobStatusAsync("flink-456"));
     }
 
@@ -363,7 +361,7 @@ public class FlinkJobGatewayServiceTests
     public async Task GetJobMetricsAsync_WithValidResponse_ReturnsMetrics()
     {
         // Arrange
-        var metricsJson = SerializeJobMetrics(new JobMetrics
+        var metricsJson = this.SerializeJobMetrics(new JobMetrics
         {
             FlinkJobId = "flink-789",
             RecordsIn = 1000,
@@ -371,9 +369,9 @@ public class FlinkJobGatewayServiceTests
             Parallelism = 4
         });
 
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, metricsJson);
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, metricsJson);
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var metrics = await service.GetJobMetricsAsync("flink-789");
@@ -389,11 +387,11 @@ public class FlinkJobGatewayServiceTests
     public async Task GetJobMetricsAsync_WithHttpError_ReturnsEmptyMetrics()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.InternalServerError, "Server error");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.InternalServerError, "Server error");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
 
-        _configuration!.MaxRetries = 0;
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        this._configuration!.MaxRetries = 0;
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var metrics = await service.GetJobMetricsAsync("flink-error");
@@ -407,12 +405,12 @@ public class FlinkJobGatewayServiceTests
     public void GetJobMetricsAsync_WithInvalidJson_ThrowsJsonException()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "not valid json");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "not valid json");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert
-        Assert.ThrowsAsync<System.Text.Json.JsonException>(async () =>
+        _ = Assert.ThrowsAsync<System.Text.Json.JsonException>(async () =>
             await service.GetJobMetricsAsync("flink-999"));
     }
 
@@ -424,9 +422,9 @@ public class FlinkJobGatewayServiceTests
     public async Task CancelJobAsync_WithSuccessResponse_ReturnsTrue()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "{}");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "{}");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var result = await service.CancelJobAsync("flink-to-cancel");
@@ -439,11 +437,11 @@ public class FlinkJobGatewayServiceTests
     public async Task CancelJobAsync_WithHttpError_ReturnsFalse()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "Job not found");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.NotFound, "Job not found");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
 
-        _configuration!.MaxRetries = 0;
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        this._configuration!.MaxRetries = 0;
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var result = await service.CancelJobAsync("non-existent-job");
@@ -460,9 +458,9 @@ public class FlinkJobGatewayServiceTests
     public async Task HealthCheckAsync_WithSuccessResponse_ReturnsTrue()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "{ \"status\": \"healthy\" }");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "{ \"status\": \"healthy\" }");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var isHealthy = await service.HealthCheckAsync();
@@ -475,9 +473,9 @@ public class FlinkJobGatewayServiceTests
     public async Task HealthCheckAsync_WithHttpError_ReturnsFalse()
     {
         // Arrange
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.ServiceUnavailable, "Service down");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.ServiceUnavailable, "Service down");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var isHealthy = await service.HealthCheckAsync();
@@ -491,7 +489,7 @@ public class FlinkJobGatewayServiceTests
     {
         // Arrange
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -499,7 +497,7 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new HttpRequestException("Network error"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var isHealthy = await service.HealthCheckAsync();
@@ -516,7 +514,7 @@ public class FlinkJobGatewayServiceTests
         cts.Cancel(); // Cancel immediately
 
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -524,7 +522,7 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new TaskCanceledException("Request was canceled"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert
         var isHealthy = await service.HealthCheckAsync(cts.Token);
@@ -543,7 +541,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var callCount = 0;
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -558,7 +556,7 @@ public class FlinkJobGatewayServiceTests
                         Content = new StringContent("Server error")
                     };
                 }
-                var resultJson = SerializeJobSubmissionResult(new JobSubmissionResult
+                var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
                     JobId = "retry-test",
                     FlinkJobId = "flink-retry",
@@ -571,9 +569,9 @@ public class FlinkJobGatewayServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("retry-test");
+        var validJob = this.CreateValidJobDefinition("retry-test");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -588,7 +586,7 @@ public class FlinkJobGatewayServiceTests
     {
         // Arrange
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -596,11 +594,11 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new HttpRequestException("Connection failed"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert
         await Task.Delay(1); // Make this truly async
-        Assert.ThrowsAsync<HttpRequestException>(async () =>
+        _ = Assert.ThrowsAsync<HttpRequestException>(async () =>
             await service.GetJobStatusAsync("flink-fail"));
     }
 
@@ -610,7 +608,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var callCount = 0;
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -625,7 +623,7 @@ public class FlinkJobGatewayServiceTests
                         Content = new StringContent("Rate limit exceeded")
                     };
                 }
-                var resultJson = SerializeJobSubmissionResult(new JobSubmissionResult
+                var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
                     JobId = "rate-limit-test",
                     FlinkJobId = "flink-rate",
@@ -638,9 +636,9 @@ public class FlinkJobGatewayServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("rate-limit-test");
+        var validJob = this.CreateValidJobDefinition("rate-limit-test");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -656,7 +654,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var callCount = 0;
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -671,7 +669,7 @@ public class FlinkJobGatewayServiceTests
                         Content = new StringContent("Flink cluster is not healthy or unreachable")
                     };
                 }
-                var resultJson = SerializeJobSubmissionResult(new JobSubmissionResult
+                var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
                     JobId = "cluster-ready-test",
                     FlinkJobId = "flink-ready",
@@ -684,9 +682,9 @@ public class FlinkJobGatewayServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("cluster-ready-test");
+        var validJob = this.CreateValidJobDefinition("cluster-ready-test");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -702,7 +700,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var callCount = 0;
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -717,7 +715,7 @@ public class FlinkJobGatewayServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var result = await service.CancelJobAsync("invalid-job");
@@ -735,7 +733,7 @@ public class FlinkJobGatewayServiceTests
         cts.Cancel(); // Cancel immediately
 
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -743,10 +741,10 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new TaskCanceledException("Request was canceled"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert
-        Assert.ThrowsAsync<TaskCanceledException>(async () =>
+        _ = Assert.ThrowsAsync<TaskCanceledException>(async () =>
             await service.CancelJobAsync("test-job", cts.Token));
     }
 
@@ -754,11 +752,11 @@ public class FlinkJobGatewayServiceTests
     public async Task GetJobStatusAsync_WithNonRetryableStatusCode_ReturnsUnknownStatus()
     {
         // Arrange - Use 3xx redirect which shouldn't trigger retry
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.MovedPermanently, "Moved");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.MovedPermanently, "Moved");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
 
-        _configuration!.MaxRetries = 3;
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        this._configuration!.MaxRetries = 3;
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act
         var status = await service.GetJobStatusAsync("test-job");
@@ -774,7 +772,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var callCount = 0;
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -786,7 +784,7 @@ public class FlinkJobGatewayServiceTests
                 {
                     throw new HttpRequestException("Connection failed");
                 }
-                var resultJson = SerializeJobSubmissionResult(new JobSubmissionResult
+                var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
                     JobId = "exception-retry-test",
                     FlinkJobId = "flink-exception",
@@ -799,9 +797,9 @@ public class FlinkJobGatewayServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("exception-retry-test");
+        var validJob = this.CreateValidJobDefinition("exception-retry-test");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -819,7 +817,7 @@ public class FlinkJobGatewayServiceTests
         cts.Cancel(); // Cancel immediately
 
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -827,10 +825,10 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new TaskCanceledException("Request was canceled"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert
-        Assert.ThrowsAsync<TaskCanceledException>(async () =>
+        _ = Assert.ThrowsAsync<TaskCanceledException>(async () =>
             await service.GetJobMetricsAsync("test-job", cts.Token));
     }
 
@@ -838,11 +836,11 @@ public class FlinkJobGatewayServiceTests
     public async Task SubmitJobAsync_WithValidJsonButNullResult_ReturnsFailure()
     {
         // Arrange - Valid JSON that deserializes to null
-        var mockHandler = CreateMockHttpMessageHandler(HttpStatusCode.OK, "null");
+        var mockHandler = this.CreateMockHttpMessageHandler(HttpStatusCode.OK, "null");
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
-        var validJob = CreateValidJobDefinition("null-result-test");
+        var validJob = this.CreateValidJobDefinition("null-result-test");
 
         // Act
         var result = await service.SubmitJobAsync(validJob);
@@ -857,7 +855,7 @@ public class FlinkJobGatewayServiceTests
     {
         // Arrange
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -865,12 +863,12 @@ public class FlinkJobGatewayServiceTests
             .ThrowsAsync(new HttpRequestException("Persistent connection failure"));
 
         var httpClient = new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://localhost:8080") };
-        _configuration!.MaxRetries = 2;
-        _configuration.RetryDelay = TimeSpan.FromMilliseconds(10);
-        using var service = new FlinkJobGatewayService(_configuration, httpClient, _mockLogger?.Object);
+        this._configuration!.MaxRetries = 2;
+        this._configuration.RetryDelay = TimeSpan.FromMilliseconds(10);
+        using var service = new FlinkJobGatewayService(this._configuration, httpClient, this._mockLogger?.Object);
 
         // Act & Assert - Exception is rethrown after retries
-        Assert.ThrowsAsync<HttpRequestException>(async () =>
+        _ = Assert.ThrowsAsync<HttpRequestException>(async () =>
             await service.GetJobStatusAsync("test-job"));
     }
 
@@ -882,7 +880,7 @@ public class FlinkJobGatewayServiceTests
     public void Dispose_CalledOnce_DisposesHttpClient()
     {
         // Arrange
-        var service = new FlinkJobGatewayService(_configuration);
+        var service = new FlinkJobGatewayService(this._configuration);
 
         // Act
         service.Dispose();
@@ -895,7 +893,7 @@ public class FlinkJobGatewayServiceTests
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Arrange
-        var service = new FlinkJobGatewayService(_configuration);
+        var service = new FlinkJobGatewayService(this._configuration);
 
         // Act
         service.Dispose();
@@ -913,7 +911,7 @@ public class FlinkJobGatewayServiceTests
     private Mock<HttpMessageHandler> CreateMockHttpMessageHandler(HttpStatusCode statusCode, string responseContent)
     {
         var mockHandler = new Mock<HttpMessageHandler>();
-        mockHandler.Protected()
+        _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),

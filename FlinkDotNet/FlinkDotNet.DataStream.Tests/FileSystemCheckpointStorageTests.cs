@@ -313,7 +313,7 @@ namespace FlinkDotNet.DataStream.Tests
             var config = new CheckpointConfig();
 
             // Act
-            config.SetCheckpointStorage(storage);
+            _ = config.SetCheckpointStorage(storage);
 
             // Assert
             Assert.That(config.GetCheckpointStorage(), Is.SameAs(storage));

@@ -17,7 +17,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 BindingFlags.NonPublic | BindingFlags.Static);
 
             if (method == null)
+            {
                 throw new InvalidOperationException("Could not find TryGetJobIdFromHeaders method");
+            }
 
             return (string?) method.Invoke(null, new object[] { response });
         }
@@ -65,7 +67,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithLocationStringValue_ExtractsJobId()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("Location", "http://localhost:8081/jobs/string123");
+            _ = response.Headers.TryAddWithoutValidation("Location", "http://localhost:8081/jobs/string123");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -102,7 +104,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithXFlinkJobIDHeader_ExtractsJobId()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("X-Flink-JobID", "header-job-id-123");
+            _ = response.Headers.TryAddWithoutValidation("X-Flink-JobID", "header-job-id-123");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -113,7 +115,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithXFlinkJobIdHeader_ExtractsJobId()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("X-Flink-Job-Id", "header-job-id-456");
+            _ = response.Headers.TryAddWithoutValidation("X-Flink-Job-Id", "header-job-id-456");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -124,7 +126,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithFlinkJobIdHeader_ExtractsJobId()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("Flink-Job-Id", "flink-job-789");
+            _ = response.Headers.TryAddWithoutValidation("Flink-Job-Id", "flink-job-789");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -135,7 +137,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithFlinkJobIdHeaderCaps_ExtractsJobId()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("Flink-JobId", "flink-jobid-abc");
+            _ = response.Headers.TryAddWithoutValidation("Flink-JobId", "flink-jobid-abc");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -146,7 +148,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithHeaderHavingWhitespace_TrimsJobId()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("X-Flink-JobID", "  trimmed-id-123  ");
+            _ = response.Headers.TryAddWithoutValidation("X-Flink-JobID", "  trimmed-id-123  ");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -167,7 +169,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithEmptyLocationString_ReturnsNull()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("Location", "");
+            _ = response.Headers.TryAddWithoutValidation("Location", "");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -178,7 +180,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithWhitespaceLocationString_ReturnsEncodedValue()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("Location", "   ");
+            _ = response.Headers.TryAddWithoutValidation("Location", "   ");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -190,7 +192,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_WithEmptyHeaderValue_ReturnsNull()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("X-Flink-JobID", "");
+            _ = response.Headers.TryAddWithoutValidation("X-Flink-JobID", "");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -204,7 +206,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Headers = { Location = new Uri("http://localhost:8081/jobs/location-id") }
             };
-            response.Headers.TryAddWithoutValidation("X-Flink-JobID", "header-id");
+            _ = response.Headers.TryAddWithoutValidation("X-Flink-JobID", "header-id");
 
             var result = CallTryGetJobIdFromHeaders(response);
 
@@ -215,8 +217,8 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TryGetJobIdFromHeaders_MultipleLocationValues_UsesFirstValid()
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.TryAddWithoutValidation("Location", "http://localhost:8081/jobs");
-            response.Headers.TryAddWithoutValidation("Location", "http://localhost:8081/jobs/valid-id");
+            _ = response.Headers.TryAddWithoutValidation("Location", "http://localhost:8081/jobs");
+            _ = response.Headers.TryAddWithoutValidation("Location", "http://localhost:8081/jobs/valid-id");
 
             var result = CallTryGetJobIdFromHeaders(response);
 

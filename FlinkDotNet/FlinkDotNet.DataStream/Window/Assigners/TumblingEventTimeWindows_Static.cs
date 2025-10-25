@@ -27,10 +27,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="size">The size of the window</param>
         /// <returns>A new TumblingEventTimeWindows WindowAssigner</returns>
-        public static TumblingEventTimeWindows<T> Of<T>(Time size)
-        {
-            return TumblingEventTimeWindows<T>.Of(size);
-        }
+        public static TumblingEventTimeWindows<T> Of<T>(Time size) => TumblingEventTimeWindows<T>.Of(size);
 
         /// <summary>
         /// Creates a new TumblingEventTimeWindows WindowAssigner that assigns elements to windows of the given size with an offset.
@@ -38,9 +35,6 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="size">The size of the window</param>
         /// <param name="offset">The offset which window start would be shifted by</param>
         /// <returns>A new TumblingEventTimeWindows WindowAssigner</returns>
-        public static TumblingEventTimeWindows<T> Of<T>(Time size, Time offset)
-        {
-            return TumblingEventTimeWindows<T>.Of(size, offset);
-        }
+        public static TumblingEventTimeWindows<T> Of<T>(Time size, Time offset) => TumblingEventTimeWindows<T>.Of(size, offset);
     }
 }

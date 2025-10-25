@@ -10,10 +10,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         #region TimeCharacteristic Tests
 
@@ -120,11 +117,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetStreamTimeCharacteristic_ProcessingTime_ShouldSetCorrectly()
         {
             // Act
-            var result = _env.SetStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
+            var result = this._env.SetStreamTimeCharacteristic(TimeCharacteristic.ProcessingTime);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            var config = _env.GetConfig().GetConfiguration();
+            Assert.That(result, Is.SameAs(this._env));
+            var config = this._env.GetConfig().GetConfiguration();
             Assert.That(config.GetString("stream.time-characteristic", null), Is.EqualTo("ProcessingTime"));
         }
 
@@ -132,11 +129,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetStreamTimeCharacteristic_EventTime_ShouldSetCorrectly()
         {
             // Act
-            var result = _env.SetStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+            var result = this._env.SetStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            var config = _env.GetConfig().GetConfiguration();
+            Assert.That(result, Is.SameAs(this._env));
+            var config = this._env.GetConfig().GetConfiguration();
             Assert.That(config.GetString("stream.time-characteristic", null), Is.EqualTo("EventTime"));
         }
 
@@ -144,11 +141,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void SetStreamTimeCharacteristic_IngestionTime_ShouldSetCorrectly()
         {
             // Act
-            var result = _env.SetStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+            var result = this._env.SetStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
             // Assert
-            Assert.That(result, Is.SameAs(_env));
-            var config = _env.GetConfig().GetConfiguration();
+            Assert.That(result, Is.SameAs(this._env));
+            var config = this._env.GetConfig().GetConfiguration();
             Assert.That(config.GetString("stream.time-characteristic", null), Is.EqualTo("IngestionTime"));
         }
 
@@ -159,7 +156,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunction = new TestSourceFunction<string>();
 
             // Act
-            var stream = _env.AddSource(sourceFunction);
+            var stream = this._env.AddSource(sourceFunction);
 
             // Assert
             Assert.That(stream, Is.Not.Null);
@@ -175,7 +172,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var data = new[] { "test1", "test2", "test3" };
-            var stream = _env.FromCollection(data);
+            var stream = this._env.FromCollection(data);
             var kafkaSink = new KafkaSinkFunction<string>(
                 "test-topic",
                 "localhost:9092",
@@ -269,28 +266,16 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp)
-            {
-                return new Watermark(extractedTimestamp);
-            }
+            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp) => new Watermark(extractedTimestamp);
         }
 
         private class TestPeriodicWatermarkAssigner : IAssignerWithPeriodicWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? GetCurrentWatermark()
-            {
-                return new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
+            public Watermark? GetCurrentWatermark() => new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         }
         private class TestAsyncFunction : IAsyncFunction<string, int>
         {
@@ -324,15 +309,9 @@ namespace FlinkDotNet.DataStream.Tests
                 get; private set;
             }
 
-            public void Complete(System.Collections.Generic.IEnumerable<T> results)
-            {
-                Results.AddRange(results);
-            }
+            public void Complete(System.Collections.Generic.IEnumerable<T> results) => this.Results.AddRange(results);
 
-            public void CompleteExceptionally(Exception exception)
-            {
-                Exception = exception;
-            }
+            public void CompleteExceptionally(Exception exception) => this.Exception = exception;
         }
 
         #endregion
