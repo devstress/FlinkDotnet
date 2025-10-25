@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <!-- FlinkDotNet Infrastructure -->
+    <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
     
     <!-- Kafka Producer/Consumer - Use version compatible with FlinkDotNet.DataStream -->

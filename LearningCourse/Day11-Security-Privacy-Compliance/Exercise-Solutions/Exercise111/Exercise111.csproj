@@ -19,7 +19,7 @@
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     <PackageReference Include="Serilog" Version="4.2.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
     
     <!-- JWT Authentication Packages -->
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
