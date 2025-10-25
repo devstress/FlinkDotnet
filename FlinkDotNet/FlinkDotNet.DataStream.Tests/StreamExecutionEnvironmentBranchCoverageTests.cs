@@ -1,5 +1,5 @@
-using NUnit.Framework;
 using System;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -95,12 +95,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object?[] { null });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("(not available in error message)"));
         }
@@ -111,12 +111,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object[] { string.Empty });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("(not available in error message)"));
         }
@@ -127,12 +127,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object[] { "Error occurred but no URL" });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("(not available in error message)"));
         }
@@ -143,12 +143,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object[] { "Connection failed at http://localhost:8081" });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("http://localhost:8081"));
         }
@@ -159,12 +159,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object[] { "Error at https://flink.example.com:9443/jobs" });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("https://flink.example.com:9443/jobs"));
         }
@@ -175,12 +175,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act - URL at end of message without trailing space
             var result = method!.Invoke(null, new object[] { "Failed to connect at http://localhost:8081/jobs/abc123" });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("http://localhost:8081/jobs/abc123"));
         }
@@ -191,12 +191,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object[] { "Error at http://localhost:8081' in request" });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("http://localhost:8081"));
         }
@@ -207,12 +207,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to test private static method
             var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
+
             Assert.That(method, Is.Not.Null);
-            
+
             // Act
             var result = method!.Invoke(null, new object[] { "Failed at http://localhost:8081\nNext line" });
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("http://localhost:8081"));
         }
@@ -227,10 +227,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var emptyCollection = new string[] { };
-            
+
             // Act
             var stream = env.FromCollection(emptyCollection);
-            
+
             // Assert
             Assert.That(stream, Is.Not.Null);
         }
@@ -243,10 +243,10 @@ namespace FlinkDotNet.DataStream.Tests
             var largeCollection = new int[1000];
             for (int i = 0; i < largeCollection.Length; i++)
                 largeCollection[i] = i;
-            
+
             // Act
             var stream = env.FromCollection(largeCollection);
-            
+
             // Assert
             Assert.That(stream, Is.Not.Null);
         }

@@ -1,3 +1,4 @@
+using System.Text;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.JobGateway.Controllers;
 using FlinkDotNet.JobGateway.Services;
@@ -5,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Text;
 
 namespace FlinkDotNet.JobGateway.Tests
 {
@@ -35,7 +35,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange - Create invalid JSON longer than 400 characters
             var longInvalidJson = "{\"invalid\": " + new string('x', 500) + "}";
-            
+
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(longInvalidJson));
             _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -45,7 +45,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            
+
             // Verify the logger was called with truncated message (Line 123 branch: raw[..400])
             _mockLogger.Verify(
                 x => x.Log(
@@ -62,7 +62,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange - Create invalid JSON shorter than 400 characters
             var shortInvalidJson = "{\"invalid json without closing brace\"";
-            
+
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(shortInvalidJson));
             _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -72,7 +72,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
-            
+
             // Verify the logger was called (Line 123 branch: raw)
             _mockLogger.Verify(
                 x => x.Log(
@@ -125,7 +125,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            
+
             // Verify metadata was created (Line 142 branch: ??= new JobMetadata())
             _mockJobManager.Verify(
                 x => x.SubmitJobAsync(It.Is<JobDefinition>(j => j.Metadata != null)),
@@ -172,11 +172,11 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
-            
+
             // Verify metadata was preserved (Line 142 branch: metadata already exists, no new creation)
             _mockJobManager.Verify(
-                x => x.SubmitJobAsync(It.Is<JobDefinition>(j => 
-                    j.Metadata != null && 
+                x => x.SubmitJobAsync(It.Is<JobDefinition>(j =>
+                    j.Metadata != null &&
                     j.Metadata.JobId == "custom-job-id")),
                 Times.Once);
         }

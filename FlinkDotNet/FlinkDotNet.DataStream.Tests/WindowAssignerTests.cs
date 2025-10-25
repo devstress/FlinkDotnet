@@ -111,7 +111,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = windowAssigner.AssignWindows("test", timestamp).ToList();
 
             Assert.That(windows.Count, Is.GreaterThanOrEqualTo(3));
-            
+
             foreach (var window in windows)
             {
                 Assert.That(window.Start, Is.LessThanOrEqualTo(timestamp));
@@ -421,7 +421,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = StreamExecutionEnvironment.GetExecutionEnvironment().FromCollection(collection);
             var keyed = stream.KeyBy(x => x[0]);
             var windowed = keyed.Window(TumblingEventTimeWindows<string>.Of(Time.Seconds(5)));
-            
+
             var result = windowed.Aggregate(new TestWindowAggregateFunction());
 
             Assert.That(result, Is.Not.Null);
@@ -446,7 +446,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = StreamExecutionEnvironment.GetExecutionEnvironment().FromCollection(collection);
             var keyed = stream.KeyBy(x => x % 2);
             var windowed = keyed.Window(TumblingEventTimeWindows<int>.Of(Time.Seconds(5)));
-            
+
             var result = windowed.Reduce(new TestReduceFunction());
 
             Assert.That(result, Is.Not.Null);
@@ -461,7 +461,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowed = keyed.Window(TumblingEventTimeWindows<int>.Of(Time.Seconds(5)));
 
             Assert.Throws<System.ArgumentNullException>(() =>
-                windowed.Reduce((IReduceFunction<int>)null!));
+                windowed.Reduce((IReduceFunction<int>) null!));
         }
 
         [Test]
@@ -471,7 +471,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = StreamExecutionEnvironment.GetExecutionEnvironment().FromCollection(collection);
             var keyed = stream.KeyBy(x => x % 2);
             var windowed = keyed.Window(TumblingEventTimeWindows<int>.Of(Time.Seconds(5)));
-            
+
             var result = windowed.Reduce((a, b) => a + b);
 
             Assert.That(result, Is.Not.Null);
@@ -486,7 +486,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowed = keyed.Window(TumblingEventTimeWindows<int>.Of(Time.Seconds(5)));
 
             Assert.Throws<System.ArgumentNullException>(() =>
-                windowed.Reduce((System.Func<int, int, int>)null!));
+                windowed.Reduce((System.Func<int, int, int>) null!));
         }
 
         [Test]

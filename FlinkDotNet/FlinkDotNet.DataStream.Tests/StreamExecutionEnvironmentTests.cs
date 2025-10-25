@@ -1,12 +1,12 @@
-using NUnit.Framework;
-using FlinkDotNet.Common;
-using FlinkDotNet.DataStream.State;
-using FlinkDotNet.DataStream.Checkpoint;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using FlinkDotNet.Common;
+using FlinkDotNet.DataStream.Checkpoint;
+using FlinkDotNet.DataStream.State;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -577,7 +577,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => 
+            var ex = Assert.Throws<ArgumentException>(() =>
                 env.FromKafka("test-topic", null, "test-group"));
             Assert.That(ex.ParamName, Is.EqualTo("bootstrapServers"));
         }
@@ -589,7 +589,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => 
+            var ex = Assert.Throws<ArgumentException>(() =>
                 env.FromKafka("test-topic", "", "test-group"));
             Assert.That(ex.ParamName, Is.EqualTo("bootstrapServers"));
         }
@@ -601,7 +601,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => 
+            var ex = Assert.Throws<ArgumentException>(() =>
                 env.FromKafka("test-topic", "   ", "test-group"));
             Assert.That(ex.ParamName, Is.EqualTo("bootstrapServers"));
         }
@@ -747,7 +747,7 @@ namespace FlinkDotNet.DataStream.Tests
                 {
                     if (cancellationToken.IsCancellationRequested)
                         yield break;
-                    
+
                     yield return i;
                     await Task.Delay(10, cancellationToken);
                 }

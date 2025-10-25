@@ -348,7 +348,7 @@ public class ConfigurationBranchCoverageTests
         // Arrange
         var config1 = new Configuration();
         config1.SetString("key1", "value1");
-        
+
         var emptyConfig = new Configuration();
 
         // Act
@@ -365,7 +365,7 @@ public class ConfigurationBranchCoverageTests
         // Arrange
         var config1 = new Configuration();
         config1.SetString("key1", "value1");
-        
+
         var config2 = new Configuration();
         config2.SetString("key2", "value2");
 

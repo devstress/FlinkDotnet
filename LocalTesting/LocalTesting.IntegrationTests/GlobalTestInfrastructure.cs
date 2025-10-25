@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using LocalTesting.FlinkSqlAppHost;
 using Microsoft.Extensions.Configuration;
@@ -20,11 +19,26 @@ public class GlobalTestInfrastructure
 
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
 
-    public static DistributedApplication? AppHost { get; private set; }
-    public static string? KafkaConnectionString { get; private set; }
-    public static string? KafkaConnectionStringFromConfig { get; private set; }
-    public static string? KafkaContainerIpForFlink { get; private set; } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
-    public static string? TemporalEndpoint { get; private set; } // Discovered Temporal endpoint with dynamic port
+    public static DistributedApplication? AppHost
+    {
+        get; private set;
+    }
+    public static string? KafkaConnectionString
+    {
+        get; private set;
+    }
+    public static string? KafkaConnectionStringFromConfig
+    {
+        get; private set;
+    }
+    public static string? KafkaContainerIpForFlink
+    {
+        get; private set;
+    } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
+    public static string? TemporalEndpoint
+    {
+        get; private set;
+    } // Discovered Temporal endpoint with dynamic port
 
     [OneTimeSetUp]
     public async Task GlobalSetUp()
@@ -41,10 +55,10 @@ public class GlobalTestInfrastructure
         {
             // Clean up test-logs directory from previous test runs
             CleanupTestLogsDirectory();
-            
+
             // Capture initial network state before infrastructure starts
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("0-before-setup");
-            
+
             // Configure JAR path for Gateway
             ConfigureGatewayJarPath();
 
@@ -66,18 +80,18 @@ public class GlobalTestInfrastructure
             // Aspire creates containers asynchronously - use smart polling instead of fixed delays
             Console.WriteLine("⏳ Waiting for Docker/Podman containers to be created and ports to be mapped...");
             Console.WriteLine("🔍 Using optimized polling (check every 2s, max 20s)...");
-            
+
             bool containersDetected = false;
             for (int attempt = 1; attempt <= 10; attempt++) // 10 attempts × 3s = 30s max
             {
                 await Task.Delay(TimeSpan.FromSeconds(3));
-                
+
                 var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
                 {
                     Console.WriteLine($"✅ Kafka container detected after {attempt * 3}s");
                     containersDetected = true;
-                    
+
                     // Show all containers for diagnostics
                     var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                     Console.WriteLine($"🐳 All containers:\n{allContainers}");
@@ -85,14 +99,14 @@ public class GlobalTestInfrastructure
                 }
                 Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 3}s elapsed)");
             }
-            
+
             if (!containersDetected)
             {
                 Console.WriteLine("⚠️ Containers not detected within 30s, proceeding anyway...");
                 var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                 Console.WriteLine($"🐳 Current containers:\n{allContainers}");
             }
-            
+
             // Capture network state after containers are detected
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("1-after-container-detection");
 
@@ -101,7 +115,7 @@ public class GlobalTestInfrastructure
             Console.WriteLine("🔧 Discovering Kafka container IP for Flink jobs...");
             var kafkaContainerIp = await GetKafkaContainerIpAsync();
             Console.WriteLine($"✅ Kafka container IP: {kafkaContainerIp}");
-            
+
             // Store for use in tests (replaces hostname-based connection)
             KafkaContainerIpForFlink = kafkaContainerIp;
 
@@ -110,15 +124,15 @@ public class GlobalTestInfrastructure
             Console.WriteLine("🔍 Getting Kafka connection string from Aspire configuration...");
             KafkaConnectionStringFromConfig = app.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()
                 .GetConnectionString("kafka");
-            
+
             // Also discover from Docker for comparison/debugging
             var discoveredKafkaEndpoint = await GetKafkaEndpointAsync();
-            
+
             // Use config value as primary, fallback to discovered if not available
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
-            
+
             Console.WriteLine($"✅ Kafka connection strings:");
             Console.WriteLine($"   📡 From Aspire config: {KafkaConnectionStringFromConfig ?? "(not set)"}");
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
@@ -138,12 +152,12 @@ public class GlobalTestInfrastructure
 
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
-            
+
             // Set environment variable for FlinkJobGatewayConfiguration to use discovered endpoint
             // Note: Keep trailing slash for proper URL combination in HttpClient
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
             Console.WriteLine($"✅ FLINK_JOB_GATEWAY_URL set to: {gatewayEndpoint}");
-            
+
             await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway is ready");
 
@@ -151,14 +165,14 @@ public class GlobalTestInfrastructure
             Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
             await RetryHealthCheckAsync("temporal-server", app, 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Temporal server resource reported healthy");
-            
+
             // Then wait for Temporal to be fully initialized
             Console.WriteLine("⏳ Waiting for Temporal server to be fully ready...");
             Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
-            
+
             // Give Temporal time to complete schema setup
             await Task.Delay(TimeSpan.FromSeconds(5)); // Optimized: Reduced from 10s to 5s
-            
+
             // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
             TemporalEndpoint = await GetTemporalEndpointAsync();
             Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
@@ -167,17 +181,17 @@ public class GlobalTestInfrastructure
 
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();
-            
+
             // Capture final network state after all infrastructure is ready
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("2-infrastructure-ready");
-            
+
             Console.WriteLine($"🌍 ========================================");
             Console.WriteLine($"🌍 GLOBAL INFRASTRUCTURE READY in {sw.Elapsed.TotalSeconds:F1}s");
             Console.WriteLine($"🌍 ========================================");
             Console.WriteLine($"🌍 Kafka connection string: {KafkaConnectionString}");
             Console.WriteLine($"🌍 Infrastructure will remain active for all tests");
             Console.WriteLine($"🌍 Tests can now run in parallel with shared infrastructure");
-            
+
             // Clean up old network diagnostic logs
             NetworkDiagnostics.CleanupOldLogs();
         }
@@ -185,13 +199,13 @@ public class GlobalTestInfrastructure
         {
             Console.WriteLine($"❌ Global infrastructure setup failed: {ex.Message}");
             Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
-            
+
             // Capture network diagnostics on failure
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("error-setup-failed");
-            
+
             // Capture container diagnostics and include in exception
             var diagnostics = await GetContainerDiagnosticsAsync();
-            
+
             throw new InvalidOperationException(
                 $"Global infrastructure setup failed: {ex.Message}\n\n" +
                 $"Container Diagnostics:\n{diagnostics}",
@@ -217,7 +231,7 @@ public class GlobalTestInfrastructure
             {
                 // Aggressive cleanup with minimal timeout
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-                
+
                 try
                 {
                     await AppHost.StopAsync(cts.Token);
@@ -245,16 +259,16 @@ public class GlobalTestInfrastructure
         try
         {
             Console.WriteLine("🧹 Cleaning up test-logs directory...");
-            
+
             var repoRoot = FindRepositoryRoot(Environment.CurrentDirectory);
             if (repoRoot == null)
             {
                 Console.WriteLine("⚠️ Cannot find repository root, skipping test-logs cleanup");
                 return;
             }
-            
+
             var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
-            
+
             if (Directory.Exists(testLogsDir))
             {
                 try
@@ -274,7 +288,7 @@ public class GlobalTestInfrastructure
                     // Continue anyway
                 }
             }
-            
+
             // Recreate the directory for this test run
             Directory.CreateDirectory(testLogsDir);
             Console.WriteLine($"✅ Created fresh test-logs directory: {testLogsDir}");
@@ -297,22 +311,22 @@ public class GlobalTestInfrastructure
         {
             Console.WriteLine("📋 Capturing Flink container logs before teardown...");
             Console.WriteLine("   ℹ️ Only capturing JobManager and TaskManager logs for performance");
-            
+
             var repoRoot = FindRepositoryRoot(Environment.CurrentDirectory);
             if (repoRoot == null)
             {
                 Console.WriteLine("⚠️ Cannot find repository root, skipping log capture");
                 return;
             }
-            
+
             var testLogsDir = Path.Combine(repoRoot, "LocalTesting", "test-logs");
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            
+
             // PERFORMANCE OPTIMIZATION: Only capture logs from Flink JobManager and TaskManager
             // Skip Kafka, Temporal, Redis, Gateway, and other containers to reduce teardown time
             await CaptureContainerLogAsync("flink-taskmanager", Path.Combine(testLogsDir, $"Flink.TaskManager.container.log.{timestamp}"));
             await CaptureContainerLogAsync("flink-jobmanager", Path.Combine(testLogsDir, $"Flink.JobManager.container.log.{timestamp}"));
-            
+
             Console.WriteLine("✅ Flink container logs captured");
         }
         catch (Exception ex)
@@ -320,7 +334,7 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"⚠️ Error capturing container logs: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Capture logs from a specific container with optimized log checking.
     /// Skips containers that have no log output to improve performance.
@@ -336,38 +350,38 @@ public class GlobalTestInfrastructure
                 .Select(c => c.Trim())
                 .Where(c => !string.IsNullOrEmpty(c))
                 .ToList();
-            
+
             if (containers.Count == 0)
             {
                 Console.WriteLine($"⏭️ Skipping: No container matching '{containerNameFilter}' found");
                 return;
             }
-            
+
             // Take the first matching container
             var containerName = containers[0];
             Console.WriteLine($"🔍 Processing container: {containerName}");
-            
+
             // PERFORMANCE OPTIMIZATION: Check if container has logs before attempting to read them
             // Use --tail 1 to quickly check if there's any output
             var logCheck = await RunDockerCommandAsync($"logs {containerName} --tail 1 2>&1");
-            
+
             // Check if logs contain error about container not found
             if (logCheck.Contains("no container with name or ID", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine($"⏭️ Skipping: Container {containerName} was already removed");
                 return;
             }
-            
+
             // If log check is empty, skip full log capture
             if (string.IsNullOrWhiteSpace(logCheck))
             {
                 Console.WriteLine($"⏭️ Skipping: Container {containerName} has no log output");
                 return;
             }
-            
+
             // Container has logs, proceed with full capture
             var logs = await RunDockerCommandAsync($"logs {containerName} 2>&1");
-            
+
             if (!string.IsNullOrWhiteSpace(logs))
             {
                 await File.WriteAllTextAsync(outputPath, logs);
@@ -478,26 +492,26 @@ public class GlobalTestInfrastructure
             Console.WriteLine("\n╔══════════════════════════════════════════════════════════════");
             Console.WriteLine("║ 🔍 [TaskManager] Checking TaskManager Status");
             Console.WriteLine("╚══════════════════════════════════════════════════════════════");
-            
+
             // Find TaskManager container (using name filter which matches containers containing the name)
             var containerName = await RunDockerCommandAsync("ps --filter name=flink-taskmanager --format \"{{.Names}}\" | head -1");
             containerName = containerName.Trim();
-            
+
             if (string.IsNullOrEmpty(containerName))
             {
                 Console.WriteLine("❌ No TaskManager container found");
                 return;
             }
-            
+
             Console.WriteLine($"📦 TaskManager container: {containerName}");
-            
+
             // Get container status
             var status = await RunDockerCommandAsync($"ps --filter \"name={containerName}\" --format \"{{{{.Status}}}}\"");
             Console.WriteLine($"📊 Container status: {status.Trim()}");
-            
+
             // Get last 100 lines of TaskManager logs
             var logs = await RunDockerCommandAsync($"logs {containerName} --tail 100");
-            
+
             if (!string.IsNullOrWhiteSpace(logs))
             {
                 Console.WriteLine("\n📋 TaskManager Recent Logs (last 100 lines):");
@@ -575,7 +589,7 @@ public class GlobalTestInfrastructure
         {
             var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"");
             var lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
+
             foreach (var line in lines)
             {
                 if (line.Contains("->8081/tcp"))
@@ -631,7 +645,7 @@ public class GlobalTestInfrastructure
         {
             var temporalContainers = await RunDockerCommandAsync("ps --filter \"name=temporal-server\" --format \"{{.Ports}}\"");
             var lines = temporalContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
+
             foreach (var line in lines)
             {
                 // Look for port mapping to 7233 (Temporal gRPC port)
@@ -664,7 +678,7 @@ public class GlobalTestInfrastructure
         {
             var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
             Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
-            
+
             return ExtractKafkaEndpointFromPorts(kafkaContainers);
         }
         catch (Exception ex)
@@ -703,7 +717,7 @@ public class GlobalTestInfrastructure
         {
             var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka-\" --format \"{{.Names}}\"");
             var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            
+
             if (string.IsNullOrWhiteSpace(kafkaContainer))
             {
                 throw new InvalidOperationException("Kafka container not found");
@@ -712,7 +726,7 @@ public class GlobalTestInfrastructure
             // Try Docker bridge network first
             var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
             var ip = ipAddress.Trim();
-            
+
             // If bridge network doesn't have IP, try podman network (for Podman runtime)
             if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
@@ -720,7 +734,7 @@ public class GlobalTestInfrastructure
                 ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.podman.IPAddress}}}}\"");
                 ip = ipAddress.Trim();
             }
-            
+
             if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
                 // Fallback: Get the first available network IP
@@ -728,14 +742,14 @@ public class GlobalTestInfrastructure
                 ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}\"");
                 ip = ipAddress.Trim();
             }
-            
+
             if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
             {
                 throw new InvalidOperationException($"Could not determine Kafka container IP from any network. Container: {kafkaContainer}");
             }
 
             Console.WriteLine($"✅ Kafka container IP discovered: {ip}");
-            
+
             // Return IP with PLAINTEXT_INTERNAL port (9093)
             return $"{ip}:9093";
         }
@@ -756,7 +770,7 @@ public class GlobalTestInfrastructure
             diagnostics.AppendLine("\n╔══════════════════════════════════════════════════════════════");
             diagnostics.AppendLine("║ 🔍 [Diagnostics] Container Status at Test Failure");
             diagnostics.AppendLine("╚══════════════════════════════════════════════════════════════");
-            
+
             // Try Docker first
             var dockerContainers = await TryRunContainerCommandAsync("docker", "ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
             if (!string.IsNullOrWhiteSpace(dockerContainers))
@@ -765,15 +779,15 @@ public class GlobalTestInfrastructure
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
                 diagnostics.AppendLine(dockerContainers);
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
-                
+
                 // Add TaskManager logs for debugging
                 await AppendTaskManagerLogsAsync(diagnostics);
-                
+
                 // Also write to console for immediate visibility
                 Console.WriteLine(diagnostics.ToString());
                 return diagnostics.ToString();
             }
-            
+
             // Try Podman if Docker didn't work
             var podmanContainers = await TryRunContainerCommandAsync("podman", "ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
             if (!string.IsNullOrWhiteSpace(podmanContainers))
@@ -782,18 +796,18 @@ public class GlobalTestInfrastructure
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
                 diagnostics.AppendLine(podmanContainers);
                 diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
-                
+
                 // Add TaskManager logs for debugging
                 await AppendTaskManagerLogsAsync(diagnostics);
-                
+
                 // Also write to console for immediate visibility
                 Console.WriteLine(diagnostics.ToString());
                 return diagnostics.ToString();
             }
-            
+
             diagnostics.AppendLine("⚠️ No container runtime (Docker/Podman) responded to 'ps -a' command");
             diagnostics.AppendLine("   This suggests the container runtime may not be running or accessible");
-            
+
             // Also write to console for immediate visibility
             Console.WriteLine(diagnostics.ToString());
             return diagnostics.ToString();
@@ -805,7 +819,7 @@ public class GlobalTestInfrastructure
             return errorMsg;
         }
     }
-    
+
     /// <summary>
     /// Append TaskManager logs to diagnostics output
     /// </summary>
@@ -815,16 +829,16 @@ public class GlobalTestInfrastructure
         {
             var containerName = await RunDockerCommandAsync("ps --filter \"name=flink-taskmanager\" --format \"{{.Names}}\" | head -1");
             containerName = containerName.Trim();
-            
+
             if (string.IsNullOrEmpty(containerName))
             {
                 diagnostics.AppendLine("\n⚠️ No TaskManager container found for log capture");
                 return;
             }
-            
+
             diagnostics.AppendLine($"\n📋 TaskManager ({containerName}) Recent Logs (last 20 lines):");
             diagnostics.AppendLine("─────────────────────────────────────────────────────────────");
-            
+
             var logs = await RunDockerCommandAsync($"logs {containerName} --tail 20 2>&1");
             if (!string.IsNullOrWhiteSpace(logs))
             {
@@ -848,18 +862,18 @@ public class GlobalTestInfrastructure
     private static async Task RetryHealthCheckAsync(string resourceName, DistributedApplication app, int maxRetries, TimeSpan delayBetweenRetries)
     {
         Exception? lastException = null;
-        
+
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
             {
                 Console.WriteLine($"🔄 Health check attempt {attempt}/{maxRetries} for '{resourceName}'...");
-                
+
                 // Wait for resource to be healthy (with a reasonable timeout per attempt)
                 await app.ResourceNotifications
                     .WaitForResourceHealthyAsync(resourceName)
                     .WaitAsync(TimeSpan.FromSeconds(30));
-                
+
                 Console.WriteLine($"✅ '{resourceName}' became healthy on attempt {attempt}");
                 return; // Success!
             }
@@ -867,7 +881,7 @@ public class GlobalTestInfrastructure
             {
                 lastException = ex;
                 Console.WriteLine($"⚠️ Attempt {attempt}/{maxRetries} failed for '{resourceName}': {ex.Message}");
-                
+
                 if (attempt < maxRetries)
                 {
                     Console.WriteLine($"⏳ Waiting {delayBetweenRetries.TotalSeconds}s before retry...");
@@ -875,7 +889,7 @@ public class GlobalTestInfrastructure
                 }
             }
         }
-        
+
         // All retries failed
         throw new InvalidOperationException(
             $"Resource '{resourceName}' failed to become healthy after {maxRetries} attempts. " +
@@ -889,7 +903,7 @@ public class GlobalTestInfrastructure
     private static async Task RetryWaitForReadyAsync(string serviceName, Func<Task> readyCheckFunc, int maxRetries, TimeSpan delayBetweenRetries)
     {
         Exception? lastException = null;
-        
+
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
@@ -903,7 +917,7 @@ public class GlobalTestInfrastructure
             {
                 lastException = ex;
                 Console.WriteLine($"⚠️ Attempt {attempt}/{maxRetries} failed for '{serviceName}': {ex.Message}");
-                
+
                 if (attempt < maxRetries)
                 {
                     Console.WriteLine($"⏳ Waiting {delayBetweenRetries.TotalSeconds}s before retry...");
@@ -911,7 +925,7 @@ public class GlobalTestInfrastructure
                 }
             }
         }
-        
+
         // All retries failed
         throw new InvalidOperationException(
             $"Service '{serviceName}' failed to become ready after {maxRetries} attempts. " +

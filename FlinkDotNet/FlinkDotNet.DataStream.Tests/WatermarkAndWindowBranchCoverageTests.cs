@@ -1,7 +1,7 @@
-using NUnit.Framework;
+using System;
 using FlinkDotNet.DataStream;
 using FlinkDotNet.DataStream.Watermarks;
-using System;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests;
 

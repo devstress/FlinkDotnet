@@ -8,13 +8,13 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            
+
             // Act & Assert - No Kafka source or operation capture
             var ex = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
                 await env.ExecuteAsync("test-job");
             });
-            
+
             NUnit.Framework.Assert.That(ex.Message, NUnit.Framework.Does.Contain("No Flink-compatible job is defined"));
         }
 
@@ -24,9 +24,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Note: This will fail validation because there's no sink defined
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -40,7 +40,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Act & Assert - Should use default name "Flink Streaming Job"
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -70,7 +70,7 @@ namespace FlinkDotNet.DataStream.Tests
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
             using var cts = new System.Threading.CancellationTokenSource();
             cts.Cancel(); // Cancel immediately
-            
+
             // Act & Assert - Cancellation happens before HTTP call in validation
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -85,7 +85,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
             stream.Map(x => x.ToUpper());
-            
+
             // Act & Assert - Should translate operations before submission
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -98,7 +98,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            
+
             // Create a job definition directly without operation capture
             var jobDef = new Flink.JobBuilder.Models.JobDefinition
             {
@@ -117,12 +117,12 @@ namespace FlinkDotNet.DataStream.Tests
                     Version = "1.0"
                 }
             };
-            
+
             // Use reflection to set the active job without operation capture
             var activeJobField = typeof(StreamExecutionEnvironment).GetField("_activeJob",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             activeJobField?.SetValue(env, jobDef);
-            
+
             // Act & Assert - Should use active job definition
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -136,7 +136,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -151,7 +151,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
             var longName = new string('a', 1000);
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -166,7 +166,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             _ = env.FromKafka("test-topic", "localhost:9092", "test-group");
             var specialName = "test-job-!@#$%^&*()";
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -182,7 +182,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
             stream.Map(x => x.ToUpper())
                   .Filter(x => x.Length > 0);
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -199,7 +199,7 @@ namespace FlinkDotNet.DataStream.Tests
             stream.Map(x => x.ToUpper())
                   .Filter(x => x.Length > 5)
                   .Map(x => x.ToLower());
-            
+
             // Act & Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {

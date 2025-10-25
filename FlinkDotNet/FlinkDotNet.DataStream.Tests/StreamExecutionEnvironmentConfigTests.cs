@@ -1,9 +1,9 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream.State;
-using FlinkDotNet.Common;
 using System;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using FlinkDotNet.Common;
+using FlinkDotNet.DataStream.State;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -17,7 +17,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-            
+
             _env = StreamExecutionEnvironment.GetExecutionEnvironment();
         }
 
@@ -416,7 +416,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _env.ExecuteAsyncJob("test-job"));
-            
+
             Assert.That(ex!.Message, Does.Contain("No Flink-compatible job is defined"));
         }
 
@@ -488,7 +488,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() =>
                 _env.FromKafka("test-topic", null));
-            
+
             Assert.That(ex!.Message, Does.Contain("bootstrap servers"));
         }
 
@@ -498,7 +498,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() =>
                 _env.FromKafka("test-topic", ""));
-            
+
             Assert.That(ex!.Message, Does.Contain("bootstrap servers"));
         }
 
@@ -508,7 +508,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<ArgumentException>(() =>
                 _env.FromKafka("test-topic", "   "));
-            
+
             Assert.That(ex!.Message, Does.Contain("bootstrap servers"));
         }
 

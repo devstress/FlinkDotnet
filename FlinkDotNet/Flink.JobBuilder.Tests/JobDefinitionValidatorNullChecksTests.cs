@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
 

@@ -31,7 +31,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<System.ArgumentException>(() =>
                 env.FromKafka("test-topic", null, "test-group"));
-            
+
             Assert.That(ex!.ParamName, Is.EqualTo("bootstrapServers"));
             Assert.That(ex.Message, Does.Contain("Kafka bootstrap servers must be provided"));
         }
@@ -45,7 +45,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<System.ArgumentException>(() =>
                 env.FromKafka("test-topic", "", "test-group"));
-            
+
             Assert.That(ex!.ParamName, Is.EqualTo("bootstrapServers"));
         }
 
@@ -58,7 +58,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.Throws<System.ArgumentException>(() =>
                 env.FromKafka("test-topic", "   ", "test-group"));
-            
+
             Assert.That(ex!.ParamName, Is.EqualTo("bootstrapServers"));
         }
 
@@ -159,7 +159,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act & Assert
             var ex = Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
                 await env.ExecuteAsyncJob("test-job"));
-            
+
             Assert.That(ex!.Message, Does.Contain("No Flink-compatible job is defined"));
         }
 

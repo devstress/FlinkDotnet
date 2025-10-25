@@ -1,5 +1,5 @@
-using NUnit.Framework;
 using System;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -230,7 +230,10 @@ namespace FlinkDotNet.DataStream.Tests
         private class TestMessage
         {
             public string Data { get; set; } = string.Empty;
-            public long Timestamp { get; set; }
+            public long Timestamp
+            {
+                get; set;
+            }
         }
 
         private class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<TestMessage>

@@ -19,7 +19,7 @@ public class FlinkJobGatewayServiceTests
     {
         // Set environment variable required by FlinkJobGatewayConfiguration
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        
+
         _mockLogger = new Mock<ILogger>();
         _configuration = new FlinkJobGatewayConfiguration
         {
@@ -87,7 +87,7 @@ public class FlinkJobGatewayServiceTests
     public async Task Constructor_WithApiKey_UsesApiKeyInRequests()
     {
         // Arrange
-        var capturedRequest = (HttpRequestMessage?)null;
+        var capturedRequest = (HttpRequestMessage?) null;
         var mockHandler = new Mock<HttpMessageHandler>();
         mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(

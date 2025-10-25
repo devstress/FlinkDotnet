@@ -25,17 +25,17 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             var customFunction = new CustomMapFunction();
-            
+
             // Act
             stream.Map(customFunction);
-            
+
             // Get the captured operations using reflection
             var operationCaptureField = typeof(DataStream<string>).GetField("_operationCapture",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var operationCapture = operationCaptureField?.GetValue(stream);
-            
+
             // Assert - Operation should be captured even for unknown function types
             NUnit.Framework.Assert.That(operationCapture, NUnit.Framework.Is.Not.Null);
         }
@@ -46,9 +46,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             var unknownFunction = new UnknownMapFunction();
-            
+
             // Act - Map with unknown function should not throw
             NUnit.Framework.Assert.DoesNotThrow(() =>
             {
@@ -64,7 +64,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
             var customFunction = new CustomMapFunction();
             stream.Map(customFunction);
-            
+
             // Act - ExecuteAsync should translate unknown function and fail validation
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -78,16 +78,16 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Act - Get operation capture to test directly
             var operationCaptureField = typeof(DataStream<string>).GetField("_operationCapture",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var operationCapture = operationCaptureField?.GetValue(stream);
-            
+
             // Get CaptureMapOperation method
             var captureMethod = operationCapture?.GetType().GetMethod("CaptureMapOperation",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            
+
             // Act - Should not throw with null function
             NUnit.Framework.Assert.DoesNotThrow(() =>
             {
@@ -102,10 +102,10 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
             var filterFunction = new CustomFilterFunction();
-            
+
             // Act
             stream.Filter(filterFunction);
-            
+
             // Assert - Should translate custom filter and fail validation
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -119,13 +119,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             var function1 = new CustomMapFunction();
             var function2 = new UnknownMapFunction();
-            
+
             // Act - Chain multiple unknown functions
             stream.Map(function1).Map(function2);
-            
+
             // Assert
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -140,20 +140,20 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
             var customFunction = new CustomMapFunction();
-            
+
             // Act
             stream.Map(customFunction);
-            
+
             // Get operation capture
             var operationCaptureField = typeof(DataStream<string>).GetField("_operationCapture",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var operationCapture = operationCaptureField?.GetValue(stream);
-            
+
             // Get operations list
             var operationsField = operationCapture?.GetType().GetField("_operations",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var operations = operationsField?.GetValue(operationCapture) as System.Collections.IList;
-            
+
             // Assert - Should have captured the operation
             NUnit.Framework.Assert.That(operations, NUnit.Framework.Is.Not.Null);
             NUnit.Framework.Assert.That(operations.Count, NUnit.Framework.Is.GreaterThan(0));
@@ -165,13 +165,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Create a function with "Upper" in the name
             var upperFunction = new UpperCaseMapFunction();
-            
+
             // Act
             stream.Map(upperFunction);
-            
+
             // Assert - Should recognize Upper in name and map to "upper" expression
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -185,13 +185,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Create a function with "Lower" in the name
             var lowerFunction = new LowerCaseMapFunction();
-            
+
             // Act
             stream.Map(lowerFunction);
-            
+
             // Assert - Should recognize Lower in name and map to "lower" expression
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {
@@ -205,13 +205,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
-            
+
             // Create a function with "Capitalizer" in the name
             var capFunction = new WordsCapitalizerFunction();
-            
+
             // Act
             stream.Map(capFunction);
-            
+
             // Assert - Should recognize Capitalizer in name and map to "upper" expression
             NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
             {

@@ -1,11 +1,9 @@
 using System.Diagnostics;
-using LocalTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 using Temporalio.Activities;
 using Temporalio.Client;
 using Temporalio.Worker;
 using Temporalio.Workflows;
-using Temporalio.Exceptions;
 
 namespace LocalTesting.IntegrationTests;
 
@@ -29,7 +27,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
     public async Task Temporal_BizTalkStyleOrchestration_ComplexOrderProcessing()
     {
         TestPrerequisites.EnsureDockerAvailable();
-        
+
         var baseToken = TestContext.CurrentContext.CancellationToken;
         using var testTimeout = new CancellationTokenSource(TestTimeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
@@ -51,7 +49,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
         TestContext.WriteLine($"✅ Temporal Endpoint: {TemporalEndpoint}");
         TestContext.WriteLine($"✅ Infrastructure:    All services ready from global setup");
         TestContext.WriteLine("");
-        
+
         var stopwatch = Stopwatch.StartNew();
 
         try
@@ -62,11 +60,11 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 throw new InvalidOperationException(
                     "Temporal endpoint not available. Ensure GlobalTestInfrastructure completed successfully.");
             }
-            
+
             // The GlobalTestInfrastructure already started Temporal and discovered the dynamic endpoint
             TestContext.WriteLine($"🔍 Using discovered Temporal endpoint: {TemporalEndpoint}");
             TestContext.WriteLine($"✅ Temporal infrastructure verified and ready");
-            
+
             // Connect to Temporal using discovered endpoint (not hardcoded port)
             TestContext.WriteLine($"📡 Connecting to Temporal at {TemporalEndpoint}");
             var client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions
@@ -77,7 +75,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
 
             var taskQueue = $"order-processing-{TestContext.CurrentContext.Test.ID}";
             TestContext.WriteLine($"🔧 Creating worker on task queue: {taskQueue}");
-            
+
             using var worker = new TemporalWorker(
                 client,
                 new TemporalWorkerOptions(taskQueue)
@@ -89,19 +87,19 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Step 1: Initialize Kafka Topics for Order Events                       │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
-                
+
                 var orderInputTopic = $"order-input-{TestContext.CurrentContext.Test.ID}";
                 var orderEventsTopic = $"order-events-{TestContext.CurrentContext.Test.ID}";
-                
+
                 TestContext.WriteLine($"📨 Creating Kafka topics:");
                 TestContext.WriteLine($"   Input Topic:  {orderInputTopic}");
                 TestContext.WriteLine($"   Events Topic: {orderEventsTopic}");
                 TestContext.WriteLine("");
-                
+
                 // Start complex order processing workflow
                 var orderId = $"ORDER-{Guid.NewGuid().ToString()[..8]}";
                 var workflowId = $"order-workflow-{orderId}";
-                
+
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Step 2: Start Temporal Workflow for Order Orchestration                │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
@@ -109,7 +107,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine($"🔧 Workflow ID:  {workflowId}");
                 TestContext.WriteLine($"📋 Task Queue:   {taskQueue}");
                 TestContext.WriteLine("");
-                
+
                 var orderRequest = new OrderRequest
                 {
                     OrderId = orderId,
@@ -128,7 +126,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
 
                 TestContext.WriteLine("✅ Workflow started successfully");
                 TestContext.WriteLine("");
-                
+
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Step 3: Workflow Executes - Order Validation Activity                  │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
@@ -136,10 +134,10 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine("   - Validates order amount > 0");
                 TestContext.WriteLine("   - Validates items array not empty");
                 TestContext.WriteLine("");
-                
+
                 // Simulate human approval (signal) after brief delay
                 await Task.Delay(1000, ct);
-                
+
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Step 4: Human Interaction - Manager Approval Signal                    │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
@@ -148,7 +146,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 await handle.SignalAsync(wf => wf.ApproveOrder("MANAGER-001"));
                 TestContext.WriteLine("   ✅ Approval signal received by workflow");
                 TestContext.WriteLine("");
-                
+
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Step 5: Workflow Continues - Payment & Inventory Activities            │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
@@ -156,7 +154,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine("📦 Temporal executes ReserveInventoryAsync activities in parallel");
                 TestContext.WriteLine("🚚 Temporal executes CreateShipmentAsync activity");
                 TestContext.WriteLine("");
-                
+
                 TestContext.WriteLine("⏳ Waiting for workflow completion...");
                 var result = await handle.GetResultAsync();
 
@@ -175,7 +173,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                     TestContext.WriteLine($"   ✓ {step}");
                 }
                 TestContext.WriteLine("");
-                
+
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Integration Architecture Demonstrated                                   │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
@@ -235,7 +233,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
 [Workflow]
 public class OrderProcessingOrchestration
 {
-    private bool approved = false;
+    private bool approved;
     private string? approver;
     private readonly List<string> steps = new();
 
@@ -267,8 +265,8 @@ public class OrderProcessingOrchestration
         // Step 3: Process payment (with retry logic)
         var paymentSuccess = await Workflow.ExecuteActivityAsync(
             (OrderActivities act) => act.ProcessPaymentAsync(request.OrderId, request.Amount),
-            new ActivityOptions 
-            { 
+            new ActivityOptions
+            {
                 StartToCloseTimeout = TimeSpan.FromSeconds(10),
                 RetryPolicy = new() { MaximumAttempts = 3 } // Automatic retries
             });
@@ -298,9 +296,9 @@ public class OrderProcessingOrchestration
         steps.Add($"Shipment created: {shipmentId}");
         steps.Add("Order processing complete");
 
-        return new OrderResult 
-        { 
-            OrderId = request.OrderId, 
+        return new OrderResult
+        {
+            OrderId = request.OrderId,
             Status = "Completed",
             ShipmentId = shipmentId,
             Steps = steps
@@ -368,11 +366,26 @@ public sealed class OrderActivities
 /// </summary>
 public record OrderRequest
 {
-    public required string OrderId { get; init; }
-    public required string CustomerId { get; init; }
-    public required decimal Amount { get; init; }
-    public required string[] Items { get; init; }
-    public bool RequiresApproval { get; init; }
+    public required string OrderId
+    {
+        get; init;
+    }
+    public required string CustomerId
+    {
+        get; init;
+    }
+    public required decimal Amount
+    {
+        get; init;
+    }
+    public required string[] Items
+    {
+        get; init;
+    }
+    public bool RequiresApproval
+    {
+        get; init;
+    }
 }
 
 /// <summary>
@@ -380,10 +393,22 @@ public record OrderRequest
 /// </summary>
 public record OrderResult
 {
-    public required string OrderId { get; init; }
-    public required string Status { get; init; }
-    public string? ShipmentId { get; init; }
-    public required List<string> Steps { get; init; }
+    public required string OrderId
+    {
+        get; init;
+    }
+    public required string Status
+    {
+        get; init;
+    }
+    public string? ShipmentId
+    {
+        get; init;
+    }
+    public required List<string> Steps
+    {
+        get; init;
+    }
 }
 
 #endregion

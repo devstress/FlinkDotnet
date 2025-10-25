@@ -21,8 +21,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = null,
                     StateKey = "myKey"
                 }
@@ -48,8 +48,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = "",
                     StateKey = "myKey"
                 }
@@ -75,8 +75,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = "invalid",
                     StateKey = "myKey"
                 }
@@ -102,8 +102,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = "value",
                     StateKey = null
                 }
@@ -129,8 +129,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = "value",
                     StateKey = ""
                 }
@@ -156,8 +156,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = "value",
                     StateKey = "myKey",
                     TtlMs = 0
@@ -184,8 +184,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new StateOperationDefinition 
-                { 
+                new StateOperationDefinition
+                {
                     StateType = "value",
                     StateKey = "myKey",
                     TtlMs = -1000
@@ -216,8 +216,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new TimerOperationDefinition 
-                { 
+                new TimerOperationDefinition
+                {
                     TimerType = null,
                     DelayMs = 5000
                 }
@@ -243,8 +243,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new TimerOperationDefinition 
-                { 
+                new TimerOperationDefinition
+                {
                     TimerType = "",
                     DelayMs = 5000
                 }
@@ -270,8 +270,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new TimerOperationDefinition 
-                { 
+                new TimerOperationDefinition
+                {
                     TimerType = "invalid",
                     DelayMs = 5000
                 }
@@ -297,8 +297,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new TimerOperationDefinition 
-                { 
+                new TimerOperationDefinition
+                {
                     TimerType = "processing",
                     DelayMs = 0
                 }
@@ -324,8 +324,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new TimerOperationDefinition 
-                { 
+                new TimerOperationDefinition
+                {
                     TimerType = "processing",
                     DelayMs = -1000
                 }
@@ -351,8 +351,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new TimerOperationDefinition 
-                { 
+                new TimerOperationDefinition
+                {
                     TimerType = "processing",
                     DelayMs = 86_500_000 // > 86_400_000
                 }
@@ -382,8 +382,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = -1,
                     DelayMs = new List<long> { 1000 },
                     StateKey = "retryKey"
@@ -410,8 +410,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 101, // > 100
                     DelayMs = new List<long> { 1000 },
                     StateKey = "retryKey"
@@ -438,8 +438,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = null,
                     StateKey = "retryKey"
@@ -466,8 +466,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long>(),
                     StateKey = "retryKey"
@@ -494,8 +494,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long> { 1000, -500, 2000 },
                     StateKey = "retryKey"
@@ -522,8 +522,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long> { 1000, 0, 2000 },
                     StateKey = "retryKey"
@@ -550,8 +550,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long> { 1000 },
                     StateKey = null
@@ -578,8 +578,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
+                new RetryOperationDefinition
+                {
                     MaxRetries = 3,
                     DelayMs = new List<long> { 1000 },
                     StateKey = ""
@@ -610,8 +610,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = null,
                     Condition = "value > 100",
                     SideOutputSink = new ConsoleSinkDefinition()
@@ -638,8 +638,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "",
                     Condition = "value > 100",
                     SideOutputSink = new ConsoleSinkDefinition()
@@ -666,8 +666,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "high-values",
                     Condition = null,
                     SideOutputSink = new ConsoleSinkDefinition()
@@ -694,8 +694,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "high-values",
                     Condition = "",
                     SideOutputSink = new ConsoleSinkDefinition()
@@ -722,8 +722,8 @@ public class JobDefinitionValidatorStateTimerRetryTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "high-values",
                     Condition = "value > 100",
                     SideOutputSink = null

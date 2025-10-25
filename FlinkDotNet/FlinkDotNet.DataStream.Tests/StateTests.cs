@@ -1,6 +1,6 @@
 using System;
-using NUnit.Framework;
 using FlinkDotNet.DataStream.State;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -634,7 +634,7 @@ namespace FlinkDotNet.DataStream.Tests
             var spinningDiskValue = RocksDBPredefinedOptions.SPINNING_DISK_OPTIMIZED;
             var flashSsdValue = RocksDBPredefinedOptions.FLASH_SSD_OPTIMIZED;
             var highMemValue = RocksDBPredefinedOptions.SPINNING_DISK_OPTIMIZED_HIGH_MEM;
-            
+
             // Verify values are defined
             Assert.That(System.Enum.IsDefined(typeof(RocksDBPredefinedOptions), defaultValue), Is.True);
             Assert.That(System.Enum.IsDefined(typeof(RocksDBPredefinedOptions), spinningDiskValue), Is.True);

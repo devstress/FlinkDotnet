@@ -13,12 +13,12 @@ namespace Flink.JobBuilder.Models
         /// Data source for the streaming job
         /// </summary>
         public ISourceDefinition Source { get; set; } = null!;
-        
+
         /// <summary>
         /// List of operations to apply to the data stream
         /// </summary>
         public List<IOperationDefinition> Operations { get; set; } = [];
-        
+
         /// <summary>
         /// Data sink for the streaming job (nullable for pure SQL jobs)
         /// </summary>
@@ -26,7 +26,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // nullable to allow pure SQL jobs
-        
+
         /// <summary>
         /// Job metadata including ID, name, version, and properties
         /// </summary>
@@ -42,7 +42,7 @@ namespace Flink.JobBuilder.Models
         /// Unique identifier for the job
         /// </summary>
         public string JobId { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Human-readable name for the job
         /// </summary>
@@ -50,7 +50,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        
+
         /// <summary>
         /// Timestamp when the job was created
         /// </summary>
@@ -58,12 +58,12 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        
+
         /// <summary>
         /// Version of the job definition
         /// </summary>
         public string Version { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Parallelism level for job execution
         /// </summary>
@@ -71,7 +71,7 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
-        
+
         /// <summary>
         /// Additional properties for job configuration
         /// </summary>

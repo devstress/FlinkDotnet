@@ -27,12 +27,18 @@ namespace FlinkDotNet.DataStream.Window
         /// <summary>
         /// Gets the starting timestamp of the window (inclusive).
         /// </summary>
-        public long Start { get; }
+        public long Start
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the ending timestamp of the window (exclusive).
         /// </summary>
-        public long End { get; }
+        public long End
+        {
+            get;
+        }
 
         /// <summary>
         /// Creates a new TimeWindow.

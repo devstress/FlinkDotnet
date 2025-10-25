@@ -27,13 +27,13 @@ public static class FlinkDotNetJobs
         CancellationToken ct)
     {
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
-        
+
         environment.FromKafka(inputTopic, kafka, groupId: "uppercase-job", startingOffsets: "earliest")
             .Map(s => s.ToUpperInvariant())
             .SinkToKafka(outputTopic, kafka);
-        
+
         var jobClient = await environment.ExecuteAsync(jobName, ct);
-        
+
         return new JobSubmissionResult
         {
             Success = true,
@@ -41,7 +41,7 @@ public static class FlinkDotNetJobs
             SubmittedAt = DateTime.UtcNow
         };
     }
-    
+
     /// <summary>
     /// Creates a DataStream job with filtering
     /// </summary>
@@ -53,13 +53,13 @@ public static class FlinkDotNetJobs
         CancellationToken ct)
     {
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
-        
+
         environment.FromKafka(inputTopic, kafka, groupId: "filter-job", startingOffsets: "earliest")
             .Filter(s => !string.IsNullOrWhiteSpace(s))
             .SinkToKafka(outputTopic, kafka);
-        
+
         var jobClient = await environment.ExecuteAsync(jobName, ct);
-        
+
         return new JobSubmissionResult
         {
             Success = true,
@@ -67,7 +67,7 @@ public static class FlinkDotNetJobs
             SubmittedAt = DateTime.UtcNow
         };
     }
-    
+
     /// <summary>
     /// Creates a DataStream job with string splitting and concatenation
     /// </summary>
@@ -79,14 +79,14 @@ public static class FlinkDotNetJobs
         CancellationToken ct)
     {
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
-        
+
         environment.FromKafka(inputTopic, kafka, groupId: "splitconcat-job", startingOffsets: "earliest")
             .FlatMap(s => s.Split(','))
             .Map(s => s + "-joined")
             .SinkToKafka(outputTopic, kafka);
-        
+
         var jobClient = await environment.ExecuteAsync(jobName, ct);
-        
+
         return new JobSubmissionResult
         {
             Success = true,
@@ -94,7 +94,7 @@ public static class FlinkDotNetJobs
             SubmittedAt = DateTime.UtcNow
         };
     }
-    
+
     /// <summary>
     /// Creates a DataStream job with timer functionality
     /// Note: Timer functionality needs special windowing - simplified version here
@@ -107,14 +107,14 @@ public static class FlinkDotNetJobs
         CancellationToken ct)
     {
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
-        
+
         // Simple pass-through for timer test (actual timer logic would require more complex windowing)
         environment.FromKafka(inputTopic, kafka, groupId: "timer-job", startingOffsets: "earliest")
             .Map(s => $"[Timed] {s}")
             .SinkToKafka(outputTopic, kafka);
-        
+
         var jobClient = await environment.ExecuteAsync(jobName, ct);
-        
+
         return new JobSubmissionResult
         {
             Success = true,
@@ -122,7 +122,7 @@ public static class FlinkDotNetJobs
             SubmittedAt = DateTime.UtcNow
         };
     }
-    
+
     /// <summary>
     /// Creates a SQL job that passes through data from input to output using Direct Flink SQL Gateway
     /// </summary>
@@ -152,7 +152,7 @@ public static class FlinkDotNetJobs
             )",
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
-        
+
         var jobDef = new JobDefinition
         {
             Source = new SqlSourceDefinition
@@ -169,22 +169,22 @@ public static class FlinkDotNetJobs
                 Version = "1.0"
             }
         };
-        
+
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Flink:SqlGateway:BaseUrl"] = sqlGatewayUrl
             })
             .Build();
-        
+
         var jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
             NullLogger<FlinkDotNet.JobGateway.Services.FlinkJobManager>.Instance,
             configuration,
             new HttpClient());
-        
+
         return await jobManager.SubmitJobAsync(jobDef);
     }
-    
+
     /// <summary>
     /// Creates a SQL job that transforms data
     /// </summary>
@@ -214,7 +214,7 @@ public static class FlinkDotNetJobs
             )",
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
         };
-        
+
         var jobDef = new JobDefinition
         {
             Source = new SqlSourceDefinition
@@ -231,22 +231,22 @@ public static class FlinkDotNetJobs
                 Version = "1.0"
             }
         };
-        
+
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Flink:SqlGateway:BaseUrl"] = sqlGatewayUrl
             })
             .Build();
-        
+
         var jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
             NullLogger<FlinkDotNet.JobGateway.Services.FlinkJobManager>.Instance,
             configuration,
             new HttpClient());
-        
+
         return await jobManager.SubmitJobAsync(jobDef);
     }
-    
+
     /// <summary>
     /// Creates a composite job that combines multiple operations
     /// </summary>
@@ -258,7 +258,7 @@ public static class FlinkDotNetJobs
         CancellationToken ct)
     {
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
-        
+
         environment.FromKafka(inputTopic, kafka, groupId: "composite-job", startingOffsets: "earliest")
             .FlatMap(s => s.Split(','))
             .Map(s => s + "-tail")
@@ -266,9 +266,9 @@ public static class FlinkDotNetJobs
             .Filter(s => !string.IsNullOrWhiteSpace(s))
             .Map(s => $"[Processed] {s}")
             .SinkToKafka(outputTopic, kafka);
-        
+
         var jobClient = await environment.ExecuteAsync(jobName, ct);
-        
+
         return new JobSubmissionResult
         {
             Success = true,

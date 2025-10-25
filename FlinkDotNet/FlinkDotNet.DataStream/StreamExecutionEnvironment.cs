@@ -20,11 +20,11 @@ using System.IO.Abstractions;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using FlinkDotNet.Common;
-using FlinkDotNet.DataStream.State;
-using FlinkDotNet.DataStream.Checkpoint;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
+using FlinkDotNet.Common;
+using FlinkDotNet.DataStream.Checkpoint;
+using FlinkDotNet.DataStream.State;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 

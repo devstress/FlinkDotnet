@@ -1,13 +1,13 @@
-using Moq;
-using Moq.Protected;
-using NUnit.Framework;
-using Flink.JobBuilder.Models;
 using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Flink.JobBuilder.Models;
+using Moq;
+using Moq.Protected;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -22,7 +22,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-            
+
             _mockHttpHandler = new Mock<HttpMessageHandler>();
             _mockHttpClient = new HttpClient(_mockHttpHandler.Object)
             {
@@ -153,7 +153,10 @@ namespace FlinkDotNet.DataStream.Tests
             var savepointPath = "/test/savepoint/path";
             var triggerId = "trigger-123";
 
-            var responseJson = JsonSerializer.Serialize(new { requestId = triggerId });
+            var responseJson = JsonSerializer.Serialize(new
+            {
+                requestId = triggerId
+            });
             var responseContent = new StringContent(responseJson, Encoding.UTF8, "application/json");
 
             _mockHttpHandler
@@ -185,8 +188,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var jobId = "test-job-id";
-            
-            var responseJson = JsonSerializer.Serialize(new { requestId = "trigger-123" });
+
+            var responseJson = JsonSerializer.Serialize(new
+            {
+                requestId = "trigger-123"
+            });
             _mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -304,7 +310,10 @@ namespace FlinkDotNet.DataStream.Tests
             var savepointPath = "/test/savepoint/path";
             var triggerId = "trigger-456";
 
-            var responseJson = JsonSerializer.Serialize(new { requestId = triggerId });
+            var responseJson = JsonSerializer.Serialize(new
+            {
+                requestId = triggerId
+            });
             _mockHttpHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -615,9 +624,9 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Set the private _flinkHttp field using reflection
-            var httpField = typeof(JobClient).GetField("_flinkHttp", 
+            var httpField = typeof(JobClient).GetField("_flinkHttp",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
+
             if (httpField != null)
             {
                 httpField.SetValue(client, _mockHttpClient);

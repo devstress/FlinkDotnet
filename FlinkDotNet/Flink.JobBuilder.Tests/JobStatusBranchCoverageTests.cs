@@ -1,6 +1,4 @@
-using NUnit.Framework;
 using Flink.JobBuilder.Models;
-using System;
 
 namespace Flink.JobBuilder.Tests;
 

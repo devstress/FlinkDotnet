@@ -1,8 +1,8 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream.Window;
-using FlinkDotNet.DataStream.Window.Assigners;
 using System;
 using System.Linq;
+using FlinkDotNet.DataStream.Window;
+using FlinkDotNet.DataStream.Window.Assigners;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -20,10 +20,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", 15000L).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(15000L));
@@ -35,10 +35,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10));
-            
+
             // Act - Negative timestamps should still produce windows
             var windows = assigner.AssignWindows("test", -5000L).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.EqualTo(1));
             Assert.That(windows[0].Start, Is.LessThanOrEqualTo(-5000L));
@@ -50,7 +50,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10));
-            
+
             // Act & Assert
             Assert.That(assigner.IsEventTime, Is.True);
         }
@@ -60,10 +60,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10));
-            
+
             // Act
             var result = assigner.ToString();
-            
+
             // Assert
             Assert.That(result, Does.Contain("TumblingEventTimeWindows"));
             Assert.That(result, Does.Contain("10000ms"));
@@ -75,7 +75,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var assigner1 = TumblingEventTimeWindows.Of<string>(Time.Seconds(10));
             var assigner2 = TumblingEventTimeWindows.Of<int>(Time.Seconds(5), Time.Seconds(2));
-            
+
             // Assert
             Assert.That(assigner1, Is.Not.Null);
             Assert.That(assigner2, Is.Not.Null);
@@ -92,10 +92,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5), Time.Seconds(2));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", 15000L).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.GreaterThanOrEqualTo(2)); // Should assign to multiple overlapping windows
             Assert.That(windows, Has.All.Matches<TimeWindow>(w => w.Start <= 15000L && w.End > 15000L));
@@ -106,10 +106,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
-            
+
             // Act - Should handle negative timestamps and skip windows with negative bounds
             var windows = assigner.AssignWindows("test", -2000L).ToList();
-            
+
             // Assert - Should only include windows with start >= 0 or end > 0
             Assert.That(windows, Has.All.Matches<TimeWindow>(w => w.Start >= 0 || w.End > 0));
         }
@@ -119,10 +119,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
-            
+
             // Act - long.MinValue timestamp should return no windows
             var windows = assigner.AssignWindows("test", long.MinValue).ToList();
-            
+
             // Assert
             Assert.That(windows, Is.Empty);
         }
@@ -132,7 +132,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
-            
+
             // Act & Assert
             Assert.That(assigner.IsEventTime, Is.True);
         }
@@ -142,10 +142,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
-            
+
             // Act
             var result = assigner.ToString();
-            
+
             // Assert
             Assert.That(result, Does.Contain("SlidingEventTimeWindows"));
             Assert.That(result, Does.Contain("10000ms"));
@@ -158,7 +158,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var assigner1 = SlidingEventTimeWindows.Of<string>(Time.Seconds(10), Time.Seconds(5));
             var assigner2 = SlidingEventTimeWindows.Of<int>(Time.Seconds(20), Time.Seconds(10), Time.Seconds(5));
-            
+
             // Assert
             Assert.That(assigner1, Is.Not.Null);
             Assert.That(assigner2, Is.Not.Null);
@@ -175,10 +175,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SessionWindows<string>.WithGap(Time.Seconds(5));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", 10000L).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(10000L));
@@ -190,7 +190,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SessionWindows<string>.WithGap(Time.Seconds(5));
-            
+
             // Act & Assert
             Assert.That(assigner.IsEventTime, Is.True);
             Assert.That(assigner.CanMerge, Is.True);
@@ -201,10 +201,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SessionWindows<string>.WithGap(Time.Seconds(5));
-            
+
             // Act
             var result = assigner.ToString();
-            
+
             // Assert
             Assert.That(result, Does.Contain("SessionWindows"));
             Assert.That(result, Does.Contain("5000ms"));
@@ -216,10 +216,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var windows = Array.Empty<TimeWindow>();
-            
+
             // Act
             var merged = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(merged, Is.Empty);
         }
@@ -229,10 +229,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var windows = new[] { new TimeWindow(0, 5000) };
-            
+
             // Act
             var merged = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(merged.Count, Is.EqualTo(1));
             Assert.That(merged[0].Start, Is.EqualTo(0));
@@ -249,10 +249,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(4000, 9000),
                 new TimeWindow(8000, 13000)
             };
-            
+
             // Act
             var merged = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(merged.Count, Is.EqualTo(1));
             Assert.That(merged[0].Start, Is.EqualTo(0));
@@ -269,10 +269,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(10000, 15000),
                 new TimeWindow(20000, 25000)
             };
-            
+
             // Act
             var merged = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(merged.Count, Is.EqualTo(3));
             Assert.That(merged[0].Start, Is.EqualTo(0));
@@ -293,10 +293,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(0, 5000),
                 new TimeWindow(4000, 9000)
             };
-            
+
             // Act - Should sort internally before merging
             var merged = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert
             Assert.That(merged.Count, Is.EqualTo(2));
             Assert.That(merged[0].Start, Is.EqualTo(0));
@@ -314,10 +314,10 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(0, 5000),
                 new TimeWindow(5000, 10000) // Touches at 5000
             };
-            
+
             // Act
             var merged = SessionWindows<string>.MergeWindows(windows).ToList();
-            
+
             // Assert - Should merge because start <= end
             Assert.That(merged.Count, Is.EqualTo(1));
             Assert.That(merged[0].Start, Is.EqualTo(0));
@@ -329,7 +329,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange & Act
             var assigner = SessionWindows.WithGap<string>(Time.Seconds(5));
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             Assert.That(assigner.IsEventTime, Is.True);
@@ -345,10 +345,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", 0L).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.EqualTo(1));
             Assert.That(windows[0].Start, Is.LessThanOrEqualTo(0));
@@ -360,10 +360,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", 0L).ToList();
-            
+
             // Assert
             Assert.That(windows, Is.Not.Empty);
             Assert.That(windows, Has.All.Matches<TimeWindow>(w => w.Start <= 0 && w.End > 0));
@@ -374,10 +374,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SessionWindows<string>.WithGap(Time.Seconds(5));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", 0L).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(0L));
@@ -389,10 +389,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(10));
-            
+
             // Act
             var windows = assigner.AssignWindows("test", long.MaxValue / 2).ToList();
-            
+
             // Assert
             Assert.That(windows.Count, Is.EqualTo(1));
             Assert.That(windows[0].Start, Is.LessThanOrEqualTo(long.MaxValue / 2));

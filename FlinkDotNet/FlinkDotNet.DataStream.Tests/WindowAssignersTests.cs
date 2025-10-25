@@ -1,8 +1,8 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream.Window;
-using FlinkDotNet.DataStream.Window.Assigners;
 using System;
 using System.Linq;
+using FlinkDotNet.DataStream.Window;
+using FlinkDotNet.DataStream.Window.Assigners;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -74,10 +74,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Assert
             Assert.That(window1.Start, Is.EqualTo(0L));
             Assert.That(window1.End, Is.EqualTo(5000L));
-            
+
             Assert.That(window2.Start, Is.EqualTo(5000L));
             Assert.That(window2.End, Is.EqualTo(10000L));
-            
+
             Assert.That(window3.Start, Is.EqualTo(10000L));
             Assert.That(window3.End, Is.EqualTo(15000L));
         }
@@ -148,11 +148,11 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Assert - element should belong to 2 overlapping windows
             Assert.That(windows.Count, Is.EqualTo(2));
-            
+
             // First window: [10s-20s)
             Assert.That(windows[0].Start, Is.EqualTo(10000L));
             Assert.That(windows[0].End, Is.EqualTo(20000L));
-            
+
             // Second window: [5s-15s)
             Assert.That(windows[1].Start, Is.EqualTo(5000L));
             Assert.That(windows[1].End, Is.EqualTo(15000L));
