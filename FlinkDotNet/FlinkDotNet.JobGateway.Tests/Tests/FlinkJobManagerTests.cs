@@ -769,7 +769,8 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange - No environment variables set
             
             // Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
             // Assert - Constructor logs default endpoint usage
             _mockLogger.Verify(

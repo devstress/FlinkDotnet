@@ -72,7 +72,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://custom-host:9999/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://custom-host:9999/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -97,7 +97,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://custom-host:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://custom-host:8081/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -122,7 +122,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://custom-host:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://custom-host:8081/"));
     }
 
     #endregion
@@ -253,7 +253,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://localhost:12345/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://localhost:12345/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -275,7 +275,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://config-host:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://config-host:8081/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -297,7 +297,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://flink-jobmanager:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://flink-jobmanager:8081/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -335,7 +335,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("https://secure-host:8443/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("https://secure-host:8443/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -364,7 +364,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("https://secure-host:8443/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("https://secure-host:8443/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -390,7 +390,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://default-host:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://default-host:8081/"));
     }
 
     [Test]
@@ -408,7 +408,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://test-host:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://test-host:8081/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Warning,
@@ -437,7 +437,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://test-host:8081/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("http://test-host:8081/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Warning,
@@ -464,7 +464,7 @@ public class FlinkJobManagerFinalCoverageTests
 
         // Assert - Environment variable should take precedence
         Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("https://secure-host:8443/"));
+        Assert.That(manager.FlinkBaseUrl.ToString(), Is.EqualTo("https://secure-host:8443/"));
         _mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,

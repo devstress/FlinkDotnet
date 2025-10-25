@@ -21,6 +21,12 @@ public class FlinkJobManager : IFlinkJobManager
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
     
     /// <summary>
+    /// Lazy initialization of Flink JobManager endpoint to ensure Aspire environment variables are available.
+    /// Endpoint discovery is deferred until first use to allow Aspire service discovery to complete.
+    /// </summary>
+    private readonly Lazy<Uri> _flinkBaseUri;
+    
+    /// <summary>
     /// Gets or sets the delay between SQL Gateway retry attempts.
     /// Static field for testability (can be set to 1ms in tests).
     /// </summary>
@@ -50,16 +56,46 @@ public class FlinkJobManager : IFlinkJobManager
         _configuration = configuration;
         _httpClient = httpClient;
 
-        // Try multiple Flink endpoint discovery strategies
-        // NOTE: This discovery happens at Gateway startup time, which may be BEFORE
-        // the Flink container is fully ready in Aspire DCP testing mode.
-        // The Gateway will verify Flink connectivity when jobs are submitted.
-        var flinkBaseUrl = DiscoverFlinkEndpoint();
+        // CRITICAL FIX: Use lazy initialization for Flink endpoint discovery
+        // This ensures Aspire environment variables (services__flink-jobmanager__jm-http__0)
+        // are fully configured before endpoint discovery occurs.
+        // Previously, constructor-time discovery happened too early, before Aspire had
+        // injected the environment variables, causing fallback to defaults.
+        // SqlGateway discovery already used this lazy pattern and worked correctly.
+        _flinkBaseUri = new Lazy<Uri>(() =>
+        {
+            var endpoint = DiscoverFlinkEndpoint();
+            _logger.LogInformation("Flink JobManager endpoint discovered: {Endpoint}", endpoint);
+            return new Uri(endpoint);
+        });
 
-        _httpClient.BaseAddress = new Uri(flinkBaseUrl);
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
-        _logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
-        _logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
+        _logger.LogInformation("Flink Job Gateway initialized - endpoint will be discovered on first use");
+    }
+
+    /// <summary>
+    /// Ensures the HttpClient BaseAddress is set to the discovered Flink endpoint.
+    /// This method must be called before any HTTP operations to trigger lazy endpoint discovery.
+    /// </summary>
+    private void EnsureFlinkEndpointConfigured()
+    {
+        if (_httpClient.BaseAddress == null)
+        {
+            _httpClient.BaseAddress = _flinkBaseUri.Value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the Flink JobManager base URL. This property triggers lazy endpoint discovery
+    /// if it hasn't been performed yet. Exposed as internal for testing purposes.
+    /// </summary>
+    internal Uri FlinkBaseUrl
+    {
+        get
+        {
+            EnsureFlinkEndpointConfigured();
+            return _httpClient.BaseAddress!;
+        }
     }
 
     /// <summary>
@@ -411,6 +447,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// <returns>A task containing the job status, or null if the job is not found.</returns>
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
+        EnsureFlinkEndpointConfigured();
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
 
         // Validate input before attempting HTTP call to prevent injection attacks
@@ -475,6 +512,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// <returns>A task containing true if the job was successfully cancelled, false otherwise.</returns>
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
+        EnsureFlinkEndpointConfigured();
         // Validate input before attempting HTTP calls to prevent injection attacks
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
 
@@ -636,6 +674,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<bool> CheckFlinkClusterHealthAsync()
     {
+        EnsureFlinkEndpointConfigured();
         try
         {
             var response = await _httpClient.GetAsync("/v1/overview");
@@ -649,6 +688,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string> SubmitJobToFlinkClusterAsync(string irBase64, JobDefinition jobDefinition)
     {
+        EnsureFlinkEndpointConfigured();
         try
         {
             LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
@@ -921,6 +961,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string> EnsureRunnerJarAsync()
     {
+        EnsureFlinkEndpointConfigured();
         var jarPath = await EnsureRunnerJarPathAsync();
         if (!File.Exists(jarPath))
         {
@@ -995,6 +1036,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string?> TryFindRegisteredJarAsync(string fileName, List<string> lastKnownJars)
     {
+        EnsureFlinkEndpointConfigured();
         try
         {
             var listResp = await _httpClient.GetAsync("/v1/jars");
@@ -1311,6 +1353,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string?> TryRecoverFromSingleEndpointAsync(string jobName, string endpoint)
     {
+        EnsureFlinkEndpointConfigured();
         try
         {
             using var response = await _httpClient.GetAsync(endpoint);
@@ -1639,6 +1682,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
+        EnsureFlinkEndpointConfigured();
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
         var verticesResp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
         if (!verticesResp.IsSuccessStatusCode)
