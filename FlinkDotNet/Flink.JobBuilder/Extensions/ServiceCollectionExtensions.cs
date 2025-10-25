@@ -33,24 +33,25 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<FlinkJobGatewayConfiguration>(options =>
+        _ = services.Configure<FlinkJobGatewayConfiguration>(options =>
         {
-            var configSection = configuration.GetSection("FlinkJobGateway");
-
             // Bind from appsettings
-            configSection.Bind(options);
+            configuration.GetSection("FlinkJobGateway").Bind(options);
 
-            // If BaseUrl not in appsettings, try environment variable
+            // If BaseUrl is set in appsettings, use it
             if (!string.IsNullOrEmpty(options.BaseUrl))
             {
                 return;
             }
 
+            // Otherwise, try environment variable
             var envUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
-            if (!string.IsNullOrEmpty(envUrl))
+            if (string.IsNullOrEmpty(envUrl))
             {
-                options.BaseUrl = envUrl;
+                return;
             }
+
+            options.BaseUrl = envUrl;
         });
 
         return services;
@@ -63,9 +64,8 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddFlinkJobGatewayConfiguration(configuration);
-        services.AddTransient<IFlinkJobGatewayService, FlinkJobGatewayService>();
-
-        return services;
+        return services
+            .AddFlinkJobGatewayConfiguration(configuration)
+            .AddTransient<IFlinkJobGatewayService, FlinkJobGatewayService>();
     }
 }
