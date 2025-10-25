@@ -21,6 +21,12 @@ namespace Flink.JobBuilder.Services
         private readonly ILogger? _logger;
         private static readonly Serilog.ILogger _log = CreateLogger();
 
+        /// <summary>
+        /// Gets or sets the delay between retry attempts.
+        /// Static field for testability (can be set to 1ms in tests).
+        /// </summary>
+        public static TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+
         private static Serilog.ILogger CreateLogger()
         {
             var fileSystem = new System.IO.Abstractions.FileSystem();
@@ -373,7 +379,7 @@ namespace Flink.JobBuilder.Services
                 }
 
                 retryCount++;
-                await Task.Delay(this._configuration.RetryDelay * (retryCount + 1)); // Exponential backoff: 2s, 4s, 6s
+                await Task.Delay(RetryDelay * (retryCount + 1)); // Exponential backoff: uses static RetryDelay (default 1s, configurable for tests)
             }
 
             throw new HttpRequestException($"Request failed after {this._configuration.MaxRetries} retries");
@@ -422,7 +428,7 @@ namespace Flink.JobBuilder.Services
                 return;
             }
 
-            var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{this._configuration.MaxRetries}) after {this._configuration.RetryDelay * (retryCount + 1)}ms";
+            var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{this._configuration.MaxRetries}) after {RetryDelay * (retryCount + 1)}ms";
             this._logger?.LogWarning(message);
             _log.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] {Message}", message);
         }

@@ -212,7 +212,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
                 // Give a moment for logger to initialize
-                await Task.Delay(100);
+                await Task.Delay(1);
 
                 // Log directory should exist (created by Serilog)
                 Assert.That(Directory.Exists(customLogPath) || File.Exists(Path.Combine(customLogPath, "*.log")),
