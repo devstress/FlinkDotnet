@@ -328,10 +328,10 @@ var gateway = builder.AddContainer("flink-job-gateway", "flinkdotnet/jobgateway"
     .WithEnvironment("ASPNETCORE_URLS", "http://+:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/opt/connectors")
     .WithEnvironment("LOG_FILE_PATH", "/opt/test-logs")
+    .WithEnvironment("Flink__JobManager__BaseUrl", "http://flink-jobmanager:8081")
+    .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://flink-sql-gateway:8083")
     .WithBindMount(connectorsDir, "/opt/connectors", isReadOnly: true)
-    .WithBindMount(testLogsDir, "/opt/test-logs")
-    .WithReference(jobManager.GetEndpoint("jm-http"))
-    .WithReference(sqlGateway.GetEndpoint("sg-http"));
+    .WithBindMount(testLogsDir, "/opt/test-logs");
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server

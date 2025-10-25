@@ -51,62 +51,6 @@ namespace FlinkDotNet.JobGateway.Tests
         #region Endpoint Discovery Branch Coverage Tests
 
         [Test]
-        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
-        public void Constructor_WithAspireServiceDiscovery_UsesAspireEndpoint()
-        {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", "http://aspire-endpoint:8081");
-                
-                // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-                // Assert - Constructor should log using Aspire endpoint
-                _mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using Aspire service discovery for")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);
-            }
-        }
-
-        [Test]
-        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
-        public void Constructor_WithLegacyAspireFormat_UsesLegacyEndpoint()
-        {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", "http://legacy-aspire:8081");
-                
-                // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-                // Assert - Constructor should log using legacy Aspire endpoint
-                _mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("legacy format")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", null);
-            }
-        }
-
-        [Test]
         public void Constructor_WithConfigEndpoint_UsesConfigurationEndpoint()
         {
             // Arrange

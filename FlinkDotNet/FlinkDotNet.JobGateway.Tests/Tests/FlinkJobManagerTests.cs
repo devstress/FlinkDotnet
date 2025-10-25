@@ -681,62 +681,6 @@ namespace FlinkDotNet.JobGateway.Tests
         #region Endpoint Discovery Tests
 
         [Test]
-        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
-        public void Constructor_WithAspireEndpoint_UsesAspireDiscovery()
-        {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", "http://localhost:12345");
-                
-                // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-                // Assert - Constructor logs the discovered endpoint
-                _mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Aspire service discovery")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);
-            }
-        }
-
-        [Test]
-        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
-        public void Constructor_WithLegacyAspireFormat_UsesLegacyEndpoint()
-        {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", "http://localhost:54321");
-                
-                // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-                // Assert - Constructor logs legacy format usage
-                _mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("legacy format")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", null);
-            }
-        }
-
-        [Test]
         public void Constructor_WithEnvironmentVariables_UsesEnvVars()
         {
             // Arrange
@@ -779,26 +723,6 @@ namespace FlinkDotNet.JobGateway.Tests
                     LogLevel.Information,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("default")),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.AtLeastOnce);
-        }
-
-        [Test]
-        [Ignore("Test validates Aspire warning log message which has been removed - endpoint discovery is now infrastructure-agnostic")]
-        public void Constructor_WithDefaultEndpoint_LogsWarning()
-        {
-            // Arrange - No environment variables set
-            
-            // Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-            // Assert - Constructor logs warning about Aspire not found
-            _mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Warning,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Aspire service discovery not found")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);

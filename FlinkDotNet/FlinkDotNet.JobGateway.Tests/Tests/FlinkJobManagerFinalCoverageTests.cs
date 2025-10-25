@@ -241,31 +241,6 @@ public class FlinkJobManagerFinalCoverageTests
     #region Additional Constructor Variations
 
     [Test]
-    [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
-    public void Constructor_WithAspireServiceDiscovery_LegacyHttpFormat_UsesLegacyEndpoint()
-    {
-        // Arrange - Test legacy format fallback (line 82-83)
-        Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", "http://localhost:12345");
-
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
-
-        // Act
-        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-        // Assert
-        Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://localhost:12345/"));
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("legacy format")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-    [Test]
     public void Constructor_WithConfigurationEndpoint_UsesConfigValue()
     {
         // Arrange
@@ -282,37 +257,6 @@ public class FlinkJobManagerFinalCoverageTests
                 LogLevel.Information,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using configuration for")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-    }
-
-    [Test]
-    [Ignore("Test validates Aspire warning log message which has been removed - endpoint discovery is now infrastructure-agnostic")]
-    public void Constructor_WithNoConfiguration_UsesDefaultDockerComposeEndpoint()
-    {
-        // Arrange - All configuration sources return null
-        _mockConfiguration.Setup(c => c["Flink:JobManager:BaseUrl"]).Returns((string?)null);
-
-        // Act
-        var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
-
-        // Assert
-        Assert.That(manager, Is.Not.Null);
-        Assert.That(_httpClient.BaseAddress.ToString(), Is.EqualTo("http://flink-jobmanager:8081/"));
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Using default Docker network")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-        _mockLogger.Verify(
-            x => x.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Aspire service discovery not found")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
