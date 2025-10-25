@@ -606,5 +606,256 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+
+        #region CollectVertexBackpressureAsync Tests - Currently 50% coverage
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithBackpressureNonSuccessResponse_ContinuesExecution()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
+            
+            // Setup backpressure with non-success status
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.NotFound, "");
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithBackpressureLevelMissing_HandlesGracefully()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
+            
+            // Setup backpressure response without level field
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { status = "ok" })); // Missing 'backpressure_level' field
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public void GetJobMetricsAsync_WithBackpressureException_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
+            
+            // Setup backpressure with invalid JSON to trigger exception
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                "invalid-json{malformed");
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await jobManager.GetJobMetricsAsync(flinkJobId));
+            
+            Assert.That(ex!.InnerException, Is.Not.Null);
+            Assert.That(ex.Message, Does.Contain("job metrics"));
+        }
+
+        #endregion
+
+        #region Additional Edge Case Tests
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithMultipleMetricTypes_ParsesAllCorrectly()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            // Setup metrics response with all metric types
+            var metricsResponse = new[]
+            {
+                new { id = "numRecordsIn", value = "12345" },
+                new { id = "numRecordsOut", value = "67890" },
+                new { id = "parallelism", value = "8" }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(metricsResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { backpressure_level = "ok" }));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithEmptyMetricsArray_HandlesGracefully()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            // Setup empty metrics array
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new object[] { }));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { backpressure_level = "ok" }));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithUnknownMetricIds_IgnoresThem()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            // Setup metrics with unknown IDs
+            var metricsResponse = new[]
+            {
+                new { id = "unknownMetric1", value = "123" },
+                new { id = "someOtherMetric", value = "456" },
+                new { id = "numRecordsIn", value = "789" }  // One known metric
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(metricsResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { backpressure_level = "ok" }));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        #endregion
     }
 }
