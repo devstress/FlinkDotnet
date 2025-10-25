@@ -26,7 +26,7 @@ namespace Flink.JobBuilder.Services
             var fileSystem = new System.IO.Abstractions.FileSystem();
             return global::FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(
                 fileSystem, 
-                "FlinkDotNet.JobGateway.log");
+                "FlinkDotNet.Client.log");
         }
 
         private readonly JsonSerializerOptions _jsonOptions;
@@ -45,7 +45,7 @@ namespace Flink.JobBuilder.Services
 
         private HttpClient CreateDefaultHttpClient()
         {
-            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient for .NET Job Gateway (not Apache Flink) with BaseUrl={BaseUrl}", _configuration.BaseUrl);
+            _log.Information("[FlinkDotNet.Client.CreateDefaultHttpClient] Creating HttpClient for .NET Job Gateway (not Apache Flink) with BaseUrl={BaseUrl}", _configuration.BaseUrl);
             
             var client = new HttpClient
             {
@@ -60,7 +60,7 @@ namespace Flink.JobBuilder.Services
                 client.DefaultRequestHeaders.Add("X-API-Key", _configuration.ApiKey);
             }
 
-            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] HttpClient created for .NET Job Gateway with BaseAddress={BaseAddress}", client.BaseAddress);
+            _log.Information("[FlinkDotNet.Client.CreateDefaultHttpClient] HttpClient created for .NET Job Gateway with BaseAddress={BaseAddress}", client.BaseAddress);
             return client;
         }
 
@@ -68,7 +68,7 @@ namespace Flink.JobBuilder.Services
         {
             var targetUrl = new Uri(_httpClient.BaseAddress!, "/api/v1/jobs/submit").ToString();
             _logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway at {Url}", jobDefinition.Metadata.JobId, targetUrl);
-            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}, TargetUrl={TargetUrl}",
+            _log.Information("[FlinkDotNet.Client.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}, TargetUrl={TargetUrl}",
                 jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers, targetUrl);
 
             var validation = ValidateJobDefinition(jobDefinition);
@@ -117,10 +117,10 @@ namespace Flink.JobBuilder.Services
 
         private static void LogBootstrapServersInJson(string json)
         {
-            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] After JSON serialization, checking bootstrap servers in JSON");
+            _log.Information("[FlinkDotNet.Client.SubmitJobAsync] After JSON serialization, checking bootstrap servers in JSON");
             var bootstrapServersInJson = json.Contains("bootstrapServers", StringComparison.OrdinalIgnoreCase) ||
                                          json.Contains("\"bootstrap", StringComparison.OrdinalIgnoreCase);
-            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] JSON contains bootstrap servers reference: {HasBootstrapServers}", bootstrapServersInJson);
+            _log.Information("[FlinkDotNet.Client.SubmitJobAsync] JSON contains bootstrap servers reference: {HasBootstrapServers}", bootstrapServersInJson);
 
             ExtractBootstrapServersFromJson(json);
         }
@@ -133,13 +133,13 @@ namespace Flink.JobBuilder.Services
                 if (jsonDoc.RootElement.TryGetProperty("source", out var sourceElement) &&
                     sourceElement.TryGetProperty("bootstrapServers", out var bootstrapElement))
                 {
-                    _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Bootstrap servers in JSON: {BootstrapServers}",
+                    _log.Information("[FlinkDotNet.Client.SubmitJobAsync] Bootstrap servers in JSON: {BootstrapServers}",
                         bootstrapElement.GetString());
                 }
             }
             catch (Exception ex)
             {
-                _log.Warning(ex, "[FlinkJobGatewayService.SubmitJobAsync] Failed to parse bootstrap servers from JSON");
+                _log.Warning(ex, "[FlinkDotNet.Client.SubmitJobAsync] Failed to parse bootstrap servers from JSON");
             }
         }
 
@@ -412,7 +412,7 @@ namespace Flink.JobBuilder.Services
             {
                 var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{_configuration.MaxRetries}) after {_configuration.RetryDelay * (retryCount + 1)}ms";
                 _logger?.LogWarning(message);
-                _log.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] {Message}", message);
+                _log.Warning("[FlinkDotNet.Client.ExecuteWithRetryAsync] {Message}", message);
             }
         }
 
