@@ -197,136 +197,35 @@ Traditional solutions require Java expertise or vendor lock-in. FlinkDotNet brin
 3. Submit to Flink cluster via Gateway - prebuilt Java runner interprets IR
 4. Jobs run at full Flink performance on production clusters
 
-## Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **DataStream API** | Complete Apache Flink 2.1 API: map, filter, flatMap, window, aggregate, join |
-| **Kafka Integration** | First-class support for Kafka sources and sinks |
-| **Event-Time Processing** | Watermarks, late data handling, time windows (tumbling/sliding/session) |
-| **Exactly-Once** | Checkpointing and savepoints for fault tolerance |
-| **Dynamic Scaling** | Flink 2.1 adaptive scheduler, reactive mode, savepoint-based scaling |
-| **Workflow Integration** | Temporal.io platform integration for complex orchestration |
-| **Local Development** | .NET Aspire integration - start full stack with one command |
-| **Enterprise Observability** | Full PGL stack (Prometheus, Grafana, Loki) + OpenTelemetry |
-
-## Proven at Scale
-
-✅ **10 Integration Tests Passing** - Complete pipeline validated on every commit
-
-🔗 [**View Live Test Results**](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml)
-
-**What's validated:**
-- ✅ Kafka producer/consumer with Flink processing
-- ✅ Basic transformations (map, filter, flatMap)
-- ✅ Stateful processing (timers, event-time windows)
-- ✅ Flink SQL via TableEnvironment and SQL Gateway
-- ✅ Complex multi-step pipelines
-- ✅ Aspire orchestration and service discovery
-- ✅ Temporal workflow integration
-
-## Real-World Use Cases
-
-**Financial Services** - Real-time fraud detection, risk calculation, regulatory reporting  
-**E-commerce** - Order processing, inventory management, personalization  
-**IoT/Manufacturing** - Sensor data processing, predictive maintenance, quality control  
-**Healthcare** - Patient monitoring, care coordination, compliance tracking  
-
-See [**Architecture & Use Cases**](docs/architecture-and-usecases.md) for detailed implementations.
-
-## Project Structure
-
-```
-FlinkDotNet/
-├── FlinkDotNet.DataStream/      # Core FlinkDotnet unified package (DataStream API, Common, JobBuilder)
-├── FlinkDotNet.JobGateway/      # Job submission service
-└── Test Projects/               # Unit and integration tests
-
-LocalTesting/                     # Complete local dev environment
-├── LocalTesting.FlinkSqlAppHost/    # .NET Aspire orchestration
-└── LocalTesting.IntegrationTests/   # End-to-end validation tests
-
-LearningCourse/                   # 15-day learning path
-├── IntegrationTests.sln/        # Dedicated solution for course tests
-└── Day01-Day15/                 # 15 days of hands-on exercises
-```
-
 ## Documentation
 
-| Guide | Description |
-|-------|-------------|
-| [**Getting Started**](docs/wiki/Getting-Started.md) | Complete setup and first job |
-| [**Architecture & Use Cases**](docs/architecture-and-usecases.md) | System design, scaling strategies, real-world examples |
-| [**API Reference**](docs/api-reference.md) | Complete DataStream API documentation |
-| [**Flink vs Kafka Streams vs Temporal**](docs/flink-vs-temporal-decision-guide.md) | When to use each technology |
-| [**Learning Course**](LearningCourse/README.md) | 15-day hands-on exercises |
-| [**Contributing**](CONTRIBUTING.md) | Development guidelines |
+📚 **Complete guides and references for all aspects of FlinkDotNet:**
 
-### Quick Links
+### Getting Started
+- **[Getting Started Guide](docs/getting-started.md)** - Complete setup, first job, and local development
+- **[Quickstart](docs/quickstart.md)** - 5-minute minimal example
+- **[Installation Options](docs/getting-started.md#installation-options)** - NuGet, Docker, and source installation
+- **[User Instructions Wiki](docs/wiki/)** - Detailed guides for Client, Gateway, and Docker deployment
 
-- 📖 [Quickstart Guide](docs/quickstart.md)
-- 🔧 [Local Development Setup](docs/local-testing-setup.md)
-- 📊 [Observability & Monitoring](docs/observability.md)
-- 🚨 [Troubleshooting](docs/troubleshooting.md)
-- 🔄 [CI/CD Integration](docs/ci-cd-integration.md)
+### Core Documentation
+- **[Features](docs/features.md)** - Complete feature list with Apache Flink 2.1 capabilities
+- **[API Reference](docs/api-reference.md)** - Complete DataStream API documentation
+- **[Architecture & Use Cases](docs/architecture-and-usecases.md)** - System design and real-world examples
 
-## Learning Path
+### Advanced Topics
+- **[Performance Benchmarks](docs/performance-benchmarks.md)** - Throughput metrics and optimization
+- **[Observability & Monitoring](docs/observability.md)** - Metrics, logging, and tracing
+- **[Deployment](docs/deployment.md)** - Production deployment strategies
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
 
-New to FlinkDotNet? Follow our [**15-Day Learning Course**](LearningCourse/README.md):
+### Technology Decisions
+- **[Flink vs Temporal Decision Guide](docs/flink-vs-temporal-decision-guide.md)** - When to use each technology
+- **[Apache Flink 2.1 Features](docs/flink-21-features.md)** - Complete API mapping
 
-- **Days 1-2:** Kafka + Flink fundamentals, stream processing basics
-- **Days 3-4:** Event-time windowing, backpressure handling
-- **Days 5-6:** Temporal workflows, enterprise observability
-- **Days 7-8:** Stress testing, exactly-once semantics
-- **Days 9-10:** Performance tuning, security patterns
-- **Days 11-14:** Disaster recovery, chaos engineering
-- **Day 15:** Capstone project
-
-Each day includes working code examples and integration tests.
-
-## Apache Flink 2.1 Support
-
-FlinkDotNet implements extensive Apache Flink 2.1 features:
-
-- **Adaptive Scheduler** - Automatic parallelism optimization
-- **Reactive Mode** - Elastic scaling based on cluster resources
-- **Dynamic Scaling** - Change parallelism without job restart
-- **Advanced Partitioning** - Rebalance, rescale, forward, shuffle, broadcast, custom
-- **Savepoint Operations** - Create, restore, scale from savepoints
-- **Fine-grained Resource Management** - Slot sharing groups, resource profiles
-
-See [**Apache Flink 2.1 Features**](docs/flink-21-features.md) for complete API mapping.
-
-## Performance
-
-**Validated throughput** (LocalTesting environment):
-- 📈 **800K+ messages/sec** through complete Kafka → Flink → Output pipeline
-- 📈 **80K+ msg/sec per Kafka partition** (20 partitions tested)
-- 📈 **10% Temporal workflow processing** (80K workflows/sec) with full orchestration
-- 📈 **3 TaskManagers, 8 slots each** = 24 parallel task capacity
-
-See [**Performance Benchmarks**](docs/performance-benchmarks.md) for detailed metrics.
-
-## Community & Support
-
-- 💬 **GitHub Issues** - Bug reports and feature requests
-- 📧 **Discussions** - Architecture questions and best practices
-- 🌟 **Star the repo** - Stay updated on releases
-- 🤝 **Contribute** - See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## Comparison
-
-| Feature | FlinkDotNet | Kafka Streams | AWS Kinesis | Azure Stream Analytics |
-|---------|-------------|---------------|-------------|------------------------|
-| Language | **C# native** | Java/Scala | Multiple | SQL/JavaScript |
-| Scale | Millions/sec | < 100K/sec | Thousands/sec | Cloud-dependent |
-| Exactly-Once | ✅ External systems | ✅ Kafka only | ❌ | ❌ |
-| Complex CEP | ✅ | ❌ | ❌ | Limited |
-| Multi-Cloud | ✅ | ✅ | AWS only | Azure only |
-| Local Dev | ✅ Aspire | ✅ | ❌ | ❌ |
-| Cost | Infrastructure | Infrastructure | Per shard | Per job |
-
-See [**Technology Decision Guide**](docs/flink-vs-temporal-decision-guide.md) for detailed comparison.
+### Learning Resources
+- **[15-Day Learning Course](LearningCourse/README.md)** - Comprehensive hands-on training
+- **[Local Testing Setup](docs/local-testing-setup.md)** - Development environment details
+- **[Contributing Guide](CONTRIBUTING.md)** - Development guidelines
 
 ## Requirements
 
@@ -334,6 +233,13 @@ See [**Technology Decision Guide**](docs/flink-vs-temporal-decision-guide.md) fo
 - **Docker Desktop** or **Podman** - For local testing with Aspire
 - **Apache Flink 2.1 cluster** - Production deployments
 - **Apache Kafka** - For stream sources/sinks (optional)
+
+## Community & Support
+
+- 💬 **[GitHub Issues](https://github.com/devstress/FlinkDotnet/issues)** - Bug reports and feature requests
+- 📧 **[Discussions](https://github.com/devstress/FlinkDotnet/discussions)** - Architecture questions and best practices
+- 🌟 **Star the repo** - Stay updated on releases
+- 🤝 **[Contribute](CONTRIBUTING.md)** - Development guidelines
 
 ## License
 
@@ -349,6 +255,6 @@ Built on top of:
 
 ---
 
-**Ready to process billions of events?** Start with the [Quick Start](#quick-start) or explore the [Learning Course](LearningCourse/README.md).
+**Ready to process billions of events?** Start with the [Getting Started Guide](docs/getting-started.md) or explore the [15-Day Learning Course](LearningCourse/README.md).
 
 🌟 **Star this repo** to stay updated on new features and releases.

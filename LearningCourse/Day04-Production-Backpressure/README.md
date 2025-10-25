@@ -1210,7 +1210,7 @@ These exercises implement the **specific distributed rate limiting concepts** co
 - **[Uber's Rate Limiting at Scale](https://eng.uber.com/scaling-api-with-rate-limiter/)** - Regional budget bank patterns
 
 ### 🏛️ Internal References
-- **[Getting Started Guide](../../docs/wiki/Getting-Started.md)** - Basic setup and quick start
+- **[Getting Started Guide](../../docs/getting-started.md)** - Basic setup and quick start
 - **[Local Testing Setup](../../docs/local-testing-setup.md)** - Development environment
 
 ### 🔬 Academic References

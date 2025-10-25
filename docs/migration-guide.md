@@ -322,8 +322,8 @@ await env.ExecuteAsync("TestJob");
 ## Additional Resources
 
 - [FlinkDotNet DataStream API Documentation](api-reference.md)
-- [Getting Started Guide](wiki/Getting-Started.md)
-- [Usage Examples](wiki/Usage-Examples.md)
+- [Getting Started Guide](getting-started.md)
+- [Features](features.md)
 - [Apache Flink DataStream API](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/overview/)
 
 ## Support
