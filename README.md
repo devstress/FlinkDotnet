@@ -205,6 +205,7 @@ Traditional solutions require Java expertise or vendor lock-in. FlinkDotNet brin
 - **[Getting Started Guide](docs/getting-started.md)** - Complete setup, first job, and local development
 - **[Quickstart](docs/quickstart.md)** - 5-minute minimal example
 - **[Installation Options](docs/getting-started.md#installation-options)** - NuGet, Docker, and source installation
+- **[User Instructions Wiki](docs/wiki/)** - Detailed guides for Client, Gateway, and Docker deployment
 
 ### Core Documentation
 - **[Features](docs/features.md)** - Complete feature list with Apache Flink 2.1 capabilities
