@@ -205,7 +205,7 @@ namespace FlinkDotNet.DataStream
         public Task ClearAsync();
     }
 
-    #endregion
+    #endregion State Interfaces
 
     #region State Descriptors
 
@@ -331,5 +331,5 @@ namespace FlinkDotNet.DataStream
             this.AggregateFunction = aggregateFunction ?? throw new System.ArgumentNullException(nameof(aggregateFunction));
     }
 
-    #endregion
+    #endregion State Descriptors
 }

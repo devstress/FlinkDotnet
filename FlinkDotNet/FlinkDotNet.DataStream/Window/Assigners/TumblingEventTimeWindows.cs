@@ -39,7 +39,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="size">The size of the window</param>
         /// <returns>A new TumblingEventTimeWindows WindowAssigner</returns>
-        public static TumblingEventTimeWindows<T> Of(Time size) => new TumblingEventTimeWindows<T>(size.ToMilliseconds(), 0);
+        public static TumblingEventTimeWindows<T> Of(Time size) => new(size.ToMilliseconds(), 0);
 
         /// <summary>
         /// Creates a new TumblingEventTimeWindows WindowAssigner that assigns elements to windows of the given size with an offset.
@@ -47,7 +47,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="size">The size of the window</param>
         /// <param name="offset">The offset which window start would be shifted by</param>
         /// <returns>A new TumblingEventTimeWindows WindowAssigner</returns>
-        public static TumblingEventTimeWindows<T> Of(Time size, Time offset) => new TumblingEventTimeWindows<T>(size.ToMilliseconds(), offset.ToMilliseconds());
+        public static TumblingEventTimeWindows<T> Of(Time size, Time offset) => new(size.ToMilliseconds(), offset.ToMilliseconds());
 
         /// <summary>
         /// Assigns the element to a single tumbling window based on its timestamp.
@@ -55,7 +55,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         public IEnumerable<TimeWindow> AssignWindows(T element, long timestamp)
         {
             var start = this.GetWindowStart(timestamp);
-            yield return new TimeWindow(start, start + this._size);
+            yield return new(start, start + this._size);
         }
 
         private long GetWindowStart(long timestamp) => timestamp - ((timestamp - this._offset + this._size) % this._size);

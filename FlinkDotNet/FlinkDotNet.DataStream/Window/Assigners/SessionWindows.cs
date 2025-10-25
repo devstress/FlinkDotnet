@@ -36,7 +36,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="sessionGap">The session gap</param>
         /// <returns>A new SessionWindows WindowAssigner</returns>
-        public static SessionWindows<T> WithGap(Time sessionGap) => new SessionWindows<T>(sessionGap.ToMilliseconds());
+        public static SessionWindows<T> WithGap(Time sessionGap) => new(sessionGap.ToMilliseconds());
 
         /// <summary>
         /// Assigns the element to a session window.
@@ -46,7 +46,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         {
             // For session windows, each element initially creates a window that starts at the timestamp
             // and ends at timestamp + session gap. Windows are merged when they overlap.
-            yield return new TimeWindow(timestamp, timestamp + this._sessionGap);
+            yield return new(timestamp, timestamp + this._sessionGap);
         }
 
         /// <summary>

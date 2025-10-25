@@ -117,7 +117,7 @@ namespace FlinkDotNet.DataStream
         public Task ProcessAsync(TKey key, IEnumerable<TIn> elements, IWindowContext ctx, ICollector<TOut> @out);
     }
 
-    #endregion
+    #endregion Process Functions
 
     #region Async I/O
 
@@ -163,7 +163,7 @@ namespace FlinkDotNet.DataStream
         public void CompleteExceptionally(Exception exception);
     }
 
-    #endregion
+    #endregion Async I/O
 
     #region Context Interfaces
 
@@ -308,7 +308,7 @@ namespace FlinkDotNet.DataStream
         public void Collect(T element);
     }
 
-    #endregion
+    #endregion Context Interfaces
 
     #region Side Outputs and Tagged Outputs
 
@@ -342,7 +342,7 @@ namespace FlinkDotNet.DataStream
         public override int GetHashCode() => this.Id.GetHashCode();
     }
 
-    #endregion
+    #endregion Process Functions
 
     #region Enums
 
@@ -363,7 +363,7 @@ namespace FlinkDotNet.DataStream
         ProcessingTime
     }
 
-    #endregion
+    #endregion Process Functions
 
     #region Join and CoGroup
 
@@ -409,5 +409,5 @@ namespace FlinkDotNet.DataStream
         public IEnumerable<TOut> CoGroup(IEnumerable<T1> first, IEnumerable<T2> second);
     }
 
-    #endregion
+    #endregion Join and CoGroup
 }

@@ -393,7 +393,7 @@ namespace FlinkDotNet.DataStream
             try
             {
                 submit = await gateway.SubmitJobAsync(jobToSubmit, cancellationToken).ConfigureAwait(false);
-                _log.Information("[ExecuteAsync] Job submission completed - Success={Success}, FlinkJobId={FlinkJobId}", 
+                _log.Information("[ExecuteAsync] Job submission completed - Success={Success}, FlinkJobId={FlinkJobId}",
                     submit.Success, submit.FlinkJobId);
             }
             catch (Exception ex)
@@ -408,7 +408,7 @@ namespace FlinkDotNet.DataStream
                 var gatewayUrl = gatewayConfig.BaseUrl;
                 string? jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
 
-                _log.Error("[ExecuteAsync] Job submission failed - Error={ErrorMessage}, GatewayUrl={GatewayUrl}, JobManagerUrl={JobManagerUrl}", 
+                _log.Error("[ExecuteAsync] Job submission failed - Error={ErrorMessage}, GatewayUrl={GatewayUrl}, JobManagerUrl={JobManagerUrl}",
                     submit.ErrorMessage, gatewayUrl, jobManagerUrl);
 
                 throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");

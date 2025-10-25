@@ -155,7 +155,7 @@ namespace FlinkDotNet.DataStream
 
         public JobDefinition ToJobDefinition(string jobId, string jobName)
         {
-            _logger.Debug("[OperationCapture.ToJobDefinition] Starting translation - jobId={JobId}, jobName={JobName}, kafkaSource.BootstrapServers={BootstrapServers}", 
+            _logger.Debug("[OperationCapture.ToJobDefinition] Starting translation - jobId={JobId}, jobName={JobName}, kafkaSource.BootstrapServers={BootstrapServers}",
                 jobId, jobName, this._kafkaSource?.BootstrapServers);
 
             if (this._kafkaSource == null)
@@ -165,7 +165,7 @@ namespace FlinkDotNet.DataStream
             }
 
             var jobDef = this.CreateJobDefinition(jobId, jobName);
-            _logger.Debug("[OperationCapture.ToJobDefinition] After CreateJobDefinition - Source.BootstrapServers={BootstrapServers}", 
+            _logger.Debug("[OperationCapture.ToJobDefinition] After CreateJobDefinition - Source.BootstrapServers={BootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             this.ConfigureJobMetadata(jobDef);

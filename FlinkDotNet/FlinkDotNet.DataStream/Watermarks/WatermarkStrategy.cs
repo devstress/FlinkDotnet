@@ -47,14 +47,14 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// </summary>
         /// <param name="maxOutOfOrderness">The maximum out-of-orderness</param>
         /// <returns>A new WatermarkStrategy</returns>
-        public static WatermarkStrategy<T> ForBoundedOutOfOrderness(System.TimeSpan maxOutOfOrderness) => new WatermarkStrategy<T>(maxOutOfOrderness, false);
+        public static WatermarkStrategy<T> ForBoundedOutOfOrderness(System.TimeSpan maxOutOfOrderness) => new(maxOutOfOrderness, false);
 
         /// <summary>
         /// Creates a watermark strategy for situations where timestamps are monotonously ascending
         /// (events always arrive in order).
         /// </summary>
         /// <returns>A new WatermarkStrategy</returns>
-        public static WatermarkStrategy<T> ForMonotonousTimestamps() => new WatermarkStrategy<T>(System.TimeSpan.Zero, true);
+        public static WatermarkStrategy<T> ForMonotonousTimestamps() => new(System.TimeSpan.Zero, true);
 
         /// <summary>
         /// Sets the timestamp assigner function.

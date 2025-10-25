@@ -74,7 +74,7 @@ namespace FlinkDotNet.DataStream.Window
         /// </summary>
         /// <param name="other">The other window to cover</param>
         /// <returns>The minimal window covering both windows</returns>
-        public TimeWindow Cover(TimeWindow other) => new TimeWindow(Math.Min(this.Start, other.Start), Math.Max(this.End, other.End));
+        public TimeWindow Cover(TimeWindow other) => new(Math.Min(this.Start, other.Start), Math.Max(this.End, other.End));
 
         /// <summary>
         /// Gets the window that results from merging this window with the given windows.
@@ -97,7 +97,7 @@ namespace FlinkDotNet.DataStream.Window
                 maxEnd = Math.Max(maxEnd, window.End);
             }
 
-            return new TimeWindow(minStart, maxEnd);
+            return new(minStart, maxEnd);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace FlinkDotNet.DataStream.Window
         public static TimeWindow GetWindowStartWithOffset(long timestamp, long offset, long windowSize)
         {
             var start = timestamp - (timestamp - offset + windowSize) % windowSize;
-            return new TimeWindow(start, start + windowSize);
+            return new(start, start + windowSize);
         }
 
         public override bool Equals(object? obj)
