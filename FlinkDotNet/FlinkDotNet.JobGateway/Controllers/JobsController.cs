@@ -15,6 +15,9 @@ namespace FlinkDotNet.JobGateway.Controllers;
 [ApiVersion("1.0")]
 public class JobsController : ControllerBase
 {
+    private const string LogBorderTop = "╔══════════════════════════════════════════════════════════════";
+    private const string LogBorderBottom = "╚══════════════════════════════════════════════════════════════";
+    
     private readonly ILogger<JobsController> _logger;
     private readonly IFlinkJobManager _flinkJobManager;
 
@@ -58,11 +61,11 @@ public class JobsController : ControllerBase
 
     private void LogRequestReceived()
     {
-        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+        _logger.LogInformation(LogBorderTop);
         _logger.LogInformation("║ 🔵 [Gateway] Received job submission request");
         _logger.LogInformation("║ 📡 Client: {ClientIP}", HttpContext.Connection.RemoteIpAddress);
         _logger.LogInformation("║ 🌐 Endpoint: POST /api/v1/jobs/submit");
-        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        _logger.LogInformation(LogBorderBottom);
     }
 
     private async Task<(string? Body, ActionResult? Error)> ReadRequestBodyAsync()
@@ -153,33 +156,33 @@ public class JobsController : ControllerBase
 
             if (result.IsSuccess)
             {
-                _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+                _logger.LogInformation(LogBorderTop);
                 _logger.LogInformation("║ ✅ [Gateway] Job submitted successfully");
                 _logger.LogInformation("║ 📋 JobId: {JobId}", result.JobId);
                 _logger.LogInformation("║ 🆔 FlinkJobId: {FlinkJobId}", result.FlinkJobId);
                 _logger.LogInformation("║ 📤 Response: 200 OK");
-                _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+                _logger.LogInformation(LogBorderBottom);
                 return Ok(result);
             }
             else
             {
-                _logger.LogError("╔══════════════════════════════════════════════════════════════");
+                _logger.LogError(LogBorderTop);
                 _logger.LogError("║ ❌ [Gateway] Job submission failed");
                 _logger.LogError("║ 📋 JobId: {JobId}", result.JobId);
                 _logger.LogError("║ ⚠️ Error: {ErrorMessage}", result.ErrorMessage);
                 _logger.LogError("║ 📤 Response: 400 Bad Request");
-                _logger.LogError("╚══════════════════════════════════════════════════════════════");
+                _logger.LogError(LogBorderBottom);
                 return BadRequest(result);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "╔══════════════════════════════════════════════════════════════");
+            _logger.LogError(ex, LogBorderTop);
             _logger.LogError("║ ❌ [Gateway] Exception during job submission");
             _logger.LogError("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
             _logger.LogError("║ 💥 Exception: {Message}", ex.Message);
             _logger.LogError("║ 📤 Response: 500 Internal Server Error");
-            _logger.LogError("╚══════════════════════════════════════════════════════════════");
+            _logger.LogError(LogBorderBottom);
             var result = JobSubmissionResult.CreateFailure(
                 jobDefinition.Metadata.JobId,
                 $"Internal server error: {ex.Message}");

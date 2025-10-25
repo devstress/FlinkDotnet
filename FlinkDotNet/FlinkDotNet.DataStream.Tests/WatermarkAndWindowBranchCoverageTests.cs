@@ -87,7 +87,7 @@ public class WatermarkAndWindowBranchCoverageTests
 
     private class TestTimestampAssigner : ITimestampAssigner<string>
     {
-        public long ExtractTimestamp(string element, long recordTimestamp)
+        public long ExtractTimestamp(string element, long previousElementTimestamp)
         {
             return element.Length;
         }

@@ -302,7 +302,7 @@ namespace Flink.JobBuilder.Services
                 errors.Add($"operations[{index}].retry.maxRetries must be between 0 and 100");
             if (retry.DelayMs == null || retry.DelayMs.Count == 0)
                 errors.Add($"operations[{index}].retry.delayMs must contain at least 1 value");
-            else if (retry.DelayMs.Any(d => d <= 0))
+            else if (retry.DelayMs.Exists(d => d <= 0))
                 errors.Add($"operations[{index}].retry.delayMs values must be > 0");
             if (string.IsNullOrWhiteSpace(retry.StateKey))
                 errors.Add($"operations[{index}].retry.stateKey is required");

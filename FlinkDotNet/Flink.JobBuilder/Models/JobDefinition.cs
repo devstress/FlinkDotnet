@@ -103,8 +103,14 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class KafkaSourceDefinition : ISourceDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "kafka";
+        /// <summary>
+        /// Gets or sets the topic
+        /// </summary>
         public string Topic { get; set; } = string.Empty;
         public string? BootstrapServers
         {
@@ -114,7 +120,13 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
+        /// <summary>
+        /// Gets or sets the starting offsets
+        /// </summary>
         public string? StartingOffsets { get; set; } = "earliest"; // earliest, latest, or specific offsets
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -123,10 +135,22 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FileSourceDefinition : ISourceDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "file";
+        /// <summary>
+        /// Gets or sets the path
+        /// </summary>
         public string Path { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the format
+        /// </summary>
         public string Format { get; set; } = "text"; // text, json, csv, etc.
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -135,20 +159,38 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class HttpSourceDefinition : ISourceDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "http";
+        /// <summary>
+        /// Gets or sets the url
+        /// </summary>
         public string Url { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the method
+        /// </summary>
         public string Method { get; set; } = "GET";
+        /// <summary>
+        /// Gets or sets the headers
+        /// </summary>
         public Dictionary<string, string> Headers { get; set; } = [];
         public string? Body
         {
             get; set;
         }
+        /// <summary>
+        /// Gets or sets the interval seconds
+        /// </summary>
         public int IntervalSeconds { get; set; } = 60; // Polling interval for continuous requests
         public string? AuthTokenStateKey
         {
             get; set;
         } // Key for cached auth token
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -157,12 +199,30 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class DatabaseSourceDefinition : ISourceDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "database";
+        /// <summary>
+        /// Gets or sets the connection string
+        /// </summary>
         public string ConnectionString { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the query
+        /// </summary>
         public string Query { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the database type
+        /// </summary>
         public string? DatabaseType { get; set; } = "postgresql";
+        /// <summary>
+        /// Gets or sets the polling interval seconds
+        /// </summary>
         public int PollingIntervalSeconds { get; set; } = 30;
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -171,9 +231,18 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class SqlSourceDefinition : ISourceDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "sql";
+        /// <summary>
+        /// Gets or sets the statements
+        /// </summary>
         public List<string> Statements { get; set; } = [];
+        /// <summary>
+        /// Gets or sets the mode
+        /// </summary>
         public string Mode { get; set; } = "streaming"; // streaming or batch (future)
 
         /// <summary>
@@ -181,6 +250,9 @@ namespace Flink.JobBuilder.Models
         /// </summary>
         public string ExecutionMode { get; set; } = "tableenv";
 
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -213,8 +285,14 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FilterOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "filter";
+        /// <summary>
+        /// Gets or sets the expression
+        /// </summary>
         public string Expression { get; set; } = string.Empty;
     }
 
@@ -223,8 +301,14 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class MapOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "map";
+        /// <summary>
+        /// Gets or sets the expression
+        /// </summary>
         public string Expression { get; set; } = string.Empty;
         public string? OutputType
         {
@@ -237,8 +321,14 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class GroupByOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "groupBy";
+        /// <summary>
+        /// Gets or sets the key
+        /// </summary>
         public string Key { get; set; } = string.Empty;
         public List<string>? Keys
         {
@@ -251,9 +341,18 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class AggregateOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "aggregate";
+        /// <summary>
+        /// Gets or sets the aggregation type
+        /// </summary>
         public string AggregationType { get; set; } = string.Empty; // SUM, COUNT, AVG, MIN, MAX, COLLECT
+        /// <summary>
+        /// Gets or sets the field
+        /// </summary>
         public string Field { get; set; } = string.Empty;
         public string? Alias
         {
@@ -287,13 +386,22 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class WindowOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "window";
+        /// <summary>
+        /// Gets or sets the window type
+        /// </summary>
         public string WindowType { get; set; } = string.Empty; // TUMBLING, SLIDING, SESSION
         public int Size
         {
             get; set;
         }
+        /// <summary>
+        /// Gets or sets the time unit
+        /// </summary>
         public string TimeUnit { get; set; } = "MINUTES"; // SECONDS, MINUTES, HOURS
         public int? Slide
         {
@@ -310,11 +418,26 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JoinOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "join";
+        /// <summary>
+        /// Gets or sets the join type
+        /// </summary>
         public string JoinType { get; set; } = "INNER"; // INNER, LEFT, RIGHT, FULL
+        /// <summary>
+        /// Gets or sets the right source
+        /// </summary>
         public ISourceDefinition RightSource { get; set; } = null!;
+        /// <summary>
+        /// Gets or sets the left key
+        /// </summary>
         public string LeftKey { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the right key
+        /// </summary>
         public string RightKey { get; set; } = string.Empty;
         public WindowOperationDefinition? Window
         {
@@ -327,11 +450,26 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class AsyncFunctionOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "asyncFunction";
+        /// <summary>
+        /// Gets or sets the function type
+        /// </summary>
         public string FunctionType { get; set; } = string.Empty; // http, database, etc.
+        /// <summary>
+        /// Gets or sets the url
+        /// </summary>
         public string Url { get; set; } = string.Empty; // For HTTP calls
+        /// <summary>
+        /// Gets or sets the method
+        /// </summary>
         public string Method { get; set; } = "GET";
+        /// <summary>
+        /// Gets or sets the headers
+        /// </summary>
         public Dictionary<string, string> Headers { get; set; } = [];
         public string? BodyTemplate
         {
@@ -345,7 +483,13 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // For database queries
+        /// <summary>
+        /// Gets or sets the timeout ms
+        /// </summary>
         public int TimeoutMs { get; set; } = 5000;
+        /// <summary>
+        /// Gets or sets the max retries
+        /// </summary>
         public int MaxRetries { get; set; } = 3;
         public string? StateKey
         {
@@ -355,6 +499,9 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // Cache time-to-live
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -363,12 +510,30 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class ProcessFunctionOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "processFunction";
+        /// <summary>
+        /// Gets or sets the process type
+        /// </summary>
         public string ProcessType { get; set; } = string.Empty; // authTokenManager, retryHandler, etc.
+        /// <summary>
+        /// Gets or sets the parameters
+        /// </summary>
         public Dictionary<string, object> Parameters { get; set; } = [];
+        /// <summary>
+        /// Gets or sets the state keys
+        /// </summary>
         public List<string> StateKeys { get; set; } = [];
+        /// <summary>
+        /// Gets or sets the timer names
+        /// </summary>
         public List<string> TimerNames { get; set; } = [];
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -377,10 +542,22 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class StateOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "state";
+        /// <summary>
+        /// Gets or sets the state type
+        /// </summary>
         public string StateType { get; set; } = "value"; // value, list, map, reducing
+        /// <summary>
+        /// Gets or sets the state key
+        /// </summary>
         public string StateKey { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the value type
+        /// </summary>
         public string? ValueType { get; set; } = "string";
         public long? TtlMs
         {
@@ -390,6 +567,9 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         }
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -398,8 +578,14 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class TimerOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "timer";
+        /// <summary>
+        /// Gets or sets the timer type
+        /// </summary>
         public string TimerType { get; set; } = "processing"; // processing, event
         public long DelayMs
         {
@@ -413,6 +599,9 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // What to do when timer fires
+        /// <summary>
+        /// Gets or sets the parameters
+        /// </summary>
         public Dictionary<string, object> Parameters { get; set; } = [];
     }
 
@@ -421,9 +610,18 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class RetryOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "retry";
+        /// <summary>
+        /// Gets or sets the max retries
+        /// </summary>
         public int MaxRetries { get; set; } = 5;
+        /// <summary>
+        /// Gets or sets the delay ms
+        /// </summary>
         public List<long> DelayMs { get; set; } = [300_000, 600_000, 1_800_000, 3_600_000, 86_400_000]; // 5min, 10min, 30min, 1hr, 1day
         public string? RetryCondition
         {
@@ -433,7 +631,13 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // Topic for permanent failures
+        /// <summary>
+        /// Gets or sets the state key
+        /// </summary>
         public string StateKey { get; set; } = "retry_state";
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -442,11 +646,26 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class SideOutputOperationDefinition : IOperationDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "sideOutput";
+        /// <summary>
+        /// Gets or sets the output tag
+        /// </summary>
         public string OutputTag { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the condition
+        /// </summary>
         public string Condition { get; set; } = string.Empty; // When to route to side output
+        /// <summary>
+        /// Gets or sets the side output sink
+        /// </summary>
         public ISinkDefinition SideOutputSink { get; set; } = null!;
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -473,14 +692,26 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class KafkaSinkDefinition : ISinkDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "kafka";
+        /// <summary>
+        /// Gets or sets the topic
+        /// </summary>
         public string Topic { get; set; } = string.Empty;
         public string? BootstrapServers
         {
             get; set;
         }
+        /// <summary>
+        /// Gets or sets the serializer
+        /// </summary>
         public string? Serializer { get; set; } = "json";
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -489,8 +720,14 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class ConsoleSinkDefinition : ISinkDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "console";
+        /// <summary>
+        /// Gets or sets the format
+        /// </summary>
         public string? Format { get; set; } = "json";
     }
 
@@ -499,10 +736,22 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class FileSinkDefinition : ISinkDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "file";
+        /// <summary>
+        /// Gets or sets the path
+        /// </summary>
         public string Path { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the format
+        /// </summary>
         public string Format { get; set; } = "json"; // json, csv, parquet, etc.
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -511,11 +760,26 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class DatabaseSinkDefinition : ISinkDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "database";
+        /// <summary>
+        /// Gets or sets the connection string
+        /// </summary>
         public string ConnectionString { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the table
+        /// </summary>
         public string Table { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the database type
+        /// </summary>
         public string? DatabaseType { get; set; } = "postgresql"; // postgresql, mysql, etc.
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -524,10 +788,22 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class HttpSinkDefinition : ISinkDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "http";
+        /// <summary>
+        /// Gets or sets the url
+        /// </summary>
         public string Url { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the method
+        /// </summary>
         public string Method { get; set; } = "POST";
+        /// <summary>
+        /// Gets or sets the headers
+        /// </summary>
         public Dictionary<string, string> Headers { get; set; } = [];
         public string? BodyTemplate
         {
@@ -537,7 +813,13 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } // Key for cached auth token
+        /// <summary>
+        /// Gets or sets the timeout ms
+        /// </summary>
         public int TimeoutMs { get; set; } = 5000;
+        /// <summary>
+        /// Gets or sets the properties
+        /// </summary>
         public Dictionary<string, string> Properties { get; set; } = [];
     }
 
@@ -546,14 +828,26 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class RedisSinkDefinition : ISinkDefinition
     {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
         [JsonIgnore]
         public string Type => "redis";
+        /// <summary>
+        /// Gets or sets the connection string
+        /// </summary>
         public string ConnectionString { get; set; } = string.Empty;
         public string? Key
         {
             get; set;
         } // Redis key for operations
+        /// <summary>
+        /// Gets or sets the operation type
+        /// </summary>
         public string OperationType { get; set; } = "increment"; // increment, set, sadd, etc.
+        /// <summary>
+        /// Gets or sets the configuration
+        /// </summary>
         public Dictionary<string, object> Configuration { get; set; } = [];
     }
 }
