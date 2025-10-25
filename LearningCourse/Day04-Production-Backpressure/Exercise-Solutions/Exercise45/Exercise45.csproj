@@ -24,7 +24,7 @@
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     
     <!-- JSON Serialization -->
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
 
   <ItemGroup>
