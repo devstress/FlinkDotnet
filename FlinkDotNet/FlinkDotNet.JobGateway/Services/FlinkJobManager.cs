@@ -294,7 +294,8 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (!clusterHealthy2)
             {
-                var errorMessage = "Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible.";
+                var flinkUrl = _httpClient.BaseAddress?.ToString() ?? "(unknown)";
+                var errorMessage = $"Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible at {flinkUrl}";
                 _logger.LogError("❌ {ErrorMessage}", errorMessage);
                 throw new InvalidOperationException(errorMessage);
             }
