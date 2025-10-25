@@ -102,11 +102,9 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public string GetString(string key, string? defaultValue = null)
         {
-            if (this._configuration.TryGetValue(key, out var value))
-            {
-                return value?.ToString() ?? defaultValue ?? string.Empty;
-            }
-            return defaultValue ?? string.Empty;
+            return this._configuration.TryGetValue(key, out var value)
+                ? value?.ToString() ?? defaultValue ?? string.Empty
+                : defaultValue ?? string.Empty;
         }
 
         /// <summary>
@@ -231,12 +229,9 @@ namespace FlinkDotNet.Common
         /// <returns>List of string values</returns>
         public static IList<string> ParseListValue(string? value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return [];
-            }
-
-            return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return string.IsNullOrWhiteSpace(value)
+                ? []
+                : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
     }
 }

@@ -118,6 +118,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "S107:Methods should not have too many parameters",
         Justification = "Generic method eliminates 98 lines of duplication between DiscoverFlinkEndpoint and DiscoverSqlGatewayEndpoint")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters reserved for future Aspire integration")]
     private string DiscoverEndpoint(
         string serviceName,
         string primaryEndpointName,
@@ -211,7 +212,7 @@ public class FlinkJobManager : IFlinkJobManager
 
         this._logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
 
-        for (int i = 0; i < maxRetries; i++)
+        for (var i = 0; i < maxRetries; i++)
         {
             try
             {
@@ -1926,7 +1927,7 @@ public class FlinkJobManager : IFlinkJobManager
             return Rank(candidate) >= Rank(current) ? candidate : current;
         }
 
-        public JobMetrics Build() => new JobMetrics
+        public JobMetrics Build() => new()
         {
             FlinkJobId = this._flinkJobId,
             RecordsIn = this._recordsIn,
