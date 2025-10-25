@@ -1,0 +1,13 @@
+<Project>
+  <!-- Override test project settings to completely disable warnings -->
+  <!-- This file is evaluated AFTER .csproj files, so it overrides their settings -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <!-- Suppress all warnings in test projects without using NoWarn -->
+    <WarningLevel>0</WarningLevel>
+    <!-- Disable nullable reference type warnings -->
+    <Nullable>disable</Nullable>
+    <!-- Ensure analyzers don't run -->
+    <RunAnalyzers>false</RunAnalyzers>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+  </PropertyGroup>
+</Project>
