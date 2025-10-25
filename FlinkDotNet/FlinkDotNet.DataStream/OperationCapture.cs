@@ -245,6 +245,9 @@ namespace FlinkDotNet.DataStream
                     case "Aggregate":
                         TranslateAggregateOperation(jobDef, operation);
                         break;
+                    default:
+                        _logger.Warning("[OperationCapture.TranslateOperations] Unknown operation type: {OperationType}", operation.Type);
+                        break;
                 }
             }
         }
