@@ -44,6 +44,12 @@ public class FlinkJobManager : IFlinkJobManager
     public static TimeSpan JobRecoveryPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
 
     /// <summary>
+    /// Gets or sets the HTTP client timeout for Flink REST API calls.
+    /// Static field for testability (can be set to low value in tests for fast failure).
+    /// </summary>
+    public static TimeSpan HttpClientTimeout { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="FlinkJobManager"/> class.
     /// </summary>
     /// <param name="logger">Logger for tracking job management operations.</param>
@@ -62,7 +68,7 @@ public class FlinkJobManager : IFlinkJobManager
         var flinkBaseUrl = this.DiscoverFlinkEndpoint();
 
         this._httpClient.BaseAddress = new Uri(flinkBaseUrl);
-        this._httpClient.Timeout = TimeSpan.FromMinutes(5);
+        this._httpClient.Timeout = HttpClientTimeout;
         this._logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
         this._logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
     }
@@ -786,7 +792,7 @@ public class FlinkJobManager : IFlinkJobManager
         return new HttpClient
         {
             BaseAddress = new Uri(sqlGatewayEndpoint),
-            Timeout = TimeSpan.FromMinutes(5)
+            Timeout = HttpClientTimeout
         };
     }
 

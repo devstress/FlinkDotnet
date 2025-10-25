@@ -24,6 +24,7 @@ public class FlinkJobManagerFinalCoverageTests
         FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
         FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
         FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+        FlinkJobManager.HttpClientTimeout = TimeSpan.FromMilliseconds(100);
 
         this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
         this._mockConfiguration = new Mock<IConfiguration>();

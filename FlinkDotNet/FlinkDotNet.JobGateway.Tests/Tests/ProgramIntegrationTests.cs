@@ -24,6 +24,7 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.HttpClientTimeout = TimeSpan.FromMilliseconds(100);
 
             // Clean up environment variables before each test
             Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);

@@ -24,6 +24,7 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.HttpClientTimeout = TimeSpan.FromMilliseconds(100);
 
             this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
             this._mockConfiguration = new Mock<IConfiguration>();
@@ -946,13 +947,19 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         [Test]
-        public void Constructor_SetsTimeoutTo5Minutes()
+        public void Constructor_SetsTimeoutFromStaticProperty()
         {
-            // Arrange & Act
+            // Arrange
+            FlinkJobManager.HttpClientTimeout = TimeSpan.FromSeconds(30);
+
+            // Act
             _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Assert
-            Assert.That(this._httpClient.Timeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
+            Assert.That(this._httpClient.Timeout, Is.EqualTo(TimeSpan.FromSeconds(30)));
+            
+            // Cleanup - restore to test default
+            FlinkJobManager.HttpClientTimeout = TimeSpan.FromMilliseconds(100);
         }
 
         [Test]
