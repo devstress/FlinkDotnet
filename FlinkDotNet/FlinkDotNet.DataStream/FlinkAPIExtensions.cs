@@ -143,7 +143,7 @@ namespace FlinkDotNet.DataStream
         {
             this._topic = topic;
             this._bootstrapServers = bootstrapServers;
-            // serializer parameter kept for API compatibility but not stored
+            _ = serializer; // Reserved for future implementation - parameter kept for API compatibility
         }
 
         /// <summary>
@@ -241,10 +241,13 @@ namespace FlinkDotNet.DataStream
         /// <returns>The Kafka source function with timestamps configured</returns>
         public static KafkaSourceFunction<T> AssignTimestampsAndWatermarks<T>(
             this KafkaSourceFunction<T> source,
-            IAssignerWithPunctuatedWatermarks<T> assigner) =>
+            IAssignerWithPunctuatedWatermarks<T> assigner)
+        {
+            _ = assigner; // Reserved for future implementation
             // In production, this would configure the source to use the assigner
             // For now, we return the source to maintain API compatibility
-            source;
+            return source;
+        }
 
         /// <summary>
         /// Assigns timestamps and watermarks to elements from this Kafka source using periodic watermarks.
@@ -256,9 +259,12 @@ namespace FlinkDotNet.DataStream
         /// <returns>The Kafka source function with timestamps configured</returns>
         public static KafkaSourceFunction<T> AssignTimestampsAndWatermarks<T>(
             this KafkaSourceFunction<T> source,
-            IAssignerWithPeriodicWatermarks<T> assigner) =>
+            IAssignerWithPeriodicWatermarks<T> assigner)
+        {
+            _ = assigner; // Reserved for future implementation
             // In production, this would configure the source to use the assigner
             // For now, we return the source to maintain API compatibility
-            source;
+            return source;
+        }
     }
 }

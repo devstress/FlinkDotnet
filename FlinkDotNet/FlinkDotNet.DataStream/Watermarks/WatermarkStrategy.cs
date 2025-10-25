@@ -78,6 +78,7 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <returns>The timestamp in milliseconds</returns>
         public long ExtractTimestamp(T element, long previousTimestamp)
         {
+            _ = previousTimestamp; // Reserved for future implementation
             if (this._timestampAssigner == null)
             {
                 throw new System.InvalidOperationException(
