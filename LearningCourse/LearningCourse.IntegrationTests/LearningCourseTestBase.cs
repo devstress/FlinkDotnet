@@ -1952,8 +1952,15 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
-        // Set FLINK_GATEWAY_URL for exercises that submit Flink jobs directly (always use localhost:8080)
-        psi.Environment["FLINK_GATEWAY_URL"] = "http://localhost:8080";
+        // Set FLINK_GATEWAY_URL for exercises that submit Flink jobs directly (use discovered endpoint)
+        if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
+        {
+            psi.Environment["FLINK_GATEWAY_URL"] = FlinkRestApiEndpoint;
+        }
+        else
+        {
+            throw new InvalidOperationException("Flink REST API endpoint not discovered. Ensure GlobalSetUp ran successfully.");
+        }
         
         // Set LOG_FILE_PATH to ensure all logs go to LocalTesting/test-logs/
         // Use absolute path to ensure logs are written to the correct location
@@ -1969,6 +1976,10 @@ public abstract class LearningCourseTestBase
         if (!string.IsNullOrEmpty(RedisHostEndpoint))
         {
             TestContext.WriteLine($"🔧 Setting REDIS_ENDPOINT={RedisHostEndpoint} for Redis state management");
+        }
+        if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
+        {
+            TestContext.WriteLine($"🔧 Setting FLINK_GATEWAY_URL={FlinkRestApiEndpoint} for Flink job submission");
         }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 
