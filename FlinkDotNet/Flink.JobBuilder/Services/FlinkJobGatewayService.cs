@@ -45,7 +45,7 @@ namespace Flink.JobBuilder.Services
 
         private HttpClient CreateDefaultHttpClient()
         {
-            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient with BaseUrl={BaseUrl}", _configuration.BaseUrl);
+            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient for .NET Job Gateway (not Apache Flink) with BaseUrl={BaseUrl}", _configuration.BaseUrl);
             
             var client = new HttpClient
             {
@@ -60,7 +60,7 @@ namespace Flink.JobBuilder.Services
                 client.DefaultRequestHeaders.Add("X-API-Key", _configuration.ApiKey);
             }
 
-            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] HttpClient created with BaseAddress={BaseAddress}", client.BaseAddress);
+            _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] HttpClient created for .NET Job Gateway with BaseAddress={BaseAddress}", client.BaseAddress);
             return client;
         }
 

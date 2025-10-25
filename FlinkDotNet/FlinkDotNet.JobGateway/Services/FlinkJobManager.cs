@@ -58,8 +58,11 @@ public class FlinkJobManager : IFlinkJobManager
 
         _httpClient.BaseAddress = new Uri(flinkBaseUrl);
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
-        _logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
-        _logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
+        _logger.LogInformation("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        _logger.LogInformation("🔧 FlinkJobManager initialized - connects to Apache Flink JobManager");
+        _logger.LogInformation("🎯 Target Apache Flink cluster: {FlinkBaseUrl}", flinkBaseUrl);
+        _logger.LogInformation("📡 Gateway will verify Flink connectivity when jobs are submitted");
+        _logger.LogInformation("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 
     /// <summary>
@@ -129,8 +132,12 @@ public class FlinkJobManager : IFlinkJobManager
         var aspireEndpoint = Environment.GetEnvironmentVariable(aspireKey);
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
-            _logger.LogInformation("Using Aspire service discovery for {ServiceName}: {Endpoint}", serviceDisplayName, aspireEndpoint);
+            _logger.LogInformation("✅ Using Aspire service discovery for {ServiceName}: {Endpoint} (from {AspireKey})", serviceDisplayName, aspireEndpoint, aspireKey);
             return aspireEndpoint;
+        }
+        else
+        {
+            _logger.LogWarning("⚠️ Aspire environment variable not found: {AspireKey}", aspireKey);
         }
 
         // Fallback: Try legacy endpoint name format
@@ -138,7 +145,7 @@ public class FlinkJobManager : IFlinkJobManager
         aspireEndpoint = Environment.GetEnvironmentVariable(legacyKey);
         if (!string.IsNullOrEmpty(aspireEndpoint))
         {
-            _logger.LogInformation("Using Aspire service discovery for {ServiceName} (legacy format): {Endpoint}", serviceDisplayName, aspireEndpoint);
+            _logger.LogInformation("✅ Using Aspire service discovery for {ServiceName} (legacy format): {Endpoint} (from {LegacyKey})", serviceDisplayName, aspireEndpoint, legacyKey);
             return aspireEndpoint;
         }
 
@@ -146,7 +153,7 @@ public class FlinkJobManager : IFlinkJobManager
         var configEndpoint = _configuration[configKey];
         if (!string.IsNullOrEmpty(configEndpoint))
         {
-            _logger.LogInformation("Using configuration for {ServiceName}: {Endpoint}", serviceDisplayName, configEndpoint);
+            _logger.LogInformation("✅ Using configuration for {ServiceName}: {Endpoint} (from {ConfigKey})", serviceDisplayName, configEndpoint, configKey);
             return configEndpoint;
         }
 
@@ -159,17 +166,17 @@ public class FlinkJobManager : IFlinkJobManager
             var port = int.TryParse(envPort, out var p) ? p : defaultPort;
             var protocol = GetProtocol();
             var envEndpoint = $"{protocol}://{envHost}:{port}";
-            _logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
+            _logger.LogInformation("✅ Using environment variable for {ServiceName}: {Endpoint} (from {EnvHostKey} + {EnvPortKey})", serviceDisplayName, envEndpoint, envHostKey, envPortKey);
             return envEndpoint;
         }
 
         // Strategy 4: Default fallback
         var defaultProtocol = GetProtocol();
         var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
-        _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
+        _logger.LogWarning("⚠️ Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
-            _logger.LogWarning("Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
+            _logger.LogWarning("⚠️ Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
         }
         return defaultEndpoint;
     }
