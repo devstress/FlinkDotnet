@@ -227,20 +227,6 @@ Traditional solutions require Java expertise or vendor lock-in. FlinkDotNet brin
 - **[Local Testing Setup](docs/local-testing-setup.md)** - Development environment details
 - **[Contributing Guide](CONTRIBUTING.md)** - Development guidelines
 
-## Proven at Scale
-
-✅ **10 Integration Tests Passing** - Complete pipeline validated on every commit
-
-🔗 [**View Live Test Results**](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml)
-
-**What's validated:**
-- ✅ Kafka → Flink → Output pipeline (800K+ msg/sec)
-- ✅ Basic transformations (map, filter, flatMap)
-- ✅ Stateful processing (timers, event-time windows)
-- ✅ Flink SQL via TableEnvironment
-- ✅ Multi-step pipelines
-- ✅ Temporal workflow integration
-
 ## Requirements
 
 - **.NET 9.0 SDK** - Required for all development
