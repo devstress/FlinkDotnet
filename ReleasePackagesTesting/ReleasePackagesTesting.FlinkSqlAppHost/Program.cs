@@ -325,13 +325,14 @@ var gateway = builder.AddContainer("flink-job-gateway", "flinkdotnet/jobgateway"
     .WithHttpEndpoint(port: Ports.GatewayHostPort, targetPort: 8080, name: "gateway-http")
     .WithContainerRuntimeArgs("--publish", $"{Ports.GatewayHostPort}:8080")  // Explicit port publishing for test access
     .WaitFor(jobManager)  // Wait for JobManager to be ready before starting Job Gateway
+    .WaitFor(sqlGateway)  // Wait for SQL Gateway to be ready before starting Job Gateway
     .WithEnvironment("ASPNETCORE_URLS", "http://+:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/opt/connectors")
     .WithEnvironment("LOG_FILE_PATH", "/opt/test-logs")
+    .WithEnvironment("Flink__JobManager__BaseUrl", jobManager.GetEndpoint("jm-http"))
+    .WithEnvironment("Flink__SqlGateway__BaseUrl", sqlGateway.GetEndpoint("sg-http"))
     .WithBindMount(connectorsDir, "/opt/connectors", isReadOnly: true)
-    .WithBindMount(testLogsDir, "/opt/test-logs")
-    .WithReference(jobManager.GetEndpoint("jm-http"))
-    .WithReference(sqlGateway.GetEndpoint("sg-http"));
+    .WithBindMount(testLogsDir, "/opt/test-logs");
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
