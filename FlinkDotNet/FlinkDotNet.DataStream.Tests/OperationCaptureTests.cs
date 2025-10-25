@@ -258,11 +258,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
-            
+
             var mapped = stream.Map(new MultiplyByTwoMapFunction());
             var filtered = mapped.Filter(new GreaterThanTenFilterFunction());
             var windowed = filtered.TimeWindowAll(Time.Seconds(5));
-            
+
             Assert.That(windowed, Is.Not.Null);
             Assert.Pass("Full pipeline created successfully");
         }
@@ -272,11 +272,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
-            
+
             var windowed = stream.CountWindowAll(100);
             var aggregated = windowed.Aggregate(new AverageAggregateFunction());
             aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
-            
+
             Assert.Pass("Complex pipeline created successfully");
         }
 
@@ -290,7 +290,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
             stream.Map("upper").SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert - Should not throw when creating job definition internally
             Assert.That(stream, Is.Not.Null);
         }
@@ -302,7 +302,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
             var result = stream.Map("lower");
             result.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -315,7 +315,7 @@ namespace FlinkDotNet.DataStream.Tests
                 (string s) => s, "earliest");
             var mapped = stream.Map(new WordsCapitalizerMapFunction());
             mapped.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -328,7 +328,7 @@ namespace FlinkDotNet.DataStream.Tests
                 (string s) => s, "earliest");
             var mapped = stream.Map(new LowerCaseMapFunction());
             mapped.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -341,7 +341,7 @@ namespace FlinkDotNet.DataStream.Tests
                 (string s) => s, "earliest");
             var mapped = stream.Map(new UnknownMapFunction());
             mapped.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -356,7 +356,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithTimestampAssigner(s => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var withWatermarks = stream.AssignTimestampsAndWatermarks(strategy);
             withWatermarks.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert
             Assert.That(withWatermarks, Is.Not.Null);
         }
@@ -370,7 +370,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowed = stream.TimeWindowAll(Time.Seconds(10));
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
             aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
-            
+
             // Act & Assert
             Assert.That(aggregated, Is.Not.Null);
         }
@@ -381,7 +381,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
             stream.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Act & Assert - Should create operations
             Assert.That(stream, Is.Not.Null);
         }
@@ -461,11 +461,11 @@ namespace FlinkDotNet.DataStream.Tests
         private class AverageAggregateFunction : IAggregateFunction<int, (int, int), double>
         {
             public (int, int) CreateAccumulator() => (0, 0);
-            public (int, int) Add(int value, (int, int) accumulator) => 
+            public (int, int) Add(int value, (int, int) accumulator) =>
                 (accumulator.Item1 + value, accumulator.Item2 + 1);
-            public double GetResult((int, int) accumulator) => 
-                accumulator.Item2 == 0 ? 0.0 : (double)accumulator.Item1 / accumulator.Item2;
-            public (int, int) Merge((int, int) acc1, (int, int) acc2) => 
+            public double GetResult((int, int) accumulator) =>
+                accumulator.Item2 == 0 ? 0.0 : (double) accumulator.Item1 / accumulator.Item2;
+            public (int, int) Merge((int, int) acc1, (int, int) acc2) =>
                 (acc1.Item1 + acc2.Item1, acc1.Item2 + acc2.Item2);
         }
 #pragma warning restore S4144 // Methods should not have identical implementations

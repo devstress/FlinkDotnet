@@ -27,13 +27,13 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-            
+
             _mockLogger = new Mock<ILogger<FlinkJobManager>>();
             _mockConfiguration = new Mock<IConfiguration>();
-            
+
             // Setup default configuration values
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
-            
+            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
@@ -45,7 +45,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TearDown()
         {
             _httpClient?.Dispose();
-            
+
             // Clean up environment variables
             Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", null);
         }
@@ -56,7 +56,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithEnvironmentVariable_AttemptsToUseJarFromEnvVar()
         {
             // Arrange
-            var testJarPath = "/tmp/nonexistent-runner.jar";  
+            var testJarPath = "/tmp/nonexistent-runner.jar";
             Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", testJarPath);
 
             try

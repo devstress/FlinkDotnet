@@ -18,7 +18,7 @@ public class FlinkJobManager : IFlinkJobManager
     private const string ProtocolHttps = "HTTPS";
     private const string ProtocolHttp = "HTTP";
     private const string FlinkIRRunnerDirectory = "FlinkIRRunner";
-    
+
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
@@ -1547,6 +1547,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// Rejects path traversal sequences, special characters, and URL-encoded attacks.
     /// </summary>
     /// <param name="segment">The path segment to validate.</param>
+    /// <param name="parameterName"></param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
     private static string ValidateAndSanitizePathSegment(string segment, string parameterName = "segment")

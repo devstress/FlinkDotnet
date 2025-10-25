@@ -212,8 +212,8 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var assigner = SlidingEventTimeWindows<int>.Of(
-                Time.Seconds(10), 
-                Time.Seconds(5), 
+                Time.Seconds(10),
+                Time.Seconds(5),
                 Time.Seconds(2));
             var timestamp = 12000L;
 

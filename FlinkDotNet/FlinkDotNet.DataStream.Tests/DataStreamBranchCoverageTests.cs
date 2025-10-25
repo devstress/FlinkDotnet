@@ -1,10 +1,10 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Flink.JobBuilder.Models;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -107,7 +107,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = _env.FromCollection(collection);
 
             // Act & Assert - Should throw because _job is null and _operationCapture is null
-            Assert.Throws<InvalidOperationException>(() => 
+            Assert.Throws<InvalidOperationException>(() =>
                 stream.SinkToKafka("output-topic", "localhost:9092"));
         }
 
@@ -118,10 +118,10 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
             var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
@@ -260,10 +260,10 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
             var stream = CreateDataStreamWithJobDefinition<string>(jobDef);
@@ -393,10 +393,10 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
             var stream = CreateDataStreamWithJobDefinition<int>(jobDef);
@@ -460,10 +460,10 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "TestJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
             var stream = CreateDataStreamWithJobDefinition<int>(jobDef);
@@ -497,10 +497,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange - Create job definition without metadata
             var jobDef = new JobDefinition
             {
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
 
@@ -519,10 +519,10 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "ExistingJob" },
-                Source = new KafkaSourceDefinition 
-                { 
-                    Topic = "test-topic", 
-                    BootstrapServers = "localhost:9092" 
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "test-topic",
+                    BootstrapServers = "localhost:9092"
                 }
             };
 
@@ -555,7 +555,7 @@ namespace FlinkDotNet.DataStream.Tests
             if (constructor == null)
                 throw new InvalidOperationException("Could not find internal constructor");
 
-            return (DataStream<T>)constructor.Invoke(new object[] { job, _env });
+            return (DataStream<T>) constructor.Invoke(new object[] { job, _env });
         }
 
         /// <summary>
@@ -575,7 +575,7 @@ namespace FlinkDotNet.DataStream.Tests
             if (constructor == null)
                 throw new InvalidOperationException("Could not find internal constructor");
 
-            return (DataStream<T>)constructor.Invoke(new object[] { sourceFunction, _env, "TestSource" });
+            return (DataStream<T>) constructor.Invoke(new object[] { sourceFunction, _env, "TestSource" });
         }
 
         // Test sink function without Kafka properties

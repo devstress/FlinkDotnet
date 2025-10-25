@@ -1,6 +1,6 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream.Window;
 using System;
+using FlinkDotNet.DataStream.Window;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests;
 
@@ -11,7 +11,7 @@ namespace FlinkDotNet.DataStream.Tests;
 public class TimeWindowBranchCoverageTests
 {
     #region Constructor Tests
-    
+
     [Test]
     public void TimeWindow_Constructor_WithStartGreaterThanEnd_ThrowsArgumentException()
     {

@@ -48,17 +48,26 @@ namespace FlinkDotNet.DataStream.Window.Functions
             /// <summary>
             /// Gets the window that is being processed.
             /// </summary>
-            IWindow Window { get; }
+            IWindow Window
+            {
+                get;
+            }
 
             /// <summary>
             /// Gets the current processing time.
             /// </summary>
-            long CurrentProcessingTime { get; }
+            long CurrentProcessingTime
+            {
+                get;
+            }
 
             /// <summary>
             /// Gets the current event time watermark.
             /// </summary>
-            long CurrentWatermark { get; }
+            long CurrentWatermark
+            {
+                get;
+            }
         }
     }
 }

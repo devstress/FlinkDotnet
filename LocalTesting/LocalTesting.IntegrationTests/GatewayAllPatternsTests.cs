@@ -157,11 +157,11 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             TestContext.WriteLine($"📡 Kafka bootstrap (Flink): {GlobalTestInfrastructure.KafkaContainerIpForFlink}");
             TestContext.WriteLine($"📍 Input topic: {inputTopic}");
             TestContext.WriteLine($"📍 Output topic: {outputTopic}");
-            
+
             var submitResult = await jobCreator(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, ct);
 
             TestContext.WriteLine($"📊 Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");
-            
+
             // If job submission failed, retrieve detailed diagnostics
             if (!submitResult.Success)
             {
@@ -170,7 +170,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
                 var diagnostics = await GetFlinkJobDiagnosticsAsync(flinkEndpoint, submitResult.FlinkJobId);
                 TestContext.WriteLine(diagnostics);
             }
-            
+
             Assert.That(submitResult.Success, Is.True, $"Job must submit successfully. Error: {submitResult.ErrorMessage}");
 
             // Wait for job to be running
@@ -428,7 +428,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         {
             var sqlGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-sql-gateway\" --format \"{{.Ports}}\"");
             var lines = sqlGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
+
             foreach (var line in lines)
             {
                 // Look for port mapping to 8083 (SQL Gateway's default listener port)
@@ -451,7 +451,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             return $"http://localhost:{Ports.SqlGatewayHostPort}/";
         }
     }
-    
+
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
         // Try Docker first, then Podman if Docker fails or returns empty

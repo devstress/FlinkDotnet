@@ -28,7 +28,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 RouteData = new Microsoft.AspNetCore.Routing.RouteData(),
                 ActionDescriptor = new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor()
             };
-            
+
             actionContext.ModelState.AddModelError("TestKey", "Test error message");
             actionContext.HttpContext.Request.Path = "/test/path";
 
@@ -125,7 +125,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 RouteData = new Microsoft.AspNetCore.Routing.RouteData(),
                 ActionDescriptor = new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor()
             };
-            
+
             actionContext.ModelState.AddModelError("Key1", "Error 1");
             actionContext.ModelState.AddModelError("Key2", "Error 2");
             actionContext.ModelState.AddModelError("Key2", "Error 3"); // Multiple errors for same key
@@ -145,8 +145,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => 
-                        v.ToString()!.Contains("Key1") && 
+                    It.Is<It.IsAnyType>((v, t) =>
+                        v.ToString()!.Contains("Key1") &&
                         v.ToString()!.Contains("Key2")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
@@ -253,7 +253,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var today = DateTime.UtcNow.ToString("yyyyMMdd");
             var logFilePath = "test-logs";
-            
+
             // Act
             var logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
 

@@ -1,9 +1,9 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlinkDotNet.DataStream.Window;
 using FlinkDotNet.DataStream.Window.Assigners;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -23,10 +23,10 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var slide = Time.Seconds(5);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act - Use long.MinValue timestamp
             var windows = assigner.AssignWindows("test", long.MinValue).ToList();
-            
+
             // Assert - Should return no windows because timestamp check fails
             Assert.That(windows, Is.Empty);
         }
@@ -38,11 +38,11 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var slide = Time.Seconds(5);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act - Use a very large negative timestamp that still allows some windows
             var timestamp = -1000L; // Use a reasonable negative value instead
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert - The condition allows windows where start >= 0 OR start + size > 0
             // With very negative timestamps, we should get some windows
             Assert.That(windows, Is.Not.Null);
@@ -56,11 +56,11 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Milliseconds(100);
             var slide = Time.Milliseconds(50);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act - Use a negative timestamp that would create windows with start < 0 and start + size <= 0
             var timestamp = -1000L; // This will create windows well into negative territory
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert - Some windows should be filtered out by the condition
             foreach (var window in windows)
             {
@@ -76,11 +76,11 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Milliseconds(5000);
             var slide = Time.Milliseconds(1000);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act - Use timestamp that creates windows crossing from negative to positive
             var timestamp = 1000L; // This will create some windows with start < 0 but end > 0
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert - Should include windows where start < 0 but end > 0
             var windowsCrossingZero = windows.Where(w => w.Start < 0 && w.End > 0).ToList();
             Assert.That(windowsCrossingZero, Is.Not.Empty, "Should have windows crossing from negative to positive");
@@ -93,11 +93,11 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var slide = Time.Seconds(5);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act - Use normal positive timestamp
             var timestamp = 15000L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert - All windows should have start >= 0 for this timestamp
             Assert.That(windows, Is.Not.Empty);
             Assert.That(windows.All(w => w.Start >= 0), Is.True);
@@ -111,11 +111,11 @@ namespace FlinkDotNet.DataStream.Tests
             var slide = Time.Seconds(5);
             var offset = Time.Seconds(2);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide, offset);
-            
+
             // Act
             var timestamp = 15000L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert - Should assign windows with offset applied
             Assert.That(windows, Is.Not.Empty);
             // The offset affects the window start calculation
@@ -129,10 +129,10 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var slide = Time.Seconds(5);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act
             var result = assigner.ToString();
-            
+
             // Assert
             Assert.That(result, Does.Contain("SlidingEventTimeWindows"));
             Assert.That(result, Does.Contain("10000")); // 10 seconds in ms
@@ -146,7 +146,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var slide = Time.Seconds(5);
             var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
-            
+
             // Act & Assert - Just check the boolean property, skip TimeCharacteristic enum comparison
             Assert.That(assigner.IsEventTime, Is.True);
         }
@@ -161,7 +161,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act - Tests the two-parameter Of method (no offset)
             var windowSize = Time.Seconds(10);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var timestamp = 15000L;
@@ -176,7 +176,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var offset = Time.Seconds(3);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize, offset);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var timestamp = 15000L;
@@ -190,11 +190,11 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange - Tests GetWindowStart calculation with negative timestamp
             var windowSize = Time.Seconds(10);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
-            
+
             // Act - Use negative timestamp
             var timestamp = -5000L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert - Should still assign exactly one window
             Assert.That(windows, Has.Count.EqualTo(1));
             // Window should contain the timestamp
@@ -208,11 +208,11 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange - Tests boundary condition with timestamp = 0
             var windowSize = Time.Seconds(10);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
-            
+
             // Act
             var timestamp = 0L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert
             Assert.That(windows, Has.Count.EqualTo(1));
             Assert.That(windows[0].Start, Is.LessThanOrEqualTo(0));
@@ -225,10 +225,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var windowSize = Time.Seconds(10);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
-            
+
             // Act
             var result = assigner.ToString();
-            
+
             // Assert
             Assert.That(result, Does.Contain("TumblingEventTimeWindows"));
             Assert.That(result, Does.Contain("10000")); // 10 seconds in ms
@@ -240,7 +240,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var windowSize = Time.Seconds(10);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
-            
+
             // Act & Assert - Just check the boolean property
             Assert.That(assigner.IsEventTime, Is.True);
         }
@@ -252,11 +252,11 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var offset = Time.Seconds(8);
             var assigner = TumblingEventTimeWindows<string>.Of(windowSize, offset);
-            
+
             // Act
             var timestamp = 25000L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert
             Assert.That(windows, Has.Count.EqualTo(1));
             // Verify the window calculation accounts for offset
@@ -274,11 +274,11 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var sessionGap = Time.Seconds(5);
             var assigner = SessionWindows<string>.WithGap(sessionGap);
-            
+
             // Act
             var timestamp = 10000L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert
             Assert.That(windows, Has.Count.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(timestamp));
@@ -291,7 +291,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var sessionGap = Time.Seconds(5);
             var assigner = SessionWindows<string>.WithGap(sessionGap);
-            
+
             // Act & Assert - Just check the boolean properties
             Assert.That(assigner.IsEventTime, Is.True);
             Assert.That(assigner.CanMerge, Is.True);
@@ -303,10 +303,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var sessionGap = Time.Seconds(5);
             var assigner = SessionWindows<string>.WithGap(sessionGap);
-            
+
             // Act
             var result = assigner.ToString();
-            
+
             // Assert
             Assert.That(result, Does.Contain("SessionWindows"));
             Assert.That(result, Does.Contain("5000")); // 5 seconds in ms
@@ -318,11 +318,11 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var sessionGap = Time.Seconds(5);
             var assigner = SessionWindows<string>.WithGap(sessionGap);
-            
+
             // Act
             var timestamp = -10000L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert
             Assert.That(windows, Has.Count.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(timestamp));
@@ -335,11 +335,11 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var sessionGap = Time.Seconds(5);
             var assigner = SessionWindows<string>.WithGap(sessionGap);
-            
+
             // Act
             var timestamp = 0L;
             var windows = assigner.AssignWindows("test", timestamp).ToList();
-            
+
             // Assert
             Assert.That(windows, Has.Count.EqualTo(1));
             Assert.That(windows[0].Start, Is.EqualTo(0));
@@ -356,7 +356,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var windowSize = Time.Seconds(10);
             var assigner = TumblingEventTimeWindows.Of<string>(windowSize);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var windows = assigner.AssignWindows("test", 15000L).ToList();
@@ -370,7 +370,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var offset = Time.Seconds(2);
             var assigner = TumblingEventTimeWindows.Of<string>(windowSize, offset);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var windows = assigner.AssignWindows("test", 15000L).ToList();
@@ -384,7 +384,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowSize = Time.Seconds(10);
             var slide = Time.Seconds(5);
             var assigner = SlidingEventTimeWindows.Of<string>(windowSize, slide);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var windows = assigner.AssignWindows("test", 15000L).ToList();
@@ -399,7 +399,7 @@ namespace FlinkDotNet.DataStream.Tests
             var slide = Time.Seconds(5);
             var offset = Time.Seconds(2);
             var assigner = SlidingEventTimeWindows.Of<string>(windowSize, slide, offset);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var windows = assigner.AssignWindows("test", 15000L).ToList();
@@ -412,7 +412,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var sessionGap = Time.Seconds(5);
             var assigner = SessionWindows.WithGap<string>(sessionGap);
-            
+
             // Assert
             Assert.That(assigner, Is.Not.Null);
             var windows = assigner.AssignWindows("test", 10000L).ToList();

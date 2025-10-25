@@ -19,9 +19,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     {
         // Set environment variable required by FlinkJobGatewayConfiguration
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        
+
         _mockLogger = new Mock<ILogger>();
-        
+
         // Clean up test log directory
         var logPath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
         try
@@ -31,10 +31,10 @@ public class FlinkJobGatewayServiceBranchCoverageTests
                 var testLogFiles = Directory.GetFiles(logPath, "FlinkDotNet.JobGateway.log.*");
                 foreach (var file in testLogFiles)
                 {
-                    try 
-                    { 
-                        File.Delete(file); 
-                    } 
+                    try
+                    {
+                        File.Delete(file);
+                    }
                     catch (IOException)
                     {
                         // Ignore file deletion errors - file may be locked

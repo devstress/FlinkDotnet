@@ -1,11 +1,8 @@
 using System.Diagnostics;
-using Aspire.Hosting.Testing;
 using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using LocalTesting.FlinkSqlAppHost;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
@@ -22,7 +19,7 @@ public abstract class LocalTestingTestBase
     /// Infrastructure is initialized once for all tests, dramatically reducing startup overhead.
     /// </summary>
     protected static DistributedApplication? AppHost => GlobalTestInfrastructure.AppHost;
-    
+
     /// <summary>
     /// Access to shared Kafka connection string from GlobalTestInfrastructure.
     /// CRITICAL: This address is used by BOTH test producers/consumers AND Flink jobs.
@@ -30,7 +27,7 @@ public abstract class LocalTestingTestBase
     /// from both host and containers via Docker port mapping.
     /// </summary>
     protected static string? KafkaConnectionString => GlobalTestInfrastructure.KafkaConnectionString;
-    
+
     /// <summary>
     /// Access to discovered Temporal endpoint from GlobalTestInfrastructure.
     /// Aspire allocates dynamic ports during testing, so we must use the discovered endpoint.
@@ -77,7 +74,7 @@ public abstract class LocalTestingTestBase
             var containerDetails = await RunDockerCommandAsync(
                 "ps --filter \"name=kafka\" --format \"{{.Names}} {{.Ports}} {{.Networks}}\" --no-trunc"
             );
-            
+
             if (!string.IsNullOrWhiteSpace(containerDetails))
             {
                 return containerDetails.Trim();
@@ -87,7 +84,7 @@ public abstract class LocalTestingTestBase
             var allContainers = await RunDockerCommandAsync(
                 "ps --format \"{{.Names}} {{.Ports}} {{.Networks}}\" --no-trunc"
             );
-            
+
             TestContext.WriteLine($"🔍 All container details: {allContainers}");
             return "No Kafka containers found";
         }
@@ -180,43 +177,43 @@ public abstract class LocalTestingTestBase
         TestContext.WriteLine($"║ 📡 Bootstrap servers: {bootstrapServers}");
         TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
         TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
-        
+
         var bootstrapVariations = await GetBootstrapServerVariationsAsync(bootstrapServers);
         TestContext.WriteLine($"🔗 [KafkaReady] Will try connection variations: {string.Join(", ", bootstrapVariations)}");
 
         Exception? lastException = null;
-        
+
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
-            
+
             var (connected, exception) = await TryConnectToKafkaAsync(bootstrapVariations, attempt, sw.Elapsed);
             if (connected)
                 return;
-            
+
             lastException = exception;
             await LogKafkaAttemptDiagnosticsAsync(attempt, bootstrapVariations, lastException);
             await Task.Delay(100, ct); // Optimized: Reduced to 100ms (was 250ms)
         }
-        
+
         throw await CreateKafkaTimeoutExceptionAsync(timeout, bootstrapVariations, lastException);
     }
 
     private static Task<(bool connected, Exception? exception)> TryConnectToKafkaAsync(string[] bootstrapVariations, int attempt, TimeSpan elapsed)
     {
         Exception? lastException = null;
-        
+
         foreach (var bootstrap in bootstrapVariations)
         {
             try
             {
                 using var admin = CreateKafkaAdminClient(bootstrap);
                 var md = admin.GetMetadata(TimeSpan.FromSeconds(2));
-                
+
                 if (md?.Brokers?.Count > 0)
                 {
                     TestContext.WriteLine($"✅ [KafkaReady] Metadata OK (brokers={md.Brokers.Count}) using {bootstrap} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
-                    return Task.FromResult((true, (Exception?)null));
+                    return Task.FromResult((true, (Exception?) null));
                 }
             }
             catch (Exception ex)
@@ -282,7 +279,7 @@ public abstract class LocalTestingTestBase
             originalBootstrap,
             originalBootstrap.Replace("localhost", "127.0.0.1")
         };
-        
+
         // Remove duplicates
         return Task.FromResult(variations.Distinct().ToArray());
     }
@@ -295,7 +292,7 @@ public abstract class LocalTestingTestBase
         try
         {
             TestContext.WriteLine("🔍 Detailed connectivity diagnostics:");
-            
+
             // Test each endpoint manually
             foreach (var endpoint in bootstrapVariations.Take(3)) // Test first 3 to avoid spam
             {
@@ -306,15 +303,15 @@ public abstract class LocalTestingTestBase
                     TestContext.WriteLine($"   {endpoint}: {(reachable ? "✅ Reachable" : "❌ Not reachable")}");
                 }
             }
-            
+
             // Container status
             var containers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
             TestContext.WriteLine($"   Container Status: {containers.Trim()}");
-            
+
             // Network information
             var networks = await RunDockerCommandAsync("network ls --format \"{{.Name}}: {{.Driver}}\"");
             TestContext.WriteLine($"   Networks: {networks.Replace('\n', ' ').Trim()}");
-            
+
             if (lastException != null)
             {
                 TestContext.WriteLine($"   Last Exception: {lastException.GetType().Name}: {lastException.Message}");
@@ -339,16 +336,16 @@ public abstract class LocalTestingTestBase
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var sw = Stopwatch.StartNew();
         var attempt = 0;
-        
+
         TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
         TestContext.WriteLine($"║ 🔎 [FlinkReady] Connecting to Flink JobManager");
         TestContext.WriteLine($"║ 📡 Overview URL: {overviewUrl}");
         TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
         TestContext.WriteLine($"║ 🎯 Require free slots: {requireFreeSlots}");
         TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
-        
+
         await InitializeFlinkReadinessCheckAsync(overviewUrl, timeout);
-        
+
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
@@ -358,10 +355,10 @@ public abstract class LocalTestingTestBase
                 TestContext.WriteLine($"✅ [FlinkReady] JobManager with TaskManagers ready{slotsMessage} at {overviewUrl} after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
                 return;
             }
-            
+
             await Task.Delay(200, ct); // Optimized: Reduced to 200ms (was 500ms)
         }
-        
+
         await LogFlinkContainerDiagnosticsAsync();
         throw new TimeoutException($"Flink JobManager not ready within {timeout.TotalSeconds:F0}s at {overviewUrl}");
     }
@@ -370,13 +367,13 @@ public abstract class LocalTestingTestBase
     {
         TestContext.WriteLine($"🔎 [FlinkReady] Probing Flink JobManager at {overviewUrl} (timeout: {timeout.TotalSeconds:F0}s)");
         TestContext.WriteLine($"⏳ [FlinkReady] Checking Flink container status immediately...");
-        
+
         await Task.Delay(500); // Optimized: Reduced to 500ms (was 2000ms)
-        
+
         var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
         TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
     }
-    
+
     /// <summary>
     /// Check if Flink JobManager is ready with TaskManagers and available task slots.
     /// Enhanced to verify task slots are available before allowing job submission.
@@ -399,18 +396,18 @@ public abstract class LocalTestingTestBase
                 {
                     return false;
                 }
-                
+
                 // TaskManagers are registered - check slots only if required
                 if (requireFreeSlots)
                 {
                     var baseUrl = overviewUrl.Replace("/v1/overview", "");
                     return await CheckTaskManagerSlotsAsync(http, baseUrl, attempt, ct);
                 }
-                
+
                 // Slots not required, just TaskManager registration is enough
                 return true;
             }
-            
+
             TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: HTTP {resp.StatusCode}");
             return false;
         }
@@ -425,7 +422,7 @@ public abstract class LocalTestingTestBase
             return false;
         }
     }
-    
+
     /// <summary>
     /// Check if TaskManagers have available task slots for job submission.
     /// Queries /v1/taskmanagers endpoint to verify at least one free slot exists.
@@ -436,15 +433,15 @@ public abstract class LocalTestingTestBase
         {
             var taskManagersUrl = $"{baseUrl}/v1/taskmanagers";
             var resp = await http.GetAsync(taskManagersUrl, ct);
-            
+
             if (!resp.IsSuccessStatusCode)
             {
                 TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: TaskManagers endpoint returned {resp.StatusCode}");
                 return false;
             }
-            
+
             var content = await resp.Content.ReadAsStringAsync(ct);
-            
+
             // Parse JSON to check for available slots
             // Expected format: {"taskmanagers":[{"id":"...","slotsNumber":2,"freeSlots":2,...}]}
             if (string.IsNullOrWhiteSpace(content) || !content.Contains("taskmanagers"))
@@ -452,7 +449,7 @@ public abstract class LocalTestingTestBase
                 TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: TaskManagers response missing 'taskmanagers' field");
                 return false;
             }
-            
+
             // Simple JSON parsing to check for freeSlots > 0
             // Look for "freeSlots": pattern followed by a number greater than 0
             var freeSlotsMatch = System.Text.RegularExpressions.Regex.Match(content, @"""freeSlots""\s*:\s*(\d+)");
@@ -470,7 +467,7 @@ public abstract class LocalTestingTestBase
                     return false;
                 }
             }
-            
+
             TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: Could not parse freeSlots from TaskManagers response");
             return false;
         }
@@ -480,7 +477,7 @@ public abstract class LocalTestingTestBase
             return false;
         }
     }
-    
+
     /// <summary>
     /// Validate Flink JobManager response content.
     /// </summary>
@@ -490,15 +487,15 @@ public abstract class LocalTestingTestBase
         {
             return true;
         }
-        
+
         if (!string.IsNullOrEmpty(content))
         {
             TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: JobManager responding but TaskManagers not ready yet");
         }
-        
+
         return false;
     }
-    
+
     /// <summary>
     /// Handle HTTP exceptions during Flink readiness checks.
     /// </summary>
@@ -512,14 +509,14 @@ public abstract class LocalTestingTestBase
         {
             TestContext.WriteLine($"⏳ [FlinkReady] Attempt {attempt}: {ex.GetType().Name} - {ex.Message}");
         }
-        
+
         // Log detailed diagnostics every 10 attempts
         if (attempt % 10 == 0)
         {
             await LogFlinkContainerDiagnosticsAsync();
         }
     }
-    
+
     /// <summary>
     /// Log detailed Flink container diagnostics for troubleshooting.
     /// </summary>
@@ -528,15 +525,15 @@ public abstract class LocalTestingTestBase
         try
         {
             TestContext.WriteLine("🔍 [FlinkReady] Container diagnostics:");
-            
+
             // Check Flink containers
             var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
             TestContext.WriteLine($"   Flink Containers: {flinkContainers.Trim()}");
-            
+
             // Check if port is listening
             var portTest = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
             TestContext.WriteLine($"   Port {Ports.JobManagerHostPort} accessible: {portTest}");
-            
+
             // Try to get container logs
             var jobManagerLogs = await RunDockerCommandAsync("logs --tail 20 flink-jobmanager 2>&1 || echo 'Could not get logs'");
             TestContext.WriteLine($"   JobManager logs (last 20 lines): {jobManagerLogs.Trim()}");
@@ -557,18 +554,18 @@ public abstract class LocalTestingTestBase
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         var sw = Stopwatch.StartNew();
         var attempt = 0;
-        
+
         LogGatewayReadinessStart(healthUrl, timeout);
-        
+
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
             if (await CheckGatewayHealthAsync(http, healthUrl, attempt, sw.Elapsed, ct))
                 return;
-            
+
             await Task.Delay(1000, ct);
         }
-        
+
         ThrowGatewayTimeoutException(healthUrl, timeout, attempt, sw.Elapsed);
     }
 
@@ -608,7 +605,7 @@ public abstract class LocalTestingTestBase
 
     private static bool HandleGatewayResponse(HttpResponseMessage resp, string healthUrl, int attempt, TimeSpan elapsed)
     {
-        if ((int)resp.StatusCode >= 200 && (int)resp.StatusCode < 500)
+        if ((int) resp.StatusCode >= 200 && (int) resp.StatusCode < 500)
         {
             TestContext.WriteLine($"✅ [GatewayReady] Gateway ready at {healthUrl} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
             return true;
@@ -654,18 +651,18 @@ public abstract class LocalTestingTestBase
         var sw = Stopwatch.StartNew();
         var attempt = 0;
         var healthUrl = $"{baseUrl}/v1/info";
-        
+
         LogSqlGatewayReadinessStart(healthUrl, timeout);
-        
+
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
             if (await CheckSqlGatewayHealthAsync(http, healthUrl, attempt, sw.Elapsed, ct))
                 return;
-            
+
             await Task.Delay(1000, ct);
         }
-        
+
         ThrowSqlGatewayTimeoutException(healthUrl, timeout, attempt, sw.Elapsed);
     }
 
@@ -685,7 +682,7 @@ public abstract class LocalTestingTestBase
                 TestContext.WriteLine($"✅ [SqlGatewayReady] SQL Gateway ready at {healthUrl} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
                 return true;
             }
-            
+
             LogSqlGatewayAttempt(attempt, elapsed, resp.StatusCode);
             return false;
         }
@@ -740,24 +737,24 @@ public abstract class LocalTestingTestBase
         var sw = Stopwatch.StartNew();
         var attempt = 0;
         Exception? lastException = null;
-        
+
         LogTemporalReadinessStart(address, timeout);
-        
+
         while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
         {
             attempt++;
-            
+
             var (success, exception) = await TryConnectToTemporalAsync(address, attempt, sw.Elapsed);
             if (success)
             {
                 return;
             }
-            
+
             lastException = exception;
             await LogTemporalConnectionAttemptAsync(attempt, sw.Elapsed, lastException);
             await Task.Delay(1000, ct);
         }
-        
+
         throw CreateTemporalTimeoutException(address, timeout, attempt, sw.Elapsed, lastException);
     }
 
@@ -780,13 +777,13 @@ public abstract class LocalTestingTestBase
                 TargetHost = address,
                 Namespace = "default",
             });
-            
+
             if (client.Connection != null)
             {
                 TestContext.WriteLine($"✅ [TemporalReady] Temporal ready at {address} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
                 return (true, null);
             }
-            
+
             return (false, null);
         }
         catch (Exception ex)
@@ -803,13 +800,13 @@ public abstract class LocalTestingTestBase
             {
                 TestContext.WriteLine($"⏳ [TemporalReady] Attempt {attempt} ({elapsed.TotalSeconds:F0}s elapsed): {lastException.GetType().Name}");
             }
-            
+
             if (elapsed.TotalSeconds >= 30 && attempt % 30 == 0)
             {
                 TestContext.WriteLine($"   💡 Temporal PostgreSQL initialization can be slow - this is normal for first startup");
             }
         }
-        
+
         return Task.CompletedTask;
     }
 
@@ -817,12 +814,12 @@ public abstract class LocalTestingTestBase
     {
         var errorMessage = $"Temporal not ready within {timeout.TotalSeconds:F0}s at {address}. " +
                           $"Attempted {attempt} times over {elapsed.TotalSeconds:F1}s.";
-        
+
         if (lastException != null)
         {
             errorMessage += $" Last error: {lastException.GetType().Name} - {lastException.Message}";
         }
-        
+
         return new TimeoutException(errorMessage);
     }
 
@@ -862,7 +859,7 @@ public abstract class LocalTestingTestBase
 
             await admin.CreateTopicsAsync(new[] { topicSpec });
             TestContext.WriteLine($"✅ Topic '{topicName}' created successfully");
-            
+
             // Optimized delay for faster test execution
             await Task.Delay(100);
         }
@@ -893,16 +890,16 @@ public abstract class LocalTestingTestBase
         // Quick validation that endpoints are still responding
         // This is used by individual tests after global setup has already validated everything
         TestContext.WriteLine("🔧 Quick infrastructure health check...");
-        
+
         // Just verify Kafka is still accessible (very quick check)
         if (string.IsNullOrEmpty(KafkaConnectionString))
         {
             throw new InvalidOperationException("Kafka connection string not available");
         }
-        
+
         // Display container status with ports for visibility (no polling - containers should already be running)
         await DisplayContainerStatusAsync();
-        
+
         TestContext.WriteLine("✅ Infrastructure health check passed");
     }
 
@@ -928,7 +925,7 @@ public abstract class LocalTestingTestBase
         {
             var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"");
             TestContext.WriteLine($"🔍 Flink JobManager port mappings: {flinkContainers.Trim()}");
-            
+
             return ExtractFlinkEndpointFromPorts(flinkContainers);
         }
         catch (Exception ex)
@@ -971,13 +968,13 @@ public abstract class LocalTestingTestBase
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
             var logsBuilder = new System.Text.StringBuilder();
             logsBuilder.AppendLine("\n========== JobManager Logs ==========");
-            
+
             var mainLogName = await GetJobManagerLogListAsync(httpClient, flinkEndpoint, logsBuilder);
             if (!string.IsNullOrEmpty(mainLogName))
             {
                 await AppendJobManagerLogContentAsync(httpClient, flinkEndpoint, mainLogName, logsBuilder);
             }
-            
+
             return logsBuilder.ToString();
         }
         catch (Exception ex)
@@ -990,16 +987,16 @@ public abstract class LocalTestingTestBase
     {
         var logListUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs";
         var logListResponse = await httpClient.GetAsync(logListUrl);
-        
+
         if (!logListResponse.IsSuccessStatusCode)
         {
             logsBuilder.AppendLine($"Failed to get JobManager log list: HTTP {logListResponse.StatusCode}");
             return null;
         }
-        
+
         var logListContent = await logListResponse.Content.ReadAsStringAsync();
         var logListJson = System.Text.Json.JsonDocument.Parse(logListContent);
-        
+
         return ExtractMainLogName(logListJson, logsBuilder);
     }
 
@@ -1014,7 +1011,7 @@ public abstract class LocalTestingTestBase
                 {
                     var logName = name.GetString();
                     logsBuilder.AppendLine($"  Available log: {logName}");
-                    
+
                     if (logName?.EndsWith(".log") == true)
                     {
                         mainLogName = logName;
@@ -1066,7 +1063,7 @@ public abstract class LocalTestingTestBase
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             var url = $"{flinkEndpoint.TrimEnd('/')}/jobs/{jobId}/exceptions";
             TestContext.WriteLine($"🔍 Fetching job exceptions from: {url}");
-            
+
             var response = await httpClient.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
@@ -1094,15 +1091,15 @@ public abstract class LocalTestingTestBase
         {
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             var logsBuilder = new System.Text.StringBuilder();
-            
+
             var taskManagers = await GetTaskManagerListAsync(httpClient, flinkEndpoint);
             if (!taskManagers.HasValue)
             {
                 return "Failed to get TaskManager list or no TaskManagers found";
             }
-            
+
             var tmCount = await ProcessTaskManagersAsync(httpClient, flinkEndpoint, taskManagers.Value, logsBuilder);
-            
+
             return tmCount == 0 ? "No TaskManagers found" : logsBuilder.ToString();
         }
         catch (Exception ex)
@@ -1115,20 +1112,20 @@ public abstract class LocalTestingTestBase
     {
         var tmListUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers";
         var tmListResponse = await httpClient.GetAsync(tmListUrl);
-        
+
         if (!tmListResponse.IsSuccessStatusCode)
         {
             return null;
         }
-        
+
         var tmListContent = await tmListResponse.Content.ReadAsStringAsync();
         var tmListJson = System.Text.Json.JsonDocument.Parse(tmListContent);
-        
+
         if (!tmListJson.RootElement.TryGetProperty("taskmanagers", out var taskManagers))
         {
             return null;
         }
-        
+
         return taskManagers;
     }
 
@@ -1142,7 +1139,7 @@ public abstract class LocalTestingTestBase
                 var taskManagerId = tmId.GetString();
                 tmCount++;
                 logsBuilder.AppendLine($"\n========== TaskManager {tmCount} (ID: {taskManagerId}) ==========");
-                
+
                 await AppendTaskManagerLogsAsync(httpClient, flinkEndpoint, taskManagerId, logsBuilder);
             }
         }
@@ -1166,12 +1163,12 @@ public abstract class LocalTestingTestBase
     {
         var logUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/logs";
         var logResponse = await httpClient.GetAsync(logUrl);
-        
+
         if (logResponse.IsSuccessStatusCode)
         {
             var logContent = await logResponse.Content.ReadAsStringAsync();
             var logJson = System.Text.Json.JsonDocument.Parse(logContent);
-            
+
             if (logJson.RootElement.TryGetProperty("logs", out var logs))
             {
                 foreach (var logFile in logs.EnumerateArray())
@@ -1189,7 +1186,7 @@ public abstract class LocalTestingTestBase
     {
         var stdoutUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/stdout";
         var stdoutResponse = await httpClient.GetAsync(stdoutUrl);
-        
+
         if (stdoutResponse.IsSuccessStatusCode)
         {
             var stdoutContent = await stdoutResponse.Content.ReadAsStringAsync();
@@ -1212,12 +1209,12 @@ public abstract class LocalTestingTestBase
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             var containerName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
-            
+
             if (string.IsNullOrEmpty(containerName))
             {
                 return "No TaskManager container found";
             }
-            
+
             TestContext.WriteLine($"🔍 Getting logs from TaskManager container: {containerName}");
             var logs = await RunDockerCommandAsync($"logs {containerName} --tail 20 2>&1");
             return $"========== TaskManager Container Logs ({containerName}) - Last 20 Lines ==========\n{logs}";
@@ -1238,12 +1235,12 @@ public abstract class LocalTestingTestBase
         diagnostics.AppendLine("\n" + new string('=', 80));
         diagnostics.AppendLine("FLINK JOB FAILURE DIAGNOSTICS");
         diagnostics.AppendLine(new string('=', 80));
-        
+
         // 1. Get JobManager logs (most important for job submission failures)
         diagnostics.AppendLine("\n--- JobManager Logs (from Flink REST API) ---");
         var jmLogs = await GetFlinkJobManagerLogsAsync(flinkEndpoint);
         diagnostics.AppendLine(jmLogs);
-        
+
         // 2. Get job exceptions if jobId is provided
         if (!string.IsNullOrEmpty(jobId))
         {
@@ -1251,17 +1248,17 @@ public abstract class LocalTestingTestBase
             var exceptions = await GetFlinkJobExceptionsAsync(flinkEndpoint, jobId);
             diagnostics.AppendLine(exceptions);
         }
-        
+
         // 3. Get TaskManager logs from Flink REST API
         diagnostics.AppendLine("\n--- TaskManager Logs (from Flink REST API) ---");
         var tmLogs = await GetFlinkTaskManagerLogsAsync(flinkEndpoint);
         diagnostics.AppendLine(tmLogs);
-        
+
         // 4. Get TaskManager logs from Docker as fallback/additional info
         diagnostics.AppendLine("\n--- TaskManager Logs (from Docker) ---");
         var dockerLogs = await GetTaskManagerLogsFromDockerAsync();
         diagnostics.AppendLine(dockerLogs);
-        
+
         diagnostics.AppendLine("\n" + new string('=', 80));
         return diagnostics.ToString();
     }
@@ -1282,14 +1279,14 @@ public abstract class LocalTestingTestBase
             {
                 // Check if we only got the header (no actual containers)
                 var lines = containerInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                
+
                 if (lines.Length <= 1)
                 {
                     // Only header, no containers
                     TestContext.WriteLine("⚠️ No containers found - this is unexpected in lightweight mode");
                     TestContext.WriteLine("🔍 Container info output:");
                     TestContext.WriteLine(containerInfo);
-                    
+
                     // Try listing ALL containers including stopped ones for diagnostics
                     var allContainersInfo = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                     if (!string.IsNullOrWhiteSpace(allContainersInfo))
@@ -1323,18 +1320,18 @@ public abstract class LocalTestingTestBase
         try
         {
             TestContext.WriteLine($"🔍 [Job Status Check] {checkpoint} - Job ID: {jobId}");
-            
+
             // Skip status check if job ID is null or empty
             if (string.IsNullOrEmpty(jobId))
             {
                 TestContext.WriteLine($"⏭️ Skipping job status check - Job ID is empty");
                 return;
             }
-            
+
             using var httpClient = new System.Net.Http.HttpClient();
             var statusUrl = $"{gatewayBase}api/v1/jobs/{jobId}/status";
             var response = await httpClient.GetAsync(statusUrl);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -1359,18 +1356,18 @@ public abstract class LocalTestingTestBase
         try
         {
             TestContext.WriteLine($"🔍 [Flink Container Debug] {checkpoint}");
-            
+
             // Get ALL container names and filter in C# to handle Aspire's random suffixes
             var allContainersList = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var allContainers = allContainersList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             var flinkContainers = allContainers.Where(name => name.Contains("flink", StringComparison.OrdinalIgnoreCase)).ToList();
-            
+
             TestContext.WriteLine($"🐳 Flink containers found: {string.Join(", ", flinkContainers)}");
-            
+
             // Find JobManager container
             var jmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
-            
+
             if (!string.IsNullOrWhiteSpace(jmName))
             {
                 TestContext.WriteLine($"📋 Found JobManager container: {jmName}");
@@ -1382,10 +1379,10 @@ public abstract class LocalTestingTestBase
                 TestContext.WriteLine("⚠️ No JobManager container found");
                 TestContext.WriteLine($"   Available containers: {string.Join(", ", allContainers)}");
             }
-            
+
             // Find TaskManager container
             var tmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
-            
+
             if (!string.IsNullOrWhiteSpace(tmName))
             {
                 TestContext.WriteLine($"📋 Found TaskManager container: {tmName}");
@@ -1417,14 +1414,14 @@ public abstract class LocalTestingTestBase
         try
         {
             TestContext.WriteLine($"🔍 [Flink Job Debug] {checkpoint} - Job ID: {jobId}");
-            
+
             // Get all container names and filter in C# to handle Aspire's random suffixes
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             // Find JobManager container
             var jmName = containers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
-            
+
             if (!string.IsNullOrWhiteSpace(jmName))
             {
                 // Get logs filtered for this specific job
@@ -1432,19 +1429,19 @@ public abstract class LocalTestingTestBase
                 var jobLogLines = jobLogs.Split('\n').Where(line => line.Contains(jobId, StringComparison.OrdinalIgnoreCase)).Take(30);
                 TestContext.WriteLine($"📋 Job-specific logs (last 30 lines):\n{string.Join('\n', jobLogLines)}");
             }
-            
+
             // Find TaskManager container
             var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
-            
+
             if (!string.IsNullOrWhiteSpace(tmName))
             {
                 // Get TaskManager logs and filter locally
                 var allLogs = await RunDockerCommandAsync($"logs {tmName} 2>&1");
-                
+
                 // Check for Kafka-related logs
                 var kafkaLogLines = allLogs.Split('\n').Where(line => line.Contains("kafka", StringComparison.OrdinalIgnoreCase)).Take(20);
                 TestContext.WriteLine($"📋 Kafka-related logs from TaskManager (last 20 lines):\n{string.Join('\n', kafkaLogLines)}");
-                
+
                 // Also check for any error logs
                 var errorLogLines = allLogs.Split('\n').Where(line =>
                     line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
@@ -1468,32 +1465,32 @@ public abstract class LocalTestingTestBase
         try
         {
             TestContext.WriteLine("🔍 [Kafka Connectivity] Testing from Flink TaskManager container...");
-            
+
             // Get all container names and filter in C# to handle Aspire's random suffixes
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
-            
+
             if (string.IsNullOrWhiteSpace(tmName))
             {
                 TestContext.WriteLine("⚠️ No TaskManager container found for connectivity test");
                 return;
             }
-            
+
             TestContext.WriteLine($"🐳 Using TaskManager container: {tmName}");
-            
+
             // Test connectivity to kafka:9092
             var testResult = await RunDockerCommandAsync($"exec {tmName} timeout 2 bash -c 'echo \"test\" | nc -w 1 kafka 9092 && echo \"SUCCESS\" || echo \"FAILED\"' 2>&1");
             TestContext.WriteLine($"📊 Kafka connectivity (kafka:9092): {testResult.Trim()}");
-            
+
             // Also try to resolve the hostname
             var dnsResult = await RunDockerCommandAsync($"exec {tmName} getent hosts kafka 2>&1 || echo \"DNS resolution failed\"");
             TestContext.WriteLine($"📊 DNS resolution for 'kafka': {dnsResult.Trim()}");
-            
+
             // Check if Kafka connectorJARs are present
             var connectorCheck = await RunDockerCommandAsync($"exec {tmName} ls -lh /opt/flink/lib/*kafka* 2>&1 || echo \"No Kafka connector found\"");
             TestContext.WriteLine($"📊 Kafka connector JARs in Flink:\n{connectorCheck.Trim()}");
-            
+
             // Check network settings
             var networkInfo = await RunDockerCommandAsync($"inspect {tmName} --format '{{{{.NetworkSettings.Networks}}}}'");
             TestContext.WriteLine($"📊 Container network info: {networkInfo.Trim()}");

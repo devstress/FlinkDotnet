@@ -1,6 +1,6 @@
-using NUnit.Framework;
 using System;
 using System.Linq;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -285,7 +285,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() =>
-                stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<string>)null!));
+                stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<string>) null!));
         }
 
         [Test]
@@ -382,7 +382,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange - Create a stream with no valid source (internal test scenario)
             var testData = new string[] { };
             var stream = _env.FromCollection(testData);
-            
+
             // Force the stream into an invalid state by mapping multiple times
             var mapped1 = stream.Map(s => s.ToUpper());
             var mapped2 = mapped1.Map(s => s.ToLower());

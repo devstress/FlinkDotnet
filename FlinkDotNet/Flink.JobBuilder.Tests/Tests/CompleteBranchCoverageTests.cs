@@ -310,9 +310,9 @@ namespace Flink.JobBuilder.Tests.Tests
             var job = new JobDefinition
             {
                 Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
-                Source = new DatabaseSourceDefinition 
-                { 
-                    ConnectionString = "Server=localhost;Database=test", 
+                Source = new DatabaseSourceDefinition
+                {
+                    ConnectionString = "Server=localhost;Database=test",
                     Query = "SELECT * FROM users",
                     PollingIntervalSeconds = 60
                 },

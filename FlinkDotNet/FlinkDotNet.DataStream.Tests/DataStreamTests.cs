@@ -205,7 +205,7 @@ namespace FlinkDotNet.DataStream.Tests
         [Test]
         public void SinkToKafka_WithSerializer_ReturnsDataStream()
         {
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group", 
+            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s));
             var sunk = stream.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
             Assert.That(sunk, Is.Not.Null);
@@ -398,7 +398,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             var collection = new[] { 1, 2, 3 };
             var stream = _env.FromCollection(collection);
-            Assert.Throws<ArgumentNullException>(() => stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<int>)null!));
+            Assert.Throws<ArgumentNullException>(() => stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<int>) null!));
         }
 
         #endregion
@@ -505,10 +505,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
-            
+
             // Act
             var mapped = stream.Map(x => x * 2);
-            
+
             // Assert - Just verify the stream is created
             Assert.That(mapped, Is.Not.Null);
         }
@@ -519,10 +519,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
-            
+
             // Act
             var filtered = stream.Filter(x => x > 2);
-            
+
             // Assert
             Assert.That(filtered, Is.Not.Null);
         }
@@ -533,10 +533,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var source = new StringSourceFunction();
             var stream = _env.AddSource(source, "test-source");
-            
+
             // Act
             var flatMapped = stream.FlatMap(x => x.Split(' '));
-            
+
             // Assert
             Assert.That(flatMapped, Is.Not.Null);
         }
@@ -547,13 +547,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
-            
+
             // Act - Chain multiple maps
             var transformed = stream
                 .Map(x => x * 2)
                 .Map(x => x + 10)
                 .Map(x => x.ToString());
-            
+
             // Assert
             Assert.That(transformed, Is.Not.Null);
         }
@@ -564,13 +564,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
-            
+
             // Act - Chain multiple filters
             var filtered = stream
                 .Filter(x => x > 1)
                 .Filter(x => x < 10)
                 .Filter(x => x % 2 == 0);
-            
+
             // Assert
             Assert.That(filtered, Is.Not.Null);
         }
@@ -581,13 +581,13 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
-            
+
             // Act - Mix map, filter, and flatmap
             var transformed = stream
                 .Map(x => x * 2)
                 .Filter(x => x > 3)
                 .FlatMap(x => new[] { x, x + 1 });
-            
+
             // Assert
             Assert.That(transformed, Is.Not.Null);
         }
@@ -599,10 +599,10 @@ namespace FlinkDotNet.DataStream.Tests
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
             var mapFunction = new MultiplyMapFunction();
-            
+
             // Act
             var mapped = stream.Map(mapFunction);
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -614,10 +614,10 @@ namespace FlinkDotNet.DataStream.Tests
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
             var filterFunction = new GreaterThanFilterFunction();
-            
+
             // Act
             var filtered = stream.Filter(filterFunction);
-            
+
             // Assert
             Assert.That(filtered, Is.Not.Null);
         }
@@ -629,10 +629,10 @@ namespace FlinkDotNet.DataStream.Tests
             var source = new IntegerSourceFunction();
             var stream = _env.AddSource(source, "test-source");
             var flatMapFunction = new DuplicateFlatMapFunction();
-            
+
             // Act
             var flatMapped = stream.FlatMap(flatMapFunction);
-            
+
             // Assert
             Assert.That(flatMapped, Is.Not.Null);
         }

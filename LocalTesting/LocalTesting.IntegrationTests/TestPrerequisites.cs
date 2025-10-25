@@ -23,10 +23,10 @@ internal static class TestPrerequisites
     {
         // IMPORTANT: Do NOT use cached value - always re-check to detect newly built JARs
         // The previous caching caused tests to fail even after JARs were built
-        
+
         var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
         var gatewayProj = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "FlinkDotNet.JobGateway.csproj");
-        
+
         if (!ValidateGatewayProjectExists(gatewayProj))
         {
             return false;
@@ -50,7 +50,7 @@ internal static class TestPrerequisites
         {
             return true;
         }
-        
+
         TestContext.WriteLine($"FlinkDotNet.JobGateway project not found at {gatewayProj}");
         return false;
     }
@@ -79,7 +79,7 @@ internal static class TestPrerequisites
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -112,11 +112,11 @@ internal static class TestPrerequisites
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            
+
             // Use 'version' command which works consistently for both Docker and Podman
             psi.ArgumentList.Add("version");
             psi.ArgumentList.Add("--format");
-            
+
             // Docker uses {{.Server.Version}}, Podman uses {{.Version}}
             // Use the simpler format that works for both
             if (runtimeCommand.Equals("docker", StringComparison.OrdinalIgnoreCase))
