@@ -964,9 +964,9 @@ public class JobDefinitionValidatorFullBranchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
-                    MaxRetries = 3, 
+                new RetryOperationDefinition
+                {
+                    MaxRetries = 3,
                     DelayMs = new List<long> { 100, 200, 300 },
                     StateKey = "retryState"
                 }
@@ -991,9 +991,9 @@ public class JobDefinitionValidatorFullBranchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
-                    MaxRetries = 3, 
+                new RetryOperationDefinition
+                {
+                    MaxRetries = 3,
                     DelayMs = null,
                     StateKey = "retryState"
                 }
@@ -1019,9 +1019,9 @@ public class JobDefinitionValidatorFullBranchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
-                    MaxRetries = 3, 
+                new RetryOperationDefinition
+                {
+                    MaxRetries = 3,
                     DelayMs = new List<long>(),
                     StateKey = "retryState"
                 }
@@ -1047,9 +1047,9 @@ public class JobDefinitionValidatorFullBranchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
-                    MaxRetries = 3, 
+                new RetryOperationDefinition
+                {
+                    MaxRetries = 3,
                     DelayMs = new List<long> { 100, 0, 300 },
                     StateKey = "retryState"
                 }
@@ -1075,9 +1075,9 @@ public class JobDefinitionValidatorFullBranchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
-                new RetryOperationDefinition 
-                { 
-                    MaxRetries = 3, 
+                new RetryOperationDefinition
+                {
+                    MaxRetries = 3,
                     DelayMs = new List<long> { 100, 200, -50 },
                     StateKey = "retryState"
                 }

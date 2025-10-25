@@ -316,7 +316,7 @@ namespace FlinkDotNet.DataStream.Tests
             public (int, int) Add(int value, (int, int) accumulator) =>
                 (accumulator.Item1 + value, accumulator.Item2 + 1);
             public double GetResult((int, int) accumulator) =>
-                accumulator.Item2 == 0 ? 0.0 : (double)accumulator.Item1 / accumulator.Item2;
+                accumulator.Item2 == 0 ? 0.0 : (double) accumulator.Item1 / accumulator.Item2;
             public (int, int) Merge((int, int) acc1, (int, int) acc2) =>
                 (acc1.Item1 + acc2.Item1, acc1.Item2 + acc2.Item2);
         }

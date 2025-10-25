@@ -351,8 +351,8 @@ public class JobResultsModelTests
         try
         {
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-            
-            Assert.Throws<InvalidOperationException>(() => 
+
+            Assert.Throws<InvalidOperationException>(() =>
             {
                 var config = new FlinkJobGatewayConfiguration();
                 _ = config.BaseUrl; // Access property to trigger evaluation

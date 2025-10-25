@@ -1,7 +1,7 @@
-using NUnit.Framework;
 using System;
 using System.Reflection;
 using Flink.JobBuilder.Models;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -16,23 +16,25 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Use reflection to create OperationCapture since it's internal
             var type = typeof(DataStream<>).Assembly.GetType("FlinkDotNet.DataStream.OperationCapture");
-            if (type == null) throw new InvalidOperationException("OperationCapture type not found");
-            return (OperationCapture)Activator.CreateInstance(type, true)!;
+            if (type == null)
+                throw new InvalidOperationException("OperationCapture type not found");
+            return (OperationCapture) Activator.CreateInstance(type, true)!;
         }
 
         private static void SetWindowDefinition(OperationCapture capture, bool isCountBased, long size)
         {
             // Use reflection to set _windowDefinition private field
             var windowDefType = typeof(DataStream<>).Assembly.GetType("FlinkDotNet.DataStream.WindowDefinition");
-            if (windowDefType == null) throw new InvalidOperationException("WindowDefinition type not found");
+            if (windowDefType == null)
+                throw new InvalidOperationException("WindowDefinition type not found");
             var windowDef = Activator.CreateInstance(windowDefType, true);
-            
+
             var isCountProp = windowDefType!.GetProperty("IsCountBased");
             var sizeProp = windowDefType.GetProperty("Size");
-            
+
             isCountProp!.SetValue(windowDef, isCountBased);
             sizeProp!.SetValue(windowDef, size);
-            
+
             var field = capture.GetType().GetField("_windowDefinition", BindingFlags.NonPublic | BindingFlags.Instance);
             field!.SetValue(capture, windowDef);
         }
@@ -40,24 +42,25 @@ namespace FlinkDotNet.DataStream.Tests
         private static object CreateCapturedOperation(string operationType, object? function)
         {
             var capturedOpType = typeof(DataStream<>).Assembly.GetType("FlinkDotNet.DataStream.CapturedOperation");
-            if (capturedOpType == null) throw new InvalidOperationException("CapturedOperation type not found");
+            if (capturedOpType == null)
+                throw new InvalidOperationException("CapturedOperation type not found");
             var capturedOp = Activator.CreateInstance(capturedOpType, true);
-            
+
             var opTypeProp = capturedOpType!.GetProperty("OperationType");
             var functionProp = capturedOpType.GetProperty("Function");
-            
+
             opTypeProp!.SetValue(capturedOp, operationType);
             if (function != null)
             {
                 functionProp!.SetValue(capturedOp, function);
             }
-            
+
             return capturedOp!;
         }
 
         private static void CallTranslateAggregateOperation(OperationCapture capture, JobDefinition jobDef, object operation)
         {
-            var method = capture.GetType().GetMethod("TranslateAggregateOperation", 
+            var method = capture.GetType().GetMethod("TranslateAggregateOperation",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             method!.Invoke(capture, new[] { jobDef, operation });
         }
@@ -69,9 +72,9 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var function = new TestAggregateFunction();
             var operation = CreateCapturedOperation("aggregate", function);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             Assert.That(jobDef.Metadata.Properties, Contains.Key("aggregateFunction"));
             Assert.That(jobDef.Metadata.Properties["aggregateFunction"], Does.Contain("TestAggregateFunction"));
             Assert.That(jobDef.Operations.Count, Is.EqualTo(1));
@@ -83,9 +86,9 @@ namespace FlinkDotNet.DataStream.Tests
             var capture = CreateOperationCapture();
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var operation = CreateCapturedOperation("aggregate", null);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             Assert.That(jobDef.Metadata.Properties, Does.Not.ContainKey("aggregateFunction"));
             Assert.That(jobDef.Operations.Count, Is.EqualTo(1));
         }
@@ -97,9 +100,9 @@ namespace FlinkDotNet.DataStream.Tests
             SetWindowDefinition(capture, isCountBased: false, size: 60000);
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var operation = CreateCapturedOperation("aggregate", null);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             var aggOp = jobDef.Operations[0] as AggregateOperationDefinition;
             Assert.That(aggOp, Is.Not.Null);
             Assert.That(aggOp!.WindowSeconds, Is.EqualTo(60));
@@ -113,9 +116,9 @@ namespace FlinkDotNet.DataStream.Tests
             SetWindowDefinition(capture, isCountBased: true, size: 100);
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var operation = CreateCapturedOperation("aggregate", null);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             var aggOp = jobDef.Operations[0] as AggregateOperationDefinition;
             Assert.That(aggOp, Is.Not.Null);
             Assert.That(aggOp!.WindowCount, Is.EqualTo(100));
@@ -128,9 +131,9 @@ namespace FlinkDotNet.DataStream.Tests
             var capture = CreateOperationCapture();
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var operation = CreateCapturedOperation("aggregate", null);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             var aggOp = jobDef.Operations[0] as AggregateOperationDefinition;
             Assert.That(aggOp, Is.Not.Null);
             Assert.That(aggOp!.WindowSeconds, Is.Null);
@@ -145,9 +148,9 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var function = new TestAggregateFunction();
             var operation = CreateCapturedOperation("aggregate", function);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             Assert.That(jobDef.Metadata.Properties, Contains.Key("aggregateFunction"));
             var aggOp = jobDef.Operations[0] as AggregateOperationDefinition;
             Assert.That(aggOp!.WindowSeconds, Is.EqualTo(30));
@@ -162,9 +165,9 @@ namespace FlinkDotNet.DataStream.Tests
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var function = new TestAggregateFunction();
             var operation = CreateCapturedOperation("aggregate", function);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             Assert.That(jobDef.Metadata.Properties, Contains.Key("aggregateFunction"));
             var aggOp = jobDef.Operations[0] as AggregateOperationDefinition;
             Assert.That(aggOp!.WindowCount, Is.EqualTo(50));
@@ -177,9 +180,9 @@ namespace FlinkDotNet.DataStream.Tests
             var capture = CreateOperationCapture();
             var jobDef = new JobDefinition { Metadata = new JobMetadata() };
             var operation = CreateCapturedOperation("aggregate", null);
-            
+
             CallTranslateAggregateOperation(capture, jobDef, operation);
-            
+
             Assert.That(jobDef.Operations.Count, Is.EqualTo(1));
             Assert.That(jobDef.Operations[0], Is.InstanceOf<AggregateOperationDefinition>());
             var aggOp = jobDef.Operations[0] as AggregateOperationDefinition;

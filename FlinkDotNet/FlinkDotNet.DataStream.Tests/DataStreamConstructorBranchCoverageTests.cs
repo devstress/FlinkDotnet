@@ -1,7 +1,6 @@
-using NUnit.Framework;
-using FlinkDotNet.DataStream;
 using System;
 using System.Collections.Generic;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -19,7 +18,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            
+
             // Act & Assert - Test null JobDefinition
             var ex = Assert.Throws<System.Reflection.TargetInvocationException>(() =>
             {
@@ -30,7 +29,7 @@ namespace FlinkDotNet.DataStream.Tests
                     null);
                 constructor?.Invoke(new object?[] { null, env });
             });
-            
+
             Assert.That(ex!.InnerException, Is.InstanceOf<ArgumentNullException>());
         }
 
@@ -40,12 +39,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test", "localhost:9092", "group", "earliest");
-            
+
             // Get job definition from the stream
             var jobDefField = typeof(DataStream<string>).GetField("_jobDefinition",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var jobDef = jobDefField?.GetValue(stream);
-            
+
             // Act & Assert - Test null environment
             var ex = Assert.Throws<System.Reflection.TargetInvocationException>(() =>
             {
@@ -56,7 +55,7 @@ namespace FlinkDotNet.DataStream.Tests
                     null);
                 constructor?.Invoke(new object?[] { jobDef, null });
             });
-            
+
             Assert.That(ex!.InnerException, Is.InstanceOf<ArgumentNullException>());
         }
 
@@ -72,9 +71,9 @@ namespace FlinkDotNet.DataStream.Tests
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
             Func<int, int>? nullFunc = null;
-            
+
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 stream.Map(nullFunc!));
         }
 
@@ -90,9 +89,9 @@ namespace FlinkDotNet.DataStream.Tests
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
             Func<int, bool>? nullFunc = null;
-            
+
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 stream.Filter(nullFunc!));
         }
 
@@ -108,9 +107,9 @@ namespace FlinkDotNet.DataStream.Tests
             var collection = new[] { "a", "b", "c" };
             var stream = env.FromCollection(collection);
             Func<string, IEnumerable<char>>? nullFunc = null;
-            
+
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 stream.FlatMap(nullFunc!));
         }
 
@@ -125,10 +124,10 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
-            
+
             // Act
             var result = stream.SetMaxParallelism(100);
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -140,10 +139,10 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
-            
+
             // Act
             var result = stream.SetMaxParallelism(32768);
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -159,10 +158,10 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
-            
+
             // Act
             var result = stream.Name(null);
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -174,10 +173,10 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
-            
+
             // Act
             var result = stream.Name(string.Empty);
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -190,10 +189,10 @@ namespace FlinkDotNet.DataStream.Tests
             var collection = new[] { 1, 2, 3 };
             var stream = env.FromCollection(collection);
             var longName = new string('a', 10000);
-            
+
             // Act
             var result = stream.Name(longName);
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }

@@ -24,13 +24,13 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-            
+
             _mockLogger = new Mock<ILogger<FlinkJobManager>>();
             _mockConfiguration = new Mock<IConfiguration>();
-            
+
             // Setup default configuration values (returns null for any key by default)
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
-            
+            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
@@ -448,7 +448,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-123";
-            
+
             // Setup mock to return empty/not found responses for all endpoints
             _mockHttpMessageHandler
                 .Protected()
@@ -483,7 +483,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-123";
-            
+
             // Setup successful PATCH endpoint
             SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
@@ -503,7 +503,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var flinkJobId = "flink-123";
             var statusResponse = @"{ ""state"": ""RUNNING"" }";
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, statusResponse);
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -688,7 +688,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
-                
+
                 // Act
                 _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -713,7 +713,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_WithNoDiscovery_UsesDefaultEndpoint()
         {
             // Arrange - No environment variables set
-            
+
             // Act
             _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -738,7 +738,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var flinkJobId = "test-job-123";
             var statusResponse = @"{ }"; // Empty response without state property
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, statusResponse);
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -756,7 +756,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var flinkJobId = "test-job-123";
             var statusResponse = @"{ ""state"": null }";
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, statusResponse);
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -773,7 +773,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-123";
-            
+
             _mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -785,7 +785,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.GetJobStatusAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to query Flink"));
         }
@@ -862,7 +862,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-123";
-            
+
             _mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -874,7 +874,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act & Assert
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => 
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await jobManager.CancelJobAsync(flinkJobId));
             Assert.That(ex!.Message, Does.Contain("Failed to cancel job"));
         }
@@ -890,8 +890,8 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata { JobId = "test-sql-job", JobName = "SQL Test" },
-                Source = new SqlSourceDefinition 
-                { 
+                Source = new SqlSourceDefinition
+                {
                     Statements = new List<string> { "SELECT * FROM test_table" },
                     ExecutionMode = "gateway"
                 },
@@ -915,8 +915,8 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata { JobId = "test-sql-job", JobName = "SQL Test" },
-                Source = new SqlSourceDefinition 
-                { 
+                Source = new SqlSourceDefinition
+                {
                     Statements = new List<string>()
                 },
                 Sink = null!
@@ -928,7 +928,7 @@ namespace FlinkDotNet.JobGateway.Tests
             await Task.Run(async () =>
             {
                 var result = await jobManager.SubmitJobAsync(jobDefinition);
-                
+
                 // Assert - Validation passes, but execution will fail
                 Assert.That(result, Is.Not.Null);
             });

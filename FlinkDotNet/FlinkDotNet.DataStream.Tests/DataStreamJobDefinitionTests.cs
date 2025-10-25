@@ -62,7 +62,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert - Constructor should validate null job
             var ex = Assert.Throws<System.ArgumentNullException>(() =>
-                new DataStream<string>((Flink.JobBuilder.Models.JobDefinition)null!, env));
+                new DataStream<string>((Flink.JobBuilder.Models.JobDefinition) null!, env));
             Assert.That(ex.ParamName, Is.EqualTo("job"));
         }
 
@@ -121,7 +121,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert - Constructor should validate null job
             var ex = Assert.Throws<System.ArgumentNullException>(() =>
-                new DataStream<string>((Flink.JobBuilder.Models.JobDefinition)null!, env));
+                new DataStream<string>((Flink.JobBuilder.Models.JobDefinition) null!, env));
             Assert.That(ex.ParamName, Is.EqualTo("job"));
         }
 
@@ -179,7 +179,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert - Constructor should validate null job
             var ex = Assert.Throws<System.ArgumentNullException>(() =>
-                new DataStream<string>((Flink.JobBuilder.Models.JobDefinition)null!, env));
+                new DataStream<string>((Flink.JobBuilder.Models.JobDefinition) null!, env));
             Assert.That(ex.ParamName, Is.EqualTo("job"));
         }
 
@@ -190,7 +190,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
-            
+
             var kafkaSink = new TestKafkaSinkFunction("test-topic", "localhost:9092");
 
             // Act
@@ -208,7 +208,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
-            
+
             var genericSink = new TestGenericSinkFunction();
 
             // Act
@@ -222,8 +222,14 @@ namespace FlinkDotNet.DataStream.Tests
         // Helper classes for testing
         private class TestKafkaSinkFunction : ISinkFunction<string>
         {
-            public string Topic { get; }
-            public string BootstrapServers { get; }
+            public string Topic
+            {
+                get;
+            }
+            public string BootstrapServers
+            {
+                get;
+            }
 
             public TestKafkaSinkFunction(string topic, string bootstrapServers)
             {

@@ -1,9 +1,9 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -416,17 +416,17 @@ namespace FlinkDotNet.DataStream.Tests
         private class AverageAggregateFunction : IAggregateFunction<int, (int sum, int count), double>
         {
             public (int sum, int count) CreateAccumulator() => (0, 0);
-            
+
             public (int sum, int count) Add(int value, (int sum, int count) accumulator)
             {
                 return (accumulator.sum + value, accumulator.count + 1);
             }
-            
+
             public double GetResult((int sum, int count) accumulator)
             {
-                return accumulator.count == 0 ? 0.0 : (double)accumulator.sum / accumulator.count;
+                return accumulator.count == 0 ? 0.0 : (double) accumulator.sum / accumulator.count;
             }
-            
+
             public (int sum, int count) Merge((int sum, int count) acc1, (int sum, int count) acc2)
             {
                 return (acc1.sum + acc2.sum, acc1.count + acc2.count);
@@ -507,7 +507,7 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceData = new[] { "hello world", "test" };
             var sourceFunction = new TestSourceFunction<string>(sourceData);
             var flatMappedFunction = new FlatMappedSourceFunction<string, string>(
-                sourceFunction, 
+                sourceFunction,
                 s => s.Split(' '));
 
             // Act

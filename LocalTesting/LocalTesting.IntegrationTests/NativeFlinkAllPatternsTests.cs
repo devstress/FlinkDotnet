@@ -180,7 +180,8 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             response.EnsureSuccessStatusCode();
 
             var jobInfo = await response.Content.ReadFromJsonAsync<FlinkJobInfo>(ct);
-            if (jobInfo?.State == "RUNNING") return;
+            if (jobInfo?.State == "RUNNING")
+                return;
             if (jobInfo?.State == "FAILED" || jobInfo?.State == "CANCELED")
             {
                 Assert.Fail($"Job entered terminal state: {jobInfo.State}");
@@ -267,7 +268,8 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         if (repoRoot != null)
         {
             var jarPath = Path.Combine(repoRoot, "LocalTesting", "NativeFlinkJob", "target", "native-flink-kafka-job-1.0.0.jar");
-            if (File.Exists(jarPath)) return jarPath;
+            if (File.Exists(jarPath))
+                return jarPath;
         }
 
         return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "NativeFlinkJob", "target", "native-flink-kafka-job-1.0.0.jar"));
@@ -278,7 +280,8 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         var dir = new DirectoryInfo(startPath);
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "global.json"))) return dir.FullName;
+            if (File.Exists(Path.Combine(dir.FullName, "global.json")))
+                return dir.FullName;
             dir = dir.Parent;
         }
         return null;

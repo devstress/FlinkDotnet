@@ -157,7 +157,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Assert
             Assert.That(timeDomain, Is.EqualTo(TimeDomain.EventTime));
-            Assert.That((int)timeDomain, Is.EqualTo(0));
+            Assert.That((int) timeDomain, Is.EqualTo(0));
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Assert
             Assert.That(timeDomain, Is.EqualTo(TimeDomain.ProcessingTime));
-            Assert.That((int)timeDomain, Is.EqualTo(1));
+            Assert.That((int) timeDomain, Is.EqualTo(1));
         }
 
         [Test]
@@ -204,8 +204,8 @@ namespace FlinkDotNet.DataStream.Tests
             var processingTime = TimeDomain.ProcessingTime;
 
             // Act
-            var eventTimeInt = (int)eventTime;
-            var processingTimeInt = (int)processingTime;
+            var eventTimeInt = (int) eventTime;
+            var processingTimeInt = (int) processingTime;
 
             // Assert
             Assert.That(eventTimeInt, Is.LessThan(processingTimeInt));

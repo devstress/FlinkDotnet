@@ -1,9 +1,9 @@
-using NUnit.Framework;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {

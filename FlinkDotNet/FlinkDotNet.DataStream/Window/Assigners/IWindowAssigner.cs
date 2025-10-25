@@ -54,12 +54,18 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <summary>
         /// Gets the time characteristic (event time or processing time) of this window assigner.
         /// </summary>
-        TimeCharacteristic TimeCharacteristic { get; }
+        TimeCharacteristic TimeCharacteristic
+        {
+            get;
+        }
 
         /// <summary>
         /// Returns true if windows created by this assigner can be merged.
         /// This is true for session windows but false for tumbling/sliding windows.
         /// </summary>
-        bool IsEventTime { get; }
+        bool IsEventTime
+        {
+            get;
+        }
     }
 }

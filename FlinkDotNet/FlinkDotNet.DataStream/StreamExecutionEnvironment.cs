@@ -20,11 +20,11 @@ using System.IO.Abstractions;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using FlinkDotNet.Common;
-using FlinkDotNet.DataStream.State;
-using FlinkDotNet.DataStream.Checkpoint;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;
+using FlinkDotNet.Common;
+using FlinkDotNet.DataStream.Checkpoint;
+using FlinkDotNet.DataStream.State;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -672,12 +672,15 @@ namespace FlinkDotNet.DataStream
             };
         }
 
-        public async Task<SavepointResult> TriggerSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Helper method to trigger a savepoint operation with the specified cancelJob flag.
+        /// </summary>
+        private async Task<SavepointResult> TriggerSavepointInternalAsync(string? savepointPath, bool cancelJob, CancellationToken cancellationToken)
         {
             var payload = new
             {
                 targetDirectory = savepointPath,
-                cancelJob = false
+                cancelJob = cancelJob
             };
             var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
@@ -696,28 +699,14 @@ namespace FlinkDotNet.DataStream
             return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
         }
 
+        public async Task<SavepointResult> TriggerSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
+        {
+            return await TriggerSavepointInternalAsync(savepointPath, false, cancellationToken).ConfigureAwait(false);
+        }
+
         public async Task<SavepointResult> CancelWithSavepointAsync(string? savepointPath = null, CancellationToken cancellationToken = default)
         {
-            var payload = new
-            {
-                targetDirectory = savepointPath,
-                cancelJob = true
-            };
-            var resp = await _flinkHttp.PostAsync($"/v1/jobs/{JobId}/savepoints",
-                new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
-            var ok = resp.IsSuccessStatusCode;
-            var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            string triggerId = string.Empty;
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(text);
-                triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty;
-            }
-            catch
-            {
-                // JSON parsing may fail if response is not valid JSON - use empty triggerId
-            }
-            return new SavepointResult { SavepointPath = null!, Success = ok, TriggerId = triggerId, Error = ok ? null : text };
+            return await TriggerSavepointInternalAsync(savepointPath, true, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<JobStatus> GetJobStatusAsync(CancellationToken cancellationToken = default)

@@ -1,9 +1,9 @@
-using NUnit.Framework;
-using FlinkDotNet.Common.Logging;
 using System;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using FlinkDotNet.Common.Logging;
 using Moq;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -52,7 +52,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var mockFileSystem = new MockFileSystem();
             mockFileSystem.Directory.CreateDirectory("test-logs");
-            
+
             // Create an old log file (older than 1 day)
             var oldLogPath = mockFileSystem.Path.Combine("test-logs", "FlinkDotnet.log.20200101");
             mockFileSystem.File.WriteAllText(oldLogPath, "old log content");
@@ -154,7 +154,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var mockFileSystem = new MockFileSystem();
             mockFileSystem.Directory.CreateDirectory("test-logs");
-            
+
             // Create a recent log file (less than 1 day old)
             var recentLogPath = mockFileSystem.Path.Combine("test-logs", $"FlinkDotnet.log.{DateTime.UtcNow:yyyyMMdd}");
             mockFileSystem.File.WriteAllText(recentLogPath, "recent log content");
@@ -218,7 +218,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var mockFileSystem = new MockFileSystem();
             mockFileSystem.Directory.CreateDirectory("test-logs");
-            
+
             // This test verifies the cleanup logic without mocking complex file info behavior
             var logger = LoggerFactory.CreateLogger(mockFileSystem);
 

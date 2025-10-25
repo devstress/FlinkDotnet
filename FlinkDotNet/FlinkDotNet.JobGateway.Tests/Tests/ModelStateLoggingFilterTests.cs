@@ -98,7 +98,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => 
+                    It.Is<It.IsAnyType>((v, t) =>
                         v.ToString()!.Contains("Property1:Error 1") &&
                         v.ToString()!.Contains("Property2:Error 2|Error 3")),
                     It.IsAny<Exception?>(),

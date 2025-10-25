@@ -1,7 +1,7 @@
-using FlinkDotNet.Common.Logging;
-using System.IO.Abstractions.TestingHelpers;
-using Moq;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
+using FlinkDotNet.Common.Logging;
+using Moq;
 
 namespace FlinkDotNet.Common.Tests;
 
@@ -32,7 +32,7 @@ public class LoggerFactoryBranchCoverageTests
         // Arrange
         var mockFileSystem = new MockFileSystem();
         mockFileSystem.Directory.CreateDirectory("test-logs");
-        
+
         // Create an old log file (older than 1 day) with proper date
         var oldDate = DateTime.UtcNow.AddDays(-2);
         var oldLogPath = mockFileSystem.Path.Combine("test-logs", "FlinkDotnet.log.20200101");
@@ -56,7 +56,7 @@ public class LoggerFactoryBranchCoverageTests
         // Arrange
         var mockFileSystem = new MockFileSystem();
         mockFileSystem.Directory.CreateDirectory("test-logs");
-        
+
         // Create a recent log file (less than 1 day old)
         var recentDate = DateTime.UtcNow.AddHours(-12);
         var recentLogPath = mockFileSystem.Path.Combine("test-logs", "FlinkDotnet.log.20991231");

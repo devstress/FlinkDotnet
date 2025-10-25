@@ -108,7 +108,7 @@ namespace FlinkDotNet.DataStream.Watermarks
             else
             {
                 // For bounded out-of-orderness, watermark = max timestamp - allowed delay
-                return currentMaxTimestamp - (long)_maxOutOfOrderness.TotalMilliseconds;
+                return currentMaxTimestamp - (long) _maxOutOfOrderness.TotalMilliseconds;
             }
         }
 

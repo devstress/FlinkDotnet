@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using NUnit.Framework;
 using FlinkDotNet.DataStream.Window;
 using FlinkDotNet.DataStream.Window.Assigners;
 using FlinkDotNet.DataStream.Window.Functions;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -55,7 +55,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 new WindowedStream<string, int, TimeWindow>(null!, windowAssigner));
             Assert.That(ex!.ParamName, Is.EqualTo("keyedStream"));
         }
@@ -68,7 +68,7 @@ namespace FlinkDotNet.DataStream.Tests
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 new WindowedStream<string, int, TimeWindow>(keyedStream, null!));
             Assert.That(ex!.ParamName, Is.EqualTo("windowAssigner"));
         }
@@ -83,7 +83,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 windowedStream.Aggregate<List<string>, string>(null!));
             Assert.That(ex!.ParamName, Is.EqualTo("aggregateFunction"));
         }
@@ -116,8 +116,8 @@ namespace FlinkDotNet.DataStream.Tests
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
-                windowedStream.Reduce((IReduceFunction<string>)null!));
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                windowedStream.Reduce((IReduceFunction<string>) null!));
             Assert.That(ex!.ParamName, Is.EqualTo("reduceFunction"));
         }
 
@@ -149,8 +149,8 @@ namespace FlinkDotNet.DataStream.Tests
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
-                windowedStream.Reduce((Func<string, string, string>)null!));
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                windowedStream.Reduce((Func<string, string, string>) null!));
             Assert.That(ex!.ParamName, Is.EqualTo("reduceFunction"));
         }
 
@@ -181,7 +181,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentNullException>(() => 
+            var ex = Assert.Throws<ArgumentNullException>(() =>
                 windowedStream.Process<string>(null!));
             Assert.That(ex!.ParamName, Is.EqualTo("processFunction"));
         }
