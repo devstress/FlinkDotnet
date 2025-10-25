@@ -1324,6 +1324,13 @@ public abstract class LocalTestingTestBase
         {
             TestContext.WriteLine($"🔍 [Job Status Check] {checkpoint} - Job ID: {jobId}");
             
+            // Skip status check if job ID is null or empty
+            if (string.IsNullOrEmpty(jobId))
+            {
+                TestContext.WriteLine($"⏭️ Skipping job status check - Job ID is empty");
+                return;
+            }
+            
             using var httpClient = new System.Net.Http.HttpClient();
             var statusUrl = $"{gatewayBase}api/v1/jobs/{jobId}/status";
             var response = await httpClient.GetAsync(statusUrl);

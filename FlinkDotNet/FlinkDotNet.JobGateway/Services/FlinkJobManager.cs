@@ -124,25 +124,7 @@ public class FlinkJobManager : IFlinkJobManager
         string serviceDisplayName,
         bool logAspireWarning)
     {
-        // Strategy 1: Aspire service discovery (primary endpoint name)
-        var aspireKey = $"services__{serviceName}__{primaryEndpointName}__0";
-        var aspireEndpoint = Environment.GetEnvironmentVariable(aspireKey);
-        if (!string.IsNullOrEmpty(aspireEndpoint))
-        {
-            _logger.LogInformation("Using Aspire service discovery for {ServiceName}: {Endpoint}", serviceDisplayName, aspireEndpoint);
-            return aspireEndpoint;
-        }
-
-        // Fallback: Try legacy endpoint name format
-        var legacyKey = $"services__{serviceName}__{legacyEndpointName}__0";
-        aspireEndpoint = Environment.GetEnvironmentVariable(legacyKey);
-        if (!string.IsNullOrEmpty(aspireEndpoint))
-        {
-            _logger.LogInformation("Using Aspire service discovery for {ServiceName} (legacy format): {Endpoint}", serviceDisplayName, aspireEndpoint);
-            return aspireEndpoint;
-        }
-
-        // Strategy 2: Configuration from appsettings.json
+        // Strategy 1: Configuration from appsettings.json or injected by infrastructure (Aspire/tests)
         var configEndpoint = _configuration[configKey];
         if (!string.IsNullOrEmpty(configEndpoint))
         {
@@ -150,7 +132,7 @@ public class FlinkJobManager : IFlinkJobManager
             return configEndpoint;
         }
 
-        // Strategy 3: Explicit environment variables
+        // Strategy 2: Explicit environment variables (generic, non-Aspire specific)
         var envHost = Environment.GetEnvironmentVariable(envHostKey);
         var envPort = Environment.GetEnvironmentVariable(envPortKey);
 
@@ -163,13 +145,13 @@ public class FlinkJobManager : IFlinkJobManager
             return envEndpoint;
         }
 
-        // Strategy 4: Default fallback
+        // Strategy 3: Default fallback for local development
         var defaultProtocol = GetProtocol();
         var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
         _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
-            _logger.LogWarning("Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
+            _logger.LogWarning("No configuration found for {ServiceName} - using default endpoint", serviceDisplayName);
         }
         return defaultEndpoint;
     }
@@ -312,7 +294,8 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (!clusterHealthy2)
             {
-                var errorMessage = "Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible.";
+                var flinkUrl = _httpClient.BaseAddress?.ToString() ?? "(unknown)";
+                var errorMessage = $"Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible at {flinkUrl}";
                 _logger.LogError("❌ {ErrorMessage}", errorMessage);
                 throw new InvalidOperationException(errorMessage);
             }
@@ -728,8 +711,10 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (string.IsNullOrEmpty(jobId))
             {
-                _logger.LogError("❌ Flink did not return a jobId");
-                throw new InvalidOperationException($"Flink did not return a jobId. Response: {runContent}");
+                var errorMsg = $"Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
+                    $"Response status: {response.StatusCode}, Response body: {runContent}";
+                _logger.LogError("❌ {ErrorMessage}", errorMsg);
+                throw new InvalidOperationException(errorMsg);
             }
 
             LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
@@ -763,7 +748,16 @@ public class FlinkJobManager : IFlinkJobManager
 
             var lastJobId = await ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
 
+            // SQL Gateway jobs return session handle as tracking ID
+            // This is expected behavior for SQL Gateway - it manages jobs within sessions
             var result = lastJobId ?? sessionHandle;
+            
+            if (string.IsNullOrEmpty(result))
+            {
+                _logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
+                throw new InvalidOperationException("SQL Gateway did not return a job ID or session handle. This should not happen.");
+            }
+            
             LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
                 ("🆔 JobId/SessionHandle", result));
 

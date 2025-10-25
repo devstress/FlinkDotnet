@@ -600,7 +600,8 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=gateway\" --format \"{{.Ports}}\"");
+            // Search specifically for flink-job-gateway, not flink-sql-gateway
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-job-gateway\" --format \"{{.Ports}}\"");
 
             if (!string.IsNullOrWhiteSpace(gatewayContainers))
             {

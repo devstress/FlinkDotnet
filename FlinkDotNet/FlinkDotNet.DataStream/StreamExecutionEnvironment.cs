@@ -431,7 +431,8 @@ namespace FlinkDotNet.DataStream
             }
 
             _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
-            var gateway = new FlinkJobGatewayService();
+            var gatewayConfig = new FlinkJobGatewayConfiguration();
+            var gateway = new FlinkJobGatewayService(gatewayConfig);
 
             JobSubmissionResult submit;
             try
@@ -449,7 +450,33 @@ namespace FlinkDotNet.DataStream
 
             if (!submit.Success)
             {
+                // Log diagnostic information about endpoints when job submission fails
+                // Use actual gateway URL from the service configuration
+                var gatewayUrl = gatewayConfig.BaseUrl;
+                
+                // Extract JobManager URL from error message if available
+                string? jobManagerUrl = "(not available in error message)";
+                if (submit.ErrorMessage?.Contains("at http") == true)
+                {
+                    var startIndex = submit.ErrorMessage.IndexOf("at http");
+                    if (startIndex >= 0)
+                    {
+                        var urlStart = submit.ErrorMessage.IndexOf("http", startIndex);
+                        if (urlStart >= 0)
+                        {
+                            var urlEnd = submit.ErrorMessage.IndexOfAny(new[] { ' ', '\n', '\r', '"', '\'' }, urlStart);
+                            jobManagerUrl = urlEnd > urlStart 
+                                ? submit.ErrorMessage.Substring(urlStart, urlEnd - urlStart)
+                                : submit.ErrorMessage.Substring(urlStart);
+                        }
+                    }
+                }
+                
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
+                _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");
+                _serilogLogger.Error("[ExecuteAsync]   - FlinkDotNet.JobGateway URL: {GatewayUrl}", gatewayUrl);
+                _serilogLogger.Error("[ExecuteAsync]   - Flink JobManager URL (used by Gateway): {JobManagerUrl}", jobManagerUrl);
+                
                 throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");
             }
 

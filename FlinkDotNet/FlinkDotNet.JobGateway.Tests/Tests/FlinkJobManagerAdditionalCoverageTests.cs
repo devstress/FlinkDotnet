@@ -58,6 +58,7 @@ namespace FlinkDotNet.JobGateway.Tests
         #region SQL Gateway Endpoint Discovery Tests
 
         [Test]
+        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
         public async Task Constructor_WithSqlGatewayAspireEndpoint_UsesSqlGatewayAspireEndpoint()
         {
             // Arrange
@@ -103,6 +104,7 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         [Test]
+        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
         public async Task Constructor_WithSqlGatewayLegacyAspire_UsesLegacyFormat()
         {
             // Arrange

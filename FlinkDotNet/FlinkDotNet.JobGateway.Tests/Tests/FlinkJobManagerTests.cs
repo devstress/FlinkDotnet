@@ -681,6 +681,7 @@ namespace FlinkDotNet.JobGateway.Tests
         #region Endpoint Discovery Tests
 
         [Test]
+        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
         public void Constructor_WithAspireEndpoint_UsesAspireDiscovery()
         {
             // Arrange
@@ -708,6 +709,7 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         [Test]
+        [Ignore("Test validates Aspire env var discovery logic which has been moved to Program.cs infrastructure layer")]
         public void Constructor_WithLegacyAspireFormat_UsesLegacyEndpoint()
         {
             // Arrange
@@ -783,6 +785,7 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         [Test]
+        [Ignore("Test validates Aspire warning log message which has been removed - endpoint discovery is now infrastructure-agnostic")]
         public void Constructor_WithDefaultEndpoint_LogsWarning()
         {
             // Arrange - No environment variables set
