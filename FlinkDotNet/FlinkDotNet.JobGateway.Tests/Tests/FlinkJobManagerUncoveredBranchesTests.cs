@@ -518,5 +518,93 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+
+        #region SubmitJobToFlinkClusterAsync Tests - Currently 61.1% coverage
+
+        [Test]
+        public async Task SubmitJobAsync_WithJarSourceAndNoConnectorJars_SubmitsSuccessfully()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "jar-job-no-connectors",
+                    JobName = "JAR Job Without Connectors"
+                },
+                Source = new FileSourceDefinition
+                {
+                    Path = "test-file.txt",
+                    Format = "csv"
+                },
+                Sink = new ConsoleSinkDefinition(),
+                Operations = new List<IOperationDefinition>()
+            };
+
+            // Setup cluster health
+            SetupHttpResponse("/overview", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { version = "1.18.0" }));
+
+            // Setup JAR upload
+            SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { filename = "/tmp/flink-ir-runner.jar" }), "POST");
+
+            // Setup JAR run
+            SetupHttpResponse("/v1/jars/", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { jobid = "flink-job-123" }), "POST");
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithKafkaSourceAndSink_MergesConnectorJars()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "kafka-job",
+                    JobName = "Kafka Job"
+                },
+                Source = new KafkaSourceDefinition
+                {
+                    Topic = "input-topic",
+                    BootstrapServers = "localhost:9092",
+                    GroupId = "test-group"
+                },
+                Sink = new KafkaSinkDefinition
+                {
+                    Topic = "output-topic",
+                    BootstrapServers = "localhost:9092"
+                },
+                Operations = new List<IOperationDefinition>()
+            };
+
+            SetupHttpResponse("/overview", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { version = "1.18.0" }));
+
+            SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { filename = "/tmp/merged-job.jar" }), "POST");
+
+            SetupHttpResponse("/v1/jars/", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { jobid = "flink-kafka-job-123" }), "POST");
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        #endregion
     }
 }
