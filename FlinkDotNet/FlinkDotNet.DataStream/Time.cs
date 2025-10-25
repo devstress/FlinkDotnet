@@ -20,7 +20,7 @@ namespace FlinkDotNet.DataStream
     /// Time unit for windowing operations.
     /// Corresponds to org.apache.flink.streaming.api.windowing.time.Time in Java Flink.
     /// </summary>
-    public class Time
+    public sealed class Time
     {
         private readonly long _milliseconds;
 

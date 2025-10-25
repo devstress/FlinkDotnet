@@ -23,7 +23,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
     /// Corresponds to org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements being windowed</typeparam>
-    public class TumblingEventTimeWindows<T> : IWindowAssigner<T, TimeWindow>
+    public sealed class TumblingEventTimeWindows<T> : IWindowAssigner<T, TimeWindow>
     {
         private readonly long _size;
         private readonly long _offset;
@@ -54,11 +54,11 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         public IEnumerable<TimeWindow> AssignWindows(T element, long timestamp)
         {
-            long start = this.GetWindowStart(timestamp);
+            var start = this.GetWindowStart(timestamp);
             yield return new TimeWindow(start, start + this._size);
         }
 
-        private long GetWindowStart(long timestamp) => timestamp - (timestamp - this._offset + this._size) % this._size;
+        private long GetWindowStart(long timestamp) => timestamp - ((timestamp - this._offset + this._size) % this._size);
 
         /// <summary>
         /// Gets the time characteristic (Event Time) of this window assigner.

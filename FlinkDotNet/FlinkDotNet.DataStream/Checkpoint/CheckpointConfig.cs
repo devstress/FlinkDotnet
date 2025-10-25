@@ -19,12 +19,13 @@ namespace FlinkDotNet.DataStream.Checkpoint
     /// <summary>
     /// Configuration for checkpointing behavior.
     /// This corresponds to org.apache.flink.streaming.api.environment.CheckpointConfig in Apache Flink.
-    ///
+    /// <para>
     /// Checkpoint configuration controls:
     /// - Where checkpoints are stored (checkpoint storage)
     /// - Checkpoint timeouts and failure tolerance
     /// - Concurrent checkpoint limits
     /// - Minimum pause between checkpoints
+    /// </para>
     /// </summary>
     public class CheckpointConfig
     {

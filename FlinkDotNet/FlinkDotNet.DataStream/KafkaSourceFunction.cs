@@ -27,30 +27,25 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of elements to deserialize</typeparam>
     public class KafkaSourceFunction<T> : ISourceFunction<T>
     {
-        private readonly string _topic;
-        private readonly string _bootstrapServers;
-        private readonly string _groupId;
-        private readonly string _startingOffsets;
-
         /// <summary>
         /// Gets the Kafka topic to consume from.
         /// </summary>
-        public string Topic => this._topic;
+        public string Topic { get; }
 
         /// <summary>
         /// Gets the Kafka bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers => this._bootstrapServers;
+        public string BootstrapServers { get; }
 
         /// <summary>
         /// Gets the Kafka consumer group ID.
         /// </summary>
-        public string GroupId => this._groupId;
+        public string GroupId { get; }
 
         /// <summary>
         /// Gets the starting offsets strategy.
         /// </summary>
-        public string StartingOffsets => this._startingOffsets;
+        public string StartingOffsets { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KafkaSourceFunction{T}"/> class.
@@ -67,12 +62,12 @@ namespace FlinkDotNet.DataStream
             System.Func<string, T> deserializer,
             string startingOffsets)
         {
-            this._topic = topic ?? throw new System.ArgumentNullException(nameof(topic));
-            this._bootstrapServers = bootstrapServers ?? throw new System.ArgumentNullException(nameof(bootstrapServers));
-            this._groupId = groupId ?? throw new System.ArgumentNullException(nameof(groupId));
+            this.Topic = topic ?? throw new System.ArgumentNullException(nameof(topic));
+            this.BootstrapServers = bootstrapServers ?? throw new System.ArgumentNullException(nameof(bootstrapServers));
+            this.GroupId = groupId ?? throw new System.ArgumentNullException(nameof(groupId));
             // deserializer parameter kept for API compatibility but not stored
             _ = deserializer ?? throw new System.ArgumentNullException(nameof(deserializer));
-            this._startingOffsets = startingOffsets;
+            this.StartingOffsets = startingOffsets;
         }
 
         /// <summary>

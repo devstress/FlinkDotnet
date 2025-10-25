@@ -499,10 +499,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream with timestamps assigned</returns>
         public DataStream<T> AssignTimestampsAndWatermarks(Watermarks.WatermarkStrategy<T> strategy)
         {
-            if (strategy == null)
-            {
-                throw new ArgumentNullException(nameof(strategy));
-            }
+            ArgumentNullException.ThrowIfNull(strategy);
 
             // In a full implementation, this would configure the stream's time characteristic
             // and work with the watermark strategy to extract timestamps and generate watermarks
@@ -617,10 +614,7 @@ namespace FlinkDotNet.DataStream
             Window.Assigners.IWindowAssigner<T, TWindow> assigner)
             where TWindow : Window.IWindow
         {
-            if (assigner == null)
-            {
-                throw new ArgumentNullException(nameof(assigner));
-            }
+            ArgumentNullException.ThrowIfNull(assigner);
 
             return new Window.WindowedStream<T, TKey, TWindow>(this, assigner);
         }

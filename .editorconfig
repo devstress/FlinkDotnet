@@ -215,10 +215,10 @@ csharp_style_expression_bodied_accessors = true:warning
 csharp_style_expression_bodied_lambdas = true:warning
 csharp_style_expression_bodied_local_functions = when_on_single_line:warning
 
-# var preferences
-csharp_style_var_for_built_in_types = true:suggestion
-csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_style_var_elsewhere = true:suggestion
+# var preferences - enforce use of 'var' to match SonarCloud
+csharp_style_var_for_built_in_types = true:warning
+csharp_style_var_when_type_is_apparent = true:warning
+csharp_style_var_elsewhere = false:suggestion
 
 # Using directive preferences
 csharp_using_directive_placement = outside_namespace:warning
@@ -422,3 +422,111 @@ dotnet_diagnostic.IDE0079.severity = warning # Remove unnecessary suppression
 dotnet_diagnostic.CA1822.severity = warning # Mark members as static
 dotnet_diagnostic.CA1050.severity = warning # Make class sealed
 dotnet_diagnostic.CA1070.severity = warning # Use 'System.ArgumentNullException.ThrowIfNull'
+
+# Additional Roslyn/Sonar rules to match SonarCloud issues
+dotnet_diagnostic.CS8618.severity = warning # Nullable reference type annotations
+dotnet_diagnostic.CS8600.severity = warning # Converting null literal to non-nullable reference
+dotnet_diagnostic.CS8602.severity = warning # Dereference of possibly null reference
+dotnet_diagnostic.CS8604.severity = warning # Possible null reference argument
+dotnet_diagnostic.IDE0007.severity = warning # Use 'var' instead of explicit type
+dotnet_diagnostic.IDE0008.severity = warning # Use explicit type instead of 'var'
+dotnet_diagnostic.IDE0011.severity = warning # Add braces
+dotnet_diagnostic.IDE0058.severity = none # Expression value is never used (disabled for test files)
+dotnet_diagnostic.IDE0059.severity = warning # Unnecessary assignment
+dotnet_diagnostic.IDE0090.severity = warning # Use 'new(...)'
+dotnet_diagnostic.IDE1005.severity = warning # Use conditional delegate call
+dotnet_diagnostic.IDE0029.severity = warning # Use coalesce expression
+dotnet_diagnostic.IDE0030.severity = warning # Use coalesce expression
+dotnet_diagnostic.IDE0031.severity = warning # Use null propagation
+dotnet_diagnostic.IDE0045.severity = warning # Use conditional expression for assignment
+dotnet_diagnostic.IDE0046.severity = warning # Use conditional expression for return
+dotnet_diagnostic.IDE0074.severity = warning # Use compound assignment
+dotnet_diagnostic.IDE0075.severity = warning # Simplify conditional expression
+dotnet_diagnostic.IDE0082.severity = warning # Convert 'typeof' to 'nameof'
+dotnet_diagnostic.IDE0083.severity = warning # Use pattern matching
+dotnet_diagnostic.IDE0180.severity = warning # Use tuple to swap values
+dotnet_diagnostic.IDE0200.severity = warning # Remove unnecessary lambda expression
+dotnet_diagnostic.IDE0220.severity = warning # Add explicit cast
+dotnet_diagnostic.IDE0230.severity = warning # Use UTF-8 string literal
+dotnet_diagnostic.IDE0240.severity = warning # Remove redundant nullable directive
+dotnet_diagnostic.IDE0241.severity = warning # Remove unnecessary nullable directive
+dotnet_diagnostic.IDE0251.severity = warning # Make member readonly
+dotnet_diagnostic.IDE0290.severity = warning # Use primary constructor
+dotnet_diagnostic.IDE0300.severity = warning # Use collection expression for array
+dotnet_diagnostic.IDE0301.severity = warning # Use collection expression for empty
+dotnet_diagnostic.IDE0302.severity = warning # Use collection expression for stackalloc
+dotnet_diagnostic.IDE0303.severity = warning # Use collection expression for Create()
+dotnet_diagnostic.IDE0304.severity = warning # Use collection expression for builder
+dotnet_diagnostic.IDE0305.severity = warning # Use collection expression for fluent
+
+# Roslynator rules for code quality
+dotnet_diagnostic.RCS1001.severity = warning # Add braces to if-else
+dotnet_diagnostic.RCS1003.severity = warning # Add braces to if-else
+dotnet_diagnostic.RCS1036.severity = warning # Remove unnecessary blank line
+dotnet_diagnostic.RCS1037.severity = warning # Remove trailing whitespace
+dotnet_diagnostic.RCS1049.severity = warning # Simplify boolean comparison
+dotnet_diagnostic.RCS1050.severity = warning # Add argument list to object creation
+dotnet_diagnostic.RCS1085.severity = warning # Use auto-implemented property
+dotnet_diagnostic.RCS1163.severity = warning # Unused parameter
+dotnet_diagnostic.RCS1164.severity = warning # Unused type parameter
+dotnet_diagnostic.RCS1168.severity = warning # Parameter name differs from base
+dotnet_diagnostic.RCS1175.severity = warning # Unused this parameter
+dotnet_diagnostic.RCS1181.severity = warning # Convert comment to documentation comment
+dotnet_diagnostic.RCS1186.severity = warning # Use RegexOptions.Compiled
+dotnet_diagnostic.RCS1188.severity = warning # Remove redundant auto-property initialization
+dotnet_diagnostic.RCS1189.severity = warning # Add or remove region name
+dotnet_diagnostic.RCS1192.severity = warning # Unnecessary usage of verbatim string literal
+dotnet_diagnostic.RCS1197.severity = warning # Optimize StringBuilder.Append/AppendLine call
+dotnet_diagnostic.RCS1201.severity = warning # Use method chaining
+dotnet_diagnostic.RCS1202.severity = warning # Avoid NullReferenceException
+dotnet_diagnostic.RCS1207.severity = warning # Convert anonymous function to method group
+dotnet_diagnostic.RCS1211.severity = warning # Remove unnecessary else clause
+dotnet_diagnostic.RCS1212.severity = warning # Remove redundant assignment
+dotnet_diagnostic.RCS1214.severity = warning # Unnecessary interpolated string
+dotnet_diagnostic.RCS1217.severity = warning # Convert interpolated string to concatenation
+dotnet_diagnostic.RCS1224.severity = warning # Make method an extension method
+dotnet_diagnostic.RCS1226.severity = warning # Add paragraph to documentation comment
+dotnet_diagnostic.RCS1228.severity = warning # Unused element in documentation comment
+dotnet_diagnostic.RCS1232.severity = warning # Order elements in documentation comment
+dotnet_diagnostic.RCS1234.severity = warning # Duplicate enum value
+
+# Sonar logging rules
+dotnet_diagnostic.S2190.severity = warning # Recursion
+dotnet_diagnostic.S2551.severity = warning # Shared resources should not be used for locking
+dotnet_diagnostic.S2583.severity = warning # Conditionally executed code should be reachable
+dotnet_diagnostic.S2589.severity = warning # Boolean expressions should not be gratuitous
+dotnet_diagnostic.S2681.severity = warning # Multiline blocks should be enclosed in braces
+dotnet_diagnostic.S2701.severity = warning # Literal suffixes should be upper case
+dotnet_diagnostic.S2737.severity = warning # Catch clauses should do more than rethrow
+dotnet_diagnostic.S2952.severity = warning # Classes should dispose of members
+dotnet_diagnostic.S3010.severity = warning # Static fields should not be updated in methods
+dotnet_diagnostic.S3168.severity = warning # Async methods should not return void
+dotnet_diagnostic.S3216.severity = warning # ConfigureAwait(false) should be used
+dotnet_diagnostic.S3220.severity = warning # Method calls should not resolve ambiguously
+dotnet_diagnostic.S3358.severity = warning # Extract ternary operation from expression
+dotnet_diagnostic.S3400.severity = warning # Methods should not return constants
+dotnet_diagnostic.S3440.severity = warning # Variables should not be checked against the values they're assigned
+dotnet_diagnostic.S3441.severity = warning # Redundant property names
+dotnet_diagnostic.S3442.severity = warning # Abstract classes should not have public constructors
+dotnet_diagnostic.S3443.severity = warning # Types should not extend outdated base types
+dotnet_diagnostic.S3444.severity = warning # Interfaces should not simply inherit from base
+dotnet_diagnostic.S3445.severity = warning # Exceptions should not be explicitly rethrown
+dotnet_diagnostic.S3453.severity = warning # Classes should not have only private constructors
+dotnet_diagnostic.S3872.severity = warning # Parameter names should match original
+dotnet_diagnostic.S3881.severity = warning # Implement IDisposable correctly
+dotnet_diagnostic.S3898.severity = warning # Value types should implement equality
+dotnet_diagnostic.S3900.severity = warning # Arguments should match parameters
+dotnet_diagnostic.S3903.severity = warning # Types should be defined in named namespaces
+dotnet_diagnostic.S3925.severity = warning # Serialization event handlers should be implemented correctly
+dotnet_diagnostic.S3927.severity = warning # Serialization event handlers should have correct signature
+dotnet_diagnostic.S3928.severity = warning # Argument types should match parameters
+dotnet_diagnostic.S4004.severity = warning # Collection properties should be readonly
+dotnet_diagnostic.S4016.severity = warning # Enumeration members should not be named Reserved
+dotnet_diagnostic.S4023.severity = warning # Interfaces should not be empty
+dotnet_diagnostic.S4025.severity = warning # Child class fields shadowing parent fields
+dotnet_diagnostic.S4035.severity = warning # Classes implementing IEquatable should override Equals
+dotnet_diagnostic.S4070.severity = warning # Non-flags enums should not be marked with FlagsAttribute
+
+# SonarCloud specific logging rules to match reported issues
+dotnet_diagnostic.S2629.severity = warning # Logging templates should be constant
+dotnet_diagnostic.S2589.severity = warning # Boolean expressions should not be gratuitous

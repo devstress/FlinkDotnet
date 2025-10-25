@@ -19,18 +19,20 @@ namespace FlinkDotNet.DataStream.Checkpoint
     /// <summary>
     /// Checkpoint storage implementation that stores checkpoints on a file system.
     /// This corresponds to org.apache.flink.runtime.state.storage.FileSystemCheckpointStorage in Apache Flink.
-    ///
+    /// <para>
     /// Supports various file systems:
     /// - Local file system: file:///path/to/checkpoints
     /// - HDFS: hdfs://namenode:port/path/to/checkpoints
     /// - Amazon S3: s3://bucket/path/to/checkpoints
     /// - Azure Blob Storage: wasb://container@account/path/to/checkpoints
     /// - Google Cloud Storage: gs://bucket/path/to/checkpoints
-    ///
+    /// </para>
+    /// <para>
     /// File system checkpoint storage provides:
     /// - Persistent checkpoint storage
     /// - High availability support
     /// - Suitable for production deployments
+    /// </para>
     /// </summary>
     public class FileSystemCheckpointStorage : ICheckpointStorage
     {

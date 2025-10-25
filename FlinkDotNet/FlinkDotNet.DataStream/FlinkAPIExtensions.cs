@@ -88,7 +88,7 @@ namespace FlinkDotNet.DataStream
     /// Corresponds to org.apache.flink.api.common.typeinfo.TypeInformation in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type</typeparam>
-    public class TypeInformation<T>
+    public sealed class TypeInformation<T>
     {
         private readonly System.Type _type;
 
@@ -120,18 +120,15 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T">The type of elements to write</typeparam>
     public class KafkaSinkFunction<T> : ISinkFunction<T>
     {
-        private readonly string _topic;
-        private readonly string _bootstrapServers;
-
         /// <summary>
         /// Gets the Kafka topic to write to.
         /// </summary>
-        public string Topic => this._topic;
+        public string Topic { get; }
 
         /// <summary>
         /// Gets the Kafka bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers => this._bootstrapServers;
+        public string BootstrapServers { get; }
 
         /// <summary>
         /// Creates a Kafka sink function.
@@ -141,8 +138,8 @@ namespace FlinkDotNet.DataStream
         /// <param name="serializer">Serialization function</param>
         public KafkaSinkFunction(string topic, string bootstrapServers, Func<T, byte[]> serializer)
         {
-            this._topic = topic;
-            this._bootstrapServers = bootstrapServers;
+            this.Topic = topic;
+            this.BootstrapServers = bootstrapServers;
             _ = serializer; // Reserved for future implementation - parameter kept for API compatibility
         }
 

@@ -24,7 +24,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
     /// Corresponds to org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements being windowed</typeparam>
-    public class SessionWindows<T> : IWindowAssigner<T, TimeWindow>
+    public sealed class SessionWindows<T> : IWindowAssigner<T, TimeWindow>
     {
         private readonly long _sessionGap;
 
