@@ -43,7 +43,7 @@ namespace FlinkDotNet.DataStream.Window
         {
             if (start > end)
                 throw new ArgumentException("Start must be less than or equal to end");
-            
+
             Start = start;
             End = end;
         }

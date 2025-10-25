@@ -57,14 +57,14 @@ namespace FlinkDotNet.Common
 
         /// <summary>
         /// Gets or sets whether object reuse is enabled.
-        /// When enabled, user functions that produce objects will be asked to reuse 
+        /// When enabled, user functions that produce objects will be asked to reuse
         /// objects rather than allocating new ones.
         /// </summary>
         public bool ObjectReuseEnabled { get; set; } = false;
 
         /// <summary>
         /// Gets or sets whether closure cleaner is enabled.
-        /// The closure cleaner removes unneeded references to the outer class files of 
+        /// The closure cleaner removes unneeded references to the outer class files of
         /// anonymous functions inside of Flink programs.
         /// </summary>
         public bool ClosureCleanerEnabled { get; set; } = true;

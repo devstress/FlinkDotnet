@@ -19,19 +19,19 @@ public class FlinkJobManager : IFlinkJobManager
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
-    
+
     /// <summary>
     /// Gets or sets the delay between SQL Gateway retry attempts.
     /// Static field for testability (can be set to 1ms in tests).
     /// </summary>
     public static TimeSpan SqlGatewayRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
-    
+
     /// <summary>
     /// Gets or sets the delay between JAR registration polling attempts.
     /// Static field for testability (can be set to 1ms in tests).
     /// </summary>
     public static TimeSpan JarRegistrationPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
-    
+
     /// <summary>
     /// Gets or sets the delay between job recovery polling attempts.
     /// Static field for testability (can be set to 1ms in tests).
@@ -398,7 +398,7 @@ public class FlinkJobManager : IFlinkJobManager
 
         // Validate input before attempting HTTP call to prevent injection attacks
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
-        
+
         try
         {
             var response = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
@@ -669,7 +669,7 @@ public class FlinkJobManager : IFlinkJobManager
 
             // Validate jarId from Flink response to prevent injection attacks
             var sanitizedJarId = ValidateAndSanitizePathSegment(jarId, nameof(jarId));
-            
+
             _logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", _httpClient.BaseAddress, jarId);
             using var response = await _httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
             _logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) response.StatusCode, response.ReasonPhrase);
@@ -751,13 +751,13 @@ public class FlinkJobManager : IFlinkJobManager
             // SQL Gateway jobs return session handle as tracking ID
             // This is expected behavior for SQL Gateway - it manages jobs within sessions
             var result = lastJobId ?? sessionHandle;
-            
+
             if (string.IsNullOrEmpty(result))
             {
                 _logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
                 throw new InvalidOperationException("SQL Gateway did not return a job ID or session handle. This should not happen.");
             }
-            
+
             LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
                 ("🆔 JobId/SessionHandle", result));
 
@@ -1712,7 +1712,7 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task CollectCheckpointMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
-        
+
         try
         {
             var cps = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/checkpoints");

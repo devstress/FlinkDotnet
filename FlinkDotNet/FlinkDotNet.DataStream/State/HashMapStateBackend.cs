@@ -19,12 +19,12 @@ namespace FlinkDotNet.DataStream.State
     /// <summary>
     /// A state backend that stores state in memory (on the Java heap).
     /// This corresponds to org.apache.flink.runtime.state.hashmap.HashMapStateBackend in Apache Flink.
-    /// 
+    ///
     /// This state backend is suitable for:
     /// - Development and testing
     /// - Jobs with small state
     /// - Jobs that require very low latency state access
-    /// 
+    ///
     /// Limitations:
     /// - State must fit in memory
     /// - Checkpoints are serialized and stored externally

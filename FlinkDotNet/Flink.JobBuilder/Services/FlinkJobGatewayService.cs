@@ -25,7 +25,7 @@ namespace Flink.JobBuilder.Services
         {
             var fileSystem = new System.IO.Abstractions.FileSystem();
             return global::FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(
-                fileSystem, 
+                fileSystem,
                 "FlinkDotNet.JobGateway.log");
         }
 
@@ -46,7 +46,7 @@ namespace Flink.JobBuilder.Services
         private HttpClient CreateDefaultHttpClient()
         {
             _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient with BaseUrl={BaseUrl}", _configuration.BaseUrl);
-            
+
             var client = new HttpClient
             {
                 BaseAddress = new Uri(_configuration.BaseUrl),

@@ -13,11 +13,11 @@ public class MetricsService
     private readonly Gauge _jobsRunning;
     private readonly Counter _jobsSucceededTotal;
     private readonly Counter _jobsFailedTotal;
-    
+
     // Request-related metrics
     private readonly Counter _requestsTotal;
     private readonly Histogram _requestDuration;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="MetricsService"/> class.
     /// Configures Prometheus counters, gauges, and histograms for job and request tracking.
@@ -32,15 +32,15 @@ public class MetricsService
             {
                 LabelNames = new[] { "mode" } // LOCAL or REMOTE
             });
-        
+
         _jobsRunning = Metrics.CreateGauge(
             "flinkdotnet_gateway_jobs_running",
             "Current number of running jobs tracked by the gateway");
-        
+
         _jobsSucceededTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_jobs_succeeded_total",
             "Total number of successfully completed jobs");
-        
+
         _jobsFailedTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_jobs_failed_total",
             "Total number of failed jobs",
@@ -48,7 +48,7 @@ public class MetricsService
             {
                 LabelNames = new[] { "error_type" }
             });
-        
+
         // Request metrics
         _requestsTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_requests_total",
@@ -57,7 +57,7 @@ public class MetricsService
             {
                 LabelNames = new[] { "endpoint", "method", "status_code" }
             });
-        
+
         _requestDuration = Metrics.CreateHistogram(
             "flinkdotnet_gateway_request_duration_seconds",
             "Duration of API requests in seconds",
@@ -67,7 +67,7 @@ public class MetricsService
                 Buckets = Histogram.ExponentialBuckets(0.001, 2, 10) // 1ms to ~1s
             });
     }
-    
+
     /// <summary>
     /// Records a job submission and increments the running jobs counter.
     /// </summary>
@@ -77,7 +77,7 @@ public class MetricsService
         _jobsSubmittedTotal.WithLabels(mode).Inc();
         _jobsRunning.Inc();
     }
-    
+
     /// <summary>
     /// Records a successful job completion and decrements the running jobs counter.
     /// </summary>
@@ -86,7 +86,7 @@ public class MetricsService
         _jobsSucceededTotal.Inc();
         _jobsRunning.Dec();
     }
-    
+
     /// <summary>
     /// Records a job failure and decrements the running jobs counter.
     /// </summary>
@@ -96,7 +96,7 @@ public class MetricsService
         _jobsFailedTotal.WithLabels(errorType).Inc();
         _jobsRunning.Dec();
     }
-    
+
     /// <summary>
     /// Records an API request with endpoint, method, and status code.
     /// </summary>
@@ -107,7 +107,7 @@ public class MetricsService
     {
         _requestsTotal.WithLabels(endpoint, method, statusCode.ToString()).Inc();
     }
-    
+
     /// <summary>
     /// Creates a timer to measure the duration of an API request.
     /// </summary>
