@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.Common.Logging;
-using Serilog;
 
 namespace FlinkDotNet.DataStream
 {
@@ -29,7 +28,7 @@ namespace FlinkDotNet.DataStream
     internal class OperationCapture
     {
         private static readonly IFileSystem _fileSystem = new FileSystem();
-        private static readonly ILogger _logger = LoggerFactory.CreateLogger(_fileSystem);
+        private static readonly Serilog.Core.Logger _logger = LoggerFactory.CreateLogger(_fileSystem);
 
         private readonly List<CapturedOperation> _operations = new();
         private KafkaSourceDefinition? _kafkaSource;
@@ -155,8 +154,8 @@ namespace FlinkDotNet.DataStream
 
         public JobDefinition ToJobDefinition(string jobId, string jobName)
         {
-            _logger.Information("[OperationCapture.ToJobDefinition] Starting translation to JobDefinition: jobId={JobId}, jobName={JobName}", jobId, jobName);
-            _logger.Information("[OperationCapture.ToJobDefinition] Current _kafkaSource.BootstrapServers={BootstrapServers}", this._kafkaSource?.BootstrapServers);
+            _logger.Debug("[OperationCapture.ToJobDefinition] Starting translation - jobId={JobId}, jobName={JobName}, kafkaSource.BootstrapServers={BootstrapServers}",
+                jobId, jobName, this._kafkaSource?.BootstrapServers);
 
             if (this._kafkaSource == null)
             {
@@ -165,17 +164,15 @@ namespace FlinkDotNet.DataStream
             }
 
             var jobDef = this.CreateJobDefinition(jobId, jobName);
-            _logger.Information("[OperationCapture.ToJobDefinition] After CreateJobDefinition: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _logger.Debug("[OperationCapture.ToJobDefinition] After CreateJobDefinition - Source.BootstrapServers={BootstrapServers}",
+                (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             this.ConfigureJobMetadata(jobDef);
-            _logger.Information(
-                "[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}",
+            _logger.Debug("[OperationCapture.ToJobDefinition] After ConfigureJobMetadata - Source.BootstrapServers={BootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             this.TranslateOperations(jobDef);
-            _logger.Information("[OperationCapture.ToJobDefinition] After TranslateOperations: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
-
-            _logger.Information("[OperationCapture.ToJobDefinition] Final JobDefinition: Source.BootstrapServers={BootstrapServers}, Sink.BootstrapServers={SinkBootstrapServers}",
+            _logger.Information("[OperationCapture.ToJobDefinition] Translation complete - Source.BootstrapServers={SourceBootstrapServers}, Sink.BootstrapServers={SinkBootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers, (jobDef.Sink as KafkaSinkDefinition)?.BootstrapServers);
 
             return jobDef;
@@ -188,7 +185,7 @@ namespace FlinkDotNet.DataStream
             var jobDef = new JobDefinition
             {
                 Source = this._kafkaSource!,
-                Operations = new List<IOperationDefinition>(),
+                Operations = [],
                 Sink = this._kafkaSink,
                 Metadata = new JobMetadata
                 {
@@ -196,7 +193,7 @@ namespace FlinkDotNet.DataStream
                     JobName = jobName,
                     CreatedAt = System.DateTime.UtcNow,
                     Version = "1.0",
-                    Properties = new Dictionary<string, string>()
+                    Properties = []
                 }
             };
 

@@ -19,10 +19,11 @@ namespace FlinkDotNet.DataStream.State
     /// <summary>
     /// A state backend defines how the state of a streaming application is stored and checkpointed.
     /// This corresponds to org.apache.flink.runtime.state.StateBackend in Apache Flink.
-    ///
+    /// <para>
     /// Different state backends store their state in different places:
     /// - HashMapStateBackend: Stores state in memory (on-heap)
     /// - EmbeddedRocksDBStateBackend: Stores state in RocksDB (off-heap, disk-backed)
+    /// </para>
     /// </summary>
     public interface IStateBackend
     {

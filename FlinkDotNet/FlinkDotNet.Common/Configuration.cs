@@ -202,7 +202,7 @@ namespace FlinkDotNet.Common
         /// Creates a copy of this configuration.
         /// </summary>
         /// <returns>A new Configuration instance with the same values</returns>
-        public Configuration Clone() => new Configuration(this._configuration);
+        public Configuration Clone() => new(this._configuration);
 
         /// <summary>
         /// Adds all key-value pairs from another configuration.

@@ -20,7 +20,7 @@ namespace FlinkDotNet.DataStream
     /// Time unit for windowing operations.
     /// Corresponds to org.apache.flink.streaming.api.windowing.time.Time in Java Flink.
     /// </summary>
-    public class Time
+    public sealed class Time
     {
         private readonly long _milliseconds;
 
@@ -34,27 +34,27 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Creates a time duration in milliseconds.
         /// </summary>
-        public static Time Milliseconds(long milliseconds) => new Time(milliseconds);
+        public static Time Milliseconds(long milliseconds) => new(milliseconds);
 
         /// <summary>
         /// Creates a time duration in seconds.
         /// </summary>
-        public static Time Seconds(long seconds) => new Time(seconds * 1000);
+        public static Time Seconds(long seconds) => new(seconds * 1000);
 
         /// <summary>
         /// Creates a time duration in minutes.
         /// </summary>
-        public static Time Minutes(long minutes) => new Time(minutes * 60 * 1000);
+        public static Time Minutes(long minutes) => new(minutes * 60 * 1000);
 
         /// <summary>
         /// Creates a time duration in hours.
         /// </summary>
-        public static Time Hours(long hours) => new Time(hours * 60 * 60 * 1000);
+        public static Time Hours(long hours) => new(hours * 60 * 60 * 1000);
 
         /// <summary>
         /// Creates a time duration in days.
         /// </summary>
-        public static Time Days(long days) => new Time(days * 24 * 60 * 60 * 1000);
+        public static Time Days(long days) => new(days * 24 * 60 * 60 * 1000);
 
         // Java Flink-compatible lowercase aliases
         /// <summary>

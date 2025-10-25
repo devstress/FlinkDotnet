@@ -49,17 +49,19 @@ namespace FlinkDotNet.DataStream.State
     /// <summary>
     /// A state backend that stores state in an embedded RocksDB database.
     /// This corresponds to org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend in Apache Flink.
-    ///
+    /// <para>
     /// This state backend is suitable for:
     /// - Production deployments
     /// - Jobs with large state (larger than available memory)
     /// - Jobs requiring high throughput checkpointing
-    ///
+    /// </para>
+    /// <para>
     /// Features:
     /// - State stored off-heap in RocksDB
     /// - Supports incremental checkpointing
     /// - State can exceed available memory
     /// - Persistent across restarts with checkpointing
+    /// </para>
     /// </summary>
     public class EmbeddedRocksDBStateBackend : IStateBackend
     {

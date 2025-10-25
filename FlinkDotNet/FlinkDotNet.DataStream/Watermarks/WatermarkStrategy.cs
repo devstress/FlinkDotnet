@@ -21,16 +21,24 @@ namespace FlinkDotNet.DataStream.Watermarks
     /// Corresponds to org.apache.flink.api.common.eventtime.WatermarkStrategy in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements in the stream</typeparam>
-    public class WatermarkStrategy<T>
+    public sealed class WatermarkStrategy<T>
     {
         private System.Func<T, long>? _timestampAssigner;
-        private readonly System.TimeSpan _maxOutOfOrderness;
-        private readonly bool _isMonotonous;
+
+        /// <summary>
+        /// Gets whether this strategy is for monotonous timestamps.
+        /// </summary>
+        public bool IsMonotonous { get; }
+
+        /// <summary>
+        /// Gets the maximum out-of-orderness allowed.
+        /// </summary>
+        public System.TimeSpan MaxOutOfOrderness { get; }
 
         private WatermarkStrategy(System.TimeSpan maxOutOfOrderness, bool isMonotonous)
         {
-            this._maxOutOfOrderness = maxOutOfOrderness;
-            this._isMonotonous = isMonotonous;
+            this.MaxOutOfOrderness = maxOutOfOrderness;
+            this.IsMonotonous = isMonotonous;
         }
 
         /// <summary>
@@ -39,14 +47,14 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// </summary>
         /// <param name="maxOutOfOrderness">The maximum out-of-orderness</param>
         /// <returns>A new WatermarkStrategy</returns>
-        public static WatermarkStrategy<T> ForBoundedOutOfOrderness(System.TimeSpan maxOutOfOrderness) => new WatermarkStrategy<T>(maxOutOfOrderness, false);
+        public static WatermarkStrategy<T> ForBoundedOutOfOrderness(System.TimeSpan maxOutOfOrderness) => new(maxOutOfOrderness, false);
 
         /// <summary>
         /// Creates a watermark strategy for situations where timestamps are monotonously ascending
         /// (events always arrive in order).
         /// </summary>
         /// <returns>A new WatermarkStrategy</returns>
-        public static WatermarkStrategy<T> ForMonotonousTimestamps() => new WatermarkStrategy<T>(System.TimeSpan.Zero, true);
+        public static WatermarkStrategy<T> ForMonotonousTimestamps() => new(System.TimeSpan.Zero, true);
 
         /// <summary>
         /// Sets the timestamp assigner function.
@@ -95,27 +103,15 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <returns>The watermark timestamp</returns>
         public long GetCurrentWatermark(long currentMaxTimestamp)
         {
-            if (this._isMonotonous)
+            if (this.IsMonotonous)
             {
                 // For monotonous timestamps, watermark = current timestamp
                 return currentMaxTimestamp;
             }
-            else
-            {
-                // For bounded out-of-orderness, watermark = max timestamp - allowed delay
-                return currentMaxTimestamp - (long) this._maxOutOfOrderness.TotalMilliseconds;
-            }
+
+            // For bounded out-of-orderness, watermark = max timestamp - allowed delay
+            return currentMaxTimestamp - (long) this.MaxOutOfOrderness.TotalMilliseconds;
         }
-
-        /// <summary>
-        /// Gets whether this strategy is for monotonous timestamps.
-        /// </summary>
-        public bool IsMonotonous => this._isMonotonous;
-
-        /// <summary>
-        /// Gets the maximum out-of-orderness allowed.
-        /// </summary>
-        public System.TimeSpan MaxOutOfOrderness => this._maxOutOfOrderness;
 
         /// <summary>
         /// Gets whether a timestamp assigner has been configured.

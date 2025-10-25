@@ -300,7 +300,7 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="TKey">The type of the key</typeparam>
         /// <param name="keySelector">The key selector function</param>
         /// <returns>A KeyedStream</returns>
-        public KeyedStream<T, TKey> KeyBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull => new KeyedStream<T, TKey>(this, keySelector);
+        public KeyedStream<T, TKey> KeyBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull => new(this, keySelector);
 
         /// <summary>
         /// Groups the elements of this DataStream by the given key field.
@@ -312,7 +312,7 @@ namespace FlinkDotNet.DataStream
         public KeyedStream<T, string> GroupBy(string keyField) =>
             // For basic field-based grouping, we'll create a simple key function
             // This allows the API to work for basic scenarios
-            new KeyedStream<T, string>(this, _ => keyField);
+            new(this, _ => keyField);
 
         /// <summary>
         /// Writes the DataStream to standard output.
@@ -499,10 +499,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream with timestamps assigned</returns>
         public DataStream<T> AssignTimestampsAndWatermarks(Watermarks.WatermarkStrategy<T> strategy)
         {
-            if (strategy == null)
-            {
-                throw new ArgumentNullException(nameof(strategy));
-            }
+            ArgumentNullException.ThrowIfNull(strategy);
 
             // In a full implementation, this would configure the stream's time characteristic
             // and work with the watermark strategy to extract timestamps and generate watermarks
@@ -617,10 +614,7 @@ namespace FlinkDotNet.DataStream
             Window.Assigners.IWindowAssigner<T, TWindow> assigner)
             where TWindow : Window.IWindow
         {
-            if (assigner == null)
-            {
-                throw new ArgumentNullException(nameof(assigner));
-            }
+            ArgumentNullException.ThrowIfNull(assigner);
 
             return new Window.WindowedStream<T, TKey, TWindow>(this, assigner);
         }

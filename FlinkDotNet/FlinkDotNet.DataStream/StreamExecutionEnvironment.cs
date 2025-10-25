@@ -40,7 +40,7 @@ namespace FlinkDotNet.DataStream
         private readonly ExecutionConfig _executionConfig;
         private readonly ILogger? _logger;
         private static readonly IFileSystem _fileSystem = new FileSystem();
-        private static readonly Serilog.ILogger _serilogLogger = FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(_fileSystem);
+        private static readonly Serilog.Core.Logger _log = FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(_fileSystem);
 
         private int _bufferTimeoutMillis = 100;
         private bool _operatorChainingEnabled = true;
@@ -62,7 +62,7 @@ namespace FlinkDotNet.DataStream
         {
             this._executionConfig = new ExecutionConfig(configuration ?? new Configuration());
             this._logger = logger;
-            _serilogLogger.Information("[StreamExecutionEnvironment] Created new environment instance");
+            _log.Information("[StreamExecutionEnvironment] Created new environment instance");
         }
 
         internal void SetActiveJob(JobDefinition job) => this._activeJob = job;
@@ -79,12 +79,12 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public DataStream<string> FromKafka(string topic, string? bootstrapServers = null, string? groupId = null, string startingOffsets = "latest")
         {
-            _serilogLogger.Information("[FromKafka] Called with topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
+            _log.Debug("[FromKafka] Called with topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
                 topic, bootstrapServers, groupId, startingOffsets);
 
             if (string.IsNullOrWhiteSpace(bootstrapServers))
             {
-                _serilogLogger.Error("[FromKafka] Bootstrap servers is null or whitespace!");
+                _log.Error("[FromKafka] Bootstrap servers is null or whitespace!");
                 throw new ArgumentException(
                     "Kafka bootstrap servers must be provided via bootstrapServers parameter.",
                     nameof(bootstrapServers));
@@ -92,10 +92,10 @@ namespace FlinkDotNet.DataStream
 
             // Initialize operation capture for native API usage
             this._operationCapture = new OperationCapture();
-            _serilogLogger.Debug("[FromKafka] Calling OperationCapture.CaptureKafkaSource with bootstrapServers={BootstrapServers}", bootstrapServers);
+            _log.Debug("[FromKafka] Calling OperationCapture.CaptureKafkaSource with bootstrapServers={BootstrapServers}", bootstrapServers);
             this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
 
-            _serilogLogger.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
+            _log.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
             var jd = new JobDefinition
             {
                 Source = new KafkaSourceDefinition
@@ -113,7 +113,6 @@ namespace FlinkDotNet.DataStream
                     Version = "1.0"
                 }
             };
-            _serilogLogger.Information("[FromKafka] JobDefinition created with Source.BootstrapServers={BootstrapServers}", (jd.Source as KafkaSourceDefinition)?.BootstrapServers);
             this.SetActiveJob(jd);
 
             var dataStream = new DataStream<string>(jd, this);
@@ -121,7 +120,7 @@ namespace FlinkDotNet.DataStream
             // Attach operation capture to enable native API (Map with IMapFunction)
             dataStream.AttachOperationCapture(this._operationCapture);
 
-            _serilogLogger.Information("[FromKafka] Returning DataStream with bootstrap servers={BootstrapServers}", bootstrapServers);
+            _log.Information("[FromKafka] DataStream created - topic={Topic}, bootstrapServers={BootstrapServers}", topic, bootstrapServers);
             return dataStream;
         }
 
@@ -337,7 +336,7 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="T">The type of elements in the collection</typeparam>
         /// <param name="collection">The collection of elements to create the data stream from</param>
         /// <returns>The data stream representing the given collection</returns>
-        public DataStream<T> FromCollection<T>(IEnumerable<T> collection) => new DataStream<T>(collection, this);
+        public DataStream<T> FromCollection<T>(IEnumerable<T> collection) => new(collection, this);
 
         /// <summary>
         /// Adds a data source to the streaming topology.
@@ -346,7 +345,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="sourceFunction">The user defined source function</param>
         /// <param name="sourceName">Name of the data source</param>
         /// <returns>The data stream constructed</returns>
-        public DataStream<T> AddSource<T>(ISourceFunction<T> sourceFunction, string sourceName = "Custom Source") => new DataStream<T>(sourceFunction, this, sourceName);
+        public DataStream<T> AddSource<T>(ISourceFunction<T> sourceFunction, string sourceName = "Custom Source") => new(sourceFunction, this, sourceName);
 
         /// <summary>
         /// Creates an execution environment that represents the context in which the program is executed.
@@ -354,44 +353,39 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="configuration">The configuration to instantiate the environment with</param>
         /// <returns>The execution environment of the context in which the program is executed</returns>
-        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null) => new StreamExecutionEnvironment(configuration);
+        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null) => new(configuration);
 
         public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
             var name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
             this._logger?.LogInformation("Starting execution of job: {JobName}", name);
-            _serilogLogger.Information("[ExecuteAsync] Starting execution of job: {JobName}", name);
+            _log.Debug("[ExecuteAsync] Starting execution of job: {JobName}", name);
 
             JobDefinition jobToSubmit;
 
             // Check if we have captured operations from native API usage
-            if (this._operationCapture != null && this._operationCapture.HasOperations())
+            if (this._operationCapture?.HasOperations() == true)
             {
                 // Translate captured operations to JobDefinition
                 var jobId = System.Guid.NewGuid().ToString();
-                _serilogLogger.Information("[ExecuteAsync] Translating native DataStream API operations to JobDefinition with jobId={JobId}", jobId);
+                _log.Debug("[ExecuteAsync] Translating native DataStream API operations with jobId={JobId}", jobId);
                 jobToSubmit = this._operationCapture.ToJobDefinition(jobId, name);
-                _serilogLogger.Information("[ExecuteAsync] After translation: Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
                 this._logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
             }
             else if (this._activeJob != null)
             {
                 // Use existing JobDefinition (IR-backed stream)
-                _serilogLogger.Information(
-                    "[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}",
-                    (this._activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
+                _log.Debug("[ExecuteAsync] Using existing JobDefinition");
                 jobToSubmit = this._activeJob;
                 jobToSubmit.Metadata.JobName = name;
             }
             else
             {
-                _serilogLogger.Error("[ExecuteAsync] No Flink-compatible job defined!");
+                _log.Error("[ExecuteAsync] No Flink-compatible job defined!");
                 throw new InvalidOperationException("No Flink-compatible job is defined. Use AddKafkaSource(...) or FromKafka(...) before Execute().");
             }
 
-            _serilogLogger.Information(
-                "[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}",
-                (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _log.Debug("[ExecuteAsync] About to submit job to gateway");
             var gatewayConfig = new FlinkJobGatewayConfiguration();
             var gateway = new FlinkJobGatewayService(gatewayConfig);
 
@@ -399,12 +393,11 @@ namespace FlinkDotNet.DataStream
             try
             {
                 submit = await gateway.SubmitJobAsync(jobToSubmit, cancellationToken).ConfigureAwait(false);
-                _serilogLogger.Information("[ExecuteAsync] Job submission completed: Success={Success}, FlinkJobId={FlinkJobId}, Error={Error}",
-                    submit.Success, submit.FlinkJobId, submit.ErrorMessage);
+                _log.Information("[ExecuteAsync] Job submission completed - Success={Success}, FlinkJobId={FlinkJobId}",
+                    submit.Success, submit.FlinkJobId);
             }
             catch (Exception ex)
             {
-                _serilogLogger.Error(ex, "[ExecuteAsync] Exception during job submission to gateway for job {JobId}", jobToSubmit.Metadata.JobId);
                 this._logger?.LogError(ex, "Failed to submit job {JobId} to gateway", jobToSubmit.Metadata.JobId);
                 throw new InvalidOperationException($"Failed to submit job {jobToSubmit.Metadata.JobId} to Flink Job Gateway", ex);
             }
@@ -412,16 +405,11 @@ namespace FlinkDotNet.DataStream
             if (!submit.Success)
             {
                 // Log diagnostic information about endpoints when job submission fails
-                // Use actual gateway URL from the service configuration
                 var gatewayUrl = gatewayConfig.BaseUrl;
+                var jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
 
-                // Extract JobManager URL from error message if available
-                string? jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
-
-                _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
-                _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");
-                _serilogLogger.Error("[ExecuteAsync]   - FlinkDotNet.JobGateway URL: {GatewayUrl}", gatewayUrl);
-                _serilogLogger.Error("[ExecuteAsync]   - Flink JobManager URL (used by Gateway): {JobManagerUrl}", jobManagerUrl);
+                _log.Error("[ExecuteAsync] Job submission failed - Error={ErrorMessage}, GatewayUrl={GatewayUrl}, JobManagerUrl={JobManagerUrl}",
+                    submit.ErrorMessage, gatewayUrl, jobManagerUrl);
 
                 throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");
             }
@@ -432,7 +420,7 @@ namespace FlinkDotNet.DataStream
                 JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId
             };
 
-            _serilogLogger.Information("[ExecuteAsync] Returning JobClient with JobId={JobId}", jobClient.JobId);
+            _log.Information("[ExecuteAsync] Job submitted successfully - JobId={JobId}", jobClient.JobId);
             return jobClient;
         }
 
@@ -478,7 +466,8 @@ namespace FlinkDotNet.DataStream
                 return "(not available in error message)";
             }
 
-            var urlEnd = errorMessage.IndexOfAny(new[] { ' ', '\n', '\r', '"', '\'' }, urlStart);
+            char[] separators = [' ', '\n', '\r', '"', '\''];
+            var urlEnd = errorMessage.IndexOfAny(separators, urlStart);
             return urlEnd > urlStart
                 ? errorMessage.Substring(urlStart, urlEnd - urlStart)
                 : errorMessage.Substring(urlStart);
@@ -640,13 +629,13 @@ namespace FlinkDotNet.DataStream
             var payload = new
             {
                 targetDirectory = savepointPath,
-                cancelJob = cancelJob
+                cancelJob
             };
             var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             var ok = resp.IsSuccessStatusCode;
             var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            string triggerId = string.Empty;
+            var triggerId = string.Empty;
             try
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(text);
@@ -690,7 +679,7 @@ namespace FlinkDotNet.DataStream
             var payload = new
             {
                 targetDirectory = savepointPath,
-                drain = drain
+                drain
             };
             var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/stop",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);

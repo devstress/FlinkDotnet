@@ -23,7 +23,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
     /// Corresponds to org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements being windowed</typeparam>
-    public class SlidingEventTimeWindows<T> : IWindowAssigner<T, TimeWindow>
+    public sealed class SlidingEventTimeWindows<T> : IWindowAssigner<T, TimeWindow>
     {
         private readonly long _size;
         private readonly long _slide;
@@ -42,7 +42,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="size">The size of the window</param>
         /// <param name="slide">The slide interval (how often a new window starts)</param>
         /// <returns>A new SlidingEventTimeWindows WindowAssigner</returns>
-        public static SlidingEventTimeWindows<T> Of(Time size, Time slide) => new SlidingEventTimeWindows<T>(size.ToMilliseconds(), slide.ToMilliseconds(), 0);
+        public static SlidingEventTimeWindows<T> Of(Time size, Time slide) => new(size.ToMilliseconds(), slide.ToMilliseconds(), 0);
 
         /// <summary>
         /// Creates a new SlidingEventTimeWindows WindowAssigner with an offset.
@@ -51,7 +51,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="slide">The slide interval</param>
         /// <param name="offset">The offset which window start would be shifted by</param>
         /// <returns>A new SlidingEventTimeWindows WindowAssigner</returns>
-        public static SlidingEventTimeWindows<T> Of(Time size, Time slide, Time offset) => new SlidingEventTimeWindows<T>(size.ToMilliseconds(), slide.ToMilliseconds(), offset.ToMilliseconds());
+        public static SlidingEventTimeWindows<T> Of(Time size, Time slide, Time offset) => new(size.ToMilliseconds(), slide.ToMilliseconds(), offset.ToMilliseconds());
 
         /// <summary>
         /// Assigns the element to multiple overlapping sliding windows based on its timestamp.
@@ -65,19 +65,19 @@ namespace FlinkDotNet.DataStream.Window.Assigners
             }
 
             // Determine the start of the first window that contains this timestamp
-            long lastStart = this.GetWindowStart(timestamp);
+            var lastStart = this.GetWindowStart(timestamp);
 
             // Generate all windows that contain this timestamp
-            for (long start = lastStart; start > timestamp - this._size; start -= this._slide)
+            for (var start = lastStart; start > timestamp - this._size; start -= this._slide)
             {
                 if (start >= 0 || start + this._size > 0)
                 {
-                    yield return new TimeWindow(start, start + this._size);
+                    yield return new(start, start + this._size);
                 }
             }
         }
 
-        private long GetWindowStart(long timestamp) => timestamp - (timestamp - this._offset + this._slide) % this._slide;
+        private long GetWindowStart(long timestamp) => timestamp - ((timestamp - this._offset + this._slide) % this._slide);
 
         /// <summary>
         /// Gets the time characteristic (Event Time) of this window assigner.
