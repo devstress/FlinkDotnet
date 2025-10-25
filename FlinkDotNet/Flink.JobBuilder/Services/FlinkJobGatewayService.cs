@@ -18,8 +18,7 @@ namespace Flink.JobBuilder.Services
     {
         private readonly HttpClient _httpClient;
         private readonly FlinkJobGatewayConfiguration _configuration;
-        private readonly ILogger? _logger;
-        private static readonly Serilog.ILogger _log = CreateLogger();
+        private static readonly Serilog.Core.Logger _log = CreateLogger();
 
         /// <summary>
         /// Gets or sets the delay between retry attempts.
@@ -28,6 +27,7 @@ namespace Flink.JobBuilder.Services
         public static TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
 
         private static Serilog.ILogger CreateLogger()
+        private static Serilog.Core.Logger CreateLogger()
         {
             var fileSystem = new System.IO.Abstractions.FileSystem();
             return global::FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(
@@ -101,7 +101,7 @@ namespace Flink.JobBuilder.Services
             }
 
             var msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
-            this._logger?.LogWarning(msg);
+            this._logger?.LogWarning("Job validation failed: {ValidationErrors}", msg);
             return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, msg);
         }
 
@@ -180,7 +180,7 @@ namespace Flink.JobBuilder.Services
             if (response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(rawResponse))
             {
                 var errorMsg = $"Gateway returned empty response body from {targetUrl} - this indicates a serialization problem in the Gateway";
-                this._logger?.LogError(errorMsg);
+                this._logger?.LogError("Gateway returned empty response body from {TargetUrl} - this indicates a serialization problem in the Gateway", targetUrl);
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, errorMsg);
             }
 
@@ -428,9 +428,11 @@ namespace Flink.JobBuilder.Services
                 return;
             }
 
-            var message = $"Flink cluster not ready, retrying ({retryCount + 1}/{this._configuration.MaxRetries}) after {RetryDelay * (retryCount + 1)}ms";
-            this._logger?.LogWarning(message);
-            _log.Warning("[FlinkJobGatewayService.ExecuteWithRetryAsync] {Message}", message);
+            this._logger?.LogWarning(
+                "Flink cluster not ready, retrying ({RetryAttempt}/{MaxRetries}) after {DelayMs}ms",
+                retryCount + 1,
+                this._configuration.MaxRetries,
+                this._configuration.RetryDelay * (retryCount + 1));
         }
 
         private static async Task<bool> ShouldRetryFlinkClusterNotReadyAsync(HttpResponseMessage response)
