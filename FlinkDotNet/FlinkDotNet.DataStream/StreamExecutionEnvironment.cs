@@ -336,7 +336,7 @@ namespace FlinkDotNet.DataStream
         /// <typeparam name="T">The type of elements in the collection</typeparam>
         /// <param name="collection">The collection of elements to create the data stream from</param>
         /// <returns>The data stream representing the given collection</returns>
-        public DataStream<T> FromCollection<T>(IEnumerable<T> collection) => new DataStream<T>(collection, this);
+        public DataStream<T> FromCollection<T>(IEnumerable<T> collection) => new(collection, this);
 
         /// <summary>
         /// Adds a data source to the streaming topology.
@@ -345,7 +345,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="sourceFunction">The user defined source function</param>
         /// <param name="sourceName">Name of the data source</param>
         /// <returns>The data stream constructed</returns>
-        public DataStream<T> AddSource<T>(ISourceFunction<T> sourceFunction, string sourceName = "Custom Source") => new DataStream<T>(sourceFunction, this, sourceName);
+        public DataStream<T> AddSource<T>(ISourceFunction<T> sourceFunction, string sourceName = "Custom Source") => new(sourceFunction, this, sourceName);
 
         /// <summary>
         /// Creates an execution environment that represents the context in which the program is executed.
@@ -353,7 +353,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="configuration">The configuration to instantiate the environment with</param>
         /// <returns>The execution environment of the context in which the program is executed</returns>
-        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null) => new StreamExecutionEnvironment(configuration);
+        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null) => new(configuration);
 
         public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
@@ -406,7 +406,7 @@ namespace FlinkDotNet.DataStream
             {
                 // Log diagnostic information about endpoints when job submission fails
                 var gatewayUrl = gatewayConfig.BaseUrl;
-                string? jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
+                var jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
 
                 _log.Error("[ExecuteAsync] Job submission failed - Error={ErrorMessage}, GatewayUrl={GatewayUrl}, JobManagerUrl={JobManagerUrl}",
                     submit.ErrorMessage, gatewayUrl, jobManagerUrl);

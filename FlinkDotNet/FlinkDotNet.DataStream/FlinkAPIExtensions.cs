@@ -98,14 +98,14 @@ namespace FlinkDotNet.DataStream
         /// Creates type information for the given type.
         /// </summary>
         /// <returns>Type information for T</returns>
-        public static TypeInformation<T> Of() => new TypeInformation<T>(typeof(T));
+        public static TypeInformation<T> Of() => new(typeof(T));
 
         /// <summary>
         /// Creates type information for a specific type.
         /// </summary>
         /// <typeparam name="TType">The type</typeparam>
         /// <returns>Type information</returns>
-        public static TypeInformation<TType> Of<TType>() => new TypeInformation<TType>(typeof(TType));
+        public static TypeInformation<TType> Of<TType>() => new(typeof(TType));
 
         /// <summary>
         /// Gets the .NET type.
