@@ -325,6 +325,7 @@ var gateway = builder.AddContainer("flink-job-gateway", "flinkdotnet/jobgateway"
     .WithHttpEndpoint(port: Ports.GatewayHostPort, targetPort: 8080, name: "gateway-http")
     .WithContainerRuntimeArgs("--publish", $"{Ports.GatewayHostPort}:8080")  // Explicit port publishing for test access
     .WaitFor(jobManager)  // Wait for JobManager to be ready before starting Job Gateway
+    .WaitFor(sqlGateway)  // Wait for SQL Gateway to be ready before starting Job Gateway
     .WithEnvironment("ASPNETCORE_URLS", "http://+:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/opt/connectors")
     .WithEnvironment("LOG_FILE_PATH", "/opt/test-logs")
