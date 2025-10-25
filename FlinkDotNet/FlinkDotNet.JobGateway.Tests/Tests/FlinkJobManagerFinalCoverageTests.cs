@@ -27,10 +27,7 @@ public class FlinkJobManagerFinalCoverageTests
         _mockLogger = new Mock<ILogger<FlinkJobManager>>();
         _mockConfiguration = new Mock<IConfiguration>();
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-        _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
-        {
-            BaseAddress = new Uri("http://localhost:8081")
-        };
+        _httpClient = new HttpClient(_mockHttpMessageHandler.Object);
         
         // Reset all environment variables before each test
         Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);

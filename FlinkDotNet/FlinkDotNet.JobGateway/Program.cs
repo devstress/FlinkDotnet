@@ -105,24 +105,7 @@ public class Program
 
         // Register FlinkJobManager as singleton to preserve job tracking across requests
         // The in-memory _jobMapping dictionary must persist for LOCAL mode jobs
-        // Configure HttpClient with Aspire service discovery for Flink JobManager endpoint
-        builder.Services.AddHttpClient(nameof(FlinkJobManager), (sp, client) =>
-        {
-            var configuration = sp.GetRequiredService<IConfiguration>();
-            
-            // Try to get Flink endpoint from Aspire service discovery
-            // Aspire injects: services__flink-jobmanager__jm-http__0
-            var flinkEndpoint = configuration["services:flink-jobmanager:jm-http:0"]
-                ?? configuration["services:flink-jobmanager:http:0"] // Legacy format fallback
-                ?? configuration["Flink:JobManager:BaseUrl"] // Configuration fallback
-                ?? $"http://{Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager"}:{Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081"}"; // Environment variable fallback
-            
-            client.BaseAddress = new Uri(flinkEndpoint);
-            client.Timeout = TimeSpan.FromMinutes(5);
-            
-            Log.Information("Flink JobManager HttpClient configured with endpoint: {Endpoint}", flinkEndpoint);
-        });
-        
+        builder.Services.AddHttpClient(nameof(FlinkJobManager));
         builder.Services.AddSingleton<IFlinkJobManager>(sp =>
         {
             var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();

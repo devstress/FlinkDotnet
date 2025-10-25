@@ -43,23 +43,22 @@ public class FlinkJobManager : IFlinkJobManager
     /// </summary>
     /// <param name="logger">Logger for tracking job management operations.</param>
     /// <param name="configuration">Configuration for reading Flink endpoints.</param>
-    /// <param name="httpClient">HTTP client pre-configured with Flink endpoint via Aspire service discovery or configuration.</param>
+    /// <param name="httpClient">HTTP client configured for Flink REST API communication.</param>
     public FlinkJobManager(ILogger<FlinkJobManager> logger, IConfiguration configuration, HttpClient httpClient)
     {
         _logger = logger;
         _configuration = configuration;
         _httpClient = httpClient;
 
-        // HttpClient BaseAddress is now configured via Aspire service discovery in Program.cs
-        // This eliminates the timing issue where endpoint discovery happened before Aspire injected environment variables
-        if (_httpClient.BaseAddress == null)
-        {
-            throw new InvalidOperationException(
-                "HttpClient BaseAddress must be configured via Aspire service discovery or DI configuration. " +
-                "Ensure AddHttpClient is configured with the Flink endpoint in Program.cs.");
-        }
-        
-        _logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", _httpClient.BaseAddress);
+        // Try multiple Flink endpoint discovery strategies
+        // NOTE: This discovery happens at Gateway startup time, which may be BEFORE
+        // the Flink container is fully ready in Aspire DCP testing mode.
+        // The Gateway will verify Flink connectivity when jobs are submitted.
+        var flinkBaseUrl = DiscoverFlinkEndpoint();
+
+        _httpClient.BaseAddress = new Uri(flinkBaseUrl);
+        _httpClient.Timeout = TimeSpan.FromMinutes(5);
+        _logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
         _logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
     }
 
