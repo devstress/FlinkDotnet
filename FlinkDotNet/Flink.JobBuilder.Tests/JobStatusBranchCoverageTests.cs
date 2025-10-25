@@ -21,8 +21,8 @@ public class JobStatusBranchCoverageTests
         {
             JobId = "test-job",
             State = "FINISHED",
-            StartTime = new DateTime(2025, 1, 1, 10, 0, 0),
-            EndTime = new DateTime(2025, 1, 1, 11, 30, 0)
+            StartTime = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+            EndTime = new DateTime(2025, 1, 1, 11, 30, 0, DateTimeKind.Utc)
         };
 
         // Act
@@ -30,7 +30,7 @@ public class JobStatusBranchCoverageTests
 
         // Assert
         Assert.That(duration, Is.Not.Null);
-        Assert.That(duration.Value.TotalHours, Is.EqualTo(1.5).Within(0.01));
+        Assert.That(duration!.Value.TotalHours, Is.EqualTo(1.5).Within(0.01));
     }
 
     [Test]
@@ -41,7 +41,7 @@ public class JobStatusBranchCoverageTests
         {
             JobId = "test-job",
             State = "RUNNING",
-            StartTime = new DateTime(2025, 1, 1, 10, 0, 0),
+            StartTime = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
             EndTime = null
         };
 
@@ -61,7 +61,7 @@ public class JobStatusBranchCoverageTests
             JobId = "test-job",
             State = "FAILED",
             StartTime = null,
-            EndTime = new DateTime(2025, 1, 1, 11, 30, 0)
+            EndTime = new DateTime(2025, 1, 1, 11, 30, 0, DateTimeKind.Utc)
         };
 
         // Act

@@ -15,6 +15,10 @@ namespace FlinkDotNet.JobGateway.Services;
 /// </summary>
 public class FlinkJobManager : IFlinkJobManager
 {
+    private const string ProtocolHttps = "HTTPS";
+    private const string ProtocolHttp = "HTTP";
+    private const string FlinkIRRunnerDirectory = "FlinkIRRunner";
+    
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
@@ -168,13 +172,13 @@ public class FlinkJobManager : IFlinkJobManager
         var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
         if (!string.IsNullOrEmpty(envProtocol))
         {
-            var protocol = envProtocol.Trim().ToLowerInvariant();
-            if (protocol == "https")
+            var protocol = envProtocol.Trim().ToUpperInvariant();
+            if (protocol == ProtocolHttps)
             {
                 _logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
                 return "https";
             }
-            if (protocol != "http")
+            if (protocol != ProtocolHttp)
             {
                 _logger.LogWarning("Invalid FLINK_PROTOCOL value '{Protocol}', defaulting to http", envProtocol);
             }
@@ -184,8 +188,8 @@ public class FlinkJobManager : IFlinkJobManager
         var configProtocol = _configuration["Flink:Protocol"];
         if (!string.IsNullOrEmpty(configProtocol))
         {
-            var protocol = configProtocol.Trim().ToLowerInvariant();
-            if (protocol == "https")
+            var protocol = configProtocol.Trim().ToUpperInvariant();
+            if (protocol == ProtocolHttps)
             {
                 _logger.LogInformation("Using HTTPS protocol from configuration");
                 return "https";
@@ -534,7 +538,7 @@ public class FlinkJobManager : IFlinkJobManager
             throw new InvalidOperationException("Could not locate repository root for Maven build");
         }
 
-        var runnerDir = Path.Combine(repoRoot, "FlinkIRRunner");
+        var runnerDir = Path.Combine(repoRoot, FlinkIRRunnerDirectory);
         var pomFile = Path.Combine(runnerDir, "pom.xml");
         if (!File.Exists(pomFile))
         {
@@ -599,7 +603,7 @@ public class FlinkJobManager : IFlinkJobManager
         var baseDirs = new[]
         {
             Environment.CurrentDirectory,
-            Path.Combine(Environment.CurrentDirectory, "FlinkIRRunner", "target")
+            Path.Combine(Environment.CurrentDirectory, FlinkIRRunnerDirectory, "target")
         };
 
         var searchPaths = baseDirs.SelectMany(d => names.Select(n => Path.Combine(d, n))).ToArray();
@@ -609,13 +613,13 @@ public class FlinkJobManager : IFlinkJobManager
         {
             var repoCandidates = new[]
             {
-                Path.Combine(repoRoot, "FlinkIRRunner", "target"),
+                Path.Combine(repoRoot, FlinkIRRunnerDirectory, "target"),
                 repoRoot,
             };
             searchPaths = searchPaths.Concat(repoCandidates.SelectMany(d => names.Select(n => Path.Combine(d, n)))).ToArray();
         }
 
-        return searchPaths.FirstOrDefault(File.Exists);
+        return Array.Find(searchPaths, File.Exists);
     }
 
     private async Task<bool> CheckFlinkClusterHealthAsync()
@@ -1262,7 +1266,7 @@ public class FlinkJobManager : IFlinkJobManager
         var dir = new DirectoryInfo(start);
         while (dir != null)
         {
-            var pom = Path.Combine(dir.FullName, "FlinkIRRunner", "pom.xml");
+            var pom = Path.Combine(dir.FullName, FlinkIRRunnerDirectory, "pom.xml");
             var globalJson = Path.Combine(dir.FullName, "global.json");
             if (File.Exists(pom) && File.Exists(globalJson))
             {
@@ -1543,7 +1547,6 @@ public class FlinkJobManager : IFlinkJobManager
     /// Rejects path traversal sequences, special characters, and URL-encoded attacks.
     /// </summary>
     /// <param name="segment">The path segment to validate.</param>
-    /// <param name="parameterName">Name of the parameter for error messages.</param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
     private static string ValidateAndSanitizePathSegment(string segment)
@@ -1712,7 +1715,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to collect backpressure metrics for job {flinkJobId}, vertex {vertexId}", ex);
+            throw new InvalidOperationException($"Failed to collect backpressure data for job {flinkJobId}, vertex {vertexId}", ex);
         }
     }
 
@@ -1735,7 +1738,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to collect checkpoint metrics for job {flinkJobId}", ex);
+            throw new InvalidOperationException($"Failed to collect checkpoint data for job {flinkJobId}", ex);
         }
     }
 
@@ -1808,12 +1811,12 @@ public class FlinkJobManager : IFlinkJobManager
 
         private static string WorstBackpressure(string current, string candidate)
         {
-            static int Rank(string s) => s?.ToLowerInvariant() switch
+            static int Rank(string s) => s?.ToUpperInvariant() switch
             {
-                "high" => 3,
-                "low" => 2,
-                "ok" => 1,
-                "none" => 0,
+                "HIGH" => 3,
+                "LOW" => 2,
+                "OK" => 1,
+                "NONE" => 0,
                 _ => 0
             };
 
