@@ -216,9 +216,8 @@ public class Program
     private static void MapAspireServiceConnections(IConfiguration configuration)
     {
         // Map Flink JobManager endpoint from Aspire service connections to Flink configuration
-        var jobManagerEndpoint = configuration["ConnectionStrings:flink-jobmanager"] 
-            ?? configuration.GetValue<string>("services:flink-jobmanager:jm-http:0")
-            ?? configuration.GetValue<string>("services:flink-jobmanager:http:0");
+        // Simple connection string name: "flink-jobmanager"
+        var jobManagerEndpoint = configuration["ConnectionStrings:flink-jobmanager"];
         
         if (!string.IsNullOrEmpty(jobManagerEndpoint))
         {
@@ -227,9 +226,8 @@ public class Program
         }
 
         // Map Flink SQL Gateway endpoint from Aspire service connections to Flink configuration
-        var sqlGatewayEndpoint = configuration["ConnectionStrings:flink-sql-gateway"]
-            ?? configuration.GetValue<string>("services:flink-sql-gateway:sg-http:0")
-            ?? configuration.GetValue<string>("services:flink-sql-gateway:http:0");
+        // Simple connection string name: "flink-sql-gateway"
+        var sqlGatewayEndpoint = configuration["ConnectionStrings:flink-sql-gateway"];
         
         if (!string.IsNullOrEmpty(sqlGatewayEndpoint))
         {
