@@ -340,8 +340,8 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
-    .WithEnvironment("Flink__JobManager__BaseUrl", "http://localhost:8081")
-    .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://localhost:8083")
+    .WithReference(jobManager.GetEndpoint("jm-http"))
+    .WithReference(sqlGateway.GetEndpoint("sg-http"))
     .WaitFor(jobManager)
     .WaitFor(sqlGateway);
 #pragma warning restore S1481

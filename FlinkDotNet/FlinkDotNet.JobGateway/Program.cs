@@ -46,6 +46,9 @@ public class Program
 
             var builder = WebApplication.CreateBuilder(args);
 
+            // Map Aspire service discovery endpoints to appsettings configuration
+            MapAspireEndpointsToConfiguration();
+
             // Use Serilog for ASP.NET Core logging
             builder.Host.UseSerilog();
 
@@ -203,6 +206,32 @@ public class Program
 
         await mem.CopyToAsync(originalBody);
         ctx.Response.Body = originalBody;
+    }
+
+    /// <summary>
+    /// Maps Aspire service discovery endpoints to configuration values that appsettings expects.
+    /// Aspire injects endpoints as: services__{resource-name}__{endpoint-name}__{index}
+    /// We map these to: Flink:JobManager:BaseUrl and Flink:SqlGateway:BaseUrl
+    /// </summary>
+    private static void MapAspireEndpointsToConfiguration()
+    {
+        // Check for Aspire-injected Flink JobManager endpoint
+        var jobManagerEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__jm-http__0");
+        if (!string.IsNullOrEmpty(jobManagerEndpoint))
+        {
+            // Override appsettings value with Aspire-discovered endpoint
+            Environment.SetEnvironmentVariable("Flink__JobManager__BaseUrl", jobManagerEndpoint);
+            Log.Information("Mapped Aspire Flink JobManager endpoint to configuration: {Endpoint}", jobManagerEndpoint);
+        }
+
+        // Check for Aspire-injected SQL Gateway endpoint
+        var sqlGatewayEndpoint = Environment.GetEnvironmentVariable("services__flink-sql-gateway__sg-http__0");
+        if (!string.IsNullOrEmpty(sqlGatewayEndpoint))
+        {
+            // Override appsettings value with Aspire-discovered endpoint
+            Environment.SetEnvironmentVariable("Flink__SqlGateway__BaseUrl", sqlGatewayEndpoint);
+            Log.Information("Mapped Aspire SQL Gateway endpoint to configuration: {Endpoint}", sqlGatewayEndpoint);
+        }
     }
 }
 
