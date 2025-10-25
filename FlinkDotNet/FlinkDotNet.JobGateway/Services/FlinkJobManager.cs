@@ -124,25 +124,7 @@ public class FlinkJobManager : IFlinkJobManager
         string serviceDisplayName,
         bool logAspireWarning)
     {
-        // Strategy 1: Aspire service discovery (primary endpoint name)
-        var aspireKey = $"services__{serviceName}__{primaryEndpointName}__0";
-        var aspireEndpoint = Environment.GetEnvironmentVariable(aspireKey);
-        if (!string.IsNullOrEmpty(aspireEndpoint))
-        {
-            _logger.LogInformation("Using Aspire service discovery for {ServiceName}: {Endpoint}", serviceDisplayName, aspireEndpoint);
-            return aspireEndpoint;
-        }
-
-        // Fallback: Try legacy endpoint name format
-        var legacyKey = $"services__{serviceName}__{legacyEndpointName}__0";
-        aspireEndpoint = Environment.GetEnvironmentVariable(legacyKey);
-        if (!string.IsNullOrEmpty(aspireEndpoint))
-        {
-            _logger.LogInformation("Using Aspire service discovery for {ServiceName} (legacy format): {Endpoint}", serviceDisplayName, aspireEndpoint);
-            return aspireEndpoint;
-        }
-
-        // Strategy 2: Configuration from appsettings.json
+        // Strategy 1: Configuration from appsettings.json or injected by infrastructure (Aspire/tests)
         var configEndpoint = _configuration[configKey];
         if (!string.IsNullOrEmpty(configEndpoint))
         {
@@ -150,7 +132,7 @@ public class FlinkJobManager : IFlinkJobManager
             return configEndpoint;
         }
 
-        // Strategy 3: Explicit environment variables
+        // Strategy 2: Explicit environment variables (generic, non-Aspire specific)
         var envHost = Environment.GetEnvironmentVariable(envHostKey);
         var envPort = Environment.GetEnvironmentVariable(envPortKey);
 
@@ -163,13 +145,13 @@ public class FlinkJobManager : IFlinkJobManager
             return envEndpoint;
         }
 
-        // Strategy 4: Default fallback
+        // Strategy 3: Default fallback for local development
         var defaultProtocol = GetProtocol();
         var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
         _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
-            _logger.LogWarning("Aspire service discovery not found for {ServiceName} - may not be accessible in testing mode", serviceDisplayName);
+            _logger.LogWarning("No configuration found for {ServiceName} - using default endpoint", serviceDisplayName);
         }
         return defaultEndpoint;
     }

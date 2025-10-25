@@ -46,6 +46,10 @@ public class Program
 
             var builder = WebApplication.CreateBuilder(args);
 
+            // Map Aspire service connections to Flink configuration
+            // Aspire injects service endpoints which we map to our configuration keys
+            MapAspireServiceConnections(builder.Configuration);
+
             // Use Serilog for ASP.NET Core logging
             builder.Host.UseSerilog();
 
@@ -204,4 +208,34 @@ public class Program
         await mem.CopyToAsync(originalBody);
         ctx.Response.Body = originalBody;
     }
+
+    /// <summary>
+    /// Maps Aspire service connection strings to Flink configuration keys.
+    /// This allows FlinkJobManager to remain infrastructure-agnostic while Aspire can inject endpoints.
+    /// </summary>
+    private static void MapAspireServiceConnections(IConfiguration configuration)
+    {
+        // Map Flink JobManager endpoint from Aspire service connections to Flink configuration
+        var jobManagerEndpoint = configuration["ConnectionStrings:flink-jobmanager"] 
+            ?? configuration.GetValue<string>("services:flink-jobmanager:jm-http:0")
+            ?? configuration.GetValue<string>("services:flink-jobmanager:http:0");
+        
+        if (!string.IsNullOrEmpty(jobManagerEndpoint))
+        {
+            configuration["Flink:JobManager:BaseUrl"] = jobManagerEndpoint;
+            Log.Information("Mapped Aspire Flink JobManager endpoint to configuration: {Endpoint}", jobManagerEndpoint);
+        }
+
+        // Map Flink SQL Gateway endpoint from Aspire service connections to Flink configuration
+        var sqlGatewayEndpoint = configuration["ConnectionStrings:flink-sql-gateway"]
+            ?? configuration.GetValue<string>("services:flink-sql-gateway:sg-http:0")
+            ?? configuration.GetValue<string>("services:flink-sql-gateway:http:0");
+        
+        if (!string.IsNullOrEmpty(sqlGatewayEndpoint))
+        {
+            configuration["Flink:SqlGateway:BaseUrl"] = sqlGatewayEndpoint;
+            Log.Information("Mapped Aspire SQL Gateway endpoint to configuration: {Endpoint}", sqlGatewayEndpoint);
+        }
+    }
 }
+
