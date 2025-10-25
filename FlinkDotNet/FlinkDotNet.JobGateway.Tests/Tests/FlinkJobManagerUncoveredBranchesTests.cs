@@ -857,5 +857,211 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+
+        #region WaitForJarRegistrationAsync Tests - Currently 66.7% coverage
+
+        [Test]
+        public async Task SubmitJobAsync_WithJarRegistrationSuccessOnFirstAttempt_Succeeds()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "jar-job-quick-registration",
+                    JobName = "JAR Job Quick Registration"
+                },
+                Source = new FileSourceDefinition
+                {
+                    Path = "test-file.txt",
+                    Format = "csv"
+                },
+                Sink = new ConsoleSinkDefinition(),
+                Operations = new List<IOperationDefinition>()
+            };
+
+            // Setup cluster health
+            SetupHttpResponse("/overview", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { version = "1.18.0" }));
+
+            // Setup JAR upload - returns filename immediately
+            var uploadResponse = new { filename = "flink-ir-runner.jar" };
+            SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
+                JsonSerializer.Serialize(uploadResponse), "POST");
+
+            // Setup JAR list - shows JAR is registered immediately
+            var jarsResponse = new
+            {
+                files = new[]
+                {
+                    new { id = "flink-ir-runner.jar", name = "flink-ir-runner.jar" }
+                }
+            };
+            SetupHttpResponse("/v1/jars", HttpStatusCode.OK,
+                JsonSerializer.Serialize(jarsResponse));
+
+            // Setup JAR run
+            SetupHttpResponse("/v1/jars/flink-ir-runner.jar/run", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { jobid = "flink-job-quick-123" }), "POST");
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task SubmitJobAsync_WithJarRegistrationDelayed_RetriesAndSucceeds()
+        {
+            // Arrange
+            var jobDefinition = new JobDefinition
+            {
+                Metadata = new JobMetadata
+                {
+                    JobId = "jar-job-delayed-registration",
+                    JobName = "JAR Job Delayed Registration"
+                },
+                Source = new FileSourceDefinition
+                {
+                    Path = "test-file.txt",
+                    Format = "csv"
+                },
+                Sink = new ConsoleSinkDefinition(),
+                Operations = new List<IOperationDefinition>()
+            };
+
+            SetupHttpResponse("/overview", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { version = "1.18.0" }));
+
+            var uploadResponse = new { filename = "flink-ir-runner.jar" };
+            SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
+                JsonSerializer.Serialize(uploadResponse), "POST");
+
+            // Setup JAR list - first call empty, second call has JAR
+            var callCount = 0;
+            _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => 
+                        req.RequestUri!.PathAndQuery.Contains("/v1/jars") &&
+                        req.Method.ToString().Equals("GET", StringComparison.OrdinalIgnoreCase)),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    if (callCount == 1)
+                    {
+                        // First call - JAR not registered yet
+                        return new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent(JsonSerializer.Serialize(new { files = new object[] { } }), Encoding.UTF8, "application/json")
+                        };
+                    }
+                    // Second call - JAR is now registered
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(JsonSerializer.Serialize(new { files = new[] { new { id = "flink-ir-runner.jar", name = "flink-ir-runner.jar" } } }), Encoding.UTF8, "application/json")
+                    };
+                });
+
+            SetupHttpResponse("/v1/jars/flink-ir-runner.jar/run", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { jobid = "flink-job-delayed-123" }), "POST");
+
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        #endregion
+
+        #region CollectVertexBackpressureAsync Additional Tests - Currently 75% coverage
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithBackpressureValidLevel_UpdatesMetrics()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
+            
+            // Setup backpressure with valid level
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { backpressure_level = "high" }));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public async Task GetJobMetricsAsync_WithBackpressureEmptyLevel_HandlesGracefully()
+        {
+            // Arrange
+            var flinkJobId = "test-job-id";
+            var vertexId = "vertex-123";
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { state = "RUNNING" }));
+            
+            var verticesResponse = new
+            {
+                vertices = new[]
+                {
+                    new { id = vertexId, name = "Map", parallelism = 2 }
+                }
+            };
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+                JsonSerializer.Serialize(verticesResponse));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
+            
+            // Setup backpressure with empty level
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/backpressure", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { backpressure_level = "" }));
+            
+            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+                JsonSerializer.Serialize(new { counts = new { completed = 5, restored = 1 } }));
+            
+            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            // Act
+            var result = await jobManager.GetJobMetricsAsync(flinkJobId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        #endregion
     }
 }
