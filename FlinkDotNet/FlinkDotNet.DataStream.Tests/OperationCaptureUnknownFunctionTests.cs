@@ -1,3 +1,4 @@
+#nullable enable
 namespace FlinkDotNet.DataStream.Tests
 {
     [NUnit.Framework.TestFixture]
