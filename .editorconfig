@@ -406,3 +406,19 @@ dotnet_diagnostic.S4040.severity = warning # Strings should be normalized to upp
 
 # Enable Roslynator rules for better code organization
 # RCS1060 is already set to warning in the config above
+
+# SonarCloud additional rules to match reported issues
+dotnet_diagnostic.S2436.severity = warning # Reduce the number of generic type parameters
+dotnet_diagnostic.S2757.severity = warning # Logging templates should be constant
+dotnet_diagnostic.S2325.severity = warning # Make methods static if possible
+
+# Roslyn IDE rules for code quality
+dotnet_diagnostic.IDE0040.severity = warning # Add accessibility modifiers
+dotnet_diagnostic.IDE0044.severity = warning # Add readonly modifier
+dotnet_diagnostic.IDE0051.severity = warning # Remove unused private member
+dotnet_diagnostic.IDE0052.severity = warning # Remove unread private member
+dotnet_diagnostic.IDE0060.severity = warning # Remove unused parameter
+dotnet_diagnostic.IDE0079.severity = warning # Remove unnecessary suppression
+dotnet_diagnostic.CA1822.severity = warning # Mark members as static
+dotnet_diagnostic.CA1050.severity = warning # Make class sealed
+dotnet_diagnostic.CA1070.severity = warning # Use 'System.ArgumentNullException.ThrowIfNull'
