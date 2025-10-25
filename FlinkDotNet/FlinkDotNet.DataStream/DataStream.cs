@@ -372,11 +372,11 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Sets the name for this operation.
         /// </summary>
-        /// <param name="name">The name of this operation</param>
+        /// <param name="operatorName">The name of this operation</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> Name(string name)
+        public DataStream<T> Name(string operatorName)
         {
-            _ = name; // Reserved for future implementation
+            _ = operatorName; // Reserved for future implementation
             return this;
         }
 
@@ -453,11 +453,11 @@ namespace FlinkDotNet.DataStream
         /// Sets the slotting group for this operation.
         /// Used for fine-grained resource management in Apache Flink 2.1.0.
         /// </summary>
-        /// <param name="slotSharingGroup">The slot sharing group name</param>
+        /// <param name="groupName">The slot sharing group name</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> SlotSharingGroup(string slotSharingGroup)
+        public DataStream<T> SlotSharingGroup(string groupName)
         {
-            _ = slotSharingGroup; // Reserved for future implementation
+            _ = groupName; // Reserved for future implementation
             return this;
         }
 
