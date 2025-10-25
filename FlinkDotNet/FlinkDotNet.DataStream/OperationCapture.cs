@@ -41,7 +41,8 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureKafkaSource(string topic, string bootstrapServers, string groupId, string startingOffsets, object? deserializer = null)
         {
-            _logger.Information("[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
+            _logger.Information(
+                "[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
                 topic, bootstrapServers, groupId, startingOffsets);
 
             _kafkaSource = new KafkaSourceDefinition
@@ -167,7 +168,9 @@ namespace FlinkDotNet.DataStream
             _logger.Information("[OperationCapture.ToJobDefinition] After CreateJobDefinition: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             ConfigureJobMetadata(jobDef);
-            _logger.Information("[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _logger.Information(
+                "[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}",
+                (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             TranslateOperations(jobDef);
             _logger.Information("[OperationCapture.ToJobDefinition] After TranslateOperations: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);

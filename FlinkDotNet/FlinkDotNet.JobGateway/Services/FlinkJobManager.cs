@@ -111,7 +111,8 @@ public class FlinkJobManager : IFlinkJobManager
     /// This method has 10 parameters to eliminate 98 lines of code duplication.
     /// The trade-off is justified as it consolidates endpoint discovery logic.
     /// </remarks>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "S107:Methods should not have too many parameters", Justification = "Generic method eliminates 98 lines of duplication between DiscoverFlinkEndpoint and DiscoverSqlGatewayEndpoint")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "S107:Methods should not have too many parameters",
+        Justification = "Generic method eliminates 98 lines of duplication between DiscoverFlinkEndpoint and DiscoverSqlGatewayEndpoint")]
     private string DiscoverEndpoint(
         string serviceName,
         string primaryEndpointName,

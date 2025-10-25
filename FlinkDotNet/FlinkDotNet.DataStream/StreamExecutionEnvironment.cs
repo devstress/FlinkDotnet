@@ -420,7 +420,9 @@ namespace FlinkDotNet.DataStream
             else if (_activeJob != null)
             {
                 // Use existing JobDefinition (IR-backed stream)
-                _serilogLogger.Information("[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}", (_activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
+                _serilogLogger.Information(
+                    "[ExecuteAsync] Using existing JobDefinition with Source.BootstrapServers={BootstrapServers}",
+                    (_activeJob.Source as KafkaSourceDefinition)?.BootstrapServers);
                 jobToSubmit = _activeJob;
                 jobToSubmit.Metadata.JobName = name;
             }
@@ -430,7 +432,9 @@ namespace FlinkDotNet.DataStream
                 throw new InvalidOperationException("No Flink-compatible job is defined. Use AddKafkaSource(...) or FromKafka(...) before Execute().");
             }
 
-            _serilogLogger.Information("[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}", (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
+            _serilogLogger.Information(
+                "[ExecuteAsync] About to submit job to gateway with Source.BootstrapServers={BootstrapServers}",
+                (jobToSubmit.Source as KafkaSourceDefinition)?.BootstrapServers);
             var gatewayConfig = new FlinkJobGatewayConfiguration();
             var gateway = new FlinkJobGatewayService(gatewayConfig);
 
@@ -478,7 +482,8 @@ namespace FlinkDotNet.DataStream
         public Task<JobClient> ExecuteAsyncJob(string jobName = "Flink Streaming Job")
         {
             if (_activeJob == null)
-                throw new InvalidOperationException("No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before ExecuteAsyncJob().");
+                throw new InvalidOperationException(
+                    "No Flink-compatible job is defined. Use FromKafka(...), Map(string), Filter(string)/Where(string), and SinkToKafka(...) before ExecuteAsyncJob().");
             _activeJob.Metadata.JobName = jobName;
             return Task.FromResult(new JobClient(jobName));
         }
