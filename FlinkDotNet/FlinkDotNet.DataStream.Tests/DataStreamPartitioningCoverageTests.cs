@@ -136,7 +136,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         #endregion
 
-        #region Configuration Operations
+        #region FlinkConfiguration Operations
 
         [Test]
         public void SetMaxParallelism_WithValidValue_ReturnsDataStream()

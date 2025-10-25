@@ -238,7 +238,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         #endregion
 
-        #region Configuration Tests
+        #region FlinkConfiguration Tests
 
         [Test]
         public void SetParallelism_ReturnsDataStream()

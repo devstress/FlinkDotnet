@@ -1,7 +1,7 @@
 namespace FlinkDotNet.Common.Tests;
 
 /// <summary>
-/// Tests for Configuration parsing edge cases to achieve 100% branch coverage
+/// Tests for FlinkConfiguration parsing edge cases to achieve 100% branch coverage
 /// Targets GetInteger, GetBoolean, and GetLong type conversion and parse failure paths
 /// </summary>
 [TestFixture]
@@ -13,7 +13,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetInteger_WithIntValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetInteger("key", 42);
 
         // Act
@@ -27,7 +27,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetInteger_WithStringThatParsesToInt_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "123");
 
         // Act
@@ -41,7 +41,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetInteger_WithNonNumericString_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "not-a-number");
 
         // Act
@@ -55,7 +55,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetInteger_WithNonIntObject_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         var dict = config.ToMap();
         dict["key"] = new object(); // Non-int, non-parseable object
 
@@ -70,7 +70,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetInteger_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetInteger("missing-key", 100);
@@ -87,7 +87,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetBoolean_WithBoolValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetBoolean("key", true);
 
         // Act
@@ -101,7 +101,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetBoolean_WithStringTrue_ReturnsTrue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "true");
 
         // Act
@@ -115,7 +115,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetBoolean_WithStringFalse_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "false");
 
         // Act
@@ -129,7 +129,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetBoolean_WithNonBooleanString_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "not-a-boolean");
 
         // Act
@@ -143,7 +143,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetBoolean_WithNonBoolObject_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         var dict = config.ToMap();
         dict["key"] = 123; // Non-bool, non-parseable object
 
@@ -158,7 +158,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetBoolean_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetBoolean("missing-key", true);
@@ -175,7 +175,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetLong_WithLongValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetLong("key", 9876543210L);
 
         // Act
@@ -189,7 +189,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetLong_WithStringThatParsesToLong_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "123456789");
 
         // Act
@@ -203,7 +203,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetLong_WithNonNumericString_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "not-a-number");
 
         // Act
@@ -217,7 +217,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetLong_WithNonLongObject_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         var dict = config.ToMap();
         dict["key"] = new object(); // Non-long, non-parseable object
 
@@ -232,7 +232,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetLong_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetLong("missing-key", 777L);
@@ -249,7 +249,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetString_WithNullValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         var dict = config.ToMap();
         dict["key"] = null!;
 
@@ -264,7 +264,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetString_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("missing", "fallback");
@@ -277,7 +277,7 @@ public class ConfigurationParsingEdgeCasesTests
     public void GetString_WithMissingKeyAndNoDefault_ReturnsEmpty()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("missing");

@@ -1,7 +1,7 @@
 namespace FlinkDotNet.Common.Tests;
 
 /// <summary>
-/// Comprehensive tests to achieve 100% branch coverage for Configuration class
+/// Comprehensive tests to achieve 100% branch coverage for FlinkConfiguration class
 /// Covers all conditional branches and edge cases
 /// </summary>
 [TestFixture]
@@ -16,7 +16,7 @@ public class ConfigurationFullBranchCoverageTests
         var dict = new Dictionary<string, object>();
 
         // Act
-        var config = new Configuration(dict);
+        var config = new FlinkConfiguration(dict);
 
         // Assert
         Assert.That(config.GetKeys(), Is.Empty);
@@ -35,7 +35,7 @@ public class ConfigurationFullBranchCoverageTests
         };
 
         // Act
-        var config = new Configuration(dict);
+        var config = new FlinkConfiguration(dict);
 
         // Assert
         Assert.That(config.GetString("key1"), Is.EqualTo("value1"));
@@ -56,7 +56,7 @@ public class ConfigurationFullBranchCoverageTests
         {
             { "nullKey", null! }
         };
-        var config = new Configuration(dict);
+        var config = new FlinkConfiguration(dict);
 
         // Act
         var result = config.GetString("nullKey", "defaultValue");
@@ -73,7 +73,7 @@ public class ConfigurationFullBranchCoverageTests
         {
             { "nullKey", null! }
         };
-        var config = new Configuration(dict);
+        var config = new FlinkConfiguration(dict);
 
         // Act
         var result = config.GetString("nullKey");
@@ -86,7 +86,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetString_WithExistingValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "value");
 
         // Act
@@ -100,7 +100,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetString_WithMissingKeyAndDefault_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("missingKey", "defaultValue");
@@ -113,7 +113,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetString_WithMissingKeyAndNullDefault_ReturnsEmpty()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("missingKey", null);
@@ -126,7 +126,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetString_WithMissingKeyNoDefault_ReturnsEmpty()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("missingKey");
@@ -139,7 +139,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetString_WithIntValue_ConvertsToString()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetInteger("intKey", 42);
 
         // Act
@@ -157,7 +157,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetInteger_WithExistingIntValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetInteger("key", 42);
 
         // Act
@@ -171,7 +171,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetInteger_WithParsableStringValue_ParsesAndReturns()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "123");
 
         // Act
@@ -185,7 +185,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetInteger_WithUnparsableValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "notAnInt");
 
         // Act
@@ -199,7 +199,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetInteger_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetInteger("missingKey", 999);
@@ -212,7 +212,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetInteger_WithMissingKeyNoDefault_ReturnsZero()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetInteger("missingKey");
@@ -225,7 +225,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetInteger_WithBoolValue_FailsParseReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetBoolean("key", true);
 
         // Act
@@ -243,7 +243,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithExistingBoolValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetBoolean("key", true);
 
         // Act
@@ -257,7 +257,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithParsableStringValue_ParsesAndReturns()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "true");
 
         // Act
@@ -271,7 +271,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithFalseStringValue_ParsesAndReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "false");
 
         // Act
@@ -285,7 +285,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithUnparsableValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "notABool");
 
         // Act
@@ -299,7 +299,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetBoolean("missingKey", true);
@@ -312,7 +312,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithMissingKeyNoDefault_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetBoolean("missingKey");
@@ -325,7 +325,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetBoolean_WithIntValue_FailsParseReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetInteger("key", 42);
 
         // Act
@@ -343,7 +343,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetLong_WithExistingLongValue_ReturnsValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetLong("key", 9876543210L);
 
         // Act
@@ -357,7 +357,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetLong_WithParsableStringValue_ParsesAndReturns()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "1234567890");
 
         // Act
@@ -371,7 +371,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetLong_WithUnparsableValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "notALong");
 
         // Act
@@ -385,7 +385,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetLong_WithMissingKey_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetLong("missingKey", 999L);
@@ -398,7 +398,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetLong_WithMissingKeyNoDefault_ReturnsZero()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetLong("missingKey");
@@ -411,7 +411,7 @@ public class ConfigurationFullBranchCoverageTests
     public void GetLong_WithBoolValue_FailsParseReturnsDefault()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetBoolean("key", true);
 
         // Act
@@ -429,9 +429,9 @@ public class ConfigurationFullBranchCoverageTests
     public void AddAll_WithEmptyConfiguration_AddsNothing()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("existing", "value");
-        var other = new Configuration();
+        var other = new FlinkConfiguration();
 
         // Act
         _ = config.AddAll(other);
@@ -445,10 +445,10 @@ public class ConfigurationFullBranchCoverageTests
     public void AddAll_WithMultipleValues_AddsAll()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key1", "value1");
 
-        var other = new Configuration();
+        var other = new FlinkConfiguration();
         _ = other.SetString("key2", "value2");
         _ = other.SetInteger("key3", 42);
         _ = other.SetBoolean("key4", true);
@@ -467,10 +467,10 @@ public class ConfigurationFullBranchCoverageTests
     public void AddAll_WithOverlappingKeys_OverwritesExisting()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key1", "original");
 
-        var other = new Configuration();
+        var other = new FlinkConfiguration();
         _ = other.SetString("key1", "updated");
 
         // Act
@@ -488,7 +488,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithNull_ReturnsEmptyList()
     {
         // Act
-        var result = Configuration.ParseListValue(null);
+        var result = FlinkConfiguration.ParseListValue(null);
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -498,7 +498,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithEmptyString_ReturnsEmptyList()
     {
         // Act
-        var result = Configuration.ParseListValue("");
+        var result = FlinkConfiguration.ParseListValue("");
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -508,7 +508,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithWhitespace_ReturnsEmptyList()
     {
         // Act
-        var result = Configuration.ParseListValue("   ");
+        var result = FlinkConfiguration.ParseListValue("   ");
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -518,7 +518,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithSingleValue_ReturnsSingleItem()
     {
         // Act
-        var result = Configuration.ParseListValue("value");
+        var result = FlinkConfiguration.ParseListValue("value");
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -529,7 +529,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithMultipleValues_ReturnsAllItems()
     {
         // Act
-        var result = Configuration.ParseListValue("value1,value2,value3");
+        var result = FlinkConfiguration.ParseListValue("value1,value2,value3");
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(3));
@@ -542,7 +542,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithSpacesAroundValues_TrimsValues()
     {
         // Act
-        var result = Configuration.ParseListValue(" value1 , value2 , value3 ");
+        var result = FlinkConfiguration.ParseListValue(" value1 , value2 , value3 ");
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(3));
@@ -555,7 +555,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ParseListValue_WithEmptyEntries_RemovesEmptyEntries()
     {
         // Act
-        var result = Configuration.ParseListValue("value1,,value2,,,value3");
+        var result = FlinkConfiguration.ParseListValue("value1,,value2,,,value3");
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(3));
@@ -572,7 +572,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ContainsKey_WithExistingKey_ReturnsTrue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "value");
 
         // Act
@@ -586,7 +586,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ContainsKey_WithMissingKey_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.ContainsKey("missingKey");
@@ -599,7 +599,7 @@ public class ConfigurationFullBranchCoverageTests
     public void RemoveKey_WithExistingKey_RemovesAndReturnsTrue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "value");
 
         // Act
@@ -614,7 +614,7 @@ public class ConfigurationFullBranchCoverageTests
     public void RemoveKey_WithMissingKey_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.RemoveKey("missingKey");
@@ -627,7 +627,7 @@ public class ConfigurationFullBranchCoverageTests
     public void Clone_CreatesIndependentCopy()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "original");
 
         // Act
@@ -643,7 +643,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ToMap_ReturnsAllValues()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key1", "value1");
         _ = config.SetInteger("key2", 42);
 
@@ -660,7 +660,7 @@ public class ConfigurationFullBranchCoverageTests
     public void ToMap_CreatesIndependentDictionary()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key", "original");
 
         // Act

@@ -26,7 +26,7 @@ public class ExecutionConfigTests
     public void ConstructorWithConfiguration_UsesProvidedConfiguration()
     {
         // Arrange
-        var underlyingConfig = new Configuration();
+        var underlyingConfig = new FlinkConfiguration();
         _ = underlyingConfig.SetString("test-key", "test-value");
 
         // Act
@@ -358,7 +358,7 @@ public class ExecutionConfigTests
     public void GetConfiguration_ReturnsUnderlyingConfiguration()
     {
         // Arrange
-        var underlyingConfig = new Configuration();
+        var underlyingConfig = new FlinkConfiguration();
         _ = underlyingConfig.SetString("key1", "value1");
         var config = new ExecutionConfig(underlyingConfig);
 

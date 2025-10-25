@@ -7,7 +7,7 @@ public class ConfigurationTests
     public void DefaultConstructor_CreatesEmptyConfiguration()
     {
         // Arrange & Act
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Assert
         Assert.That(config, Is.Not.Null);
@@ -26,7 +26,7 @@ public class ConfigurationTests
         };
 
         // Act
-        var config = new Configuration(initialConfig);
+        var config = new FlinkConfiguration(initialConfig);
 
         // Assert
         Assert.That(config.ContainsKey("key1"), Is.True);
@@ -39,7 +39,7 @@ public class ConfigurationTests
     public void SetString_StoresAndRetrievesValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.SetString("testKey", "testValue");
@@ -53,7 +53,7 @@ public class ConfigurationTests
     public void SetInteger_StoresAndRetrievesValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.SetInteger("intKey", 123);
@@ -67,7 +67,7 @@ public class ConfigurationTests
     public void SetBoolean_StoresAndRetrievesValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.SetBoolean("boolKey", true);
@@ -81,7 +81,7 @@ public class ConfigurationTests
     public void SetLong_StoresAndRetrievesValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.SetLong("longKey", 9876543210L);
@@ -95,7 +95,7 @@ public class ConfigurationTests
     public void GetString_NonExistentKey_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("nonExistent", "default");
@@ -108,7 +108,7 @@ public class ConfigurationTests
     public void GetString_NonExistentKeyNoDefault_ReturnsEmptyString()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetString("nonExistent");
@@ -121,7 +121,7 @@ public class ConfigurationTests
     public void GetInteger_NonExistentKey_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetInteger("nonExistent", 999);
@@ -134,7 +134,7 @@ public class ConfigurationTests
     public void GetInteger_StringValue_ParsesCorrectly()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("numKey", "456");
 
         // Act
@@ -148,7 +148,7 @@ public class ConfigurationTests
     public void GetBoolean_NonExistentKey_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetBoolean("nonExistent", true);
@@ -161,7 +161,7 @@ public class ConfigurationTests
     public void GetBoolean_StringValue_ParsesCorrectly()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("boolKey", "true");
 
         // Act
@@ -175,7 +175,7 @@ public class ConfigurationTests
     public void GetLong_NonExistentKey_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.GetLong("nonExistent", 12345L);
@@ -188,7 +188,7 @@ public class ConfigurationTests
     public void GetLong_StringValue_ParsesCorrectly()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("longKey", "9876543210");
 
         // Act
@@ -202,7 +202,7 @@ public class ConfigurationTests
     public void ContainsKey_ExistingKey_ReturnsTrue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("existingKey", "value");
 
         // Act & Assert
@@ -213,7 +213,7 @@ public class ConfigurationTests
     public void ContainsKey_NonExistentKey_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act & Assert
         Assert.That(config.ContainsKey("nonExistent"), Is.False);
@@ -223,7 +223,7 @@ public class ConfigurationTests
     public void RemoveKey_ExistingKey_ReturnsTrueAndRemovesKey()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("toRemove", "value");
 
         // Act
@@ -238,7 +238,7 @@ public class ConfigurationTests
     public void RemoveKey_NonExistentKey_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         var result = config.RemoveKey("nonExistent");
@@ -251,7 +251,7 @@ public class ConfigurationTests
     public void GetKeys_ReturnsAllConfigurationKeys()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key1", "value1");
         _ = config.SetInteger("key2", 42);
         _ = config.SetBoolean("key3", true);
@@ -270,7 +270,7 @@ public class ConfigurationTests
     public void Clone_CreatesIndependentCopy()
     {
         // Arrange
-        var original = new Configuration();
+        var original = new FlinkConfiguration();
         _ = original.SetString("key1", "value1");
         _ = original.SetInteger("key2", 42);
 
@@ -289,11 +289,11 @@ public class ConfigurationTests
     public void AddAll_MergesConfigurations()
     {
         // Arrange
-        var config1 = new Configuration();
+        var config1 = new FlinkConfiguration();
         _ = config1.SetString("key1", "value1");
         _ = config1.SetInteger("key2", 42);
 
-        var config2 = new Configuration();
+        var config2 = new FlinkConfiguration();
         _ = config2.SetString("key3", "value3");
         _ = config2.SetBoolean("key4", true);
 
@@ -312,10 +312,10 @@ public class ConfigurationTests
     public void AddAll_OverwritesExistingKeys()
     {
         // Arrange
-        var config1 = new Configuration();
+        var config1 = new FlinkConfiguration();
         _ = config1.SetString("key1", "original");
 
-        var config2 = new Configuration();
+        var config2 = new FlinkConfiguration();
         _ = config2.SetString("key1", "updated");
 
         // Act
@@ -329,7 +329,7 @@ public class ConfigurationTests
     public void ToMap_ReturnsAllConfigurationValues()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("key1", "value1");
         _ = config.SetInteger("key2", 42);
         _ = config.SetBoolean("key3", true);
@@ -348,7 +348,7 @@ public class ConfigurationTests
     public void ParseListValue_NullValue_ReturnsEmptyList()
     {
         // Act
-        var result = Configuration.ParseListValue(null);
+        var result = FlinkConfiguration.ParseListValue(null);
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -358,7 +358,7 @@ public class ConfigurationTests
     public void ParseListValue_EmptyString_ReturnsEmptyList()
     {
         // Act
-        var result = Configuration.ParseListValue("");
+        var result = FlinkConfiguration.ParseListValue("");
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -368,7 +368,7 @@ public class ConfigurationTests
     public void ParseListValue_WhitespaceString_ReturnsEmptyList()
     {
         // Act
-        var result = Configuration.ParseListValue("   ");
+        var result = FlinkConfiguration.ParseListValue("   ");
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -378,7 +378,7 @@ public class ConfigurationTests
     public void ParseListValue_CommaSeparatedValues_ReturnsListOfValues()
     {
         // Act
-        var result = Configuration.ParseListValue("value1,value2,value3").ToList();
+        var result = FlinkConfiguration.ParseListValue("value1,value2,value3").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(3));
@@ -391,7 +391,7 @@ public class ConfigurationTests
     public void ParseListValue_ValuesWithSpaces_TrimsSpaces()
     {
         // Act
-        var result = Configuration.ParseListValue(" value1 , value2 , value3 ").ToList();
+        var result = FlinkConfiguration.ParseListValue(" value1 , value2 , value3 ").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(3));
@@ -404,7 +404,7 @@ public class ConfigurationTests
     public void ParseListValue_SingleValue_ReturnsSingleItemList()
     {
         // Act
-        var result = Configuration.ParseListValue("singleValue").ToList();
+        var result = FlinkConfiguration.ParseListValue("singleValue").ToList();
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
@@ -415,7 +415,7 @@ public class ConfigurationTests
     public void MethodChaining_MultipleOperations_WorksCorrectly()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
 
         // Act
         _ = config.SetString("key1", "value1")
@@ -434,7 +434,7 @@ public class ConfigurationTests
     public void GetString_WithNullObjectValue_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "nullKey", null! }
         });
@@ -450,7 +450,7 @@ public class ConfigurationTests
     public void GetString_WithNullObjectValueNoDefault_ReturnsEmptyString()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "nullKey", null! }
         });
@@ -466,7 +466,7 @@ public class ConfigurationTests
     public void GetInteger_UnparsableStringValue_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("badInt", "not-a-number");
 
         // Act
@@ -480,7 +480,7 @@ public class ConfigurationTests
     public void GetInteger_UnparsableStringValueNoDefault_ReturnsZero()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("badInt", "not-a-number");
 
         // Act
@@ -494,7 +494,7 @@ public class ConfigurationTests
     public void GetBoolean_UnparsableStringValue_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("badBool", "not-a-boolean");
 
         // Act
@@ -508,7 +508,7 @@ public class ConfigurationTests
     public void GetBoolean_UnparsableStringValueNoDefault_ReturnsFalse()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("badBool", "not-a-boolean");
 
         // Act
@@ -522,7 +522,7 @@ public class ConfigurationTests
     public void GetLong_UnparsableStringValue_ReturnsDefaultValue()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("badLong", "not-a-number");
 
         // Act
@@ -536,7 +536,7 @@ public class ConfigurationTests
     public void GetLong_UnparsableStringValueNoDefault_ReturnsZero()
     {
         // Arrange
-        var config = new Configuration();
+        var config = new FlinkConfiguration();
         _ = config.SetString("badLong", "not-a-number");
 
         // Act

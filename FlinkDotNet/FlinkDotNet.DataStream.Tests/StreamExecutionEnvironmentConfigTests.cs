@@ -26,7 +26,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
 
-        #region Parallelism Configuration Tests
+        #region Parallelism FlinkConfiguration Tests
 
         [Test]
         public void SetParallelism_WithValidValue_SetsParallelism()
@@ -376,13 +376,13 @@ namespace FlinkDotNet.DataStream.Tests
 
         #endregion
 
-        #region Configuration Tests
+        #region FlinkConfiguration Tests
 
         [Test]
         public void Configure_WithConfiguration_MergesConfiguration()
         {
             // Arrange
-            var config = new Configuration();
+            var config = new FlinkConfiguration();
             _ = config.SetString("test.key", "test.value");
 
             // Act

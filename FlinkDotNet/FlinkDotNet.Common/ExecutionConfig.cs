@@ -22,12 +22,12 @@ namespace FlinkDotNet.Common
     /// </summary>
     public class ExecutionConfig
     {
-        private readonly Configuration _configuration;
+        private readonly FlinkConfiguration _configuration;
 
         /// <summary>
         /// Creates a new ExecutionConfig with default settings.
         /// </summary>
-        public ExecutionConfig() : this(new Configuration())
+        public ExecutionConfig() : this(new FlinkConfiguration())
         {
         }
 
@@ -35,7 +35,7 @@ namespace FlinkDotNet.Common
         /// Creates a new ExecutionConfig with the given configuration.
         /// </summary>
         /// <param name="configuration">The underlying configuration</param>
-        public ExecutionConfig(Configuration configuration) => this._configuration = configuration;
+        public ExecutionConfig(FlinkConfiguration configuration) => this._configuration = configuration;
 
         /// <summary>
         /// Gets or sets the parallelism for operations executed through this environment.
@@ -220,7 +220,7 @@ namespace FlinkDotNet.Common
         /// Gets the underlying configuration.
         /// </summary>
         /// <returns>The configuration object</returns>
-        public Configuration GetConfiguration() => this._configuration;
+        public FlinkConfiguration GetConfiguration() => this._configuration;
 
         /// <summary>
         /// Sets a configuration parameter.
