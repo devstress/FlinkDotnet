@@ -216,23 +216,36 @@ public class Program
     private static void MapAspireServiceConnections(IConfiguration configuration)
     {
         // Map Flink JobManager endpoint from Aspire service connections to Flink configuration
-        // Simple connection string name: "flink-jobmanager"
-        var jobManagerEndpoint = configuration["ConnectionStrings:flink-jobmanager"];
+        // Aspire creates connection strings when using WithReference(endpoint)
+        // Pattern: ConnectionStrings:flink-jobmanager or services__flink-jobmanager__jm-http__0
+        var jobManagerEndpoint = configuration["ConnectionStrings:flink-jobmanager"]
+                               ?? configuration["services__flink-jobmanager__jm-http__0"]
+                               ?? configuration["services:flink-jobmanager:jm-http:0"];
         
         if (!string.IsNullOrEmpty(jobManagerEndpoint))
         {
             configuration["Flink:JobManager:BaseUrl"] = jobManagerEndpoint;
             Log.Information("Mapped Aspire Flink JobManager endpoint to configuration: {Endpoint}", jobManagerEndpoint);
         }
+        else
+        {
+            Log.Warning("No Aspire service connection found for Flink JobManager - endpoint discovery will use fallback mechanisms");
+        }
 
         // Map Flink SQL Gateway endpoint from Aspire service connections to Flink configuration
-        // Simple connection string name: "flink-sql-gateway"
-        var sqlGatewayEndpoint = configuration["ConnectionStrings:flink-sql-gateway"];
+        // Pattern: ConnectionStrings:flink-sql-gateway or services__flink-sql-gateway__sg-http__0
+        var sqlGatewayEndpoint = configuration["ConnectionStrings:flink-sql-gateway"]
+                               ?? configuration["services__flink-sql-gateway__sg-http__0"]
+                               ?? configuration["services:flink-sql-gateway:sg-http:0"];
         
         if (!string.IsNullOrEmpty(sqlGatewayEndpoint))
         {
             configuration["Flink:SqlGateway:BaseUrl"] = sqlGatewayEndpoint;
             Log.Information("Mapped Aspire SQL Gateway endpoint to configuration: {Endpoint}", sqlGatewayEndpoint);
+        }
+        else
+        {
+            Log.Warning("No Aspire service connection found for Flink SQL Gateway - endpoint discovery will use fallback mechanisms");
         }
     }
 }
