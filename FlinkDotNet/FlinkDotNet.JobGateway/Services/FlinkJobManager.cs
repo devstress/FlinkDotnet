@@ -397,7 +397,7 @@ public class FlinkJobManager : IFlinkJobManager
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
 
         // Validate input before attempting HTTP call to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
@@ -436,7 +436,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
@@ -459,7 +459,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
         {
@@ -668,7 +668,7 @@ public class FlinkJobManager : IFlinkJobManager
             using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             // Validate jarId from Flink response to prevent injection attacks
-            var sanitizedJarId = ValidateAndSanitizePathSegment(jarId, nameof(jarId));
+            var sanitizedJarId = ValidateAndSanitizePathSegment(jarId);
 
             _logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", _httpClient.BaseAddress, jarId);
             using var response = await _httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
@@ -869,7 +869,7 @@ public class FlinkJobManager : IFlinkJobManager
         using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
         // Validate sessionHandle from SQL Gateway response to prevent injection attacks
-        var sanitizedSessionHandle = ValidateAndSanitizePathSegment(sessionHandle, nameof(sessionHandle));
+        var sanitizedSessionHandle = ValidateAndSanitizePathSegment(sessionHandle);
         var statementEndpoint = $"/v1/sessions/{sanitizedSessionHandle}/statements";
         using var response = await client.PostAsync(statementEndpoint, content);
 
@@ -1539,7 +1539,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// <param name="parameterName">Name of the parameter for error messages.</param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
-    private static string ValidateAndSanitizePathSegment(string segment, string parameterName)
+    private static string ValidateAndSanitizePathSegment(string segment)
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
@@ -1633,7 +1633,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
         var verticesResp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
         if (!verticesResp.IsSuccessStatusCode)
             return;
@@ -1665,8 +1665,8 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
     {
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
-        var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId, nameof(vertexId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
         var mresp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
         if (!mresp.IsSuccessStatusCode)
             return;
@@ -1689,8 +1689,8 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
-            var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId, nameof(vertexId));
+            var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+            var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
             var bp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/backpressure");
             if (!bp.IsSuccessStatusCode)
                 return;
@@ -1711,7 +1711,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectCheckpointMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
