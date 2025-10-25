@@ -95,14 +95,27 @@ namespace FlinkDotNet.DataStream.Tests
         #region Aggregate Operation (Lines 697, 705)
 
         /// <summary>
-        /// Test aggregate operation with null source function to cover line 705 exception path
+        /// Test aggregate operation with null source function to cover line 660 exception path
         /// </summary>
         [Test]
         public void Aggregate_WithNullSourceFunction_ThrowsInvalidOperationException()
         {
-            // This test needs to create a DataStream with null source function
-            // which is challenging as the constructors require a source function
-            // This branch may be unreachable in normal usage
+            // This test creates a DataStream from collection which has null _sourceFunction
+            // When we try to aggregate, it should throw InvalidOperationException at line 660
+            
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var collection = new[] { "test1", "test2", "test3" };
+            // FromCollection creates a DataStream with null _sourceFunction
+            var dataStream = env.FromCollection(collection);
+            var windowedStream = new AllWindowedStream<string>(dataStream, Time.Seconds(5));
+            var aggregateFunction = new CountAggregateFunction();
+
+            // Act & Assert
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                windowedStream.Aggregate(aggregateFunction));
+
+            Assert.That(ex!.Message, Does.Contain("Source function required"));
         }
 
         /// <summary>
