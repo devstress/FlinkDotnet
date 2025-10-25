@@ -623,8 +623,8 @@ namespace FlinkDotNet.DataStream
                 return "http";
             }
 
-            var protocol = envProtocol.Trim().ToLowerInvariant();
-            if (protocol == "https")
+            var protocol = envProtocol.Trim().ToUpperInvariant();
+            if (protocol == "HTTPS")
             {
                 return "https";
             }

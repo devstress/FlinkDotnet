@@ -15,7 +15,8 @@ namespace FlinkDotNet.JobGateway.Services;
 /// </summary>
 public class FlinkJobManager : IFlinkJobManager
 {
-    private const string ProtocolHttps = "https";
+    private const string ProtocolHttps = "HTTPS";
+    private const string ProtocolHttp = "HTTP";
     private const string FlinkIRRunnerDirectory = "FlinkIRRunner";
     
     private readonly ILogger<FlinkJobManager> _logger;
@@ -171,13 +172,13 @@ public class FlinkJobManager : IFlinkJobManager
         var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
         if (!string.IsNullOrEmpty(envProtocol))
         {
-            var protocol = envProtocol.Trim().ToLowerInvariant();
+            var protocol = envProtocol.Trim().ToUpperInvariant();
             if (protocol == ProtocolHttps)
             {
                 _logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
-                return ProtocolHttps;
+                return "https";
             }
-            if (protocol != "http")
+            if (protocol != ProtocolHttp)
             {
                 _logger.LogWarning("Invalid FLINK_PROTOCOL value '{Protocol}', defaulting to http", envProtocol);
             }
@@ -187,11 +188,11 @@ public class FlinkJobManager : IFlinkJobManager
         var configProtocol = _configuration["Flink:Protocol"];
         if (!string.IsNullOrEmpty(configProtocol))
         {
-            var protocol = configProtocol.Trim().ToLowerInvariant();
+            var protocol = configProtocol.Trim().ToUpperInvariant();
             if (protocol == ProtocolHttps)
             {
                 _logger.LogInformation("Using HTTPS protocol from configuration");
-                return ProtocolHttps;
+                return "https";
             }
             if (protocol != "http")
             {
@@ -1714,7 +1715,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to collect backpressure metrics for job {flinkJobId}, vertex {vertexId}", ex);
+            throw new InvalidOperationException($"Failed to collect backpressure data for job {flinkJobId}, vertex {vertexId}", ex);
         }
     }
 
@@ -1737,7 +1738,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to collect checkpoint metrics for job {flinkJobId}", ex);
+            throw new InvalidOperationException($"Failed to collect checkpoint data for job {flinkJobId}", ex);
         }
     }
 
@@ -1810,12 +1811,12 @@ public class FlinkJobManager : IFlinkJobManager
 
         private static string WorstBackpressure(string current, string candidate)
         {
-            static int Rank(string s) => s?.ToLowerInvariant() switch
+            static int Rank(string s) => s?.ToUpperInvariant() switch
             {
-                "high" => 3,
-                "low" => 2,
-                "ok" => 1,
-                "none" => 0,
+                "HIGH" => 3,
+                "LOW" => 2,
+                "OK" => 1,
+                "NONE" => 0,
                 _ => 0
             };
 
