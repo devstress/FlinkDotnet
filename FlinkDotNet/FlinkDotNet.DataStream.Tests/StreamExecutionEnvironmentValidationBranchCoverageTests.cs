@@ -128,8 +128,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert - Null bootstrap servers should throw (tests bootstrapServers null check)
-            var ex = Assert.Throws<ArgumentException>(() => 
-                env.FromKafka("test-topic", null, "test-group"));
+            var ex = Assert.Throws<ArgumentException>(() => env.FromKafka("test-topic", null, "test-group"));
             Assert.That(ex!.Message, Does.Contain("Kafka bootstrap servers"));
         }
 
@@ -140,8 +139,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert - Empty bootstrap servers should throw (tests string.IsNullOrWhiteSpace)
-            var ex = Assert.Throws<ArgumentException>(() => 
-                env.FromKafka("test-topic", "", "test-group"));
+            var ex = Assert.Throws<ArgumentException>(() => env.FromKafka("test-topic", "", "test-group"));
             Assert.That(ex!.Message, Does.Contain("Kafka bootstrap servers"));
         }
 
@@ -152,8 +150,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert - Whitespace bootstrap servers should throw
-            var ex = Assert.Throws<ArgumentException>(() => 
-                env.FromKafka("test-topic", "   ", "test-group"));
+            var ex = Assert.Throws<ArgumentException>(() => env.FromKafka("test-topic", "   ", "test-group"));
             Assert.That(ex!.Message, Does.Contain("Kafka bootstrap servers"));
         }
 
