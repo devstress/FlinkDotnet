@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.IO.Abstractions;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.Common.Logging;
-using Serilog;
 
 namespace FlinkDotNet.DataStream
 {

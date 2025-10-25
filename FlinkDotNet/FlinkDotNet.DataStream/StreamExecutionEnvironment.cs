@@ -629,7 +629,7 @@ namespace FlinkDotNet.DataStream
             var payload = new
             {
                 targetDirectory = savepointPath,
-                cancelJob = cancelJob
+                cancelJob
             };
             var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
@@ -679,7 +679,7 @@ namespace FlinkDotNet.DataStream
             var payload = new
             {
                 targetDirectory = savepointPath,
-                drain = drain
+                drain
             };
             var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/stop",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
