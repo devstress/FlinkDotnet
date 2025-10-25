@@ -24,7 +24,7 @@ namespace FlinkDotNet.DataStream.Tests
         #region Null/Missing Source Tests
 
         [Test]
-        public async Task OperationCapture_ToJobDefinition_WithoutKafkaSource_ThrowsInvalidOperationException()
+        public void OperationCapture_ToJobDefinition_WithoutKafkaSource_ThrowsInvalidOperationException()
         {
             // This tests the branch: if (this._kafkaSource == null) at line 161
             // Arrange - Don't add any source, just try to execute

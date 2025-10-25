@@ -156,10 +156,10 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Arrange
         var services = new ServiceCollection();
         var configBuilder = new ConfigurationBuilder();
-        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string>
         {
             { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
-        });
+        }!);
         var configuration = configBuilder.Build();
 
         // Act
@@ -179,10 +179,10 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var services = new ServiceCollection();
         _ = services.AddHttpClient(); // FlinkJobGatewayService needs HttpClient
         var configBuilder = new ConfigurationBuilder();
-        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string>
         {
             { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
-        });
+        }!);
         var configuration = configBuilder.Build();
 
         // Act
@@ -216,10 +216,10 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var services = new ServiceCollection();
         _ = services.AddHttpClient();
         var configBuilder = new ConfigurationBuilder();
-        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+        _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string>
         {
             { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
-        });
+        }!);
         var configuration = configBuilder.Build();
 
         // Act

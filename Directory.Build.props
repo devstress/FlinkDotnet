@@ -47,7 +47,7 @@
     <!-- Suppress all warnings in test projects -->
     <WarningLevel>0</WarningLevel>
     <CodeAnalysisRuleSet></CodeAnalysisRuleSet>
-    <Nullable>annotations</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <!-- SonarAnalyzer applied at repository level for systematic code quality analysis -->
