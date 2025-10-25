@@ -27,6 +27,11 @@ public class FlinkJobManager : IFlinkJobManager
     private readonly Lazy<Uri> _flinkBaseUri;
     
     /// <summary>
+    /// Flag to track if endpoint configuration has been applied to HttpClient.
+    /// </summary>
+    private int _endpointConfigured = 0; // 0 = not configured, 1 = configured (using Interlocked for thread safety)
+    
+    /// <summary>
     /// Gets or sets the delay between SQL Gateway retry attempts.
     /// Static field for testability (can be set to 1ms in tests).
     /// </summary>
@@ -76,10 +81,11 @@ public class FlinkJobManager : IFlinkJobManager
     /// <summary>
     /// Ensures the HttpClient BaseAddress is set to the discovered Flink endpoint.
     /// This method must be called before any HTTP operations to trigger lazy endpoint discovery.
+    /// Uses Interlocked for thread-safe initialization check.
     /// </summary>
     private void EnsureFlinkEndpointConfigured()
     {
-        if (_httpClient.BaseAddress == null)
+        if (Interlocked.CompareExchange(ref _endpointConfigured, 1, 0) == 0)
         {
             _httpClient.BaseAddress = _flinkBaseUri.Value;
         }

@@ -613,7 +613,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 // No port set, should use default
                 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert - Should log using environment variable
                 _mockLogger.Verify(
@@ -641,7 +643,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
                 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert - Should use default host with custom port
                 _mockLogger.Verify(
@@ -1587,7 +1591,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 .Returns("http://config-flink:8081");
 
             // Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
             // Assert
             _mockLogger.Verify(
@@ -1610,7 +1616,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8888");
 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert
                 _mockLogger.Verify(
@@ -1640,7 +1648,9 @@ namespace FlinkDotNet.JobGateway.Tests
                     .Returns("http://config-flink:8081");
 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert - Config should be logged, not env
                 _mockLogger.Verify(

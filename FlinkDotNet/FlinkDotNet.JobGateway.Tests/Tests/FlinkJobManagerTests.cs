@@ -689,7 +689,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", "http://localhost:12345");
                 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert - Constructor logs the discovered endpoint
                 _mockLogger.Verify(
@@ -716,7 +718,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", "http://localhost:54321");
                 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert - Constructor logs legacy format usage
                 _mockLogger.Verify(
@@ -744,7 +748,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
                 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+                _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
                 // Assert - Constructor logs environment variable usage
                 _mockLogger.Verify(
@@ -789,7 +795,9 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange - No environment variables set
             
             // Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
             // Assert - Constructor logs warning about Aspire not found
             _mockLogger.Verify(
@@ -1016,7 +1024,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_SetsBaseAddressCorrectly()
         {
             // Arrange & Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
             // Assert - HttpClient base address should be set during construction
             Assert.That(_httpClient.BaseAddress, Is.Not.Null);
@@ -1026,7 +1036,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_SetsTimeoutTo5Minutes()
         {
             // Arrange & Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
             // Assert
             Assert.That(_httpClient.Timeout, Is.EqualTo(TimeSpan.FromMinutes(5)));
@@ -1036,7 +1048,9 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_LogsInitialization()
         {
             // Arrange & Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
 
             // Assert - Logs initialization message
             _mockLogger.Verify(
@@ -1053,14 +1067,16 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_LogsConnectivityVerificationMessage()
         {
             // Arrange & Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var manager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
-            // Assert - Logs that connectivity will be verified
+            _ = manager.FlinkBaseUrl; // Trigger lazy endpoint discovery
+
+            // Assert - Logs that endpoint will be discovered on first use
             _mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("verify Flink connectivity")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("endpoint will be discovered on first use")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);
