@@ -23,6 +23,11 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void Setup()
         {
+            // Set static delays to 1ms for fast test execution
+            FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+
             this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
             this._mockConfiguration = new Mock<IConfiguration>();
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
@@ -37,7 +42,15 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         [TearDown]
-        public void TearDown() => this._httpClient?.Dispose();
+        public void TearDown()
+        {
+            // Restore default delays
+            FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromSeconds(1);
+            FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromSeconds(1);
+            FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromSeconds(1);
+
+            this._httpClient?.Dispose();
+        }
 
         #region Path Traversal Tests
 

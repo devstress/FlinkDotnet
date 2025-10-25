@@ -20,6 +20,9 @@ public class FlinkJobGatewayServiceTests
         // Set environment variable required by FlinkJobGatewayConfiguration
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
 
+        // Set retry delay to 1ms for fast tests
+        FlinkJobGatewayService.RetryDelay = TimeSpan.FromMilliseconds(1);
+
         this._mockLogger = new Mock<ILogger>();
         this._configuration = new FlinkJobGatewayConfiguration
         {
@@ -31,9 +34,14 @@ public class FlinkJobGatewayServiceTests
     }
 
     [TearDown]
-    public void TearDown() =>
+    public void TearDown()
+    {
+        // Restore default retry delay
+        FlinkJobGatewayService.RetryDelay = TimeSpan.FromSeconds(1);
+        
         // Clean up environment variable
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
+    }
 
     #region Constructor Tests
 

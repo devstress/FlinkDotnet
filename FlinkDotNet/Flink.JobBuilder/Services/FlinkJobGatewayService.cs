@@ -18,9 +18,15 @@ namespace Flink.JobBuilder.Services
     {
         private readonly HttpClient _httpClient;
         private readonly FlinkJobGatewayConfiguration _configuration;
-        private readonly ILogger? _logger;
         private static readonly Serilog.Core.Logger _log = CreateLogger();
 
+        /// <summary>
+        /// Gets or sets the delay between retry attempts.
+        /// Static field for testability (can be set to 1ms in tests).
+        /// </summary>
+        public static TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+        private static Serilog.ILogger CreateLogger()
         private static Serilog.Core.Logger CreateLogger()
         {
             var fileSystem = new System.IO.Abstractions.FileSystem();
@@ -373,7 +379,7 @@ namespace Flink.JobBuilder.Services
                 }
 
                 retryCount++;
-                await Task.Delay(this._configuration.RetryDelay * (retryCount + 1)); // Exponential backoff: 2s, 4s, 6s
+                await Task.Delay(RetryDelay * (retryCount + 1)); // Exponential backoff: uses static RetryDelay (default 1s, configurable for tests)
             }
 
             throw new HttpRequestException($"Request failed after {this._configuration.MaxRetries} retries");

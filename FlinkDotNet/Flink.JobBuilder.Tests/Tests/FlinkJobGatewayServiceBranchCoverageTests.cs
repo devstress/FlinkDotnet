@@ -20,6 +20,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
         // Set environment variable required by FlinkJobGatewayConfiguration
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
 
+        // Set retry delay to 1ms for fast tests
+        FlinkJobGatewayService.RetryDelay = TimeSpan.FromMilliseconds(1);
+
         this._mockLogger = new Mock<ILogger>();
 
         // Clean up test log directory
@@ -55,6 +58,9 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     [TearDown]
     public void TearDown()
     {
+        // Restore default retry delay
+        FlinkJobGatewayService.RetryDelay = TimeSpan.FromSeconds(1);
+        
         Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }
@@ -117,7 +123,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
             using var service = new FlinkJobGatewayService();
 
             // Give a moment for cleanup to run
-            Thread.Sleep(100);
+            Thread.Sleep(1);
 
             // Assert - Old log file should be deleted
             // Note: The cleanup runs in a try-catch so it may not always succeed

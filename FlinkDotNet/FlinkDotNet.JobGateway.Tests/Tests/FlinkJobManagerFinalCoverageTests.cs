@@ -20,6 +20,11 @@ public class FlinkJobManagerFinalCoverageTests
     [SetUp]
     public void SetUp()
     {
+        // Set static delays to 1ms for fast test execution
+        FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
+        FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
+        FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+
         this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
         this._mockConfiguration = new Mock<IConfiguration>();
         this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
@@ -39,6 +44,11 @@ public class FlinkJobManagerFinalCoverageTests
     [TearDown]
     public void TearDown()
     {
+        // Restore default delays
+        FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromSeconds(1);
+        FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromSeconds(1);
+        FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromSeconds(1);
+
         // Clean up environment variables after each test
         Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);
         Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", null);
