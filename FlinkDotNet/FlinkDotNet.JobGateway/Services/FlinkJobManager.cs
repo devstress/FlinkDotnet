@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -402,7 +403,7 @@ public class FlinkJobManager : IFlinkJobManager
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
 
         // Validate input before attempting HTTP call to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
@@ -441,7 +442,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
@@ -464,7 +465,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
         {
@@ -1547,10 +1548,14 @@ public class FlinkJobManager : IFlinkJobManager
     /// Rejects path traversal sequences, special characters, and URL-encoded attacks.
     /// </summary>
     /// <param name="segment">The path segment to validate.</param>
-    /// <param name="parameterName"></param>
+    /// <param name="parameterName">
+    /// The name of the parameter being validated. This is automatically populated via CallerArgumentExpression 
+    /// and should not be provided by callers. It will capture the argument expression from the call site 
+    /// (e.g., "flinkJobId" when called as ValidateAndSanitizePathSegment(flinkJobId)).
+    /// </param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
-    private static string ValidateAndSanitizePathSegment(string segment, string parameterName = "segment")
+    private static string ValidateAndSanitizePathSegment(string segment, [CallerArgumentExpression(nameof(segment))] string? parameterName = null)
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
