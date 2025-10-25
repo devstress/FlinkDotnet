@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -82,6 +83,172 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Assert
             Assert.That(dataStream, Is.Not.Null);
+        }
+
+        #endregion
+
+        #region ExtractJobManagerUrlFromError Tests (Lines 504, 510, 516, 522)
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithNullErrorMessage_ReturnsNotAvailable()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object?[] { null });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("(not available in error message)"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithEmptyErrorMessage_ReturnsNotAvailable()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object[] { string.Empty });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("(not available in error message)"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithoutHttpInMessage_ReturnsNotAvailable()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object[] { "Error occurred but no URL" });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("(not available in error message)"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithHttpInMessage_ExtractsUrl()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object[] { "Connection failed at http://localhost:8081" });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("http://localhost:8081"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithHttpsInMessage_ExtractsUrl()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object[] { "Error at https://flink.example.com:9443/jobs" });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("https://flink.example.com:9443/jobs"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithUrlAtEndOfMessage_ExtractsFullUrl()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act - URL at end of message without trailing space
+            var result = method!.Invoke(null, new object[] { "Failed to connect at http://localhost:8081/jobs/abc123" });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("http://localhost:8081/jobs/abc123"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithQuotedUrl_ExtractsUrlWithoutQuote()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object[] { "Error at http://localhost:8081' in request" });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("http://localhost:8081"));
+        }
+
+        [Test]
+        public void ExtractJobManagerUrlFromError_WithNewlineAfterUrl_ExtractsUrlCorrectly()
+        {
+            // Use reflection to test private static method
+            var method = typeof(StreamExecutionEnvironment).GetMethod("ExtractJobManagerUrlFromError",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            
+            Assert.That(method, Is.Not.Null);
+            
+            // Act
+            var result = method!.Invoke(null, new object[] { "Failed at http://localhost:8081\nNext line" });
+            
+            // Assert
+            Assert.That(result, Is.EqualTo("http://localhost:8081"));
+        }
+
+        #endregion
+
+        #region FromCollection Tests
+
+        [Test]
+        public void FromCollection_WithEmptyCollection_CreatesStream()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var emptyCollection = new string[] { };
+            
+            // Act
+            var stream = env.FromCollection(emptyCollection);
+            
+            // Assert
+            Assert.That(stream, Is.Not.Null);
+        }
+
+        [Test]
+        public void FromCollection_WithLargeCollection_CreatesStream()
+        {
+            // Arrange
+            var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            var largeCollection = new int[1000];
+            for (int i = 0; i < largeCollection.Length; i++)
+                largeCollection[i] = i;
+            
+            // Act
+            var stream = env.FromCollection(largeCollection);
+            
+            // Assert
+            Assert.That(stream, Is.Not.Null);
         }
 
         #endregion
