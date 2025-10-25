@@ -30,10 +30,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="sessionGap">The session gap</param>
         /// <returns>A new SessionWindows WindowAssigner</returns>
-        public static SessionWindows<T> WithGap<T>(Time sessionGap)
-        {
-            return SessionWindows<T>.WithGap(sessionGap);
-        }
+        public static SessionWindows<T> WithGap<T>(Time sessionGap) => SessionWindows<T>.WithGap(sessionGap);
 
         /// <summary>
         /// Merges overlapping session windows.
@@ -41,9 +38,6 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="windows">The windows to merge</param>
         /// <returns>Merged windows</returns>
-        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows)
-        {
-            return SessionWindows<object>.MergeWindows(windows);
-        }
+        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows) => SessionWindows<object>.MergeWindows(windows);
     }
 }

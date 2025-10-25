@@ -9,18 +9,14 @@ namespace FlinkDotNet.DataStream.Tests
     public class StreamExecutionEnvironmentEdgeCasesTests
     {
         [SetUp]
-        public void SetUp()
-        {
+        public void SetUp() =>
             // Set environment variable required by FlinkJobGatewayConfiguration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        }
 
         [TearDown]
-        public void TearDown()
-        {
+        public void TearDown() =>
             // Clean up environment variable
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
-        }
 
         [Test]
         public void FromKafka_WithNullBootstrapServers_ThrowsArgumentException()
@@ -185,7 +181,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
             var config = new FlinkDotNet.Common.Configuration();
-            config.SetString("test.key", "test.value");
+            _ = config.SetString("test.key", "test.value");
 
             // Act
             var result = env.Configure(config);
@@ -202,7 +198,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.SetBufferTimeout(500);
+            _ = env.SetBufferTimeout(500);
 
             // Assert
             Assert.That(env.GetBufferTimeout(), Is.EqualTo(500));
@@ -215,7 +211,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.DisableOperatorChaining();
+            _ = env.DisableOperatorChaining();
 
             // Assert
             Assert.That(env.IsChainingEnabled(), Is.False);
@@ -228,7 +224,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableCheckpointing(5000);
+            _ = env.EnableCheckpointing(5000);
 
             // Assert
             Assert.That(env.GetCheckpointInterval(), Is.EqualTo(5000));
@@ -241,7 +237,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableAdaptiveScheduler(true);
+            _ = env.EnableAdaptiveScheduler(true);
 
             // Assert
             Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
@@ -252,10 +248,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.EnableAdaptiveScheduler(true);
+            _ = env.EnableAdaptiveScheduler(true);
 
             // Act
-            env.EnableAdaptiveScheduler(false);
+            _ = env.EnableAdaptiveScheduler(false);
 
             // Assert
             Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.False);
@@ -268,7 +264,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableReactiveMode(true);
+            _ = env.EnableReactiveMode(true);
 
             // Assert
             Assert.That(env.IsReactiveModeEnabled(), Is.True);
@@ -279,10 +275,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.EnableReactiveMode(true);
+            _ = env.EnableReactiveMode(true);
 
             // Act
-            env.EnableReactiveMode(false);
+            _ = env.EnableReactiveMode(false);
 
             // Assert
             Assert.That(env.IsReactiveModeEnabled(), Is.False);
@@ -296,7 +292,7 @@ namespace FlinkDotNet.DataStream.Tests
             var path = "/tmp/savepoint";
 
             // Act
-            env.FromSavepoint(path);
+            _ = env.FromSavepoint(path);
 
             // Assert
             Assert.That(env.GetSavepointPath(), Is.EqualTo(path));
@@ -309,7 +305,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<System.ArgumentNullException>(() => env.SetStateBackend(null!));
+            _ = Assert.Throws<System.ArgumentNullException>(() => env.SetStateBackend(null!));
         }
 
         [Test]
@@ -372,7 +368,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var config = new FlinkDotNet.Common.Configuration();
-            config.SetString("test.key", "test.value");
+            _ = config.SetString("test.key", "test.value");
 
             // Act
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment(config);

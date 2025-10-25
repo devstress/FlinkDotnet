@@ -16,7 +16,7 @@ namespace FlinkDotNet.DataStream.Tests
         [SetUp]
         public void Setup()
         {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
+            this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
             Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "localhost");
             Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
         }
@@ -27,7 +27,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_FlatMap_WithEmptyResults_HandlesCorrectly()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - FlatMap that returns empty enumerable
             var flatMapped = stream.FlatMap(s => Enumerable.Empty<string>());
@@ -40,7 +40,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_FlatMap_WithFlatMapFunction_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var flatMapFunction = new TestFlatMapFunction();
 
             // Act
@@ -58,7 +58,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_Map_WithIdentityFunction_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - Identity map (returns same value)
             var mapped = stream.Map(s => s);
@@ -71,7 +71,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_Map_WithComplexTransformation_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - Complex transformation
             var mapped = stream.Map(s => $"{s.ToUpper()}_{s.Length}_{DateTime.UtcNow.Ticks}");
@@ -85,7 +85,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var testData = new[] { "a", "b", "c" };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
             var keyed = stream.KeyBy(s => s.Length);
 
             // Act - Use ReduceFunction interface
@@ -103,7 +103,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_Filter_WithAlwaysTruePredicate_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - Filter that always returns true
             var filtered = stream.Filter(s => true);
@@ -116,7 +116,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_Filter_WithAlwaysFalsePredicate_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - Filter that always returns false
             var filtered = stream.Filter(s => false);
@@ -129,7 +129,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_Filter_WithFilterFunction_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var filterFunction = new TestFilterFunction();
 
             // Act
@@ -148,7 +148,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Create stream without JobDefinition (collection source)
             var testData = new[] { "test1", "test2" };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
 
             // Act - Where should be no-op without JobDefinition
             var filtered = stream.Where("value > 10");
@@ -161,7 +161,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_Where_WithJobDefinition_AddsFilterOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act
             var filtered = stream.Where("length > 5");
@@ -179,7 +179,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var testData = new[] { "apple", "banana", "apricot" };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
 
             // Act - Group by first character (as string)
             var grouped = stream.GroupBy("firstChar");
@@ -198,7 +198,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var testData = new[] { "log1", "log2" };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
 
             // Act
             var printed = stream.Print();
@@ -216,7 +216,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var testData = new[] { "data1", "data2" };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
             var customSink = new TestCustomSinkFunction();
 
             // Act
@@ -231,7 +231,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "localhost");
-            var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group");
             var kafkaSink = new KafkaSinkFunction<string>(
                 "output-topic",
                 "localhost:9092",
@@ -253,7 +253,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_AssignTimestampsAndWatermarks_WithPunctuatedAssigner_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var assigner = new TestPunctuatedWatermarkAssigner();
 
             // Act
@@ -267,7 +267,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_AssignTimestampsAndWatermarks_WithPeriodicAssigner_CapturesOperation()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var assigner = new TestPeriodicWatermarkAssigner();
 
             // Act
@@ -281,10 +281,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_AssignTimestampsAndWatermarks_WithWatermarkStrategy_ThrowsOnNull()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() =>
+            _ = Assert.Throws<ArgumentNullException>(() =>
                 stream.AssignTimestampsAndWatermarks((Watermarks.WatermarkStrategy<string>) null!));
         }
 
@@ -292,7 +292,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_AssignTimestampsAndWatermarks_WithValidWatermarkStrategy_ReturnsStream()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
             var strategy = Watermarks.WatermarkStrategy<string>.ForMonotonousTimestamps();
 
             // Act
@@ -310,27 +310,27 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_CountWindowAll_WithZeroSize_ThrowsException()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
+            _ = Assert.Throws<ArgumentException>(() => stream.CountWindowAll(0));
         }
 
         [Test]
         public void OperationCapture_CountWindowAll_WithNegativeSize_ThrowsException()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-5));
+            _ = Assert.Throws<ArgumentException>(() => stream.CountWindowAll(-5));
         }
 
         [Test]
         public void OperationCapture_TimeWindowAll_WithVerySmallWindow_CreatesWindow()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - 1 millisecond window
             var windowed = stream.TimeWindowAll(Time.Milliseconds(1));
@@ -344,7 +344,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void OperationCapture_TimeWindowAll_WithVeryLargeWindow_CreatesWindow()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group");
 
             // Act - 1 hour window
             var windowed = stream.TimeWindowAll(Time.Hours(1));
@@ -363,13 +363,13 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var testData = new[] { 1, 2, 3 };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
 
             // Act
             var environment = stream.GetExecutionEnvironment();
 
             // Assert
-            Assert.That(environment, Is.SameAs(_env));
+            Assert.That(environment, Is.SameAs(this._env));
         }
 
         #endregion
@@ -381,7 +381,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange - Create a stream with no valid source (internal test scenario)
             var testData = new string[] { };
-            var stream = _env.FromCollection(testData);
+            var stream = this._env.FromCollection(testData);
 
             // Force the stream into an invalid state by mapping multiple times
             var mapped1 = stream.Map(s => s.ToUpper());
@@ -397,61 +397,38 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestFlatMapFunction : IFlatMapFunction<string, string>
         {
-            public System.Collections.Generic.IEnumerable<string> FlatMap(string value)
-            {
-                return value.Split(' ');
-            }
+            public System.Collections.Generic.IEnumerable<string> FlatMap(string value) => value.Split(' ');
         }
 
         private class TestReduceFunction : IReduceFunction<string>
         {
-            public string Reduce(string value1, string value2)
-            {
-                return value1 + value2;
-            }
+            public string Reduce(string value1, string value2) => value1 + value2;
         }
 
         private class TestFilterFunction : IFilterFunction<string>
         {
-            public bool Filter(string value)
-            {
-                return value.Length > 3;
-            }
+            public bool Filter(string value) => value.Length > 3;
         }
 
         private class TestCustomSinkFunction : ISinkFunction<string>
         {
-            public System.Threading.Tasks.Task InvokeAsync(string element, System.Threading.CancellationToken cancellationToken = default)
-            {
+            public System.Threading.Tasks.Task InvokeAsync(string element, System.Threading.CancellationToken cancellationToken = default) =>
                 // Custom sink logic
-                return System.Threading.Tasks.Task.CompletedTask;
-            }
+                System.Threading.Tasks.Task.CompletedTask;
         }
 
         private class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp)
-            {
-                return new Watermark(extractedTimestamp);
-            }
+            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp) => new Watermark(extractedTimestamp);
         }
 
         private class TestPeriodicWatermarkAssigner : IAssignerWithPeriodicWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? GetCurrentWatermark()
-            {
-                return new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
+            public Watermark? GetCurrentWatermark() => new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         }
 
         #endregion

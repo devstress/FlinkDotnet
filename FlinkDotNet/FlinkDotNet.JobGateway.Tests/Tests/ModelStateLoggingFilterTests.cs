@@ -19,8 +19,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void SetUp()
         {
-            _mockLogger = new Mock<ILogger<ModelStateLoggingFilter>>();
-            _filter = new ModelStateLoggingFilter(_mockLogger.Object);
+            this._mockLogger = new Mock<ILogger<ModelStateLoggingFilter>>();
+            this._filter = new ModelStateLoggingFilter(this._mockLogger.Object);
         }
 
         [Test]
@@ -35,10 +35,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new object());
 
             // Act
-            _filter.OnActionExecuting(context);
+            this._filter.OnActionExecuting(context);
 
             // Assert
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     It.IsAny<LogLevel>(),
                     It.IsAny<EventId>(),
@@ -62,10 +62,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new object());
 
             // Act
-            _filter.OnActionExecuting(context);
+            this._filter.OnActionExecuting(context);
 
             // Assert
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
@@ -91,10 +91,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new object());
 
             // Act
-            _filter.OnActionExecuting(context);
+            this._filter.OnActionExecuting(context);
 
             // Assert
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
@@ -120,10 +120,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new object());
 
             // Act
-            _filter.OnActionExecuting(context);
+            this._filter.OnActionExecuting(context);
 
             // Assert
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
@@ -144,10 +144,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new object());
 
             // Act - Should not throw any exceptions
-            _filter.OnActionExecuted(context);
+            this._filter.OnActionExecuted(context);
 
             // Assert - No logging should occur
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     It.IsAny<LogLevel>(),
                     It.IsAny<EventId>(),

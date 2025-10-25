@@ -301,10 +301,7 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         [Test]
-        public void TimeWindow_Constructor_StartGreaterThanEnd_ThrowsArgumentException()
-        {
-            Assert.Throws<System.ArgumentException>(() => new TimeWindow(5000, 1000));
-        }
+        public void TimeWindow_Constructor_StartGreaterThanEnd_ThrowsArgumentException() => _ = Assert.Throws<System.ArgumentException>(() => new TimeWindow(5000, 1000));
 
         [Test]
         public void TimeWindow_Constructor_StartEqualsEnd_CreatesWindow()
@@ -339,10 +336,7 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         [Test]
-        public void TimeWindow_MergeWindows_WithEmptyArray_ThrowsArgumentException()
-        {
-            Assert.Throws<System.ArgumentException>(() => TimeWindow.MergeWindows());
-        }
+        public void TimeWindow_MergeWindows_WithEmptyArray_ThrowsArgumentException() => _ = Assert.Throws<System.ArgumentException>(() => TimeWindow.MergeWindows());
 
         [Test]
         public void TimeWindow_GetWindowStartWithOffset_ReturnsCorrectWindow()
@@ -435,7 +429,7 @@ namespace FlinkDotNet.DataStream.Tests
             var keyed = stream.KeyBy(x => x[0]);
             var windowed = keyed.Window(TumblingEventTimeWindows<string>.Of(Time.Seconds(5)));
 
-            Assert.Throws<System.ArgumentNullException>(() =>
+            _ = Assert.Throws<System.ArgumentNullException>(() =>
                 windowed.Aggregate<int, int>(null!));
         }
 
@@ -460,7 +454,7 @@ namespace FlinkDotNet.DataStream.Tests
             var keyed = stream.KeyBy(x => x % 2);
             var windowed = keyed.Window(TumblingEventTimeWindows<int>.Of(Time.Seconds(5)));
 
-            Assert.Throws<System.ArgumentNullException>(() =>
+            _ = Assert.Throws<System.ArgumentNullException>(() =>
                 windowed.Reduce((IReduceFunction<int>) null!));
         }
 
@@ -485,7 +479,7 @@ namespace FlinkDotNet.DataStream.Tests
             var keyed = stream.KeyBy(x => x % 2);
             var windowed = keyed.Window(TumblingEventTimeWindows<int>.Of(Time.Seconds(5)));
 
-            Assert.Throws<System.ArgumentNullException>(() =>
+            _ = Assert.Throws<System.ArgumentNullException>(() =>
                 windowed.Reduce((System.Func<int, int, int>) null!));
         }
 

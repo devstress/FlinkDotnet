@@ -87,7 +87,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "value");
+        _ = config.SetString("key", "value");
 
         // Act
         var result = config.GetString("key", "default");
@@ -140,7 +140,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetInteger("intKey", 42);
+        _ = config.SetInteger("intKey", 42);
 
         // Act
         var result = config.GetString("intKey");
@@ -158,7 +158,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetInteger("key", 42);
+        _ = config.SetInteger("key", 42);
 
         // Act
         var result = config.GetInteger("key", 999);
@@ -172,7 +172,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "123");
+        _ = config.SetString("key", "123");
 
         // Act
         var result = config.GetInteger("key", 999);
@@ -186,7 +186,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "notAnInt");
+        _ = config.SetString("key", "notAnInt");
 
         // Act
         var result = config.GetInteger("key", 999);
@@ -226,7 +226,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetBoolean("key", true);
+        _ = config.SetBoolean("key", true);
 
         // Act
         var result = config.GetInteger("key", 999);
@@ -244,7 +244,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetBoolean("key", true);
+        _ = config.SetBoolean("key", true);
 
         // Act
         var result = config.GetBoolean("key", false);
@@ -258,7 +258,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "true");
+        _ = config.SetString("key", "true");
 
         // Act
         var result = config.GetBoolean("key", false);
@@ -272,7 +272,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "false");
+        _ = config.SetString("key", "false");
 
         // Act
         var result = config.GetBoolean("key", true);
@@ -286,7 +286,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "notABool");
+        _ = config.SetString("key", "notABool");
 
         // Act
         var result = config.GetBoolean("key", true);
@@ -326,7 +326,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetInteger("key", 42);
+        _ = config.SetInteger("key", 42);
 
         // Act
         var result = config.GetBoolean("key", true);
@@ -344,7 +344,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetLong("key", 9876543210L);
+        _ = config.SetLong("key", 9876543210L);
 
         // Act
         var result = config.GetLong("key", 999L);
@@ -358,7 +358,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "1234567890");
+        _ = config.SetString("key", "1234567890");
 
         // Act
         var result = config.GetLong("key", 999L);
@@ -372,7 +372,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "notALong");
+        _ = config.SetString("key", "notALong");
 
         // Act
         var result = config.GetLong("key", 999L);
@@ -412,7 +412,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetBoolean("key", true);
+        _ = config.SetBoolean("key", true);
 
         // Act
         var result = config.GetLong("key", 999L);
@@ -430,11 +430,11 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("existing", "value");
+        _ = config.SetString("existing", "value");
         var other = new Configuration();
 
         // Act
-        config.AddAll(other);
+        _ = config.AddAll(other);
 
         // Assert
         Assert.That(config.GetString("existing"), Is.EqualTo("value"));
@@ -446,15 +446,15 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key1", "value1");
+        _ = config.SetString("key1", "value1");
 
         var other = new Configuration();
-        other.SetString("key2", "value2");
-        other.SetInteger("key3", 42);
-        other.SetBoolean("key4", true);
+        _ = other.SetString("key2", "value2");
+        _ = other.SetInteger("key3", 42);
+        _ = other.SetBoolean("key4", true);
 
         // Act
-        config.AddAll(other);
+        _ = config.AddAll(other);
 
         // Assert
         Assert.That(config.GetString("key1"), Is.EqualTo("value1"));
@@ -468,13 +468,13 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key1", "original");
+        _ = config.SetString("key1", "original");
 
         var other = new Configuration();
-        other.SetString("key1", "updated");
+        _ = other.SetString("key1", "updated");
 
         // Act
-        config.AddAll(other);
+        _ = config.AddAll(other);
 
         // Assert
         Assert.That(config.GetString("key1"), Is.EqualTo("updated"));
@@ -573,7 +573,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "value");
+        _ = config.SetString("key", "value");
 
         // Act
         var result = config.ContainsKey("key");
@@ -600,7 +600,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "value");
+        _ = config.SetString("key", "value");
 
         // Act
         var result = config.RemoveKey("key");
@@ -628,11 +628,11 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "original");
+        _ = config.SetString("key", "original");
 
         // Act
         var clone = config.Clone();
-        clone.SetString("key", "modified");
+        _ = clone.SetString("key", "modified");
 
         // Assert
         Assert.That(config.GetString("key"), Is.EqualTo("original"));
@@ -644,8 +644,8 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key1", "value1");
-        config.SetInteger("key2", 42);
+        _ = config.SetString("key1", "value1");
+        _ = config.SetInteger("key2", 42);
 
         // Act
         var map = config.ToMap();
@@ -661,7 +661,7 @@ public class ConfigurationFullBranchCoverageTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key", "original");
+        _ = config.SetString("key", "original");
 
         // Act
         var map = config.ToMap();

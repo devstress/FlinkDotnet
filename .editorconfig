@@ -27,18 +27,18 @@ dotnet_style_new_line_between_query_expression_clauses = true
 
 # Code style settings
 # this. and Me. preferences
-dotnet_style_qualification_for_field = true:suggestion
-dotnet_style_qualification_for_property = true:suggestion
-dotnet_style_qualification_for_method = true:suggestion
-dotnet_style_qualification_for_event = true:suggestion
+dotnet_style_qualification_for_field = true:warning
+dotnet_style_qualification_for_property = true:warning
+dotnet_style_qualification_for_method = true:warning
+dotnet_style_qualification_for_event = true:warning
 
 # Language keywords vs framework type names for type references
 dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
 dotnet_style_predefined_type_for_member_access = true:suggestion
 
 # Modifier preferences
-dotnet_style_require_accessibility_modifiers = always:suggestion
-csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
+dotnet_style_require_accessibility_modifiers = always:warning
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:warning
 
 # Expression-level preferences
 dotnet_style_object_initializer = true:suggestion
@@ -51,11 +51,11 @@ csharp_style_throw_expression = true:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
 
 # Unnecessary code suggestions
-dotnet_remove_unnecessary_casts = true:suggestion
-dotnet_style_prefer_readonly_struct = true:suggestion
-dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
-csharp_style_unused_value_assignment_preference = discard_variable:suggestion
-csharp_style_unused_value_expression_statement_preference = discard_variable:suggestion
+dotnet_remove_unnecessary_casts = true:warning
+dotnet_style_prefer_readonly_struct = true:warning
+dotnet_style_prefer_simplified_boolean_expressions = true:warning
+csharp_style_unused_value_assignment_preference = discard_variable:warning
+csharp_style_unused_value_expression_statement_preference = discard_variable:warning
 
 # Naming conventions
 # Rules are specified using the following format:
@@ -206,14 +206,14 @@ dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:suggesti
 dotnet_style_parentheses_in_other_operators = never_if_unnecessary:suggestion
 
 # Expression-bodied members
-csharp_style_expression_bodied_methods = when_on_single_line:suggestion
-csharp_style_expression_bodied_constructors = when_on_single_line:suggestion
-csharp_style_expression_bodied_operators = when_on_single_line:suggestion
-csharp_style_expression_bodied_properties = true:suggestion
-csharp_style_expression_bodied_indexers = true:suggestion
-csharp_style_expression_bodied_accessors = true:suggestion
-csharp_style_expression_bodied_lambdas = true:suggestion
-csharp_style_expression_bodied_local_functions = when_on_single_line:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:warning
+csharp_style_expression_bodied_constructors = when_on_single_line:warning
+csharp_style_expression_bodied_operators = when_on_single_line:warning
+csharp_style_expression_bodied_properties = true:warning
+csharp_style_expression_bodied_indexers = true:warning
+csharp_style_expression_bodied_accessors = true:warning
+csharp_style_expression_bodied_lambdas = true:warning
+csharp_style_expression_bodied_local_functions = when_on_single_line:warning
 
 # var preferences
 csharp_style_var_for_built_in_types = true:suggestion
@@ -261,7 +261,7 @@ dotnet_diagnostic.S138.severity = error   # Method length limit
 dotnet_diagnostic.S6677.severity = error  # Unique message template placeholders
 
 # Code block preferences
-csharp_prefer_braces = true:suggestion
+csharp_prefer_braces = true:warning
 
 # XML Documentation Comments
 # IDE0055: Fix formatting of XML documentation comments

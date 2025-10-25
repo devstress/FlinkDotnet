@@ -25,7 +25,7 @@ public class MetricsService
     public MetricsService()
     {
         // Job metrics
-        _jobsSubmittedTotal = Metrics.CreateCounter(
+        this._jobsSubmittedTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_jobs_submitted_total",
             "Total number of jobs submitted to the gateway",
             new CounterConfiguration
@@ -33,15 +33,15 @@ public class MetricsService
                 LabelNames = new[] { "mode" } // LOCAL or REMOTE
             });
 
-        _jobsRunning = Metrics.CreateGauge(
+        this._jobsRunning = Metrics.CreateGauge(
             "flinkdotnet_gateway_jobs_running",
             "Current number of running jobs tracked by the gateway");
 
-        _jobsSucceededTotal = Metrics.CreateCounter(
+        this._jobsSucceededTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_jobs_succeeded_total",
             "Total number of successfully completed jobs");
 
-        _jobsFailedTotal = Metrics.CreateCounter(
+        this._jobsFailedTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_jobs_failed_total",
             "Total number of failed jobs",
             new CounterConfiguration
@@ -50,7 +50,7 @@ public class MetricsService
             });
 
         // Request metrics
-        _requestsTotal = Metrics.CreateCounter(
+        this._requestsTotal = Metrics.CreateCounter(
             "flinkdotnet_gateway_requests_total",
             "Total number of API requests",
             new CounterConfiguration
@@ -58,7 +58,7 @@ public class MetricsService
                 LabelNames = new[] { "endpoint", "method", "status_code" }
             });
 
-        _requestDuration = Metrics.CreateHistogram(
+        this._requestDuration = Metrics.CreateHistogram(
             "flinkdotnet_gateway_request_duration_seconds",
             "Duration of API requests in seconds",
             new HistogramConfiguration
@@ -74,8 +74,8 @@ public class MetricsService
     /// <param name="mode">The submission mode (LOCAL or REMOTE).</param>
     public void RecordJobSubmitted(string mode)
     {
-        _jobsSubmittedTotal.WithLabels(mode).Inc();
-        _jobsRunning.Inc();
+        this._jobsSubmittedTotal.WithLabels(mode).Inc();
+        this._jobsRunning.Inc();
     }
 
     /// <summary>
@@ -83,8 +83,8 @@ public class MetricsService
     /// </summary>
     public void RecordJobSucceeded()
     {
-        _jobsSucceededTotal.Inc();
-        _jobsRunning.Dec();
+        this._jobsSucceededTotal.Inc();
+        this._jobsRunning.Dec();
     }
 
     /// <summary>
@@ -93,8 +93,8 @@ public class MetricsService
     /// <param name="errorType">The type or category of the error that caused the failure.</param>
     public void RecordJobFailed(string errorType)
     {
-        _jobsFailedTotal.WithLabels(errorType).Inc();
-        _jobsRunning.Dec();
+        this._jobsFailedTotal.WithLabels(errorType).Inc();
+        this._jobsRunning.Dec();
     }
 
     /// <summary>
@@ -103,10 +103,7 @@ public class MetricsService
     /// <param name="endpoint">The API endpoint path.</param>
     /// <param name="method">The HTTP method (GET, POST, etc.).</param>
     /// <param name="statusCode">The HTTP status code returned.</param>
-    public void RecordRequest(string endpoint, string method, int statusCode)
-    {
-        _requestsTotal.WithLabels(endpoint, method, statusCode.ToString()).Inc();
-    }
+    public void RecordRequest(string endpoint, string method, int statusCode) => this._requestsTotal.WithLabels(endpoint, method, statusCode.ToString()).Inc();
 
     /// <summary>
     /// Creates a timer to measure the duration of an API request.
@@ -114,8 +111,5 @@ public class MetricsService
     /// <param name="endpoint">The API endpoint path.</param>
     /// <param name="method">The HTTP method (GET, POST, etc.).</param>
     /// <returns>A disposable timer that records the duration when disposed.</returns>
-    public IDisposable MeasureRequestDuration(string endpoint, string method)
-    {
-        return _requestDuration.WithLabels(endpoint, method).NewTimer();
-    }
+    public IDisposable MeasureRequestDuration(string endpoint, string method) => this._requestDuration.WithLabels(endpoint, method).NewTimer();
 }

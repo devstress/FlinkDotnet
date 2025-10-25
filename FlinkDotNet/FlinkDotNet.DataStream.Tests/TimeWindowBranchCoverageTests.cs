@@ -13,18 +13,14 @@ public class TimeWindowBranchCoverageTests
     #region Constructor Tests
 
     [Test]
-    public void TimeWindow_Constructor_WithStartGreaterThanEnd_ThrowsArgumentException()
-    {
+    public void TimeWindow_Constructor_WithStartGreaterThanEnd_ThrowsArgumentException() =>
         // Arrange & Act & Assert
-        Assert.Throws<ArgumentException>(() => new TimeWindow(100, 50));
-    }
+        _ = Assert.Throws<ArgumentException>(() => new TimeWindow(100, 50));
 
     [Test]
-    public void TimeWindow_Constructor_WithStartEqualToEnd_DoesNotThrow()
-    {
+    public void TimeWindow_Constructor_WithStartEqualToEnd_DoesNotThrow() =>
         // Arrange & Act & Assert
         Assert.DoesNotThrow(() => new TimeWindow(100, 100));
-    }
 
     [Test]
     public void TimeWindow_Constructor_WithValidRange_CreatesWindow()
@@ -102,11 +98,9 @@ public class TimeWindowBranchCoverageTests
     #region MergeWindows Tests
 
     [Test]
-    public void TimeWindow_MergeWindows_WithEmptyArray_ThrowsArgumentException()
-    {
+    public void TimeWindow_MergeWindows_WithEmptyArray_ThrowsArgumentException() =>
         // Arrange & Act & Assert
-        Assert.Throws<ArgumentException>(() => TimeWindow.MergeWindows());
-    }
+        _ = Assert.Throws<ArgumentException>(() => TimeWindow.MergeWindows());
 
     [Test]
     public void TimeWindow_MergeWindows_WithSingleWindow_ReturnsCoveringWindow()

@@ -32,18 +32,18 @@ namespace FlinkDotNet.DataStream
         /// Gets the current value of the state.
         /// </summary>
         /// <returns>The current value or default if not set</returns>
-        Task<T> ValueAsync();
+        public Task<T> ValueAsync();
 
         /// <summary>
         /// Updates the value of the state.
         /// </summary>
         /// <param name="value">The new value</param>
-        Task UpdateAsync(T value);
+        public Task UpdateAsync(T value);
 
         /// <summary>
         /// Clears the state.
         /// </summary>
-        Task ClearAsync();
+        public Task ClearAsync();
     }
 
     /// <summary>
@@ -57,30 +57,30 @@ namespace FlinkDotNet.DataStream
         /// Gets all elements in the state.
         /// </summary>
         /// <returns>An enumerable of all elements</returns>
-        Task<IEnumerable<T>> GetAsync();
+        public Task<IEnumerable<T>> GetAsync();
 
         /// <summary>
         /// Adds an element to the state.
         /// </summary>
         /// <param name="value">The element to add</param>
-        Task AddAsync(T value);
+        public Task AddAsync(T value);
 
         /// <summary>
         /// Adds multiple elements to the state.
         /// </summary>
         /// <param name="values">The elements to add</param>
-        Task AddAllAsync(IEnumerable<T> values);
+        public Task AddAllAsync(IEnumerable<T> values);
 
         /// <summary>
         /// Updates the state with a new list of elements, replacing existing content.
         /// </summary>
         /// <param name="values">The new list of elements</param>
-        Task UpdateAsync(IEnumerable<T> values);
+        public Task UpdateAsync(IEnumerable<T> values);
 
         /// <summary>
         /// Clears the state.
         /// </summary>
-        Task ClearAsync();
+        public Task ClearAsync();
     }
 
     /// <summary>
@@ -96,62 +96,62 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="key">The key</param>
         /// <returns>The value or default if not found</returns>
-        Task<TValue> GetAsync(TKey key);
+        public Task<TValue> GetAsync(TKey key);
 
         /// <summary>
         /// Associates the specified value with the specified key.
         /// </summary>
         /// <param name="key">The key</param>
         /// <param name="value">The value</param>
-        Task PutAsync(TKey key, TValue value);
+        public Task PutAsync(TKey key, TValue value);
 
         /// <summary>
         /// Copies all mappings from the specified map to the state.
         /// </summary>
         /// <param name="map">The map to copy from</param>
-        Task PutAllAsync(IDictionary<TKey, TValue> map);
+        public Task PutAllAsync(IDictionary<TKey, TValue> map);
 
         /// <summary>
         /// Removes the mapping for the given key.
         /// </summary>
         /// <param name="key">The key</param>
-        Task RemoveAsync(TKey key);
+        public Task RemoveAsync(TKey key);
 
         /// <summary>
         /// Checks if the state contains a mapping for the given key.
         /// </summary>
         /// <param name="key">The key</param>
         /// <returns>True if the key exists</returns>
-        Task<bool> ContainsAsync(TKey key);
+        public Task<bool> ContainsAsync(TKey key);
 
         /// <summary>
         /// Gets an enumerable of all entries in the state.
         /// </summary>
         /// <returns>An enumerable of key-value pairs</returns>
-        Task<IEnumerable<KeyValuePair<TKey, TValue>>> EntriesAsync();
+        public Task<IEnumerable<KeyValuePair<TKey, TValue>>> EntriesAsync();
 
         /// <summary>
         /// Gets an enumerable of all keys in the state.
         /// </summary>
         /// <returns>An enumerable of keys</returns>
-        Task<IEnumerable<TKey>> KeysAsync();
+        public Task<IEnumerable<TKey>> KeysAsync();
 
         /// <summary>
         /// Gets an enumerable of all values in the state.
         /// </summary>
         /// <returns>An enumerable of values</returns>
-        Task<IEnumerable<TValue>> ValuesAsync();
+        public Task<IEnumerable<TValue>> ValuesAsync();
 
         /// <summary>
         /// Clears the state.
         /// </summary>
-        Task ClearAsync();
+        public Task ClearAsync();
 
         /// <summary>
         /// Checks if the state is empty.
         /// </summary>
         /// <returns>True if empty</returns>
-        Task<bool> IsEmptyAsync();
+        public Task<bool> IsEmptyAsync();
     }
 
     /// <summary>
@@ -165,18 +165,18 @@ namespace FlinkDotNet.DataStream
         /// Gets the current reduced value.
         /// </summary>
         /// <returns>The reduced value or default if empty</returns>
-        Task<T> GetAsync();
+        public Task<T> GetAsync();
 
         /// <summary>
         /// Adds a new element and applies the reduce function.
         /// </summary>
         /// <param name="value">The element to add</param>
-        Task AddAsync(T value);
+        public Task AddAsync(T value);
 
         /// <summary>
         /// Clears the state.
         /// </summary>
-        Task ClearAsync();
+        public Task ClearAsync();
     }
 
     /// <summary>
@@ -191,18 +191,18 @@ namespace FlinkDotNet.DataStream
         /// Gets the current aggregated value.
         /// </summary>
         /// <returns>The aggregated value or default if empty</returns>
-        Task<TOut> GetAsync();
+        public Task<TOut> GetAsync();
 
         /// <summary>
         /// Adds a new element and updates the aggregate.
         /// </summary>
         /// <param name="value">The element to add</param>
-        Task AddAsync(TIn value);
+        public Task AddAsync(TIn value);
 
         /// <summary>
         /// Clears the state.
         /// </summary>
-        Task ClearAsync();
+        public Task ClearAsync();
     }
 
     #endregion
@@ -223,10 +223,7 @@ namespace FlinkDotNet.DataStream
             get;
         }
 
-        protected StateDescriptor(string name)
-        {
-            Name = name ?? throw new System.ArgumentNullException(nameof(name));
-        }
+        protected StateDescriptor(string name) => this.Name = name ?? throw new System.ArgumentNullException(nameof(name));
     }
 
     /// <summary>
@@ -244,10 +241,7 @@ namespace FlinkDotNet.DataStream
             get;
         }
 
-        public ValueStateDescriptor(string name) : base(name)
-        {
-            ValueType = typeof(T);
-        }
+        public ValueStateDescriptor(string name) : base(name) => this.ValueType = typeof(T);
     }
 
     /// <summary>
@@ -265,10 +259,7 @@ namespace FlinkDotNet.DataStream
             get;
         }
 
-        public ListStateDescriptor(string name) : base(name)
-        {
-            ElementType = typeof(T);
-        }
+        public ListStateDescriptor(string name) : base(name) => this.ElementType = typeof(T);
     }
 
     /// <summary>
@@ -297,8 +288,8 @@ namespace FlinkDotNet.DataStream
 
         public MapStateDescriptor(string name) : base(name)
         {
-            KeyType = typeof(TKey);
-            ValueType = typeof(TValue);
+            this.KeyType = typeof(TKey);
+            this.ValueType = typeof(TValue);
         }
     }
 
@@ -314,10 +305,9 @@ namespace FlinkDotNet.DataStream
             get;
         }
 
-        public ReducingStateDescriptor(string name, IReduceFunction<T> reduceFunction) : base(name)
-        {
-            ReduceFunction = reduceFunction ?? throw new System.ArgumentNullException(nameof(reduceFunction));
-        }
+        public ReducingStateDescriptor(string name, IReduceFunction<T> reduceFunction)
+            : base(name) =>
+            this.ReduceFunction = reduceFunction ?? throw new System.ArgumentNullException(nameof(reduceFunction));
     }
 
     /// <summary>
@@ -334,10 +324,9 @@ namespace FlinkDotNet.DataStream
             get;
         }
 
-        public AggregatingStateDescriptor(string name, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction) : base(name)
-        {
-            AggregateFunction = aggregateFunction ?? throw new System.ArgumentNullException(nameof(aggregateFunction));
-        }
+        public AggregatingStateDescriptor(string name, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction)
+            : base(name) =>
+            this.AggregateFunction = aggregateFunction ?? throw new System.ArgumentNullException(nameof(aggregateFunction));
     }
 
     #endregion

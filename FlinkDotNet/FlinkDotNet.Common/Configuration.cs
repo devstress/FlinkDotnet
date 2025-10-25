@@ -42,7 +42,7 @@ namespace FlinkDotNet.Common
         {
             foreach (var kvp in configuration)
             {
-                _configuration[kvp.Key] = kvp.Value;
+                this._configuration[kvp.Key] = kvp.Value;
             }
         }
 
@@ -54,7 +54,7 @@ namespace FlinkDotNet.Common
         /// <returns>This Configuration instance for method chaining</returns>
         public Configuration SetString(string key, string value)
         {
-            _configuration[key] = value;
+            this._configuration[key] = value;
             return this;
         }
 
@@ -66,7 +66,7 @@ namespace FlinkDotNet.Common
         /// <returns>This Configuration instance for method chaining</returns>
         public Configuration SetInteger(string key, int value)
         {
-            _configuration[key] = value;
+            this._configuration[key] = value;
             return this;
         }
 
@@ -78,7 +78,7 @@ namespace FlinkDotNet.Common
         /// <returns>This Configuration instance for method chaining</returns>
         public Configuration SetBoolean(string key, bool value)
         {
-            _configuration[key] = value;
+            this._configuration[key] = value;
             return this;
         }
 
@@ -90,7 +90,7 @@ namespace FlinkDotNet.Common
         /// <returns>This Configuration instance for method chaining</returns>
         public Configuration SetLong(string key, long value)
         {
-            _configuration[key] = value;
+            this._configuration[key] = value;
             return this;
         }
 
@@ -102,7 +102,7 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public string GetString(string key, string? defaultValue = null)
         {
-            if (_configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out var value))
             {
                 return value?.ToString() ?? defaultValue ?? string.Empty;
             }
@@ -117,12 +117,17 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public int GetInteger(string key, int defaultValue = 0)
         {
-            if (_configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out var value))
             {
                 if (value is int intValue)
+                {
                     return intValue;
+                }
+
                 if (int.TryParse(value.ToString(), out var parsedValue))
+                {
                     return parsedValue;
+                }
             }
             return defaultValue;
         }
@@ -135,12 +140,17 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public bool GetBoolean(string key, bool defaultValue = false)
         {
-            if (_configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out var value))
             {
                 if (value is bool boolValue)
+                {
                     return boolValue;
+                }
+
                 if (bool.TryParse(value.ToString(), out var parsedValue))
+                {
                     return parsedValue;
+                }
             }
             return defaultValue;
         }
@@ -153,12 +163,17 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public long GetLong(string key, long defaultValue = 0L)
         {
-            if (_configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out var value))
             {
                 if (value is long longValue)
+                {
                     return longValue;
+                }
+
                 if (long.TryParse(value.ToString(), out var parsedValue))
+                {
                     return parsedValue;
+                }
             }
             return defaultValue;
         }
@@ -168,38 +183,26 @@ namespace FlinkDotNet.Common
         /// </summary>
         /// <param name="key">The configuration key</param>
         /// <returns>True if the key exists</returns>
-        public bool ContainsKey(string key)
-        {
-            return _configuration.ContainsKey(key);
-        }
+        public bool ContainsKey(string key) => this._configuration.ContainsKey(key);
 
         /// <summary>
         /// Removes a key from the configuration.
         /// </summary>
         /// <param name="key">The configuration key to remove</param>
         /// <returns>True if the key was removed</returns>
-        public bool RemoveKey(string key)
-        {
-            return _configuration.Remove(key);
-        }
+        public bool RemoveKey(string key) => this._configuration.Remove(key);
 
         /// <summary>
         /// Gets all configuration keys.
         /// </summary>
         /// <returns>Collection of all configuration keys</returns>
-        public IEnumerable<string> GetKeys()
-        {
-            return _configuration.Keys;
-        }
+        public IEnumerable<string> GetKeys() => this._configuration.Keys;
 
         /// <summary>
         /// Creates a copy of this configuration.
         /// </summary>
         /// <returns>A new Configuration instance with the same values</returns>
-        public Configuration Clone()
-        {
-            return new Configuration(_configuration);
-        }
+        public Configuration Clone() => new Configuration(this._configuration);
 
         /// <summary>
         /// Adds all key-value pairs from another configuration.
@@ -210,7 +213,7 @@ namespace FlinkDotNet.Common
         {
             foreach (var kvp in other._configuration)
             {
-                _configuration[kvp.Key] = kvp.Value;
+                this._configuration[kvp.Key] = kvp.Value;
             }
             return this;
         }
@@ -219,10 +222,7 @@ namespace FlinkDotNet.Common
         /// Gets all configuration as a dictionary.
         /// </summary>
         /// <returns>Dictionary containing all configuration values</returns>
-        public IDictionary<string, object> ToMap()
-        {
-            return new Dictionary<string, object>(_configuration);
-        }
+        public IDictionary<string, object> ToMap() => new Dictionary<string, object>(this._configuration);
 
         /// <summary>
         /// Parses a list value from a string (comma-separated).
@@ -232,7 +232,9 @@ namespace FlinkDotNet.Common
         public static IList<string> ParseListValue(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
+            {
                 return new List<string>();
+            }
 
             return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }

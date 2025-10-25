@@ -36,7 +36,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="value">The input value</param>
         /// <param name="ctx">The context providing access to element timestamp and timers</param>
         /// <param name="out">The collector for returning result values</param>
-        Task ProcessElementAsync(T value, IProcessContext ctx, ICollector<TOut> @out);
+        public Task ProcessElementAsync(T value, IProcessContext ctx, ICollector<TOut> @out);
 
         /// <summary>
         /// Called when a timer fires.
@@ -44,7 +44,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="timestamp">The timestamp of the firing timer</param>
         /// <param name="ctx">The timer context</param>
         /// <param name="out">The collector for returning result values</param>
-        Task OnTimerAsync(long timestamp, IOnTimerContext ctx, ICollector<TOut> @out);
+        public Task OnTimerAsync(long timestamp, IOnTimerContext ctx, ICollector<TOut> @out);
     }
 
     /// <summary>
@@ -59,12 +59,12 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Processes one element from the input stream.
         /// </summary>
-        Task ProcessElementAsync(T value, IKeyedProcessContext<TKey> ctx, ICollector<TOut> @out);
+        public Task ProcessElementAsync(T value, IKeyedProcessContext<TKey> ctx, ICollector<TOut> @out);
 
         /// <summary>
         /// Called when a timer fires.
         /// </summary>
-        Task OnTimerAsync(long timestamp, IKeyedOnTimerContext<TKey> ctx, ICollector<TOut> @out);
+        public Task OnTimerAsync(long timestamp, IKeyedOnTimerContext<TKey> ctx, ICollector<TOut> @out);
     }
 
     /// <summary>
@@ -79,17 +79,17 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Processes an element from the first input stream.
         /// </summary>
-        Task ProcessElement1Async(T1 value, IProcessContext ctx, ICollector<TOut> @out);
+        public Task ProcessElement1Async(T1 value, IProcessContext ctx, ICollector<TOut> @out);
 
         /// <summary>
         /// Processes an element from the second input stream.
         /// </summary>
-        Task ProcessElement2Async(T2 value, IProcessContext ctx, ICollector<TOut> @out);
+        public Task ProcessElement2Async(T2 value, IProcessContext ctx, ICollector<TOut> @out);
 
         /// <summary>
         /// Called when a timer fires.
         /// </summary>
-        Task OnTimerAsync(long timestamp, IOnTimerContext ctx, ICollector<TOut> @out);
+        public Task OnTimerAsync(long timestamp, IOnTimerContext ctx, ICollector<TOut> @out);
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="elements">The elements in the window</param>
         /// <param name="ctx">The context holding window metadata</param>
         /// <param name="out">The collector for emitting results</param>
-        Task ProcessAsync(TKey key, IEnumerable<TIn> elements, IWindowContext ctx, ICollector<TOut> @out);
+        public Task ProcessAsync(TKey key, IEnumerable<TIn> elements, IWindowContext ctx, ICollector<TOut> @out);
     }
 
     #endregion
@@ -128,12 +128,12 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="input">The input element</param>
         /// <param name="resultFuture">The result future to complete with async results</param>
-        Task AsyncInvokeAsync(TIn input, IResultFuture<TOut> resultFuture);
+        public Task AsyncInvokeAsync(TIn input, IResultFuture<TOut> resultFuture);
 
         /// <summary>
         /// Timeout handling method (optional). Called when async operation times out.
         /// </summary>
-        Task TimeoutAsync(TIn input, IResultFuture<TOut> resultFuture)
+        public Task TimeoutAsync(TIn input, IResultFuture<TOut> resultFuture)
         {
             // Default: complete with empty collection
             resultFuture.Complete(Array.Empty<TOut>());
@@ -149,12 +149,12 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Completes the future with a collection of results.
         /// </summary>
-        void Complete(IEnumerable<T> results);
+        public void Complete(IEnumerable<T> results);
 
         /// <summary>
         /// Completes the future exceptionally.
         /// </summary>
-        void CompleteExceptionally(Exception exception);
+        public void CompleteExceptionally(Exception exception);
     }
 
     #endregion
@@ -169,7 +169,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the timestamp of the element currently being processed.
         /// </summary>
-        long Timestamp
+        public long Timestamp
         {
             get;
         }
@@ -177,7 +177,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the current processing time.
         /// </summary>
-        long CurrentProcessingTime
+        public long CurrentProcessingTime
         {
             get;
         }
@@ -185,7 +185,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the current event time watermark.
         /// </summary>
-        long CurrentWatermark
+        public long CurrentWatermark
         {
             get;
         }
@@ -193,22 +193,22 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Registers a timer to fire at the given timestamp.
         /// </summary>
-        void RegisterEventTimeTimer(long timestamp);
+        public void RegisterEventTimeTimer(long timestamp);
 
         /// <summary>
         /// Registers a processing time timer.
         /// </summary>
-        void RegisterProcessingTimeTimer(long timestamp);
+        public void RegisterProcessingTimeTimer(long timestamp);
 
         /// <summary>
         /// Deletes the event time timer for the given timestamp.
         /// </summary>
-        void DeleteEventTimeTimer(long timestamp);
+        public void DeleteEventTimeTimer(long timestamp);
 
         /// <summary>
         /// Deletes the processing time timer for the given timestamp.
         /// </summary>
-        void DeleteProcessingTimeTimer(long timestamp);
+        public void DeleteProcessingTimeTimer(long timestamp);
     }
 
     /// <summary>
@@ -219,7 +219,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the key of the element currently being processed.
         /// </summary>
-        TKey CurrentKey
+        public TKey CurrentKey
         {
             get;
         }
@@ -233,7 +233,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the time domain of the firing timer.
         /// </summary>
-        TimeDomain TimeDomain
+        public TimeDomain TimeDomain
         {
             get;
         }
@@ -247,7 +247,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the key of the timer.
         /// </summary>
-        TKey CurrentKey
+        public TKey CurrentKey
         {
             get;
         }
@@ -261,7 +261,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the start timestamp of the window.
         /// </summary>
-        long WindowStart
+        public long WindowStart
         {
             get;
         }
@@ -269,7 +269,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the end timestamp of the window.
         /// </summary>
-        long WindowEnd
+        public long WindowEnd
         {
             get;
         }
@@ -277,7 +277,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the current processing time.
         /// </summary>
-        long CurrentProcessingTime
+        public long CurrentProcessingTime
         {
             get;
         }
@@ -285,7 +285,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the current event time watermark.
         /// </summary>
-        long CurrentWatermark
+        public long CurrentWatermark
         {
             get;
         }
@@ -299,7 +299,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Emits an element.
         /// </summary>
-        void Collect(T element);
+        public void Collect(T element);
     }
 
     #endregion
@@ -321,10 +321,7 @@ namespace FlinkDotNet.DataStream
             get;
         }
 
-        public OutputTag(string id)
-        {
-            Id = id ?? throw new ArgumentNullException(nameof(id));
-        }
+        public OutputTag(string id) => this.Id = id ?? throw new ArgumentNullException(nameof(id));
 
         public override bool Equals(object? obj)
         {
@@ -333,13 +330,10 @@ namespace FlinkDotNet.DataStream
                 return false;
             }
 
-            return Id == other.Id;
+            return this.Id == other.Id;
         }
 
-        public override int GetHashCode()
-        {
-            return Id.GetHashCode();
-        }
+        public override int GetHashCode() => this.Id.GetHashCode();
     }
 
     #endregion
@@ -376,7 +370,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Joins two elements.
         /// </summary>
-        TOut Join(T1 first, T2 second);
+        public TOut Join(T1 first, T2 second);
     }
 
     /// <summary>
@@ -388,7 +382,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Joins two elements and produces zero, one, or more result elements.
         /// </summary>
-        IEnumerable<TOut> Join(T1 first, T2 second);
+        public IEnumerable<TOut> Join(T1 first, T2 second);
     }
 
     /// <summary>
@@ -400,7 +394,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Co-groups two groups of elements.
         /// </summary>
-        IEnumerable<TOut> CoGroup(IEnumerable<T1> first, IEnumerable<T2> second);
+        public IEnumerable<TOut> CoGroup(IEnumerable<T1> first, IEnumerable<T2> second);
     }
 
     #endregion

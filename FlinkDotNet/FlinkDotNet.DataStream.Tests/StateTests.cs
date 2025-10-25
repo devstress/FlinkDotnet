@@ -250,10 +250,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestReduceFunction : IReduceFunction<int>
         {
-            public int Reduce(int value1, int value2)
-            {
-                return value1 + value2;
-            }
+            public int Reduce(int value1, int value2) => value1 + value2;
         }
 
         private class TestAggregateFunction : IAggregateFunction<int, int, int>
@@ -374,8 +371,8 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new EmbeddedRocksDBStateBackend();
 
             // Act
-            backend.SetPredefinedOptions(RocksDBPredefinedOptions.SPINNING_DISK_OPTIMIZED);
-            backend.SetPredefinedOptions(RocksDBPredefinedOptions.FLASH_SSD_OPTIMIZED);
+            _ = backend.SetPredefinedOptions(RocksDBPredefinedOptions.SPINNING_DISK_OPTIMIZED);
+            _ = backend.SetPredefinedOptions(RocksDBPredefinedOptions.FLASH_SSD_OPTIMIZED);
 
             // Assert
             Assert.That(backend.GetPredefinedOptions(), Is.EqualTo(RocksDBPredefinedOptions.FLASH_SSD_OPTIMIZED));
@@ -443,8 +440,8 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new EmbeddedRocksDBStateBackend();
 
             // Act
-            backend.SetDbStoragePath("/tmp/path1");
-            backend.SetDbStoragePath("/tmp/path2");
+            _ = backend.SetDbStoragePath("/tmp/path1");
+            _ = backend.SetDbStoragePath("/tmp/path2");
 
             // Assert
             Assert.That(backend.GetDbStoragePath(), Is.EqualTo("/tmp/path2"));
@@ -503,8 +500,8 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new EmbeddedRocksDBStateBackend(true);
 
             // Act
-            backend.EnableIncrementalCheckpointing(false);
-            backend.EnableIncrementalCheckpointing(true);
+            _ = backend.EnableIncrementalCheckpointing(false);
+            _ = backend.EnableIncrementalCheckpointing(true);
 
             // Assert
             Assert.That(backend.IsIncrementalCheckpointingEnabled(), Is.True);

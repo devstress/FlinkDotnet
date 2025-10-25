@@ -28,10 +28,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
     {
         private readonly long _sessionGap;
 
-        private SessionWindows(long sessionGap)
-        {
-            _sessionGap = sessionGap;
-        }
+        private SessionWindows(long sessionGap) => this._sessionGap = sessionGap;
 
         /// <summary>
         /// Creates a new SessionWindows WindowAssigner that windows elements into sessions with the given gap.
@@ -39,10 +36,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="sessionGap">The session gap</param>
         /// <returns>A new SessionWindows WindowAssigner</returns>
-        public static SessionWindows<T> WithGap(Time sessionGap)
-        {
-            return new SessionWindows<T>(sessionGap.ToMilliseconds());
-        }
+        public static SessionWindows<T> WithGap(Time sessionGap) => new SessionWindows<T>(sessionGap.ToMilliseconds());
 
         /// <summary>
         /// Assigns the element to a session window.
@@ -52,7 +46,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         {
             // For session windows, each element initially creates a window that starts at the timestamp
             // and ends at timestamp + session gap. Windows are merged when they overlap.
-            yield return new TimeWindow(timestamp, timestamp + _sessionGap);
+            yield return new TimeWindow(timestamp, timestamp + this._sessionGap);
         }
 
         /// <summary>
@@ -110,9 +104,6 @@ namespace FlinkDotNet.DataStream.Window.Assigners
             return mergedWindows;
         }
 
-        public override string ToString()
-        {
-            return $"SessionWindows({_sessionGap}ms gap)";
-        }
+        public override string ToString() => $"SessionWindows({this._sessionGap}ms gap)";
     }
 }

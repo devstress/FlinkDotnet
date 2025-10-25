@@ -196,10 +196,7 @@ namespace FlinkDotNet.DataStream.Tests
         // Helper classes for testing
         private class CustomSinkWithoutKafkaProperties : ISinkFunction<string>
         {
-            public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
+            public Task InvokeAsync(string element, CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 
         private class KafkaSinkWithNullProperties : ISinkFunction<string>
@@ -214,10 +211,7 @@ namespace FlinkDotNet.DataStream.Tests
                 get;
             }
 
-            public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
+            public Task InvokeAsync(string element, CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 
         private class KafkaSinkWithEmptyProperties : ISinkFunction<string>
@@ -226,10 +220,7 @@ namespace FlinkDotNet.DataStream.Tests
             public string Topic { get; } = "";
             public string BootstrapServers { get; } = "";
 
-            public Task InvokeAsync(string element, CancellationToken cancellationToken = default)
-            {
-                return Task.CompletedTask;
-            }
+            public Task InvokeAsync(string element, CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 
         private class GenericTestSourceFunction : ISourceFunction<string>
@@ -244,54 +235,30 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestPunctuatedWatermarkAssigner : IAssignerWithPunctuatedWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp)
-            {
-                return new Watermark(extractedTimestamp);
-            }
+            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp) => new Watermark(extractedTimestamp);
         }
 
         private class TestPeriodicWatermarkAssigner : IAssignerWithPeriodicWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? GetCurrentWatermark()
-            {
-                return new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
+            public Watermark? GetCurrentWatermark() => new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         }
 
         private class TestDeserializationSchema : IDeserializationSchema<string>
         {
-            public string Deserialize(byte[] bytes)
-            {
-                return System.Text.Encoding.UTF8.GetString(bytes);
-            }
+            public string Deserialize(byte[] bytes) => System.Text.Encoding.UTF8.GetString(bytes);
 
-            public bool IsEndOfStream(string element)
-            {
-                return false;
-            }
+            public bool IsEndOfStream(string element) => false;
 
-            public TypeInformation<string> GetProducedType()
-            {
-                return TypeInformation<string>.Of();
-            }
+            public TypeInformation<string> GetProducedType() => TypeInformation<string>.Of();
         }
 
         private class TestSerializationSchema : ISerializationSchema<string>
         {
-            public byte[] Serialize(string element)
-            {
-                return System.Text.Encoding.UTF8.GetBytes(element);
-            }
+            public byte[] Serialize(string element) => System.Text.Encoding.UTF8.GetBytes(element);
         }
     }
 }

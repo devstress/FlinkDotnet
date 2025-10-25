@@ -30,13 +30,13 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// Gets the base path where checkpoints are stored.
         /// </summary>
         /// <returns>The checkpoint storage path</returns>
-        string GetCheckpointPath();
+        public string GetCheckpointPath();
 
         /// <summary>
         /// Gets whether this storage implementation supports high availability.
         /// High availability requires persistent storage that survives JobManager failures.
         /// </summary>
         /// <returns>True if high availability is supported</returns>
-        bool SupportsHighAvailability();
+        public bool SupportsHighAvailability();
     }
 }

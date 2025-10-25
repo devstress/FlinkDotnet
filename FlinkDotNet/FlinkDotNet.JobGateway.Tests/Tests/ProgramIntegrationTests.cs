@@ -32,44 +32,41 @@ namespace FlinkDotNet.JobGateway.Tests
         [TearDown]
         public void TearDown()
         {
-            _client?.Dispose();
-            _factory?.Dispose();
+            this._client?.Dispose();
+            this._factory?.Dispose();
         }
 
         [Test]
         public void Program_StartsSuccessfully_WithDefaultConfiguration()
         {
             // Arrange & Act
-            _factory = new WebApplicationFactory<Program>()
+            this._factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
-                    builder.UseEnvironment("Development");
-                    builder.ConfigureAppConfiguration((context, config) =>
+                    _ = builder.UseEnvironment("Development");
+                    _ = builder.ConfigureAppConfiguration((context, config) => _ = config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        config.AddInMemoryCollection(new Dictionary<string, string?>
-                        {
-                            ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
-                            ["Metrics:Prometheus:Enabled"] = "false"
-                        });
-                    });
+                        ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
+                        ["Metrics:Prometheus:Enabled"] = "false"
+                    }));
                 });
 
-            _client = _factory.CreateClient();
+            this._client = this._factory.CreateClient();
 
             // Assert - Application should start without errors
-            Assert.That(_factory, Is.Not.Null);
-            Assert.That(_client, Is.Not.Null);
+            Assert.That(this._factory, Is.Not.Null);
+            Assert.That(this._client, Is.Not.Null);
         }
 
         [Test]
         public async Task HealthEndpoint_ReturnsOk()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: false);
+            this._client = this._factory.CreateClient();
 
             // Act
-            var response = await _client.GetAsync("/health");
+            var response = await this._client.GetAsync("/health");
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -82,11 +79,11 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task ApiHealthEndpoint_ReturnsJsonWithOkStatus()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: false);
+            this._client = this._factory.CreateClient();
 
             // Act
-            var response = await _client.GetAsync("/api/v1/health");
+            var response = await this._client.GetAsync("/api/v1/health");
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -99,11 +96,11 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task Program_WithMetricsEnabled_ConfiguresPrometheusEndpoint()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: true);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: true);
+            this._client = this._factory.CreateClient();
 
             // Act - Try to access metrics endpoint
-            var response = await _client.GetAsync("/metrics");
+            var response = await this._client.GetAsync("/metrics");
 
             // Assert - Metrics endpoint should be accessible
             // It may return 200 (Prometheus data) or 404 (route not found if not properly configured)
@@ -115,11 +112,11 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task Program_WithMetricsDisabled_DoesNotConfigurePrometheusEndpoint()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: false);
+            this._client = this._factory.CreateClient();
 
             // Act
-            var response = await _client.GetAsync("/metrics");
+            var response = await this._client.GetAsync("/metrics");
 
             // Assert - Metrics endpoint should not be found
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
@@ -129,24 +126,21 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task Program_InDevelopmentMode_EnablesSwagger()
         {
             // Arrange
-            _factory = new WebApplicationFactory<Program>()
+            this._factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
-                    builder.UseEnvironment("Development");
-                    builder.ConfigureAppConfiguration((context, config) =>
+                    _ = builder.UseEnvironment("Development");
+                    _ = builder.ConfigureAppConfiguration((context, config) => _ = config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        config.AddInMemoryCollection(new Dictionary<string, string?>
-                        {
-                            ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
-                            ["Metrics:Prometheus:Enabled"] = "false"
-                        });
-                    });
+                        ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
+                        ["Metrics:Prometheus:Enabled"] = "false"
+                    }));
                 });
 
-            _client = _factory.CreateClient();
+            this._client = this._factory.CreateClient();
 
             // Act
-            var response = await _client.GetAsync("/swagger/v1/swagger.json");
+            var response = await this._client.GetAsync("/swagger/v1/swagger.json");
 
             // Assert - Swagger should be accessible in Development
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -156,24 +150,21 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task Program_InProductionMode_DisablesSwagger()
         {
             // Arrange
-            _factory = new WebApplicationFactory<Program>()
+            this._factory = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
-                    builder.UseEnvironment("Production");
-                    builder.ConfigureAppConfiguration((context, config) =>
+                    _ = builder.UseEnvironment("Production");
+                    _ = builder.ConfigureAppConfiguration((context, config) => _ = config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        config.AddInMemoryCollection(new Dictionary<string, string?>
-                        {
-                            ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
-                            ["Metrics:Prometheus:Enabled"] = "false"
-                        });
-                    });
+                        ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
+                        ["Metrics:Prometheus:Enabled"] = "false"
+                    }));
                 });
 
-            _client = _factory.CreateClient();
+            this._client = this._factory.CreateClient();
 
             // Act
-            var response = await _client.GetAsync("/swagger/v1/swagger.json");
+            var response = await this._client.GetAsync("/swagger/v1/swagger.json");
 
             // Assert - Swagger should not be accessible in Production
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
@@ -188,11 +179,11 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                _factory = CreateTestFactory(metricsEnabled: false);
-                _client = _factory.CreateClient();
+                this._factory = CreateTestFactory(metricsEnabled: false);
+                this._client = this._factory.CreateClient();
 
                 // Act & Assert - Application should start with environment variables
-                var response = await _client.GetAsync("/health");
+                var response = await this._client.GetAsync("/health");
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             }
             finally
@@ -211,11 +202,11 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                _factory = CreateTestFactory(metricsEnabled: false);
-                _client = _factory.CreateClient();
+                this._factory = CreateTestFactory(metricsEnabled: false);
+                this._client = this._factory.CreateClient();
 
                 // Act
-                var response = await _client.GetAsync("/health");
+                var response = await this._client.GetAsync("/health");
 
                 // Assert
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -233,7 +224,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 try
                 {
                     if (Directory.Exists(customLogPath))
+                    {
                         Directory.Delete(customLogPath, true);
+                    }
                 }
                 catch
                 {
@@ -246,12 +239,12 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Program_RegistersFlinkJobManagerAsSingleton()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: false);
+            this._client = this._factory.CreateClient();
 
             // Act
-            var scope1 = _factory.Services.CreateScope();
-            var scope2 = _factory.Services.CreateScope();
+            var scope1 = this._factory.Services.CreateScope();
+            var scope2 = this._factory.Services.CreateScope();
 
             var manager1 = scope1.ServiceProvider.GetRequiredService<IFlinkJobManager>();
             var manager2 = scope2.ServiceProvider.GetRequiredService<IFlinkJobManager>();
@@ -267,10 +260,10 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange - This test demonstrates that metrics service registration depends on appsettings.json
             // Since appsettings.json doesn't have Metrics:Prometheus:Enabled set, it defaults to false
             // To truly test this, we'd need to modify appsettings.json or use a test-specific configuration file
-            _factory = CreateTestFactory(metricsEnabled: true);
+            this._factory = CreateTestFactory(metricsEnabled: true);
 
             // Act
-            var metricsService = _factory.Services.GetService<MetricsService>();
+            var metricsService = this._factory.Services.GetService<MetricsService>();
 
             // Assert - In the current setup, metrics will NOT be registered because appsettings.json
             // doesn't have the Metrics section, so it defaults to false
@@ -283,10 +276,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Program_WithMetricsDisabled_DoesNotRegisterMetricsService()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
+            this._factory = CreateTestFactory(metricsEnabled: false);
 
             // Act
-            var metricsService = _factory.Services.GetService<MetricsService>();
+            var metricsService = this._factory.Services.GetService<MetricsService>();
 
             // Assert
             Assert.That(metricsService, Is.Null, "MetricsService should not be registered when metrics are disabled");
@@ -296,8 +289,8 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task BodyLoggingMiddleware_ForSubmitEndpoint_LogsRequestBody()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: false);
+            this._client = this._factory.CreateClient();
 
             var jobDefinition = new
             {
@@ -324,7 +317,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 "application/json");
 
             // Act
-            var response = await _client.PostAsync("/api/v1/jobs/submit", content);
+            var response = await this._client.PostAsync("/api/v1/jobs/submit", content);
 
             // Assert - Request should be processed (may fail validation but middleware should work)
             Assert.That(response.StatusCode, Is.AnyOf(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError));
@@ -334,11 +327,11 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task BodyLoggingMiddleware_ForNonSubmitEndpoint_DoesNotLogRequestBody()
         {
             // Arrange
-            _factory = CreateTestFactory(metricsEnabled: false);
-            _client = _factory.CreateClient();
+            this._factory = CreateTestFactory(metricsEnabled: false);
+            this._client = this._factory.CreateClient();
 
             // Act
-            var response = await _client.GetAsync("/health");
+            var response = await this._client.GetAsync("/health");
 
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -352,11 +345,11 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                _factory = CreateTestFactory(metricsEnabled: false);
-                _client = _factory.CreateClient();
+                this._factory = CreateTestFactory(metricsEnabled: false);
+                this._client = this._factory.CreateClient();
 
                 // Act
-                var response = await _client.GetAsync("/health");
+                var response = await this._client.GetAsync("/health");
 
                 // Assert - Application should start with Aspire endpoint
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -375,11 +368,11 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                _factory = CreateTestFactory(metricsEnabled: false);
-                _client = _factory.CreateClient();
+                this._factory = CreateTestFactory(metricsEnabled: false);
+                this._client = this._factory.CreateClient();
 
                 // Act
-                var response = await _client.GetAsync("/health");
+                var response = await this._client.GetAsync("/health");
 
                 // Assert
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -395,17 +388,15 @@ namespace FlinkDotNet.JobGateway.Tests
             return new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
-                    builder.UseEnvironment("Development");
-                    builder.ConfigureAppConfiguration((context, config) =>
-                    {
+                    _ = builder.UseEnvironment("Development");
+                    _ = builder.ConfigureAppConfiguration((context, config) =>
                         // Add configuration AFTER default sources to override them
-                        config.AddInMemoryCollection(new Dictionary<string, string?>
+                        _ = config.AddInMemoryCollection(new Dictionary<string, string?>
                         {
                             ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
                             ["Metrics:Prometheus:Enabled"] = metricsEnabled ? "true" : "false",
                             ["Metrics:Prometheus:Path"] = "/metrics"
-                        }!);
-                    });
+                        }!));
                 });
         }
     }

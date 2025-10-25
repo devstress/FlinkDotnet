@@ -17,7 +17,7 @@ public class LoggerFactoryBranchCoverageTests
         // Arrange
         Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
         var mockFileSystem = new MockFileSystem();
-        mockFileSystem.Directory.CreateDirectory("test-logs");
+        _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
         // Act
         var logger = LoggerFactory.CreateLogger(mockFileSystem);
@@ -31,7 +31,7 @@ public class LoggerFactoryBranchCoverageTests
     {
         // Arrange
         var mockFileSystem = new MockFileSystem();
-        mockFileSystem.Directory.CreateDirectory("test-logs");
+        _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
         // Create an old log file (older than 1 day) with proper date
         var oldDate = DateTime.UtcNow.AddDays(-2);
@@ -55,7 +55,7 @@ public class LoggerFactoryBranchCoverageTests
     {
         // Arrange
         var mockFileSystem = new MockFileSystem();
-        mockFileSystem.Directory.CreateDirectory("test-logs");
+        _ = mockFileSystem.Directory.CreateDirectory("test-logs");
 
         // Create a recent log file (less than 1 day old)
         var recentDate = DateTime.UtcNow.AddHours(-12);
@@ -94,16 +94,16 @@ public class LoggerFactoryBranchCoverageTests
         var mockPath = new Mock<IPath>();
         var mockFile = new Mock<IFile>();
 
-        mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
+        _ = mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
             .Returns((string path1, string path2) => $"{path1}/{path2}");
 
-        mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
-        mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
+        _ = mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
+        _ = mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
             .Throws(new UnauthorizedAccessException("Access denied"));
 
-        mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
-        mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
-        mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
+        _ = mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
+        _ = mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
+        _ = mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
 
         // Act & Assert - Should not throw despite GetFiles throwing
         Assert.DoesNotThrow(() => LoggerFactory.CreateLogger(mockFileSystem.Object));
@@ -119,20 +119,20 @@ public class LoggerFactoryBranchCoverageTests
         var mockFile = new Mock<IFile>();
         var mockFileInfoFactory = new Mock<IFileInfoFactory>();
 
-        mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
+        _ = mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
             .Returns((string path1, string path2) => $"{path1}/{path2}");
 
-        mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
-        mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
+        _ = mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
+        _ = mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
             .Returns(new[] { "test-logs/old.log" });
 
-        mockFileInfoFactory.Setup(f => f.New(It.IsAny<string>()))
+        _ = mockFileInfoFactory.Setup(f => f.New(It.IsAny<string>()))
             .Throws(new System.IO.IOException("File info error"));
 
-        mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
-        mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
-        mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
-        mockFileSystem.Setup(fs => fs.FileInfo).Returns(mockFileInfoFactory.Object);
+        _ = mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
+        _ = mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
+        _ = mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
+        _ = mockFileSystem.Setup(fs => fs.FileInfo).Returns(mockFileInfoFactory.Object);
 
         // Act & Assert - Should not throw despite FileInfo throwing
         Assert.DoesNotThrow(() => LoggerFactory.CreateLogger(mockFileSystem.Object));
@@ -149,24 +149,24 @@ public class LoggerFactoryBranchCoverageTests
         var mockFileInfoFactory = new Mock<IFileInfoFactory>();
         var mockFileInfo = new Mock<IFileInfo>();
 
-        mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
+        _ = mockPath.Setup(p => p.Combine(It.IsAny<string>(), It.IsAny<string>()))
             .Returns((string path1, string path2) => $"{path1}/{path2}");
 
-        mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
-        mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
+        _ = mockDirectory.Setup(d => d.Exists(It.IsAny<string>())).Returns(true);
+        _ = mockDirectory.Setup(d => d.GetFiles(It.IsAny<string>(), It.IsAny<string>()))
             .Returns(new[] { "test-logs/old.log" });
 
-        mockFileInfo.Setup(f => f.LastWriteTimeUtc).Returns(DateTime.UtcNow.AddDays(-2));
-        mockFileInfoFactory.Setup(f => f.New(It.IsAny<string>()))
+        _ = mockFileInfo.Setup(f => f.LastWriteTimeUtc).Returns(DateTime.UtcNow.AddDays(-2));
+        _ = mockFileInfoFactory.Setup(f => f.New(It.IsAny<string>()))
             .Returns(mockFileInfo.Object);
 
-        mockFile.Setup(f => f.Delete(It.IsAny<string>()))
+        _ = mockFile.Setup(f => f.Delete(It.IsAny<string>()))
             .Throws(new UnauthorizedAccessException("Cannot delete"));
 
-        mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
-        mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
-        mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
-        mockFileSystem.Setup(fs => fs.FileInfo).Returns(mockFileInfoFactory.Object);
+        _ = mockFileSystem.Setup(fs => fs.Directory).Returns(mockDirectory.Object);
+        _ = mockFileSystem.Setup(fs => fs.Path).Returns(mockPath.Object);
+        _ = mockFileSystem.Setup(fs => fs.File).Returns(mockFile.Object);
+        _ = mockFileSystem.Setup(fs => fs.FileInfo).Returns(mockFileInfoFactory.Object);
 
         // Act & Assert - Should not throw despite Delete throwing
         Assert.DoesNotThrow(() => LoggerFactory.CreateLogger(mockFileSystem.Object));

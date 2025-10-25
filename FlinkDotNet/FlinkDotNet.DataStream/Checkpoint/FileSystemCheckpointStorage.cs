@@ -54,27 +54,21 @@ namespace FlinkDotNet.DataStream.Checkpoint
                     nameof(checkpointPath));
             }
 
-            _checkpointPath = checkpointPath;
-            _fileSizeThreshold = fileSizeThreshold;
+            this._checkpointPath = checkpointPath;
+            this._fileSizeThreshold = fileSizeThreshold;
         }
 
         /// <summary>
         /// Gets the base path where checkpoints are stored.
         /// </summary>
         /// <returns>The checkpoint storage path</returns>
-        public string GetCheckpointPath()
-        {
-            return _checkpointPath;
-        }
+        public string GetCheckpointPath() => this._checkpointPath;
 
         /// <summary>
         /// Gets the file size threshold for inline state storage.
         /// </summary>
         /// <returns>The file size threshold in bytes, or -1 for default</returns>
-        public int GetFileSizeThreshold()
-        {
-            return _fileSizeThreshold;
-        }
+        public int GetFileSizeThreshold() => this._fileSizeThreshold;
 
         /// <summary>
         /// Gets whether this storage implementation supports high availability.
@@ -82,9 +76,6 @@ namespace FlinkDotNet.DataStream.Checkpoint
         /// distributed file systems (HDFS, S3, etc.).
         /// </summary>
         /// <returns>True, as file system storage supports high availability</returns>
-        public bool SupportsHighAvailability()
-        {
-            return true;
-        }
+        public bool SupportsHighAvailability() => true;
     }
 }

@@ -49,12 +49,12 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="element">The element to assign</param>
         /// <param name="timestamp">The timestamp of the element</param>
         /// <returns>A collection of windows that the element is assigned to</returns>
-        IEnumerable<W> AssignWindows(T element, long timestamp);
+        public IEnumerable<W> AssignWindows(T element, long timestamp);
 
         /// <summary>
         /// Gets the time characteristic (event time or processing time) of this window assigner.
         /// </summary>
-        TimeCharacteristic TimeCharacteristic
+        public TimeCharacteristic TimeCharacteristic
         {
             get;
         }
@@ -63,7 +63,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// Returns true if windows created by this assigner can be merged.
         /// This is true for session windows but false for tumbling/sliding windows.
         /// </summary>
-        bool IsEventTime
+        public bool IsEventTime
         {
             get;
         }

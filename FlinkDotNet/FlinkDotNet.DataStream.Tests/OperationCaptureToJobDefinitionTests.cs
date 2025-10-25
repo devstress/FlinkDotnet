@@ -9,17 +9,14 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         [Test]
         public void ToJobDefinition_WithKafkaSourceOnly_CreatesValidJobDefinition()
         {
             // Arrange
-            var stream = _env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
-            stream.SinkToKafka("output-topic", "localhost:9092");
+            var stream = this._env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
+            _ = stream.SinkToKafka("output-topic", "localhost:9092");
 
             // Act & Assert - Pipeline should be configured (not executed)
             Assert.That(stream, Is.Not.Null);
@@ -29,9 +26,9 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithMapOperations_CreatesMapDefinitions()
         {
             // Arrange
-            var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
+            var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
             var mapped = stream.Map("upper").Map("lower");
-            mapped.SinkToKafka("output-topic", "localhost:9092");
+            _ = mapped.SinkToKafka("output-topic", "localhost:9092");
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(mapped, Is.Not.Null);
@@ -41,7 +38,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithFilterOperations_CreatesFilterDefinitions()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var filtered = stream.Filter(new TestFilterFunction());
 
@@ -53,11 +50,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithTimeWindowAndAggregate_CreatesAggregateWithTimeWindow()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var windowed = stream.TimeWindowAll(Time.Seconds(30));
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);
@@ -67,11 +64,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithCountWindowAndAggregate_CreatesAggregateWithCountWindow()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var windowed = stream.CountWindowAll(100);
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);
@@ -81,12 +78,12 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithTimestampAssigner_SetsEventTimeCharacteristic()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var strategy = Watermarks.WatermarkStrategy<string>.ForMonotonousTimestamps()
                 .WithTimestampAssigner(s => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var withWatermarks = stream.AssignTimestampsAndWatermarks(strategy);
-            withWatermarks.SinkToKafka("output-topic", "localhost:9092", x => x);
+            _ = withWatermarks.SinkToKafka("output-topic", "localhost:9092", x => x);
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(withWatermarks, Is.Not.Null);
@@ -96,9 +93,9 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithDeserializer_SetsDeserializationMetadata()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
-            stream.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = stream.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(stream, Is.Not.Null);
@@ -110,9 +107,9 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithSerializer_SetsSerializationMetadata()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
-            stream.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = stream.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(stream, Is.Not.Null);
@@ -122,14 +119,14 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithComplexPipeline_CreatesCompleteJobDefinition()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var strategy = Watermarks.WatermarkStrategy<int>.ForBoundedOutOfOrderness(TimeSpan.FromSeconds(5))
                 .WithTimestampAssigner(x => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var withWatermarks = stream.AssignTimestampsAndWatermarks(strategy);
             var windowed = withWatermarks.TimeWindowAll(Time.Seconds(10));
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);
@@ -139,13 +136,13 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithMultipleMapOperations_CreatesAllMapDefinitions()
         {
             // Arrange
-            var stream = _env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
+            var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
             var result = stream
                 .Map("upper")
                 .Map("lower")
                 .Map("upper")
                 .Map("lower");
-            result.SinkToKafka("output-topic", "localhost:9092");
+            _ = result.SinkToKafka("output-topic", "localhost:9092");
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(result, Is.Not.Null);
@@ -155,10 +152,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithCustomMapFunction_CreatesMapWithFunctionType()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var mapped = stream.Map(new UpperCaseMapFunction());
-            mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
+            _ = mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(mapped, Is.Not.Null);
@@ -168,10 +165,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithWordCapitalizerFunction_MapsToUpper()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var mapped = stream.Map(new WordsCapitalizerMapFunction());
-            mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
+            _ = mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(mapped, Is.Not.Null);
@@ -181,10 +178,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithLowerCaseFunction_MapsToLower()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var mapped = stream.Map(new LowerCaseMapFunction());
-            mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
+            _ = mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(mapped, Is.Not.Null);
@@ -194,10 +191,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithUnknownMapFunction_UsesIdentityTransform()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var mapped = stream.Map(new UnknownMapFunction());
-            mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
+            _ = mapped.SinkToKafka("output-topic", "localhost:9092", x => x);
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(mapped, Is.Not.Null);
@@ -207,7 +204,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithFlatMapOperation_CreatesFlatMapDefinition()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => s, "earliest");
             var flatMapped = stream.FlatMap(new SplitFlatMapFunction());
 
@@ -219,11 +216,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithMultipleAggregates_CreatesAllAggregateDefinitions()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var windowed = stream.TimeWindowAll(Time.Seconds(5));
             var aggregated = windowed.Aggregate(new AverageAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);
@@ -233,11 +230,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithLargeTimeWindow_CreatesCorrectWindowSize()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var windowed = stream.TimeWindowAll(Time.Hours(1));
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);
@@ -247,11 +244,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithSmallTimeWindow_CreatesCorrectWindowSize()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var windowed = stream.TimeWindowAll(Time.Milliseconds(500));
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);
@@ -261,11 +258,11 @@ namespace FlinkDotNet.DataStream.Tests
         public void ToJobDefinition_WithLargeCountWindow_CreatesCorrectWindowSize()
         {
             // Arrange
-            var stream = _env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
+            var stream = this._env.AddKafkaSource("input-topic", "localhost:9092", "test-group",
                 (string s) => int.Parse(s), "earliest");
             var windowed = stream.CountWindowAll(10000);
             var aggregated = windowed.Aggregate(new SumAggregateFunction());
-            aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
+            _ = aggregated.SinkToKafka("output-topic", "localhost:9092", x => x.ToString());
 
             // Act & Assert - Pipeline configured successfully
             Assert.That(aggregated, Is.Not.Null);

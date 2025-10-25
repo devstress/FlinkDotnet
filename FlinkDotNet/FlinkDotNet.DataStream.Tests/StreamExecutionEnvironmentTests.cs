@@ -31,7 +31,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var config = new Configuration();
-            config.SetString("test.key", "test.value");
+            _ = config.SetString("test.key", "test.value");
 
             // Act
             var env = StreamExecutionEnvironment.GetExecutionEnvironment(config);
@@ -48,10 +48,10 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var config = new Configuration();
-            config.SetString("additional.key", "additional.value");
+            _ = config.SetString("additional.key", "additional.value");
 
             // Act
-            env.Configure(config);
+            _ = env.Configure(config);
 
             // Assert
             Assert.That(env.GetConfig().GetConfiguration().GetString("additional.key"), Is.EqualTo("additional.value"));
@@ -68,7 +68,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.SetParallelism(4);
+            _ = env.SetParallelism(4);
 
             // Assert
             Assert.That(env.GetParallelism(), Is.EqualTo(4));
@@ -107,7 +107,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.SetMaxParallelism(128);
+            _ = env.SetMaxParallelism(128);
 
             // Assert
             Assert.That(env.GetMaxParallelism(), Is.EqualTo(128));
@@ -120,7 +120,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
+            _ = Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(0));
         }
 
         [Test]
@@ -130,7 +130,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
+            _ = Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(-1));
         }
 
         [Test]
@@ -140,7 +140,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
+            _ = Assert.Throws<ArgumentException>(() => env.SetMaxParallelism(32769));
         }
 
         [Test]
@@ -167,7 +167,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.SetBufferTimeout(200);
+            _ = env.SetBufferTimeout(200);
 
             // Assert
             Assert.That(env.GetBufferTimeout(), Is.EqualTo(200));
@@ -223,7 +223,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.DisableOperatorChaining();
+            _ = env.DisableOperatorChaining();
 
             // Assert
             Assert.That(env.IsChainingEnabled(), Is.False);
@@ -253,7 +253,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableCheckpointing(5000);
+            _ = env.EnableCheckpointing(5000);
 
             // Assert
             Assert.That(env.GetCheckpointInterval(), Is.EqualTo(5000));
@@ -310,7 +310,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableAdaptiveScheduler(true);
+            _ = env.EnableAdaptiveScheduler(true);
 
             // Assert
             Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
@@ -323,7 +323,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableAdaptiveScheduler();
+            _ = env.EnableAdaptiveScheduler();
 
             // Assert
             Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.True);
@@ -334,10 +334,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.EnableAdaptiveScheduler(true);
+            _ = env.EnableAdaptiveScheduler(true);
 
             // Act
-            env.EnableAdaptiveScheduler(false);
+            _ = env.EnableAdaptiveScheduler(false);
 
             // Assert
             Assert.That(env.IsAdaptiveSchedulerEnabled(), Is.False);
@@ -380,7 +380,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableReactiveMode(true);
+            _ = env.EnableReactiveMode(true);
 
             // Assert
             Assert.That(env.IsReactiveModeEnabled(), Is.True);
@@ -393,7 +393,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act
-            env.EnableReactiveMode();
+            _ = env.EnableReactiveMode();
 
             // Assert
             Assert.That(env.IsReactiveModeEnabled(), Is.True);
@@ -404,10 +404,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.EnableReactiveMode(true);
+            _ = env.EnableReactiveMode(true);
 
             // Act
-            env.EnableReactiveMode(false);
+            _ = env.EnableReactiveMode(false);
 
             // Assert
             Assert.That(env.IsReactiveModeEnabled(), Is.False);
@@ -451,7 +451,7 @@ namespace FlinkDotNet.DataStream.Tests
             var savepointPath = "/path/to/savepoint";
 
             // Act
-            env.FromSavepoint(savepointPath);
+            _ = env.FromSavepoint(savepointPath);
 
             // Assert
             Assert.That(env.GetSavepointPath(), Is.EqualTo(savepointPath));
@@ -495,7 +495,7 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new HashMapStateBackend();
 
             // Act
-            env.SetStateBackend(backend);
+            _ = env.SetStateBackend(backend);
 
             // Assert
             Assert.That(env.GetStateBackend(), Is.SameAs(backend));
@@ -509,7 +509,7 @@ namespace FlinkDotNet.DataStream.Tests
             var backend = new EmbeddedRocksDBStateBackend();
 
             // Act
-            env.SetStateBackend(backend);
+            _ = env.SetStateBackend(backend);
 
             // Assert
             Assert.That(env.GetStateBackend(), Is.InstanceOf<EmbeddedRocksDBStateBackend>());
@@ -522,7 +522,7 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => env.SetStateBackend(null!));
+            _ = Assert.Throws<ArgumentNullException>(() => env.SetStateBackend(null!));
         }
 
         [Test]
@@ -746,7 +746,9 @@ namespace FlinkDotNet.DataStream.Tests
                 for (int i = 0; i < 10; i++)
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         yield break;
+                    }
 
                     yield return i;
                     await Task.Delay(10, cancellationToken);

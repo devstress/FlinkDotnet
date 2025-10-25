@@ -135,7 +135,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("numKey", "456");
+        _ = config.SetString("numKey", "456");
 
         // Act
         var result = config.GetInteger("numKey");
@@ -162,7 +162,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("boolKey", "true");
+        _ = config.SetString("boolKey", "true");
 
         // Act
         var result = config.GetBoolean("boolKey");
@@ -189,7 +189,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("longKey", "9876543210");
+        _ = config.SetString("longKey", "9876543210");
 
         // Act
         var result = config.GetLong("longKey");
@@ -203,7 +203,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("existingKey", "value");
+        _ = config.SetString("existingKey", "value");
 
         // Act & Assert
         Assert.That(config.ContainsKey("existingKey"), Is.True);
@@ -224,7 +224,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("toRemove", "value");
+        _ = config.SetString("toRemove", "value");
 
         // Act
         var result = config.RemoveKey("toRemove");
@@ -252,9 +252,9 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key1", "value1");
-        config.SetInteger("key2", 42);
-        config.SetBoolean("key3", true);
+        _ = config.SetString("key1", "value1");
+        _ = config.SetInteger("key2", 42);
+        _ = config.SetBoolean("key3", true);
 
         // Act
         var keys = config.GetKeys().ToList();
@@ -271,12 +271,12 @@ public class ConfigurationTests
     {
         // Arrange
         var original = new Configuration();
-        original.SetString("key1", "value1");
-        original.SetInteger("key2", 42);
+        _ = original.SetString("key1", "value1");
+        _ = original.SetInteger("key2", 42);
 
         // Act
         var clone = original.Clone();
-        clone.SetString("key3", "value3");
+        _ = clone.SetString("key3", "value3");
 
         // Assert
         Assert.That(clone.GetString("key1"), Is.EqualTo("value1"));
@@ -290,12 +290,12 @@ public class ConfigurationTests
     {
         // Arrange
         var config1 = new Configuration();
-        config1.SetString("key1", "value1");
-        config1.SetInteger("key2", 42);
+        _ = config1.SetString("key1", "value1");
+        _ = config1.SetInteger("key2", 42);
 
         var config2 = new Configuration();
-        config2.SetString("key3", "value3");
-        config2.SetBoolean("key4", true);
+        _ = config2.SetString("key3", "value3");
+        _ = config2.SetBoolean("key4", true);
 
         // Act
         var result = config1.AddAll(config2);
@@ -313,13 +313,13 @@ public class ConfigurationTests
     {
         // Arrange
         var config1 = new Configuration();
-        config1.SetString("key1", "original");
+        _ = config1.SetString("key1", "original");
 
         var config2 = new Configuration();
-        config2.SetString("key1", "updated");
+        _ = config2.SetString("key1", "updated");
 
         // Act
-        config1.AddAll(config2);
+        _ = config1.AddAll(config2);
 
         // Assert
         Assert.That(config1.GetString("key1"), Is.EqualTo("updated"));
@@ -330,9 +330,9 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("key1", "value1");
-        config.SetInteger("key2", 42);
-        config.SetBoolean("key3", true);
+        _ = config.SetString("key1", "value1");
+        _ = config.SetInteger("key2", 42);
+        _ = config.SetBoolean("key3", true);
 
         // Act
         var map = config.ToMap();
@@ -418,7 +418,7 @@ public class ConfigurationTests
         var config = new Configuration();
 
         // Act
-        config.SetString("key1", "value1")
+        _ = config.SetString("key1", "value1")
               .SetInteger("key2", 42)
               .SetBoolean("key3", true)
               .SetLong("key4", 9876543210L);
@@ -467,7 +467,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("badInt", "not-a-number");
+        _ = config.SetString("badInt", "not-a-number");
 
         // Act
         var result = config.GetInteger("badInt", 999);
@@ -481,7 +481,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("badInt", "not-a-number");
+        _ = config.SetString("badInt", "not-a-number");
 
         // Act
         var result = config.GetInteger("badInt");
@@ -495,7 +495,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("badBool", "not-a-boolean");
+        _ = config.SetString("badBool", "not-a-boolean");
 
         // Act
         var result = config.GetBoolean("badBool", true);
@@ -509,7 +509,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("badBool", "not-a-boolean");
+        _ = config.SetString("badBool", "not-a-boolean");
 
         // Act
         var result = config.GetBoolean("badBool");
@@ -523,7 +523,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("badLong", "not-a-number");
+        _ = config.SetString("badLong", "not-a-number");
 
         // Act
         var result = config.GetLong("badLong", 12345L);
@@ -537,7 +537,7 @@ public class ConfigurationTests
     {
         // Arrange
         var config = new Configuration();
-        config.SetString("badLong", "not-a-number");
+        _ = config.SetString("badLong", "not-a-number");
 
         // Act
         var result = config.GetLong("badLong");

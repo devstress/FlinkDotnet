@@ -13,10 +13,7 @@ namespace FlinkDotNet.DataStream.Tests
         private StreamExecutionEnvironment _env = null!;
 
         [SetUp]
-        public void Setup()
-        {
-            _env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        }
+        public void Setup() => this._env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Test helper classes
         private class TestAggregateFunction : IAggregateFunction<string, List<string>, string>
@@ -42,10 +39,7 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestProcessWindowFunction : IProcessWindowFunction<string, string, int, TimeWindow>
         {
-            public IEnumerable<string> Process(int key, IProcessWindowFunction<string, string, int, TimeWindow>.IProcessWindowContext context, IEnumerable<string> elements)
-            {
-                return new List<string> { string.Join(",", elements) };
-            }
+            public IEnumerable<string> Process(int key, IProcessWindowFunction<string, string, int, TimeWindow>.IProcessWindowContext context, IEnumerable<string> elements) => new List<string> { string.Join(",", elements) };
         }
 
         [Test]
@@ -64,7 +58,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Constructor_WithNullWindowAssigner_ThrowsArgumentNullException()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
 
             // Act & Assert
@@ -77,7 +71,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Aggregate_WithNullAggregateFunction_ThrowsArgumentNullException()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -92,7 +86,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Aggregate_WithValidAggregateFunction_ReturnsDataStream()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -110,7 +104,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Reduce_WithNullReduceFunction_ThrowsArgumentNullException()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -125,7 +119,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Reduce_WithValidReduceFunction_ReturnsDataStream()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -143,7 +137,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Reduce_WithNullLambdaFunction_ThrowsArgumentNullException()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -158,7 +152,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Reduce_WithValidLambdaFunction_ReturnsDataStream()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -175,7 +169,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Process_WithNullProcessFunction_ThrowsArgumentNullException()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -190,7 +184,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Process_WithValidProcessFunction_ReturnsDataStream()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -208,7 +202,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void GetWindowAssigner_ReturnsCorrectAssigner()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -224,7 +218,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void GetKeyedStream_ReturnsCorrectKeyedStream()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = TumblingEventTimeWindows<string>.Of(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -240,7 +234,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void WindowedStream_WithSlidingWindows_WorksCorrectly()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = SlidingEventTimeWindows<string>.Of(Time.Seconds(10), Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);
@@ -258,7 +252,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void WindowedStream_WithSessionWindows_WorksCorrectly()
         {
             // Arrange
-            var dataStream = _env.FromCollection(new[] { "a", "b", "c" });
+            var dataStream = this._env.FromCollection(new[] { "a", "b", "c" });
             var keyedStream = dataStream.KeyBy(x => x.GetHashCode());
             var windowAssigner = SessionWindows<string>.WithGap(Time.Seconds(5));
             var windowedStream = new WindowedStream<string, int, TimeWindow>(keyedStream, windowAssigner);

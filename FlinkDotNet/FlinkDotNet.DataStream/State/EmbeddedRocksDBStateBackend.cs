@@ -78,10 +78,7 @@ namespace FlinkDotNet.DataStream.State
         /// Creates a new EmbeddedRocksDBStateBackend with incremental checkpointing configuration.
         /// </summary>
         /// <param name="enableIncrementalCheckpointing">Whether to enable incremental checkpointing</param>
-        public EmbeddedRocksDBStateBackend(bool enableIncrementalCheckpointing)
-        {
-            _enableIncrementalCheckpointing = enableIncrementalCheckpointing;
-        }
+        public EmbeddedRocksDBStateBackend(bool enableIncrementalCheckpointing) => this._enableIncrementalCheckpointing = enableIncrementalCheckpointing;
 
         /// <summary>
         /// Sets the predefined RocksDB configuration options.
@@ -90,7 +87,7 @@ namespace FlinkDotNet.DataStream.State
         /// <returns>This EmbeddedRocksDBStateBackend instance for method chaining</returns>
         public EmbeddedRocksDBStateBackend SetPredefinedOptions(RocksDBPredefinedOptions options)
         {
-            _predefinedOptions = options;
+            this._predefinedOptions = options;
             return this;
         }
 
@@ -98,10 +95,7 @@ namespace FlinkDotNet.DataStream.State
         /// Gets the configured predefined RocksDB options.
         /// </summary>
         /// <returns>The predefined options</returns>
-        public RocksDBPredefinedOptions GetPredefinedOptions()
-        {
-            return _predefinedOptions;
-        }
+        public RocksDBPredefinedOptions GetPredefinedOptions() => this._predefinedOptions;
 
         /// <summary>
         /// Sets the local directory path where RocksDB stores its data files.
@@ -115,7 +109,7 @@ namespace FlinkDotNet.DataStream.State
             {
                 throw new System.ArgumentException("RocksDB storage path cannot be null or empty", nameof(path));
             }
-            _dbStoragePath = path;
+            this._dbStoragePath = path;
             return this;
         }
 
@@ -123,10 +117,7 @@ namespace FlinkDotNet.DataStream.State
         /// Gets the configured RocksDB storage path.
         /// </summary>
         /// <returns>The storage path, or null if using default</returns>
-        public string? GetDbStoragePath()
-        {
-            return _dbStoragePath;
-        }
+        public string? GetDbStoragePath() => this._dbStoragePath;
 
         /// <summary>
         /// Enables or disables incremental checkpointing.
@@ -137,7 +128,7 @@ namespace FlinkDotNet.DataStream.State
         /// <returns>This EmbeddedRocksDBStateBackend instance for method chaining</returns>
         public EmbeddedRocksDBStateBackend EnableIncrementalCheckpointing(bool enabled = true)
         {
-            _enableIncrementalCheckpointing = enabled;
+            this._enableIncrementalCheckpointing = enabled;
             return this;
         }
 
@@ -145,28 +136,19 @@ namespace FlinkDotNet.DataStream.State
         /// Gets whether incremental checkpointing is enabled.
         /// </summary>
         /// <returns>True if incremental checkpointing is enabled</returns>
-        public bool IsIncrementalCheckpointingEnabled()
-        {
-            return _enableIncrementalCheckpointing;
-        }
+        public bool IsIncrementalCheckpointingEnabled() => this._enableIncrementalCheckpointing;
 
         /// <summary>
         /// Gets the name of this state backend.
         /// </summary>
         /// <returns>The state backend name</returns>
-        public string GetName()
-        {
-            return "EmbeddedRocksDBStateBackend";
-        }
+        public string GetName() => "EmbeddedRocksDBStateBackend";
 
         /// <summary>
         /// Gets whether this state backend supports incremental checkpointing.
         /// RocksDB state backend supports incremental checkpointing.
         /// </summary>
         /// <returns>True, as incremental checkpointing is supported</returns>
-        public bool SupportsIncrementalCheckpointing()
-        {
-            return true;
-        }
+        public bool SupportsIncrementalCheckpointing() => true;
     }
 }

@@ -56,7 +56,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act - Use Filter with a function to trigger TranslateFilterOperation path
             var filtered = stream.Filter(new TestFilterFunction());
-            filtered.SinkToKafka("output-topic", "localhost:9092");
+            _ = filtered.SinkToKafka("output-topic", "localhost:9092");
 
             // Assert - The stream should have the filter operation captured
             Assert.That(filtered, Is.Not.Null);
@@ -171,36 +171,21 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestFilterFunction : IFilterFunction<string>
         {
-            public bool Filter(string value)
-            {
-                return !string.IsNullOrEmpty(value);
-            }
+            public bool Filter(string value) => !string.IsNullOrEmpty(value);
         }
 
         private class TestPunctuatedAssigner : IAssignerWithPunctuatedWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp)
-            {
-                return new Watermark(extractedTimestamp);
-            }
+            public Watermark? CheckAndGetNextWatermark(string lastElement, long extractedTimestamp) => new Watermark(extractedTimestamp);
         }
 
         private class TestPeriodicAssigner : IAssignerWithPeriodicWatermarks<string>
         {
-            public long ExtractTimestamp(string element, long previousElementTimestamp)
-            {
-                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            }
+            public long ExtractTimestamp(string element, long previousElementTimestamp) => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            public Watermark? GetCurrentWatermark()
-            {
-                return new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            }
+            public Watermark? GetCurrentWatermark() => new Watermark(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         }
     }
 }

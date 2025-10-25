@@ -30,8 +30,8 @@ namespace FlinkDotNet.DataStream.Window.Assigners
 
         private TumblingEventTimeWindows(long size, long offset)
         {
-            _size = size;
-            _offset = offset;
+            this._size = size;
+            this._offset = offset;
         }
 
         /// <summary>
@@ -39,10 +39,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="size">The size of the window</param>
         /// <returns>A new TumblingEventTimeWindows WindowAssigner</returns>
-        public static TumblingEventTimeWindows<T> Of(Time size)
-        {
-            return new TumblingEventTimeWindows<T>(size.ToMilliseconds(), 0);
-        }
+        public static TumblingEventTimeWindows<T> Of(Time size) => new TumblingEventTimeWindows<T>(size.ToMilliseconds(), 0);
 
         /// <summary>
         /// Creates a new TumblingEventTimeWindows WindowAssigner that assigns elements to windows of the given size with an offset.
@@ -50,24 +47,18 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="size">The size of the window</param>
         /// <param name="offset">The offset which window start would be shifted by</param>
         /// <returns>A new TumblingEventTimeWindows WindowAssigner</returns>
-        public static TumblingEventTimeWindows<T> Of(Time size, Time offset)
-        {
-            return new TumblingEventTimeWindows<T>(size.ToMilliseconds(), offset.ToMilliseconds());
-        }
+        public static TumblingEventTimeWindows<T> Of(Time size, Time offset) => new TumblingEventTimeWindows<T>(size.ToMilliseconds(), offset.ToMilliseconds());
 
         /// <summary>
         /// Assigns the element to a single tumbling window based on its timestamp.
         /// </summary>
         public IEnumerable<TimeWindow> AssignWindows(T element, long timestamp)
         {
-            long start = GetWindowStart(timestamp);
-            yield return new TimeWindow(start, start + _size);
+            long start = this.GetWindowStart(timestamp);
+            yield return new TimeWindow(start, start + this._size);
         }
 
-        private long GetWindowStart(long timestamp)
-        {
-            return timestamp - (timestamp - _offset + _size) % _size;
-        }
+        private long GetWindowStart(long timestamp) => timestamp - (timestamp - this._offset + this._size) % this._size;
 
         /// <summary>
         /// Gets the time characteristic (Event Time) of this window assigner.
@@ -79,9 +70,6 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         public bool IsEventTime => true;
 
-        public override string ToString()
-        {
-            return $"TumblingEventTimeWindows({_size}ms)";
-        }
+        public override string ToString() => $"TumblingEventTimeWindows({this._size}ms)";
     }
 }

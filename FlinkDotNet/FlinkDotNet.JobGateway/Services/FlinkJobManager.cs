@@ -51,20 +51,20 @@ public class FlinkJobManager : IFlinkJobManager
     /// <param name="httpClient">HTTP client configured for Flink REST API communication.</param>
     public FlinkJobManager(ILogger<FlinkJobManager> logger, IConfiguration configuration, HttpClient httpClient)
     {
-        _logger = logger;
-        _configuration = configuration;
-        _httpClient = httpClient;
+        this._logger = logger;
+        this._configuration = configuration;
+        this._httpClient = httpClient;
 
         // Try multiple Flink endpoint discovery strategies
         // NOTE: This discovery happens at Gateway startup time, which may be BEFORE
         // the Flink container is fully ready in Aspire DCP testing mode.
         // The Gateway will verify Flink connectivity when jobs are submitted.
-        var flinkBaseUrl = DiscoverFlinkEndpoint();
+        var flinkBaseUrl = this.DiscoverFlinkEndpoint();
 
-        _httpClient.BaseAddress = new Uri(flinkBaseUrl);
-        _httpClient.Timeout = TimeSpan.FromMinutes(5);
-        _logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
-        _logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
+        this._httpClient.BaseAddress = new Uri(flinkBaseUrl);
+        this._httpClient.Timeout = TimeSpan.FromMinutes(5);
+        this._logger.LogInformation("Flink Job Gateway initialized with target cluster: {FlinkBaseUrl}", flinkBaseUrl);
+        this._logger.LogInformation("Gateway will verify Flink connectivity when jobs are submitted");
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// </summary>
     private string DiscoverFlinkEndpoint()
     {
-        return DiscoverEndpoint(
+        return this.DiscoverEndpoint(
             serviceName: "flink-jobmanager",
             primaryEndpointName: "jm-http",
             legacyEndpointName: "http",
@@ -94,7 +94,7 @@ public class FlinkJobManager : IFlinkJobManager
     /// </summary>
     private string DiscoverSqlGatewayEndpoint()
     {
-        return DiscoverEndpoint(
+        return this.DiscoverEndpoint(
             serviceName: "flink-sql-gateway",
             primaryEndpointName: "sg-http",
             legacyEndpointName: "http",
@@ -131,10 +131,10 @@ public class FlinkJobManager : IFlinkJobManager
         bool logAspireWarning)
     {
         // Strategy 1: Configuration from appsettings.json or injected by infrastructure (Aspire/tests)
-        var configEndpoint = _configuration[configKey];
+        var configEndpoint = this._configuration[configKey];
         if (!string.IsNullOrEmpty(configEndpoint))
         {
-            _logger.LogInformation("Using configuration for {ServiceName}: {Endpoint}", serviceDisplayName, configEndpoint);
+            this._logger.LogInformation("Using configuration for {ServiceName}: {Endpoint}", serviceDisplayName, configEndpoint);
             return configEndpoint;
         }
 
@@ -145,19 +145,19 @@ public class FlinkJobManager : IFlinkJobManager
         if (!string.IsNullOrEmpty(envHost))
         {
             var port = int.TryParse(envPort, out var p) ? p : defaultPort;
-            var protocol = GetProtocol();
+            var protocol = this.GetProtocol();
             var envEndpoint = $"{protocol}://{envHost}:{port}";
-            _logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
+            this._logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
             return envEndpoint;
         }
 
         // Strategy 3: Default fallback for local development
-        var defaultProtocol = GetProtocol();
+        var defaultProtocol = this.GetProtocol();
         var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
-        _logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
+        this._logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
-            _logger.LogWarning("No configuration found for {ServiceName} - using default endpoint", serviceDisplayName);
+            this._logger.LogWarning("No configuration found for {ServiceName} - using default endpoint", serviceDisplayName);
         }
         return defaultEndpoint;
     }
@@ -176,28 +176,28 @@ public class FlinkJobManager : IFlinkJobManager
             var protocol = envProtocol.Trim().ToUpperInvariant();
             if (protocol == ProtocolHttps)
             {
-                _logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
+                this._logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
                 return "https";
             }
             if (protocol != ProtocolHttp)
             {
-                _logger.LogWarning("Invalid FLINK_PROTOCOL value '{Protocol}', defaulting to http", envProtocol);
+                this._logger.LogWarning("Invalid FLINK_PROTOCOL value '{Protocol}', defaulting to http", envProtocol);
             }
         }
 
         // Check configuration
-        var configProtocol = _configuration["Flink:Protocol"];
+        var configProtocol = this._configuration["Flink:Protocol"];
         if (!string.IsNullOrEmpty(configProtocol))
         {
             var protocol = configProtocol.Trim().ToUpperInvariant();
             if (protocol == ProtocolHttps)
             {
-                _logger.LogInformation("Using HTTPS protocol from configuration");
+                this._logger.LogInformation("Using HTTPS protocol from configuration");
                 return "https";
             }
             if (protocol != "http")
             {
-                _logger.LogWarning("Invalid Flink:Protocol configuration value '{Protocol}', defaulting to http", configProtocol);
+                this._logger.LogWarning("Invalid Flink:Protocol configuration value '{Protocol}', defaulting to http", configProtocol);
             }
         }
 
@@ -209,31 +209,31 @@ public class FlinkJobManager : IFlinkJobManager
     {
         var maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
 
-        _logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
+        this._logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
 
         for (int i = 0; i < maxRetries; i++)
         {
             try
             {
-                _logger.LogInformation("Checking SQL Gateway availability (attempt {Attempt}/{Max})", i + 1, maxRetries);
+                this._logger.LogInformation("Checking SQL Gateway availability (attempt {Attempt}/{Max})", i + 1, maxRetries);
                 var response = await client.GetAsync("/v1/info");
 
                 if (response.IsSuccessStatusCode)
                 {
                     var infoContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation("SQL Gateway is ready and responding: {Info}", infoContent);
+                    this._logger.LogInformation("SQL Gateway is ready and responding: {Info}", infoContent);
                     return;
                 }
 
-                _logger.LogWarning("SQL Gateway returned {StatusCode}, retrying...", response.StatusCode);
+                this._logger.LogWarning("SQL Gateway returned {StatusCode}, retrying...", response.StatusCode);
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning(ex, "SQL Gateway not yet available (attempt {Attempt}/{Max})", i + 1, maxRetries);
+                this._logger.LogWarning(ex, "SQL Gateway not yet available (attempt {Attempt}/{Max})", i + 1, maxRetries);
             }
             catch (TaskCanceledException ex)
             {
-                _logger.LogWarning(ex, "SQL Gateway request timed out (attempt {Attempt}/{Max})", i + 1, maxRetries);
+                this._logger.LogWarning(ex, "SQL Gateway request timed out (attempt {Attempt}/{Max})", i + 1, maxRetries);
             }
 
             await Task.Delay(SqlGatewayRetryDelay);
@@ -247,13 +247,13 @@ public class FlinkJobManager : IFlinkJobManager
     /// </summary>
     private void LogSectionHeader(string title, params (string Label, string Value)[] details)
     {
-        _logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-        _logger.LogInformation("║ {Title}", title);
+        this._logger.LogInformation("╔══════════════════════════════════════════════════════════════");
+        this._logger.LogInformation("║ {Title}", title);
         foreach (var (label, value) in details)
         {
-            _logger.LogInformation("║ {Label}: {Value}", label, value);
+            this._logger.LogInformation("║ {Label}: {Value}", label, value);
         }
-        _logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        this._logger.LogInformation("╚══════════════════════════════════════════════════════════════");
     }
 
     /// <summary>
@@ -263,58 +263,58 @@ public class FlinkJobManager : IFlinkJobManager
     /// <returns>A task containing the job submission result with success status and Flink job ID.</returns>
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
-        LogSectionHeader("🔧 [FlinkJobManager] Processing job submission",
+        this.LogSectionHeader("🔧 [FlinkJobManager] Processing job submission",
             ("📋 JobId", jobDefinition.Metadata.JobId),
             ("📝 Job Name", jobDefinition.Metadata.JobName ?? "Unnamed"));
 
         try
         {
-            var validation = ValidateJobDefinition(jobDefinition);
+            var validation = this.ValidateJobDefinition(jobDefinition);
             if (!validation.IsValid)
             {
-                _logger.LogError("❌ Job validation failed: {Errors}", string.Join(", ", validation.Errors));
+                this._logger.LogError("❌ Job validation failed: {Errors}", string.Join(", ", validation.Errors));
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
                     $"Job validation failed: {string.Join(", ", validation.Errors)}");
             }
-            _logger.LogInformation("✅ Job definition validated successfully");
+            this._logger.LogInformation("✅ Job definition validated successfully");
 
             // Check if this is a SQL Gateway job
             if (jobDefinition.Source is SqlSourceDefinition sqlSource &&
                 sqlSource.ExecutionMode == "gateway")
             {
-                _logger.LogInformation("🔀 Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
+                this._logger.LogInformation("🔀 Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
 
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
-                var flinkJobId = await SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
-                TrackJob(jobDefinition, flinkJobId);
+                var flinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
+                this.TrackJob(jobDefinition, flinkJobId);
                 return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
-            _logger.LogInformation("🔄 Using standard JAR submission flow");
-            var irBase64 = EncodeJobDefinition(jobDefinition);
+            this._logger.LogInformation("🔄 Using standard JAR submission flow");
+            var irBase64 = this.EncodeJobDefinition(jobDefinition);
 
-            _logger.LogInformation("🔍 Probing Flink cluster health...");
-            var clusterHealthy2 = await ProbeClusterHealthSafelyAsync();
+            this._logger.LogInformation("🔍 Probing Flink cluster health...");
+            var clusterHealthy2 = await this.ProbeClusterHealthSafelyAsync();
 
             if (!clusterHealthy2)
             {
-                var flinkUrl = _httpClient.BaseAddress?.ToString() ?? "(unknown)";
+                var flinkUrl = this._httpClient.BaseAddress?.ToString() ?? "(unknown)";
                 var errorMessage = $"Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible at {flinkUrl}";
-                _logger.LogError("❌ {ErrorMessage}", errorMessage);
+                this._logger.LogError("❌ {ErrorMessage}", errorMessage);
                 throw new InvalidOperationException(errorMessage);
             }
 
-            var flinkJobId2 = await SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
-            TrackJob(jobDefinition, flinkJobId2);
+            var flinkJobId2 = await this.SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
+            this.TrackJob(jobDefinition, flinkJobId2);
 
-            _logger.LogInformation("✅ Job submitted successfully to Flink cluster");
+            this._logger.LogInformation("✅ Job submitted successfully to Flink cluster");
             return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId2);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to submit job {JobId}: {Message}", jobDefinition.Metadata.JobId, ex.Message);
+            this._logger.LogError(ex, "❌ Failed to submit job {JobId}: {Message}", jobDefinition.Metadata.JobId, ex.Message);
             return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, ex.Message);
         }
     }
@@ -329,41 +329,43 @@ public class FlinkJobManager : IFlinkJobManager
         };
         var irJson = JsonSerializer.Serialize(jobDefinition, serializerOptions);
 
-        LogJobDefinitionDiagnostics(irJson, jobDefinition);
+        this.LogJobDefinitionDiagnostics(irJson, jobDefinition);
 
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(irJson));
     }
 
     private void LogJobDefinitionDiagnostics(string irJson, JobDefinition jobDefinition)
     {
-        _logger.LogDebug("════════════════════════════════════════════════════════════");
-        _logger.LogDebug("Complete Job Definition JSON:");
-        _logger.LogDebug("{IrJson}", irJson);
-        _logger.LogDebug("════════════════════════════════════════════════════════════");
+        this._logger.LogDebug("════════════════════════════════════════════════════════════");
+        this._logger.LogDebug("Complete Job Definition JSON:");
+        this._logger.LogDebug("{IrJson}", irJson);
+        this._logger.LogDebug("════════════════════════════════════════════════════════════");
 
-        LogKafkaConfiguration(jobDefinition);
-        LogOperations(jobDefinition);
+        this.LogKafkaConfiguration(jobDefinition);
+        this.LogOperations(jobDefinition);
     }
 
     private void LogKafkaConfiguration(JobDefinition jobDefinition)
     {
         var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
         var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-        _logger.LogDebug("Source BootstrapServers: {SourceBootstrapServers}", kafkaSource?.BootstrapServers ?? "null");
-        _logger.LogDebug("Sink BootstrapServers: {SinkBootstrapServers}", kafkaSink?.BootstrapServers ?? "null");
-        _logger.LogDebug("Operations Count: {OperationsCount}", jobDefinition.Operations?.Count ?? 0);
+        this._logger.LogDebug("Source BootstrapServers: {SourceBootstrapServers}", kafkaSource?.BootstrapServers ?? "null");
+        this._logger.LogDebug("Sink BootstrapServers: {SinkBootstrapServers}", kafkaSink?.BootstrapServers ?? "null");
+        this._logger.LogDebug("Operations Count: {OperationsCount}", jobDefinition.Operations?.Count ?? 0);
     }
 
     private void LogOperations(JobDefinition jobDefinition)
     {
         if (jobDefinition.Operations == null || jobDefinition.Operations.Count == 0)
+        {
             return;
+        }
 
         foreach (var op in jobDefinition.Operations)
         {
             if (op is MapOperationDefinition mapOp)
             {
-                _logger.LogDebug("Map Operation - Expression: '{Expression}'", mapOp.Expression);
+                this._logger.LogDebug("Map Operation - Expression: '{Expression}'", mapOp.Expression);
             }
         }
     }
@@ -372,18 +374,18 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            return await CheckFlinkClusterHealthAsync();
+            return await this.CheckFlinkClusterHealthAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Cluster health probe failed; falling back to local mode.");
+            this._logger.LogWarning(ex, "Cluster health probe failed; falling back to local mode.");
             return false;
         }
     }
 
     private void TrackJob(JobDefinition jobDefinition, string flinkJobId)
     {
-        _jobMapping[flinkJobId] = new JobInfo
+        this._jobMapping[flinkJobId] = new JobInfo
         {
             JobId = jobDefinition.Metadata.JobId,
             FlinkJobId = flinkJobId,
@@ -400,14 +402,14 @@ public class FlinkJobManager : IFlinkJobManager
     /// <returns>A task containing the job status, or null if the job is not found.</returns>
     public async Task<JobStatus?> GetJobStatusAsync(string flinkJobId)
     {
-        _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
+        this._logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
 
         // Validate input before attempting HTTP call to prevent injection attacks
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
-            var response = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
+            var response = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
             if (response.IsSuccessStatusCode)
             {
                 var jsonResponse = await response.Content.ReadAsStringAsync();
@@ -417,7 +419,7 @@ public class FlinkJobManager : IFlinkJobManager
                     : "UNKNOWN";
 
                 // Try to get JobId from mapping, fallback to FlinkJobId
-                var jobId = _jobMapping.TryGetValue(flinkJobId, out var info) ? info.JobId : flinkJobId;
+                var jobId = this._jobMapping.TryGetValue(flinkJobId, out var info) ? info.JobId : flinkJobId;
                 return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
             }
 
@@ -442,13 +444,13 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        ValidateAndSanitizePathSegment(flinkJobId);
+        _ = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
             var metrics = new JobMetricsBuilder(flinkJobId);
-            await CollectVertexMetricsAsync(flinkJobId, metrics);
-            await CollectCheckpointMetricsAsync(flinkJobId, metrics);
+            await this.CollectVertexMetricsAsync(flinkJobId, metrics);
+            await this.CollectCheckpointMetricsAsync(flinkJobId, metrics);
             return metrics.Build();
         }
         catch (Exception ex)
@@ -467,7 +469,7 @@ public class FlinkJobManager : IFlinkJobManager
         // Validate input before attempting HTTP calls to prevent injection attacks
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
-        if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
+        if (this._jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
         {
             info.Status = "LOCAL-CANCELED";
             return true;
@@ -475,40 +477,40 @@ public class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            _logger.LogInformation("Attempting to cancel Flink job: {FlinkJobId}", flinkJobId);
+            this._logger.LogInformation("Attempting to cancel Flink job: {FlinkJobId}", flinkJobId);
 
             // Try Flink 2.x style first: PATCH /jobs/{jobId}?mode=cancel
-            var patchResponse = await _httpClient.PatchAsync($"/jobs/{sanitizedJobId}?mode=cancel", null);
+            var patchResponse = await this._httpClient.PatchAsync($"/jobs/{sanitizedJobId}?mode=cancel", null);
             if (patchResponse.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Successfully canceled job {FlinkJobId} using PATCH /jobs/{{jobId}}?mode=cancel", flinkJobId);
-                if (_jobMapping.TryGetValue(flinkJobId, out var jobInfo))
+                this._logger.LogInformation("Successfully canceled job {FlinkJobId} using PATCH /jobs/{{jobId}}?mode=cancel", flinkJobId);
+                if (this._jobMapping.TryGetValue(flinkJobId, out var jobInfo))
                 {
                     jobInfo.Status = "CANCELED";
                 }
                 return true;
             }
 
-            _logger.LogWarning("PATCH /jobs/{{jobId}}?mode=cancel returned {StatusCode}, trying POST endpoint", patchResponse.StatusCode);
+            this._logger.LogWarning("PATCH /jobs/{{jobId}}?mode=cancel returned {StatusCode}, trying POST endpoint", patchResponse.StatusCode);
 
             // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
-            var postResponse = await _httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
+            var postResponse = await this._httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
             if (postResponse.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Successfully canceled job {FlinkJobId} using POST /jobs/{{jobId}}/cancel", flinkJobId);
-                if (_jobMapping.TryGetValue(flinkJobId, out var jobInfo))
+                this._logger.LogInformation("Successfully canceled job {FlinkJobId} using POST /jobs/{{jobId}}/cancel", flinkJobId);
+                if (this._jobMapping.TryGetValue(flinkJobId, out var jobInfo))
                 {
                     jobInfo.Status = "CANCELED";
                 }
                 return true;
             }
 
-            _logger.LogWarning("Both cancel attempts failed. PATCH: {PatchStatus}, POST: {PostStatus}",
+            this._logger.LogWarning("Both cancel attempts failed. PATCH: {PatchStatus}, POST: {PostStatus}",
                 patchResponse.StatusCode, postResponse.StatusCode);
 
             if (postResponse.StatusCode == HttpStatusCode.NotFound || patchResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                _logger.LogError("Job {FlinkJobId} not found in Flink cluster during cancellation", flinkJobId);
+                this._logger.LogError("Job {FlinkJobId} not found in Flink cluster during cancellation", flinkJobId);
                 return false;
             }
 
@@ -516,7 +518,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to cancel job {FlinkJobId} in Flink 2.1.0 cluster", flinkJobId);
+            this._logger.LogError(ex, "Failed to cancel job {FlinkJobId} in Flink 2.1.0 cluster", flinkJobId);
             throw new InvalidOperationException($"Failed to cancel job in Flink 2.1.0 cluster: {flinkJobId}", ex);
         }
     }
@@ -527,12 +529,12 @@ public class FlinkJobManager : IFlinkJobManager
         var jarPath = FindExistingRunnerJar();
         if (jarPath != null && File.Exists(jarPath))
         {
-            _logger.LogDebug("Found existing runner jar at {Path}", jarPath);
+            this._logger.LogDebug("Found existing runner jar at {Path}", jarPath);
             return jarPath;
         }
 
         // Build jar on demand using Maven directly
-        _logger.LogInformation("Runner jar not found, building on demand with Maven...");
+        this._logger.LogInformation("Runner jar not found, building on demand with Maven...");
         var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot == null)
         {
@@ -558,7 +560,7 @@ public class FlinkJobManager : IFlinkJobManager
                 UseShellExecute = false
             };
 
-            _logger.LogDebug("Starting Maven build in {WorkingDir}: mvn {Args}", runnerDir, psi.Arguments);
+            this._logger.LogDebug("Starting Maven build in {WorkingDir}: mvn {Args}", runnerDir, psi.Arguments);
             var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start Maven process");
 
             var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -570,12 +572,12 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (process.ExitCode != 0)
             {
-                _logger.LogError("Maven build failed with exit code {ExitCode}\nSTDOUT:\n{Stdout}\nSTDERR:\n{Stderr}",
+                this._logger.LogError("Maven build failed with exit code {ExitCode}\nSTDOUT:\n{Stdout}\nSTDERR:\n{Stderr}",
                     process.ExitCode, stdout, stderr);
                 throw new InvalidOperationException($"Maven build failed with exit code {process.ExitCode}");
             }
 
-            _logger.LogDebug("Maven build completed successfully");
+            this._logger.LogDebug("Maven build completed successfully");
             jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner-java17.jar");
             if (!File.Exists(jarPath))
             {
@@ -627,7 +629,7 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            var response = await _httpClient.GetAsync("/v1/overview");
+            var response = await this._httpClient.GetAsync("/v1/overview");
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -640,25 +642,25 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
-                ("🌐 Target", _httpClient.BaseAddress?.ToString() ?? "unknown"));
+            this.LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
+                ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"));
 
-            var jarId = await EnsureRunnerJarAsync();
-            _logger.LogInformation("✅ Flink runner JAR ready: {JarId}", jarId);
+            var jarId = await this.EnsureRunnerJarAsync();
+            this._logger.LogInformation("✅ Flink runner JAR ready: {JarId}", jarId);
 
             // DIAGNOSTIC: Log job definition bootstrap servers before submission
             var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
             var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-            _logger.LogInformation("📋 Job Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap}",
+            this._logger.LogInformation("📋 Job Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap}",
                 kafkaSource?.BootstrapServers ?? "null",
                 kafkaSink?.BootstrapServers ?? "null");
 
             // DIAGNOSTIC: Log environment variables that might override job definition
-            _logger.LogInformation("🌍 Gateway environment: KAFKA_BOOTSTRAP={KafkaBootstrap}",
+            this._logger.LogInformation("🌍 Gateway environment: KAFKA_BOOTSTRAP={KafkaBootstrap}",
                 Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set");
-            _logger.LogWarning("⚠️ CRITICAL: Flink containers have KAFKA_BOOTSTRAP set, which will override job definition bootstrap servers in FlinkJobRunner.java!");
-            _logger.LogWarning("⚠️ FlinkJobRunner.java line 93 uses: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\")");
-            _logger.LogWarning("⚠️ This means if Flink container has KAFKA_BOOTSTRAP set, it will override the kafka:9092 value from job definition!");
+            this._logger.LogWarning("⚠️ CRITICAL: Flink containers have KAFKA_BOOTSTRAP set, which will override job definition bootstrap servers in FlinkJobRunner.java!");
+            this._logger.LogWarning("⚠️ FlinkJobRunner.java line 93 uses: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\")");
+            this._logger.LogWarning("⚠️ This means if Flink container has KAFKA_BOOTSTRAP set, it will override the kafka:9092 value from job definition!");
 
             var runRequest = new
             {
@@ -669,26 +671,26 @@ public class FlinkJobManager : IFlinkJobManager
             };
 
             var requestJson = JsonSerializer.Serialize(runRequest);
-            _logger.LogDebug("📤 Flink run request: {RequestJson}", requestJson);
+            this._logger.LogDebug("📤 Flink run request: {RequestJson}", requestJson);
 
             using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             // Validate jarId from Flink response to prevent injection attacks
             var sanitizedJarId = ValidateAndSanitizePathSegment(jarId);
 
-            _logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", _httpClient.BaseAddress, jarId);
-            using var response = await _httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
-            _logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) response.StatusCode, response.ReasonPhrase);
+            this._logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", this._httpClient.BaseAddress, jarId);
+            using var response = await this._httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
+            this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) response.StatusCode, response.ReasonPhrase);
 
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 var err = await response.Content.ReadAsStringAsync();
-                _logger.LogError("❌ Flink job submission failed: {StatusCode} - {Error}", response.StatusCode, err);
+                this._logger.LogError("❌ Flink job submission failed: {StatusCode} - {Error}", response.StatusCode, err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
 
             var runContent = await response.Content.ReadAsStringAsync();
-            _logger.LogDebug("📥 Flink response body: {RunContent}", runContent);
+            this._logger.LogDebug("📥 Flink response body: {RunContent}", runContent);
 
             string? jobId = null;
             try
@@ -698,61 +700,61 @@ public class FlinkJobManager : IFlinkJobManager
                 jobId = run?.JobId;
                 if (jobId != null)
                 {
-                    _logger.LogInformation("✅ Extracted Flink JobId from response: {JobId}", jobId);
+                    this._logger.LogInformation("✅ Extracted Flink JobId from response: {JobId}", jobId);
                 }
             }
             catch (JsonException ex)
             {
-                _logger.LogDebug(ex, "⚠️ Failed to deserialize Flink run response when extracting job id");
+                this._logger.LogDebug(ex, "⚠️ Failed to deserialize Flink run response when extracting job id");
             }
 
             jobId ??= TryGetJobIdFromHeaders(response);
 
             if (string.IsNullOrEmpty(jobId))
             {
-                _logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
+                this._logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
                 var targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
-                jobId = await TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
+                jobId = await this.TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
             }
 
             if (string.IsNullOrEmpty(jobId))
             {
                 var errorMsg = $"Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
                     $"Response status: {response.StatusCode}, Response body: {runContent}";
-                _logger.LogError("❌ {ErrorMessage}", errorMsg);
+                this._logger.LogError("❌ {ErrorMessage}", errorMsg);
                 throw new InvalidOperationException(errorMsg);
             }
 
-            LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
+            this.LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
                 ("🆔 Flink JobId", jobId));
 
             return jobId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to submit jar to Flink REST API: {Message}", ex.Message);
+            this._logger.LogError(ex, "❌ Failed to submit jar to Flink REST API: {Message}", ex.Message);
             throw new InvalidOperationException($"Failed to submit jar to Flink REST API for job {jobDefinition.Metadata.JobId}", ex);
         }
     }
 
     private async Task<string> SubmitSqlGatewayJobAsync(SqlSourceDefinition sqlSource, JobDefinition jobDefinition)
     {
-        LogSectionHeader("📡 [FlinkJobManager] Submitting SQL job to SQL Gateway",
+        this.LogSectionHeader("📡 [FlinkJobManager] Submitting SQL job to SQL Gateway",
             ("📋 JobId", jobDefinition.Metadata.JobId));
 
         try
         {
-            using var sqlGatewayClient = CreateSqlGatewayClient();
-            _logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress}", sqlGatewayClient.BaseAddress);
+            using var sqlGatewayClient = this.CreateSqlGatewayClient();
+            this._logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress}", sqlGatewayClient.BaseAddress);
 
-            _logger.LogInformation("⏳ Waiting for SQL Gateway to be ready...");
-            await WaitForSqlGatewayReadyAsync(sqlGatewayClient);
-            _logger.LogInformation("✅ SQL Gateway is ready");
+            this._logger.LogInformation("⏳ Waiting for SQL Gateway to be ready...");
+            await this.WaitForSqlGatewayReadyAsync(sqlGatewayClient);
+            this._logger.LogInformation("✅ SQL Gateway is ready");
 
-            var sessionHandle = await CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
-            _logger.LogInformation("✅ SQL Gateway session created: {SessionHandle}", sessionHandle);
+            var sessionHandle = await this.CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
+            this._logger.LogInformation("✅ SQL Gateway session created: {SessionHandle}", sessionHandle);
 
-            var lastJobId = await ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
+            var lastJobId = await this.ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
 
             // SQL Gateway jobs return session handle as tracking ID
             // This is expected behavior for SQL Gateway - it manages jobs within sessions
@@ -760,26 +762,26 @@ public class FlinkJobManager : IFlinkJobManager
 
             if (string.IsNullOrEmpty(result))
             {
-                _logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
+                this._logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
                 throw new InvalidOperationException("SQL Gateway did not return a job ID or session handle. This should not happen.");
             }
 
-            LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
+            this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
                 ("🆔 JobId/SessionHandle", result));
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to submit SQL job via SQL Gateway: {Message}", ex.Message);
+            this._logger.LogError(ex, "❌ Failed to submit SQL job via SQL Gateway: {Message}", ex.Message);
             throw new InvalidOperationException("SQL Gateway submission failed. See inner exception for details.", ex);
         }
     }
 
     private HttpClient CreateSqlGatewayClient()
     {
-        var sqlGatewayEndpoint = DiscoverSqlGatewayEndpoint();
-        _logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
+        var sqlGatewayEndpoint = this.DiscoverSqlGatewayEndpoint();
+        this._logger.LogInformation("Using SQL Gateway endpoint: {Endpoint}", sqlGatewayEndpoint);
 
         return new HttpClient
         {
@@ -791,33 +793,33 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task<string> CreateSqlGatewaySessionAsync(HttpClient client, JobDefinition jobDefinition)
     {
         var sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
-        _logger.LogInformation("🚀 POST {BaseAddress}/v1/sessions (Creating session: {SessionName})", client.BaseAddress, sessionName);
+        this._logger.LogInformation("🚀 POST {BaseAddress}/v1/sessions (Creating session: {SessionName})", client.BaseAddress, sessionName);
 
         var sessionRequest = new
         {
             sessionName
         };
         var sessionJson = JsonSerializer.Serialize(sessionRequest);
-        _logger.LogDebug("📤 Request body: {SessionJson}", sessionJson);
+        this._logger.LogDebug("📤 Request body: {SessionJson}", sessionJson);
 
         using var sessionContent = new StringContent(sessionJson, Encoding.UTF8, "application/json");
         using var sessionResponse = await client.PostAsync("/v1/sessions", sessionContent);
 
-        _logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
+        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
 
         if (!sessionResponse.IsSuccessStatusCode)
         {
             var errorContent = await sessionResponse.Content.ReadAsStringAsync();
-            _logger.LogError("❌ SQL Gateway session creation failed: {StatusCode} - {Error}",
+            this._logger.LogError("❌ SQL Gateway session creation failed: {StatusCode} - {Error}",
                 sessionResponse.StatusCode, errorContent);
             throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
         }
 
         var sessionResponseContent = await sessionResponse.Content.ReadAsStringAsync();
-        _logger.LogDebug("📥 Response body: {Response}", sessionResponseContent);
+        this._logger.LogDebug("📥 Response body: {Response}", sessionResponseContent);
 
-        var handle = ExtractSessionHandle(sessionResponseContent);
-        _logger.LogInformation("✅ Session handle extracted: {Handle}", handle);
+        var handle = this.ExtractSessionHandle(sessionResponseContent);
+        this._logger.LogInformation("✅ Session handle extracted: {Handle}", handle);
 
         return handle;
     }
@@ -830,14 +832,14 @@ public class FlinkJobManager : IFlinkJobManager
             if (sessionJson.RootElement.TryGetProperty("sessionHandle", out var handleProp))
             {
                 var sessionHandle = handleProp.GetString() ?? throw new InvalidOperationException("Session handle is null");
-                _logger.LogInformation("SQL Gateway session handle: {SessionHandle}", sessionHandle);
+                this._logger.LogInformation("SQL Gateway session handle: {SessionHandle}", sessionHandle);
                 return sessionHandle;
             }
             throw new InvalidOperationException("Session response doesn't contain sessionHandle");
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse session response");
+            this._logger.LogError(ex, "Failed to parse session response");
             throw new InvalidOperationException("Failed to parse SQL Gateway session response", ex);
         }
     }
@@ -849,14 +851,16 @@ public class FlinkJobManager : IFlinkJobManager
         foreach (var statement in statements)
         {
             if (string.IsNullOrWhiteSpace(statement))
+            {
                 continue;
+            }
 
-            lastJobId = await ExecuteSingleStatementAsync(client, sessionHandle, statement) ?? lastJobId;
+            lastJobId = await this.ExecuteSingleStatementAsync(client, sessionHandle, statement) ?? lastJobId;
         }
 
         if (string.IsNullOrEmpty(lastJobId))
         {
-            _logger.LogInformation("Using session handle as job ID: {JobId}", sessionHandle);
+            this._logger.LogInformation("Using session handle as job ID: {JobId}", sessionHandle);
         }
 
         return lastJobId;
@@ -864,7 +868,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string?> ExecuteSingleStatementAsync(HttpClient client, string sessionHandle, string statement)
     {
-        _logger.LogInformation("Executing SQL statement via Gateway: {Statement}",
+        this._logger.LogInformation("Executing SQL statement via Gateway: {Statement}",
             statement.Length > 100 ? statement.Substring(0, 100) + "..." : statement);
 
         var requestBody = new
@@ -882,15 +886,15 @@ public class FlinkJobManager : IFlinkJobManager
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogError("SQL Gateway statement execution failed: {StatusCode} - {Error}",
+            this._logger.LogError("SQL Gateway statement execution failed: {StatusCode} - {Error}",
                 response.StatusCode, errorContent);
             throw new InvalidOperationException($"SQL Gateway execution failed: {response.StatusCode} - {errorContent}");
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        _logger.LogDebug("SQL Gateway response: {Response}", responseContent);
+        this._logger.LogDebug("SQL Gateway response: {Response}", responseContent);
 
-        return ExtractJobIdFromStatementResponse(responseContent);
+        return this.ExtractJobIdFromStatementResponse(responseContent);
     }
 
     private string? ExtractJobIdFromStatementResponse(string responseContent)
@@ -901,19 +905,19 @@ public class FlinkJobManager : IFlinkJobManager
             if (responseJson.RootElement.TryGetProperty("operationHandle", out var opHandleProp))
             {
                 var jobId = opHandleProp.GetString();
-                _logger.LogInformation("SQL Gateway returned operation handle: {OperationHandle}", jobId);
+                this._logger.LogInformation("SQL Gateway returned operation handle: {OperationHandle}", jobId);
                 return jobId;
             }
             if (responseJson.RootElement.TryGetProperty("statementId", out var stmtIdProp))
             {
                 var jobId = stmtIdProp.GetString();
-                _logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", jobId);
+                this._logger.LogInformation("SQL Gateway returned statement ID: {StatementId}", jobId);
                 return jobId;
             }
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
+            this._logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
         }
         return null;
     }
@@ -921,18 +925,18 @@ public class FlinkJobManager : IFlinkJobManager
 
     private async Task<string> EnsureRunnerJarAsync()
     {
-        var jarPath = await EnsureRunnerJarPathAsync();
+        var jarPath = await this.EnsureRunnerJarPathAsync();
         if (!File.Exists(jarPath))
         {
             throw new FileNotFoundException($"Runner jar not found at {jarPath}");
         }
 
         // Collect connector JARs and create a shaded JAR if needed
-        var connectorJars = CollectConnectorJars();
+        var connectorJars = this.CollectConnectorJars();
         if (connectorJars.Any())
         {
-            _logger.LogInformation("Found {Count} connector JARs, creating shaded JAR", connectorJars.Count);
-            jarPath = await CreateShadedJarAsync(jarPath, connectorJars);
+            this._logger.LogInformation("Found {Count} connector JARs, creating shaded JAR", connectorJars.Count);
+            jarPath = await this.CreateShadedJarAsync(jarPath, connectorJars);
         }
 
         using var form = new MultipartFormDataContent();
@@ -940,7 +944,7 @@ public class FlinkJobManager : IFlinkJobManager
         var fileName = Path.GetFileName(jarPath);
         form.Add(new StreamContent(fs), "jarfile", fileName);
 
-        var uploadResp = await _httpClient.PostAsync("/v1/jars/upload", form);
+        var uploadResp = await this._httpClient.PostAsync("/v1/jars/upload", form);
         if (!uploadResp.IsSuccessStatusCode)
         {
             var err = await uploadResp.Content.ReadAsStringAsync();
@@ -948,7 +952,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
 
         var uploadPayload = await uploadResp.Content.ReadAsStringAsync();
-        _logger.LogInformation("Jar upload response payload: {Payload}", uploadPayload);
+        this._logger.LogInformation("Jar upload response payload: {Payload}", uploadPayload);
 
         if (!string.IsNullOrWhiteSpace(uploadPayload))
         {
@@ -961,18 +965,18 @@ public class FlinkJobManager : IFlinkJobManager
                     jarId = Path.GetFileName(jarId.Replace('\\', '/'));
                     if (!string.IsNullOrEmpty(jarId))
                     {
-                        _logger.LogInformation("Flink accepted jar upload {JarFile} as {JarId}", fileName, jarId);
+                        this._logger.LogInformation("Flink accepted jar upload {JarFile} as {JarId}", fileName, jarId);
                         return jarId;
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to parse jar upload response: {Payload}", uploadPayload);
+                this._logger.LogDebug(ex, "Failed to parse jar upload response: {Payload}", uploadPayload);
             }
         }
 
-        return await WaitForJarRegistrationAsync(fileName);
+        return await this.WaitForJarRegistrationAsync(fileName);
     }
 
     private async Task<string> WaitForJarRegistrationAsync(string fileName, TimeSpan? timeout = null)
@@ -983,23 +987,27 @@ public class FlinkJobManager : IFlinkJobManager
 
         while (DateTime.UtcNow < deadline)
         {
-            var jarId = await TryFindRegisteredJarAsync(fileName, lastKnownJars);
+            var jarId = await this.TryFindRegisteredJarAsync(fileName, lastKnownJars);
             if (jarId != null)
+            {
                 return jarId;
+            }
 
             await Task.Delay(JarRegistrationPollingDelay);
         }
 
-        return ThrowJarNotFoundError(fileName, waitFor, lastKnownJars);
+        return this.ThrowJarNotFoundError(fileName, waitFor, lastKnownJars);
     }
 
     private async Task<string?> TryFindRegisteredJarAsync(string fileName, List<string> lastKnownJars)
     {
         try
         {
-            var listResp = await _httpClient.GetAsync("/v1/jars");
+            var listResp = await this._httpClient.GetAsync("/v1/jars");
             if (!listResp.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             var listJson = await listResp.Content.ReadAsStringAsync();
             var jars = JsonSerializer.Deserialize<FlinkJarsList>(listJson);
@@ -1009,7 +1017,7 @@ public class FlinkJobManager : IFlinkJobManager
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Polling for uploaded jar {JarFile} failed; will retry", fileName);
+            this._logger.LogDebug(ex, "Polling for uploaded jar {JarFile} failed; will retry", fileName);
             return null;
         }
     }
@@ -1018,7 +1026,9 @@ public class FlinkJobManager : IFlinkJobManager
     {
         lastKnownJars.Clear();
         if (jars?.Files == null)
+        {
             return;
+        }
 
         lastKnownJars.AddRange(jars.Files.Select(f =>
             string.IsNullOrEmpty(f.Id) ? f.Name : $"{f.Name} ({f.Id})"));
@@ -1036,7 +1046,7 @@ public class FlinkJobManager : IFlinkJobManager
     private string ThrowJarNotFoundError(string fileName, TimeSpan waitFor, List<string> lastKnownJars)
     {
         var jarList = string.Join(", ", lastKnownJars);
-        _logger.LogError("Uploaded jar {JarFile} not found; last known jars: {JarList}", fileName, jarList);
+        this._logger.LogError("Uploaded jar {JarFile} not found; last known jars: {JarList}", fileName, jarList);
         throw new InvalidOperationException(
             $"Uploaded jar '{fileName}' not found in Flink jar list within {waitFor.TotalSeconds:F0}s. Last seen: {jarList}");
     }
@@ -1069,7 +1079,7 @@ public class FlinkJobManager : IFlinkJobManager
             searchPaths.Add(Path.Combine(appRoot, "LocalTesting", "connectors", "flink", "lib"));
         }
 
-        _logger.LogInformation("Searching for connector JARs in {Count} paths", searchPaths.Count);
+        this._logger.LogInformation("Searching for connector JARs in {Count} paths", searchPaths.Count);
 
         foreach (var searchPath in searchPaths.Distinct())
         {
@@ -1079,19 +1089,19 @@ public class FlinkJobManager : IFlinkJobManager
                 if (jars.Length > 0)
                 {
                     connectorJars.AddRange(jars);
-                    _logger.LogInformation("Found {Count} connector JARs in {Path}", jars.Length, searchPath);
+                    this._logger.LogInformation("Found {Count} connector JARs in {Path}", jars.Length, searchPath);
                 }
             }
             else
             {
-                _logger.LogDebug("Connector path does not exist: {Path}", searchPath);
+                this._logger.LogDebug("Connector path does not exist: {Path}", searchPath);
             }
         }
 
         if (connectorJars.Count == 0)
         {
-            _logger.LogWarning("No connector JARs found. SQL jobs may fail if they require Kafka/JSON connectors.");
-            _logger.LogWarning("Current directory: {Current}, AppDomain base: {AppBase}, Repo root: {RepoRoot}",
+            this._logger.LogWarning("No connector JARs found. SQL jobs may fail if they require Kafka/JSON connectors.");
+            this._logger.LogWarning("Current directory: {Current}, AppDomain base: {AppBase}, Repo root: {RepoRoot}",
                 Environment.CurrentDirectory, AppDomain.CurrentDomain.BaseDirectory, repoRoot ?? "not found");
         }
 
@@ -1101,12 +1111,12 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task<string> CreateShadedJarAsync(string runnerJarPath, List<string> connectorJars)
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"flink-shaded-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
+        _ = Directory.CreateDirectory(tempDir);
 
         try
         {
             var shadedJarPath = Path.Combine(tempDir, "flink-ir-runner-shaded.jar");
-            await CombineJarsAsync(runnerJarPath, connectorJars, shadedJarPath);
+            await this.CombineJarsAsync(runnerJarPath, connectorJars, shadedJarPath);
             return shadedJarPath;
         }
         catch
@@ -1118,7 +1128,7 @@ public class FlinkJobManager : IFlinkJobManager
             catch (Exception cleanupEx)
             {
                 // Non-fatal cleanup failure; continue throwing original error
-                _logger.LogDebug(cleanupEx, "Temp directory cleanup failed: {TempDir}", tempDir);
+                this._logger.LogDebug(cleanupEx, "Temp directory cleanup failed: {TempDir}", tempDir);
             }
             throw;
         }
@@ -1126,7 +1136,7 @@ public class FlinkJobManager : IFlinkJobManager
 
     private Task CombineJarsAsync(string runnerJarPath, List<string> connectorJars, string outputPath)
     {
-        _logger.LogInformation("Combining runner JAR with {Count} connector JARs into shaded JAR", connectorJars.Count);
+        this._logger.LogInformation("Combining runner JAR with {Count} connector JARs into shaded JAR", connectorJars.Count);
         File.Copy(runnerJarPath, outputPath, true);
 
         var serviceFiles = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
@@ -1138,11 +1148,11 @@ public class FlinkJobManager : IFlinkJobManager
                 StringComparer.OrdinalIgnoreCase);
 
             CollectServiceFilesFromRunnerJar(outputZip, serviceFiles);
-            MergeConnectorJars(outputZip, connectorJars, existingEntries, serviceFiles);
-            WriteMergedServiceFiles(outputZip, serviceFiles);
+            this.MergeConnectorJars(outputZip, connectorJars, existingEntries, serviceFiles);
+            this.WriteMergedServiceFiles(outputZip, serviceFiles);
         }
 
-        _logger.LogInformation("Created shaded JAR at {Path}", outputPath);
+        this._logger.LogInformation("Created shaded JAR at {Path}", outputPath);
         return Task.CompletedTask;
     }
 
@@ -1160,7 +1170,7 @@ public class FlinkJobManager : IFlinkJobManager
                 var trimmed = line.Trim();
                 if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
                 {
-                    lines.Add(line);
+                    _ = lines.Add(line);
                 }
             }
             serviceFiles[entry.FullName] = lines;
@@ -1174,13 +1184,13 @@ public class FlinkJobManager : IFlinkJobManager
         {
             if (!File.Exists(connectorJar))
             {
-                _logger.LogWarning("Connector JAR not found, skipping: {Path}", connectorJar);
+                this._logger.LogWarning("Connector JAR not found, skipping: {Path}", connectorJar);
                 continue;
             }
 
-            _logger.LogDebug("Merging connector JAR: {Path}", connectorJar);
+            this._logger.LogDebug("Merging connector JAR: {Path}", connectorJar);
             var entriesAdded = MergeConnectorJar(outputZip, connectorJar, existingEntries, serviceFiles);
-            _logger.LogInformation("Added {Count} entries from connector JAR: {Name}",
+            this._logger.LogInformation("Added {Count} entries from connector JAR: {Name}",
                 entriesAdded, Path.GetFileName(connectorJar));
         }
     }
@@ -1194,7 +1204,9 @@ public class FlinkJobManager : IFlinkJobManager
         foreach (var entry in connectorZip.Entries)
         {
             if (entry.FullName.EndsWith('/'))
+            {
                 continue;
+            }
 
             if (entry.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase))
             {
@@ -1203,10 +1215,12 @@ public class FlinkJobManager : IFlinkJobManager
             }
 
             if (existingEntries.Contains(entry.FullName))
+            {
                 continue;
+            }
 
             CopyZipEntry(entry, outputZip);
-            existingEntries.Add(entry.FullName);
+            _ = existingEntries.Add(entry.FullName);
             entriesAdded++;
         }
 
@@ -1229,7 +1243,7 @@ public class FlinkJobManager : IFlinkJobManager
             var trimmed = line.Trim();
             if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith('#'))
             {
-                serviceFiles[entry.FullName].Add(line);
+                _ = serviceFiles[entry.FullName].Add(line);
             }
         }
     }
@@ -1257,7 +1271,7 @@ public class FlinkJobManager : IFlinkJobManager
                 writer.WriteLine(line);
             }
 
-            _logger.LogDebug("Merged service file {Path} with {Count} providers",
+            this._logger.LogDebug("Merged service file {Path} with {Count} providers",
                 servicePath, serviceLines.Count);
         }
     }
@@ -1281,16 +1295,20 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task<string?> TryRecoverFlinkJobIdAsync(string? jobName, TimeSpan timeout)
     {
         if (string.IsNullOrWhiteSpace(jobName))
+        {
             return null;
+        }
 
         var sw = Stopwatch.StartNew();
         var overviewEndpoints = new[] { "/v1/jobs/overview", "/jobs/overview" };
 
         while (sw.Elapsed < timeout)
         {
-            var jobId = await TryRecoverFromEndpointsAsync(jobName, overviewEndpoints);
+            var jobId = await this.TryRecoverFromEndpointsAsync(jobName, overviewEndpoints);
             if (jobId != null)
+            {
                 return jobId;
+            }
 
             await Task.Delay(JobRecoveryPollingDelay);
         }
@@ -1302,9 +1320,11 @@ public class FlinkJobManager : IFlinkJobManager
     {
         foreach (var endpoint in endpoints)
         {
-            var jobId = await TryRecoverFromSingleEndpointAsync(jobName, endpoint);
+            var jobId = await this.TryRecoverFromSingleEndpointAsync(jobName, endpoint);
             if (jobId != null)
+            {
                 return jobId;
+            }
         }
         return null;
     }
@@ -1313,26 +1333,26 @@ public class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            using var response = await _httpClient.GetAsync(endpoint);
+            using var response = await this._httpClient.GetAsync(endpoint);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogDebug("Jobs overview endpoint {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
+                this._logger.LogDebug("Jobs overview endpoint {Endpoint} returned {StatusCode}", endpoint, response.StatusCode);
                 return null;
             }
 
             var payload = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation("Jobs overview response from {Endpoint} while recovering job id: {Payload}", endpoint, payload);
+            this._logger.LogInformation("Jobs overview response from {Endpoint} while recovering job id: {Payload}", endpoint, payload);
 
             var recovered = ExtractJobIdFromOverviewPayload(payload, jobName);
             if (!string.IsNullOrEmpty(recovered))
             {
-                _logger.LogInformation("Recovered job id {FlinkJobId} for job {JobName} via {Endpoint}", recovered, jobName, endpoint);
+                this._logger.LogInformation("Recovered job id {FlinkJobId} for job {JobName} via {Endpoint}", recovered, jobName, endpoint);
                 return recovered;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Failed to recover job id for {JobName} via {Endpoint}; will retry", jobName, endpoint);
+            this._logger.LogDebug(ex, "Failed to recover job id for {JobName} via {Endpoint}; will retry", jobName, endpoint);
         }
         return null;
     }
@@ -1340,7 +1360,9 @@ public class FlinkJobManager : IFlinkJobManager
     private static string? ExtractJobIdFromOverviewPayload(string payload, string jobName)
     {
         if (string.IsNullOrWhiteSpace(payload))
+        {
             return null;
+        }
 
         try
         {
@@ -1361,20 +1383,26 @@ public class FlinkJobManager : IFlinkJobManager
             {
                 var nested = ExtractJobIdFromOverviewElement(child, jobName);
                 if (!string.IsNullOrEmpty(nested))
+                {
                     return nested;
+                }
             }
         }
         else if (element.ValueKind == JsonValueKind.Object)
         {
             var match = MatchJobEntry(element, jobName);
             if (!string.IsNullOrEmpty(match))
+            {
                 return match;
+            }
 
             foreach (var property in element.EnumerateObject())
             {
                 var nested = ExtractJobIdFromOverviewElement(property.Value, jobName);
                 if (!string.IsNullOrEmpty(nested))
+                {
                     return nested;
+                }
             }
         }
 
@@ -1384,10 +1412,14 @@ public class FlinkJobManager : IFlinkJobManager
     private static string? MatchJobEntry(JsonElement element, string jobName)
     {
         if (!TryGetStringProperty(element, "name", out var name) && !TryGetStringProperty(element, "jobName", out name))
+        {
             return null;
+        }
 
         if (!string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase))
+        {
             return null;
+        }
 
         if (!TryGetStringProperty(element, "jid", out var jobId)
             && !TryGetStringProperty(element, "jobId", out jobId)
@@ -1422,7 +1454,9 @@ public class FlinkJobManager : IFlinkJobManager
         {
             var jobId = ExtractJobIdFromPath(location.ToString());
             if (!string.IsNullOrEmpty(jobId))
+            {
                 return jobId;
+            }
         }
 
         if (response.Headers.TryGetValues("Location", out var locations))
@@ -1431,7 +1465,9 @@ public class FlinkJobManager : IFlinkJobManager
             {
                 var jobId = ExtractJobIdFromPath(value);
                 if (!string.IsNullOrEmpty(jobId))
+                {
                     return jobId;
+                }
             }
         }
 
@@ -1441,7 +1477,9 @@ public class FlinkJobManager : IFlinkJobManager
             {
                 var value = headerValues.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
                 if (!string.IsNullOrEmpty(value))
+                {
                     return value.Trim();
+                }
             }
         }
 
@@ -1450,15 +1488,22 @@ public class FlinkJobManager : IFlinkJobManager
         static string? ExtractJobIdFromPath(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
+            {
                 return null;
+            }
+
             var trimmed = value.Split('?', 2)[0].Trim().Trim('/');
             if (string.IsNullOrEmpty(trimmed))
+            {
                 return null;
+            }
 
             var segments = trimmed.Split('/', StringSplitOptions.RemoveEmptyEntries);
             var last = segments.LastOrDefault();
             if (string.IsNullOrEmpty(last) || last.Equals("jobs", StringComparison.OrdinalIgnoreCase))
+            {
                 return null;
+            }
 
             return last;
         }
@@ -1493,7 +1538,9 @@ public class FlinkJobManager : IFlinkJobManager
 
         var isSqlJob = jobDefinition.Source is SqlSourceDefinition;
         if (jobDefinition.Sink != null || isSqlJob)
+        {
             return;
+        }
 
         errors.Add("Job sink is required");
     }
@@ -1501,7 +1548,9 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ValidateSource(object? source, List<string> errors)
     {
         if (source == null)
+        {
             return;
+        }
 
         switch (source)
         {
@@ -1520,7 +1569,9 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ValidateSink(object? sink, List<string> errors)
     {
         if (sink == null)
+        {
             return;
+        }
 
         switch (sink)
         {
@@ -1559,13 +1610,13 @@ public class FlinkJobManager : IFlinkJobManager
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
-            throw new ArgumentException($"Path segment cannot be null or empty.", parameterName);
+            throw new ArgumentException($"Path {nameof(segment)} cannot be null or empty.", parameterName);
         }
 
         // Check for path traversal sequences
         if (segment.Contains("..") || segment.Contains("./") || segment.Contains(".\\"))
         {
-            throw new ArgumentException($"Path segment contains invalid path traversal sequence: {segment}", parameterName);
+            throw new ArgumentException($"Path {nameof(segment)} contains invalid path traversal sequence: {segment}", parameterName);
         }
 
         // Check for invalid characters - only allow alphanumeric, hyphens, underscores, and dots
@@ -1574,7 +1625,7 @@ public class FlinkJobManager : IFlinkJobManager
         var invalidChar = segment.FirstOrDefault(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.');
         if (invalidChar != '\0')
         {
-            throw new ArgumentException($"Path segment contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
+            throw new ArgumentException($"Path {nameof(segment)} contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
         }
 
         // Return URL-encoded segment for additional safety
@@ -1650,42 +1701,52 @@ public class FlinkJobManager : IFlinkJobManager
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
-        var verticesResp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
+        var verticesResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
         if (!verticesResp.IsSuccessStatusCode)
+        {
             return;
+        }
 
         var verticesJson = await verticesResp.Content.ReadAsStringAsync();
         using var vdoc = JsonDocument.Parse(verticesJson);
 
         if (!vdoc.RootElement.TryGetProperty("vertices", out var vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
+        {
             return;
+        }
 
         foreach (var vertex in vertsEl.EnumerateArray())
         {
-            await ProcessVertexAsync(flinkJobId, vertex, metrics);
+            await this.ProcessVertexAsync(flinkJobId, vertex, metrics);
         }
     }
 
     private async Task ProcessVertexAsync(string flinkJobId, JsonElement vertex, JobMetricsBuilder metrics)
     {
         if (!vertex.TryGetProperty("id", out var idEl))
+        {
             return;
+        }
 
         var vertexId = idEl.GetString();
         if (string.IsNullOrEmpty(vertexId))
+        {
             return;
+        }
 
-        await CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
-        await CollectVertexBackpressureAsync(flinkJobId, vertexId, metrics);
+        await this.CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
+        await this.CollectVertexBackpressureAsync(flinkJobId, vertexId, metrics);
     }
 
     private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
     {
         var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
         var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
-        var mresp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
+        var mresp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
         if (!mresp.IsSuccessStatusCode)
+        {
             return;
+        }
 
         var metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync())
             ?? new List<FlinkMetricEntry>();
@@ -1693,11 +1754,19 @@ public class FlinkJobManager : IFlinkJobManager
         foreach (var m in metricsList)
         {
             if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vi))
+            {
                 metrics.AddRecordsIn(vi);
+            }
+
             if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vo))
+            {
                 metrics.AddRecordsOut(vo);
+            }
+
             if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out var p))
+            {
                 metrics.UpdateMaxParallelism(p);
+            }
         }
     }
 
@@ -1707,9 +1776,11 @@ public class FlinkJobManager : IFlinkJobManager
         {
             var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
             var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
-            var bp = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/backpressure");
+            var bp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/backpressure");
             if (!bp.IsSuccessStatusCode)
+            {
                 return;
+            }
 
             var bpStr = await bp.Content.ReadAsStringAsync();
             using var bdoc = JsonDocument.Parse(bpStr);
@@ -1717,7 +1788,9 @@ public class FlinkJobManager : IFlinkJobManager
 
             var level = ExtractBackpressureLevel(root);
             if (!string.IsNullOrEmpty(level))
+            {
                 metrics.UpdateWorstBackpressure(level);
+            }
         }
         catch (Exception ex)
         {
@@ -1731,9 +1804,11 @@ public class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            var cps = await _httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/checkpoints");
+            var cps = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/checkpoints");
             if (!cps.IsSuccessStatusCode)
+            {
                 return;
+            }
 
             var cpsJson = await cps.Content.ReadAsStringAsync();
             using var cdoc = JsonDocument.Parse(cpsJson);
@@ -1751,13 +1826,19 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ProcessCheckpointCounts(JsonElement root, JobMetricsBuilder metrics)
     {
         if (!root.TryGetProperty("counts", out var counts))
+        {
             return;
+        }
 
         if (!counts.TryGetProperty("completed", out var completedEl))
+        {
             return;
+        }
 
         if (!completedEl.TryGetInt32(out var c))
+        {
             return;
+        }
 
         metrics.SetCheckpoints(c);
     }
@@ -1765,23 +1846,33 @@ public class FlinkJobManager : IFlinkJobManager
     private static void ProcessCheckpointTimestamps(JsonElement root, JobMetricsBuilder metrics)
     {
         if (!root.TryGetProperty("latest", out var latest))
+        {
             return;
+        }
 
         if (!latest.TryGetProperty("completed", out var comp))
+        {
             return;
+        }
 
         var ts = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
         if (ts.HasValue)
+        {
             metrics.SetLastCheckpoint(ts.Value);
+        }
     }
 
     private static DateTime? ExtractTimestamp(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out var timeEl))
+        {
             return null;
+        }
 
         if (timeEl.ValueKind != JsonValueKind.Number)
+        {
             return null;
+        }
 
         var ms = timeEl.GetInt64();
         return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
@@ -1790,9 +1881,15 @@ public class FlinkJobManager : IFlinkJobManager
     private static string? ExtractBackpressureLevel(JsonElement root)
     {
         if (root.TryGetProperty("backpressureLevel", out var lvlEl))
+        {
             return lvlEl.GetString();
+        }
+
         if (root.TryGetProperty("backpressure-level", out var lvlEl2))
+        {
             return lvlEl2.GetString();
+        }
+
         return null;
     }
 
@@ -1806,14 +1903,14 @@ public class FlinkJobManager : IFlinkJobManager
         private DateTime? _lastCheckpoint;
         private string _backpressureLevel = "UNKNOWN";
 
-        public JobMetricsBuilder(string flinkJobId) => _flinkJobId = flinkJobId;
+        public JobMetricsBuilder(string flinkJobId) => this._flinkJobId = flinkJobId;
 
-        public void AddRecordsIn(long value) => _recordsIn += value;
-        public void AddRecordsOut(long value) => _recordsOut += value;
-        public void UpdateMaxParallelism(int value) => _parallelism = Math.Max(_parallelism, value);
-        public void SetCheckpoints(int value) => _checkpoints = value;
-        public void SetLastCheckpoint(DateTime value) => _lastCheckpoint = value;
-        public void UpdateWorstBackpressure(string level) => _backpressureLevel = WorstBackpressure(_backpressureLevel, level);
+        public void AddRecordsIn(long value) => this._recordsIn += value;
+        public void AddRecordsOut(long value) => this._recordsOut += value;
+        public void UpdateMaxParallelism(int value) => this._parallelism = Math.Max(this._parallelism, value);
+        public void SetCheckpoints(int value) => this._checkpoints = value;
+        public void SetLastCheckpoint(DateTime value) => this._lastCheckpoint = value;
+        public void UpdateWorstBackpressure(string level) => this._backpressureLevel = WorstBackpressure(this._backpressureLevel, level);
 
         private static string WorstBackpressure(string current, string candidate)
         {
@@ -1831,15 +1928,15 @@ public class FlinkJobManager : IFlinkJobManager
 
         public JobMetrics Build() => new JobMetrics
         {
-            FlinkJobId = _flinkJobId,
-            RecordsIn = _recordsIn,
-            RecordsOut = _recordsOut,
-            Parallelism = _parallelism,
-            Checkpoints = _checkpoints,
-            LastCheckpoint = _lastCheckpoint,
+            FlinkJobId = this._flinkJobId,
+            RecordsIn = this._recordsIn,
+            RecordsOut = this._recordsOut,
+            Parallelism = this._parallelism,
+            Checkpoints = this._checkpoints,
+            LastCheckpoint = this._lastCheckpoint,
             CustomMetrics = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
             {
-                ["backpressureLevel"] = _backpressureLevel
+                ["backpressureLevel"] = this._backpressureLevel
             }
         };
     }

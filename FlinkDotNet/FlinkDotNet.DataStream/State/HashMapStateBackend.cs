@@ -43,19 +43,13 @@ namespace FlinkDotNet.DataStream.State
         /// Gets the name of this state backend.
         /// </summary>
         /// <returns>The state backend name</returns>
-        public string GetName()
-        {
-            return "HashMapStateBackend";
-        }
+        public string GetName() => "HashMapStateBackend";
 
         /// <summary>
         /// Gets whether this state backend supports incremental checkpointing.
         /// HashMapStateBackend does not support incremental checkpointing.
         /// </summary>
         /// <returns>False, as incremental checkpointing is not supported</returns>
-        public bool SupportsIncrementalCheckpointing()
-        {
-            return false;
-        }
+        public bool SupportsIncrementalCheckpointing() => false;
     }
 }

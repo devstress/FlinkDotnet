@@ -45,21 +45,21 @@ namespace FlinkDotNet.DataStream
                 "[OperationCapture.CaptureKafkaSource] Capturing Kafka source: topic={Topic}, bootstrapServers={BootstrapServers}, groupId={GroupId}, startingOffsets={StartingOffsets}",
                 topic, bootstrapServers, groupId, startingOffsets);
 
-            _kafkaSource = new KafkaSourceDefinition
+            this._kafkaSource = new KafkaSourceDefinition
             {
                 Topic = topic,
                 BootstrapServers = bootstrapServers,
                 GroupId = groupId,
                 StartingOffsets = startingOffsets
             };
-            _deserializationFunction = deserializer;
+            this._deserializationFunction = deserializer;
 
-            _logger.Information("[OperationCapture.CaptureKafkaSource] Created KafkaSourceDefinition with BootstrapServers={BootstrapServers}", _kafkaSource.BootstrapServers);
+            _logger.Information("[OperationCapture.CaptureKafkaSource] Created KafkaSourceDefinition with BootstrapServers={BootstrapServers}", this._kafkaSource.BootstrapServers);
         }
 
         public void CaptureMapOperation(string operationType, object? function = null)
         {
-            _operations.Add(new CapturedOperation
+            this._operations.Add(new CapturedOperation
             {
                 Type = "Map",
                 OperationType = operationType,
@@ -69,7 +69,7 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureFilterOperation(object? function = null)
         {
-            _operations.Add(new CapturedOperation
+            this._operations.Add(new CapturedOperation
             {
                 Type = "Filter",
                 Function = function
@@ -78,7 +78,7 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureFlatMapOperation(object? function = null)
         {
-            _operations.Add(new CapturedOperation
+            this._operations.Add(new CapturedOperation
             {
                 Type = "FlatMap",
                 Function = function
@@ -87,8 +87,8 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureTimestampAssigner(object assigner)
         {
-            _hasTimestampAssigner = true;
-            _operations.Add(new CapturedOperation
+            this._hasTimestampAssigner = true;
+            this._operations.Add(new CapturedOperation
             {
                 Type = "AssignTimestampsAndWatermarks",
                 Function = assigner
@@ -97,7 +97,7 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureTimeWindow(Time windowSize)
         {
-            _windowDefinition = new WindowDefinition
+            this._windowDefinition = new WindowDefinition
             {
                 WindowType = "TUMBLING",
                 Size = windowSize.ToMilliseconds(),
@@ -105,7 +105,7 @@ namespace FlinkDotNet.DataStream
                 IsCountBased = false
             };
 
-            _operations.Add(new CapturedOperation
+            this._operations.Add(new CapturedOperation
             {
                 Type = "TimeWindowAll",
                 Function = windowSize
@@ -114,7 +114,7 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureCountWindow(int windowSize)
         {
-            _windowDefinition = new WindowDefinition
+            this._windowDefinition = new WindowDefinition
             {
                 WindowType = "TUMBLING",
                 Size = windowSize,
@@ -122,7 +122,7 @@ namespace FlinkDotNet.DataStream
                 IsCountBased = true
             };
 
-            _operations.Add(new CapturedOperation
+            this._operations.Add(new CapturedOperation
             {
                 Type = "CountWindowAll",
                 Function = windowSize
@@ -131,7 +131,7 @@ namespace FlinkDotNet.DataStream
 
         public void CaptureAggregateOperation(object aggregateFunction)
         {
-            _operations.Add(new CapturedOperation
+            this._operations.Add(new CapturedOperation
             {
                 Type = "Aggregate",
                 Function = aggregateFunction
@@ -143,36 +143,36 @@ namespace FlinkDotNet.DataStream
             _logger.Information("[OperationCapture.CaptureKafkaSink] Capturing Kafka sink: topic={Topic}, bootstrapServers={BootstrapServers}",
                 topic, bootstrapServers);
 
-            _kafkaSink = new KafkaSinkDefinition
+            this._kafkaSink = new KafkaSinkDefinition
             {
                 Topic = topic,
                 BootstrapServers = bootstrapServers
             };
-            _serializationFunction = serializer;
+            this._serializationFunction = serializer;
 
-            _logger.Information("[OperationCapture.CaptureKafkaSink] Created KafkaSinkDefinition with BootstrapServers={BootstrapServers}", _kafkaSink.BootstrapServers);
+            _logger.Information("[OperationCapture.CaptureKafkaSink] Created KafkaSinkDefinition with BootstrapServers={BootstrapServers}", this._kafkaSink.BootstrapServers);
         }
 
         public JobDefinition ToJobDefinition(string jobId, string jobName)
         {
             _logger.Information("[OperationCapture.ToJobDefinition] Starting translation to JobDefinition: jobId={JobId}, jobName={JobName}", jobId, jobName);
-            _logger.Information("[OperationCapture.ToJobDefinition] Current _kafkaSource.BootstrapServers={BootstrapServers}", _kafkaSource?.BootstrapServers);
+            _logger.Information("[OperationCapture.ToJobDefinition] Current _kafkaSource.BootstrapServers={BootstrapServers}", this._kafkaSource?.BootstrapServers);
 
-            if (_kafkaSource == null)
+            if (this._kafkaSource == null)
             {
                 _logger.Error("[OperationCapture.ToJobDefinition] No Kafka source defined!");
                 throw new System.InvalidOperationException("No Kafka source defined. Use AddKafkaSource() or FromKafka() before executing.");
             }
 
-            var jobDef = CreateJobDefinition(jobId, jobName);
+            var jobDef = this.CreateJobDefinition(jobId, jobName);
             _logger.Information("[OperationCapture.ToJobDefinition] After CreateJobDefinition: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
-            ConfigureJobMetadata(jobDef);
+            this.ConfigureJobMetadata(jobDef);
             _logger.Information(
                 "[OperationCapture.ToJobDefinition] After ConfigureJobMetadata: Source.BootstrapServers={BootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
-            TranslateOperations(jobDef);
+            this.TranslateOperations(jobDef);
             _logger.Information("[OperationCapture.ToJobDefinition] After TranslateOperations: Source.BootstrapServers={BootstrapServers}", (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
             _logger.Information("[OperationCapture.ToJobDefinition] Final JobDefinition: Source.BootstrapServers={BootstrapServers}, Sink.BootstrapServers={SinkBootstrapServers}",
@@ -183,13 +183,13 @@ namespace FlinkDotNet.DataStream
 
         private JobDefinition CreateJobDefinition(string jobId, string jobName)
         {
-            _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", _kafkaSource?.BootstrapServers);
+            _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", this._kafkaSource?.BootstrapServers);
 
             var jobDef = new JobDefinition
             {
-                Source = _kafkaSource!,
+                Source = this._kafkaSource!,
                 Operations = new List<IOperationDefinition>(),
-                Sink = _kafkaSink,
+                Sink = this._kafkaSink,
                 Metadata = new JobMetadata
                 {
                     JobId = jobId,
@@ -206,35 +206,35 @@ namespace FlinkDotNet.DataStream
 
         private void ConfigureJobMetadata(JobDefinition jobDef)
         {
-            if (_hasTimestampAssigner)
+            if (this._hasTimestampAssigner)
             {
                 jobDef.Metadata.Properties["timeCharacteristic"] = "EventTime";
             }
 
-            if (_deserializationFunction != null)
+            if (this._deserializationFunction != null)
             {
-                jobDef.Metadata.Properties["deserializationFunction"] = _deserializationFunction.GetType().FullName ?? "Unknown";
+                jobDef.Metadata.Properties["deserializationFunction"] = this._deserializationFunction.GetType().FullName ?? "Unknown";
             }
 
-            if (_serializationFunction == null)
+            if (this._serializationFunction == null)
             {
                 return;
             }
 
-            jobDef.Metadata.Properties["serializationFunction"] = _serializationFunction.GetType().FullName ?? "Unknown";
+            jobDef.Metadata.Properties["serializationFunction"] = this._serializationFunction.GetType().FullName ?? "Unknown";
         }
 
         private void TranslateOperations(JobDefinition jobDef)
         {
-            foreach (var operation in _operations)
+            foreach (var operation in this._operations)
             {
                 switch (operation.Type)
                 {
                     case "Map":
-                        TranslateMapOperation(jobDef, operation);
+                        this.TranslateMapOperation(jobDef, operation);
                         break;
                     case "Filter":
-                        TranslateFilterOperation(jobDef, operation);
+                        this.TranslateFilterOperation(jobDef, operation);
                         break;
                     case "TimeWindowAll":
                     case "CountWindowAll":
@@ -243,7 +243,7 @@ namespace FlinkDotNet.DataStream
                         // DO NOT call TranslateWindowOperation() here!
                         break;
                     case "Aggregate":
-                        TranslateAggregateOperation(jobDef, operation);
+                        this.TranslateAggregateOperation(jobDef, operation);
                         break;
                     default:
                         _logger.Warning("[OperationCapture.TranslateOperations] Unknown operation type: {OperationType}", operation.Type);
@@ -322,21 +322,21 @@ namespace FlinkDotNet.DataStream
             long? windowSeconds = null;
             int? windowCount = null;
 
-            if (_windowDefinition != null)
+            if (this._windowDefinition != null)
             {
-                if (_windowDefinition.IsCountBased)
+                if (this._windowDefinition.IsCountBased)
                 {
                     // COUNT-BASED WINDOW
-                    windowCount = (int) _windowDefinition.Size;
+                    windowCount = (int) this._windowDefinition.Size;
                     _logger.Information("[OperationCapture.TranslateAggregateOperation] Using COUNT-based window: {WindowCount} messages",
                         windowCount);
                 }
                 else
                 {
                     // TIME-BASED WINDOW - Convert window size from milliseconds to seconds
-                    windowSeconds = _windowDefinition.Size / 1000;
+                    windowSeconds = this._windowDefinition.Size / 1000;
                     _logger.Information("[OperationCapture.TranslateAggregateOperation] Using TIME-based window: {WindowSeconds} seconds (from {WindowSize} ms)",
-                        windowSeconds, _windowDefinition.Size);
+                        windowSeconds, this._windowDefinition.Size);
                 }
             }
             else
@@ -357,7 +357,7 @@ namespace FlinkDotNet.DataStream
                 windowSeconds, windowCount);
         }
 
-        public bool HasOperations() => _operations.Count > 0 || _kafkaSource != null;
+        public bool HasOperations() => this._operations.Count > 0 || this._kafkaSource != null;
     }
 
     internal class CapturedOperation

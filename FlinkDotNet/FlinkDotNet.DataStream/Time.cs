@@ -24,15 +24,12 @@ namespace FlinkDotNet.DataStream
     {
         private readonly long _milliseconds;
 
-        private Time(long milliseconds)
-        {
-            _milliseconds = milliseconds;
-        }
+        private Time(long milliseconds) => this._milliseconds = milliseconds;
 
         /// <summary>
         /// Gets the time duration in milliseconds.
         /// </summary>
-        public long ToMilliseconds() => _milliseconds;
+        public long ToMilliseconds() => this._milliseconds;
 
         /// <summary>
         /// Creates a time duration in milliseconds.
@@ -90,7 +87,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public static Time days(long days) => Days(days);
 
-        public override string ToString() => $"{_milliseconds}ms";
+        public override string ToString() => $"{this._milliseconds}ms";
     }
 
     /// <summary>
@@ -101,17 +98,14 @@ namespace FlinkDotNet.DataStream
     {
         private readonly long _timestamp;
 
-        public Watermark(long timestamp)
-        {
-            _timestamp = timestamp;
-        }
+        public Watermark(long timestamp) => this._timestamp = timestamp;
 
         /// <summary>
         /// Gets the timestamp of this watermark in milliseconds.
         /// </summary>
-        public long GetTimestamp() => _timestamp;
+        public long GetTimestamp() => this._timestamp;
 
-        public override string ToString() => $"Watermark({_timestamp})";
+        public override string ToString() => $"Watermark({this._timestamp})";
     }
 
     /// <summary>
@@ -126,7 +120,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="element">The element to extract the timestamp from</param>
         /// <param name="previousElementTimestamp">The previous timestamp</param>
         /// <returns>The timestamp in milliseconds</returns>
-        long ExtractTimestamp(T element, long previousElementTimestamp);
+        public long ExtractTimestamp(T element, long previousElementTimestamp);
     }
 
     /// <summary>
@@ -141,7 +135,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="lastElement">The last processed element</param>
         /// <param name="extractedTimestamp">The extracted timestamp</param>
         /// <returns>The watermark or null if no watermark should be emitted</returns>
-        Watermark? CheckAndGetNextWatermark(T lastElement, long extractedTimestamp);
+        public Watermark? CheckAndGetNextWatermark(T lastElement, long extractedTimestamp);
     }
 
     /// <summary>
@@ -154,6 +148,6 @@ namespace FlinkDotNet.DataStream
         /// Returns the current watermark.
         /// </summary>
         /// <returns>The current watermark or null if no watermark should be emitted</returns>
-        Watermark? GetCurrentWatermark();
+        public Watermark? GetCurrentWatermark();
     }
 }

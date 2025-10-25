@@ -47,7 +47,7 @@ public class Program
             var builder = WebApplication.CreateBuilder(args);
 
             // Use Serilog for ASP.NET Core logging
-            builder.Host.UseSerilog();
+            _ = builder.Host.UseSerilog();
 
             ConfigureServices(builder);
             var app = builder.Build();
@@ -68,7 +68,7 @@ public class Program
 
     private static void ConfigureServices(WebApplicationBuilder builder)
     {
-        builder.Services
+        _ = builder.Services
             .AddControllers(options => options.Filters.Add<ModelStateLoggingFilter>())
             .AddJsonOptions(o =>
             {
@@ -77,23 +77,20 @@ public class Program
                 o.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, new DefaultJsonTypeInfoResolver());
             });
 
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen(c =>
+        _ = builder.Services.AddEndpointsApiExplorer();
+        _ = builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo
         {
-            c.SwaggerDoc("v1", new OpenApiInfo
-            {
-                Title = "Flink Job Gateway API",
-                Version = "v1",
-                Description = "REST API for submitting and managing Apache Flink jobs from .NET applications"
-            });
-        });
+            Title = "Flink Job Gateway API",
+            Version = "v1",
+            Description = "REST API for submitting and managing Apache Flink jobs from .NET applications"
+        }));
 
-        builder.Services.AddApiVersioning(options =>
+        _ = builder.Services.AddApiVersioning(options =>
         {
             options.AssumeDefaultVersionWhenUnspecified = true;
             options.DefaultApiVersion = new ApiVersion(1, 0);
         });
-        builder.Services.AddVersionedApiExplorer(options =>
+        _ = builder.Services.AddVersionedApiExplorer(options =>
         {
             options.GroupNameFormat = "'v'VVV";
             options.SubstituteApiVersionInUrl = true;
@@ -101,8 +98,8 @@ public class Program
 
         // Register FlinkJobManager as singleton to preserve job tracking across requests
         // The in-memory _jobMapping dictionary must persist for LOCAL mode jobs
-        builder.Services.AddHttpClient(nameof(FlinkJobManager));
-        builder.Services.AddSingleton<IFlinkJobManager>(sp =>
+        _ = builder.Services.AddHttpClient(nameof(FlinkJobManager));
+        _ = builder.Services.AddSingleton<IFlinkJobManager>(sp =>
         {
             var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
             var httpClient = httpClientFactory.CreateClient(nameof(FlinkJobManager));
@@ -118,7 +115,7 @@ public class Program
         if (metricsEnabled)
         {
             Log.Information("Prometheus metrics ENABLED (configured in appsettings)");
-            builder.Services.AddSingleton<MetricsService>();
+            _ = builder.Services.AddSingleton<MetricsService>();
         }
         else
         {
@@ -132,8 +129,8 @@ public class Program
     {
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            _ = app.UseSwagger();
+            _ = app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Flink Job Gateway API v1");
                 c.RoutePrefix = string.Empty;
@@ -145,18 +142,18 @@ public class Program
 
         if (metricsEnabled)
         {
-            app.UseMetricServer();
-            app.UseHttpMetrics();
+            _ = app.UseMetricServer();
+            _ = app.UseHttpMetrics();
             var metricsPath = app.Configuration.GetValue<string>("Metrics:Prometheus:Path") ?? "/metrics";
             Log.Information("Prometheus metrics endpoint enabled at {Path} (configured via appsettings)", metricsPath);
         }
 
-        app.UseRouting();
-        app.Use(BodyLoggingMiddleware);  // Moved AFTER UseRouting so routing can match endpoints
-        app.UseAuthorization();
-        app.MapControllers();
-        app.MapGet("/health", () => Results.Ok("OK"));
-        app.MapGet("/api/v1/health", () => Results.Ok(new { status = "OK", timestamp = DateTime.UtcNow }));
+        _ = app.UseRouting();
+        _ = app.Use(BodyLoggingMiddleware);  // Moved AFTER UseRouting so routing can match endpoints
+        _ = app.UseAuthorization();
+        _ = app.MapControllers();
+        _ = app.MapGet("/health", () => Results.Ok("OK"));
+        _ = app.MapGet("/api/v1/health", () => Results.Ok(new { status = "OK", timestamp = DateTime.UtcNow }));
     }
 
     private static async Task BodyLoggingMiddleware(HttpContext ctx, Func<Task> next)

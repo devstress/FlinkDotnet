@@ -23,24 +23,21 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void Setup()
         {
-            _mockLogger = new Mock<ILogger<FlinkJobManager>>();
-            _mockConfiguration = new Mock<IConfiguration>();
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+            this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
+            this._mockConfiguration = new Mock<IConfiguration>();
+            _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
-            _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
+            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081")
             };
 
-            _jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this._jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
         }
 
         [TearDown]
-        public void TearDown()
-        {
-            _httpClient?.Dispose();
-        }
+        public void TearDown() => this._httpClient?.Dispose();
 
         #region Path Traversal Tests
 
@@ -52,7 +49,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -64,7 +61,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -76,7 +73,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -88,7 +85,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobMetricsAsync(maliciousJobId));
+                await this._jobManager.GetJobMetricsAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -104,7 +101,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -116,7 +113,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -128,7 +125,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -140,7 +137,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -153,7 +150,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(null!));
+                await this._jobManager.GetJobStatusAsync(null!));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -162,7 +159,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(""));
+                await this._jobManager.GetJobStatusAsync(""));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -171,7 +168,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync("   "));
+                await this._jobManager.GetJobStatusAsync("   "));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -186,14 +183,14 @@ namespace FlinkDotNet.JobGateway.Tests
             var validJobId = "abc123-def456-789ghi";
             var expectedUrl = $"/v1/jobs/{Uri.EscapeDataString(validJobId)}";
 
-            SetupHttpResponse(expectedUrl, HttpStatusCode.OK, "{\"state\":\"RUNNING\"}");
+            this.SetupHttpResponse(expectedUrl, HttpStatusCode.OK, "{\"state\":\"RUNNING\"}");
 
             // Act
-            var result = await _jobManager.GetJobStatusAsync(validJobId);
+            var result = await this._jobManager.GetJobStatusAsync(validJobId);
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            VerifyHttpRequest(expectedUrl);
+            this.VerifyHttpRequest(expectedUrl);
         }
 
         [Test]
@@ -203,14 +200,14 @@ namespace FlinkDotNet.JobGateway.Tests
             var validJobId = "job_123-456_test";
             var expectedUrl = $"/v1/jobs/{Uri.EscapeDataString(validJobId)}";
 
-            SetupHttpResponse(expectedUrl, HttpStatusCode.OK, "{\"state\":\"RUNNING\"}");
+            this.SetupHttpResponse(expectedUrl, HttpStatusCode.OK, "{\"state\":\"RUNNING\"}");
 
             // Act
-            var result = await _jobManager.GetJobStatusAsync(validJobId);
+            var result = await this._jobManager.GetJobStatusAsync(validJobId);
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            VerifyHttpRequest(expectedUrl);
+            this.VerifyHttpRequest(expectedUrl);
         }
 
         [Test]
@@ -220,14 +217,14 @@ namespace FlinkDotNet.JobGateway.Tests
             var validJobId = "123456789";
             var expectedUrl = $"/v1/jobs/{Uri.EscapeDataString(validJobId)}";
 
-            SetupHttpResponse(expectedUrl, HttpStatusCode.OK, "{\"state\":\"RUNNING\"}");
+            this.SetupHttpResponse(expectedUrl, HttpStatusCode.OK, "{\"state\":\"RUNNING\"}");
 
             // Act
-            var result = await _jobManager.GetJobStatusAsync(validJobId);
+            var result = await this._jobManager.GetJobStatusAsync(validJobId);
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            VerifyHttpRequest(expectedUrl);
+            this.VerifyHttpRequest(expectedUrl);
         }
 
         #endregion
@@ -242,7 +239,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -254,7 +251,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
-                await _jobManager.GetJobStatusAsync(maliciousJobId));
+                await this._jobManager.GetJobStatusAsync(maliciousJobId));
             Assert.That(ex!.Message, Does.Contain("flinkJobId"));
         }
 
@@ -264,7 +261,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
         private void SetupHttpResponse(string requestUri, HttpStatusCode statusCode, string content)
         {
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -280,7 +277,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
         private void VerifyHttpRequest(string expectedUri)
         {
-            _mockHttpMessageHandler
+            this._mockHttpMessageHandler
                 .Protected()
                 .Verify(
                     "SendAsync",

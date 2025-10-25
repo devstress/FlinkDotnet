@@ -31,24 +31,21 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
 
-            _mockLogger = new Mock<ILogger<FlinkJobManager>>();
-            _mockConfiguration = new Mock<IConfiguration>();
+            this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
+            this._mockConfiguration = new Mock<IConfiguration>();
 
             // Setup default configuration values (returns null for any key by default)
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+            _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
-            _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
+            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081")
             };
         }
 
         [TearDown]
-        public void TearDown()
-        {
-            _httpClient?.Dispose();
-        }
+        public void TearDown() => this._httpClient?.Dispose();
 
         #region Helper Methods
 
@@ -59,7 +56,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Content = new StringContent(responseContent, Encoding.UTF8, "application/json")
             };
 
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -72,7 +69,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
         private void SetupHttpException(string requestUri, Exception exception, string method = "GET")
         {
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -94,8 +91,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/v1/jobs/{flinkJobId}", new HttpRequestException("Network failure"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}", new HttpRequestException("Network failure"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -109,8 +106,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/v1/jobs/{flinkJobId}", new TaskCanceledException("Request timeout"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}", new TaskCanceledException("Request timeout"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -124,8 +121,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new HttpRequestException("Connection refused"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new HttpRequestException("Connection refused"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -139,8 +136,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new TaskCanceledException("Network timeout"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new TaskCanceledException("Network timeout"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -153,8 +150,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/jobs/{flinkJobId}?mode=cancel", new HttpRequestException("Connection error"), "PATCH");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/jobs/{flinkJobId}?mode=cancel", new HttpRequestException("Connection error"), "PATCH");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -168,8 +165,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/jobs/{flinkJobId}?mode=cancel", new TaskCanceledException("Request timeout"), "PATCH");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/jobs/{flinkJobId}?mode=cancel", new TaskCanceledException("Request timeout"), "PATCH");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -186,8 +183,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "non-existent-job";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -201,8 +198,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.InternalServerError, "Internal Server Error");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.InternalServerError, "Internal Server Error");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -215,8 +212,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.ServiceUnavailable, "Service Unavailable");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.ServiceUnavailable, "Service Unavailable");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -229,8 +226,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.BadGateway, "Bad Gateway");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.BadGateway, "Bad Gateway");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -243,8 +240,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.Unauthorized, "Unauthorized");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.Unauthorized, "Unauthorized");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -257,8 +254,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.Forbidden, "Forbidden");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.Forbidden, "Forbidden");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -271,9 +268,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "non-existent-job";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.NotFound, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.NotFound, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -287,9 +284,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.NotFound, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.NotFound, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -303,9 +300,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.InternalServerError, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.InternalServerError, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -318,9 +315,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.ServiceUnavailable, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.ServiceUnavailable, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.ServiceUnavailable, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.ServiceUnavailable, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -337,8 +334,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, "{ invalid json }");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, "{ invalid json }");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -357,8 +354,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 jobId = flinkJobId,
                 name = "test"
             });
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -377,8 +374,8 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 state = (string?) null
             });
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -393,8 +390,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, "{}");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, "{}");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -413,7 +410,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "../../../etc/passwd";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -426,7 +423,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "..\\..\\..\\windows\\system32";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -438,10 +435,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobStatusAsync_WithNullJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.GetJobStatusAsync(null!));
         }
 
@@ -449,10 +446,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobStatusAsync_WithEmptyJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.GetJobStatusAsync(string.Empty));
         }
 
@@ -460,10 +457,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobStatusAsync_WithWhitespaceJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.GetJobStatusAsync("   "));
         }
 
@@ -472,7 +469,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "../../../etc/passwd";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -485,7 +482,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "../../../etc/passwd";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -507,7 +504,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -527,7 +524,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -547,7 +544,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -568,7 +565,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = null!,
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -588,7 +585,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = null!
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -620,10 +617,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 // No port set, should use default
 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Assert - Should log using environment variable
-                _mockLogger.Verify(
+                this._mockLogger.Verify(
                     x => x.Log(
                         LogLevel.Information,
                         It.IsAny<EventId>(),
@@ -648,10 +645,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Assert - Should use default host with custom port
-                _mockLogger.Verify(
+                this._mockLogger.Verify(
                     x => x.Log(
                         It.IsAny<LogLevel>(),
                         It.IsAny<EventId>(),
@@ -680,8 +677,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpException("/v1/overview", new HttpRequestException("Connection refused"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException("/v1/overview", new HttpRequestException("Connection refused"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -701,8 +698,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpException("/v1/overview", new TaskCanceledException("Timeout"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException("/v1/overview", new TaskCanceledException("Timeout"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -722,8 +719,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -743,8 +740,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.InternalServerError, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.InternalServerError, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -762,10 +759,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobMetricsAsync_WithNullJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.GetJobMetricsAsync(null!));
         }
 
@@ -773,10 +770,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobMetricsAsync_WithEmptyJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.GetJobMetricsAsync(string.Empty));
         }
 
@@ -784,10 +781,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobMetricsAsync_WithWhitespaceJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.GetJobMetricsAsync("   "));
         }
 
@@ -796,8 +793,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -810,8 +807,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.InternalServerError, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.InternalServerError, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -824,8 +821,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.ServiceUnavailable, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.ServiceUnavailable, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -838,8 +835,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK, "{ malformed json }");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK, "{ malformed json }");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -855,10 +852,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void CancelJobAsync_WithNullJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.CancelJobAsync(null!));
         }
 
@@ -866,10 +863,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void CancelJobAsync_WithEmptyJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.CancelJobAsync(string.Empty));
         }
 
@@ -877,10 +874,10 @@ namespace FlinkDotNet.JobGateway.Tests
         public void CancelJobAsync_WithWhitespaceJobId_ThrowsArgumentException()
         {
             // Arrange
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
-            Assert.ThrowsAsync<ArgumentException>(async () =>
+            _ = Assert.ThrowsAsync<ArgumentException>(async () =>
                 await jobManager.CancelJobAsync("   "));
         }
 
@@ -889,8 +886,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -904,9 +901,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -920,9 +917,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Accepted, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.InternalServerError, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Accepted, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -945,8 +942,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new FileSinkDefinition { Path = "/tmp/output" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -966,8 +963,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new HttpSinkDefinition { Url = "http://localhost:8080/api" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -987,8 +984,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost;Database=test" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1008,8 +1005,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1029,8 +1026,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1054,8 +1051,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new FileSourceDefinition { Path = "/tmp/input" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1075,8 +1072,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new HttpSourceDefinition { Url = "http://localhost:8080/api" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1096,8 +1093,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new DatabaseSourceDefinition { ConnectionString = "Server=localhost;Database=test", Query = "SELECT * FROM table" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1132,9 +1129,9 @@ namespace FlinkDotNet.JobGateway.Tests
             try
             {
                 // Setup cluster health check to fail (should be skipped for SQL Gateway)
-                SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+                this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
 
-                var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Act
                 var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1167,7 +1164,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Act
                 var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1200,7 +1197,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             try
             {
-                var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Act
                 var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1223,7 +1220,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "test/job/id";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -1236,7 +1233,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "test\\job\\id";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -1249,7 +1246,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "test?query=param";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -1262,7 +1259,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "test#fragment";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -1275,7 +1272,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "test@domain";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -1288,7 +1285,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var maliciousJobId = "test:8080";
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -1301,12 +1298,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var validJobId = "test.job.id.123";
-            SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(validJobId)}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(validJobId)}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(validJobId);
@@ -1321,12 +1318,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var validJobId = "test-job-id-123";
-            SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(validJobId)}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(validJobId)}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(validJobId);
@@ -1341,12 +1338,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var validJobId = "test_job_id_123";
-            SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(validJobId)}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(validJobId)}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(validJobId);
@@ -1365,13 +1362,13 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
                 }));
-            SetupHttpException($"/v1/jobs/{flinkJobId}/checkpoints", new HttpRequestException("Connection failed"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}/checkpoints", new HttpRequestException("Connection failed"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1384,13 +1381,13 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1403,13 +1400,13 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK, "{ malformed }");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK, "{ malformed }");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1426,9 +1423,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.BadRequest, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.BadRequest, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -1442,9 +1439,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Unauthorized, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Accepted, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Unauthorized, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Accepted, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -1458,9 +1455,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Forbidden, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Forbidden, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
@@ -1474,9 +1471,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Unauthorized, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Unauthorized, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Unauthorized, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Unauthorized, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1489,9 +1486,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Forbidden, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Forbidden, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.Forbidden, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.Forbidden, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1504,9 +1501,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.BadGateway, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.BadGateway, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.BadGateway, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.BadGateway, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1528,7 +1525,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<NullReferenceException>(async () =>
@@ -1547,8 +1544,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1568,8 +1565,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1589,8 +1586,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1608,14 +1605,14 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Constructor_WithConfigurationOnly_UsesConfigEndpoint()
         {
             // Arrange
-            _mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
+            _ = this._mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
                 .Returns("http://config-flink:8081");
 
             // Act
-            _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Assert
-            _mockLogger.Verify(
+            this._mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
@@ -1635,10 +1632,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8888");
 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Assert
-                _mockLogger.Verify(
+                this._mockLogger.Verify(
                     x => x.Log(
                         LogLevel.Information,
                         It.IsAny<EventId>(),
@@ -1661,14 +1658,14 @@ namespace FlinkDotNet.JobGateway.Tests
             try
             {
                 Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "env-flink");
-                _mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
+                _ = this._mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
                     .Returns("http://config-flink:8081");
 
                 // Act
-                _ = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
                 // Assert - Config should be logged, not env
-                _mockLogger.Verify(
+                this._mockLogger.Verify(
                     x => x.Log(
                         LogLevel.Information,
                         It.IsAny<EventId>(),
@@ -1692,12 +1689,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1712,12 +1709,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "FINISHED"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1732,12 +1729,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "FAILED"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1752,12 +1749,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "CANCELED"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1772,12 +1769,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "CREATED"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1792,12 +1789,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "SUSPENDED"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1812,12 +1809,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RECONCILING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -1836,8 +1833,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.BadRequest, "Bad Request");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.BadRequest, "Bad Request");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1850,8 +1847,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.GatewayTimeout, "Gateway Timeout");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.GatewayTimeout, "Gateway Timeout");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1864,8 +1861,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.TooManyRequests, "Too Many Requests");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.TooManyRequests, "Too Many Requests");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1878,8 +1875,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.Conflict, "Conflict");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.Conflict, "Conflict");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1892,9 +1889,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.TooManyRequests, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.TooManyRequests, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.TooManyRequests, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.TooManyRequests, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1907,9 +1904,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.GatewayTimeout, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.GatewayTimeout, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.GatewayTimeout, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.GatewayTimeout, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -1931,8 +1928,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.BadGateway, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.BadGateway, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1952,8 +1949,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.ServiceUnavailable, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.ServiceUnavailable, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1973,8 +1970,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.Unauthorized, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.Unauthorized, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -1994,8 +1991,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.Forbidden, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.Forbidden, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2019,8 +2016,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2040,8 +2037,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2062,8 +2059,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2083,8 +2080,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2108,8 +2105,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2129,8 +2126,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2150,8 +2147,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2176,8 +2173,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = null
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2198,8 +2195,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition>()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2220,8 +2217,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition> { new MapOperationDefinition { Expression = "x => x.ToUpper()" } }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2242,8 +2239,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition> { new FilterOperationDefinition { Expression = "x => x.Length > 0" } }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2268,8 +2265,8 @@ namespace FlinkDotNet.JobGateway.Tests
                     new FilterOperationDefinition { Expression = "x => x.Length > 0" }
                 }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2298,8 +2295,8 @@ namespace FlinkDotNet.JobGateway.Tests
                     field = "value"
                 }
             });
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -2318,8 +2315,8 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 state = "running"
             });
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -2335,8 +2332,8 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var flinkJobId = "test-job-id";
             var jsonResponse = "{ \"state\": 1 }";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, jsonResponse);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -2358,8 +2355,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2378,8 +2375,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2398,8 +2395,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "", BootstrapServers = "localhost:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2418,8 +2415,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2438,8 +2435,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "host1:9092,host2:9092,host3:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "host4:9092,host5:9092" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2463,8 +2460,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new FileSourceDefinition { Path = "" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2483,8 +2480,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new FileSinkDefinition { Path = "" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2503,8 +2500,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new FileSourceDefinition { Path = "/absolute/path/to/file.txt" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2524,8 +2521,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new FileSourceDefinition { Path = "relative/path/to/file.txt" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2549,8 +2546,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new HttpSourceDefinition { Url = "" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2569,8 +2566,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new HttpSinkDefinition { Url = "" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2589,8 +2586,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new HttpSourceDefinition { Url = "https://api.example.com/data" },
                 Sink = new HttpSinkDefinition { Url = "https://api.example.com/sink" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2610,8 +2607,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new HttpSourceDefinition { Url = "http://localhost:8080/api/data" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2635,8 +2632,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new DatabaseSourceDefinition { ConnectionString = "", Query = "SELECT * FROM table" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2655,8 +2652,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new DatabaseSourceDefinition { ConnectionString = "Server=localhost;Database=test", Query = "" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2675,8 +2672,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new DatabaseSinkDefinition { ConnectionString = "" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2699,8 +2696,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2719,12 +2716,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result1 = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -2743,17 +2740,17 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var job1 = "job-1";
             var job2 = "job-2";
-            SetupHttpResponse($"/v1/jobs/{job1}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{job1}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            SetupHttpResponse($"/v1/jobs/{job2}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{job2}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "FINISHED"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result1 = await jobManager.GetJobStatusAsync(job1);
@@ -2773,8 +2770,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result1 = await jobManager.CancelJobAsync(flinkJobId);
@@ -2791,7 +2788,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange - Setup sequence: first OK, then 404
             var flinkJobId = "test-job-id";
 
-            var sequence = _mockHttpMessageHandler
+            var sequence = this._mockHttpMessageHandler
                 .Protected()
                 .SetupSequence<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -2800,13 +2797,13 @@ namespace FlinkDotNet.JobGateway.Tests
                         req.Method.ToString().Equals("PATCH", StringComparison.OrdinalIgnoreCase)),
                     ItExpr.IsAny<CancellationToken>());
 
-            sequence.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
-            sequence.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NotFound));
+            _ = sequence.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+            _ = sequence.ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NotFound));
 
             // Also setup POST endpoint for second call fallback
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.NotFound, "", "POST");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.NotFound, "", "POST");
 
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result1 = await jobManager.CancelJobAsync(flinkJobId);
@@ -2831,8 +2828,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { ConnectionString = "" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2851,8 +2848,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2872,8 +2869,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { ConnectionString = "redis.example.com:6379,password=secret,ssl=true" }
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -2892,12 +2889,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new object[0]
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     counts = new
@@ -2905,7 +2902,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         restored = 0
                     }
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobMetricsAsync(flinkJobId);
@@ -2919,12 +2916,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = (object?) null
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     counts = new
@@ -2932,7 +2929,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         restored = 0
                     }
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobMetricsAsync(flinkJobId);
@@ -2946,7 +2943,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[]
@@ -2956,7 +2953,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         new { id = "vertex3", name = "Sink" }
                     }
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     counts = new
@@ -2964,7 +2961,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         restored = 0
                     }
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Needs metrics endpoints mocked for each vertex
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -2981,17 +2978,17 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     counts = (object?) null
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Incomplete metrics response causes exception
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3004,13 +3001,13 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK, "{}");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK, "{}");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Incomplete metrics response causes exception
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3023,12 +3020,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     counts = new
@@ -3036,7 +3033,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         restored = 9999
                     }
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Incomplete metrics response causes exception
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3058,8 +3055,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -3079,8 +3076,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -3100,8 +3097,8 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
-            SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.SubmitJobAsync(jobDefinition);
@@ -3120,15 +3117,15 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.OK, "", "PATCH");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
 
             // Assert
             Assert.That(result, Is.True);
-            _mockHttpMessageHandler.Protected().Verify(
+            this._mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
                 ItExpr.Is<HttpRequestMessage>(req =>
@@ -3142,16 +3139,16 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
-            SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpResponse($"/jobs/{flinkJobId}?mode=cancel", HttpStatusCode.NotFound, "", "PATCH");
+            this.SetupHttpResponse($"/jobs/{flinkJobId}/cancel", HttpStatusCode.OK, "", "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.CancelJobAsync(flinkJobId);
 
             // Assert
             Assert.That(result, Is.True);
-            _mockHttpMessageHandler.Protected().Verify(
+            this._mockHttpMessageHandler.Protected().Verify(
                 "SendAsync",
                 Times.Once(),
                 ItExpr.Is<HttpRequestMessage>(req =>
@@ -3169,12 +3166,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3189,12 +3186,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "Running"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3209,12 +3206,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "CUSTOM_STATE"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3233,8 +3230,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/v1/jobs/{flinkJobId}", new OperationCanceledException("Operation was canceled"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}", new OperationCanceledException("Operation was canceled"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3247,8 +3244,8 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new OperationCanceledException("Operation was canceled"));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new OperationCanceledException("Operation was canceled"));
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3261,9 +3258,9 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            SetupHttpException($"/jobs/{flinkJobId}?mode=cancel", new OperationCanceledException("Operation was canceled"), "PATCH");
-            SetupHttpException($"/jobs/{flinkJobId}/cancel", new OperationCanceledException("Operation was canceled"), "POST");
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            this.SetupHttpException($"/jobs/{flinkJobId}?mode=cancel", new OperationCanceledException("Operation was canceled"), "PATCH");
+            this.SetupHttpException($"/jobs/{flinkJobId}/cancel", new OperationCanceledException("Operation was canceled"), "POST");
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3285,7 +3282,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = null!,
                 Sink = new ConsoleSinkDefinition()
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Should return validation failure or throw
             try
@@ -3310,7 +3307,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = null!
             };
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Should return validation failure or throw
             try
@@ -3334,12 +3331,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "12345678-1234-1234-1234-123456789abc";
-            SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(flinkJobId)}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(flinkJobId)}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3354,12 +3351,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "abc123DEF456";
-            SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(flinkJobId)}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(flinkJobId)}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3374,12 +3371,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "job_test-123.abc";
-            SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(flinkJobId)}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{Uri.EscapeDataString(flinkJobId)}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     state = "RUNNING"
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3406,7 +3403,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 }),
                     System.Text.Encoding.UTF8, "text/plain")
             };
-            _mockHttpMessageHandler
+            _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
@@ -3414,7 +3411,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         req.RequestUri!.PathAndQuery.Contains($"/v1/jobs/{flinkJobId}")),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(response);
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);
@@ -3442,12 +3439,12 @@ namespace FlinkDotNet.JobGateway.Tests
                     name = $"Operator{i}"
                 });
             }
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices
                 }));
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     counts = new
@@ -3455,7 +3452,7 @@ namespace FlinkDotNet.JobGateway.Tests
                         restored = 0
                     }
                 }));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert - Needs metrics endpoints mocked for each vertex
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -3474,9 +3471,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 extraData = new string('x', 10000), // Large string
                 moreData = Enumerable.Range(1, 1000).ToArray()
             };
-            SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(largePayload));
-            var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act
             var result = await jobManager.GetJobStatusAsync(flinkJobId);

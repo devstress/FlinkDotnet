@@ -29,7 +29,7 @@ namespace FlinkDotNet.DataStream.Tests
             var customFunction = new CustomMapFunction();
 
             // Act
-            stream.Map(customFunction);
+            _ = stream.Map(customFunction);
 
             // Get the captured operations using reflection
             var operationCaptureField = typeof(DataStream<string>).GetField("_operationCapture",
@@ -50,10 +50,7 @@ namespace FlinkDotNet.DataStream.Tests
             var unknownFunction = new UnknownMapFunction();
 
             // Act - Map with unknown function should not throw
-            NUnit.Framework.Assert.DoesNotThrow(() =>
-            {
-                stream.Map(unknownFunction);
-            }, "Should handle unknown map function gracefully");
+            NUnit.Framework.Assert.DoesNotThrow(() => _ = stream.Map(unknownFunction), "Should handle unknown map function gracefully");
         }
 
         [NUnit.Framework.Test]
@@ -63,13 +60,10 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromKafka("test-topic", "localhost:9092", "test-group");
             var customFunction = new CustomMapFunction();
-            stream.Map(customFunction);
+            _ = stream.Map(customFunction);
 
             // Act - ExecuteAsync should translate unknown function and fail validation
-            NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
-            {
-                await env.ExecuteAsync("test-job");
-            }, "Should translate unknown function and fail validation");
+            _ = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () => _ = await env.ExecuteAsync("test-job"), "Should translate unknown function and fail validation");
         }
 
         [NUnit.Framework.Test]
@@ -89,10 +83,7 @@ namespace FlinkDotNet.DataStream.Tests
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
             // Act - Should not throw with null function
-            NUnit.Framework.Assert.DoesNotThrow(() =>
-            {
-                captureMethod?.Invoke(operationCapture, new object?[] { "unknown", null });
-            }, "Should handle null function parameter");
+            NUnit.Framework.Assert.DoesNotThrow(() => _ = (captureMethod?.Invoke(operationCapture, new object?[] { "unknown", null })), "Should handle null function parameter");
         }
 
         [NUnit.Framework.Test]
@@ -104,13 +95,10 @@ namespace FlinkDotNet.DataStream.Tests
             var filterFunction = new CustomFilterFunction();
 
             // Act
-            stream.Filter(filterFunction);
+            _ = stream.Filter(filterFunction);
 
             // Assert - Should translate custom filter and fail validation
-            NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
-            {
-                await env.ExecuteAsync("test-job");
-            }, "Should handle custom filter function and fail validation");
+            _ = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () => _ = await env.ExecuteAsync("test-job"), "Should handle custom filter function and fail validation");
         }
 
         [NUnit.Framework.Test]
@@ -124,13 +112,10 @@ namespace FlinkDotNet.DataStream.Tests
             var function2 = new UnknownMapFunction();
 
             // Act - Chain multiple unknown functions
-            stream.Map(function1).Map(function2);
+            _ = stream.Map(function1).Map(function2);
 
             // Assert
-            NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
-            {
-                await env.ExecuteAsync("multi-function-job");
-            }, "Should handle multiple unknown functions and fail validation");
+            _ = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () => _ = await env.ExecuteAsync("multi-function-job"), "Should handle multiple unknown functions and fail validation");
         }
 
         [NUnit.Framework.Test]
@@ -142,7 +127,7 @@ namespace FlinkDotNet.DataStream.Tests
             var customFunction = new CustomMapFunction();
 
             // Act
-            stream.Map(customFunction);
+            _ = stream.Map(customFunction);
 
             // Get operation capture
             var operationCaptureField = typeof(DataStream<string>).GetField("_operationCapture",
@@ -170,13 +155,10 @@ namespace FlinkDotNet.DataStream.Tests
             var upperFunction = new UpperCaseMapFunction();
 
             // Act
-            stream.Map(upperFunction);
+            _ = stream.Map(upperFunction);
 
             // Assert - Should recognize Upper in name and map to "upper" expression
-            NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
-            {
-                await env.ExecuteAsync("upper-test-job");
-            }, "Should recognize uppercase function names and fail validation");
+            _ = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () => _ = await env.ExecuteAsync("upper-test-job"), "Should recognize uppercase function names and fail validation");
         }
 
         [NUnit.Framework.Test]
@@ -190,13 +172,10 @@ namespace FlinkDotNet.DataStream.Tests
             var lowerFunction = new LowerCaseMapFunction();
 
             // Act
-            stream.Map(lowerFunction);
+            _ = stream.Map(lowerFunction);
 
             // Assert - Should recognize Lower in name and map to "lower" expression
-            NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
-            {
-                await env.ExecuteAsync("lower-test-job");
-            }, "Should recognize lowercase function names and fail validation");
+            _ = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () => _ = await env.ExecuteAsync("lower-test-job"), "Should recognize lowercase function names and fail validation");
         }
 
         [NUnit.Framework.Test]
@@ -210,13 +189,10 @@ namespace FlinkDotNet.DataStream.Tests
             var capFunction = new WordsCapitalizerFunction();
 
             // Act
-            stream.Map(capFunction);
+            _ = stream.Map(capFunction);
 
             // Assert - Should recognize Capitalizer in name and map to "upper" expression
-            NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
-            {
-                await env.ExecuteAsync("capitalizer-test-job");
-            }, "Should recognize capitalizer function names and fail validation");
+            _ = NUnit.Framework.Assert.ThrowsAsync<System.InvalidOperationException>(async () => _ = await env.ExecuteAsync("capitalizer-test-job"), "Should recognize capitalizer function names and fail validation");
         }
 
         // Helper classes for testing function name recognition

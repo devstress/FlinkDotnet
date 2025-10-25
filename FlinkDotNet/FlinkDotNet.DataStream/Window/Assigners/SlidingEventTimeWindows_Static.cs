@@ -28,10 +28,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="size">The size of the window</param>
         /// <param name="slide">The slide interval (how often a new window starts)</param>
         /// <returns>A new SlidingEventTimeWindows WindowAssigner</returns>
-        public static SlidingEventTimeWindows<T> Of<T>(Time size, Time slide)
-        {
-            return SlidingEventTimeWindows<T>.Of(size, slide);
-        }
+        public static SlidingEventTimeWindows<T> Of<T>(Time size, Time slide) => SlidingEventTimeWindows<T>.Of(size, slide);
 
         /// <summary>
         /// Creates a new SlidingEventTimeWindows WindowAssigner with an offset.
@@ -40,9 +37,6 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <param name="slide">The slide interval</param>
         /// <param name="offset">The offset which window start would be shifted by</param>
         /// <returns>A new SlidingEventTimeWindows WindowAssigner</returns>
-        public static SlidingEventTimeWindows<T> Of<T>(Time size, Time slide, Time offset)
-        {
-            return SlidingEventTimeWindows<T>.Of(size, slide, offset);
-        }
+        public static SlidingEventTimeWindows<T> Of<T>(Time size, Time slide, Time offset) => SlidingEventTimeWindows<T>.Of(size, slide, offset);
     }
 }

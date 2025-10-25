@@ -17,7 +17,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.SetParallelism(0);  // Test branch: Parallelism > 0 is false
+            _ = env.SetParallelism(0);  // Test branch: Parallelism > 0 is false
 
             // Act
             var dataStream = env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
@@ -32,7 +32,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.SetParallelism(-1);  // Test branch: Parallelism > 0 is false
+            _ = env.SetParallelism(-1);  // Test branch: Parallelism > 0 is false
 
             // Act
             var dataStream = env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
@@ -46,7 +46,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            env.SetParallelism(4);  // Test branch: Parallelism > 0 is true
+            _ = env.SetParallelism(4);  // Test branch: Parallelism > 0 is true
 
             // Act
             var dataStream = env.FromKafka("test-topic", "localhost:9092", "test-group", "earliest");
@@ -242,7 +242,9 @@ namespace FlinkDotNet.DataStream.Tests
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var largeCollection = new int[1000];
             for (int i = 0; i < largeCollection.Length; i++)
+            {
                 largeCollection[i] = i;
+            }
 
             // Act
             var stream = env.FromCollection(largeCollection);
