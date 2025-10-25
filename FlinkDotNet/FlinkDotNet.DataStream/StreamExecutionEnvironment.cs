@@ -449,7 +449,23 @@ namespace FlinkDotNet.DataStream
 
             if (!submit.Success)
             {
+                // Log diagnostic information about endpoints when job submission fails
+                var gatewayUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "(not set)";
+                var jobManagerUrl = Environment.GetEnvironmentVariable("services__flink-jobmanager__jm-http__0") 
+                    ?? Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0")
+                    ?? Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") + ":" + Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT")
+                    ?? "(not set)";
+                var sqlGatewayUrl = Environment.GetEnvironmentVariable("services__flink-sql-gateway__sg-http__0")
+                    ?? Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0")
+                    ?? Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST") + ":" + Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT")
+                    ?? "(not set)";
+                
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
+                _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");
+                _serilogLogger.Error("[ExecuteAsync]   - FlinkDotNet.JobGateway URL: {GatewayUrl}", gatewayUrl);
+                _serilogLogger.Error("[ExecuteAsync]   - Flink JobManager URL: {JobManagerUrl}", jobManagerUrl);
+                _serilogLogger.Error("[ExecuteAsync]   - Flink SqlGateway URL: {SqlGatewayUrl}", sqlGatewayUrl);
+                
                 throw new InvalidOperationException($"Job submission failed: {submit.ErrorMessage}");
             }
 
