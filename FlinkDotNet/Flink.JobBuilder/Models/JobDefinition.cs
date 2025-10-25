@@ -424,7 +424,7 @@ namespace Flink.JobBuilder.Models
         [JsonIgnore]
         public string Type => "retry";
         public int MaxRetries { get; set; } = 5;
-        public List<long> DelayMs { get; set; } = [300000, 600000, 1800000, 3600000, 86400000]; // 5min, 10min, 30min, 1hr, 1day
+        public List<long> DelayMs { get; set; } = [300_000, 600_000, 1_800_000, 3_600_000, 86_400_000]; // 5min, 10min, 30min, 1hr, 1day
         public string? RetryCondition
         {
             get; set;
