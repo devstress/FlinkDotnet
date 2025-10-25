@@ -46,10 +46,6 @@ public class Program
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Map Aspire service connections to Flink configuration
-            // Aspire injects service endpoints which we map to our configuration keys
-            MapAspireServiceConnections(builder.Configuration);
-
             // Use Serilog for ASP.NET Core logging
             builder.Host.UseSerilog();
 
@@ -207,41 +203,6 @@ public class Program
 
         await mem.CopyToAsync(originalBody);
         ctx.Response.Body = originalBody;
-    }
-
-    /// <summary>
-    /// Maps Aspire service connection strings to Flink configuration keys.
-    /// This allows FlinkJobManager to remain infrastructure-agnostic while Aspire can inject endpoints.
-    /// </summary>
-    private static void MapAspireServiceConnections(IConfiguration configuration)
-    {
-        // Map Flink JobManager endpoint from Aspire service connections to Flink configuration
-        // Aspire should inject connection strings with simple names: ConnectionStrings:flink-jobmanager
-        var jobManagerEndpoint = configuration["ConnectionStrings:flink-jobmanager"];
-        
-        if (!string.IsNullOrEmpty(jobManagerEndpoint))
-        {
-            configuration["Flink:JobManager:BaseUrl"] = jobManagerEndpoint;
-            Log.Information("Mapped Aspire Flink JobManager endpoint to configuration: {Endpoint}", jobManagerEndpoint);
-        }
-        else
-        {
-            Log.Warning("No Aspire service connection found for Flink JobManager (ConnectionStrings:flink-jobmanager) - endpoint discovery will use fallback mechanisms");
-        }
-
-        // Map Flink SQL Gateway endpoint from Aspire service connections to Flink configuration
-        // Aspire should inject connection strings with simple names: ConnectionStrings:flink-sql-gateway
-        var sqlGatewayEndpoint = configuration["ConnectionStrings:flink-sql-gateway"];
-        
-        if (!string.IsNullOrEmpty(sqlGatewayEndpoint))
-        {
-            configuration["Flink:SqlGateway:BaseUrl"] = sqlGatewayEndpoint;
-            Log.Information("Mapped Aspire SQL Gateway endpoint to configuration: {Endpoint}", sqlGatewayEndpoint);
-        }
-        else
-        {
-            Log.Warning("No Aspire service connection found for Flink SQL Gateway (ConnectionStrings:flink-sql-gateway) - endpoint discovery will use fallback mechanisms");
-        }
     }
 }
 
