@@ -26,7 +26,9 @@ namespace FlinkDotNet.DataStream.Window
     /// <typeparam name="T">The type of elements in the stream</typeparam>
     /// <typeparam name="TKey">The type of the key</typeparam>
     /// <typeparam name="TWindow">The type of window</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public class WindowedStream<T, TKey, TWindow> where TWindow : IWindow where TKey : notnull
+#pragma warning restore S2436
     {
         private readonly KeyedStream<T, TKey> _keyedStream;
         private readonly IWindowAssigner<T, TWindow> _windowAssigner;

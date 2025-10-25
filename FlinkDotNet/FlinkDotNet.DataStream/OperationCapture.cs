@@ -231,10 +231,10 @@ namespace FlinkDotNet.DataStream
                 switch (operation.Type)
                 {
                     case "Map":
-                        this.TranslateMapOperation(jobDef, operation);
+                        TranslateMapOperation(jobDef, operation);
                         break;
                     case "Filter":
-                        this.TranslateFilterOperation(jobDef, operation);
+                        TranslateFilterOperation(jobDef, operation);
                         break;
                     case "TimeWindowAll":
                     case "CountWindowAll":
@@ -252,7 +252,7 @@ namespace FlinkDotNet.DataStream
             }
         }
 
-        private void TranslateMapOperation(JobDefinition jobDef, CapturedOperation operation)
+        private static void TranslateMapOperation(JobDefinition jobDef, CapturedOperation operation)
         {
             if (operation.OperationType == "upper")
             {
@@ -295,7 +295,7 @@ namespace FlinkDotNet.DataStream
             }
         }
 
-        private void TranslateFilterOperation(JobDefinition jobDef, CapturedOperation operation)
+        private static void TranslateFilterOperation(JobDefinition jobDef, CapturedOperation operation)
         {
             if (operation.Function == null)
             {

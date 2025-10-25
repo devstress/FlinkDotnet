@@ -317,7 +317,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TIn">The type of input elements</typeparam>
     /// <typeparam name="TAcc">The type of accumulator</typeparam>
     /// <typeparam name="TOut">The type of output</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public class AggregatingStateDescriptor<TIn, TAcc, TOut> : StateDescriptor
+#pragma warning restore S2436
     {
         public IAggregateFunction<TIn, TAcc, TOut> AggregateFunction
         {

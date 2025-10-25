@@ -54,7 +54,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TKey">The type of the key</typeparam>
     /// <typeparam name="T">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface IKeyedProcessFunction<TKey, in T, out TOut>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Processes one element from the input stream.
@@ -74,7 +76,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="T1">The type of the first input stream</typeparam>
     /// <typeparam name="T2">The type of the second input stream</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface ICoProcessFunction<in T1, in T2, out TOut>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Processes an element from the first input stream.
@@ -99,7 +103,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TIn">The type of input elements</typeparam>
     /// <typeparam name="TOut">The type of output elements</typeparam>
     /// <typeparam name="TKey">The type of the key</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface IProcessWindowFunction<in TIn, out TOut, TKey>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Processes all elements in a window.
@@ -365,7 +371,9 @@ namespace FlinkDotNet.DataStream
     /// Interface for join functions.
     /// Corresponds to org.apache.flink.api.common.functions.JoinFunction in Java Flink.
     /// </summary>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface IJoinFunction<in T1, in T2, out TOut>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Joins two elements.
@@ -377,7 +385,9 @@ namespace FlinkDotNet.DataStream
     /// Interface for flat join functions.
     /// Corresponds to org.apache.flink.api.common.functions.FlatJoinFunction in Java Flink.
     /// </summary>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface IFlatJoinFunction<in T1, in T2, out TOut>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Joins two elements and produces zero, one, or more result elements.
@@ -389,7 +399,9 @@ namespace FlinkDotNet.DataStream
     /// Interface for co-group functions.
     /// Corresponds to org.apache.flink.api.common.functions.CoGroupFunction in Java Flink.
     /// </summary>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface ICoGroupFunction<in T1, in T2, out TOut>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Co-groups two groups of elements.

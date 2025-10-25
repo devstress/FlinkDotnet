@@ -363,14 +363,22 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="parallelism">The parallelism for this operation</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> SetParallelism(int parallelism) => this;
+        public DataStream<T> SetParallelism(int parallelism)
+        {
+            _ = parallelism; // Reserved for future implementation
+            return this;
+        }
 
         /// <summary>
         /// Sets the name for this operation.
         /// </summary>
         /// <param name="name">The name of this operation</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> Name(string name) => this;
+        public DataStream<T> Name(string name)
+        {
+            _ = name; // Reserved for future implementation
+            return this;
+        }
 
         /// <summary>
         /// Partitions the stream by uniformly distributing the data across all parallel operators.
@@ -417,7 +425,12 @@ namespace FlinkDotNet.DataStream
         /// <param name="partitioner">The custom partitioner function</param>
         /// <param name="keySelector">The key selector function</param>
         /// <returns>The custom partitioned DataStream</returns>
-        public DataStream<T> PartitionCustom<TKey>(Func<TKey, int, int> partitioner, Func<T, TKey> keySelector) => this;
+        public DataStream<T> PartitionCustom<TKey>(Func<TKey, int, int> partitioner, Func<T, TKey> keySelector)
+        {
+            _ = partitioner; // Reserved for future implementation
+            _ = keySelector; // Reserved for future implementation
+            return this;
+        }
 
         /// <summary>
         /// Sets the maximum parallelism for this operation.
@@ -442,7 +455,11 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="slotSharingGroup">The slot sharing group name</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> SlotSharingGroup(string slotSharingGroup) => this;
+        public DataStream<T> SlotSharingGroup(string slotSharingGroup)
+        {
+            _ = slotSharingGroup; // Reserved for future implementation
+            return this;
+        }
 
         /// <summary>
         /// Assigns timestamps and watermarks to this DataStream.
@@ -466,10 +483,13 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="assigner">The timestamp and watermark assigner</param>
         /// <returns>This DataStream with timestamps assigned</returns>
-        public DataStream<T> AssignTimestampsAndWatermarks(IAssignerWithPeriodicWatermarks<T> assigner) =>
+        public DataStream<T> AssignTimestampsAndWatermarks(IAssignerWithPeriodicWatermarks<T> assigner)
+        {
+            _ = assigner; // Reserved for future implementation
             // In a full implementation, this would configure the stream's time characteristic
             // For now, we return the stream to maintain API compatibility
-            this;
+            return this;
+        }
 
         /// <summary>
         /// Assigns timestamps and watermarks to this DataStream using a WatermarkStrategy.
@@ -557,9 +577,12 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="reduceFunction">The reduce function</param>
         /// <returns>The reduced DataStream</returns>
-        public DataStream<T> Reduce(Func<T, T, T> reduceFunction) =>
+        public DataStream<T> Reduce(Func<T, T, T> reduceFunction)
+        {
+            _ = reduceFunction; // Reserved for future implementation
             // This would apply the reduce function to each key group
-            this._dataStream;
+            return this._dataStream;
+        }
 
         /// <summary>
         /// Applies a reduce function to this KeyedStream using a ReduceFunction (Flink-compatible).
@@ -575,9 +598,13 @@ namespace FlinkDotNet.DataStream
         /// <param name="aggregationType">The type of aggregation</param>
         /// <param name="fieldName">The field to aggregate</param>
         /// <returns>The aggregated DataStream</returns>
-        public DataStream<T> Aggregate(string aggregationType, string fieldName) =>
+        public DataStream<T> Aggregate(string aggregationType, string fieldName)
+        {
+            _ = aggregationType; // Reserved for future implementation
+            _ = fieldName; // Reserved for future implementation
             // This would apply the aggregation function based on the type and field
-            this._dataStream;
+            return this._dataStream;
+        }
 
         /// <summary>
         /// Applies a window assigner to this KeyedStream, creating a WindowedStream.
@@ -756,7 +783,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TIn">The type of input elements</typeparam>
     /// <typeparam name="TAcc">The type of the accumulator</typeparam>
     /// <typeparam name="TOut">The type of the output result</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     public interface IAggregateFunction<in TIn, TAcc, out TOut>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Creates a new accumulator, starting a new aggregate.
@@ -892,7 +921,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TIn">The input element type</typeparam>
     /// <typeparam name="TAcc">The accumulator type</typeparam>
     /// <typeparam name="TOut">The output element type</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
     internal class AggregatedSourceFunction<TIn, TAcc, TOut> : ISourceFunction<TOut>
+#pragma warning restore S2436
     {
         private readonly ISourceFunction<TIn> _source;
         private readonly IAggregateFunction<TIn, TAcc, TOut> _aggregateFunction;
