@@ -576,5 +576,5 @@ env.GetCheckpointConfig()
 
 - [Architecture Guide](architecture-and-usecases.md) - System design and scaling
 - [Flink 2.1 Features](flink-21-features.md) - Apache Flink 2.1 compatibility
-- [Getting Started](wiki/Getting-Started.md) - Setup and first job
+- [Getting Started](getting-started.md) - Setup and first job
 - [Examples](../LearningCourse/README.md) - Hands-on learning course
