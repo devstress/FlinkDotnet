@@ -1,4 +1,4 @@
-name: Day01 Integration Tests (Kafka-Flink Pipeline)
+name: Day01 Learning Course Integration Tests
 
 on:
   push:
