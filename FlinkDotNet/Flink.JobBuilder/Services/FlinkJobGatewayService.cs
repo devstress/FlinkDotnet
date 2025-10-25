@@ -18,6 +18,7 @@ namespace Flink.JobBuilder.Services
     {
         private readonly HttpClient _httpClient;
         private readonly FlinkJobGatewayConfiguration _configuration;
+        private readonly ILogger? _logger;
         private static readonly Serilog.Core.Logger _log = CreateLogger();
 
         /// <summary>
@@ -26,7 +27,6 @@ namespace Flink.JobBuilder.Services
         /// </summary>
         public static TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
 
-        private static Serilog.ILogger CreateLogger()
         private static Serilog.Core.Logger CreateLogger()
         {
             var fileSystem = new System.IO.Abstractions.FileSystem();
