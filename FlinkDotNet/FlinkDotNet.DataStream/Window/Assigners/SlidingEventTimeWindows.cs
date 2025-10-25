@@ -65,18 +65,20 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         public IEnumerable<TimeWindow> AssignWindows(T element, long timestamp)
         {
-            if (timestamp > long.MinValue)
+            if (timestamp <= long.MinValue)
             {
-                // Determine the start of the first window that contains this timestamp
-                long lastStart = GetWindowStart(timestamp);
+                yield break;
+            }
 
-                // Generate all windows that contain this timestamp
-                for (long start = lastStart; start > timestamp - _size; start -= _slide)
+            // Determine the start of the first window that contains this timestamp
+            long lastStart = GetWindowStart(timestamp);
+
+            // Generate all windows that contain this timestamp
+            for (long start = lastStart; start > timestamp - _size; start -= _slide)
+            {
+                if (start >= 0 || start + _size > 0)
                 {
-                    if (start >= 0 || start + _size > 0)
-                    {
-                        yield return new TimeWindow(start, start + _size);
-                    }
+                    yield return new TimeWindow(start, start + _size);
                 }
             }
         }

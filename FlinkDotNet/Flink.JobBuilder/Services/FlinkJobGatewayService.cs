@@ -246,25 +246,33 @@ namespace Flink.JobBuilder.Services
                 return await _httpClient.GetAsync($"/api/v1/jobs/{flinkJobId}/status", cancellationToken);
             });
 
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                var status = JsonSerializer.Deserialize<JobStatus>(responseContent, _jsonOptions);
+                _logger?.LogWarning("Failed to get status for job {FlinkJobId}. Status: {StatusCode}",
+                    flinkJobId, response.StatusCode);
 
-                if (status != null)
+                return new JobStatus
                 {
-                    return status;
-                }
+                    FlinkJobId = flinkJobId,
+                    State = "UNKNOWN",
+                    ErrorMessage = $"Failed to retrieve status: HTTP {response.StatusCode}"
+                };
             }
 
-            _logger?.LogWarning("Failed to get status for job {FlinkJobId}. Status: {StatusCode}",
-                flinkJobId, response.StatusCode);
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var status = JsonSerializer.Deserialize<JobStatus>(responseContent, _jsonOptions);
 
+            if (status != null)
+            {
+                return status;
+            }
+
+            _logger?.LogWarning("Failed to deserialize status for job {FlinkJobId}", flinkJobId);
             return new JobStatus
             {
                 FlinkJobId = flinkJobId,
                 State = "UNKNOWN",
-                ErrorMessage = $"Failed to retrieve status: HTTP {response.StatusCode}"
+                ErrorMessage = "Failed to deserialize status"
             };
         }
 
@@ -277,20 +285,23 @@ namespace Flink.JobBuilder.Services
                 return await _httpClient.GetAsync($"/api/v1/jobs/{flinkJobId}/metrics", cancellationToken);
             });
 
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                var metrics = JsonSerializer.Deserialize<JobMetrics>(responseContent, _jsonOptions);
+                _logger?.LogWarning("Failed to get metrics for job {FlinkJobId}. Status: {StatusCode}",
+                    flinkJobId, response.StatusCode);
 
-                if (metrics != null)
-                {
-                    return metrics;
-                }
+                return new JobMetrics();
             }
 
-            _logger?.LogWarning("Failed to get metrics for job {FlinkJobId}. Status: {StatusCode}",
-                flinkJobId, response.StatusCode);
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var metrics = JsonSerializer.Deserialize<JobMetrics>(responseContent, _jsonOptions);
 
+            if (metrics != null)
+            {
+                return metrics;
+            }
+
+            _logger?.LogWarning("Failed to deserialize metrics for job {FlinkJobId}", flinkJobId);
             return new JobMetrics();
         }
 
@@ -444,14 +455,17 @@ namespace Flink.JobBuilder.Services
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (_disposed)
             {
-                if (disposing)
-                {
-                    _httpClient?.Dispose();
-                }
-                _disposed = true;
+                return;
             }
+
+            if (disposing)
+            {
+                _httpClient?.Dispose();
+            }
+            
+            _disposed = true;
         }
     }
 }

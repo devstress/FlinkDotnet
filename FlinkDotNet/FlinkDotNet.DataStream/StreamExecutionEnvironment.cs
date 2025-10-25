@@ -602,13 +602,16 @@ namespace FlinkDotNet.DataStream
         private static string GetProtocol()
         {
             var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
-            if (!string.IsNullOrEmpty(envProtocol))
+            if (string.IsNullOrEmpty(envProtocol))
             {
-                var protocol = envProtocol.Trim().ToLowerInvariant();
-                if (protocol == "https")
-                {
-                    return "https";
-                }
+                // Default to http for backward compatibility
+                return "http";
+            }
+
+            var protocol = envProtocol.Trim().ToLowerInvariant();
+            if (protocol == "https")
+            {
+                return "https";
             }
 
             // Default to http for backward compatibility
