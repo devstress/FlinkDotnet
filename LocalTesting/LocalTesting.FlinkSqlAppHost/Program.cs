@@ -192,7 +192,6 @@ if (isLearningCourseMode)
 
 jobManager = jobManager
     .WithEnvironment(JavaToolOptionsEnv, JavaOpenOptions)
-    .WithEnvironment(JavaToolOptionsEnv, JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithBindMount(testLogsDir, FlinkTestLogsPath);  // Mount host test-logs to container
@@ -240,7 +239,6 @@ if (isLearningCourseMode)
 }
 
 taskManagerBuilder = taskManagerBuilder
-    .WithEnvironment(JavaToolOptionsEnv, JavaOpenOptions)
     .WithEnvironment(JavaToolOptionsEnv, JavaOpenOptions)
     .WithBindMount(Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar"), "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(Path.Combine(connectorsDir, "flink-json-2.1.0.jar"), "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
