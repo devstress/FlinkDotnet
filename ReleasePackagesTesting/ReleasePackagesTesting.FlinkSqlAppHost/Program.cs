@@ -329,8 +329,8 @@ var gateway = builder.AddContainer("flink-job-gateway", "flinkdotnet/jobgateway"
     .WithEnvironment("ASPNETCORE_URLS", "http://+:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/opt/connectors")
     .WithEnvironment("LOG_FILE_PATH", "/opt/test-logs")
-    .WithReference(jobManager.GetEndpoint("jm-http"))
-    .WithReference(sqlGateway.GetEndpoint("sg-http"))
+    .WithEnvironment("Flink__JobManager__BaseUrl", jobManager.GetEndpoint("jm-http"))
+    .WithEnvironment("Flink__SqlGateway__BaseUrl", sqlGateway.GetEndpoint("sg-http"))
     .WithBindMount(connectorsDir, "/opt/connectors", isReadOnly: true)
     .WithBindMount(testLogsDir, "/opt/test-logs");
 #pragma warning restore S1481
