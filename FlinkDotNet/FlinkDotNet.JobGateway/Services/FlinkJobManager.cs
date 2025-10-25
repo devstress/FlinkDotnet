@@ -402,7 +402,7 @@ public class FlinkJobManager : IFlinkJobManager
         _logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
 
         // Validate input before attempting HTTP call to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
 
         try
         {
@@ -441,7 +441,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<JobMetrics?> GetJobMetricsAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        ValidateAndSanitizePathSegment(flinkJobId);
+        ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
 
         try
         {
@@ -464,7 +464,7 @@ public class FlinkJobManager : IFlinkJobManager
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId, nameof(flinkJobId));
 
         if (_jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
         {
@@ -1549,17 +1549,17 @@ public class FlinkJobManager : IFlinkJobManager
     /// <param name="segment">The path segment to validate.</param>
     /// <returns>URL-encoded safe path segment.</returns>
     /// <exception cref="ArgumentException">Thrown when segment contains invalid characters or is null/empty.</exception>
-    private static string ValidateAndSanitizePathSegment(string segment)
+    private static string ValidateAndSanitizePathSegment(string segment, string parameterName = "segment")
     {
         if (string.IsNullOrWhiteSpace(segment))
         {
-            throw new ArgumentException($"Path segment cannot be null or empty.", nameof(segment));
+            throw new ArgumentException($"Path segment cannot be null or empty.", parameterName);
         }
 
         // Check for path traversal sequences
         if (segment.Contains("..") || segment.Contains("./") || segment.Contains(".\\"))
         {
-            throw new ArgumentException($"Path segment contains invalid path traversal sequence: {segment}", nameof(segment));
+            throw new ArgumentException($"Path segment contains invalid path traversal sequence: {segment}", parameterName);
         }
 
         // Check for invalid characters - only allow alphanumeric, hyphens, underscores, and dots
@@ -1568,7 +1568,7 @@ public class FlinkJobManager : IFlinkJobManager
         var invalidChar = segment.FirstOrDefault(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_' && c != '.');
         if (invalidChar != '\0')
         {
-            throw new ArgumentException($"Path segment contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", nameof(segment));
+            throw new ArgumentException($"Path segment contains invalid character '{invalidChar}'. Only alphanumeric, hyphens, underscores, and dots are allowed.", parameterName);
         }
 
         // Return URL-encoded segment for additional safety
