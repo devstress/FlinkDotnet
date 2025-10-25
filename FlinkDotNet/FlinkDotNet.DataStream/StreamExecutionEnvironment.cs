@@ -452,25 +452,15 @@ namespace FlinkDotNet.DataStream
                 // Log diagnostic information about endpoints when job submission fails
                 var gatewayUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "(not set)";
                 
-                // Build JobManager URL from various possible env vars
-                var jobManagerUrl = Environment.GetEnvironmentVariable("services__flink-jobmanager__jm-http__0") 
-                    ?? Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
-                if (jobManagerUrl == null)
-                {
-                    var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST");
-                    var port = Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT");
-                    jobManagerUrl = (host != null && port != null) ? $"http://{host}:{port}" : "(not set)";
-                }
+                // Build JobManager URL from generic env vars
+                var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST");
+                var port = Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT");
+                var jobManagerUrl = (host != null && port != null) ? $"http://{host}:{port}" : "(not set)";
                 
-                // Build SqlGateway URL from various possible env vars
-                var sqlGatewayUrl = Environment.GetEnvironmentVariable("services__flink-sql-gateway__sg-http__0")
-                    ?? Environment.GetEnvironmentVariable("services__flink-sql-gateway__http__0");
-                if (sqlGatewayUrl == null)
-                {
-                    var host = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST");
-                    var port = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT");
-                    sqlGatewayUrl = (host != null && port != null) ? $"http://{host}:{port}" : "(not set)";
-                }
+                // Build SqlGateway URL from generic env vars
+                var sqlHost = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST");
+                var sqlPort = Environment.GetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT");
+                var sqlGatewayUrl = (sqlHost != null && sqlPort != null) ? $"http://{sqlHost}:{sqlPort}" : "(not set)";
                 
                 _serilogLogger.Error("[ExecuteAsync] Job submission failed: {ErrorMessage}", submit.ErrorMessage);
                 _serilogLogger.Error("[ExecuteAsync] Endpoint diagnostics:");

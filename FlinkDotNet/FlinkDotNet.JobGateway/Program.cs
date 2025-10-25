@@ -44,10 +44,6 @@ public class Program
             Log.Information("FLINK_CLUSTER_PORT: {Port}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"));
             Log.Information("KAFKA_BOOTSTRAP: {Kafka}", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
 
-            // Check for Aspire service discovery variables
-            var aspireFlinkEndpoint = Environment.GetEnvironmentVariable("services__flink-jobmanager__http__0");
-            Log.Information("Aspire Flink endpoint: {Endpoint}", aspireFlinkEndpoint ?? "NOT SET");
-
             var builder = WebApplication.CreateBuilder(args);
 
             // Use Serilog for ASP.NET Core logging
