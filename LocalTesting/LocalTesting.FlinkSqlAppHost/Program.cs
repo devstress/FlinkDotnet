@@ -337,20 +337,20 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 
 // CRITICAL FIX: Gateway runs on HOST, not in container, so it needs localhost URLs
 // Aspire .WithReference() injects container hostnames (e.g., flink-jobmanager:8081)
-// which are not resolvable from host processes. We must explicitly set localhost URLs.
-// FlinkJobManager.cs DiscoverFlinkEndpoint() reads these environment variables:
-// - services__flink-jobmanager__jm-http__0 for JobManager endpoint
-// - services__flink-sql-gateway__sg-http__0 for SQL Gateway endpoint
+// which are not resolvable from host processes. We must explicitly set localhost URLs via configuration.
+// FlinkJobManager.cs DiscoverFlinkEndpoint() reads configuration keys:
+// - Flink:JobManager:BaseUrl for JobManager endpoint
+// - Flink:SqlGateway:BaseUrl for SQL Gateway endpoint
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: 8080, name: "gateway-http")
     .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
-    // Note: Using ToString() instead of string interpolation due to Aspire ReferenceExpression limitations
-    // String interpolation fails with: "The type 'int' cannot be used as type parameter 'T' in the generic type"
-    .WithEnvironment("services__flink-jobmanager__jm-http__0", "http://localhost:" + Ports.JobManagerHostPort.ToString())
-    .WithEnvironment("services__flink-sql-gateway__sg-http__0", "http://localhost:" + Ports.SqlGatewayHostPort.ToString());
+    // Note: Using configuration instead of services__ environment variables to avoid Aspire confusion
+    // Using ToString() to avoid ReferenceExpression type issues
+    .WithEnvironment("Flink__JobManager__BaseUrl", "http://localhost:" + Ports.JobManagerHostPort.ToString())
+    .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://localhost:" + Ports.SqlGatewayHostPort.ToString());
 #pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
