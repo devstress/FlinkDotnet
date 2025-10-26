@@ -71,9 +71,6 @@ public partial class FlinkJobManager : IFlinkJobManager
     private string DiscoverFlinkEndpoint()
     {
         return this.DiscoverEndpoint(
-            serviceName: "flink-jobmanager",
-            primaryEndpointName: "jm-http",
-            legacyEndpointName: "http",
             configKey: "Flink:JobManager:BaseUrl",
             envHostKey: "FLINK_CLUSTER_HOST",
             envPortKey: "FLINK_CLUSTER_PORT",
@@ -92,9 +89,6 @@ public partial class FlinkJobManager : IFlinkJobManager
     private string DiscoverSqlGatewayEndpoint()
     {
         return this.DiscoverEndpoint(
-            serviceName: "flink-sql-gateway",
-            primaryEndpointName: "sg-http",
-            legacyEndpointName: "http",
             configKey: "Flink:SqlGateway:BaseUrl",
             envHostKey: "FLINK_SQL_GATEWAY_HOST",
             envPortKey: "FLINK_SQL_GATEWAY_PORT",
@@ -115,11 +109,7 @@ public partial class FlinkJobManager : IFlinkJobManager
     /// </remarks>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "S107:Methods should not have too many parameters",
         Justification = "Generic method eliminates 98 lines of duplication between DiscoverFlinkEndpoint and DiscoverSqlGatewayEndpoint")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Parameters reserved for future Aspire integration")]
     private string DiscoverEndpoint(
-        string serviceName,
-        string primaryEndpointName,
-        string legacyEndpointName,
         string configKey,
         string envHostKey,
         string envPortKey,
