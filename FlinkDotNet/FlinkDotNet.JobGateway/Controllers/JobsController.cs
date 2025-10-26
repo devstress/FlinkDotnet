@@ -61,11 +61,13 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     private void LogRequestReceived()
     {
         this._logger.LogInformation(
-            "{BorderTop}\n" +
-            "║ 🔵 [Gateway] Received job submission request\n" +
-            "║ 📡 Client: {ClientIP}\n" +
-            "║ 🌐 Endpoint: POST /api/v1/jobs/submit\n" +
-            "{BorderBottom}",
+            """
+            {BorderTop}
+            ║ 🔵 [Gateway] Received job submission request
+            ║ 📡 Client: {ClientIP}
+            ║ 🌐 Endpoint: POST /api/v1/jobs/submit
+            {BorderBottom}
+            """,
             LogBorderTop, this.HttpContext.Connection.RemoteIpAddress, LogBorderBottom);
     }
 
@@ -155,35 +157,41 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
             if (result.IsSuccess)
             {
                 this._logger.LogInformation(
-                    "{BorderTop}\n" +
-                    "║ ✅ [Gateway] Job submitted successfully\n" +
-                    "║ 📋 JobId: {JobId}\n" +
-                    "║ 🆔 FlinkJobId: {FlinkJobId}\n" +
-                    "║ 📤 Response: 200 OK\n" +
-                    "{BorderBottom}",
+                    """
+                    {BorderTop}
+                    ║ ✅ [Gateway] Job submitted successfully
+                    ║ 📋 JobId: {JobId}
+                    ║ 🆔 FlinkJobId: {FlinkJobId}
+                    ║ 📤 Response: 200 OK
+                    {BorderBottom}
+                    """,
                     LogBorderTop, result.JobId, result.FlinkJobId, LogBorderBottom);
                 return this.Ok(result);
             }
 
             this._logger.LogError(
-                "{BorderTop}\n" +
-                "║ ❌ [Gateway] Job submission failed\n" +
-                "║ 📋 JobId: {JobId}\n" +
-                "║ ⚠️ Error: {ErrorMessage}\n" +
-                "║ 📤 Response: 400 Bad Request\n" +
-                "{BorderBottom}",
+                """
+                {BorderTop}
+                ║ ❌ [Gateway] Job submission failed
+                ║ 📋 JobId: {JobId}
+                ║ ⚠️ Error: {ErrorMessage}
+                ║ 📤 Response: 400 Bad Request
+                {BorderBottom}
+                """,
                 LogBorderTop, result.JobId, result.ErrorMessage, LogBorderBottom);
             return this.BadRequest(result);
         }
         catch (Exception ex)
         {
             this._logger.LogError(ex,
-                "{BorderTop}\n" +
-                "║ ❌ [Gateway] Exception during job submission\n" +
-                "║ 📋 JobId: {JobId}\n" +
-                "║ 💥 Exception: {Message}\n" +
-                "║ 📤 Response: 500 Internal Server Error\n" +
-                "{BorderBottom}",
+                """
+                {BorderTop}
+                ║ ❌ [Gateway] Exception during job submission
+                ║ 📋 JobId: {JobId}
+                ║ 💥 Exception: {Message}
+                ║ 📤 Response: 500 Internal Server Error
+                {BorderBottom}
+                """,
                 LogBorderTop, jobDefinition.Metadata.JobId, ex.Message, LogBorderBottom);
             JobSubmissionResult result = JobSubmissionResult.CreateFailure(
                 jobDefinition.Metadata.JobId,
