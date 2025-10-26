@@ -18,6 +18,12 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     private const string LogBorderTop = "╔══════════════════════════════════════════════════════════════";
     private const string LogBorderBottom = "╚══════════════════════════════════════════════════════════════";
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
     private readonly ILogger<JobsController> _logger = logger;
     private readonly IFlinkJobManager _flinkJobManager = flinkJobManager;
 
@@ -30,19 +36,19 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     {
         this.LogRequestReceived();
 
-        var requestBodyResult = await this.ReadRequestBodyAsync();
+        (string? Body, ActionResult? Error) requestBodyResult = await this.ReadRequestBodyAsync();
         if (requestBodyResult.Error != null)
         {
             return requestBodyResult.Error;
         }
 
-        var jobDefResult = this.DeserializeJobDefinition(requestBodyResult.Body!);
+        (JobDefinition? JobDefinition, ActionResult? Error) jobDefResult = this.DeserializeJobDefinition(requestBodyResult.Body!);
         if (jobDefResult.Error != null)
         {
             return jobDefResult.Error;
         }
 
-        var jobDefinition = jobDefResult.JobDefinition!;
+        JobDefinition jobDefinition = jobDefResult.JobDefinition!;
         this.EnsureJobMetadata(jobDefinition);
 
         this._logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}",
@@ -65,8 +71,8 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     {
         try
         {
-            using var reader = new StreamReader(this.Request.Body, Encoding.UTF8);
-            var raw = await reader.ReadToEndAsync();
+            using StreamReader reader = new StreamReader(this.Request.Body, Encoding.UTF8);
+            string raw = await reader.ReadToEndAsync();
             this._logger.LogDebug("📝 Request body length: {Length} bytes", raw.Length);
 
             if (string.IsNullOrWhiteSpace(raw))
@@ -95,12 +101,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     {
         try
         {
-            var opts = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true,
-            };
-            var jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, opts);
+            JobDefinition? jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, JsonOptions);
 
             if (jobDefinition == null)
             {
@@ -147,7 +148,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
         try
         {
             this._logger.LogInformation("🚀 Submitting job to Flink cluster...");
-            var result = await this._flinkJobManager.SubmitJobAsync(jobDefinition);
+            JobSubmissionResult result = await this._flinkJobManager.SubmitJobAsync(jobDefinition);
 
             if (result.IsSuccess)
             {
@@ -159,16 +160,14 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
                 this._logger.LogInformation(LogBorderBottom);
                 return this.Ok(result);
             }
-            else
-            {
-                this._logger.LogError(LogBorderTop);
-                this._logger.LogError("║ ❌ [Gateway] Job submission failed");
-                this._logger.LogError("║ 📋 JobId: {JobId}", result.JobId);
-                this._logger.LogError("║ ⚠️ Error: {ErrorMessage}", result.ErrorMessage);
-                this._logger.LogError("║ 📤 Response: 400 Bad Request");
-                this._logger.LogError(LogBorderBottom);
-                return this.BadRequest(result);
-            }
+
+            this._logger.LogError(LogBorderTop);
+            this._logger.LogError("║ ❌ [Gateway] Job submission failed");
+            this._logger.LogError("║ 📋 JobId: {JobId}", result.JobId);
+            this._logger.LogError("║ ⚠️ Error: {ErrorMessage}", result.ErrorMessage);
+            this._logger.LogError("║ 📤 Response: 400 Bad Request");
+            this._logger.LogError(LogBorderBottom);
+            return this.BadRequest(result);
         }
         catch (Exception ex)
         {
@@ -178,7 +177,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
             this._logger.LogError("║ 💥 Exception: {Message}", ex.Message);
             this._logger.LogError("║ 📤 Response: 500 Internal Server Error");
             this._logger.LogError(LogBorderBottom);
-            var result = JobSubmissionResult.CreateFailure(
+            JobSubmissionResult result = JobSubmissionResult.CreateFailure(
                 jobDefinition.Metadata.JobId,
                 $"Internal server error: {ex.Message}");
             return this.StatusCode(500, result);

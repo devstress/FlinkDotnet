@@ -1,3 +1,4 @@
+#nullable enable
 using System.Text;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.JobGateway.Controllers;

@@ -1,3 +1,4 @@
+#nullable enable
 namespace FlinkDotNet.JobGateway.Tests.Tests;
 
 public class FlinkRunnerJarBuildTests

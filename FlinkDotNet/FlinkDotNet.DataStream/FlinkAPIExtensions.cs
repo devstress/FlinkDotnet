@@ -123,12 +123,18 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the Kafka topic to write to.
         /// </summary>
-        public string Topic { get; }
+        public string Topic
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the Kafka bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers { get; }
+        public string BootstrapServers
+        {
+            get;
+        }
 
         /// <summary>
         /// Creates a Kafka sink function.
