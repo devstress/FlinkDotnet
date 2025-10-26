@@ -822,17 +822,21 @@ public partial class FlinkJobManager
         return null;
     }
 
-    private static string? MatchJobEntry(JsonElement element, string jobName) =>
-        !TryGetStringProperty(element, "name", out string? name) && !TryGetStringProperty(element, "jobName", out name)
-            ? null
-            : !string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase)
-                ? null
-                : TryGetStringProperty(element, "jid", out string? jobId) ||
-                  TryGetStringProperty(element, "jobId", out jobId) ||
-                  TryGetStringProperty(element, "jobid", out jobId) ||
-                  TryGetStringProperty(element, "id", out jobId)
-                    ? jobId
-                    : null;
+    private static string? MatchJobEntry(JsonElement element, string jobName)
+    {
+        if ((!TryGetStringProperty(element, "name", out string? name) && !TryGetStringProperty(element, "jobName", out name)) ||
+            !string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return TryGetStringProperty(element, "jid", out string? jobId) ||
+               TryGetStringProperty(element, "jobId", out jobId) ||
+               TryGetStringProperty(element, "jobid", out jobId) ||
+               TryGetStringProperty(element, "id", out jobId)
+            ? jobId
+            : null;
+    }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
     {

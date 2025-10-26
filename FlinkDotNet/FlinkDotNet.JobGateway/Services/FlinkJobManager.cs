@@ -761,10 +761,13 @@ public partial class FlinkJobManager : IFlinkJobManager
         return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
     }
 
-    private static string? ExtractBackpressureLevel(JsonElement root) =>
-        root.TryGetProperty("backpressureLevel", out JsonElement lvlEl)
-            ? lvlEl.GetString()
-            : root.TryGetProperty("backpressure-level", out JsonElement lvlEl2)
-                ? lvlEl2.GetString()
-                : null;
+    private static string? ExtractBackpressureLevel(JsonElement root)
+    {
+        if (root.TryGetProperty("backpressureLevel", out JsonElement lvlEl))
+        {
+            return lvlEl.GetString();
+        }
+
+        return root.TryGetProperty("backpressure-level", out JsonElement lvlEl2) ? lvlEl2.GetString() : null;
+    }
 }
