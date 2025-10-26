@@ -417,7 +417,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             return response.StatusCode == HttpStatusCode.NotFound
                 ? null
                 : throw new InvalidOperationException(
-                    $"Unexpected status code querying Flink job status: {(int)response.StatusCode} {response.StatusCode}");
+                    $"Unexpected status code querying Flink job status: {(int) response.StatusCode} {response.StatusCode}");
         }
         catch (Exception ex)
         {

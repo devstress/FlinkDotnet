@@ -102,7 +102,7 @@ public partial class FlinkJobManager
                 string err = await response.Content.ReadAsStringAsync();
                 this._logger.LogError(
                     "❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
-                    (int)response.StatusCode,
+                    (int) response.StatusCode,
                     response.ReasonPhrase,
                     err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
@@ -121,7 +121,7 @@ public partial class FlinkJobManager
                 {
                     this._logger.LogInformation(
                         "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
-                        (int)response.StatusCode,
+                        (int) response.StatusCode,
                         response.ReasonPhrase,
                         jobId);
                 }
@@ -230,7 +230,7 @@ public partial class FlinkJobManager
             string errorContent = await sessionResponse.Content.ReadAsStringAsync();
             this._logger.LogError(
                 "❌ SQL Gateway session creation failed: {StatusCode} {ReasonPhrase} - {Error}",
-                (int)sessionResponse.StatusCode,
+                (int) sessionResponse.StatusCode,
                 sessionResponse.ReasonPhrase,
                 errorContent);
             throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
@@ -242,7 +242,7 @@ public partial class FlinkJobManager
         string handle = this.ExtractSessionHandle(sessionResponseContent);
         this._logger.LogInformation(
             "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Session handle extracted: {Handle}",
-            (int)sessionResponse.StatusCode,
+            (int) sessionResponse.StatusCode,
             sessionResponse.ReasonPhrase,
             handle);
 

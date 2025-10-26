@@ -391,7 +391,7 @@ namespace Flink.JobBuilder.Services
             }
 
             // For client errors (4xx), only retry on specific conditions
-            return !((int)response.StatusCode < 400 || (int)response.StatusCode >= 500)
+            return !((int) response.StatusCode < 400 || (int) response.StatusCode >= 500)
                 && await this.ShouldRetryClientErrorAsync(response, retryCount);
         }
 
