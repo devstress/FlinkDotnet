@@ -8,13 +8,17 @@ namespace FlinkDotNet.JobGateway.Services;
 /// </summary>
 public class MetricsService
 {
-    // Job-related metrics
+    /// <summary>
+    /// Job-related metrics
+    /// </summary>
     private readonly Counter _jobsSubmittedTotal;
     private readonly Gauge _jobsRunning;
     private readonly Counter _jobsSucceededTotal;
     private readonly Counter _jobsFailedTotal;
 
-    // Request-related metrics
+    /// <summary>
+    /// Request-related metrics
+    /// </summary>
     private readonly Counter _requestsTotal;
     private readonly Histogram _requestDuration;
 
@@ -30,7 +34,7 @@ public class MetricsService
             "Total number of jobs submitted to the gateway",
             new CounterConfiguration
             {
-                LabelNames = new[] { "mode" } // LOCAL or REMOTE
+                LabelNames = ["mode"] // LOCAL or REMOTE
             });
 
         this._jobsRunning = Metrics.CreateGauge(
@@ -46,7 +50,7 @@ public class MetricsService
             "Total number of failed jobs",
             new CounterConfiguration
             {
-                LabelNames = new[] { "error_type" }
+                LabelNames = ["error_type"]
             });
 
         // Request metrics
@@ -55,7 +59,7 @@ public class MetricsService
             "Total number of API requests",
             new CounterConfiguration
             {
-                LabelNames = new[] { "endpoint", "method", "status_code" }
+                LabelNames = ["endpoint", "method", "status_code"]
             });
 
         this._requestDuration = Metrics.CreateHistogram(
@@ -63,7 +67,7 @@ public class MetricsService
             "Duration of API requests in seconds",
             new HistogramConfiguration
             {
-                LabelNames = new[] { "endpoint", "method" },
+                LabelNames = ["endpoint", "method"],
                 Buckets = Histogram.ExponentialBuckets(0.001, 2, 10) // 1ms to ~1s
             });
     }

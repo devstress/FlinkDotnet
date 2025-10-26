@@ -56,7 +56,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         // NOTE: This discovery happens at Gateway startup time, which may be BEFORE
         // the Flink container is fully ready in Aspire DCP testing mode.
         // The Gateway will verify Flink connectivity when jobs are submitted.
-        var flinkBaseUrl = this.DiscoverFlinkEndpoint();
+        string flinkBaseUrl = this.DiscoverFlinkEndpoint();
 
         this._httpClient.BaseAddress = new Uri(flinkBaseUrl);
         this._httpClient.Timeout = TimeSpan.FromMinutes(5);
@@ -119,7 +119,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         bool logAspireWarning)
     {
         // Strategy 1: Configuration from appsettings.json or injected by infrastructure (Aspire/tests)
-        var configEndpoint = this._configuration[configKey];
+        string? configEndpoint = this._configuration[configKey];
         if (!string.IsNullOrEmpty(configEndpoint))
         {
             this._logger.LogInformation("Using configuration for {ServiceName}: {Endpoint}", serviceDisplayName, configEndpoint);
@@ -127,21 +127,21 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Strategy 2: Explicit environment variables (generic, non-Aspire specific)
-        var envHost = Environment.GetEnvironmentVariable(envHostKey);
-        var envPort = Environment.GetEnvironmentVariable(envPortKey);
+        string? envHost = Environment.GetEnvironmentVariable(envHostKey);
+        string? envPort = Environment.GetEnvironmentVariable(envPortKey);
 
         if (!string.IsNullOrEmpty(envHost))
         {
-            var port = int.TryParse(envPort, out var p) ? p : defaultPort;
-            var protocol = this.GetProtocol();
-            var envEndpoint = $"{protocol}://{envHost}:{port}";
+            int port = int.TryParse(envPort, out int p) ? p : defaultPort;
+            string protocol = this.GetProtocol();
+            string envEndpoint = $"{protocol}://{envHost}:{port}";
             this._logger.LogInformation("Using environment variable for {ServiceName}: {Endpoint}", serviceDisplayName, envEndpoint);
             return envEndpoint;
         }
 
         // Strategy 3: Default fallback for local development
-        var defaultProtocol = this.GetProtocol();
-        var defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
+        string defaultProtocol = this.GetProtocol();
+        string defaultEndpoint = $"{defaultProtocol}://{defaultHost}:{defaultPort}";
         this._logger.LogInformation("Using default Docker network for {ServiceName}: {Endpoint}", serviceDisplayName, defaultEndpoint);
         if (logAspireWarning)
         {
@@ -158,10 +158,10 @@ public partial class FlinkJobManager : IFlinkJobManager
     private string GetProtocol()
     {
         // Check environment variable first
-        var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+        string? envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
         if (!string.IsNullOrEmpty(envProtocol))
         {
-            var protocol = envProtocol.Trim().ToUpperInvariant();
+            string protocol = envProtocol.Trim().ToUpperInvariant();
             if (protocol == ProtocolHttps)
             {
                 this._logger.LogInformation("Using HTTPS protocol from FLINK_PROTOCOL environment variable");
@@ -174,10 +174,10 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Check configuration
-        var configProtocol = this._configuration["Flink:Protocol"];
+        string? configProtocol = this._configuration["Flink:Protocol"];
         if (!string.IsNullOrEmpty(configProtocol))
         {
-            var protocol = configProtocol.Trim().ToUpperInvariant();
+            string protocol = configProtocol.Trim().ToUpperInvariant();
             if (protocol == ProtocolHttps)
             {
                 this._logger.LogInformation("Using HTTPS protocol from configuration");
@@ -195,20 +195,20 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
     {
-        var maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
+        int maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
 
         this._logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
 
-        for (var i = 0; i < maxRetries; i++)
+        for (int i = 0; i < maxRetries; i++)
         {
             try
             {
                 this._logger.LogInformation("Checking SQL Gateway availability (attempt {Attempt}/{Max})", i + 1, maxRetries);
-                var response = await client.GetAsync("/v1/info");
+                HttpResponseMessage response = await client.GetAsync("/v1/info");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var infoContent = await response.Content.ReadAsStringAsync();
+                    string infoContent = await response.Content.ReadAsStringAsync();
                     this._logger.LogInformation("SQL Gateway is ready and responding: {Info}", infoContent);
                     return;
                 }
@@ -574,8 +574,6 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
     }
 
-
-
     // ---------------- Metrics helpers ----------------
 
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
@@ -762,5 +760,4 @@ public partial class FlinkJobManager : IFlinkJobManager
         root.TryGetProperty("backpressureLevel", out var lvlEl) ? lvlEl.GetString() :
         root.TryGetProperty("backpressure-level", out var lvlEl2) ? lvlEl2.GetString() :
         null;
-
 }
