@@ -69,6 +69,8 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="windows">The windows to merge</param>
         /// <returns>Merged windows</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "S2326:Unused type parameters should be removed",
+            Justification = "Static method is intentionally provided for backwards compatibility. Actual implementation is in SessionWindowMerger.")]
         public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows) =>
             SessionWindowMerger.MergeWindows(windows);
 

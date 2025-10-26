@@ -100,8 +100,11 @@ public partial class FlinkJobManager
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 string err = await response.Content.ReadAsStringAsync();
-                this._logger.LogError("❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
-                    (int)response.StatusCode, response.ReasonPhrase, err);
+                this._logger.LogError(
+                    "❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
+                    (int)response.StatusCode,
+                    response.ReasonPhrase,
+                    err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
 
@@ -116,8 +119,11 @@ public partial class FlinkJobManager
                 jobId = run?.JobId;
                 if (jobId != null)
                 {
-                    this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
-                        (int)response.StatusCode, response.ReasonPhrase, jobId);
+                    this._logger.LogInformation(
+                        "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
+                        (int)response.StatusCode,
+                        response.ReasonPhrase,
+                        jobId);
                 }
             }
             catch (JsonException ex)
@@ -222,8 +228,11 @@ public partial class FlinkJobManager
         if (!sessionResponse.IsSuccessStatusCode)
         {
             string errorContent = await sessionResponse.Content.ReadAsStringAsync();
-            this._logger.LogError("❌ SQL Gateway session creation failed: {StatusCode} {ReasonPhrase} - {Error}",
-                (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase, errorContent);
+            this._logger.LogError(
+                "❌ SQL Gateway session creation failed: {StatusCode} {ReasonPhrase} - {Error}",
+                (int)sessionResponse.StatusCode,
+                sessionResponse.ReasonPhrase,
+                errorContent);
             throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
         }
 
@@ -231,8 +240,11 @@ public partial class FlinkJobManager
         this._logger.LogDebug("📥 Response body: {Response}", sessionResponseContent);
 
         string handle = this.ExtractSessionHandle(sessionResponseContent);
-        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Session handle extracted: {Handle}",
-            (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase, handle);
+        this._logger.LogInformation(
+            "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Session handle extracted: {Handle}",
+            (int)sessionResponse.StatusCode,
+            sessionResponse.ReasonPhrase,
+            handle);
 
         return handle;
     }
@@ -351,10 +363,19 @@ public partial class FlinkJobManager
             jarPath = await this.CreateShadedJarAsync(jarPath, connectorJars);
         }
 
-        using MultipartFormDataContent form = new();
         await using FileStream fs = File.OpenRead(jarPath);
         string fileName = Path.GetFileName(jarPath);
-        form.Add(new StreamContent(fs), "jarfile", fileName);
+        using MultipartFormDataContent form =
+        [
+            new StreamContent(fs)
+            {
+                Headers = { ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+                {
+                    Name = "jarfile",
+                    FileName = fileName
+                }}
+            }
+        ];
 
         HttpResponseMessage uploadResp = await this._httpClient.PostAsync("/v1/jars/upload", form);
         if (!uploadResp.IsSuccessStatusCode)
