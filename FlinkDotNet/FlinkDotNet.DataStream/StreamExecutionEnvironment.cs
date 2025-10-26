@@ -660,7 +660,7 @@ namespace FlinkDotNet.DataStream
 
         public async Task<JobStatus> GetJobStatusAsync(CancellationToken cancellationToken = default)
         {
-            JobStatus status = await this._gateway.GetJobStatusAsync(this.JobId, cancellationToken).ConfigureAwait(false);
+            Flink.JobBuilder.Models.JobStatus status = await this._gateway.GetJobStatusAsync(this.JobId, cancellationToken).ConfigureAwait(false);
             return new JobStatus
             {
                 JobId = this.JobId,

@@ -94,7 +94,7 @@ namespace Flink.JobBuilder.Services
 
         private JobSubmissionResult? ValidateJobDefinition(JobDefinition jobDefinition)
         {
-            ValidationResult validation = JobDefinitionValidator.Validate(jobDefinition);
+            IrValidationResult validation = JobDefinitionValidator.Validate(jobDefinition);
             if (validation.IsValid)
             {
                 return null;
