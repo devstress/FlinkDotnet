@@ -65,7 +65,7 @@ public partial class FlinkJobManager
             // DIAGNOSTIC: Log job definition bootstrap servers before submission
             KafkaSourceDefinition? kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
             KafkaSinkDefinition? kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-            
+
             this.LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
                 ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"),
                 ("✅ JAR", jarId),
@@ -100,7 +100,7 @@ public partial class FlinkJobManager
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 string err = await response.Content.ReadAsStringAsync();
-                this._logger.LogError("❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}", 
+                this._logger.LogError("❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
                     (int)response.StatusCode, response.ReasonPhrase, err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
@@ -116,7 +116,7 @@ public partial class FlinkJobManager
                 jobId = run?.JobId;
                 if (jobId != null)
                 {
-                    this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}", 
+                    this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
                         (int)response.StatusCode, response.ReasonPhrase, jobId);
                 }
             }
@@ -231,7 +231,7 @@ public partial class FlinkJobManager
         this._logger.LogDebug("📥 Response body: {Response}", sessionResponseContent);
 
         string handle = this.ExtractSessionHandle(sessionResponseContent);
-        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Session handle extracted: {Handle}", 
+        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Session handle extracted: {Handle}",
             (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase, handle);
 
         return handle;
@@ -282,7 +282,7 @@ public partial class FlinkJobManager
     private async Task<string?> ExecuteSingleStatementAsync(HttpClient client, string sessionHandle, string statement)
     {
         this._logger.LogInformation("Executing SQL statement via Gateway: {Statement}",
-            statement.Length > 100 ? string.Concat(statement.AsSpan(0, 100), "...") : statement);
+            statement.Length > 100 ? $"{statement[..100]}..." : statement);
 
         object requestBody = new
         {
@@ -677,7 +677,7 @@ public partial class FlinkJobManager
 
             ZipArchiveEntry newEntry = outputZip.CreateEntry(servicePath, CompressionLevel.Optimal);
             using StreamWriter writer = new(newEntry.Open());
-            List<string> sortedLines = [.. serviceLines.OrderBy(l => l)];
+            List<string> sortedLines = [.. serviceLines.Order()];
             foreach (string line in sortedLines)
             {
                 writer.WriteLine(line);
@@ -829,15 +829,12 @@ public partial class FlinkJobManager
             return null;
         }
 
-        if (TryGetStringProperty(element, "jid", out string? jobId) ||
+        return TryGetStringProperty(element, "jid", out string? jobId) ||
             TryGetStringProperty(element, "jobId", out jobId) ||
             TryGetStringProperty(element, "jobid", out jobId) ||
-            TryGetStringProperty(element, "id", out jobId))
-        {
-            return jobId;
-        }
-
-        return null;
+            TryGetStringProperty(element, "id", out jobId)
+            ? jobId
+            : null;
     }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)

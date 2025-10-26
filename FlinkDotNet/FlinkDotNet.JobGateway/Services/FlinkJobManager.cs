@@ -479,7 +479,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return true;
             }
 
-            this._logger.LogWarning("PATCH cancel returned {PatchStatus}, trying POST fallback", patchResponse.StatusCode);
+            this._logger.LogDebug("PATCH cancel returned {PatchStatus}, trying POST fallback", patchResponse.StatusCode);
 
             // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
             HttpResponseMessage postResponse = await this._httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
@@ -523,10 +523,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         // Build jar on demand using Maven directly
         this._logger.LogInformation("Runner jar not found, building on demand with Maven...");
         string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
-        if (repoRoot is null)
-        {
-            throw new InvalidOperationException("Could not locate repository root for Maven build");
-        }
+        ArgumentNullException.ThrowIfNull(repoRoot, nameof(repoRoot));
 
         string runnerDir = Path.Combine(repoRoot, FlinkIRRunnerDirectory);
         string pomFile = Path.Combine(runnerDir, "pom.xml");
@@ -772,11 +769,8 @@ public partial class FlinkJobManager : IFlinkJobManager
             return lvlEl.GetString();
         }
 
-        if (root.TryGetProperty("backpressure-level", out JsonElement lvlEl2))
-        {
-            return lvlEl2.GetString();
-        }
-
-        return null;
+        return root.TryGetProperty("backpressure-level", out JsonElement lvlEl2)
+            ? lvlEl2.GetString()
+            : null;
     }
 }
