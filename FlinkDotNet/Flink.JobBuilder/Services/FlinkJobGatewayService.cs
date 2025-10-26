@@ -29,7 +29,7 @@ namespace Flink.JobBuilder.Services
 
         private static Serilog.Core.Logger CreateLogger()
         {
-            var fileSystem = new System.IO.Abstractions.FileSystem();
+            System.IO.Abstractions.FileSystem fileSystem = new System.IO.Abstractions.FileSystem();
             return global::FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(
                 fileSystem,
                 "FlinkDotNet.JobGateway.log");
@@ -53,7 +53,7 @@ namespace Flink.JobBuilder.Services
         {
             _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient with BaseUrl={BaseUrl}", this._configuration.BaseUrl);
 
-            var client = new HttpClient
+            HttpClient client = new HttpClient
             {
                 BaseAddress = new Uri(this._configuration.BaseUrl),
                 Timeout = this._configuration.HttpTimeout
@@ -72,21 +72,21 @@ namespace Flink.JobBuilder.Services
 
         public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, CancellationToken cancellationToken = default)
         {
-            var targetUrl = new Uri(this._httpClient.BaseAddress!, "/api/v1/jobs/submit").ToString();
+            string targetUrl = new Uri(this._httpClient.BaseAddress!, "/api/v1/jobs/submit").ToString();
             this._logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway at {Url}", jobDefinition.Metadata.JobId, targetUrl);
             _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}, TargetUrl={TargetUrl}",
                 jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers, targetUrl);
 
-            var validation = this.ValidateJobDefinition(jobDefinition);
+            JobSubmissionResult? validation = this.ValidateJobDefinition(jobDefinition);
             if (validation != null)
             {
                 return validation;
             }
 
-            var json = this.SerializeAndLogJobDefinition(jobDefinition);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            string json = this.SerializeAndLogJobDefinition(jobDefinition);
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await this.ExecuteWithRetryAsync(async () =>
+            HttpResponseMessage response = await this.ExecuteWithRetryAsync(async () =>
                 await this._httpClient.PostAsync("/api/v1/jobs/submit", content, cancellationToken));
 
             return await this.ProcessSubmissionResponseAsync(jobDefinition, response, targetUrl, cancellationToken);
@@ -94,20 +94,20 @@ namespace Flink.JobBuilder.Services
 
         private JobSubmissionResult? ValidateJobDefinition(JobDefinition jobDefinition)
         {
-            var validation = JobDefinitionValidator.Validate(jobDefinition);
+            ValidationResult validation = JobDefinitionValidator.Validate(jobDefinition);
             if (validation.IsValid)
             {
                 return null;
             }
 
-            var msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
+            string msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
             this._logger?.LogWarning("Job validation failed: {ValidationErrors}", msg);
             return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, msg);
         }
 
         private string SerializeAndLogJobDefinition(JobDefinition jobDefinition)
         {
-            var json = JsonSerializer.Serialize(jobDefinition, this._jsonOptions);
+            string json = JsonSerializer.Serialize(jobDefinition, this._jsonOptions);
             this.LogSerializedJob(jobDefinition, json);
             LogBootstrapServersInJson(json);
             return json;
@@ -115,8 +115,8 @@ namespace Flink.JobBuilder.Services
 
         private void LogSerializedJob(JobDefinition jobDefinition, string json)
         {
-            var hasDiscriminatorToken = json.Contains("\"type\"", StringComparison.Ordinal);
-            var firstSnippet = json.Length > 500 ? json[..500] + "...(truncated)" : json;
+            bool hasDiscriminatorToken = json.Contains("\"type\"", StringComparison.Ordinal);
+            string firstSnippet = json.Length > 500 ? json[..500] + "...(truncated)" : json;
             this._logger?.LogInformation(
                 "Job {JobId} JSON serialized (length={Length}, hasDiscriminatorToken={HasType}). Snippet: {Snippet}",
                 jobDefinition.Metadata.JobId, json.Length, hasDiscriminatorToken, firstSnippet);
@@ -127,7 +127,7 @@ namespace Flink.JobBuilder.Services
         private static void LogBootstrapServersInJson(string json)
         {
             _log.Information("[FlinkJobGatewayService.SubmitJobAsync] After JSON serialization, checking bootstrap servers in JSON");
-            var bootstrapServersInJson = json.Contains("bootstrapServers", StringComparison.OrdinalIgnoreCase) ||
+            bool bootstrapServersInJson = json.Contains("bootstrapServers", StringComparison.OrdinalIgnoreCase) ||
                                          json.Contains("\"bootstrap", StringComparison.OrdinalIgnoreCase);
             _log.Information("[FlinkJobGatewayService.SubmitJobAsync] JSON contains bootstrap servers reference: {HasBootstrapServers}", bootstrapServersInJson);
 
@@ -138,9 +138,9 @@ namespace Flink.JobBuilder.Services
         {
             try
             {
-                var jsonDoc = JsonDocument.Parse(json);
-                if (jsonDoc.RootElement.TryGetProperty("source", out var sourceElement) &&
-                    sourceElement.TryGetProperty("bootstrapServers", out var bootstrapElement))
+                JsonDocument jsonDoc = JsonDocument.Parse(json);
+                if (jsonDoc.RootElement.TryGetProperty("source", out JsonElement sourceElement) &&
+                    sourceElement.TryGetProperty("bootstrapServers", out JsonElement bootstrapElement))
                 {
                     _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Bootstrap servers in JSON: {BootstrapServers}",
                         bootstrapElement.GetString());
@@ -159,8 +159,8 @@ namespace Flink.JobBuilder.Services
                 return;
             }
 
-            var typeCount = 0;
-            var idx = 0;
+            int typeCount = 0;
+            int idx = 0;
             while ((idx = json.IndexOf("\"type\"", idx, StringComparison.Ordinal)) >= 0)
             {
                 typeCount++;
@@ -175,16 +175,16 @@ namespace Flink.JobBuilder.Services
             string targetUrl,
             CancellationToken cancellationToken)
         {
-            var rawResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+            string rawResponse = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(rawResponse))
             {
-                var errorMsg = $"Gateway returned empty response body from {targetUrl} - this indicates a serialization problem in the Gateway";
+                string errorMsg = $"Gateway returned empty response body from {targetUrl} - this indicates a serialization problem in the Gateway";
                 this._logger?.LogError("Gateway returned empty response body from {TargetUrl} - this indicates a serialization problem in the Gateway", targetUrl);
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, errorMsg);
             }
 
-            var responseSnippet = rawResponse.Length > 600 ? rawResponse[..600] + "...(truncated)" : rawResponse;
+            string responseSnippet = rawResponse.Length > 600 ? rawResponse[..600] + "...(truncated)" : rawResponse;
 
             return response.IsSuccessStatusCode
                 ? await this.HandleSuccessResponseAsync(jobDefinition, rawResponse, responseSnippet)
@@ -251,7 +251,7 @@ namespace Flink.JobBuilder.Services
         {
             this._logger?.LogDebug("Getting status for job {FlinkJobId}", flinkJobId);
 
-            var response = await this.ExecuteWithRetryAsync(async () => await this._httpClient.GetAsync($"/api/v1/jobs/{flinkJobId}/status", cancellationToken));
+            HttpResponseMessage response = await this.ExecuteWithRetryAsync(async () => await this._httpClient.GetAsync($"/api/v1/jobs/{flinkJobId}/status", cancellationToken));
 
             if (!response.IsSuccessStatusCode)
             {
@@ -266,8 +266,8 @@ namespace Flink.JobBuilder.Services
                 };
             }
 
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            var status = JsonSerializer.Deserialize<JobStatus>(responseContent, this._jsonOptions);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            JobStatus? status = JsonSerializer.Deserialize<JobStatus>(responseContent, this._jsonOptions);
 
             if (status != null)
             {
@@ -287,7 +287,7 @@ namespace Flink.JobBuilder.Services
         {
             this._logger?.LogDebug("Getting metrics for job {FlinkJobId}", flinkJobId);
 
-            var response = await this.ExecuteWithRetryAsync(async () => await this._httpClient.GetAsync($"/api/v1/jobs/{flinkJobId}/metrics", cancellationToken));
+            HttpResponseMessage response = await this.ExecuteWithRetryAsync(async () => await this._httpClient.GetAsync($"/api/v1/jobs/{flinkJobId}/metrics", cancellationToken));
 
             if (!response.IsSuccessStatusCode)
             {
@@ -297,8 +297,8 @@ namespace Flink.JobBuilder.Services
                 return new JobMetrics();
             }
 
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            var metrics = JsonSerializer.Deserialize<JobMetrics>(responseContent, this._jsonOptions);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            JobMetrics? metrics = JsonSerializer.Deserialize<JobMetrics>(responseContent, this._jsonOptions);
 
             if (metrics != null)
             {
@@ -313,9 +313,9 @@ namespace Flink.JobBuilder.Services
         {
             this._logger?.LogInformation("Canceling job {FlinkJobId}", flinkJobId);
 
-            var response = await this.ExecuteWithRetryAsync(async () => await this._httpClient.PostAsync($"/api/v1/jobs/{flinkJobId}/cancel", null, cancellationToken));
+            HttpResponseMessage response = await this.ExecuteWithRetryAsync(async () => await this._httpClient.PostAsync($"/api/v1/jobs/{flinkJobId}/cancel", null, cancellationToken));
 
-            var success = response.IsSuccessStatusCode;
+            bool success = response.IsSuccessStatusCode;
 
             if (success)
             {
@@ -336,8 +336,8 @@ namespace Flink.JobBuilder.Services
             {
                 this._logger?.LogDebug("Performing health check on Flink Job Gateway");
 
-                var response = await this._httpClient.GetAsync("/api/v1/health", cancellationToken);
-                var isHealthy = response.IsSuccessStatusCode;
+                HttpResponseMessage response = await this._httpClient.GetAsync("/api/v1/health", cancellationToken);
+                bool isHealthy = response.IsSuccessStatusCode;
 
                 this._logger?.LogDebug("Health check result: {IsHealthy}", isHealthy);
                 return isHealthy;
@@ -351,19 +351,19 @@ namespace Flink.JobBuilder.Services
 
         private async Task<HttpResponseMessage> ExecuteWithRetryAsync(Func<Task<HttpResponseMessage>> operation)
         {
-            var retryCount = 0;
+            int retryCount = 0;
             while (retryCount <= this._configuration.MaxRetries)
             {
                 try
                 {
-                    var response = await operation();
+                    HttpResponseMessage response = await operation();
 
                     if (response.IsSuccessStatusCode)
                     {
                         return response;
                     }
 
-                    var shouldRetry = await this.ShouldRetryResponseAsync(response, retryCount);
+                    bool shouldRetry = await this.ShouldRetryResponseAsync(response, retryCount);
                     if (!shouldRetry || retryCount == this._configuration.MaxRetries)
                     {
                         return response;
@@ -403,7 +403,7 @@ namespace Flink.JobBuilder.Services
             }
 
             // Retry on 400 (Bad Request) if Flink cluster is not ready
-            var shouldRetryFlinkNotReady = await ShouldRetryFlinkClusterNotReadyAsync(response);
+            bool shouldRetryFlinkNotReady = await ShouldRetryFlinkClusterNotReadyAsync(response);
             if (!shouldRetryFlinkNotReady)
             {
                 return false;
@@ -436,7 +436,7 @@ namespace Flink.JobBuilder.Services
 
             try
             {
-                var content = await response.Content.ReadAsStringAsync();
+                string content = await response.Content.ReadAsStringAsync();
                 // Check if the error message contains "Flink cluster is not healthy or unreachable"
                 return content.Contains("Flink cluster is not healthy", StringComparison.OrdinalIgnoreCase) ||
                        content.Contains("Flink cluster is not healthy or unreachable", StringComparison.OrdinalIgnoreCase);
