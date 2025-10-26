@@ -1599,7 +1599,7 @@ public abstract class LearningCourseTestBase
     {
         try
         {
-            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
             
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             
@@ -1952,10 +1952,15 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
-        // Set FLINK_GATEWAY_URL for exercises that submit Flink jobs directly (use discovered endpoint)
+        // Set FLINKDOTNET_JOBGATEWAY_URL for exercises that submit Flink jobs via FlinkDotNet.JobGateway
+        // This is always localhost:8080 (fixed port for FlinkDotNet.JobGateway service)
+        psi.Environment["FLINKDOTNET_JOBGATEWAY_URL"] = "http://localhost:8080";
+        
+        // Set FLINK_JOBMANAGER_URL for exercises that need direct Flink JobManager REST API access
+        // This is discovered from Docker containers (dynamic port mapping)
         if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
         {
-            psi.Environment["FLINK_GATEWAY_URL"] = FlinkRestApiEndpoint;
+            psi.Environment["FLINK_JOBMANAGER_URL"] = FlinkRestApiEndpoint;
         }
         else
         {
@@ -1977,9 +1982,10 @@ public abstract class LearningCourseTestBase
         {
             TestContext.WriteLine($"🔧 Setting REDIS_ENDPOINT={RedisHostEndpoint} for Redis state management");
         }
+        TestContext.WriteLine($"🔧 Setting FLINKDOTNET_JOBGATEWAY_URL=http://localhost:8080 for FlinkDotNet JobGateway");
         if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
         {
-            TestContext.WriteLine($"🔧 Setting FLINK_GATEWAY_URL={FlinkRestApiEndpoint} for Flink job submission");
+            TestContext.WriteLine($"🔧 Setting FLINK_JOBMANAGER_URL={FlinkRestApiEndpoint} for Flink JobManager REST API");
         }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 

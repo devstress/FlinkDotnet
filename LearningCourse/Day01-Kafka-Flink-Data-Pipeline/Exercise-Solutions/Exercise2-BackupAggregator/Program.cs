@@ -29,10 +29,15 @@ namespace Exercise2_BackupAggregator
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
             ?? throw new InvalidOperationException("KAFKA_BOOTSTRAP_SERVERS environment variable must be set");
         
-        // Flink Gateway configuration
+        // FlinkDotNet JobGateway configuration (always localhost:8080)
         // Lazy evaluation - reads env var when first accessed, not at class load time
-        private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+        private static string FlinkDotNetJobGatewayUrl =>
+            Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
+        
+        // Flink JobManager REST API configuration (discovered from Docker)
+        // Lazy evaluation - reads env var when first accessed, not at class load time
+        private static string FlinkJobManagerUrl =>
+            Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
 
         static async Task Main(string[] args)
         {
@@ -677,12 +682,12 @@ namespace Exercise2_BackupAggregator
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkDotNetJobGatewayUrl}/api/v1/health");
 
                     if (response.IsSuccessStatusCode)
                     {
                         Console.WriteLine($"   [SUCCESS] Flink cluster is healthy");
-                        Console.WriteLine($"   Gateway URL: {FlinkGatewayUrl}");
+                        Console.WriteLine($"   FlinkDotNet JobGateway URL: {FlinkDotNetJobGatewayUrl}");
                         return;
                     }
                 }
@@ -700,8 +705,8 @@ namespace Exercise2_BackupAggregator
 
             throw new TimeoutException(
                 $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
-                $"Attempted to connect to: {FlinkGatewayUrl}. " +
-                $"Verify FLINK_GATEWAY_URL environment variable is set correctly and Flink is running. " +
+                $"Attempted to connect to: {FlinkDotNetJobGatewayUrl}. " +
+                $"Verify FLINKDOTNET_JOBGATEWAY_URL environment variable is set correctly and FlinkDotNet JobGateway is running. " +
                 $"Check Flink JobManager logs for issues.");
         }
         

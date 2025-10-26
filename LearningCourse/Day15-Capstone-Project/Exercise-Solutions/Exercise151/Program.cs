@@ -6,7 +6,7 @@ using System.Net.Http;
 
 // Environment variables for service discovery (set by test infrastructure)
 var kafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
-var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
 var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_ENDPOINT") ?? "localhost:6379";
 
 Log.Logger = new LoggerConfiguration()

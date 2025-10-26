@@ -30,7 +30,7 @@ class Program
         Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
     private static string FlinkGatewayUrl =>
-        Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+        Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
 
     // Kafka topics for saga pattern
     private const string SagaCommandsTopic = "saga-commands";

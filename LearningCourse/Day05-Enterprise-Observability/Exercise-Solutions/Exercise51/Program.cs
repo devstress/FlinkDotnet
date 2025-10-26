@@ -35,7 +35,7 @@ namespace Exercise51_ObservabilityDemo
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
         private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
 
         static async Task Main(string[] args)
         {
@@ -52,7 +52,7 @@ namespace Exercise51_ObservabilityDemo
             Console.WriteLine("🔧 ENVIRONMENT CONFIGURATION:");
             Console.WriteLine($"   KAFKA_BOOTSTRAP_SERVERS: {KafkaBootstrapServers}");
             Console.WriteLine($"   KAFKA_FLINK_BOOTSTRAP_SERVERS: {KafkaFlinkBootstrapServers}");
-            Console.WriteLine($"   FLINK_GATEWAY_URL: {FlinkGatewayUrl}");
+            Console.WriteLine($"   FLINKDOTNET_JOBGATEWAY_URL: {FlinkGatewayUrl}");
             Console.WriteLine($"   MESSAGE_COUNT: {MessageCount:N0}");
             Console.WriteLine($"   INPUT_TOPIC: {InputTopic}");
             Console.WriteLine($"   OUTPUT_TOPIC: {OutputTopic}");
