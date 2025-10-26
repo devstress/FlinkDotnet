@@ -179,7 +179,7 @@ public class Program
         }
 
         Stream originalBody = ctx.Response.Body;
-        using MemoryStream mem = new();
+        await using MemoryStream mem = new();
         ctx.Response.Body = mem;
         await next();
 

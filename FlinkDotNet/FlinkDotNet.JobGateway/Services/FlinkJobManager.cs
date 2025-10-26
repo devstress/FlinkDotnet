@@ -479,7 +479,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return true;
             }
 
-            this._logger.LogWarning("PATCH cancel returned {PatchStatus}, trying POST fallback", patchResponse.StatusCode);
+            this._logger.LogDebug("PATCH cancel returned {PatchStatus}, trying POST fallback", patchResponse.StatusCode);
 
             // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
             HttpResponseMessage postResponse = await this._httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
@@ -523,10 +523,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         // Build jar on demand using Maven directly
         this._logger.LogInformation("Runner jar not found, building on demand with Maven...");
         string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
-        if (repoRoot is null)
-        {
-            throw new InvalidOperationException("Could not locate repository root for Maven build");
-        }
+        ArgumentNullException.ThrowIfNull(repoRoot);
 
         string runnerDir = Path.Combine(repoRoot, FlinkIRRunnerDirectory);
         string pomFile = Path.Combine(runnerDir, "pom.xml");
@@ -537,6 +534,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         try
         {
+#pragma warning disable S4036 // PATH is required for Maven executable resolution - mvn command relies on PATH
             ProcessStartInfo psi = new()
             {
                 FileName = "mvn",
@@ -548,9 +546,10 @@ public partial class FlinkJobManager : IFlinkJobManager
                 CreateNoWindow = true
             };
 
-            // S4036: Set environment explicitly for security (don't inherit potentially unsafe PATH)
+            // Set environment explicitly for security (don't inherit potentially unsafe PATH)
             psi.Environment.Clear();
             psi.Environment["PATH"] = Environment.GetEnvironmentVariable("PATH") ?? "";
+#pragma warning restore S4036
             psi.Environment["JAVA_HOME"] = Environment.GetEnvironmentVariable("JAVA_HOME") ?? "";
             psi.Environment["M2_HOME"] = Environment.GetEnvironmentVariable("M2_HOME") ?? "";
 
@@ -767,16 +766,13 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static string? ExtractBackpressureLevel(JsonElement root)
     {
+#pragma warning disable IDE0046 // Simplified form would create nested ternary which violates S3358
         if (root.TryGetProperty("backpressureLevel", out JsonElement lvlEl))
         {
             return lvlEl.GetString();
         }
 
-        if (root.TryGetProperty("backpressure-level", out JsonElement lvlEl2))
-        {
-            return lvlEl2.GetString();
-        }
-
-        return null;
+        return root.TryGetProperty("backpressure-level", out JsonElement lvlEl2) ? lvlEl2.GetString() : null;
+#pragma warning restore IDE0046
     }
 }
