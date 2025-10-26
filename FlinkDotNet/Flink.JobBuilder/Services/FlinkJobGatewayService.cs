@@ -186,12 +186,9 @@ namespace Flink.JobBuilder.Services
 
             var responseSnippet = rawResponse.Length > 600 ? rawResponse[..600] + "...(truncated)" : rawResponse;
 
-            if (response.IsSuccessStatusCode)
-            {
-                return await this.HandleSuccessResponseAsync(jobDefinition, rawResponse, responseSnippet);
-            }
-
-            return this.HandleFailureResponse(jobDefinition, response, responseSnippet, targetUrl);
+            return response.IsSuccessStatusCode
+                ? await this.HandleSuccessResponseAsync(jobDefinition, rawResponse, responseSnippet)
+                : this.HandleFailureResponse(jobDefinition, response, responseSnippet, targetUrl);
         }
 
         private async Task<JobSubmissionResult> HandleSuccessResponseAsync(
@@ -394,12 +391,7 @@ namespace Flink.JobBuilder.Services
             }
 
             // For client errors (4xx), only retry on specific conditions
-            if ((int) response.StatusCode < 400 || (int) response.StatusCode >= 500)
-            {
-                return false;
-            }
-
-            return await this.ShouldRetryClientErrorAsync(response, retryCount);
+            return !((int)response.StatusCode < 400 || (int)response.StatusCode >= 500) && await this.ShouldRetryClientErrorAsync(response, retryCount);
         }
 
         private async Task<bool> ShouldRetryClientErrorAsync(HttpResponseMessage response, int retryCount)

@@ -209,14 +209,7 @@ public class JobsController : ControllerBase
         try
         {
             var status = await this._flinkJobManager.GetJobStatusAsync(flinkJobId);
-            if (status != null)
-            {
-                return this.Ok(status);
-            }
-            else
-            {
-                return this.NotFound();
-            }
+            return status != null ? this.Ok(status) : this.NotFound();
         }
         catch (Exception ex)
         {
@@ -238,14 +231,7 @@ public class JobsController : ControllerBase
         try
         {
             var metrics = await this._flinkJobManager.GetJobMetricsAsync(flinkJobId);
-            if (metrics != null)
-            {
-                return this.Ok(metrics);
-            }
-            else
-            {
-                return this.NotFound();
-            }
+            return metrics != null ? this.Ok(metrics) : this.NotFound();
         }
         catch (Exception ex)
         {
@@ -267,14 +253,7 @@ public class JobsController : ControllerBase
         try
         {
             var canceled = await this._flinkJobManager.CancelJobAsync(flinkJobId);
-            if (canceled)
-            {
-                return this.Ok();
-            }
-            else
-            {
-                return this.NotFound();
-            }
+            return canceled ? this.Ok() : this.NotFound();
         }
         catch (Exception ex)
         {

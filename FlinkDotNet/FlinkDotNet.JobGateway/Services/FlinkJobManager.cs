@@ -424,12 +424,9 @@ public class FlinkJobManager : IFlinkJobManager
                 return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
             }
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return null;
-            }
-
-            throw new InvalidOperationException($"Unexpected status code querying Flink job status: {(int) response.StatusCode} {response.StatusCode}");
+            return response.StatusCode == HttpStatusCode.NotFound
+                ? null
+                : throw new InvalidOperationException($"Unexpected status code querying Flink job status: {(int)response.StatusCode} {response.StatusCode}");
         }
         catch (Exception ex)
         {
@@ -580,12 +577,9 @@ public class FlinkJobManager : IFlinkJobManager
 
             this._logger.LogDebug("Maven build completed successfully");
             jarPath = Path.Combine(runnerDir, "target", "flink-ir-runner-java17.jar");
-            if (!File.Exists(jarPath))
-            {
-                throw new InvalidOperationException($"Maven build completed but jar not found at expected path: {jarPath}");
-            }
-
-            return jarPath;
+            return File.Exists(jarPath)
+                ? jarPath
+                : throw new InvalidOperationException($"Maven build completed but jar not found at expected path: {jarPath}");
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
@@ -1422,15 +1416,12 @@ public class FlinkJobManager : IFlinkJobManager
             return null;
         }
 
-        if (!TryGetStringProperty(element, "jid", out var jobId)
+        return (!TryGetStringProperty(element, "jid", out var jobId)
             && !TryGetStringProperty(element, "jobId", out jobId)
             && !TryGetStringProperty(element, "jobid", out jobId)
             && !TryGetStringProperty(element, "id", out jobId))
-        {
-            return null;
-        }
-
-        return jobId;
+            ? null
+            : jobId;
     }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
@@ -1501,12 +1492,9 @@ public class FlinkJobManager : IFlinkJobManager
 
             var segments = trimmed.Split('/', StringSplitOptions.RemoveEmptyEntries);
             var last = segments.LastOrDefault();
-            if (string.IsNullOrEmpty(last) || last.Equals("jobs", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            return last;
+            return string.IsNullOrEmpty(last) || last.Equals("jobs", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : last;
         }
     }
 
@@ -1886,12 +1874,9 @@ public class FlinkJobManager : IFlinkJobManager
             return lvlEl.GetString();
         }
 
-        if (root.TryGetProperty("backpressure-level", out var lvlEl2))
-        {
-            return lvlEl2.GetString();
-        }
-
-        return null;
+        return root.TryGetProperty("backpressure-level", out var lvlEl2)
+            ? lvlEl2.GetString()
+            : null;
     }
 
     private sealed class JobMetricsBuilder

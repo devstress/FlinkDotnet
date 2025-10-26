@@ -329,15 +329,7 @@ namespace FlinkDotNet.DataStream
 
         public OutputTag(string id) => this.Id = id ?? throw new ArgumentNullException(nameof(id));
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is not OutputTag<T> other)
-            {
-                return false;
-            }
-
-            return this.Id == other.Id;
-        }
+        public override bool Equals(object? obj) => obj is OutputTag<T> other && this.Id == other.Id;
 
         public override int GetHashCode() => this.Id.GetHashCode();
     }
