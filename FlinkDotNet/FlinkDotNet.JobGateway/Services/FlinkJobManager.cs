@@ -22,7 +22,9 @@ public partial class FlinkJobManager : IFlinkJobManager
     private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
 
-    // Cached JsonSerializerOptions to avoid creating new instances for every serialization
+    /// <summary>
+    /// Cached JsonSerializerOptions to avoid creating new instances for every serialization.
+    /// </summary>
     private static readonly JsonSerializerOptions s_jobDefinitionSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -208,7 +210,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
     {
-        int maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
+        const int maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
 
         this._logger.LogInformation("Waiting for SQL Gateway to become ready at {BaseAddress}", client.BaseAddress);
 
@@ -248,12 +250,9 @@ public partial class FlinkJobManager : IFlinkJobManager
     /// </summary>
     private void LogSectionHeader(string title, params (string Label, string Value)[] details)
     {
+        string detailsText = string.Join(" | ", details.Select(d => $"{d.Label}: {d.Value}"));
         this._logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-        this._logger.LogInformation("║ {Title}", title);
-        foreach ((string label, string value) in details)
-        {
-            this._logger.LogInformation("║ {Label}: {Value}", label, value);
-        }
+        this._logger.LogInformation("║ {Title} | {Details}", title, detailsText);
         this._logger.LogInformation("╚══════════════════════════════════════════════════════════════");
     }
 
@@ -270,20 +269,19 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            JobValidationResult validation = this.ValidateJobDefinition(jobDefinition);
+            JobValidationResult validation = ValidateJobDefinition(jobDefinition);
             if (!validation.IsValid)
             {
                 this._logger.LogError("❌ Job validation failed: {Errors}", string.Join(", ", validation.Errors));
                 return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
                     $"Job validation failed: {string.Join(", ", validation.Errors)}");
             }
-            this._logger.LogInformation("✅ Job definition validated successfully");
 
             // Check if this is a SQL Gateway job
             if (jobDefinition.Source is SqlSourceDefinition sqlSource &&
                 sqlSource.ExecutionMode == "gateway")
             {
-                this._logger.LogInformation("🔀 Detected SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
+                this._logger.LogInformation("✅ Validation passed | 🔀 Using SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
 
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
@@ -293,7 +291,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
-            this._logger.LogInformation("🔄 Using standard JAR submission flow");
+            this._logger.LogInformation("✅ Validation passed | 🔄 Using standard JAR submission flow");
             string irBase64 = this.EncodeJobDefinition(jobDefinition);
 
             this._logger.LogInformation("🔍 Probing Flink cluster health...");
@@ -483,7 +481,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return true;
             }
 
-            this._logger.LogWarning("PATCH /jobs/{{jobId}}?mode=cancel returned {StatusCode}, trying POST endpoint", patchResponse.StatusCode);
+            this._logger.LogWarning("PATCH cancel returned {PatchStatus}, trying POST fallback", patchResponse.StatusCode);
 
             // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
             HttpResponseMessage postResponse = await this._httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
@@ -528,7 +526,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         // Build jar on demand using Maven directly
         this._logger.LogInformation("Runner jar not found, building on demand with Maven...");
         string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
-        if (repoRoot == null)
+        if (repoRoot is null)
         {
             throw new InvalidOperationException("Could not locate repository root for Maven build");
         }
@@ -764,7 +762,9 @@ public partial class FlinkJobManager : IFlinkJobManager
     }
 
     private static string? ExtractBackpressureLevel(JsonElement root) =>
-        root.TryGetProperty("backpressureLevel", out JsonElement lvlEl) ? lvlEl.GetString() :
-        root.TryGetProperty("backpressure-level", out JsonElement lvlEl2) ? lvlEl2.GetString() :
-        null;
+        root.TryGetProperty("backpressureLevel", out JsonElement lvlEl)
+            ? lvlEl.GetString()
+            : root.TryGetProperty("backpressure-level", out JsonElement lvlEl2)
+                ? lvlEl2.GetString()
+                : null;
 }

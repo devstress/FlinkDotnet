@@ -849,7 +849,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("trying POST endpoint")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("POST fallback")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);

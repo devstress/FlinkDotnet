@@ -104,7 +104,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void TypeInformation_Of_WithTypeParameter_ShouldReturnTypeInformation()
         {
             // Arrange & Act
-            var typeInfo = TypeInformation<int>.Of<string>();
+            var typeInfo = TypeInformation.Of<string>();
 
             // Assert
             Assert.That(typeInfo, Is.Not.Null);

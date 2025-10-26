@@ -27,7 +27,7 @@ public partial class FlinkJobManager
             Path.Combine(Environment.CurrentDirectory, FlinkIRRunnerDirectory, "target")
         ];
 
-        string[] searchPaths = baseDirs.SelectMany(d => names.Select(n => Path.Combine(d, n))).ToArray();
+        string[] searchPaths = [.. baseDirs.SelectMany(d => names.Select(n => Path.Combine(d, n)))];
 
         string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot != null)
@@ -64,21 +64,20 @@ public partial class FlinkJobManager
                 ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"));
 
             string jarId = await this.EnsureRunnerJarAsync();
-            this._logger.LogInformation("✅ Flink runner JAR ready: {JarId}", jarId);
 
             // DIAGNOSTIC: Log job definition bootstrap servers before submission
             KafkaSourceDefinition? kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
             KafkaSinkDefinition? kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-            this._logger.LogInformation("📋 Job Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap}",
+            this._logger.LogInformation("✅ JAR ready: {JarId} | Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap} | Gateway KAFKA_BOOTSTRAP={KafkaBootstrap}",
+                jarId,
                 kafkaSource?.BootstrapServers ?? "null",
-                kafkaSink?.BootstrapServers ?? "null");
+                kafkaSink?.BootstrapServers ?? "null",
+                Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set");
 
             // DIAGNOSTIC: Log environment variables that might override job definition
-            this._logger.LogInformation("🌍 Gateway environment: KAFKA_BOOTSTRAP={KafkaBootstrap}",
-                Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set");
-            this._logger.LogWarning("⚠️ CRITICAL: Flink containers have KAFKA_BOOTSTRAP set, which will override job definition bootstrap servers in FlinkJobRunner.java!");
-            this._logger.LogWarning("⚠️ FlinkJobRunner.java line 93 uses: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\")");
-            this._logger.LogWarning("⚠️ This means if Flink container has KAFKA_BOOTSTRAP set, it will override the kafka:9092 value from job definition!");
+            this._logger.LogWarning(
+                "⚠️ CRITICAL: Flink containers KAFKA_BOOTSTRAP env var overrides job definition " +
+                "(FlinkJobRunner.java L93: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\"))");
 
             object runRequest = new
             {
@@ -163,14 +162,11 @@ public partial class FlinkJobManager
         try
         {
             using HttpClient sqlGatewayClient = this.CreateSqlGatewayClient();
-            this._logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress}", sqlGatewayClient.BaseAddress);
+            this._logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress} | Waiting for ready state...", sqlGatewayClient.BaseAddress);
 
-            this._logger.LogInformation("⏳ Waiting for SQL Gateway to be ready...");
             await this.WaitForSqlGatewayReadyAsync(sqlGatewayClient);
-            this._logger.LogInformation("✅ SQL Gateway is ready");
-
             string sessionHandle = await this.CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
-            this._logger.LogInformation("✅ SQL Gateway session created: {SessionHandle}", sessionHandle);
+            this._logger.LogInformation("✅ SQL Gateway ready | Session created: {SessionHandle}", sessionHandle);
 
             string? lastJobId = await this.ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
 
@@ -223,7 +219,7 @@ public partial class FlinkJobManager
         using StringContent sessionContent = new(sessionJson, Encoding.UTF8, "application/json");
         using HttpResponseMessage sessionResponse = await client.PostAsync("/v1/sessions", sessionContent);
 
-        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
+        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
 
         if (!sessionResponse.IsSuccessStatusCode)
         {
@@ -287,7 +283,7 @@ public partial class FlinkJobManager
     private async Task<string?> ExecuteSingleStatementAsync(HttpClient client, string sessionHandle, string statement)
     {
         this._logger.LogInformation("Executing SQL statement via Gateway: {Statement}",
-            statement.Length > 100 ? statement.Substring(0, 100) + "..." : statement);
+            statement.Length > 100 ? string.Concat(statement.AsSpan(0, 100), "...") : statement);
 
         object requestBody = new
         {
@@ -400,7 +396,7 @@ public partial class FlinkJobManager
     {
         TimeSpan waitFor = timeout ?? TimeSpan.FromSeconds(30);
         DateTime deadline = DateTime.UtcNow + waitFor;
-        List<string> lastKnownJars = new();
+        List<string> lastKnownJars = [];
 
         while (DateTime.UtcNow < deadline)
         {
@@ -517,8 +513,7 @@ public partial class FlinkJobManager
 
         if (connectorJars.Count == 0)
         {
-            this._logger.LogWarning("No connector JARs found. SQL jobs may fail if they require Kafka/JSON connectors.");
-            this._logger.LogWarning("Current directory: {Current}, AppDomain base: {AppBase}, Repo root: {RepoRoot}",
+            this._logger.LogWarning("No connector JARs found (SQL jobs may fail). Paths: Current={Current}, AppDomain base={AppBase}, Repo root={RepoRoot}",
                 Environment.CurrentDirectory, AppDomain.CurrentDomain.BaseDirectory, repoRoot ?? "not found");
         }
 
@@ -651,7 +646,7 @@ public partial class FlinkJobManager
 
         if (!serviceFiles.ContainsKey(entry.FullName))
         {
-            serviceFiles[entry.FullName] = new HashSet<string>();
+            serviceFiles[entry.FullName] = [];
         }
 
         string? line;
@@ -683,7 +678,8 @@ public partial class FlinkJobManager
 
             ZipArchiveEntry newEntry = outputZip.CreateEntry(servicePath, CompressionLevel.Optimal);
             using StreamWriter writer = new(newEntry.Open());
-            foreach (string line in serviceLines.OrderBy(l => l))
+            List<string> sortedLines = [.. serviceLines.OrderBy(l => l)];
+            foreach (string line in sortedLines)
             {
                 writer.WriteLine(line);
             }
@@ -826,22 +822,17 @@ public partial class FlinkJobManager
         return null;
     }
 
-    private static string? MatchJobEntry(JsonElement element, string jobName)
-    {
-        if (!TryGetStringProperty(element, "name", out string? name) && !TryGetStringProperty(element, "jobName", out name))
-        {
-            return null;
-        }
-
-        return !string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase)
+    private static string? MatchJobEntry(JsonElement element, string jobName) =>
+        !TryGetStringProperty(element, "name", out string? name) && !TryGetStringProperty(element, "jobName", out name)
             ? null
-            : TryGetStringProperty(element, "jid", out string? jobId) ||
-              TryGetStringProperty(element, "jobId", out jobId) ||
-              TryGetStringProperty(element, "jobid", out jobId) ||
-              TryGetStringProperty(element, "id", out jobId)
-            ? jobId
-            : null;
-    }
+            : !string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase)
+                ? null
+                : TryGetStringProperty(element, "jid", out string? jobId) ||
+                  TryGetStringProperty(element, "jobId", out jobId) ||
+                  TryGetStringProperty(element, "jobid", out jobId) ||
+                  TryGetStringProperty(element, "id", out jobId)
+                    ? jobId
+                    : null;
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
     {
@@ -917,7 +908,7 @@ public partial class FlinkJobManager
         }
     }
 
-    private JobValidationResult ValidateJobDefinition(JobDefinition jobDefinition)
+    private static JobValidationResult ValidateJobDefinition(JobDefinition jobDefinition)
     {
         List<string> errors = [];
 

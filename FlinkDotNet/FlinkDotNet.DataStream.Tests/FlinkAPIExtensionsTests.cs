@@ -43,7 +43,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void TypeInformation_OfGeneric_ShouldCreateTypeInformation()
         {
             // Act
-            var typeInfo = TypeInformation<int>.Of<int>();
+            var typeInfo = TypeInformation.Of<int>();
 
             // Assert
             Assert.That(typeInfo, Is.Not.Null);
@@ -54,8 +54,8 @@ namespace FlinkDotNet.DataStream.Tests
         public void TypeInformation_OfDifferentType_ShouldCreateCorrectTypeInformation()
         {
             // Act
-            var stringTypeInfo = TypeInformation<string>.Of<string>();
-            var intTypeInfo = TypeInformation<int>.Of<int>();
+            var stringTypeInfo = TypeInformation.Of<string>();
+            var intTypeInfo = TypeInformation.Of<int>();
 
             // Assert
             Assert.That(stringTypeInfo.GetType(), Is.EqualTo(typeof(string)));
