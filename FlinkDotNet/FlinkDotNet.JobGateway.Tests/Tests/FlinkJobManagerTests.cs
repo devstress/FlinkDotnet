@@ -847,7 +847,7 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(result, Is.True);
             this._mockLogger.Verify(
                 x => x.Log(
-                    LogLevel.Warning,
+                    LogLevel.Debug,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("POST fallback")),
                     It.IsAny<Exception>(),
