@@ -96,7 +96,7 @@ namespace FlinkDotNet.DataStream
             this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
 
             _log.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
-            var jd = new JobDefinition
+            JobDefinition jd = new JobDefinition
             {
                 Source = new KafkaSourceDefinition
                 {
@@ -115,7 +115,7 @@ namespace FlinkDotNet.DataStream
             };
             this.SetActiveJob(jd);
 
-            var dataStream = new DataStream<string>(jd, this);
+            DataStream<string> dataStream = new DataStream<string>(jd, this);
 
             // Attach operation capture to enable native API (Map with IMapFunction)
             dataStream.AttachOperationCapture(this._operationCapture);
@@ -148,8 +148,8 @@ namespace FlinkDotNet.DataStream
             this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId, startingOffsets, deserializer);
 
             // Create a source function that uses the deserializer
-            var sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
-            var dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
+            KafkaSourceFunction<T> sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
+            DataStream<T> dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
 
             // Attach operation capture to the stream
             dataStream.AttachOperationCapture(this._operationCapture);
@@ -357,7 +357,7 @@ namespace FlinkDotNet.DataStream
 
         public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
-            var name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
+            string name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
             this._logger?.LogInformation("Starting execution of job: {JobName}", name);
             _log.Debug("[ExecuteAsync] Starting execution of job: {JobName}", name);
 
@@ -367,7 +367,7 @@ namespace FlinkDotNet.DataStream
             if (this._operationCapture?.HasOperations() == true)
             {
                 // Translate captured operations to JobDefinition
-                var jobId = System.Guid.NewGuid().ToString();
+                string jobId = System.Guid.NewGuid().ToString();
                 _log.Debug("[ExecuteAsync] Translating native DataStream API operations with jobId={JobId}", jobId);
                 jobToSubmit = this._operationCapture.ToJobDefinition(jobId, name);
                 this._logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
@@ -386,8 +386,8 @@ namespace FlinkDotNet.DataStream
             }
 
             _log.Debug("[ExecuteAsync] About to submit job to gateway");
-            var gatewayConfig = new FlinkJobGatewayConfiguration();
-            var gateway = new FlinkJobGatewayService(gatewayConfig);
+            FlinkJobGatewayConfiguration gatewayConfig = new FlinkJobGatewayConfiguration();
+            FlinkJobGatewayService gateway = new FlinkJobGatewayService(gatewayConfig);
 
             JobSubmissionResult submit;
             try
@@ -405,8 +405,8 @@ namespace FlinkDotNet.DataStream
             if (!submit.Success)
             {
                 // Log diagnostic information about endpoints when job submission fails
-                var gatewayUrl = gatewayConfig.BaseUrl;
-                var jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
+                string gatewayUrl = gatewayConfig.BaseUrl;
+                string? jobManagerUrl = ExtractJobManagerUrlFromError(submit.ErrorMessage);
 
                 _log.Error("[ExecuteAsync] Job submission failed - Error={ErrorMessage}, GatewayUrl={GatewayUrl}, JobManagerUrl={JobManagerUrl}",
                     submit.ErrorMessage, gatewayUrl, jobManagerUrl);
@@ -415,7 +415,7 @@ namespace FlinkDotNet.DataStream
             }
 
             // Create and return JobClient for lifecycle management
-            var jobClient = new JobClient(name)
+            JobClient jobClient = new JobClient(name)
             {
                 JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId
             };
@@ -454,20 +454,20 @@ namespace FlinkDotNet.DataStream
                 return "(not available in error message)";
             }
 
-            var startIndex = errorMessage.IndexOf("at http");
+            int startIndex = errorMessage.IndexOf("at http");
             if (startIndex < 0)
             {
                 return "(not available in error message)";
             }
 
-            var urlStart = errorMessage.IndexOf("http", startIndex);
+            int urlStart = errorMessage.IndexOf("http", startIndex);
             if (urlStart < 0)
             {
                 return "(not available in error message)";
             }
 
             char[] separators = [' ', '\n', '\r', '"', '\''];
-            var urlEnd = errorMessage.IndexOfAny(separators, urlStart);
+            int urlEnd = errorMessage.IndexOfAny(separators, urlStart);
             return urlEnd > urlStart
                 ? errorMessage.Substring(urlStart, urlEnd - urlStart)
                 : errorMessage.Substring(urlStart);
@@ -565,14 +565,14 @@ namespace FlinkDotNet.DataStream
         /// <returns>The protocol string ("http" or "https").</returns>
         private static string GetProtocol()
         {
-            var envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+            string? envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
             if (string.IsNullOrEmpty(envProtocol))
             {
                 // Default to http for backward compatibility
                 return "http";
             }
 
-            var protocol = envProtocol.Trim().ToUpperInvariant();
+            string protocol = envProtocol.Trim().ToUpperInvariant();
             if (protocol == "HTTPS")
             {
                 return "https";
@@ -594,7 +594,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public async Task CancelAsync(CancellationToken cancellationToken = default)
         {
-            var success = await this._gateway.CancelJobAsync(this.JobId, cancellationToken);
+            bool success = await this._gateway.CancelJobAsync(this.JobId, cancellationToken);
             if (success)
             {
                 return;

@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         public IEnumerable<TimeWindow> AssignWindows(T element, long timestamp)
         {
-            var start = this.GetWindowStart(timestamp);
+            long start = this.GetWindowStart(timestamp);
             yield return new(start, start + this._size);
         }
 

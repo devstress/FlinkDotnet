@@ -182,7 +182,7 @@ namespace FlinkDotNet.DataStream
         {
             _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", this._kafkaSource?.BootstrapServers);
 
-            var jobDef = new JobDefinition
+            JobDefinition jobDef = new JobDefinition
             {
                 Source = this._kafkaSource!,
                 Operations = [],
@@ -262,8 +262,8 @@ namespace FlinkDotNet.DataStream
             else if (operation.Function != null)
             {
                 // Check if the function is a known IMapFunction implementation
-                var functionTypeName = operation.Function.GetType().Name;
-                var functionFullName = operation.Function.GetType().FullName ?? "";
+                string functionTypeName = operation.Function.GetType().Name;
+                string functionFullName = operation.Function.GetType().FullName ?? "";
 
                 // Map WordsCapitalizer and other uppercase functions to "upper"
                 if (functionTypeName.Contains("Capitalizer", System.StringComparison.OrdinalIgnoreCase) ||
@@ -341,7 +341,7 @@ namespace FlinkDotNet.DataStream
                 _logger.Warning("[OperationCapture.TranslateAggregateOperation] No window defined");
             }
 
-            var aggDef = new AggregateOperationDefinition
+            AggregateOperationDefinition aggDef = new AggregateOperationDefinition
             {
                 AggregationType = "COLLECT",
                 Field = "*",
