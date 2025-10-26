@@ -87,11 +87,7 @@ namespace FlinkDotNet.DataStream.Window
         /// <returns>The resulting DataStream</returns>
         public DataStream<T> Reduce(System.Func<T, T, T> reduceFunction)
         {
-            if (reduceFunction == null)
-            {
-                throw new System.ArgumentNullException(nameof(reduceFunction));
-            }
-
+            _ = reduceFunction ?? throw new System.ArgumentNullException(nameof(reduceFunction));
             return this._keyedStream.Reduce(reduceFunction);
         }
 

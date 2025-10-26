@@ -34,58 +34,58 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Creates a time duration in milliseconds.
         /// </summary>
-        public static Time Milliseconds(long milliseconds) => new(milliseconds);
+        public static Time Milliseconds(long value) => new(value);
 
         /// <summary>
         /// Creates a time duration in seconds.
         /// </summary>
-        public static Time Seconds(long seconds) => new(seconds * 1000);
+        public static Time Seconds(long value) => new(value * 1000);
 
         /// <summary>
         /// Creates a time duration in minutes.
         /// </summary>
-        public static Time Minutes(long minutes) => new(minutes * 60 * 1000);
+        public static Time Minutes(long value) => new(value * 60 * 1000);
 
         /// <summary>
         /// Creates a time duration in hours.
         /// </summary>
-        public static Time Hours(long hours) => new(hours * 60 * 60 * 1000);
+        public static Time Hours(long value) => new(value * 60 * 60 * 1000);
 
         /// <summary>
         /// Creates a time duration in days.
         /// </summary>
-        public static Time Days(long days) => new(days * 24 * 60 * 60 * 1000);
+        public static Time Days(long value) => new(value * 24 * 60 * 60 * 1000);
 
         // Java Flink-compatible lowercase aliases
         /// <summary>
         /// Creates a time duration in milliseconds (Java Flink style).
         /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.milliseconds()
         /// </summary>
-        public static Time milliseconds(long milliseconds) => Milliseconds(milliseconds);
+        public static Time milliseconds(long value) => Milliseconds(value);
 
         /// <summary>
         /// Creates a time duration in seconds (Java Flink style).
         /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.seconds()
         /// </summary>
-        public static Time seconds(long seconds) => Seconds(seconds);
+        public static Time seconds(long value) => Seconds(value);
 
         /// <summary>
         /// Creates a time duration in minutes (Java Flink style).
         /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.minutes()
         /// </summary>
-        public static Time minutes(long minutes) => Minutes(minutes);
+        public static Time minutes(long value) => Minutes(value);
 
         /// <summary>
         /// Creates a time duration in hours (Java Flink style).
         /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.hours()
         /// </summary>
-        public static Time hours(long hours) => Hours(hours);
+        public static Time hours(long value) => Hours(value);
 
         /// <summary>
         /// Creates a time duration in days (Java Flink style).
         /// Equivalent to org.apache.flink.streaming.api.windowing.time.Time.days()
         /// </summary>
-        public static Time days(long days) => Days(days);
+        public static Time days(long value) => Days(value);
 
         public override string ToString() => $"{this._milliseconds}ms";
     }
@@ -94,18 +94,14 @@ namespace FlinkDotNet.DataStream
     /// Watermark for event time processing.
     /// Corresponds to org.apache.flink.streaming.api.watermark.Watermark in Java Flink.
     /// </summary>
-    public class Watermark
+    public class Watermark(long timestamp)
     {
-        private readonly long _timestamp;
-
-        public Watermark(long timestamp) => this._timestamp = timestamp;
-
         /// <summary>
         /// Gets the timestamp of this watermark in milliseconds.
         /// </summary>
-        public long GetTimestamp() => this._timestamp;
+        public long GetTimestamp() => timestamp;
 
-        public override string ToString() => $"Watermark({this._timestamp})";
+        public override string ToString() => $"Watermark({timestamp})";
     }
 
     /// <summary>

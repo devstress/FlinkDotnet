@@ -180,7 +180,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var env = FlinkDotNet.DataStream.StreamExecutionEnvironment.GetExecutionEnvironment();
-            var config = new FlinkDotNet.Common.Configuration();
+            var config = new FlinkDotNet.Common.FlinkConfiguration();
             _ = config.SetString("test.key", "test.value");
 
             // Act
@@ -367,7 +367,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void GetExecutionEnvironment_WithConfiguration_CreatesEnvironment()
         {
             // Arrange
-            var config = new FlinkDotNet.Common.Configuration();
+            var config = new FlinkDotNet.Common.FlinkConfiguration();
             _ = config.SetString("test.key", "test.value");
 
             // Act

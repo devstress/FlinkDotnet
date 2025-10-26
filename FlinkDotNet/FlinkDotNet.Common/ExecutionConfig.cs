@@ -20,22 +20,9 @@ namespace FlinkDotNet.Common
     /// A config to define the behavior of the program execution.
     /// This corresponds to pyflink.common.ExecutionConfig in Python Flink.
     /// </summary>
-    public class ExecutionConfig
+    public class ExecutionConfig(FlinkConfiguration? configuration = null)
     {
-        private readonly Configuration _configuration;
-
-        /// <summary>
-        /// Creates a new ExecutionConfig with default settings.
-        /// </summary>
-        public ExecutionConfig() : this(new Configuration())
-        {
-        }
-
-        /// <summary>
-        /// Creates a new ExecutionConfig with the given configuration.
-        /// </summary>
-        /// <param name="configuration">The underlying configuration</param>
-        public ExecutionConfig(Configuration configuration) => this._configuration = configuration;
+        private readonly FlinkConfiguration _configuration = configuration ?? new FlinkConfiguration();
 
         /// <summary>
         /// Gets or sets the parallelism for operations executed through this environment.
@@ -220,7 +207,7 @@ namespace FlinkDotNet.Common
         /// Gets the underlying configuration.
         /// </summary>
         /// <returns>The configuration object</returns>
-        public Configuration GetConfiguration() => this._configuration;
+        public FlinkConfiguration GetConfiguration() => this._configuration;
 
         /// <summary>
         /// Sets a configuration parameter.

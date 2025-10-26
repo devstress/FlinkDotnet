@@ -23,14 +23,14 @@ namespace FlinkDotNet.Common
     /// Lightweight configuration object which stores key/value pairs.
     /// This corresponds to pyflink.common.Configuration in Python Flink.
     /// </summary>
-    public class Configuration
+    public class FlinkConfiguration
     {
         private readonly Dictionary<string, object> _configuration = [];
 
         /// <summary>
         /// Creates an empty configuration.
         /// </summary>
-        public Configuration()
+        public FlinkConfiguration()
         {
         }
 
@@ -38,7 +38,7 @@ namespace FlinkDotNet.Common
         /// Creates a configuration with the given key-value pairs.
         /// </summary>
         /// <param name="configuration">Initial configuration values</param>
-        public Configuration(IDictionary<string, object> configuration)
+        public FlinkConfiguration(IDictionary<string, object> configuration)
         {
             foreach (var kvp in configuration)
             {
@@ -51,8 +51,8 @@ namespace FlinkDotNet.Common
         /// </summary>
         /// <param name="key">The configuration key</param>
         /// <param name="value">The value to set</param>
-        /// <returns>This Configuration instance for method chaining</returns>
-        public Configuration SetString(string key, string value)
+        /// <returns>This FlinkConfiguration instance for method chaining</returns>
+        public FlinkConfiguration SetString(string key, string value)
         {
             this._configuration[key] = value;
             return this;
@@ -63,8 +63,8 @@ namespace FlinkDotNet.Common
         /// </summary>
         /// <param name="key">The configuration key</param>
         /// <param name="value">The value to set</param>
-        /// <returns>This Configuration instance for method chaining</returns>
-        public Configuration SetInteger(string key, int value)
+        /// <returns>This FlinkConfiguration instance for method chaining</returns>
+        public FlinkConfiguration SetInteger(string key, int value)
         {
             this._configuration[key] = value;
             return this;
@@ -75,8 +75,8 @@ namespace FlinkDotNet.Common
         /// </summary>
         /// <param name="key">The configuration key</param>
         /// <param name="value">The value to set</param>
-        /// <returns>This Configuration instance for method chaining</returns>
-        public Configuration SetBoolean(string key, bool value)
+        /// <returns>This FlinkConfiguration instance for method chaining</returns>
+        public FlinkConfiguration SetBoolean(string key, bool value)
         {
             this._configuration[key] = value;
             return this;
@@ -87,8 +87,8 @@ namespace FlinkDotNet.Common
         /// </summary>
         /// <param name="key">The configuration key</param>
         /// <param name="value">The value to set</param>
-        /// <returns>This Configuration instance for method chaining</returns>
-        public Configuration SetLong(string key, long value)
+        /// <returns>This FlinkConfiguration instance for method chaining</returns>
+        public FlinkConfiguration SetLong(string key, long value)
         {
             this._configuration[key] = value;
             return this;
@@ -102,11 +102,9 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public string GetString(string key, string? defaultValue = null)
         {
-            if (this._configuration.TryGetValue(key, out var value))
-            {
-                return value?.ToString() ?? defaultValue ?? string.Empty;
-            }
-            return defaultValue ?? string.Empty;
+            return this._configuration.TryGetValue(key, out var value)
+                ? value?.ToString() ?? defaultValue ?? string.Empty
+                : defaultValue ?? string.Empty;
         }
 
         /// <summary>
@@ -201,15 +199,15 @@ namespace FlinkDotNet.Common
         /// <summary>
         /// Creates a copy of this configuration.
         /// </summary>
-        /// <returns>A new Configuration instance with the same values</returns>
-        public Configuration Clone() => new(this._configuration);
+        /// <returns>A new FlinkConfiguration instance with the same values</returns>
+        public FlinkConfiguration Clone() => new(this._configuration);
 
         /// <summary>
         /// Adds all key-value pairs from another configuration.
         /// </summary>
         /// <param name="other">The configuration to merge from</param>
         /// <returns>This Configuration instance for method chaining</returns>
-        public Configuration AddAll(Configuration other)
+        public FlinkConfiguration AddAll(FlinkConfiguration other)
         {
             foreach (var kvp in other._configuration)
             {
@@ -231,12 +229,9 @@ namespace FlinkDotNet.Common
         /// <returns>List of string values</returns>
         public static IList<string> ParseListValue(string? value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return [];
-            }
-
-            return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return string.IsNullOrWhiteSpace(value)
+                ? []
+                : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
     }
 }

@@ -58,9 +58,9 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="configuration">Optional configuration</param>
         /// <param name="logger">Optional logger</param>
-        protected StreamExecutionEnvironment(Configuration? configuration = null, ILogger? logger = null)
+        protected StreamExecutionEnvironment(FlinkConfiguration? configuration = null, ILogger? logger = null)
         {
-            this._executionConfig = new ExecutionConfig(configuration ?? new Configuration());
+            this._executionConfig = new ExecutionConfig(configuration ?? new FlinkConfiguration());
             this._logger = logger;
             _log.Information("[StreamExecutionEnvironment] Created new environment instance");
         }
@@ -353,7 +353,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="configuration">The configuration to instantiate the environment with</param>
         /// <returns>The execution environment of the context in which the program is executed</returns>
-        public static StreamExecutionEnvironment GetExecutionEnvironment(Configuration? configuration = null) => new(configuration);
+        public static StreamExecutionEnvironment GetExecutionEnvironment(FlinkConfiguration? configuration = null) => new(configuration);
 
         public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
@@ -441,7 +441,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="configuration">A configuration to read the values from</param>
         /// <returns>This object</returns>
-        public StreamExecutionEnvironment Configure(Configuration configuration)
+        public StreamExecutionEnvironment Configure(FlinkConfiguration configuration)
         {
             _ = this._executionConfig.GetConfiguration().AddAll(configuration);
             return this;

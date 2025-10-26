@@ -6,7 +6,7 @@ using FlinkDotNet.Common;
 namespace FlinkDotNet.Common.Tests
 {
     /// <summary>
-    /// Additional tests to reach 100% branch coverage for Configuration class.
+    /// Additional tests to reach 100% branch coverage for FlinkConfiguration class.
     /// Targets specific uncovered edge cases in getter methods.
     /// </summary>
     [TestFixture]
@@ -16,7 +16,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetString_WithNullValueInDictionary_AndNullDefault_ReturnsEmpty()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", null! } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", null! } });
 
             // Act
             var result = config.GetString("key", null);
@@ -29,7 +29,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetString_WithNullValueInDictionary_AndNoDefault_ReturnsEmpty()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", null! } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", null! } });
 
             // Act
             var result = config.GetString("key");
@@ -42,7 +42,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetInteger_WithUnparseableString_ReturnsDefault()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", "not-a-number" } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", "not-a-number" } });
 
             // Act
             var result = config.GetInteger("key", 999);
@@ -55,7 +55,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetBoolean_WithUnparseableString_ReturnsDefault()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", "not-a-boolean" } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", "not-a-boolean" } });
 
             // Act
             var result = config.GetBoolean("key", true);
@@ -68,7 +68,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetLong_WithUnparseableString_ReturnsDefault()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", "not-a-long" } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", "not-a-long" } });
 
             // Act
             var result = config.GetLong("key", 999L);
@@ -82,7 +82,7 @@ namespace FlinkDotNet.Common.Tests
         {
             // Arrange
             var testObj = new { Name = "Test", Value = 42 };
-            var config = new Configuration(new Dictionary<string, object> { { "key", testObj } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", testObj } });
 
             // Act
             var result = config.GetString("key");
@@ -95,7 +95,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetInteger_WithOverflowValue_ReturnsDefault()
         {
             // Arrange - long.MaxValue will overflow int parsing
-            var config = new Configuration(new Dictionary<string, object> { { "key", long.MaxValue.ToString() } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", long.MaxValue.ToString() } });
 
             // Act
             var result = config.GetInteger("key", 999);
@@ -108,7 +108,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetBoolean_WithNumericString_ReturnsDefault()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", "123" } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", "123" } });
 
             // Act
             var result = config.GetBoolean("key", true);
@@ -121,7 +121,7 @@ namespace FlinkDotNet.Common.Tests
         public void GetLong_WithInvalidFormat_ReturnsDefault()
         {
             // Arrange
-            var config = new Configuration(new Dictionary<string, object> { { "key", "123.456" } });
+            var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", "123.456" } });
 
             // Act
             var result = config.GetLong("key", 999L);
@@ -134,10 +134,10 @@ namespace FlinkDotNet.Common.Tests
         public void AddAll_WithOverlappingKeys_MergesCorrectly()
         {
             // Arrange
-            var config = new Configuration();
+            var config = new FlinkConfiguration();
             config.SetString("existing", "value1");
             
-            var other = new Configuration();
+            var other = new FlinkConfiguration();
             other.SetString("existing", "value2");
             other.SetString("newKey", "newValue");
 
@@ -153,7 +153,7 @@ namespace FlinkDotNet.Common.Tests
         public void ParseListValue_WithOnlyCommas_ReturnsEmpty()
         {
             // Act
-            var result = Configuration.ParseListValue(",,,");
+            var result = FlinkConfiguration.ParseListValue(",,,");
 
             // Assert
             Assert.That(result, Is.Empty);
@@ -163,7 +163,7 @@ namespace FlinkDotNet.Common.Tests
         public void ParseListValue_WithSpacesAndCommas_ReturnsEmpty()
         {
             // Act
-            var result = Configuration.ParseListValue(" , , , ");
+            var result = FlinkConfiguration.ParseListValue(" , , , ");
 
             // Assert
             Assert.That(result, Is.Empty);
@@ -173,7 +173,7 @@ namespace FlinkDotNet.Common.Tests
         public void ParseListValue_WithTrailingComma_IgnoresTrailing()
         {
             // Act
-            var result = Configuration.ParseListValue("value1,value2,");
+            var result = FlinkConfiguration.ParseListValue("value1,value2,");
 
             // Assert
             Assert.That(result, Has.Count.EqualTo(2));
@@ -185,7 +185,7 @@ namespace FlinkDotNet.Common.Tests
         public void ParseListValue_WithLeadingComma_IgnoresLeading()
         {
             // Act
-            var result = Configuration.ParseListValue(",value1,value2");
+            var result = FlinkConfiguration.ParseListValue(",value1,value2");
 
             // Assert
             Assert.That(result, Has.Count.EqualTo(2));

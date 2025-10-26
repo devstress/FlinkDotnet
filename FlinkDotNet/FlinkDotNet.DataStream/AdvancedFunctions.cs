@@ -317,27 +317,14 @@ namespace FlinkDotNet.DataStream
     /// Corresponds to org.apache.flink.util.OutputTag in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements in the side output</typeparam>
-    public class OutputTag<T>
+    public class OutputTag<T>(string id)
     {
         /// <summary>
         /// Gets the identifier of this output tag.
         /// </summary>
-        public string Id
-        {
-            get;
-        }
+        public string Id { get; } = id ?? throw new ArgumentNullException(nameof(id));
 
-        public OutputTag(string id) => this.Id = id ?? throw new ArgumentNullException(nameof(id));
-
-        public override bool Equals(object? obj)
-        {
-            if (obj is not OutputTag<T> other)
-            {
-                return false;
-            }
-
-            return this.Id == other.Id;
-        }
+        public override bool Equals(object? obj) => obj is OutputTag<T> other && this.Id == other.Id;
 
         public override int GetHashCode() => this.Id.GetHashCode();
     }

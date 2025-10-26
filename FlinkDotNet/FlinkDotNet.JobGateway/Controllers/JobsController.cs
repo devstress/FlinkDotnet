@@ -13,24 +13,13 @@ namespace FlinkDotNet.JobGateway.Controllers;
 [ApiController]
 [Route("api/v1/[controller]")]
 [ApiVersion("1.0")]
-public class JobsController : ControllerBase
+public class JobsController(ILogger<JobsController> logger, IFlinkJobManager flinkJobManager) : ControllerBase
 {
     private const string LogBorderTop = "╔══════════════════════════════════════════════════════════════";
     private const string LogBorderBottom = "╚══════════════════════════════════════════════════════════════";
 
-    private readonly ILogger<JobsController> _logger;
-    private readonly IFlinkJobManager _flinkJobManager;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JobsController"/> class.
-    /// </summary>
-    /// <param name="logger">Logger for tracking controller operations.</param>
-    /// <param name="flinkJobManager">The Flink job manager service for job operations.</param>
-    public JobsController(ILogger<JobsController> logger, IFlinkJobManager flinkJobManager)
-    {
-        this._logger = logger;
-        this._flinkJobManager = flinkJobManager;
-    }
+    private readonly ILogger<JobsController> _logger = logger;
+    private readonly IFlinkJobManager _flinkJobManager = flinkJobManager;
 
     /// <summary>
     /// Submit a job to the Flink cluster. The request body must contain a JobDefinition JSON payload.
@@ -209,14 +198,7 @@ public class JobsController : ControllerBase
         try
         {
             var status = await this._flinkJobManager.GetJobStatusAsync(flinkJobId);
-            if (status != null)
-            {
-                return this.Ok(status);
-            }
-            else
-            {
-                return this.NotFound();
-            }
+            return status != null ? this.Ok(status) : this.NotFound();
         }
         catch (Exception ex)
         {
@@ -238,14 +220,7 @@ public class JobsController : ControllerBase
         try
         {
             var metrics = await this._flinkJobManager.GetJobMetricsAsync(flinkJobId);
-            if (metrics != null)
-            {
-                return this.Ok(metrics);
-            }
-            else
-            {
-                return this.NotFound();
-            }
+            return metrics != null ? this.Ok(metrics) : this.NotFound();
         }
         catch (Exception ex)
         {
@@ -267,14 +242,7 @@ public class JobsController : ControllerBase
         try
         {
             var canceled = await this._flinkJobManager.CancelJobAsync(flinkJobId);
-            if (canceled)
-            {
-                return this.Ok();
-            }
-            else
-            {
-                return this.NotFound();
-            }
+            return canceled ? this.Ok() : this.NotFound();
         }
         catch (Exception ex)
         {

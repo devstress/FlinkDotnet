@@ -113,15 +113,7 @@ namespace FlinkDotNet.DataStream.Window
             return new(start, start + windowSize);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is not TimeWindow other)
-            {
-                return false;
-            }
-
-            return this.Start == other.Start && this.End == other.End;
-        }
+        public override bool Equals(object? obj) => obj is TimeWindow other && this.Start == other.Start && this.End == other.End;
 
         public override int GetHashCode() => HashCode.Combine(this.Start, this.End);
 

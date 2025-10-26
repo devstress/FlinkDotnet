@@ -17,7 +17,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// List of operations to apply to the data stream
         /// </summary>
-        public List<IOperationDefinition> Operations { get; set; } = [];
+        public List<IOperationDefinition> Operations { get; init; } = [];
 
         /// <summary>
         /// Data sink for the streaming job (nullable for pure SQL jobs)
@@ -75,7 +75,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Additional properties for job configuration
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the headers
         /// </summary>
-        public Dictionary<string, string> Headers { get; set; } = [];
+        public Dictionary<string, string> Headers { get; init; } = [];
         public string? Body
         {
             get; set;
@@ -191,7 +191,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -223,7 +223,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the statements
         /// </summary>
-        public List<string> Statements { get; set; } = [];
+        public List<string> Statements { get; init; } = [];
         /// <summary>
         /// Gets or sets the mode
         /// </summary>
@@ -253,7 +253,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -332,7 +332,7 @@ namespace Flink.JobBuilder.Models
         public string Key { get; set; } = string.Empty;
         public List<string>? Keys
         {
-            get; set;
+            get; init;
         } // For multi-key grouping
     }
 
@@ -470,7 +470,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the headers
         /// </summary>
-        public Dictionary<string, string> Headers { get; set; } = [];
+        public Dictionary<string, string> Headers { get; init; } = [];
         public string? BodyTemplate
         {
             get; set;
@@ -502,7 +502,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -522,19 +522,19 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the parameters
         /// </summary>
-        public Dictionary<string, object> Parameters { get; set; } = [];
+        public Dictionary<string, object> Parameters { get; init; } = [];
         /// <summary>
         /// Gets or sets the state keys
         /// </summary>
-        public List<string> StateKeys { get; set; } = [];
+        public List<string> StateKeys { get; init; } = [];
         /// <summary>
         /// Gets or sets the timer names
         /// </summary>
-        public List<string> TimerNames { get; set; } = [];
+        public List<string> TimerNames { get; init; } = [];
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -570,7 +570,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -602,7 +602,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the parameters
         /// </summary>
-        public Dictionary<string, object> Parameters { get; set; } = [];
+        public Dictionary<string, object> Parameters { get; init; } = [];
     }
 
     /// <summary>
@@ -622,7 +622,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the delay ms
         /// </summary>
-        public List<long> DelayMs { get; set; } = [300_000, 600_000, 1_800_000, 3_600_000, 86_400_000]; // 5min, 10min, 30min, 1hr, 1day
+        public List<long> DelayMs { get; init; } = [300_000, 600_000, 1_800_000, 3_600_000, 86_400_000]; // 5min, 10min, 30min, 1hr, 1day
         public string? RetryCondition
         {
             get; set;
@@ -638,7 +638,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -666,7 +666,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -712,7 +712,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -752,7 +752,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -780,7 +780,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -804,7 +804,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the headers
         /// </summary>
-        public Dictionary<string, string> Headers { get; set; } = [];
+        public Dictionary<string, string> Headers { get; init; } = [];
         public string? BodyTemplate
         {
             get; set;
@@ -820,7 +820,7 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the properties
         /// </summary>
-        public Dictionary<string, string> Properties { get; set; } = [];
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 
     /// <summary>
@@ -848,6 +848,6 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Gets or sets the configuration
         /// </summary>
-        public Dictionary<string, object> Configuration { get; set; } = [];
+        public Dictionary<string, object> Configuration { get; init; } = [];
     }
 }

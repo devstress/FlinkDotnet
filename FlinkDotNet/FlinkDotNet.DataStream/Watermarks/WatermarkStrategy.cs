@@ -87,13 +87,10 @@ namespace FlinkDotNet.DataStream.Watermarks
         public long ExtractTimestamp(T element, long previousTimestamp)
         {
             _ = previousTimestamp; // Reserved for future implementation
-            if (this._timestampAssigner == null)
-            {
-                throw new System.InvalidOperationException(
-                    "No timestamp assigner configured. Call WithTimestampAssigner() first.");
-            }
-
-            return this._timestampAssigner(element);
+            return this._timestampAssigner == null
+                ? throw new System.InvalidOperationException(
+                    "No timestamp assigner configured. Call WithTimestampAssigner() first.")
+                : this._timestampAssigner(element);
         }
 
         /// <summary>

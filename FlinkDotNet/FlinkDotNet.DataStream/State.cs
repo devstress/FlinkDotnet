@@ -218,12 +218,12 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the name of the state.
         /// </summary>
-        public string Name
-        {
-            get;
-        }
+        public string Name { get; }
 
-        protected StateDescriptor(string name) => this.Name = name ?? throw new System.ArgumentNullException(nameof(name));
+        protected StateDescriptor(string name)
+        {
+            this.Name = name ?? throw new System.ArgumentNullException(nameof(name));
+        }
     }
 
     /// <summary>
@@ -231,17 +231,12 @@ namespace FlinkDotNet.DataStream
     /// Corresponds to org.apache.flink.api.common.state.ValueStateDescriptor in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of value stored in the state</typeparam>
-    public class ValueStateDescriptor<T> : StateDescriptor
+    public class ValueStateDescriptor<T>(string name) : StateDescriptor(name)
     {
         /// <summary>
         /// Gets the type information for the state value.
         /// </summary>
-        public System.Type ValueType
-        {
-            get;
-        }
-
-        public ValueStateDescriptor(string name) : base(name) => this.ValueType = typeof(T);
+        public System.Type ValueType { get; } = typeof(T);
     }
 
     /// <summary>
@@ -249,17 +244,12 @@ namespace FlinkDotNet.DataStream
     /// Corresponds to org.apache.flink.api.common.state.ListStateDescriptor in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements in the list</typeparam>
-    public class ListStateDescriptor<T> : StateDescriptor
+    public class ListStateDescriptor<T>(string name) : StateDescriptor(name)
     {
         /// <summary>
         /// Gets the type information for list elements.
         /// </summary>
-        public System.Type ElementType
-        {
-            get;
-        }
-
-        public ListStateDescriptor(string name) : base(name) => this.ElementType = typeof(T);
+        public System.Type ElementType { get; } = typeof(T);
     }
 
     /// <summary>
@@ -268,29 +258,17 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     /// <typeparam name="TKey">The type of keys</typeparam>
     /// <typeparam name="TValue">The type of values</typeparam>
-    public class MapStateDescriptor<TKey, TValue> : StateDescriptor
+    public class MapStateDescriptor<TKey, TValue>(string name) : StateDescriptor(name)
     {
         /// <summary>
         /// Gets the type information for map keys.
         /// </summary>
-        public System.Type KeyType
-        {
-            get;
-        }
+        public System.Type KeyType { get; } = typeof(TKey);
 
         /// <summary>
         /// Gets the type information for map values.
         /// </summary>
-        public System.Type ValueType
-        {
-            get;
-        }
-
-        public MapStateDescriptor(string name) : base(name)
-        {
-            this.KeyType = typeof(TKey);
-            this.ValueType = typeof(TValue);
-        }
+        public System.Type ValueType { get; } = typeof(TValue);
     }
 
     /// <summary>
@@ -298,16 +276,9 @@ namespace FlinkDotNet.DataStream
     /// Corresponds to org.apache.flink.api.common.state.ReducingStateDescriptor in Java Flink.
     /// </summary>
     /// <typeparam name="T">The type of elements</typeparam>
-    public class ReducingStateDescriptor<T> : StateDescriptor
+    public class ReducingStateDescriptor<T>(string name, IReduceFunction<T> reduceFunction) : StateDescriptor(name)
     {
-        public IReduceFunction<T> ReduceFunction
-        {
-            get;
-        }
-
-        public ReducingStateDescriptor(string name, IReduceFunction<T> reduceFunction)
-            : base(name) =>
-            this.ReduceFunction = reduceFunction ?? throw new System.ArgumentNullException(nameof(reduceFunction));
+        public IReduceFunction<T> ReduceFunction { get; } = reduceFunction ?? throw new System.ArgumentNullException(nameof(reduceFunction));
     }
 
     /// <summary>
@@ -318,17 +289,10 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TAcc">The type of accumulator</typeparam>
     /// <typeparam name="TOut">The type of output</typeparam>
 #pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
-    public class AggregatingStateDescriptor<TIn, TAcc, TOut> : StateDescriptor
+    public class AggregatingStateDescriptor<TIn, TAcc, TOut>(string name, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction) : StateDescriptor(name)
 #pragma warning restore S2436
     {
-        public IAggregateFunction<TIn, TAcc, TOut> AggregateFunction
-        {
-            get;
-        }
-
-        public AggregatingStateDescriptor(string name, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction)
-            : base(name) =>
-            this.AggregateFunction = aggregateFunction ?? throw new System.ArgumentNullException(nameof(aggregateFunction));
+        public IAggregateFunction<TIn, TAcc, TOut> AggregateFunction { get; } = aggregateFunction ?? throw new System.ArgumentNullException(nameof(aggregateFunction));
     }
 
     #endregion State Descriptors

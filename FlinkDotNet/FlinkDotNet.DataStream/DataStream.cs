@@ -192,12 +192,9 @@ namespace FlinkDotNet.DataStream
             }
 
             // Handle JobDefinition-backed streams with OperationCapture
-            if (this._operationCapture != null || this._job != null)
-            {
-                return this.CreateJobDefinitionBackedStream<T>();
-            }
-
-            throw new InvalidOperationException("DataStream has no valid source");
+            return this._operationCapture != null || this._job != null
+                ? this.CreateJobDefinitionBackedStream<T>()
+                : throw new InvalidOperationException("DataStream has no valid source");
         }
 
         /// <summary>
@@ -229,12 +226,9 @@ namespace FlinkDotNet.DataStream
             }
 
             // Handle JobDefinition-backed streams with OperationCapture
-            if (this._operationCapture != null || this._job != null)
-            {
-                return this.CreateJobDefinitionBackedStream<TOut>();
-            }
-
-            throw new InvalidOperationException("DataStream has no valid source");
+            return this._operationCapture != null || this._job != null
+                ? this.CreateJobDefinitionBackedStream<TOut>()
+                : throw new InvalidOperationException("DataStream has no valid source");
         }
 
         /// <summary>
@@ -372,11 +366,11 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Sets the name for this operation.
         /// </summary>
-        /// <param name="name">The name of this operation</param>
+        /// <param name="operatorName">The name of this operation</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> Name(string name)
+        public DataStream<T> Name(string operatorName)
         {
-            _ = name; // Reserved for future implementation
+            _ = operatorName; // Reserved for future implementation
             return this;
         }
 
@@ -441,23 +435,20 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> SetMaxParallelism(int maxParallelism)
         {
-            if (maxParallelism <= 0 || maxParallelism > 32768)
-            {
-                throw new ArgumentException("Max parallelism must be between 1 and 32768");
-            }
-
-            return this;
+            return maxParallelism <= 0 || maxParallelism > 32768
+                ? throw new ArgumentException("Max parallelism must be between 1 and 32768")
+                : this;
         }
 
         /// <summary>
         /// Sets the slotting group for this operation.
         /// Used for fine-grained resource management in Apache Flink 2.1.0.
         /// </summary>
-        /// <param name="slotSharingGroup">The slot sharing group name</param>
+        /// <param name="groupName">The slot sharing group name</param>
         /// <returns>This DataStream</returns>
-        public DataStream<T> SlotSharingGroup(string slotSharingGroup)
+        public DataStream<T> SlotSharingGroup(string groupName)
         {
-            _ = slotSharingGroup; // Reserved for future implementation
+            _ = groupName; // Reserved for future implementation
             return this;
         }
 
@@ -833,16 +824,10 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     /// <typeparam name="TIn">The input element type</typeparam>
     /// <typeparam name="TOut">The output element type</typeparam>
-    internal class MappedSourceFunction<TIn, TOut> : ISourceFunction<TOut>
+    internal class MappedSourceFunction<TIn, TOut>(ISourceFunction<TIn> source, Func<TIn, TOut> mapFunction) : ISourceFunction<TOut>
     {
-        private readonly ISourceFunction<TIn> _source;
-        private readonly Func<TIn, TOut> _mapFunction;
-
-        public MappedSourceFunction(ISourceFunction<TIn> source, Func<TIn, TOut> mapFunction)
-        {
-            this._source = source ?? throw new ArgumentNullException(nameof(source));
-            this._mapFunction = mapFunction ?? throw new ArgumentNullException(nameof(mapFunction));
-        }
+        private readonly ISourceFunction<TIn> _source = source ?? throw new ArgumentNullException(nameof(source));
+        private readonly Func<TIn, TOut> _mapFunction = mapFunction ?? throw new ArgumentNullException(nameof(mapFunction));
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -858,16 +843,10 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     /// <typeparam name="TIn">The input element type</typeparam>
     /// <typeparam name="TOut">The output element type</typeparam>
-    internal class FlatMappedSourceFunction<TIn, TOut> : ISourceFunction<TOut>
+    internal class FlatMappedSourceFunction<TIn, TOut>(ISourceFunction<TIn> source, Func<TIn, IEnumerable<TOut>> flatMapFunction) : ISourceFunction<TOut>
     {
-        private readonly ISourceFunction<TIn> _source;
-        private readonly Func<TIn, IEnumerable<TOut>> _flatMapFunction;
-
-        public FlatMappedSourceFunction(ISourceFunction<TIn> source, Func<TIn, IEnumerable<TOut>> flatMapFunction)
-        {
-            this._source = source ?? throw new ArgumentNullException(nameof(source));
-            this._flatMapFunction = flatMapFunction ?? throw new ArgumentNullException(nameof(flatMapFunction));
-        }
+        private readonly ISourceFunction<TIn> _source = source ?? throw new ArgumentNullException(nameof(source));
+        private readonly Func<TIn, IEnumerable<TOut>> _flatMapFunction = flatMapFunction ?? throw new ArgumentNullException(nameof(flatMapFunction));
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -885,16 +864,10 @@ namespace FlinkDotNet.DataStream
     /// Internal wrapper source function that applies a filter predicate to elements from another source.
     /// </summary>
     /// <typeparam name="T">The element type</typeparam>
-    internal class FilteredSourceFunction<T> : ISourceFunction<T>
+    internal class FilteredSourceFunction<T>(ISourceFunction<T> source, Func<T, bool> filterFunction) : ISourceFunction<T>
     {
-        private readonly ISourceFunction<T> _source;
-        private readonly Func<T, bool> _filterFunction;
-
-        public FilteredSourceFunction(ISourceFunction<T> source, Func<T, bool> filterFunction)
-        {
-            this._source = source ?? throw new ArgumentNullException(nameof(source));
-            this._filterFunction = filterFunction ?? throw new ArgumentNullException(nameof(filterFunction));
-        }
+        private readonly ISourceFunction<T> _source = source ?? throw new ArgumentNullException(nameof(source));
+        private readonly Func<T, bool> _filterFunction = filterFunction ?? throw new ArgumentNullException(nameof(filterFunction));
 
         public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -916,17 +889,11 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TAcc">The accumulator type</typeparam>
     /// <typeparam name="TOut">The output element type</typeparam>
 #pragma warning disable S2436 // Types and methods should not have too many generic parameters - Required for Apache Flink API compatibility
-    internal class AggregatedSourceFunction<TIn, TAcc, TOut> : ISourceFunction<TOut>
+    internal class AggregatedSourceFunction<TIn, TAcc, TOut>(ISourceFunction<TIn> source, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction) : ISourceFunction<TOut>
 #pragma warning restore S2436
     {
-        private readonly ISourceFunction<TIn> _source;
-        private readonly IAggregateFunction<TIn, TAcc, TOut> _aggregateFunction;
-
-        public AggregatedSourceFunction(ISourceFunction<TIn> source, IAggregateFunction<TIn, TAcc, TOut> aggregateFunction)
-        {
-            this._source = source ?? throw new ArgumentNullException(nameof(source));
-            this._aggregateFunction = aggregateFunction ?? throw new ArgumentNullException(nameof(aggregateFunction));
-        }
+        private readonly ISourceFunction<TIn> _source = source ?? throw new ArgumentNullException(nameof(source));
+        private readonly IAggregateFunction<TIn, TAcc, TOut> _aggregateFunction = aggregateFunction ?? throw new ArgumentNullException(nameof(aggregateFunction));
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {

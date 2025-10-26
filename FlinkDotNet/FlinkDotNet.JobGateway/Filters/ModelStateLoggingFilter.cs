@@ -5,16 +5,8 @@ namespace FlinkDotNet.JobGateway.Filters;
 /// <summary>
 /// Action filter that logs model state validation errors for debugging purposes.
 /// </summary>
-internal sealed class ModelStateLoggingFilter : IActionFilter
+internal sealed class ModelStateLoggingFilter(ILogger<ModelStateLoggingFilter> logger) : IActionFilter
 {
-    private readonly ILogger<ModelStateLoggingFilter> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ModelStateLoggingFilter"/> class.
-    /// </summary>
-    /// <param name="logger">The logger instance.</param>
-    public ModelStateLoggingFilter(ILogger<ModelStateLoggingFilter> logger) => this._logger = logger;
-
     /// <summary>
     /// Called before the action executes. Logs any model state validation errors.
     /// </summary>
@@ -29,7 +21,7 @@ internal sealed class ModelStateLoggingFilter : IActionFilter
         var errors = context.ModelState
             .Where(kv => kv.Value?.Errors.Count > 0)
             .Select(kv => $"{kv.Key}:{string.Join("|", kv.Value!.Errors.Select(e => e.ErrorMessage))}");
-        this._logger.LogWarning("ModelState invalid for {Path}. Errors: {Errors}",
+        logger.LogWarning("ModelState invalid for {Path}. Errors: {Errors}",
             context.HttpContext.Request.Path,
             string.Join("; ", errors));
     }
