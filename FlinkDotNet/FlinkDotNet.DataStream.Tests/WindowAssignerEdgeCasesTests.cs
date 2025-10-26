@@ -218,7 +218,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = Array.Empty<TimeWindow>();
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged, Is.Empty);
@@ -231,7 +231,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new[] { new TimeWindow(0, 5000) };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged.Count, Is.EqualTo(1));
@@ -251,7 +251,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged.Count, Is.EqualTo(1));
@@ -271,7 +271,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged.Count, Is.EqualTo(3));
@@ -295,7 +295,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act - Should sort internally before merging
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged.Count, Is.EqualTo(2));
@@ -316,7 +316,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - Should merge because start <= end
             Assert.That(merged.Count, Is.EqualTo(1));

@@ -47,10 +47,10 @@ namespace FlinkDotNet.Common.Logging
                 .WriteTo.File(
                     path: logFile,
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-                    rollingInterval: RollingInterval.Infinite,
                     fileSizeLimitBytes: 100_000_000,
-                    rollOnFileSizeLimit: false,
-                    shared: true)
+                    shared: true,
+                    rollingInterval: RollingInterval.Infinite,
+                    rollOnFileSizeLimit: false)
                 .WriteTo.Console()
                 .MinimumLevel.Debug()
                 .CreateLogger();

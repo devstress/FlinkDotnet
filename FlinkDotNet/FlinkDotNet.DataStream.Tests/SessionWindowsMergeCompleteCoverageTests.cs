@@ -20,7 +20,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new List<TimeWindow>();
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result, Is.Empty);
@@ -37,7 +37,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
@@ -56,7 +56,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
@@ -75,7 +75,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(2));
@@ -97,7 +97,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - Should be sorted and overlapping ones merged
             Assert.That(result.Count, Is.EqualTo(1));
@@ -119,7 +119,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(3));
@@ -143,7 +143,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result.Count, Is.EqualTo(1));
@@ -162,7 +162,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - Should merge since Start <= End (not < End)
             Assert.That(result.Count, Is.EqualTo(1));
@@ -181,7 +181,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - Should NOT merge since Start > End
             Assert.That(result.Count, Is.EqualTo(2));
@@ -204,7 +204,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - All non-overlapping, should have 4 windows in sorted order
             Assert.That(result.Count, Is.EqualTo(4));
@@ -226,7 +226,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - Should merge into one
             Assert.That(result.Count, Is.EqualTo(1));
@@ -245,7 +245,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - Should keep the larger window
             Assert.That(result.Count, Is.EqualTo(1));
