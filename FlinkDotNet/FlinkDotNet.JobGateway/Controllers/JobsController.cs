@@ -18,6 +18,12 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     private const string LogBorderTop = "╔══════════════════════════════════════════════════════════════";
     private const string LogBorderBottom = "╚══════════════════════════════════════════════════════════════";
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
     private readonly ILogger<JobsController> _logger = logger;
     private readonly IFlinkJobManager _flinkJobManager = flinkJobManager;
 
@@ -30,19 +36,19 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     {
         this.LogRequestReceived();
 
-        var requestBodyResult = await this.ReadRequestBodyAsync();
+        (string? Body, ActionResult? Error) requestBodyResult = await this.ReadRequestBodyAsync();
         if (requestBodyResult.Error != null)
         {
             return requestBodyResult.Error;
         }
 
-        var jobDefResult = this.DeserializeJobDefinition(requestBodyResult.Body!);
+        (JobDefinition? JobDefinition, ActionResult? Error) jobDefResult = this.DeserializeJobDefinition(requestBodyResult.Body!);
         if (jobDefResult.Error != null)
         {
             return jobDefResult.Error;
         }
 
-        var jobDefinition = jobDefResult.JobDefinition!;
+        JobDefinition jobDefinition = jobDefResult.JobDefinition!;
         this.EnsureJobMetadata(jobDefinition);
 
         this._logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}",
@@ -54,19 +60,23 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
 
     private void LogRequestReceived()
     {
-        this._logger.LogInformation(LogBorderTop);
-        this._logger.LogInformation("║ 🔵 [Gateway] Received job submission request");
-        this._logger.LogInformation("║ 📡 Client: {ClientIP}", this.HttpContext.Connection.RemoteIpAddress);
-        this._logger.LogInformation("║ 🌐 Endpoint: POST /api/v1/jobs/submit");
-        this._logger.LogInformation(LogBorderBottom);
+        this._logger.LogInformation(
+            """
+            {BorderTop}
+            ║ 🔵 [Gateway] Received job submission request
+            ║ 📡 Client: {ClientIP}
+            ║ 🌐 Endpoint: POST /api/v1/jobs/submit
+            {BorderBottom}
+            """,
+            LogBorderTop, this.HttpContext.Connection.RemoteIpAddress, LogBorderBottom);
     }
 
     private async Task<(string? Body, ActionResult? Error)> ReadRequestBodyAsync()
     {
         try
         {
-            using var reader = new StreamReader(this.Request.Body, Encoding.UTF8);
-            var raw = await reader.ReadToEndAsync();
+            using StreamReader reader = new StreamReader(this.Request.Body, Encoding.UTF8);
+            string raw = await reader.ReadToEndAsync();
             this._logger.LogDebug("📝 Request body length: {Length} bytes", raw.Length);
 
             if (string.IsNullOrWhiteSpace(raw))
@@ -95,12 +105,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     {
         try
         {
-            var opts = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true,
-            };
-            var jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, opts);
+            JobDefinition? jobDefinition = JsonSerializer.Deserialize<JobDefinition>(raw, JsonOptions);
 
             if (jobDefinition == null)
             {
@@ -147,38 +152,48 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
         try
         {
             this._logger.LogInformation("🚀 Submitting job to Flink cluster...");
-            var result = await this._flinkJobManager.SubmitJobAsync(jobDefinition);
+            JobSubmissionResult result = await this._flinkJobManager.SubmitJobAsync(jobDefinition);
 
             if (result.IsSuccess)
             {
-                this._logger.LogInformation(LogBorderTop);
-                this._logger.LogInformation("║ ✅ [Gateway] Job submitted successfully");
-                this._logger.LogInformation("║ 📋 JobId: {JobId}", result.JobId);
-                this._logger.LogInformation("║ 🆔 FlinkJobId: {FlinkJobId}", result.FlinkJobId);
-                this._logger.LogInformation("║ 📤 Response: 200 OK");
-                this._logger.LogInformation(LogBorderBottom);
+                this._logger.LogInformation(
+                    """
+                    {BorderTop}
+                    ║ ✅ [Gateway] Job submitted successfully
+                    ║ 📋 JobId: {JobId}
+                    ║ 🆔 FlinkJobId: {FlinkJobId}
+                    ║ 📤 Response: 200 OK
+                    {BorderBottom}
+                    """,
+                    LogBorderTop, result.JobId, result.FlinkJobId, LogBorderBottom);
                 return this.Ok(result);
             }
-            else
-            {
-                this._logger.LogError(LogBorderTop);
-                this._logger.LogError("║ ❌ [Gateway] Job submission failed");
-                this._logger.LogError("║ 📋 JobId: {JobId}", result.JobId);
-                this._logger.LogError("║ ⚠️ Error: {ErrorMessage}", result.ErrorMessage);
-                this._logger.LogError("║ 📤 Response: 400 Bad Request");
-                this._logger.LogError(LogBorderBottom);
-                return this.BadRequest(result);
-            }
+
+            this._logger.LogError(
+                """
+                {BorderTop}
+                ║ ❌ [Gateway] Job submission failed
+                ║ 📋 JobId: {JobId}
+                ║ ⚠️ Error: {ErrorMessage}
+                ║ 📤 Response: 400 Bad Request
+                {BorderBottom}
+                """,
+                LogBorderTop, result.JobId, result.ErrorMessage, LogBorderBottom);
+            return this.BadRequest(result);
         }
         catch (Exception ex)
         {
-            this._logger.LogError(ex, LogBorderTop);
-            this._logger.LogError("║ ❌ [Gateway] Exception during job submission");
-            this._logger.LogError("║ 📋 JobId: {JobId}", jobDefinition.Metadata.JobId);
-            this._logger.LogError("║ 💥 Exception: {Message}", ex.Message);
-            this._logger.LogError("║ 📤 Response: 500 Internal Server Error");
-            this._logger.LogError(LogBorderBottom);
-            var result = JobSubmissionResult.CreateFailure(
+            this._logger.LogError(ex,
+                """
+                {BorderTop}
+                ║ ❌ [Gateway] Exception during job submission
+                ║ 📋 JobId: {JobId}
+                ║ 💥 Exception: {Message}
+                ║ 📤 Response: 500 Internal Server Error
+                {BorderBottom}
+                """,
+                LogBorderTop, jobDefinition.Metadata.JobId, ex.Message, LogBorderBottom);
+            JobSubmissionResult result = JobSubmissionResult.CreateFailure(
                 jobDefinition.Metadata.JobId,
                 $"Internal server error: {ex.Message}");
             return this.StatusCode(500, result);

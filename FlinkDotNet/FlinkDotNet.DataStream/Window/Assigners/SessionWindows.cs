@@ -71,7 +71,7 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// <returns>Merged windows</returns>
         public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows)
         {
-            List<TimeWindow> sortedWindows = new(windows);
+            List<TimeWindow> sortedWindows = [..windows];
             sortedWindows.Sort((w1, w2) => w1.Start.CompareTo(w2.Start));
 
             List<TimeWindow> mergedWindows = [];

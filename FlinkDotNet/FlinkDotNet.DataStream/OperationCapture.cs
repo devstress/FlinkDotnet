@@ -30,7 +30,7 @@ namespace FlinkDotNet.DataStream
         private static readonly IFileSystem _fileSystem = new FileSystem();
         private static readonly Serilog.Core.Logger _logger = LoggerFactory.CreateLogger(_fileSystem);
 
-        private readonly List<CapturedOperation> _operations = new();
+        private readonly List<CapturedOperation> _operations = [];
         private KafkaSourceDefinition? _kafkaSource;
         private KafkaSinkDefinition? _kafkaSink;
         private bool _hasTimestampAssigner;

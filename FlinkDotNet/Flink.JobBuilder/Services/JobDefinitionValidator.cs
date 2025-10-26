@@ -15,7 +15,7 @@ namespace Flink.JobBuilder.Services
     {
         public static IrValidationResult Validate(JobDefinition job)
         {
-            List<string> errors = new();
+            List<string> errors = [];
 
             ValidateMetadata(job.Metadata, errors);
             ValidateJobStructure(job, errors);
@@ -238,7 +238,7 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateAggregateOperation(AggregateOperationDefinition aggregate, int index, List<string> errors)
         {
-            string[] allowedAgg = new[] { "SUM", "COUNT", "AVG", "MIN", "MAX", "COLLECT" };
+            string[] allowedAgg = ["SUM", "COUNT", "AVG", "MIN", "MAX", "COLLECT"];
             if (string.IsNullOrWhiteSpace(aggregate.AggregationType) || !allowedAgg.Contains(aggregate.AggregationType))
             {
                 errors.Add($"operations[{index}].aggregate.aggregationType must be one of {string.Join(", ", allowedAgg)}");
@@ -260,7 +260,7 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateWindowType(WindowOperationDefinition window, int index, List<string> errors)
         {
-            string[] allowedWindow = new[] { "TUMBLING", "SLIDING", "SESSION" };
+            string[] allowedWindow = ["TUMBLING", "SLIDING", "SESSION"];
             if (string.IsNullOrWhiteSpace(window.WindowType) || !allowedWindow.Contains(window.WindowType))
             {
                 errors.Add($"operations[{index}].window.windowType must be one of {string.Join(", ", allowedWindow)}");
@@ -277,7 +277,7 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateWindowTimeUnit(WindowOperationDefinition window, int index, List<string> errors)
         {
-            string[] allowedUnits = new[] { "SECONDS", "MINUTES", "HOURS" };
+            string[] allowedUnits = ["SECONDS", "MINUTES", "HOURS"];
             if (string.IsNullOrWhiteSpace(window.TimeUnit) || !allowedUnits.Contains(window.TimeUnit))
             {
                 errors.Add($"operations[{index}].window.timeUnit must be one of {string.Join(", ", allowedUnits)}");
@@ -351,7 +351,7 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateStateOperation(StateOperationDefinition state, int index, List<string> errors)
         {
-            string[] allowedState = new[] { "value", "list", "map", "reducing" };
+            string[] allowedState = ["value", "list", "map", "reducing"];
             if (string.IsNullOrWhiteSpace(state.StateType) || !allowedState.Contains(state.StateType))
             {
                 errors.Add($"operations[{index}].state.stateType must be one of {string.Join(", ", allowedState)}");
@@ -370,7 +370,7 @@ namespace Flink.JobBuilder.Services
 
         private static void ValidateTimerOperation(TimerOperationDefinition timer, int index, List<string> errors)
         {
-            string[] allowedTimers = new[] { "processing", "event" };
+            string[] allowedTimers = ["processing", "event"];
             if (string.IsNullOrWhiteSpace(timer.TimerType) || !allowedTimers.Contains(timer.TimerType))
             {
                 errors.Add($"operations[{index}].timer.timerType must be one of {string.Join(", ", allowedTimers)}");

@@ -28,12 +28,18 @@ namespace FlinkDotNet.DataStream.Watermarks
         /// <summary>
         /// Gets whether this strategy is for monotonous timestamps.
         /// </summary>
-        public bool IsMonotonous { get; }
+        public bool IsMonotonous
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the maximum out-of-orderness allowed.
         /// </summary>
-        public System.TimeSpan MaxOutOfOrderness { get; }
+        public System.TimeSpan MaxOutOfOrderness
+        {
+            get;
+        }
 
         private WatermarkStrategy(System.TimeSpan maxOutOfOrderness, bool isMonotonous)
         {

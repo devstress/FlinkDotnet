@@ -30,22 +30,34 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the Kafka topic to consume from.
         /// </summary>
-        public string Topic { get; }
+        public string Topic
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the Kafka bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers { get; }
+        public string BootstrapServers
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the Kafka consumer group ID.
         /// </summary>
-        public string GroupId { get; }
+        public string GroupId
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the starting offsets strategy.
         /// </summary>
-        public string StartingOffsets { get; }
+        public string StartingOffsets
+        {
+            get;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KafkaSourceFunction{T}"/> class.
