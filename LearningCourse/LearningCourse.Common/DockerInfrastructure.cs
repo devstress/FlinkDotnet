@@ -357,46 +357,41 @@ public static class DockerInfrastructure
     /// <summary>
     /// Discovers the Flink REST API endpoint from Docker port mappings.
     /// This finds the dynamically allocated host port that maps to Flink JobManager's REST API port (8081).
+    /// <summary>
+    /// Gets the Flink Job Gateway endpoint for FlinkDotNet job submissions.
+    /// JobGateway runs as a host process (not containerized) on fixed port 8080.
+    /// This is the correct endpoint for exercises that submit FlinkDotNet jobs.
+    /// 
+    /// Note: This is different from Flink JobManager REST API (port 8081) which is for cluster management.
+    /// Exercises use JobGateway (/api/v1/health, /jobs endpoints) not JobManager.
     /// </summary>
-    /// <returns>Flink REST API endpoint for host access (e.g., "http://localhost:41451")</returns>
+    /// <returns>Flink Job Gateway endpoint (http://localhost:8080)</returns>
     public static async Task<string> GetFlinkRestApiEndpointAsync()
     {
         try
         {
-            var flinkContainers = await RunDockerCommandAsync("ps --filter name=flink-jobmanager --format {{.Ports}}");
-            Console.WriteLine($"🔍 Flink JobManager port mappings: {flinkContainers.Trim()}");
+            // JobGateway runs on fixed localhost:8080 (not a Docker container)
+            // No dynamic port discovery needed - it's configured in LocalTesting AppHost
+            const string jobGatewayEndpoint = "http://localhost:8080";
             
-            // Log docker ps after discovering Flink ports
-            await LogDockerPsAsync("After Flink REST API Discovery");
+            Console.WriteLine($"🔍 Using Flink Job Gateway endpoint: {jobGatewayEndpoint}");
+            Console.WriteLine($"   (JobGateway runs as host process on fixed port 8080, not in Docker)");
             
-            return ExtractFlinkRestApiEndpointFromPorts(flinkContainers);
+            // Still log docker ps for debugging, but we're not discovering from it
+            await LogDockerPsAsync("Flink Job Gateway Endpoint Configuration");
+            
+            return jobGatewayEndpoint;
         }
         catch (Exception ex)
         {
-            // Log docker ps if Flink discovery fails
-            await LogDockerPsAsync("Flink REST API Discovery Failed");
-            throw new InvalidOperationException($"Failed to discover Flink REST API endpoint from Docker: {ex.Message}", ex);
+            await LogDockerPsAsync("Flink Job Gateway Endpoint Configuration Failed");
+            throw new InvalidOperationException($"Failed to get Flink Job Gateway endpoint: {ex.Message}", ex);
         }
     }
 
-    private static string ExtractFlinkRestApiEndpointFromPorts(string flinkContainers)
-    {
-        var lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var line in lines)
-        {
-            // Look for port mapping to 8081 (Flink JobManager REST API port)
-            // Format: 127.0.0.1:PORT->8081/tcp or 0.0.0.0:PORT->8081/tcp
-            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->8081");
-            if (match.Success)
-            {
-                var port = match.Groups[1].Value;
-                Console.WriteLine($"🔍 Found Flink REST API port mapping: host {port} -> container 8081");
-                return $"http://127.0.0.1:{port}";
-            }
-        }
+    // NOTE: ExtractFlinkRestApiEndpointFromPorts method removed - JobGateway uses fixed port 8080, not Docker discovery
+    // If you need to discover Flink JobManager REST API (port 8081) for cluster management, create a separate method
 
-        throw new InvalidOperationException($"Could not determine Flink REST API endpoint from Docker/Podman ports: {flinkContainers}");
-    }
 
     /// <summary>
     /// Discovers the Kafka JMX Exporter endpoint from Docker port mappings for debugging metrics export.
