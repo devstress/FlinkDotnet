@@ -60,19 +60,18 @@ public partial class FlinkJobManager
     {
         try
         {
-            this.LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
-                ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"));
-
             string jarId = await this.EnsureRunnerJarAsync();
 
             // DIAGNOSTIC: Log job definition bootstrap servers before submission
             KafkaSourceDefinition? kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
             KafkaSinkDefinition? kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-            this._logger.LogInformation("✅ JAR ready: {JarId} | Kafka config: Source={SourceBootstrap}, Sink={SinkBootstrap} | Gateway KAFKA_BOOTSTRAP={KafkaBootstrap}",
-                jarId,
-                kafkaSource?.BootstrapServers ?? "null",
-                kafkaSink?.BootstrapServers ?? "null",
-                Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set");
+            
+            this.LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
+                ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"),
+                ("✅ JAR", jarId),
+                ("📋 Kafka Source", kafkaSource?.BootstrapServers ?? "null"),
+                ("📋 Kafka Sink", kafkaSink?.BootstrapServers ?? "null"),
+                ("🌍 Gateway KAFKA_BOOTSTRAP", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set"));
 
             // DIAGNOSTIC: Log environment variables that might override job definition
             this._logger.LogWarning(
@@ -97,12 +96,12 @@ public partial class FlinkJobManager
 
             this._logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", this._httpClient.BaseAddress, jarId);
             using HttpResponseMessage response = await this._httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
-            this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) response.StatusCode, response.ReasonPhrase);
 
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
             {
                 string err = await response.Content.ReadAsStringAsync();
-                this._logger.LogError("❌ Flink job submission failed: {StatusCode} - {Error}", response.StatusCode, err);
+                this._logger.LogError("❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}", 
+                    (int)response.StatusCode, response.ReasonPhrase, err);
                 throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
             }
 
@@ -117,7 +116,8 @@ public partial class FlinkJobManager
                 jobId = run?.JobId;
                 if (jobId != null)
                 {
-                    this._logger.LogInformation("✅ Extracted Flink JobId from response: {JobId}", jobId);
+                    this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}", 
+                        (int)response.StatusCode, response.ReasonPhrase, jobId);
                 }
             }
             catch (JsonException ex)
@@ -219,13 +219,11 @@ public partial class FlinkJobManager
         using StringContent sessionContent = new(sessionJson, Encoding.UTF8, "application/json");
         using HttpResponseMessage sessionResponse = await client.PostAsync("/v1/sessions", sessionContent);
 
-        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
-
         if (!sessionResponse.IsSuccessStatusCode)
         {
             string errorContent = await sessionResponse.Content.ReadAsStringAsync();
-            this._logger.LogError("❌ SQL Gateway session creation failed: {StatusCode} - {Error}",
-                sessionResponse.StatusCode, errorContent);
+            this._logger.LogError("❌ SQL Gateway session creation failed: {StatusCode} {ReasonPhrase} - {Error}",
+                (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase, errorContent);
             throw new InvalidOperationException($"SQL Gateway session creation failed: {sessionResponse.StatusCode} - {errorContent}");
         }
 
@@ -233,7 +231,8 @@ public partial class FlinkJobManager
         this._logger.LogDebug("📥 Response body: {Response}", sessionResponseContent);
 
         string handle = this.ExtractSessionHandle(sessionResponseContent);
-        this._logger.LogInformation("✅ Session handle extracted: {Handle}", handle);
+        this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase} | ✅ Session handle extracted: {Handle}", 
+            (int)sessionResponse.StatusCode, sessionResponse.ReasonPhrase, handle);
 
         return handle;
     }
@@ -830,12 +829,15 @@ public partial class FlinkJobManager
             return null;
         }
 
-        return TryGetStringProperty(element, "jid", out string? jobId) ||
-               TryGetStringProperty(element, "jobId", out jobId) ||
-               TryGetStringProperty(element, "jobid", out jobId) ||
-               TryGetStringProperty(element, "id", out jobId)
-            ? jobId
-            : null;
+        if (TryGetStringProperty(element, "jid", out string? jobId) ||
+            TryGetStringProperty(element, "jobId", out jobId) ||
+            TryGetStringProperty(element, "jobid", out jobId) ||
+            TryGetStringProperty(element, "id", out jobId))
+        {
+            return jobId;
+        }
+
+        return null;
     }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)

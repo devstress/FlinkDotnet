@@ -252,8 +252,7 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         string detailsText = string.Join(" | ", details.Select(d => $"{d.Label}: {d.Value}"));
         this._logger.LogInformation("╔══════════════════════════════════════════════════════════════");
-        this._logger.LogInformation("║ {Title} | {Details}", title, detailsText);
-        this._logger.LogInformation("╚══════════════════════════════════════════════════════════════");
+        this._logger.LogInformation("║ {Title} | {Details}\n╚══════════════════════════════════════════════════════════════", title, detailsText);
     }
 
     /// <summary>
@@ -291,10 +290,9 @@ public partial class FlinkJobManager : IFlinkJobManager
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
-            this._logger.LogInformation("✅ Validation passed | 🔄 Using standard JAR submission flow");
+            this._logger.LogInformation("✅ Validation passed | 🔄 Using standard JAR submission flow | 🔍 Probing Flink cluster health...");
             string irBase64 = this.EncodeJobDefinition(jobDefinition);
 
-            this._logger.LogInformation("🔍 Probing Flink cluster health...");
             bool clusterHealthy2 = await this.ProbeClusterHealthSafelyAsync();
 
             if (!clusterHealthy2)
@@ -495,8 +493,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return true;
             }
 
-            this._logger.LogWarning("Both cancel attempts failed. PATCH: {PatchStatus}, POST: {PostStatus}",
-                patchResponse.StatusCode, postResponse.StatusCode);
+            this._logger.LogWarning("POST cancel also failed with {PostStatus}", postResponse.StatusCode);
 
             if (postResponse.StatusCode == HttpStatusCode.NotFound || patchResponse.StatusCode == HttpStatusCode.NotFound)
             {
@@ -547,8 +544,15 @@ public partial class FlinkJobManager : IFlinkJobManager
                 WorkingDirectory = runnerDir,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                UseShellExecute = false
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
+
+            // S4036: Set environment explicitly for security (don't inherit potentially unsafe PATH)
+            psi.Environment.Clear();
+            psi.Environment["PATH"] = Environment.GetEnvironmentVariable("PATH") ?? "";
+            psi.Environment["JAVA_HOME"] = Environment.GetEnvironmentVariable("JAVA_HOME") ?? "";
+            psi.Environment["M2_HOME"] = Environment.GetEnvironmentVariable("M2_HOME") ?? "";
 
             this._logger.LogDebug("Starting Maven build in {WorkingDir}: mvn {Args}", runnerDir, psi.Arguments);
             Process process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start Maven process");
@@ -768,6 +772,11 @@ public partial class FlinkJobManager : IFlinkJobManager
             return lvlEl.GetString();
         }
 
-        return root.TryGetProperty("backpressure-level", out JsonElement lvlEl2) ? lvlEl2.GetString() : null;
+        if (root.TryGetProperty("backpressure-level", out JsonElement lvlEl2))
+        {
+            return lvlEl2.GetString();
+        }
+
+        return null;
     }
 }

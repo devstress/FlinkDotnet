@@ -37,8 +37,8 @@ public class Program
             string today = DateTime.UtcNow.ToString("yyyyMMdd");
             string logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
 
-            Log.Information("=== Gateway Starting === LOG_FILE_PATH: {LogPath}, Log file: {LogFile}", logFilePath, logFile);
-            Log.Information("Environment: FLINK_CLUSTER_HOST={Host}, FLINK_CLUSTER_PORT={Port}, KAFKA_BOOTSTRAP={Kafka}",
+            Log.Information("=== Gateway Starting === LOG_FILE_PATH: {LogPath}, Log file: {LogFile}, FLINK_CLUSTER_HOST={Host}, FLINK_CLUSTER_PORT={Port}, KAFKA_BOOTSTRAP={Kafka}",
+                logFilePath, logFile,
                 Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST"),
                 Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"),
                 Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
