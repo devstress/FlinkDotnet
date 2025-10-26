@@ -18,7 +18,7 @@ internal sealed class ModelStateLoggingFilter(ILogger<ModelStateLoggingFilter> l
             return;
         }
 
-        var errors = context.ModelState
+        IEnumerable<string> errors = context.ModelState
             .Where(kv => kv.Value?.Errors.Count > 0)
             .Select(kv => $"{kv.Key}:{string.Join("|", kv.Value!.Errors.Select(e => e.ErrorMessage))}");
         logger.LogWarning("ModelState invalid for {Path}. Errors: {Errors}",

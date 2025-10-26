@@ -212,7 +212,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
 
         try
         {
-            var status = await this._flinkJobManager.GetJobStatusAsync(flinkJobId);
+            JobStatus? status = await this._flinkJobManager.GetJobStatusAsync(flinkJobId);
             return status != null ? this.Ok(status) : this.NotFound();
         }
         catch (Exception ex)
@@ -234,7 +234,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
 
         try
         {
-            var metrics = await this._flinkJobManager.GetJobMetricsAsync(flinkJobId);
+            JobMetrics? metrics = await this._flinkJobManager.GetJobMetricsAsync(flinkJobId);
             return metrics != null ? this.Ok(metrics) : this.NotFound();
         }
         catch (Exception ex)
@@ -256,7 +256,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
 
         try
         {
-            var canceled = await this._flinkJobManager.CancelJobAsync(flinkJobId);
+            bool canceled = await this._flinkJobManager.CancelJobAsync(flinkJobId);
             return canceled ? this.Ok() : this.NotFound();
         }
         catch (Exception ex)
