@@ -65,10 +65,10 @@ namespace FlinkDotNet.DataStream.Window.Assigners
             }
 
             // Determine the start of the first window that contains this timestamp
-            var lastStart = this.GetWindowStart(timestamp);
+            long lastStart = this.GetWindowStart(timestamp);
 
             // Generate all windows that contain this timestamp
-            for (var start = lastStart; start > timestamp - this._size; start -= this._slide)
+            for (long start = lastStart; start > timestamp - this._size; start -= this._slide)
             {
                 if (start >= 0 || start + this._size > 0)
                 {

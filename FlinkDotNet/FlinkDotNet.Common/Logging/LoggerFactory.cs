@@ -36,9 +36,9 @@ namespace FlinkDotNet.Common.Logging
         /// <returns>Configured Serilog logger instance</returns>
         public static Logger CreateLogger(IFileSystem fileSystem, string logFileNamePattern = "FlinkDotnet.log")
         {
-            var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
-            var today = DateTime.UtcNow.ToString("yyyyMMdd");
-            var logFile = fileSystem.Path.Combine(logFilePath, $"{logFileNamePattern}.{today}");
+            string logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
+            string today = DateTime.UtcNow.ToString("yyyyMMdd");
+            string logFile = fileSystem.Path.Combine(logFilePath, $"{logFileNamePattern}.{today}");
 
             // Clean up old log files (older than 1 day)
             CleanupOldLogFiles(fileSystem, logFilePath, $"{logFileNamePattern}.*");

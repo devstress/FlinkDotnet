@@ -102,7 +102,7 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public string GetString(string key, string? defaultValue = null)
         {
-            return this._configuration.TryGetValue(key, out var value)
+            return this._configuration.TryGetValue(key, out object? value)
                 ? value?.ToString() ?? defaultValue ?? string.Empty
                 : defaultValue ?? string.Empty;
         }
@@ -115,14 +115,14 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public int GetInteger(string key, int defaultValue = 0)
         {
-            if (this._configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out object? value))
             {
                 if (value is int intValue)
                 {
                     return intValue;
                 }
 
-                if (int.TryParse(value.ToString(), out var parsedValue))
+                if (int.TryParse(value.ToString(), out int parsedValue))
                 {
                     return parsedValue;
                 }
@@ -138,14 +138,14 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public bool GetBoolean(string key, bool defaultValue = false)
         {
-            if (this._configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out object? value))
             {
                 if (value is bool boolValue)
                 {
                     return boolValue;
                 }
 
-                if (bool.TryParse(value.ToString(), out var parsedValue))
+                if (bool.TryParse(value.ToString(), out bool parsedValue))
                 {
                     return parsedValue;
                 }
@@ -161,7 +161,7 @@ namespace FlinkDotNet.Common
         /// <returns>The configuration value</returns>
         public long GetLong(string key, long defaultValue = 0L)
         {
-            if (this._configuration.TryGetValue(key, out var value))
+            if (this._configuration.TryGetValue(key, out object? value))
             {
                 if (value is long longValue)
                 {
