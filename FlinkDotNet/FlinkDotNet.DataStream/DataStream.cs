@@ -80,7 +80,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         private DataStream<TResult> CreateJobDefinitionBackedStream<TResult>()
         {
-            DataStream<TResult> result = new DataStream<TResult>(this._job ?? new Flink.JobBuilder.Models.JobDefinition(), this._environment);
+            DataStream<TResult> result = new(this._job ?? new Flink.JobBuilder.Models.JobDefinition(), this._environment);
             if (this._operationCapture != null)
             {
                 result.AttachOperationCapture(this._operationCapture);
@@ -115,7 +115,7 @@ namespace FlinkDotNet.DataStream
 
             if (this._sourceFunction != null)
             {
-                MappedSourceFunction<T, TOut> mappedSource = new MappedSourceFunction<T, TOut>(this._sourceFunction, mapFunction);
+                MappedSourceFunction<T, TOut> mappedSource = new(this._sourceFunction, mapFunction);
                 return new DataStream<TOut>(mappedSource, this._environment, $"Map({this._sourceName})");
             }
 
@@ -188,7 +188,7 @@ namespace FlinkDotNet.DataStream
 
             if (this._sourceFunction != null)
             {
-                FilteredSourceFunction<T> filteredSource = new FilteredSourceFunction<T>(this._sourceFunction, filterFunction);
+                FilteredSourceFunction<T> filteredSource = new(this._sourceFunction, filterFunction);
                 return new DataStream<T>(filteredSource, this._environment, $"Filter({this._sourceName})");
             }
 
@@ -222,7 +222,7 @@ namespace FlinkDotNet.DataStream
 
             if (this._sourceFunction != null)
             {
-                FlatMappedSourceFunction<T, TOut> flatMappedSource = new FlatMappedSourceFunction<T, TOut>(this._sourceFunction, flatMapFunction);
+                FlatMappedSourceFunction<T, TOut> flatMappedSource = new(this._sourceFunction, flatMapFunction);
                 return new DataStream<TOut>(flatMappedSource, this._environment, $"FlatMap({this._sourceName})");
             }
 
@@ -510,7 +510,7 @@ namespace FlinkDotNet.DataStream
             // Capture operation if using native API
             this._operationCapture?.CaptureTimeWindow(size);
 
-            AllWindowedStream<T> windowedStream = new AllWindowedStream<T>(this, size);
+            AllWindowedStream<T> windowedStream = new(this, size);
             this.PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
@@ -533,7 +533,7 @@ namespace FlinkDotNet.DataStream
             this._operationCapture?.CaptureCountWindow(size);
 
             // Create a windowed stream with count-based windowing
-            AllWindowedStream<T> windowedStream = new AllWindowedStream<T>(this, size);
+            AllWindowedStream<T> windowedStream = new(this, size);
             this.PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
@@ -668,7 +668,7 @@ namespace FlinkDotNet.DataStream
 
             // This is a placeholder - in production, this would integrate with the Flink runtime
             // to perform actual windowed aggregation
-            DataStream<TResult> result = new DataStream<TResult>(
+            DataStream<TResult> result = new(
                 new AggregatedSourceFunction<T, TAcc, TResult>(
                     this._dataStream._sourceFunction ?? throw new InvalidOperationException("Source function required"),
                     aggregateFunction

@@ -182,7 +182,7 @@ namespace FlinkDotNet.DataStream
         {
             _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", this._kafkaSource?.BootstrapServers);
 
-            JobDefinition jobDef = new JobDefinition
+            JobDefinition jobDef = new()
             {
                 Source = this._kafkaSource!,
                 Operations = [],
@@ -341,7 +341,7 @@ namespace FlinkDotNet.DataStream
                 _logger.Warning("[OperationCapture.TranslateAggregateOperation] No window defined");
             }
 
-            AggregateOperationDefinition aggDef = new AggregateOperationDefinition
+            AggregateOperationDefinition aggDef = new()
             {
                 AggregationType = "COLLECT",
                 Field = "*",

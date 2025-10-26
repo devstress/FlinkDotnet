@@ -168,7 +168,7 @@ namespace FlinkDotNet.Common
                     return longValue;
                 }
 
-                if (long.TryParse(value.ToString(), out var parsedValue))
+                if (long.TryParse(value.ToString(), out long parsedValue))
                 {
                     return parsedValue;
                 }

@@ -109,7 +109,7 @@ namespace FlinkDotNet.DataStream.Window
         /// <returns>The window that contains the timestamp</returns>
         public static TimeWindow GetWindowStartWithOffset(long timestamp, long offset, long windowSize)
         {
-            long start = timestamp - (timestamp - offset + windowSize) % windowSize;
+            long start = timestamp - ((timestamp - offset + windowSize) % windowSize);
             return new(start, start + windowSize);
         }
 
