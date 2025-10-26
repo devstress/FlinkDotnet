@@ -21,7 +21,7 @@ public partial class FlinkJobManager
     private sealed class JobValidationResult
     {
         public bool IsValid { get; set; }
-        public List<string> Errors { get; set; } = new();
+        public List<string> Errors { get; set; } = [];
     }
 
     private sealed class FlinkRunResponse
@@ -31,7 +31,7 @@ public partial class FlinkJobManager
 
     private sealed class FlinkJarsList
     {
-        public List<FlinkJarFile> Files { get; set; } = new();
+        public List<FlinkJarFile> Files { get; set; } = [];
     }
 
     private sealed class FlinkJarUploadResponse

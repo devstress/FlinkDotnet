@@ -45,8 +45,8 @@ namespace FlinkDotNet.Common.Logging
 
             return new LoggerConfiguration()
                 .WriteTo.File(
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
                     path: logFile,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
                     fileSizeLimitBytes: 100_000_000,
                     rollOnFileSizeLimit: false,
                     rollingInterval: RollingInterval.Infinite,

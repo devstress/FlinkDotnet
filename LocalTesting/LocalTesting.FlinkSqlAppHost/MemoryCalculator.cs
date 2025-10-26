@@ -6,7 +6,10 @@ namespace LocalTesting.FlinkSqlAppHost;
 /// </summary>
 public static class MemoryCalculator
 {
-    private const long MinimumSystemMemoryMb = 4096; // 4GB minimum required
+    /// <summary>
+    /// 4GB minimum required
+    /// </summary>
+    private const long MinimumSystemMemoryMb = 4096;
 
     /// <summary>
     /// Gets total available physical memory in MB.
@@ -37,12 +40,13 @@ public static class MemoryCalculator
     /// <summary>
     /// Calculates appropriate TaskManager process memory based on available system RAM.
     /// Uses conservative allocations to work on resource-constrained environments.
-    /// 
+    /// </summary>
+    /// <remarks>
     /// Memory allocation strategy:
     /// - ≤8GB RAM: 1.5GB TaskManager (minimal, for CI/testing)
     /// - 8-16GB RAM: 3GB TaskManager (standard development)
     /// - ≥16GB RAM: 4GB TaskManager (optimal)
-    /// </summary>
+    /// </remarks>
     public static int CalculateTaskManagerProcessMemoryMb()
     {
         var totalMemoryMb = GetTotalPhysicalMemoryMb();
@@ -83,12 +87,13 @@ public static class MemoryCalculator
     /// <summary>
     /// Calculates appropriate JVM metaspace size based on TaskManager process memory.
     /// Metaspace should be ~25% of process memory for class loading overhead.
-    /// 
+    /// </summary>
+    /// <remarks>
     /// Allocation strategy:
     /// - 1.5GB process: 384MB metaspace (minimal)
     /// - 3GB process: 768MB metaspace (standard)
     /// - 4GB+ process: 1024MB metaspace (optimal)
-    /// </summary>
+    /// </remarks>
     public static int CalculateTaskManagerMetaspaceMb(int processMemoryMb)
     {
         // Metaspace = 25% of process memory (safe allocation for class loading)
@@ -130,7 +135,7 @@ public static class MemoryCalculator
         if (totalMemoryMb < MinimumSystemMemoryMb)
         {
             Console.WriteLine($"❌ Insufficient system memory: {totalMemoryMb}MB < {MinimumSystemMemoryMb}MB required");
-            Console.WriteLine($"   Flink requires at least 4GB RAM for stable operation");
+            Console.WriteLine("   Flink requires at least 4GB RAM for stable operation");
             return false;
         }
 

@@ -37,7 +37,7 @@ mkdir -p "$LOG_FILE_PATH"
 
 # Check if binary exists
 if [[ ! -f "$GATEWAY_BINARY" ]]; then
-    echo "ERROR: FlinkJobGateway binary not found at $GATEWAY_BINARY"
+    echo "ERROR: FlinkJobGateway binary not found at $GATEWAY_BINARY" >&2
     exit 1
 fi
 

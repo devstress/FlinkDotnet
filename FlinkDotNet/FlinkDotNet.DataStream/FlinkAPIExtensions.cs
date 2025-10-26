@@ -92,7 +92,7 @@ namespace FlinkDotNet.DataStream
     {
         private readonly System.Type _type;
 
-        private TypeInformation(System.Type type) => this._type = type;
+        internal TypeInformation(System.Type type) => this._type = type;
 
         /// <summary>
         /// Creates type information for the given type.
@@ -101,16 +101,22 @@ namespace FlinkDotNet.DataStream
         public static TypeInformation<T> Of() => new(typeof(T));
 
         /// <summary>
-        /// Creates type information for a specific type.
-        /// </summary>
-        /// <typeparam name="TType">The type</typeparam>
-        /// <returns>Type information</returns>
-        public static TypeInformation<TType> Of<TType>() => new(typeof(TType));
-
-        /// <summary>
         /// Gets the .NET type.
         /// </summary>
         public new System.Type GetType() => this._type;
+    }
+
+    /// <summary>
+    /// Factory for creating TypeInformation instances.
+    /// </summary>
+    public static class TypeInformation
+    {
+        /// <summary>
+        /// Creates type information for a specific type.
+        /// </summary>
+        /// <typeparam name="T">The type</typeparam>
+        /// <returns>Type information</returns>
+        public static TypeInformation<T> Of<T>() => new(typeof(T));
     }
 
     /// <summary>

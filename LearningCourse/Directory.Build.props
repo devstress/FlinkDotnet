@@ -12,5 +12,10 @@
     <!-- Don't append configuration or framework to paths -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    
+    <!-- Disable specific code analysis warnings for tutorial/learning code -->
+    <!-- CA1050: Types should be declared in namespaces - conflicts with top-level programs in tutorials -->
+    <!-- CA1822: Methods can be static - conflicts with interface implementations in learning examples -->
+    <NoWarn>$(NoWarn);CA1050;CA1822</NoWarn>
   </PropertyGroup>
 </Project>

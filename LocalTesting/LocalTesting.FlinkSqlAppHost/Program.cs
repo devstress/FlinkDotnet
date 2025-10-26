@@ -32,7 +32,7 @@ if (!MemoryCalculator.ValidateMinimumMemory())
     return;
 }
 
-Console.WriteLine($"✅ Memory resources validated\n");
+Console.WriteLine("✅ Memory resources validated\n");
 
 // Check if LearningCourse mode is enabled - enables additional infrastructure for learning exercises
 var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
@@ -519,10 +519,10 @@ static bool ConfigureContainerRuntime()
 
 static void LogConfiguredPorts()
 {
-    Console.WriteLine($"📍 Configured ports:");
+    Console.WriteLine("📍 Configured ports:");
     Console.WriteLine($"   - Flink JobManager: {Ports.JobManagerHostPort}");
     Console.WriteLine($"   - Gateway: {Ports.GatewayHostPort}");
-    Console.WriteLine($"   - Kafka: <dynamic port allocated by Aspire>");
+    Console.WriteLine("   - Kafka: <dynamic port allocated by Aspire>");
 }
 
 static void SetupEnvironment()
@@ -747,5 +747,3 @@ static void SetPodmanDockerHost()
         Console.WriteLine($"   ⚠️ Could not set DOCKER_HOST: {ex.Message}");
     }
 }
-
-

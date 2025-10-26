@@ -69,7 +69,23 @@ namespace FlinkDotNet.DataStream.Window.Assigners
         /// </summary>
         /// <param name="windows">The windows to merge</param>
         /// <returns>Merged windows</returns>
-        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows)
+        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows) =>
+            SessionWindowMerger.MergeWindows(windows);
+
+        public override string ToString() => $"SessionWindows({this._sessionGap}ms gap)";
+    }
+
+    /// <summary>
+    /// Helper class for merging session windows to avoid static methods in generic types.
+    /// </summary>
+    internal static class SessionWindowMerger
+    {
+        /// <summary>
+        /// Merges overlapping session windows.
+        /// </summary>
+        /// <param name="windows">The windows to merge</param>
+        /// <returns>Merged windows</returns>
+        internal static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows)
         {
             List<TimeWindow> sortedWindows = [..windows];
             sortedWindows.Sort((w1, w2) => w1.Start.CompareTo(w2.Start));
@@ -103,7 +119,5 @@ namespace FlinkDotNet.DataStream.Window.Assigners
 
             return mergedWindows;
         }
-
-        public override string ToString() => $"SessionWindows({this._sessionGap}ms gap)";
     }
 }

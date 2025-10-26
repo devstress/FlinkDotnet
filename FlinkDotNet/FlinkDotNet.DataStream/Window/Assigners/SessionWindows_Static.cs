@@ -34,10 +34,11 @@ namespace FlinkDotNet.DataStream.Window.Assigners
 
         /// <summary>
         /// Merges overlapping session windows.
-        /// This is a convenience method that delegates to SessionWindows&lt;T&gt;.MergeWindows.
+        /// This is a convenience method that merges session windows regardless of element type.
         /// </summary>
         /// <param name="windows">The windows to merge</param>
         /// <returns>Merged windows</returns>
-        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows) => SessionWindows<object>.MergeWindows(windows);
+        public static IEnumerable<TimeWindow> MergeWindows(IEnumerable<TimeWindow> windows) =>
+            SessionWindowMerger.MergeWindows(windows);
     }
 }

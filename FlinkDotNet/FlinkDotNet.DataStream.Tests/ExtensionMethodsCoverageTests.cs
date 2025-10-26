@@ -154,7 +154,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void TypeInformation_Of_SpecificType_ShouldCreateTypeInformation()
         {
             // Act
-            var typeInfo = TypeInformation<int>.Of<int>();
+            var typeInfo = TypeInformation.Of<int>();
 
             // Assert
             Assert.That(typeInfo, Is.Not.Null);
