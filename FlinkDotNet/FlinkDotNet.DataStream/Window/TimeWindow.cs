@@ -88,10 +88,10 @@ namespace FlinkDotNet.DataStream.Window
                 throw new ArgumentException("Cannot merge empty window collection");
             }
 
-            var minStart = long.MaxValue;
-            var maxEnd = long.MinValue;
+            long minStart = long.MaxValue;
+            long maxEnd = long.MinValue;
 
-            foreach (var window in windows)
+            foreach (TimeWindow window in windows)
             {
                 minStart = Math.Min(minStart, window.Start);
                 maxEnd = Math.Max(maxEnd, window.End);
@@ -109,7 +109,7 @@ namespace FlinkDotNet.DataStream.Window
         /// <returns>The window that contains the timestamp</returns>
         public static TimeWindow GetWindowStartWithOffset(long timestamp, long offset, long windowSize)
         {
-            var start = timestamp - (timestamp - offset + windowSize) % windowSize;
+            long start = timestamp - (timestamp - offset + windowSize) % windowSize;
             return new(start, start + windowSize);
         }
 

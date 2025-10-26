@@ -537,16 +537,16 @@ namespace FlinkDotNet.DataStream
         public JobClient(string jobName, TimeSpan? httpTimeout = null, FlinkJobGatewayConfiguration? gatewayConfig = null)
         {
             this.JobName = jobName;
-            var host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
-            var port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
+            string host = Environment.GetEnvironmentVariable("FLINK_CLUSTER_HOST") ?? "flink-jobmanager";
+            int port = int.Parse(Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT") ?? "8081");
 
             // Use provided timeout, or check environment variable, or default to 5 minutes
-            var timeout = httpTimeout ??
-                (int.TryParse(Environment.GetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS"), out var timeoutSeconds)
+            TimeSpan timeout = httpTimeout ??
+                (int.TryParse(Environment.GetEnvironmentVariable("FLINK_HTTP_TIMEOUT_SECONDS"), out int timeoutSeconds)
                     ? TimeSpan.FromSeconds(timeoutSeconds)
                     : TimeSpan.FromMinutes(5));
 
-            var protocol = GetProtocol();
+            string protocol = GetProtocol();
             this._flinkHttp = new HttpClient { BaseAddress = new Uri($"{protocol}://{host}:{port}"), Timeout = timeout };
 
             // Use provided gateway configuration or default with same timeout for consistency
@@ -609,7 +609,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public async Task<JobExecutionResult> GetJobExecutionResultAsync(CancellationToken cancellationToken = default)
         {
-            var status = await this.GetJobStatusAsync(cancellationToken);
+            JobStatus status = await this.GetJobStatusAsync(cancellationToken);
             return new JobExecutionResult
             {
                 JobId = this.JobId,
@@ -631,15 +631,15 @@ namespace FlinkDotNet.DataStream
                 targetDirectory = savepointPath,
                 cancelJob
             };
-            var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/savepoints",
+            HttpResponseMessage resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
-            var ok = resp.IsSuccessStatusCode;
-            var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            var triggerId = string.Empty;
+            bool ok = resp.IsSuccessStatusCode;
+            string text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            string triggerId = string.Empty;
             try
             {
-                using var doc = System.Text.Json.JsonDocument.Parse(text);
-                triggerId = doc.RootElement.TryGetProperty("request-id", out var rid) ? rid.GetString() ?? string.Empty : string.Empty;
+                using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(text);
+                triggerId = doc.RootElement.TryGetProperty("request-id", out System.Text.Json.JsonElement rid) ? rid.GetString() ?? string.Empty : string.Empty;
             }
             catch
             {
@@ -660,7 +660,7 @@ namespace FlinkDotNet.DataStream
 
         public async Task<JobStatus> GetJobStatusAsync(CancellationToken cancellationToken = default)
         {
-            var status = await this._gateway.GetJobStatusAsync(this.JobId, cancellationToken).ConfigureAwait(false);
+            JobStatus status = await this._gateway.GetJobStatusAsync(this.JobId, cancellationToken).ConfigureAwait(false);
             return new JobStatus
             {
                 JobId = this.JobId,
@@ -681,10 +681,10 @@ namespace FlinkDotNet.DataStream
                 targetDirectory = savepointPath,
                 drain
             };
-            var resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/stop",
+            HttpResponseMessage resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/stop",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
-            var ok = resp.IsSuccessStatusCode;
-            var text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            bool ok = resp.IsSuccessStatusCode;
+            string text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             return new StopWithSavepointResult { SavepointPath = savepointPath ?? string.Empty, Success = ok, TriggerId = string.Empty, Drained = drain, Error = ok ? null : text };
         }
 
