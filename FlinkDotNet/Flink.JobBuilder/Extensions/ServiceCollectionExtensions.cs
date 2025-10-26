@@ -45,7 +45,7 @@ public static class ServiceCollectionExtensions
             }
 
             // Otherwise, try environment variable
-            var envUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
+            string? envUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
             if (string.IsNullOrEmpty(envUrl))
             {
                 return;

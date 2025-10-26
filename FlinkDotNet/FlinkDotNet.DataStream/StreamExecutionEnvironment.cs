@@ -96,7 +96,7 @@ namespace FlinkDotNet.DataStream
             this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId ?? "default-group", startingOffsets, null);
 
             _log.Debug("[FromKafka] Creating JobDefinition with bootstrapServers={BootstrapServers}", bootstrapServers);
-            JobDefinition jd = new JobDefinition
+            JobDefinition jd = new()
             {
                 Source = new KafkaSourceDefinition
                 {
@@ -115,7 +115,7 @@ namespace FlinkDotNet.DataStream
             };
             this.SetActiveJob(jd);
 
-            DataStream<string> dataStream = new DataStream<string>(jd, this);
+            DataStream<string> dataStream = new(jd, this);
 
             // Attach operation capture to enable native API (Map with IMapFunction)
             dataStream.AttachOperationCapture(this._operationCapture);
@@ -148,8 +148,8 @@ namespace FlinkDotNet.DataStream
             this._operationCapture.CaptureKafkaSource(topic, bootstrapServers, groupId, startingOffsets, deserializer);
 
             // Create a source function that uses the deserializer
-            KafkaSourceFunction<T> sourceFunction = new KafkaSourceFunction<T>(topic, bootstrapServers, groupId, deserializer, startingOffsets);
-            DataStream<T> dataStream = new DataStream<T>(sourceFunction, this, $"Kafka Source ({topic})");
+            KafkaSourceFunction<T> sourceFunction = new(topic, bootstrapServers, groupId, deserializer, startingOffsets);
+            DataStream<T> dataStream = new(sourceFunction, this, $"Kafka Source ({topic})");
 
             // Attach operation capture to the stream
             dataStream.AttachOperationCapture(this._operationCapture);
@@ -386,8 +386,8 @@ namespace FlinkDotNet.DataStream
             }
 
             _log.Debug("[ExecuteAsync] About to submit job to gateway");
-            FlinkJobGatewayConfiguration gatewayConfig = new FlinkJobGatewayConfiguration();
-            FlinkJobGatewayService gateway = new FlinkJobGatewayService(gatewayConfig);
+            FlinkJobGatewayConfiguration gatewayConfig = new();
+            FlinkJobGatewayService gateway = new(gatewayConfig);
 
             JobSubmissionResult submit;
             try
@@ -415,7 +415,7 @@ namespace FlinkDotNet.DataStream
             }
 
             // Create and return JobClient for lifecycle management
-            JobClient jobClient = new JobClient(name)
+            JobClient jobClient = new(name)
             {
                 JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId
             };

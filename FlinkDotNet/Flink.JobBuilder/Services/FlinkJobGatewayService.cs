@@ -29,7 +29,7 @@ namespace Flink.JobBuilder.Services
 
         private static Serilog.Core.Logger CreateLogger()
         {
-            System.IO.Abstractions.FileSystem fileSystem = new System.IO.Abstractions.FileSystem();
+            System.IO.Abstractions.FileSystem fileSystem = new();
             return global::FlinkDotNet.Common.Logging.LoggerFactory.CreateLogger(
                 fileSystem,
                 "FlinkDotNet.JobGateway.log");
@@ -53,7 +53,7 @@ namespace Flink.JobBuilder.Services
         {
             _log.Information("[FlinkJobGatewayService.CreateDefaultHttpClient] Creating HttpClient with BaseUrl={BaseUrl}", this._configuration.BaseUrl);
 
-            HttpClient client = new HttpClient
+            HttpClient client = new()
             {
                 BaseAddress = new Uri(this._configuration.BaseUrl),
                 Timeout = this._configuration.HttpTimeout
@@ -84,7 +84,7 @@ namespace Flink.JobBuilder.Services
             }
 
             string json = this.SerializeAndLogJobDefinition(jobDefinition);
-            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            StringContent content = new(json, Encoding.UTF8, "application/json");
 
             HttpResponseMessage response = await this.ExecuteWithRetryAsync(async () =>
                 await this._httpClient.PostAsync("/api/v1/jobs/submit", content, cancellationToken));
@@ -391,7 +391,8 @@ namespace Flink.JobBuilder.Services
             }
 
             // For client errors (4xx), only retry on specific conditions
-            return !((int)response.StatusCode < 400 || (int)response.StatusCode >= 500) && await this.ShouldRetryClientErrorAsync(response, retryCount);
+            return !((int)response.StatusCode < 400 || (int)response.StatusCode >= 500)
+                && await this.ShouldRetryClientErrorAsync(response, retryCount);
         }
 
         private async Task<bool> ShouldRetryClientErrorAsync(HttpResponseMessage response, int retryCount)
