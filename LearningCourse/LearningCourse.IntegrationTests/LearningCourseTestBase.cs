@@ -195,10 +195,13 @@ public abstract class LearningCourseTestBase
         aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] Log file: {aspireLogPath}");
         aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] LEARNINGCOURSE=true (enabling Redis and Observability)");
         
+        // Build the project path for --project argument
+        var projectPath = Path.Combine(AppHostPath, "LocalTesting.FlinkSqlAppHost.csproj");
+        
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = "run --no-restore --no-build --configuration Release",
+            Arguments = $"run --project \"{projectPath}\" --no-restore --no-build --configuration Release",
             WorkingDirectory = AppHostPath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
