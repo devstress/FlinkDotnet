@@ -847,7 +847,6 @@ namespace FlinkDotNet.DataStream
     {
         private readonly ISourceFunction<TIn> _source = source ?? throw new ArgumentNullException(nameof(source));
         private readonly Func<TIn, IEnumerable<TOut>> _flatMapFunction = flatMapFunction ?? throw new ArgumentNullException(nameof(flatMapFunction));
-        }
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {

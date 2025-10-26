@@ -220,7 +220,10 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public string Name { get; }
 
-        protected StateDescriptor(string name) => this.Name = name ?? throw new System.ArgumentNullException(nameof(name));
+        protected StateDescriptor(string name)
+        {
+            this.Name = name ?? throw new System.ArgumentNullException(nameof(name));
+        }
     }
 
     /// <summary>
