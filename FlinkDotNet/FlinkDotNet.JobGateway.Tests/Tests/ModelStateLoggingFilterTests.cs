@@ -19,8 +19,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void SetUp()
         {
-            this._mockLogger = new Mock<ILogger<ModelStateLoggingFilter>>();
-            this._filter = new ModelStateLoggingFilter(this._mockLogger.Object);
+            _mockLogger = new Mock<ILogger<ModelStateLoggingFilter>>();
+            this._filter = new ModelStateLoggingFilter(_mockLogger.Object);
         }
 
         [Test]
@@ -38,7 +38,7 @@ namespace FlinkDotNet.JobGateway.Tests
             this._filter.OnActionExecuting(context);
 
             // Assert
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     It.IsAny<LogLevel>(),
                     It.IsAny<EventId>(),
@@ -65,7 +65,7 @@ namespace FlinkDotNet.JobGateway.Tests
             this._filter.OnActionExecuting(context);
 
             // Assert
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
@@ -94,7 +94,7 @@ namespace FlinkDotNet.JobGateway.Tests
             this._filter.OnActionExecuting(context);
 
             // Assert
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
@@ -123,7 +123,7 @@ namespace FlinkDotNet.JobGateway.Tests
             this._filter.OnActionExecuting(context);
 
             // Assert
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Warning,
                     It.IsAny<EventId>(),
@@ -147,7 +147,7 @@ namespace FlinkDotNet.JobGateway.Tests
             this._filter.OnActionExecuted(context);
 
             // Assert - No logging should occur
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     It.IsAny<LogLevel>(),
                     It.IsAny<EventId>(),

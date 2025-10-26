@@ -2,5 +2,5 @@
 // Test fixtures use ThreadStatic fields to avoid resource conflicts  
 // ProgramIntegrationTests marked NonParallelizable (uses environment variables)
 [assembly: Parallelizable(ParallelScope.All)]
-// Use high worker count since tests are I/O bound (mocked HTTP calls)
-[assembly: LevelOfParallelism(16)]
+// Use moderate worker count to balance speed and stability
+[assembly: LevelOfParallelism(8)]

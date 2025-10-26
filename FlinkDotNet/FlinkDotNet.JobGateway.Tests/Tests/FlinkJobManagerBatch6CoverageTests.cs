@@ -17,10 +17,14 @@ namespace FlinkDotNet.JobGateway.Tests
     [TestFixture]
     public class FlinkJobManagerBatch6CoverageTests
     {
-        private Mock<ILogger<FlinkJobManager>> _mockLogger = null!;
-        private Mock<IConfiguration> _mockConfiguration = null!;
-        private Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
-        private HttpClient _httpClient = null!;
+        [ThreadStatic]
+        private static Mock<ILogger<FlinkJobManager>>? _mockLogger;
+        [ThreadStatic]
+        private static Mock<IConfiguration>? _mockConfiguration;
+        [ThreadStatic]
+        private static Mock<HttpMessageHandler>? _mockHttpMessageHandler;
+        [ThreadStatic]
+        private static HttpClient? _httpClient;
 
         [SetUp]
         public void Setup()

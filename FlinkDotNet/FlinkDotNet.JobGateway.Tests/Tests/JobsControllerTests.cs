@@ -19,7 +19,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Setup()
         {
             this._mockJobManager = new Mock<IFlinkJobManager>();
-            this._mockLogger = new Mock<ILogger<JobsController>>();
+            _mockLogger = new Mock<ILogger<JobsController>>();
         }
 
         #region SubmitJob Tests
@@ -28,7 +28,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithEmptyBody_ReturnsBadRequest()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(""));
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -46,7 +46,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithWhitespaceBody_ReturnsBadRequest()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("   "));
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -62,7 +62,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithInvalidJson_ReturnsBadRequest()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("{ invalid json }"));
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -78,7 +78,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithNullDeserialization_ReturnsBadRequest()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("null"));
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -94,7 +94,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithValidJobDefinition_ReturnsOk()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -142,7 +142,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithJobDefinitionMissingMetadata_CreatesMetadata()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -182,7 +182,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithSqlSourceAndNoSink_Succeeds()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -224,7 +224,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WhenFlinkJobManagerFails_ReturnsBadRequest()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -267,7 +267,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WhenFlinkJobManagerThrowsException_ReturnsInternalServerError()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -310,7 +310,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithMalformedJson_ReturnsBadRequest()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("{ \"metadata\": { \"jobId\": \"test\", } }"));
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -326,7 +326,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithFileSourceDefinition_Succeeds()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -373,7 +373,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithHttpSourceDefinition_Succeeds()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -421,7 +421,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task SubmitJob_WithDatabaseSourceAndSink_Succeeds()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobDefinition = new JobDefinition
             {
@@ -478,7 +478,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task GetJobStatus_WithValidJobId_ReturnsOkResult()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobId = "test-job-1";
             var expectedStatus = new JobStatus
@@ -506,7 +506,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task GetJobStatus_WithInvalidJobId_ReturnsNotFound()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobId = "non-existent-job";
 
@@ -525,7 +525,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task GetJobStatus_WhenExceptionThrown_ReturnsInternalServerError()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var jobId = "test-job-1";
 
             _ = this._mockJobManager
@@ -549,7 +549,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task GetJobMetrics_WithValidJobId_ReturnsOkResult()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobId = "test-job-1";
             var expectedMetrics = new JobMetrics
@@ -576,7 +576,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task GetJobMetrics_WithInvalidJobId_ReturnsNotFound()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var jobId = "non-existent-job";
 
             _ = this._mockJobManager
@@ -594,7 +594,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task GetJobMetrics_WhenExceptionThrown_ReturnsInternalServerError()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var jobId = "test-job-1";
 
             _ = this._mockJobManager
@@ -618,7 +618,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task CancelJob_WithValidJobId_ReturnsOk()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobId = "test-job-1";
 
@@ -637,7 +637,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task CancelJob_WithInvalidJobId_ReturnsNotFound()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             var jobId = "non-existent-job";
 
@@ -656,7 +656,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task CancelJob_WhenExceptionThrown_ReturnsInternalServerError()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
             var jobId = "test-job-1";
 
             _ = this._mockJobManager
@@ -680,7 +680,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void HealthCheck_ReturnsOk()
         {
             // Arrange
-            var controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            var controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
 
             // Act
             var result = controller.HealthCheck();

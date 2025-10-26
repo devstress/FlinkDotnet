@@ -24,8 +24,8 @@ namespace FlinkDotNet.JobGateway.Tests
         public void Setup()
         {
             this._mockJobManager = new Mock<IFlinkJobManager>();
-            this._mockLogger = new Mock<ILogger<JobsController>>();
-            this._controller = new JobsController(this._mockLogger.Object, this._mockJobManager.Object);
+            _mockLogger = new Mock<ILogger<JobsController>>();
+            this._controller = new JobsController(_mockLogger.Object, this._mockJobManager.Object);
         }
 
         #region Line 123 Branch Coverage - Long Error Message
@@ -47,7 +47,7 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
 
             // Verify the logger was called with truncated message (Line 123 branch: raw[..400])
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
@@ -74,7 +74,7 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(result.Result, Is.InstanceOf<BadRequestObjectResult>());
 
             // Verify the logger was called (Line 123 branch: raw)
-            this._mockLogger.Verify(
+            _mockLogger.Verify(
                 x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
