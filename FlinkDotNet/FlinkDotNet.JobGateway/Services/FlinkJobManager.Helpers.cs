@@ -646,8 +646,8 @@ public partial class FlinkJobManager
 
     private static void MergeServiceFile(ZipArchiveEntry entry, Dictionary<string, HashSet<string>> serviceFiles)
     {
-        using var stream = entry.Open();
-        using var reader = new StreamReader(stream);
+        using Stream stream = entry.Open();
+        using StreamReader reader = new StreamReader(stream);
 
         if (!serviceFiles.ContainsKey(entry.FullName))
         {
@@ -828,7 +828,7 @@ public partial class FlinkJobManager
 
     private static string? MatchJobEntry(JsonElement element, string jobName)
     {
-        if (!TryGetStringProperty(element, "name", out var name) && !TryGetStringProperty(element, "jobName", out name))
+        if (!TryGetStringProperty(element, "name", out string? name) && !TryGetStringProperty(element, "jobName", out name))
         {
             return null;
         }
@@ -838,7 +838,7 @@ public partial class FlinkJobManager
             return null;
         }
 
-        return TryGetStringProperty(element, "jid", out var jobId) ||
+        return TryGetStringProperty(element, "jid", out string? jobId) ||
             TryGetStringProperty(element, "jobId", out jobId) ||
             TryGetStringProperty(element, "jobid", out jobId) ||
             TryGetStringProperty(element, "id", out jobId)
@@ -848,7 +848,7 @@ public partial class FlinkJobManager
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
     {
-        foreach (var property in element.EnumerateObject())
+        foreach (JsonProperty property in element.EnumerateObject())
         {
             if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase)
                 && property.Value.ValueKind == JsonValueKind.String)
