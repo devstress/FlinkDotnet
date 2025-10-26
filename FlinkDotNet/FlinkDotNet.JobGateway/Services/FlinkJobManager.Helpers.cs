@@ -114,7 +114,7 @@ public partial class FlinkJobManager
             try
             {
                 FlinkRunResponse? run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    s_caseInsensitiveDeserializerOptions);
                 jobId = run?.JobId;
                 if (jobId != null)
                 {
@@ -833,15 +833,12 @@ public partial class FlinkJobManager
             return null;
         }
 
-        if (!string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        return TryGetStringProperty(element, "jid", out string? jobId) ||
-            TryGetStringProperty(element, "jobId", out jobId) ||
-            TryGetStringProperty(element, "jobid", out jobId) ||
-            TryGetStringProperty(element, "id", out jobId)
+        return !string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase)
+            ? null
+            : TryGetStringProperty(element, "jid", out string? jobId) ||
+              TryGetStringProperty(element, "jobId", out jobId) ||
+              TryGetStringProperty(element, "jobid", out jobId) ||
+              TryGetStringProperty(element, "id", out jobId)
             ? jobId
             : null;
     }

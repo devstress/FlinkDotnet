@@ -33,9 +33,9 @@ public class Program
 
         try
         {
-            var logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
-            var today = DateTime.UtcNow.ToString("yyyyMMdd");
-            var logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
+            string logFilePath = Environment.GetEnvironmentVariable("LOG_FILE_PATH") ?? "test-logs";
+            string today = DateTime.UtcNow.ToString("yyyyMMdd");
+            string logFile = Path.Combine(logFilePath, $"FlinkDotNet.JobGateway.log.{today}");
 
             Log.Information("=== Gateway Starting ===");
             Log.Information("LOG_FILE_PATH: {LogPath}", logFilePath);
@@ -44,13 +44,13 @@ public class Program
             Log.Information("FLINK_CLUSTER_PORT: {Port}", Environment.GetEnvironmentVariable("FLINK_CLUSTER_PORT"));
             Log.Information("KAFKA_BOOTSTRAP: {Kafka}", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP"));
 
-            var builder = WebApplication.CreateBuilder(args);
+            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             // Use Serilog for ASP.NET Core logging
             _ = builder.Host.UseSerilog();
 
             ConfigureServices(builder);
-            var app = builder.Build();
+            WebApplication app = builder.Build();
             ConfigurePipeline(app);
 
             Log.Information("Gateway configured, starting web server...");
@@ -101,16 +101,16 @@ public class Program
         _ = builder.Services.AddHttpClient(nameof(FlinkJobManager));
         _ = builder.Services.AddSingleton<IFlinkJobManager>(sp =>
         {
-            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-            var httpClient = httpClientFactory.CreateClient(nameof(FlinkJobManager));
-            var logger = sp.GetRequiredService<ILogger<FlinkJobManager>>();
-            var configuration = sp.GetRequiredService<IConfiguration>();
+            IHttpClientFactory httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            HttpClient httpClient = httpClientFactory.CreateClient(nameof(FlinkJobManager));
+            ILogger<FlinkJobManager> logger = sp.GetRequiredService<ILogger<FlinkJobManager>>();
+            IConfiguration configuration = sp.GetRequiredService<IConfiguration>();
             return new FlinkJobManager(logger, configuration, httpClient);
         });
 
         // Register MetricsService as singleton for persistent metrics across requests
         // Prometheus metrics are configured via appsettings.json (similar to Flink's approach)
-        var metricsEnabled = builder.Configuration.GetValue<bool>("Metrics:Prometheus:Enabled");
+        bool metricsEnabled = builder.Configuration.GetValue<bool>("Metrics:Prometheus:Enabled");
 
         if (metricsEnabled)
         {
@@ -138,13 +138,13 @@ public class Program
         }
 
         // Enable Prometheus metrics endpoint based on configuration (similar to Flink's metrics.reporters)
-        var metricsEnabled = app.Configuration.GetValue<bool>("Metrics:Prometheus:Enabled");
+        bool metricsEnabled = app.Configuration.GetValue<bool>("Metrics:Prometheus:Enabled");
 
         if (metricsEnabled)
         {
             _ = app.UseMetricServer();
             _ = app.UseHttpMetrics();
-            var metricsPath = app.Configuration.GetValue<string>("Metrics:Prometheus:Path") ?? "/metrics";
+            string metricsPath = app.Configuration.GetValue<string>("Metrics:Prometheus:Path") ?? "/metrics";
             Log.Information("Prometheus metrics endpoint enabled at {Path} (configured via appsettings)", metricsPath);
         }
 
@@ -158,14 +158,14 @@ public class Program
 
     private static async Task BodyLoggingMiddleware(HttpContext ctx, Func<Task> next)
     {
-        var isSubmit = ctx.Request.Path.Equals("/api/v1/jobs/submit", StringComparison.OrdinalIgnoreCase);
+        bool isSubmit = ctx.Request.Path.Equals("/api/v1/jobs/submit", StringComparison.OrdinalIgnoreCase);
         if (isSubmit)
         {
             try
             {
                 ctx.Request.EnableBuffering();
-                using var reader = new StreamReader(ctx.Request.Body, Encoding.UTF8, leaveOpen: true);
-                var raw = await reader.ReadToEndAsync();
+                using StreamReader reader = new(ctx.Request.Body, Encoding.UTF8, leaveOpen: true);
+                string raw = await reader.ReadToEndAsync();
                 ctx.Request.Body.Position = 0;
                 ctx.RequestServices.GetRequiredService<ILoggerFactory>()
                     .CreateLogger("JobSubmitRawBody")
@@ -179,8 +179,8 @@ public class Program
             }
         }
 
-        var originalBody = ctx.Response.Body;
-        using var mem = new MemoryStream();
+        Stream originalBody = ctx.Response.Body;
+        using MemoryStream mem = new();
         ctx.Response.Body = mem;
         await next();
 
@@ -191,7 +191,7 @@ public class Program
 
         if (isSubmit && ctx.Response.StatusCode == 400)
         {
-            var bodyText = await new StreamReader(mem).ReadToEndAsync();
+            string bodyText = await new StreamReader(mem).ReadToEndAsync();
             ctx.RequestServices.GetRequiredService<ILoggerFactory>()
                 .CreateLogger("JobSubmitModelState")
                 .LogWarning("Job submission returned 400. Response body: {Body}", bodyText);
