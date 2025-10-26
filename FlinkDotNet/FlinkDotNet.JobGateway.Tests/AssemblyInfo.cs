@@ -1,6 +1,6 @@
-// Enable parallel test execution but mark fixtures as non-parallelizable
-// This allows different test classes to run in parallel (safe)
-// But tests within same class run sequentially (prevents HttpClient disposal races)
-[assembly: Parallelizable(ParallelScope.Fixtures)]
-// Use high worker count to maximize parallel fixture execution
+// Enable parallel test execution at all levels for maximum speed
+// Test fixtures use ThreadStatic fields to avoid resource conflicts  
+// ProgramIntegrationTests marked NonParallelizable (uses environment variables)
+[assembly: Parallelizable(ParallelScope.All)]
+// Use high worker count since tests are I/O bound (mocked HTTP calls)
 [assembly: LevelOfParallelism(16)]
