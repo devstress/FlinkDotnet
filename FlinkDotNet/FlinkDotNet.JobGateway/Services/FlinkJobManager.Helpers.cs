@@ -823,6 +823,7 @@ public partial class FlinkJobManager
 
     private static string? MatchJobEntry(JsonElement element, string jobName)
     {
+#pragma warning disable IDE0046 // Simplified form would create nested ternary which violates S3358
         if ((!TryGetStringProperty(element, "name", out string? name) && !TryGetStringProperty(element, "jobName", out name)) ||
             !string.Equals(name, jobName, StringComparison.OrdinalIgnoreCase))
         {
@@ -835,6 +836,7 @@ public partial class FlinkJobManager
             TryGetStringProperty(element, "id", out jobId)
             ? jobId
             : null;
+#pragma warning restore IDE0046
     }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)

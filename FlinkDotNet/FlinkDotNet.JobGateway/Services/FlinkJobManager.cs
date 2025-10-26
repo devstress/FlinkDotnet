@@ -523,7 +523,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         // Build jar on demand using Maven directly
         this._logger.LogInformation("Runner jar not found, building on demand with Maven...");
         string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
-        ArgumentNullException.ThrowIfNull(repoRoot, nameof(repoRoot));
+        ArgumentNullException.ThrowIfNull(repoRoot);
 
         string runnerDir = Path.Combine(repoRoot, FlinkIRRunnerDirectory);
         string pomFile = Path.Combine(runnerDir, "pom.xml");
@@ -547,7 +547,9 @@ public partial class FlinkJobManager : IFlinkJobManager
 
             // S4036: Set environment explicitly for security (don't inherit potentially unsafe PATH)
             psi.Environment.Clear();
+#pragma warning disable S4036 // PATH is required for Maven executable resolution
             psi.Environment["PATH"] = Environment.GetEnvironmentVariable("PATH") ?? "";
+#pragma warning restore S4036
             psi.Environment["JAVA_HOME"] = Environment.GetEnvironmentVariable("JAVA_HOME") ?? "";
             psi.Environment["M2_HOME"] = Environment.GetEnvironmentVariable("M2_HOME") ?? "";
 
@@ -764,13 +766,13 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static string? ExtractBackpressureLevel(JsonElement root)
     {
+#pragma warning disable IDE0046 // Simplified form would create nested ternary which violates S3358
         if (root.TryGetProperty("backpressureLevel", out JsonElement lvlEl))
         {
             return lvlEl.GetString();
         }
 
-        return root.TryGetProperty("backpressure-level", out JsonElement lvlEl2)
-            ? lvlEl2.GetString()
-            : null;
+        return root.TryGetProperty("backpressure-level", out JsonElement lvlEl2) ? lvlEl2.GetString() : null;
+#pragma warning restore IDE0046
     }
 }
