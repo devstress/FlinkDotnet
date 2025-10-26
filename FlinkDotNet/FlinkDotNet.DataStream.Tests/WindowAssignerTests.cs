@@ -181,7 +181,7 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(10000, 15000)
             };
 
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             Assert.That(merged.Count, Is.EqualTo(2));
             Assert.That(merged[0].Start, Is.EqualTo(1000L));
@@ -200,7 +200,7 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(10000, 15000)
             };
 
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             Assert.That(merged.Count, Is.EqualTo(1));
             Assert.That(merged[0].Start, Is.EqualTo(0L));
@@ -217,7 +217,7 @@ namespace FlinkDotNet.DataStream.Tests
                 new TimeWindow(20000, 25000)
             };
 
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             Assert.That(merged.Count, Is.EqualTo(3));
             Assert.That(merged[0].Start, Is.EqualTo(0L));
@@ -230,7 +230,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             var windows = new List<TimeWindow>();
 
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             Assert.That(merged.Count, Is.EqualTo(0));
         }

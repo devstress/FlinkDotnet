@@ -336,7 +336,7 @@ namespace FlinkDotNet.DataStream.Tests
             var window3 = new TimeWindow(7000, 12000);
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(new[] { window1, window2, window3 }).ToList();
+            var merged = SessionWindows.MergeWindows(new[] { window1, window2, window3 }).ToList();
 
             // Assert
             Assert.That(merged, Has.Count.EqualTo(1));
@@ -353,7 +353,7 @@ namespace FlinkDotNet.DataStream.Tests
             var window3 = new TimeWindow(20000, 25000);
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(new[] { window1, window2, window3 }).ToList();
+            var merged = SessionWindows.MergeWindows(new[] { window1, window2, window3 }).ToList();
 
             // Assert
             Assert.That(merged, Has.Count.EqualTo(3));
@@ -368,7 +368,7 @@ namespace FlinkDotNet.DataStream.Tests
             var window3 = new TimeWindow(15000, 20000); // No overlap
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(new[] { window1, window2, window3 }).ToList();
+            var merged = SessionWindows.MergeWindows(new[] { window1, window2, window3 }).ToList();
 
             // Assert
             Assert.That(merged, Has.Count.EqualTo(2));
@@ -387,7 +387,7 @@ namespace FlinkDotNet.DataStream.Tests
             var window3 = new TimeWindow(4000, 11000);
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(new[] { window1, window2, window3 }).ToList();
+            var merged = SessionWindows.MergeWindows(new[] { window1, window2, window3 }).ToList();
 
             // Assert
             Assert.That(merged, Has.Count.EqualTo(1));
@@ -399,7 +399,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void MergeWindows_WithEmptyList_ReturnsEmpty()
         {
             // Act
-            var merged = SessionWindows<int>.MergeWindows(Array.Empty<TimeWindow>()).ToList();
+            var merged = SessionWindows.MergeWindows(Array.Empty<TimeWindow>()).ToList();
 
             // Assert
             Assert.That(merged, Is.Empty);
@@ -412,7 +412,7 @@ namespace FlinkDotNet.DataStream.Tests
             var window = new TimeWindow(5000, 10000);
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(new[] { window }).ToList();
+            var merged = SessionWindows.MergeWindows(new[] { window }).ToList();
 
             // Assert
             Assert.That(merged, Has.Count.EqualTo(1));
@@ -427,7 +427,7 @@ namespace FlinkDotNet.DataStream.Tests
             var window2 = new TimeWindow(5000, 10000);
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(new[] { window1, window2 }).ToList();
+            var merged = SessionWindows.MergeWindows(new[] { window1, window2 }).ToList();
 
             // Assert - Should merge because window2.Start == window1.End
             Assert.That(merged, Has.Count.EqualTo(1));
@@ -450,7 +450,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var merged = SessionWindows<int>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged, Has.Count.EqualTo(3));

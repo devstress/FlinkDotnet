@@ -177,7 +177,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Act
-            var result = SessionWindows<string>.MergeWindows(windows).ToList();
+            var result = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(result, Has.Count.EqualTo(1));

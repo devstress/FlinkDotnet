@@ -238,7 +238,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new[] { window1, window2 };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - no overlap, should remain separate
             Assert.That(merged.Count, Is.EqualTo(2));
@@ -253,7 +253,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new[] { window1, window2 };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - windows overlap, should merge into one
             Assert.That(merged.Count, Is.EqualTo(1));
@@ -271,7 +271,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new[] { window1, window2, window3 };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - all windows overlap transitively, should merge into one
             Assert.That(merged.Count, Is.EqualTo(1));
@@ -289,7 +289,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new[] { window1, window2, window3 };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert - first two merge, third stays separate
             Assert.That(merged.Count, Is.EqualTo(2));
@@ -306,7 +306,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new TimeWindow[0];
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged.Count, Is.EqualTo(0));
@@ -320,7 +320,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windows = new[] { window };
 
             // Act
-            var merged = SessionWindows<string>.MergeWindows(windows).ToList();
+            var merged = SessionWindows.MergeWindows(windows).ToList();
 
             // Assert
             Assert.That(merged.Count, Is.EqualTo(1));
