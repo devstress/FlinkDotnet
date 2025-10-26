@@ -114,7 +114,7 @@ public partial class FlinkJobManager
             try
             {
                 FlinkRunResponse? run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    s_caseInsensitiveDeserializerOptions);
                 jobId = run?.JobId;
                 if (jobId != null)
                 {

@@ -22,6 +22,19 @@ public partial class FlinkJobManager : IFlinkJobManager
     private readonly HttpClient _httpClient;
     private readonly ConcurrentDictionary<string, JobInfo> _jobMapping = new();
 
+    // Cached JsonSerializerOptions to avoid creating new instances for every serialization
+    private static readonly JsonSerializerOptions s_jobDefinitionSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
+    };
+
+    private static readonly JsonSerializerOptions s_caseInsensitiveDeserializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     /// <summary>
     /// Gets or sets the delay between SQL Gateway retry attempts.
     /// Static field for testability (can be set to 1ms in tests).
@@ -237,7 +250,7 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         this._logger.LogInformation("╔══════════════════════════════════════════════════════════════");
         this._logger.LogInformation("║ {Title}", title);
-        foreach (var (label, value) in details)
+        foreach ((string label, string value) in details)
         {
             this._logger.LogInformation("║ {Label}: {Value}", label, value);
         }
@@ -257,7 +270,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            var validation = this.ValidateJobDefinition(jobDefinition);
+            JobValidationResult validation = this.ValidateJobDefinition(jobDefinition);
             if (!validation.IsValid)
             {
                 this._logger.LogError("❌ Job validation failed: {Errors}", string.Join(", ", validation.Errors));
@@ -274,27 +287,27 @@ public partial class FlinkJobManager : IFlinkJobManager
 
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
-                var flinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
+                string flinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
                 this.TrackJob(jobDefinition, flinkJobId);
                 return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
             this._logger.LogInformation("🔄 Using standard JAR submission flow");
-            var irBase64 = this.EncodeJobDefinition(jobDefinition);
+            string irBase64 = this.EncodeJobDefinition(jobDefinition);
 
             this._logger.LogInformation("🔍 Probing Flink cluster health...");
-            var clusterHealthy2 = await this.ProbeClusterHealthSafelyAsync();
+            bool clusterHealthy2 = await this.ProbeClusterHealthSafelyAsync();
 
             if (!clusterHealthy2)
             {
-                var flinkUrl = this._httpClient.BaseAddress?.ToString() ?? "(unknown)";
-                var errorMessage = $"Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible at {flinkUrl}";
+                string flinkUrl = this._httpClient.BaseAddress?.ToString() ?? "(unknown)";
+                string errorMessage = $"Flink cluster is not healthy or unreachable. Cannot submit job. Please ensure Flink JobManager is running and accessible at {flinkUrl}";
                 this._logger.LogError("❌ {ErrorMessage}", errorMessage);
                 throw new InvalidOperationException(errorMessage);
             }
 
-            var flinkJobId2 = await this.SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
+            string flinkJobId2 = await this.SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
             this.TrackJob(jobDefinition, flinkJobId2);
 
             this._logger.LogInformation("✅ Job submitted successfully to Flink cluster");
@@ -309,13 +322,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private string EncodeJobDefinition(JobDefinition jobDefinition)
     {
-        var serializerOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
-        };
-        var irJson = JsonSerializer.Serialize(jobDefinition, serializerOptions);
+        string irJson = JsonSerializer.Serialize(jobDefinition, s_jobDefinitionSerializerOptions);
 
         this.LogJobDefinitionDiagnostics(irJson, jobDefinition);
 
@@ -335,8 +342,8 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private void LogKafkaConfiguration(JobDefinition jobDefinition)
     {
-        var kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
-        var kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
+        KafkaSourceDefinition? kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
+        KafkaSinkDefinition? kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
         this._logger.LogDebug("Source BootstrapServers: {SourceBootstrapServers}", kafkaSource?.BootstrapServers ?? "null");
         this._logger.LogDebug("Sink BootstrapServers: {SinkBootstrapServers}", kafkaSink?.BootstrapServers ?? "null");
         this._logger.LogDebug("Operations Count: {OperationsCount}", jobDefinition.Operations?.Count ?? 0);
@@ -349,7 +356,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             return;
         }
 
-        foreach (var op in jobDefinition.Operations)
+        foreach (object op in jobDefinition.Operations)
         {
             if (op is MapOperationDefinition mapOp)
             {
@@ -393,21 +400,21 @@ public partial class FlinkJobManager : IFlinkJobManager
         this._logger.LogDebug("Query status for {FlinkJobId}", flinkJobId);
 
         // Validate input before attempting HTTP call to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
-            var response = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
+            HttpResponseMessage response = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
             if (response.IsSuccessStatusCode)
             {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(jsonResponse);
-                var state = doc.RootElement.TryGetProperty("state", out var stateProp)
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                string state = doc.RootElement.TryGetProperty("state", out JsonElement stateProp)
                     ? stateProp.GetString() ?? "UNKNOWN"
                     : "UNKNOWN";
 
                 // Try to get JobId from mapping, fallback to FlinkJobId
-                var jobId = this._jobMapping.TryGetValue(flinkJobId, out var info) ? info.JobId : flinkJobId;
+                string jobId = this._jobMapping.TryGetValue(flinkJobId, out JobInfo? info) ? info.JobId : flinkJobId;
                 return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
             }
 
@@ -433,7 +440,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            var metrics = new JobMetricsBuilder(flinkJobId);
+            JobMetricsBuilder metrics = new(flinkJobId);
             await this.CollectVertexMetricsAsync(flinkJobId, metrics);
             await this.CollectCheckpointMetricsAsync(flinkJobId, metrics);
             return metrics.Build();
@@ -452,9 +459,9 @@ public partial class FlinkJobManager : IFlinkJobManager
     public async Task<bool> CancelJobAsync(string flinkJobId)
     {
         // Validate input before attempting HTTP calls to prevent injection attacks
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
-        if (this._jobMapping.TryGetValue(flinkJobId, out var info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
+        if (this._jobMapping.TryGetValue(flinkJobId, out JobInfo? info) && info.Status.StartsWith("LOCAL", StringComparison.OrdinalIgnoreCase))
         {
             info.Status = "LOCAL-CANCELED";
             return true;
@@ -465,11 +472,11 @@ public partial class FlinkJobManager : IFlinkJobManager
             this._logger.LogInformation("Attempting to cancel Flink job: {FlinkJobId}", flinkJobId);
 
             // Try Flink 2.x style first: PATCH /jobs/{jobId}?mode=cancel
-            var patchResponse = await this._httpClient.PatchAsync($"/jobs/{sanitizedJobId}?mode=cancel", null);
+            HttpResponseMessage patchResponse = await this._httpClient.PatchAsync($"/jobs/{sanitizedJobId}?mode=cancel", null);
             if (patchResponse.IsSuccessStatusCode)
             {
                 this._logger.LogInformation("Successfully canceled job {FlinkJobId} using PATCH /jobs/{{jobId}}?mode=cancel", flinkJobId);
-                if (this._jobMapping.TryGetValue(flinkJobId, out var jobInfo))
+                if (this._jobMapping.TryGetValue(flinkJobId, out JobInfo? jobInfo))
                 {
                     jobInfo.Status = "CANCELED";
                 }
@@ -479,11 +486,11 @@ public partial class FlinkJobManager : IFlinkJobManager
             this._logger.LogWarning("PATCH /jobs/{{jobId}}?mode=cancel returned {StatusCode}, trying POST endpoint", patchResponse.StatusCode);
 
             // Fallback to POST /jobs/{jobId}/cancel (without /v1 prefix)
-            var postResponse = await this._httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
+            HttpResponseMessage postResponse = await this._httpClient.PostAsync($"/jobs/{sanitizedJobId}/cancel", null);
             if (postResponse.IsSuccessStatusCode)
             {
                 this._logger.LogInformation("Successfully canceled job {FlinkJobId} using POST /jobs/{{jobId}}/cancel", flinkJobId);
-                if (this._jobMapping.TryGetValue(flinkJobId, out var jobInfo))
+                if (this._jobMapping.TryGetValue(flinkJobId, out JobInfo? jobInfo))
                 {
                     jobInfo.Status = "CANCELED";
                 }
@@ -511,7 +518,7 @@ public partial class FlinkJobManager : IFlinkJobManager
     private async Task<string> EnsureRunnerJarPathAsync()
     {
         // First try to find existing jar in working directory or repo structure
-        var jarPath = FindExistingRunnerJar();
+        string? jarPath = FindExistingRunnerJar();
         if (jarPath != null && File.Exists(jarPath))
         {
             this._logger.LogDebug("Found existing runner jar at {Path}", jarPath);
@@ -520,14 +527,14 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         // Build jar on demand using Maven directly
         this._logger.LogInformation("Runner jar not found, building on demand with Maven...");
-        var repoRoot = FindRepoRoot(Environment.CurrentDirectory);
+        string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot == null)
         {
             throw new InvalidOperationException("Could not locate repository root for Maven build");
         }
 
-        var runnerDir = Path.Combine(repoRoot, FlinkIRRunnerDirectory);
-        var pomFile = Path.Combine(runnerDir, "pom.xml");
+        string runnerDir = Path.Combine(repoRoot, FlinkIRRunnerDirectory);
+        string pomFile = Path.Combine(runnerDir, "pom.xml");
         if (!File.Exists(pomFile))
         {
             throw new InvalidOperationException($"Maven pom.xml not found at {pomFile}");
@@ -535,7 +542,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         try
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new()
             {
                 FileName = "mvn",
                 Arguments = "clean package -DskipTests",
@@ -546,14 +553,14 @@ public partial class FlinkJobManager : IFlinkJobManager
             };
 
             this._logger.LogDebug("Starting Maven build in {WorkingDir}: mvn {Args}", runnerDir, psi.Arguments);
-            var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start Maven process");
+            Process process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start Maven process");
 
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
 
-            var stdout = await outputTask;
-            var stderr = await errorTask;
+            string stdout = await outputTask;
+            string stderr = await errorTask;
 
             if (process.ExitCode != 0)
             {
@@ -578,22 +585,22 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
-        var verticesResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
+        string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        HttpResponseMessage verticesResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
         if (!verticesResp.IsSuccessStatusCode)
         {
             return;
         }
 
-        var verticesJson = await verticesResp.Content.ReadAsStringAsync();
-        using var vdoc = JsonDocument.Parse(verticesJson);
+        string verticesJson = await verticesResp.Content.ReadAsStringAsync();
+        using JsonDocument vdoc = JsonDocument.Parse(verticesJson);
 
-        if (!vdoc.RootElement.TryGetProperty("vertices", out var vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
+        if (!vdoc.RootElement.TryGetProperty("vertices", out JsonElement vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
         {
             return;
         }
 
-        foreach (var vertex in vertsEl.EnumerateArray())
+        foreach (JsonElement vertex in vertsEl.EnumerateArray())
         {
             await this.ProcessVertexAsync(flinkJobId, vertex, metrics);
         }
@@ -601,12 +608,12 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private async Task ProcessVertexAsync(string flinkJobId, JsonElement vertex, JobMetricsBuilder metrics)
     {
-        if (!vertex.TryGetProperty("id", out var idEl))
+        if (!vertex.TryGetProperty("id", out JsonElement idEl))
         {
             return;
         }
 
-        var vertexId = idEl.GetString();
+        string? vertexId = idEl.GetString();
         if (string.IsNullOrEmpty(vertexId))
         {
             return;
@@ -618,30 +625,30 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
     {
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
-        var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
-        var mresp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
+        string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        string sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
+        HttpResponseMessage mresp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
         if (!mresp.IsSuccessStatusCode)
         {
             return;
         }
 
-        var metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync())
-            ?? new List<FlinkMetricEntry>();
+        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync())
+            ?? [];
 
-        foreach (var m in metricsList)
+        foreach (FlinkMetricEntry m in metricsList)
         {
-            if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vi))
+            if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out long vi))
             {
                 metrics.AddRecordsIn(vi);
             }
 
-            if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out var vo))
+            if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out long vo))
             {
                 metrics.AddRecordsOut(vo);
             }
 
-            if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out var p))
+            if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out int p))
             {
                 metrics.UpdateMaxParallelism(p);
             }
@@ -652,19 +659,19 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         try
         {
-            var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
-            var sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
-            var bp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/backpressure");
+            string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+            string sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
+            HttpResponseMessage bp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/backpressure");
             if (!bp.IsSuccessStatusCode)
             {
                 return;
             }
 
-            var bpStr = await bp.Content.ReadAsStringAsync();
-            using var bdoc = JsonDocument.Parse(bpStr);
-            var root = bdoc.RootElement;
+            string bpStr = await bp.Content.ReadAsStringAsync();
+            using JsonDocument bdoc = JsonDocument.Parse(bpStr);
+            JsonElement root = bdoc.RootElement;
 
-            var level = ExtractBackpressureLevel(root);
+            string? level = ExtractBackpressureLevel(root);
             if (!string.IsNullOrEmpty(level))
             {
                 metrics.UpdateWorstBackpressure(level);
@@ -678,19 +685,19 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private async Task CollectCheckpointMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
-        var sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
+        string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
         try
         {
-            var cps = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/checkpoints");
+            HttpResponseMessage cps = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/checkpoints");
             if (!cps.IsSuccessStatusCode)
             {
                 return;
             }
 
-            var cpsJson = await cps.Content.ReadAsStringAsync();
-            using var cdoc = JsonDocument.Parse(cpsJson);
-            var root = cdoc.RootElement;
+            string cpsJson = await cps.Content.ReadAsStringAsync();
+            using JsonDocument cdoc = JsonDocument.Parse(cpsJson);
+            JsonElement root = cdoc.RootElement;
 
             ProcessCheckpointCounts(root, metrics);
             ProcessCheckpointTimestamps(root, metrics);
@@ -703,17 +710,17 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static void ProcessCheckpointCounts(JsonElement root, JobMetricsBuilder metrics)
     {
-        if (!root.TryGetProperty("counts", out var counts))
+        if (!root.TryGetProperty("counts", out JsonElement counts))
         {
             return;
         }
 
-        if (!counts.TryGetProperty("completed", out var completedEl))
+        if (!counts.TryGetProperty("completed", out JsonElement completedEl))
         {
             return;
         }
 
-        if (!completedEl.TryGetInt32(out var c))
+        if (!completedEl.TryGetInt32(out int c))
         {
             return;
         }
@@ -723,17 +730,17 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static void ProcessCheckpointTimestamps(JsonElement root, JobMetricsBuilder metrics)
     {
-        if (!root.TryGetProperty("latest", out var latest))
+        if (!root.TryGetProperty("latest", out JsonElement latest))
         {
             return;
         }
 
-        if (!latest.TryGetProperty("completed", out var comp))
+        if (!latest.TryGetProperty("completed", out JsonElement comp))
         {
             return;
         }
 
-        var ts = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
+        DateTime? ts = ExtractTimestamp(comp, "end_time") ?? ExtractTimestamp(comp, "trigger_timestamp");
         if (ts.HasValue)
         {
             metrics.SetLastCheckpoint(ts.Value);
@@ -742,7 +749,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static DateTime? ExtractTimestamp(JsonElement element, string propertyName)
     {
-        if (!element.TryGetProperty(propertyName, out var timeEl))
+        if (!element.TryGetProperty(propertyName, out JsonElement timeEl))
         {
             return null;
         }
@@ -752,12 +759,12 @@ public partial class FlinkJobManager : IFlinkJobManager
             return null;
         }
 
-        var ms = timeEl.GetInt64();
+        long ms = timeEl.GetInt64();
         return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
     }
 
     private static string? ExtractBackpressureLevel(JsonElement root) =>
-        root.TryGetProperty("backpressureLevel", out var lvlEl) ? lvlEl.GetString() :
-        root.TryGetProperty("backpressure-level", out var lvlEl2) ? lvlEl2.GetString() :
+        root.TryGetProperty("backpressureLevel", out JsonElement lvlEl) ? lvlEl.GetString() :
+        root.TryGetProperty("backpressure-level", out JsonElement lvlEl2) ? lvlEl2.GetString() :
         null;
 }
