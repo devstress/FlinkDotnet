@@ -66,24 +66,6 @@ namespace FlinkDotNet.DataStream
             });
         }
 
-        public void CaptureFilterOperation(object? function = null)
-        {
-            this._operations.Add(new CapturedOperation
-            {
-                Type = "Filter",
-                Function = function
-            });
-        }
-
-        public void CaptureFlatMapOperation(object? function = null)
-        {
-            this._operations.Add(new CapturedOperation
-            {
-                Type = "FlatMap",
-                Function = function
-            });
-        }
-
         public void CaptureTimestampAssigner(object assigner)
         {
             this._hasTimestampAssigner = true;

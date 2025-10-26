@@ -67,6 +67,7 @@ public class StateDescriptorAndOutputTagConstructorTests
         // Assert
         Assert.That(descriptor, Is.Not.Null);
         Assert.That(descriptor.Name, Is.EqualTo("list-state"));
+        Assert.That(descriptor.ElementType, Is.EqualTo(typeof(string)));
     }
 
     [Test]
@@ -89,6 +90,8 @@ public class StateDescriptorAndOutputTagConstructorTests
         // Assert
         Assert.That(descriptor, Is.Not.Null);
         Assert.That(descriptor.Name, Is.EqualTo("map-state"));
+        Assert.That(descriptor.KeyType, Is.EqualTo(typeof(string)));
+        Assert.That(descriptor.ValueType, Is.EqualTo(typeof(int)));
     }
 
     [Test]
@@ -114,6 +117,7 @@ public class StateDescriptorAndOutputTagConstructorTests
         // Assert
         Assert.That(descriptor, Is.Not.Null);
         Assert.That(descriptor.Name, Is.EqualTo("reducing-state"));
+        Assert.That(descriptor.ReduceFunction, Is.EqualTo(reduceFunc));
     }
 
     [Test]
@@ -142,6 +146,7 @@ public class StateDescriptorAndOutputTagConstructorTests
         // Assert
         Assert.That(descriptor, Is.Not.Null);
         Assert.That(descriptor.Name, Is.EqualTo("aggregating-state"));
+        Assert.That(descriptor.AggregateFunction, Is.EqualTo(aggregateFunc));
     }
 
     [Test]

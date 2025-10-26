@@ -313,6 +313,39 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(assigner.IsEventTime, Is.True);
         }
 
+        [Test]
+        public void TumblingEventTimeWindows_TimeCharacteristic_ReturnsEventTime()
+        {
+            // Arrange
+            var windowSize = Time.Seconds(5);
+            var assigner = TumblingEventTimeWindows<string>.Of(windowSize);
+
+            // Act
+            var characteristic = assigner.TimeCharacteristic;
+
+            // Assert
+            Assert.That(characteristic, Is.EqualTo(FlinkDotNet.DataStream.Window.Assigners.TimeCharacteristic.EventTime));
+        }
+
+        #endregion
+
+        #region SlidingEventTimeWindows TimeCharacteristic Tests
+
+        [Test]
+        public void SlidingEventTimeWindows_TimeCharacteristic_ReturnsEventTime()
+        {
+            // Arrange
+            var windowSize = Time.Seconds(10);
+            var slide = Time.Seconds(5);
+            var assigner = SlidingEventTimeWindows<string>.Of(windowSize, slide);
+
+            // Act
+            var characteristic = assigner.TimeCharacteristic;
+
+            // Assert
+            Assert.That(characteristic, Is.EqualTo(FlinkDotNet.DataStream.Window.Assigners.TimeCharacteristic.EventTime));
+        }
+
         #endregion
     }
 }
