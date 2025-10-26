@@ -75,7 +75,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
     {
         try
         {
-            using StreamReader reader = new StreamReader(this.Request.Body, Encoding.UTF8);
+            using StreamReader reader = new(this.Request.Body, Encoding.UTF8);
             string raw = await reader.ReadToEndAsync();
             this._logger.LogDebug("📝 Request body length: {Length} bytes", raw.Length);
 

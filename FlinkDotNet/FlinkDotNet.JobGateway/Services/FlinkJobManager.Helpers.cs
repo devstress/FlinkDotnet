@@ -20,24 +20,24 @@ public partial class FlinkJobManager
         }
 
         // Use Java 17 JAR for Flink 2.1.0 compatibility
-        string[] names = new[] { "flink-ir-runner-java17.jar" };
-        string[] baseDirs = new[]
-        {
+        string[] names = ["flink-ir-runner-java17.jar"];
+        string[] baseDirs =
+        [
             Environment.CurrentDirectory,
             Path.Combine(Environment.CurrentDirectory, FlinkIRRunnerDirectory, "target")
-        };
+        ];
 
         string[] searchPaths = baseDirs.SelectMany(d => names.Select(n => Path.Combine(d, n))).ToArray();
 
         string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
         if (repoRoot != null)
         {
-            string[] repoCandidates = new[]
-            {
+            string[] repoCandidates =
+            [
                 Path.Combine(repoRoot, FlinkIRRunnerDirectory, "target"),
                 repoRoot,
-            };
-            searchPaths = searchPaths.Concat(repoCandidates.SelectMany(d => names.Select(n => Path.Combine(d, n)))).ToArray();
+            ];
+            searchPaths = [.. searchPaths, .. repoCandidates.SelectMany(d => names.Select(n => Path.Combine(d, n)))];
         }
 
         return Array.Find(searchPaths, File.Exists);
@@ -91,7 +91,7 @@ public partial class FlinkJobManager
             string requestJson = JsonSerializer.Serialize(runRequest);
             this._logger.LogDebug("📤 Flink run request: {RequestJson}", requestJson);
 
-            using StringContent content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+            using StringContent content = new(requestJson, Encoding.UTF8, "application/json");
 
             // Validate jarId from Flink response to prevent injection attacks
             string sanitizedJarId = ValidateAndSanitizePathSegment(jarId);
@@ -137,7 +137,7 @@ public partial class FlinkJobManager
 
             if (string.IsNullOrEmpty(jobId))
             {
-                string errorMsg = $"Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
+                string errorMsg = "Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
                     $"Response status: {response.StatusCode}, Response body: {runContent}";
                 this._logger.LogError("❌ {ErrorMessage}", errorMsg);
                 throw new InvalidOperationException(errorMsg);
@@ -220,7 +220,7 @@ public partial class FlinkJobManager
         string sessionJson = JsonSerializer.Serialize(sessionRequest);
         this._logger.LogDebug("📤 Request body: {SessionJson}", sessionJson);
 
-        using StringContent sessionContent = new StringContent(sessionJson, Encoding.UTF8, "application/json");
+        using StringContent sessionContent = new(sessionJson, Encoding.UTF8, "application/json");
         using HttpResponseMessage sessionResponse = await client.PostAsync("/v1/sessions", sessionContent);
 
         this._logger.LogInformation("📥 Response: {StatusCode} {ReasonPhrase}", (int) sessionResponse.StatusCode, sessionResponse.ReasonPhrase);
@@ -294,7 +294,7 @@ public partial class FlinkJobManager
             statement = statement.Trim()
         };
         string jsonContent = JsonSerializer.Serialize(requestBody);
-        using StringContent content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        using StringContent content = new(jsonContent, Encoding.UTF8, "application/json");
 
         // Validate sessionHandle from SQL Gateway response to prevent injection attacks
         string sanitizedSessionHandle = ValidateAndSanitizePathSegment(sessionHandle);
@@ -356,7 +356,7 @@ public partial class FlinkJobManager
             jarPath = await this.CreateShadedJarAsync(jarPath, connectorJars);
         }
 
-        using MultipartFormDataContent form = new MultipartFormDataContent();
+        using MultipartFormDataContent form = new();
         await using FileStream fs = File.OpenRead(jarPath);
         string fileName = Path.GetFileName(jarPath);
         form.Add(new StreamContent(fs), "jarfile", fileName);
@@ -453,7 +453,7 @@ public partial class FlinkJobManager
 
     private static string? FindMatchingJar(FlinkJarsList? jars, string fileName)
     {
-        FlinkJarInfo? jar = jars?.Files?
+        FlinkJarFile? jar = jars?.Files?
             .OrderByDescending(f => f.Uploaded)
             .FirstOrDefault(f => string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
 
@@ -470,8 +470,8 @@ public partial class FlinkJobManager
 
     private List<string> CollectConnectorJars()
     {
-        List<string> connectorJars = new List<string>();
-        List<string> searchPaths = new List<string>();
+        List<string> connectorJars = [];
+        List<string> searchPaths = [];
 
         string? connectorPath = Environment.GetEnvironmentVariable("FLINK_CONNECTOR_PATH");
         if (!string.IsNullOrEmpty(connectorPath))
@@ -522,7 +522,7 @@ public partial class FlinkJobManager
                 Environment.CurrentDirectory, AppDomain.CurrentDomain.BaseDirectory, repoRoot ?? "not found");
         }
 
-        return connectorJars.Distinct().ToList();
+        return [.. connectorJars.Distinct()];
     }
 
     private async Task<string> CreateShadedJarAsync(string runnerJarPath, List<string> connectorJars)
@@ -556,11 +556,11 @@ public partial class FlinkJobManager
         this._logger.LogInformation("Combining runner JAR with {Count} connector JARs into shaded JAR", connectorJars.Count);
         File.Copy(runnerJarPath, outputPath, true);
 
-        Dictionary<string, HashSet<string>> serviceFiles = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, HashSet<string>> serviceFiles = new(StringComparer.OrdinalIgnoreCase);
 
         using (ZipArchive outputZip = ZipFile.Open(outputPath, ZipArchiveMode.Update))
         {
-            HashSet<string> existingEntries = new HashSet<string>(
+            HashSet<string> existingEntries = new(
                 outputZip.Entries.Select(e => e.FullName),
                 StringComparer.OrdinalIgnoreCase);
 
@@ -579,8 +579,8 @@ public partial class FlinkJobManager
             .Where(e => e.FullName.StartsWith("META-INF/services/", StringComparison.OrdinalIgnoreCase) && !e.FullName.EndsWith('/')))
         {
             using Stream stream = entry.Open();
-            using StreamReader reader = new StreamReader(stream);
-            HashSet<string> lines = new HashSet<string>();
+            using StreamReader reader = new(stream);
+            HashSet<string> lines = [];
             string? line;
             while ((line = reader.ReadLine()) != null)
             {
@@ -647,7 +647,7 @@ public partial class FlinkJobManager
     private static void MergeServiceFile(ZipArchiveEntry entry, Dictionary<string, HashSet<string>> serviceFiles)
     {
         using Stream stream = entry.Open();
-        using StreamReader reader = new StreamReader(stream);
+        using StreamReader reader = new(stream);
 
         if (!serviceFiles.ContainsKey(entry.FullName))
         {
@@ -682,7 +682,7 @@ public partial class FlinkJobManager
             oldEntry?.Delete();
 
             ZipArchiveEntry newEntry = outputZip.CreateEntry(servicePath, CompressionLevel.Optimal);
-            using StreamWriter writer = new StreamWriter(newEntry.Open());
+            using StreamWriter writer = new(newEntry.Open());
             foreach (string line in serviceLines.OrderBy(l => l))
             {
                 writer.WriteLine(line);
@@ -695,7 +695,7 @@ public partial class FlinkJobManager
 
     private static string? FindRepoRoot(string start)
     {
-        DirectoryInfo? dir = new DirectoryInfo(start);
+        DirectoryInfo? dir = new(start);
         while (dir != null)
         {
             string pom = Path.Combine(dir.FullName, FlinkIRRunnerDirectory, "pom.xml");
@@ -717,7 +717,7 @@ public partial class FlinkJobManager
         }
 
         Stopwatch sw = Stopwatch.StartNew();
-        string[] overviewEndpoints = new[] { "/v1/jobs/overview", "/jobs/overview" };
+        string[] overviewEndpoints = ["/v1/jobs/overview", "/jobs/overview"];
 
         while (sw.Elapsed < timeout)
         {
@@ -922,7 +922,7 @@ public partial class FlinkJobManager
 
     private JobValidationResult ValidateJobDefinition(JobDefinition jobDefinition)
     {
-        List<string> errors = new List<string>();
+        List<string> errors = [];
 
         ValidateBasicProperties(jobDefinition, errors);
         ValidateSource(jobDefinition.Source, errors);
@@ -1011,8 +1011,8 @@ public partial class FlinkJobManager
     /// </summary>
     /// <param name="segment">The path segment to validate.</param>
     /// <param name="parameterName">
-    /// The name of the parameter being validated. This is automatically populated via CallerArgumentExpression 
-    /// and should not be provided by callers. It will capture the argument expression from the call site 
+    /// The name of the parameter being validated. This is automatically populated via CallerArgumentExpression
+    /// and should not be provided by callers. It will capture the argument expression from the call site
     /// (e.g., "flinkJobId" when called as ValidateAndSanitizePathSegment(flinkJobId)).
     /// </param>
     /// <returns>URL-encoded safe path segment.</returns>
