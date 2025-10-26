@@ -534,6 +534,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         try
         {
+#pragma warning disable S4036 // PATH is required for Maven executable resolution - mvn command relies on PATH
             ProcessStartInfo psi = new()
             {
                 FileName = "mvn",
@@ -545,9 +546,8 @@ public partial class FlinkJobManager : IFlinkJobManager
                 CreateNoWindow = true
             };
 
-            // S4036: Set environment explicitly for security (don't inherit potentially unsafe PATH)
+            // Set environment explicitly for security (don't inherit potentially unsafe PATH)
             psi.Environment.Clear();
-#pragma warning disable S4036 // PATH is required for Maven executable resolution
             psi.Environment["PATH"] = Environment.GetEnvironmentVariable("PATH") ?? "";
 #pragma warning restore S4036
             psi.Environment["JAVA_HOME"] = Environment.GetEnvironmentVariable("JAVA_HOME") ?? "";
