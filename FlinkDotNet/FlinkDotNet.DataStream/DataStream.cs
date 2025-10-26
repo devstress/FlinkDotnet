@@ -192,12 +192,9 @@ namespace FlinkDotNet.DataStream
             }
 
             // Handle JobDefinition-backed streams with OperationCapture
-            if (this._operationCapture != null || this._job != null)
-            {
-                return this.CreateJobDefinitionBackedStream<T>();
-            }
-
-            throw new InvalidOperationException("DataStream has no valid source");
+            return this._operationCapture != null || this._job != null
+                ? this.CreateJobDefinitionBackedStream<T>()
+                : throw new InvalidOperationException("DataStream has no valid source");
         }
 
         /// <summary>
@@ -229,12 +226,9 @@ namespace FlinkDotNet.DataStream
             }
 
             // Handle JobDefinition-backed streams with OperationCapture
-            if (this._operationCapture != null || this._job != null)
-            {
-                return this.CreateJobDefinitionBackedStream<TOut>();
-            }
-
-            throw new InvalidOperationException("DataStream has no valid source");
+            return this._operationCapture != null || this._job != null
+                ? this.CreateJobDefinitionBackedStream<TOut>()
+                : throw new InvalidOperationException("DataStream has no valid source");
         }
 
         /// <summary>
@@ -441,12 +435,9 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> SetMaxParallelism(int maxParallelism)
         {
-            if (maxParallelism <= 0 || maxParallelism > 32768)
-            {
-                throw new ArgumentException("Max parallelism must be between 1 and 32768");
-            }
-
-            return this;
+            return maxParallelism <= 0 || maxParallelism > 32768
+                ? throw new ArgumentException("Max parallelism must be between 1 and 32768")
+                : this;
         }
 
         /// <summary>

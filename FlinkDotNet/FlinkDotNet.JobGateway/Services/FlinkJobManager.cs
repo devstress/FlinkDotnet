@@ -1416,12 +1416,15 @@ public class FlinkJobManager : IFlinkJobManager
             return null;
         }
 
-        return (!TryGetStringProperty(element, "jid", out var jobId)
+        if (!TryGetStringProperty(element, "jid", out var jobId)
             && !TryGetStringProperty(element, "jobId", out jobId)
             && !TryGetStringProperty(element, "jobid", out jobId)
             && !TryGetStringProperty(element, "id", out jobId))
-            ? null
-            : jobId;
+        {
+            return null;
+        }
+
+        return jobId;
     }
 
     private static bool TryGetStringProperty(JsonElement element, string propertyName, out string? value)
@@ -1874,9 +1877,12 @@ public class FlinkJobManager : IFlinkJobManager
             return lvlEl.GetString();
         }
 
-        return root.TryGetProperty("backpressure-level", out var lvlEl2)
-            ? lvlEl2.GetString()
-            : null;
+        if (root.TryGetProperty("backpressure-level", out var lvlEl2))
+        {
+            return lvlEl2.GetString();
+        }
+
+        return null;
     }
 
     private sealed class JobMetricsBuilder
