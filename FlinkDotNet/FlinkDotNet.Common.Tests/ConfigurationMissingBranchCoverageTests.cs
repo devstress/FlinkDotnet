@@ -1,7 +1,7 @@
 namespace FlinkDotNet.Common.Tests;
 
 /// <summary>
-/// Additional tests to cover remaining uncovered branches in Configuration class
+/// Additional tests to cover remaining uncovered branches in FlinkConfiguration class
 /// </summary>
 [TestFixture]
 public class ConfigurationMissingBranchCoverageTests
@@ -15,7 +15,7 @@ public class ConfigurationMissingBranchCoverageTests
         var emptyDict = new Dictionary<string, object>();
 
         // Act
-        var config = new Configuration(emptyDict);
+        var config = new FlinkConfiguration(emptyDict);
 
         // Assert
         Assert.That(config.GetKeys(), Is.Empty);
@@ -33,7 +33,7 @@ public class ConfigurationMissingBranchCoverageTests
         };
 
         // Act
-        var config = new Configuration(dict);
+        var config = new FlinkConfiguration(dict);
 
         // Assert
         Assert.That(config.ContainsKey("nullableInt"), Is.True);
@@ -49,7 +49,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetInteger_WithDoubleValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "doubleKey", 123.45 }
         });
@@ -65,7 +65,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetInteger_WithNegativeStringValue_ParsesCorrectly()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "negKey", "-42" }
         });
@@ -85,7 +85,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetBoolean_WithIntValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "intKey", 42 }
         });
@@ -101,7 +101,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetBoolean_WithFalseStringValue_ParsesCorrectly()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "falseKey", "False" }
         });
@@ -121,7 +121,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetLong_WithDoubleValue_ReturnsDefault()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "doubleKey", 123.45 }
         });
@@ -137,7 +137,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetLong_WithIntValue_ConvertsToLong()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "intKey", 42 }
         });
@@ -153,7 +153,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void GetLong_WithNegativeStringValue_ParsesCorrectly()
     {
         // Arrange
-        var config = new Configuration(new Dictionary<string, object>
+        var config = new FlinkConfiguration(new Dictionary<string, object>
         {
             { "negKey", "-12345" }
         });
@@ -173,7 +173,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void ParseListValue_WithMixedWhitespace_HandlesCorrectly()
     {
         // Arrange & Act
-        var result = Configuration.ParseListValue("  value1  ,  value2  ,  value3  ");
+        var result = FlinkConfiguration.ParseListValue("  value1  ,  value2  ,  value3  ");
 
         // Assert - should trim whitespace
         Assert.That(result, Has.Count.EqualTo(3));
@@ -186,7 +186,7 @@ public class ConfigurationMissingBranchCoverageTests
     public void ParseListValue_WithConsecutiveCommas_SkipsEmptyEntries()
     {
         // Arrange & Act
-        var result = Configuration.ParseListValue("value1,,value2,,,value3");
+        var result = FlinkConfiguration.ParseListValue("value1,,value2,,,value3");
 
         // Assert - empty entries should be removed
         Assert.That(result, Has.Count.EqualTo(3));
