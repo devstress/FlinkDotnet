@@ -12,20 +12,15 @@ public partial class FlinkJobManager
     private sealed class JobInfo
     {
         public string JobId { get; set; } = string.Empty;
-
         public string FlinkJobId { get; set; } = string.Empty;
-
         public string Status { get; set; } = string.Empty;
-
         public DateTime SubmissionTime { get; set; }
-
         public JobDefinition JobDefinition { get; set; } = null!;
     }
 
     private sealed class JobValidationResult
     {
         public bool IsValid { get; set; }
-
         public List<string> Errors { get; set; } = [];
     }
 
@@ -51,7 +46,6 @@ public partial class FlinkJobManager
     private sealed class FlinkJarFile
     {
         public string Id { get; set; } = string.Empty;
-
         public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("uploaded")]
