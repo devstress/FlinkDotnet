@@ -1,6 +1,6 @@
-// Enable parallel test execution at the fixture level only
-// Tests within the same fixture run sequentially to avoid resource conflicts
-// Different test fixtures run in parallel for improved throughput
+// Enable parallel test execution but mark fixtures as non-parallelizable
+// This allows different test classes to run in parallel (safe)
+// But tests within same class run sequentially (prevents HttpClient disposal races)
 [assembly: Parallelizable(ParallelScope.Fixtures)]
-// Use 8 worker threads for optimal balance (tested 4-20, no significant difference)
-[assembly: LevelOfParallelism(0)]
+// Use high worker count to maximize parallel fixture execution
+[assembly: LevelOfParallelism(16)]

@@ -10,12 +10,29 @@ namespace FlinkDotNet.JobGateway.Tests
     /// <summary>
     /// Integration tests for Program.cs using WebApplicationFactory
     /// Tests startup, configuration, middleware pipeline, and health endpoints
+    /// Optimized with shared factory instances for common configurations
     /// </summary>
     [TestFixture]
+    [NonParallelizable] // These tests modify environment variables, must run sequentially
     public class ProgramIntegrationTests
     {
+        private WebApplicationFactory<Program> _sharedFactory = null!;
         private WebApplicationFactory<Program> _factory = null!;
         private HttpClient _client = null!;
+
+        [OneTimeSetUp]
+        public void OneTimeSetup()
+        {
+            // Create shared factory once for tests that don't need custom configuration
+            // This significantly reduces test execution time (16 factories → 1 shared + 3 custom)
+            _sharedFactory = CreateTestFactory(metricsEnabled: false);
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            _sharedFactory?.Dispose();
+        }
 
         [SetUp]
         public void Setup()
@@ -39,24 +56,20 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TearDown()
         {
             this._client?.Dispose();
-            this._factory?.Dispose();
+            // Only dispose factory if it was created specifically for this test (not shared)
+            if (this._factory != null && this._factory != _sharedFactory)
+            {
+                this._factory.Dispose();
+            }
+            this._factory = null!;
+            this._client = null!;
         }
 
         [Test]
         public void Program_StartsSuccessfully_WithDefaultConfiguration()
         {
-            // Arrange & Act
-            this._factory = new WebApplicationFactory<Program>()
-                .WithWebHostBuilder(builder =>
-                {
-                    _ = builder.UseEnvironment("Development");
-                    _ = builder.ConfigureAppConfiguration((context, config) => _ = config.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
-                        ["Metrics:Prometheus:Enabled"] = "false"
-                    }));
-                });
-
+            // Arrange & Act - Use shared factory for common configuration
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Assert - Application should start without errors
@@ -67,8 +80,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task HealthEndpoint_ReturnsOk()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Act
@@ -84,8 +97,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task ApiHealthEndpoint_ReturnsJsonWithOkStatus()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Act
@@ -117,8 +130,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task Program_WithMetricsDisabled_DoesNotConfigurePrometheusEndpoint()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory (has metrics disabled)
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Act
@@ -131,18 +144,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task Program_InDevelopmentMode_EnablesSwagger()
         {
-            // Arrange
-            this._factory = new WebApplicationFactory<Program>()
-                .WithWebHostBuilder(builder =>
-                {
-                    _ = builder.UseEnvironment("Development");
-                    _ = builder.ConfigureAppConfiguration((context, config) => _ = config.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["Flink:JobManager:BaseUrl"] = "http://test-flink:8081",
-                        ["Metrics:Prometheus:Enabled"] = "false"
-                    }));
-                });
-
+            // Arrange - Use shared factory (already in Development mode)
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Act
@@ -244,8 +247,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public void Program_RegistersFlinkJobManagerAsSingleton()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Act
@@ -281,8 +284,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public void Program_WithMetricsDisabled_DoesNotRegisterMetricsService()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory
+            this._factory = _sharedFactory;
 
             // Act
             var metricsService = this._factory.Services.GetService<MetricsService>();
@@ -294,8 +297,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task BodyLoggingMiddleware_ForSubmitEndpoint_LogsRequestBody()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             var jobDefinition = new
@@ -332,8 +335,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task BodyLoggingMiddleware_ForNonSubmitEndpoint_DoesNotLogRequestBody()
         {
-            // Arrange
-            this._factory = CreateTestFactory(metricsEnabled: false);
+            // Arrange - Use shared factory
+            this._factory = _sharedFactory;
             this._client = this._factory.CreateClient();
 
             // Act
