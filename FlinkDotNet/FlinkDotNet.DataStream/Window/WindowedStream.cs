@@ -14,6 +14,7 @@
 //  See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using FlinkDotNet.DataStream.Window.Assigners;
 using FlinkDotNet.DataStream.Window.Functions;
 
@@ -49,14 +50,11 @@ namespace FlinkDotNet.DataStream.Window
         /// <returns>The resulting DataStream</returns>
         public DataStream<TResult> Aggregate<TAcc, TResult>(IAggregateFunction<T, TAcc, TResult> aggregateFunction)
         {
-            if (aggregateFunction == null)
-            {
-                throw new System.ArgumentNullException(nameof(aggregateFunction));
-            }
+            ArgumentNullException.ThrowIfNull(aggregateFunction);
 
             // In a production implementation, this would integrate with Flink's windowing engine
             // For now, return the underlying data stream to maintain API compatibility
-            var dataStream = this._keyedStream.GetDataStream();
+            DataStream<T> dataStream = this._keyedStream.GetDataStream();
             return new DataStream<TResult>(
                 new System.Collections.Generic.List<TResult>(),
                 dataStream.GetExecutionEnvironment()
@@ -71,10 +69,7 @@ namespace FlinkDotNet.DataStream.Window
         /// <returns>The resulting DataStream</returns>
         public DataStream<T> Reduce(IReduceFunction<T> reduceFunction)
         {
-            if (reduceFunction == null)
-            {
-                throw new System.ArgumentNullException(nameof(reduceFunction));
-            }
+            ArgumentNullException.ThrowIfNull(reduceFunction);
 
             // In a production implementation, this would integrate with Flink's windowing engine
             return this._keyedStream.GetDataStream();
@@ -101,13 +96,10 @@ namespace FlinkDotNet.DataStream.Window
         public DataStream<TResult> Process<TResult>(
             IProcessWindowFunction<T, TResult, TKey, TWindow> processFunction)
         {
-            if (processFunction == null)
-            {
-                throw new System.ArgumentNullException(nameof(processFunction));
-            }
+            ArgumentNullException.ThrowIfNull(processFunction);
 
             // In a production implementation, this would integrate with Flink's windowing engine
-            var dataStream = this._keyedStream.GetDataStream();
+            DataStream<T> dataStream = this._keyedStream.GetDataStream();
             return new DataStream<TResult>(
                 new System.Collections.Generic.List<TResult>(),
                 dataStream.GetExecutionEnvironment()

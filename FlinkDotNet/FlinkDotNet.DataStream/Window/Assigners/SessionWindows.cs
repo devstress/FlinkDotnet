@@ -74,10 +74,10 @@ namespace FlinkDotNet.DataStream.Window.Assigners
             var sortedWindows = new List<TimeWindow>(windows);
             sortedWindows.Sort((w1, w2) => w1.Start.CompareTo(w2.Start));
 
-            var mergedWindows = new List<TimeWindow>();
+            List<TimeWindow> mergedWindows = new List<TimeWindow>();
             TimeWindow? currentWindow = null;
 
-            foreach (var window in sortedWindows)
+            foreach (TimeWindow window in sortedWindows)
             {
                 if (currentWindow == null)
                 {

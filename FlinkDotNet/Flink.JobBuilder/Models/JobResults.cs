@@ -91,7 +91,10 @@ namespace Flink.JobBuilder.Models
     {
         public string JobId { get; set; } = string.Empty;
         public string FlinkJobId { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty; // CREATED, RUNNING, FINISHED, FAILED, CANCELED
+        /// <summary>
+        /// State of the job: CREATED, RUNNING, FINISHED, FAILED, CANCELED
+        /// </summary>
+        public string State { get; set; } = string.Empty;
         public DateTime? StartTime
         {
             get; set;

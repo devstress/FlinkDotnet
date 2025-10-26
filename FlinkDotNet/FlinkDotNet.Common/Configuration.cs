@@ -40,7 +40,7 @@ namespace FlinkDotNet.Common
         /// <param name="configuration">Initial configuration values</param>
         public FlinkConfiguration(IDictionary<string, object> configuration)
         {
-            foreach (var kvp in configuration)
+            foreach (KeyValuePair<string, object> kvp in configuration)
             {
                 this._configuration[kvp.Key] = kvp.Value;
             }
@@ -209,7 +209,7 @@ namespace FlinkDotNet.Common
         /// <returns>This Configuration instance for method chaining</returns>
         public FlinkConfiguration AddAll(FlinkConfiguration other)
         {
-            foreach (var kvp in other._configuration)
+            foreach (KeyValuePair<string, object> kvp in other._configuration)
             {
                 this._configuration[kvp.Key] = kvp.Value;
             }

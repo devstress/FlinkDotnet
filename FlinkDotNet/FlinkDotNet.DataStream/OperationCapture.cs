@@ -163,7 +163,7 @@ namespace FlinkDotNet.DataStream
                 throw new System.InvalidOperationException("No Kafka source defined. Use AddKafkaSource() or FromKafka() before executing.");
             }
 
-            var jobDef = this.CreateJobDefinition(jobId, jobName);
+            JobDefinition jobDef = this.CreateJobDefinition(jobId, jobName);
             _logger.Debug("[OperationCapture.ToJobDefinition] After CreateJobDefinition - Source.BootstrapServers={BootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
@@ -223,7 +223,7 @@ namespace FlinkDotNet.DataStream
 
         private void TranslateOperations(JobDefinition jobDef)
         {
-            foreach (var operation in this._operations)
+            foreach (CapturedOperation operation in this._operations)
             {
                 switch (operation.Type)
                 {

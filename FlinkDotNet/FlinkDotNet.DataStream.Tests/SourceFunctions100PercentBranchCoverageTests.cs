@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -199,7 +200,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             private int _counter = 0;
 
-            public async IAsyncEnumerable<T> RunAsync(CancellationToken cancellationToken)
+            public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
