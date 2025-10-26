@@ -48,8 +48,8 @@ namespace FlinkDotNet.Common.Logging
                     path: logFile,
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
                     rollingInterval: RollingInterval.Infinite,
-                    rollOnFileSizeLimit: false,
                     fileSizeLimitBytes: 100_000_000,
+                    rollOnFileSizeLimit: false,
                     shared: true)
                 .WriteTo.Console()
                 .MinimumLevel.Debug()
@@ -68,10 +68,10 @@ namespace FlinkDotNet.Common.Logging
             {
                 if (fileSystem.Directory.Exists(logFilePath))
                 {
-                    var logFiles = fileSystem.Directory.GetFiles(logFilePath, searchPattern);
-                    foreach (var file in logFiles)
+                    string[] logFiles = fileSystem.Directory.GetFiles(logFilePath, searchPattern);
+                    foreach (string file in logFiles)
                     {
-                        var fileInfo = fileSystem.FileInfo.New(file);
+                        IFileInfo fileInfo = fileSystem.FileInfo.New(file);
                         if (fileInfo.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1))
                         {
                             fileSystem.File.Delete(file);

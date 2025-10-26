@@ -79,7 +79,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         private DataStream<TResult> CreateJobDefinitionBackedStream<TResult>()
         {
-            var result = new DataStream<TResult>(this._job ?? new Flink.JobBuilder.Models.JobDefinition(), this._environment);
+            DataStream<TResult> result = new DataStream<TResult>(this._job ?? new Flink.JobBuilder.Models.JobDefinition(), this._environment);
             if (this._operationCapture != null)
             {
                 result.AttachOperationCapture(this._operationCapture);
@@ -108,13 +108,13 @@ namespace FlinkDotNet.DataStream
         {
             if (this._collection != null)
             {
-                var transformedCollection = this._collection.Select(mapFunction);
+                IEnumerable<TOut> transformedCollection = this._collection.Select(mapFunction);
                 return new DataStream<TOut>(transformedCollection, this._environment);
             }
 
             if (this._sourceFunction != null)
             {
-                var mappedSource = new MappedSourceFunction<T, TOut>(this._sourceFunction, mapFunction);
+                MappedSourceFunction<T, TOut> mappedSource = new MappedSourceFunction<T, TOut>(this._sourceFunction, mapFunction);
                 return new DataStream<TOut>(mappedSource, this._environment, $"Map({this._sourceName})");
             }
 
@@ -142,7 +142,7 @@ namespace FlinkDotNet.DataStream
             // Capture operation if using native API
             this._operationCapture?.CaptureMapOperation("custom", mapFunction);
 
-            var result = this.Map(mapFunction.Map);
+            DataStream<TOut> result = this.Map(mapFunction.Map);
 
             // Propagate operation capture to result stream
             if (this._operationCapture != null)
@@ -181,13 +181,13 @@ namespace FlinkDotNet.DataStream
         {
             if (this._collection != null)
             {
-                var filteredCollection = this._collection.Where(filterFunction);
+                IEnumerable<T> filteredCollection = this._collection.Where(filterFunction);
                 return new DataStream<T>(filteredCollection, this._environment);
             }
 
             if (this._sourceFunction != null)
             {
-                var filteredSource = new FilteredSourceFunction<T>(this._sourceFunction, filterFunction);
+                FilteredSourceFunction<T> filteredSource = new FilteredSourceFunction<T>(this._sourceFunction, filterFunction);
                 return new DataStream<T>(filteredSource, this._environment, $"Filter({this._sourceName})");
             }
 
@@ -215,13 +215,13 @@ namespace FlinkDotNet.DataStream
         {
             if (this._collection != null)
             {
-                var transformedCollection = this._collection.SelectMany(flatMapFunction);
+                IEnumerable<TOut> transformedCollection = this._collection.SelectMany(flatMapFunction);
                 return new DataStream<TOut>(transformedCollection, this._environment);
             }
 
             if (this._sourceFunction != null)
             {
-                var flatMappedSource = new FlatMappedSourceFunction<T, TOut>(this._sourceFunction, flatMapFunction);
+                FlatMappedSourceFunction<T, TOut> flatMappedSource = new FlatMappedSourceFunction<T, TOut>(this._sourceFunction, flatMapFunction);
                 return new DataStream<TOut>(flatMappedSource, this._environment, $"FlatMap({this._sourceName})");
             }
 
@@ -332,9 +332,9 @@ namespace FlinkDotNet.DataStream
                 string? servers = null;
 
                 // Check if it's a KafkaSinkFunction with public properties
-                var kafkaSinkType = sinkFunction.GetType();
-                var topicProp = kafkaSinkType.GetProperty("Topic");
-                var serversProp = kafkaSinkType.GetProperty("BootstrapServers");
+                Type kafkaSinkType = sinkFunction.GetType();
+                PropertyInfo? topicProp = kafkaSinkType.GetProperty("Topic");
+                PropertyInfo? serversProp = kafkaSinkType.GetProperty("BootstrapServers");
 
                 if (topicProp != null && serversProp != null)
                 {
@@ -509,7 +509,7 @@ namespace FlinkDotNet.DataStream
             // Capture operation if using native API
             this._operationCapture?.CaptureTimeWindow(size);
 
-            var windowedStream = new AllWindowedStream<T>(this, size);
+            AllWindowedStream<T> windowedStream = new AllWindowedStream<T>(this, size);
             this.PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
@@ -532,7 +532,7 @@ namespace FlinkDotNet.DataStream
             this._operationCapture?.CaptureCountWindow(size);
 
             // Create a windowed stream with count-based windowing
-            var windowedStream = new AllWindowedStream<T>(this, size);
+            AllWindowedStream<T> windowedStream = new AllWindowedStream<T>(this, size);
             this.PropagateOperationCapture(windowedStream);
             return windowedStream;
         }
@@ -663,11 +663,11 @@ namespace FlinkDotNet.DataStream
 
             // In a full implementation, this would apply windowing and aggregation
             // For now, we create a transformed stream to maintain API compatibility
-            var environment = this._dataStream.GetExecutionEnvironment();
+            StreamExecutionEnvironment environment = this._dataStream.GetExecutionEnvironment();
 
             // This is a placeholder - in production, this would integrate with the Flink runtime
             // to perform actual windowed aggregation
-            var result = new DataStream<TResult>(
+            DataStream<TResult> result = new DataStream<TResult>(
                 new AggregatedSourceFunction<T, TAcc, TResult>(
                     this._dataStream._sourceFunction ?? throw new InvalidOperationException("Source function required"),
                     aggregateFunction
@@ -831,7 +831,7 @@ namespace FlinkDotNet.DataStream
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (TIn item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
                 yield return this._mapFunction(item);
             }
@@ -850,9 +850,9 @@ namespace FlinkDotNet.DataStream
 
         public async IAsyncEnumerable<TOut> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (TIn item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
-                foreach (var output in this._flatMapFunction(item))
+                foreach (TOut output in this._flatMapFunction(item))
                 {
                     yield return output;
                 }
@@ -871,7 +871,7 @@ namespace FlinkDotNet.DataStream
 
         public async IAsyncEnumerable<T> RunAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (T item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
                 if (this._filterFunction(item))
                 {
@@ -899,9 +899,9 @@ namespace FlinkDotNet.DataStream
         {
             // This is a simplified implementation that aggregates all elements
             // In production, this would be handled by Flink's windowing mechanism
-            var accumulator = this._aggregateFunction.CreateAccumulator();
+            TAcc accumulator = this._aggregateFunction.CreateAccumulator();
 
-            await foreach (var item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (TIn item in this._source.RunAsync(cancellationToken).ConfigureAwait(false))
             {
                 accumulator = this._aggregateFunction.Add(item, accumulator);
             }
