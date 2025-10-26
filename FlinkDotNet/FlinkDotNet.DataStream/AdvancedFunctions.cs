@@ -329,7 +329,7 @@ namespace FlinkDotNet.DataStream
         public override int GetHashCode() => this.Id.GetHashCode();
     }
 
-    #endregion Process Functions
+    #endregion Side Outputs and Tagged Outputs
 
     #region Enums
 
@@ -350,7 +350,7 @@ namespace FlinkDotNet.DataStream
         ProcessingTime
     }
 
-    #endregion Process Functions
+    #endregion Enums
 
     #region Join and CoGroup
 

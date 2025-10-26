@@ -802,7 +802,7 @@ namespace FlinkDotNet.DataStream
         public TAcc Merge(TAcc acc1, TAcc acc2);
     }
 
-    #endregion
+    #endregion Function Interfaces - Core Flink API
 
     /// <summary>
     /// Interface for sink functions that consume data streams.

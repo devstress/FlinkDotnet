@@ -161,7 +161,7 @@ namespace FlinkDotNet.DataStream.Tests
             var stream = env.FromCollection(collection);
 
             // Act
-            var result = stream.Name(null);
+            var result = stream.Name(null!);
 
             // Assert
             Assert.That(result, Is.Not.Null);

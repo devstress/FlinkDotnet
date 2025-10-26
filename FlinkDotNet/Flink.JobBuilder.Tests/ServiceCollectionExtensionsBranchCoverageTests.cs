@@ -1,3 +1,5 @@
+#nullable enable
+
 using Flink.JobBuilder.Extensions;
 using Flink.JobBuilder.Models;
 using Flink.JobBuilder.Services;

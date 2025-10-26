@@ -213,17 +213,13 @@ namespace FlinkDotNet.DataStream
     /// Base class for state descriptors.
     /// Corresponds to org.apache.flink.api.common.state.StateDescriptor in Java Flink.
     /// </summary>
-    public abstract class StateDescriptor
+    /// <param name="name">The name of the state.</param>
+    public abstract class StateDescriptor(string name)
     {
         /// <summary>
         /// Gets the name of the state.
         /// </summary>
-        public string Name { get; }
-
-        protected StateDescriptor(string name)
-        {
-            this.Name = name ?? throw new System.ArgumentNullException(nameof(name));
-        }
+        public string Name { get; } = name ?? throw new System.ArgumentNullException(nameof(name));
     }
 
     /// <summary>

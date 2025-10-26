@@ -31,7 +31,10 @@ namespace FlinkDotNet.DataStream.Checkpoint
     {
         private ICheckpointStorage? _checkpointStorage;
         private string? _checkpointStoragePath;
-        private long _checkpointTimeout = 600000; // 10 minutes default
+        /// <summary>
+        /// Checkpoint timeout in milliseconds. Default: 10 minutes (600000 ms).
+        /// </summary>
+        private long _checkpointTimeout = 600000;
         private long _minPauseBetweenCheckpoints;
         private int _maxConcurrentCheckpoints = 1;
         private int _tolerableCheckpointFailureNumber = int.MaxValue;
