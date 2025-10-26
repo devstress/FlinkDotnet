@@ -1885,17 +1885,15 @@ public class FlinkJobManager : IFlinkJobManager
         return null;
     }
 
-    private sealed class JobMetricsBuilder
+    private sealed class JobMetricsBuilder(string flinkJobId)
     {
-        private readonly string _flinkJobId;
+        private readonly string _flinkJobId = flinkJobId;
         private long _recordsIn;
         private long _recordsOut;
         private int _parallelism;
         private int _checkpoints;
         private DateTime? _lastCheckpoint;
         private string _backpressureLevel = "UNKNOWN";
-
-        public JobMetricsBuilder(string flinkJobId) => this._flinkJobId = flinkJobId;
 
         public void AddRecordsIn(long value) => this._recordsIn += value;
         public void AddRecordsOut(long value) => this._recordsOut += value;

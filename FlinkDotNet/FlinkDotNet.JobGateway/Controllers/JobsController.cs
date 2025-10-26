@@ -13,24 +13,13 @@ namespace FlinkDotNet.JobGateway.Controllers;
 [ApiController]
 [Route("api/v1/[controller]")]
 [ApiVersion("1.0")]
-public class JobsController : ControllerBase
+public class JobsController(ILogger<JobsController> logger, IFlinkJobManager flinkJobManager) : ControllerBase
 {
     private const string LogBorderTop = "╔══════════════════════════════════════════════════════════════";
     private const string LogBorderBottom = "╚══════════════════════════════════════════════════════════════";
 
-    private readonly ILogger<JobsController> _logger;
-    private readonly IFlinkJobManager _flinkJobManager;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JobsController"/> class.
-    /// </summary>
-    /// <param name="logger">Logger for tracking controller operations.</param>
-    /// <param name="flinkJobManager">The Flink job manager service for job operations.</param>
-    public JobsController(ILogger<JobsController> logger, IFlinkJobManager flinkJobManager)
-    {
-        this._logger = logger;
-        this._flinkJobManager = flinkJobManager;
-    }
+    private readonly ILogger<JobsController> _logger = logger;
+    private readonly IFlinkJobManager _flinkJobManager = flinkJobManager;
 
     /// <summary>
     /// Submit a job to the Flink cluster. The request body must contain a JobDefinition JSON payload.
