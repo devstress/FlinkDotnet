@@ -28,16 +28,16 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This test covers line 209-211: if (this._hasTimestampAssigner)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>)(s => s));
-            
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>) (s => s));
+
             // Assign timestamps to set _hasTimestampAssigner = true
             var withTimestamps = stream.AssignTimestampsAndWatermarks(
                 Watermarks.WatermarkStrategy<string>.ForMonotonousTimestamps()
                     .WithTimestampAssigner(_ => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
             );
-            
+
             var result = withTimestamps.SinkToKafka("output-topic", "localhost:9092");
-            
+
             Assert.That(result, Is.Not.Null);
         }
 
@@ -46,13 +46,13 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This test covers line 214-216: if (this._deserializationFunction != null)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            
+
             // Use AddKafkaSource with deserializer to set _deserializationFunction
             Func<string, string> deserializer = s => s.ToUpper();
             var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", deserializer);
-            
+
             var result = stream.SinkToKafka("output-topic", "localhost:9092");
-            
+
             Assert.That(result, Is.Not.Null);
         }
 
@@ -61,12 +61,12 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This test covers line 219-224: if (this._serializationFunction != null)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>)(s => s));
-            
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>) (s => s));
+
             // Use SinkToKafka with serializer to set _serializationFunction
             Func<string, string> serializer = s => s.ToLower();
             var result = stream.SinkToKafka("output-topic", "localhost:9092", serializer);
-            
+
             Assert.That(result, Is.Not.Null);
         }
 
@@ -79,15 +79,15 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This covers line 317-319: if (operation.Function != null)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>)(s => s));
-            
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>) (s => s));
+
             // Create a windowed stream with aggregate
             var windowed = stream.TimeWindowAll(Time.Seconds(5));
             var testAggFunc = new TestAggregateFunction();
             var aggregated = windowed.Aggregate(testAggFunc);
-            
+
             var result = aggregated.SinkToKafka("output-topic", "localhost:9092");
-            
+
             Assert.That(result, Is.Not.Null);
         }
 
@@ -96,15 +96,15 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This covers line 327-332: if (this._windowDefinition.IsCountBased)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>)(s => s));
-            
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>) (s => s));
+
             // Create a COUNT-based windowed stream
             var windowed = stream.CountWindowAll(100);
             var testAggFunc = new TestAggregateFunction();
             var aggregated = windowed.Aggregate(testAggFunc);
-            
+
             var result = aggregated.SinkToKafka("output-topic", "localhost:9092");
-            
+
             Assert.That(result, Is.Not.Null);
         }
 
@@ -113,15 +113,15 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This covers line 334-340: else branch for time-based windows
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>)(s => s));
-            
+            var stream = env.AddKafkaSource("test-topic", "localhost:9092", "test-group", (Func<string, string>) (s => s));
+
             // Create a TIME-based windowed stream
             var windowed = stream.TimeWindowAll(Time.Seconds(10));
             var testAggFunc = new TestAggregateFunction();
             var aggregated = windowed.Aggregate(testAggFunc);
-            
+
             var result = aggregated.SinkToKafka("output-topic", "localhost:9092");
-            
+
             Assert.That(result, Is.Not.Null);
         }
 

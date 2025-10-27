@@ -1,6 +1,6 @@
+using System;
 using FlinkDotNet.DataStream;
 using NUnit.Framework;
-using System;
 
 namespace FlinkDotNet.DataStream.Tests;
 
@@ -156,7 +156,7 @@ public class StateDescriptorAndOutputTagConstructorTests
         var aggregateFunc = new TestAggregateFunction();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new AggregatingStateDescriptor<int, int, int>(null!, aggregateFunc));
     }
 

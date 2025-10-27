@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using NUnit.Framework;
 using FlinkDotNet.Common;
+using NUnit.Framework;
 
 namespace FlinkDotNet.Common.Tests
 {
@@ -81,7 +81,11 @@ namespace FlinkDotNet.Common.Tests
         public void GetString_WithObjectValue_ConvertsToString()
         {
             // Arrange
-            var testObj = new { Name = "Test", Value = 42 };
+            var testObj = new
+            {
+                Name = "Test",
+                Value = 42
+            };
             var config = new FlinkConfiguration(new Dictionary<string, object> { { "key", testObj } });
 
             // Act
@@ -136,7 +140,7 @@ namespace FlinkDotNet.Common.Tests
             // Arrange
             var config = new FlinkConfiguration();
             config.SetString("existing", "value1");
-            
+
             var other = new FlinkConfiguration();
             other.SetString("existing", "value2");
             other.SetString("newKey", "newValue");

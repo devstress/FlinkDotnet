@@ -62,7 +62,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     {
         // Restore default retry delay
         FlinkJobGatewayService.RetryDelay = TimeSpan.FromSeconds(1);
-        
+
         Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }

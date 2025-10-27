@@ -192,7 +192,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void ReducingStateDescriptor_Constructor_WithNullReduceFunction_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 new ReducingStateDescriptor<int>("test", null!));
         }
 
@@ -200,7 +200,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void AggregatingStateDescriptor_Constructor_WithNullAggregateFunction_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 new AggregatingStateDescriptor<int, int, int>("test", null!));
         }
 

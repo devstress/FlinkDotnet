@@ -19,7 +19,7 @@ public class OperationCaptureFilterTranslationTests
 
         // Act - Apply filter with a lambda function
         var filtered = stream.Filter(x => x.Length > 5);
-        
+
         // Add sink to complete the job definition
         var result = filtered.SinkToKafka("test-output", "localhost:9092");
 
@@ -37,7 +37,7 @@ public class OperationCaptureFilterTranslationTests
 
         // Act - Apply filter operation that always returns true
         var filtered = stream.Filter(x => true);
-        
+
         // Add sink to complete the job definition
         var result = filtered.SinkToKafka("test-output", "localhost:9092");
 
