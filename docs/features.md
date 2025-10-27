@@ -239,6 +239,11 @@ LocalTesting environment performance metrics:
 
 See [GitHub Issues](https://github.com/devstress/FlinkDotnet/issues) for planned features and improvements.
 
+For detailed information about Apache Flink 2.1.0 features not yet implemented in FlinkDotNet, see the [TODO folder](../TODO/README.md) which includes:
+- AI/ML Integration Features (CREATE MODEL, ML_PREDICT, AI providers)
+- Advanced Table API features (Process Table Functions, VARIANT type, native Table API)
+- Performance optimizations and format enhancements
+
 ## License
 
 MIT License - see [LICENSE](../LICENSE) for details.
