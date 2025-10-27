@@ -121,7 +121,7 @@ public partial class FlinkJobManager
             string err = await response.Content.ReadAsStringAsync();
             this._logger.LogError(
                 "❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
-                (int)response.StatusCode,
+                (int) response.StatusCode,
                 response.ReasonPhrase,
                 err);
             throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
@@ -167,7 +167,7 @@ public partial class FlinkJobManager
             {
                 this._logger.LogInformation(
                     "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
-                    (int)response.StatusCode,
+                    (int) response.StatusCode,
                     response.ReasonPhrase,
                     jobId);
             }

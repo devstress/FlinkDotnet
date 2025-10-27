@@ -103,7 +103,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This test creates a DataStream from collection which has null _sourceFunction
             // When we try to aggregate, it should throw InvalidOperationException at line 660
-            
+
             // Arrange
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var collection = new[] { "test1", "test2", "test3" };

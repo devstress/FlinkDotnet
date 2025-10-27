@@ -52,7 +52,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange & Act - Use 'using' statement to test automatic disposal
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-            
+
             using (var client = new JobClient("test-job"))
             {
                 // Client is in use

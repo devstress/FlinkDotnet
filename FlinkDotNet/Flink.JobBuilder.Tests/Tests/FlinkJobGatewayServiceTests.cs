@@ -40,7 +40,7 @@ public class FlinkJobGatewayServiceTests
     {
         // Restore default retry delay
         FlinkJobGatewayService.RetryDelay = TimeSpan.FromSeconds(1);
-        
+
         // Clean up environment variable
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }
@@ -95,7 +95,7 @@ public class FlinkJobGatewayServiceTests
     public async Task Constructor_WithApiKey_UsesApiKeyInRequests()
     {
         // Arrange
-        var capturedRequest = (HttpRequestMessage)null!;
+        var capturedRequest = (HttpRequestMessage) null!;
         var mockHandler = new Mock<HttpMessageHandler>();
         _ = mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
