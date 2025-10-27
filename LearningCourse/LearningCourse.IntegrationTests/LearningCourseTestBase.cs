@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using LearningCourse.Common;
@@ -25,7 +23,6 @@ public abstract class LearningCourseTestBase
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
     private static StreamWriter? _debugLogWriter;
-    private const int DefaultGatewayPort = 8080;
     
     /// <summary>
     /// Kafka container IP for Flink jobs (e.g., "172.17.0.2:9093").
@@ -72,13 +69,6 @@ public abstract class LearningCourseTestBase
     /// Required for Flink health checks and job submission.
     /// </summary>
     public static string? FlinkRestApiEndpoint { get; private set; }
-
-    /// <summary>
-    /// FlinkDotNet JobGateway base URL for job submission and health checks.
-    /// Aspire keeps this service on a fixed host port (8080) unless overridden.
-    /// </summary>
-    public static string FlinkDotNetJobGatewayUrl { get; private set; } =
-        LearningCourse.Common.AspireServiceDiscovery.GetFlinkDotNetJobGatewayUrl();
 
     /// <summary>
     /// Start LocalTesting AppHost once for all tests.
@@ -144,14 +134,6 @@ public abstract class LearningCourseTestBase
         
         LogDebug("[SETUP] Starting infrastructure setup");
         Console.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [SETUP] Debug log initialized");
-
-        // Choose a host port for Flink JobGateway, falling back to default if available
-        var gatewayPort = FindAvailableGatewayPort(DefaultGatewayPort);
-        FlinkDotNetJobGatewayUrl = $"http://localhost:{gatewayPort}";
-        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_HOST_PORT", gatewayPort.ToString());
-        Environment.SetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL", FlinkDotNetJobGatewayUrl);
-        TestContext.WriteLine($"🔧 Allocated Flink JobGateway port: {gatewayPort}");
-        LogDebug($"[SETUP] Selected Gateway port {gatewayPort}");
         
         // Set LEARNINGCOURSE=true to enable Redis and Observability infrastructure
         Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
@@ -299,11 +281,6 @@ public abstract class LearningCourseTestBase
         bool flinkReady = false;
         bool kafkaReady = false;
         bool temporalReady = false;
-        bool gatewayReady = false;
-
-        var gatewayUrl = Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL")
-            ?? LearningCourse.Common.AspireServiceDiscovery.GetFlinkDotNetJobGatewayUrl();
-        var gatewayHealthUrl = $"{gatewayUrl.TrimEnd('/')}/api/v1/health";
         
         // Check if LearningCourse mode is enabled for optional infrastructure
         var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
@@ -383,25 +360,12 @@ public abstract class LearningCourseTestBase
                 LogDebug($"[POLL] Temporal NOT ready yet after {stopwatch.Elapsed.TotalSeconds:F1}s");
                 TestContext.WriteLine($"⏳ Temporal not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
             }
-
-            if (!gatewayReady)
-            {
-                if (await IsJobGatewayHealthyAsync(gatewayHealthUrl))
-                {
-                    gatewayReady = true;
-                    TestContext.WriteLine($"✅ Flink JobGateway healthy at {gatewayHealthUrl} (after {stopwatch.Elapsed.TotalSeconds:F1}s)");
-                }
-                else if (iteration % 5 == 1)
-                {
-                    TestContext.WriteLine($"⏳ Flink JobGateway not ready yet (after {stopwatch.Elapsed.TotalSeconds:F1}s), will retry...");
-                }
-            }
             
             // Core infrastructure must be ready: Kafka (healthy) and Flink
             // Temporal is optional (not all tests need it - e.g., Day05 Prometheus metrics test)
             // LearningCourse infrastructure: Redis, Prometheus, and Grafana are ALL REQUIRED
             // Day 05 observability tests specifically need Prometheus/Grafana endpoints
-            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && kafkaReady && flinkReady && gatewayReady;
+            var coreReady = kafkaFlinkIp != null && kafkaHostEndpoint != null && kafkaReady && flinkReady;
             var learningCourseReady = !isLearningCourse ||
                 (redisEndpoint != null && prometheusEndpoint != null && grafanaEndpoint != null);
             
@@ -414,7 +378,6 @@ public abstract class LearningCourseTestBase
                 PrometheusHostEndpoint = prometheusEndpoint;
                 GrafanaHostEndpoint = grafanaEndpoint;
                 FlinkRestApiEndpoint = flinkRestApi;
-                FlinkDotNetJobGatewayUrl = gatewayUrl;
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
                 TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
@@ -439,8 +402,7 @@ public abstract class LearningCourseTestBase
             $"KafkaFlinkIp: {KafkaFlinkBootstrapServers ?? "null"}, " +
             $"KafkaHostEndpoint: {KafkaHostBootstrapServers ?? "null"}, " +
             $"KafkaReady: {kafkaReady}, " +
-            $"FlinkReady: {flinkReady}, " +
-            $"GatewayReady: {gatewayReady}" +
+            $"FlinkReady: {flinkReady}" +
             (isLearningCourse ? $", Redis: {RedisHostEndpoint ?? "null"} (REQUIRED), Prometheus: {PrometheusHostEndpoint ?? "null"} (REQUIRED), Grafana: {GrafanaHostEndpoint ?? "null"} (REQUIRED)" : "") +
             $" (Temporal is optional: {TemporalHostEndpoint ?? "not discovered"}, TemporalReady: {temporalReady})");
     }
@@ -594,31 +556,6 @@ public abstract class LearningCourseTestBase
             // Other connection errors
             LogDebug($"[TEMPORAL-HEALTH] Connection error: {ex.GetType().Name}: {ex.Message}");
             TestContext.WriteLine($"❌ [Temporal Health] Connection error: {ex.GetType().Name}: {ex.Message}");
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Check if FlinkDotNet JobGateway health endpoint is responding.
-    /// </summary>
-    private static async Task<bool> IsJobGatewayHealthyAsync(string healthUrl)
-    {
-        try
-        {
-            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-            var response = await httpClient.GetAsync(healthUrl);
-            if (response.IsSuccessStatusCode)
-            {
-                LogDebug($"[GATEWAY-HEALTH] Healthy response from {healthUrl}: {(int)response.StatusCode}");
-                return true;
-            }
-
-            LogDebug($"[GATEWAY-HEALTH] Non-success status from {healthUrl}: {(int)response.StatusCode}");
-            return false;
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"[GATEWAY-HEALTH] Health check failed for {healthUrl}: {ex.Message}");
             return false;
         }
     }
@@ -1662,7 +1599,7 @@ public abstract class LearningCourseTestBase
     {
         try
         {
-            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
+            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
             
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             
@@ -2015,14 +1952,10 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
-        // Set FLINKDOTNET_JOBGATEWAY_URL for exercises that submit Flink jobs via FlinkDotNet.JobGateway
-        psi.Environment["FLINKDOTNET_JOBGATEWAY_URL"] = FlinkDotNetJobGatewayUrl;
-        
-        // Set FLINK_JOBMANAGER_URL for exercises that need direct Flink JobManager REST API access
-        // This is discovered from Docker containers (dynamic port mapping)
+        // Set FLINK_GATEWAY_URL for exercises that submit Flink jobs directly (use discovered endpoint)
         if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
         {
-            psi.Environment["FLINK_JOBMANAGER_URL"] = FlinkRestApiEndpoint;
+            psi.Environment["FLINK_GATEWAY_URL"] = FlinkRestApiEndpoint;
         }
         else
         {
@@ -2044,10 +1977,9 @@ public abstract class LearningCourseTestBase
         {
             TestContext.WriteLine($"🔧 Setting REDIS_ENDPOINT={RedisHostEndpoint} for Redis state management");
         }
-        TestContext.WriteLine($"🔧 Setting FLINKDOTNET_JOBGATEWAY_URL={FlinkDotNetJobGatewayUrl} for FlinkDotNet JobGateway");
         if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
         {
-            TestContext.WriteLine($"🔧 Setting FLINK_JOBMANAGER_URL={FlinkRestApiEndpoint} for Flink JobManager REST API");
+            TestContext.WriteLine($"🔧 Setting FLINK_GATEWAY_URL={FlinkRestApiEndpoint} for Flink job submission");
         }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 

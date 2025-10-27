@@ -91,48 +91,18 @@ public static class AspireServiceDiscovery
     }
 
     /// <summary>
-    /// Get FlinkDotNet JobGateway URL for job submission via FlinkDotNet.JobGateway service.
-    /// This is always localhost:8080 (fixed port).
+    /// Get Flink Gateway URL for job submission.
     /// Checks environment variable first (set by tests), then uses default.
     /// </summary>
-    public static string GetFlinkDotNetJobGatewayUrl()
+    public static string GetFlinkGatewayUrl()
     {
-        var envValue = Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL");
+        var envValue = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL");
         if (!string.IsNullOrEmpty(envValue))
         {
             return envValue;
         }
 
-        // FlinkDotNet JobGateway service uses fixed port 8080
+        // Flink Gateway typically uses fixed port 8080
         return "http://localhost:8080";
-    }
-
-    /// <summary>
-    /// Get Flink JobManager REST API URL for direct Flink API access.
-    /// This is discovered from Docker containers (dynamic port).
-    /// Checks environment variable first (set by tests), then discovers from Docker.
-    /// </summary>
-    public static async Task<string> GetFlinkJobManagerUrlAsync()
-    {
-        // First check if test infrastructure already set it
-        var envValue = Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL");
-        if (!string.IsNullOrEmpty(envValue))
-        {
-            return envValue;
-        }
-
-        // Discover from Docker/Aspire
-        try
-        {
-            var endpoint = await DockerInfrastructure.GetFlinkRestApiEndpointAsync();
-            Console.WriteLine($"[Aspire Discovery] Flink JobManager URL: {endpoint}");
-            return endpoint;
-        }
-        catch
-        {
-            // Fallback to default if discovery fails
-            Console.WriteLine("[Aspire Discovery] Using fallback: http://localhost:8081");
-            return "http://localhost:8081";
-        }
     }
 }

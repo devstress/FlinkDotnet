@@ -38,11 +38,8 @@ namespace Exercise1_StringCapitalize
         private static string KafkaFlinkBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
-        private static string FlinkDotNetJobGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINKDOTNET_JOBGATEWAY_URL") ?? "http://localhost:8080";
-        
-        private static string FlinkJobManagerUrl =>
-            Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
+        private static string FlinkGatewayUrl =>
+            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
 
         static async Task Main(string[] args)
         {
@@ -677,7 +674,7 @@ namespace Exercise1_StringCapitalize
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                    var response = await httpClient.GetAsync($"{FlinkDotNetJobGatewayUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
                     
                     if (response.IsSuccessStatusCode)
                     {
@@ -699,7 +696,7 @@ namespace Exercise1_StringCapitalize
 
             throw new TimeoutException(
                 $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
-                $"Verify FlinkDotNet JobGateway is running and accessible at {FlinkDotNetJobGatewayUrl}");
+                $"Verify Flink JobManager is running and accessible at {FlinkGatewayUrl}");
         }
     }
 

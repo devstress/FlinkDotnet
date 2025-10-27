@@ -498,8 +498,8 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task GetJobStatusAsync_WithoutTrackedJob_UsesFlinkJobIdAsJobId()
         {
-            // Arrange
-            var flinkJobId = "flink-123";
+            // Arrange - Use a valid Flink job ID format (32 hexadecimal characters)
+            var flinkJobId = "abc123def456789012345678901234ab";
             var statusResponse = @"{ ""state"": ""RUNNING"" }";
 
             this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, statusResponse);
@@ -1250,8 +1250,9 @@ namespace FlinkDotNet.JobGateway.Tests
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-            // Act
-            Assert.DoesNotThrow(() => method!.Invoke(jobManager, new object[] { jobDefinition, "flink-123" }));
+            // Act - Use a valid Flink job ID format (32 hexadecimal characters)
+            // Flink job IDs are UUIDs without dashes, e.g., "abc123def456789012345678901234ab"
+            Assert.DoesNotThrow(() => method!.Invoke(jobManager, new object[] { jobDefinition, "abc123def456789012345678901234ab" }));
 
             // Note: We can't directly verify the internal mapping, but we can ensure no exception is thrown
         }
