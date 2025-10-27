@@ -680,7 +680,7 @@ namespace Exercise2_BackupAggregator
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/v1/overview");
 
                     if (response.IsSuccessStatusCode)
                     {
