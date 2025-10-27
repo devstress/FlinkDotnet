@@ -357,8 +357,16 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 // JobGateway runs as a host process (not containerized) for reliable endpoint discovery
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(port: 8080, name: "gateway-http")
-    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080")
+    .WithHttpEndpoint(port: 8080, name: "gateway-http");
+
+// ASPNETCORE_URLS should only be set in LocalTesting mode (not LearningCourse)
+// In LearningCourse mode, Aspire's service discovery mechanism manages the port binding
+if (!isLearningCourse)
+{
+    gateway = gateway.WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080");
+}
+
+gateway = gateway
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
