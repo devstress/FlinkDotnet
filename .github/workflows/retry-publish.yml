@@ -59,7 +59,7 @@ jobs:
         uses: NuGet/login@v1
         id: nuget-login
         with:
-          user: ${{ secrets.NUGET_USER }}
+          user: DarrenDatBui
 
       - name: Publish to NuGet.org
         run: |

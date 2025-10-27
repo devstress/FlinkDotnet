@@ -18,7 +18,7 @@ Each workflow now includes:
   uses: NuGet/login@v1
   id: nuget-login
   with:
-    user: ${{ secrets.NUGET_USER }}
+    user: DarrenDatBui
 
 - name: Publish to NuGet.org
   run: |
@@ -30,21 +30,9 @@ Each workflow now includes:
 
 ## Required Configuration Steps
 
-To complete the setup, you need to configure **TWO** things:
+To complete the setup, you need to configure NuGet.org Trusted Publishers:
 
-### 1. GitHub Repository Secret
-
-Add the `NUGET_USER` secret to this repository:
-
-**Steps:**
-1. Go to **Settings** → **Secrets and variables** → **Actions**
-2. Click **"New repository secret"**
-3. **Name:** `NUGET_USER`
-4. **Value:** Your NuGet.org **username** (profile name, **NOT** email address)
-   - Example: If your NuGet.org profile URL is `https://www.nuget.org/profiles/devstress`, your username is `devstress`
-5. Click **"Add secret"**
-
-### 2. NuGet.org Trusted Publishers Configuration
+### NuGet.org Trusted Publishers Configuration
 
 Configure Trusted Publishers on NuGet.org for each workflow:
 
@@ -81,7 +69,7 @@ Configure Trusted Publishers on NuGet.org for each workflow:
 
 ## How to Verify
 
-After configuring both the GitHub secret and NuGet Trusted Publishers:
+After configuring NuGet Trusted Publishers:
 
 1. Trigger one of the release workflows (e.g., Release - Patch Version)
 2. The workflow should:
@@ -94,11 +82,9 @@ After configuring both the GitHub secret and NuGet Trusted Publishers:
 
 ### If you get 401 Unauthorized after configuration:
 
-1. **Check secret name:** Make sure it's exactly `NUGET_USER` (case-sensitive)
-2. **Check secret value:** Must be your NuGet.org profile name, not email
-3. **Check Trusted Publishers:** Workflow names must match exactly (including `.yml` extension)
-4. **Check repository/owner:** Must be `devstress/FlinkDotnet` exactly
-5. **Wait a moment:** NuGet.org configuration may take a minute to propagate
+1. **Check Trusted Publishers:** Workflow names must match exactly (including `.yml` extension)
+2. **Check repository/owner:** Must be `devstress/FlinkDotnet` exactly
+3. **Wait a moment:** NuGet.org configuration may take a minute to propagate
 
 ### If you get "package does not exist" error:
 

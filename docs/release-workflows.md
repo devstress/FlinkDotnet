@@ -104,7 +104,7 @@ The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which 
 
 **Setup Steps:**
 
-**Step 1: Configure Trusted Publishing on NuGet.org**
+**Configure Trusted Publishing on NuGet.org**
 1. Go to https://www.nuget.org/
 2. Navigate to your account settings
 3. Select the package you want to configure
@@ -114,14 +114,6 @@ The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which 
    - **Owner**: devstress
    - **Repository**: FlinkDotnet
    - **Workflow**: The workflow file name (e.g., `release-major.yml`, `release-minor.yml`, `release-patch.yml`, `retry-publish.yml`)
-
-**Step 2: Configure GitHub Secret**
-Add the `NUGET_USER` secret to the repository:
-1. Go to repository Settings
-2. Navigate to Secrets and variables → Actions
-3. Click "New repository secret"
-4. Name: `NUGET_USER`
-5. Value: Your NuGet.org username (profile name, NOT email address)
 
 **Benefits:**
 - ✅ No long-lived API keys to manage or rotate
@@ -149,9 +141,10 @@ The release workflows require the following GitHub repository secrets:
 
 | Secret Name | Description | Where to Get |
 |------------|-------------|--------------|
-| `NUGET_USER` | NuGet.org username (profile name) | Your NuGet.org account profile name (NOT email) |
 | `DOCKER_USERNAME` | Docker Hub username | Your Docker Hub account username |
 | `DOCKER_PASSWORD` | Docker Hub password or token | Docker Hub Settings → Security → Access Tokens |
+
+**Note:** The NuGet.org username is hardcoded in the workflows as `DarrenDatBui` - no secret configuration needed.
 
 ## Release Artifacts
 
