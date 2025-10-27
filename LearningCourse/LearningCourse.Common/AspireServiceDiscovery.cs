@@ -96,7 +96,7 @@ public static class AspireServiceDiscovery
     /// </summary>
     public static string GetFlinkGatewayUrl()
     {
-        var envValue = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL");
+        var envValue = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL");
         if (!string.IsNullOrEmpty(envValue))
         {
             return envValue;

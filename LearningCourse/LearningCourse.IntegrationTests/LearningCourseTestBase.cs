@@ -1599,7 +1599,7 @@ public abstract class LearningCourseTestBase
     {
         try
         {
-            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
             
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             
@@ -1952,10 +1952,10 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
-        // Set FLINK_GATEWAY_URL for exercises that submit Flink jobs directly (use discovered endpoint)
+        // Set FLINK_JOB_GATEWAY_URL for exercises that submit Flink jobs directly (use discovered endpoint)
         if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
         {
-            psi.Environment["FLINK_GATEWAY_URL"] = FlinkRestApiEndpoint;
+            psi.Environment["FLINK_JOB_GATEWAY_URL"] = FlinkRestApiEndpoint;
         }
         else
         {
@@ -1979,7 +1979,7 @@ public abstract class LearningCourseTestBase
         }
         if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
         {
-            TestContext.WriteLine($"🔧 Setting FLINK_GATEWAY_URL={FlinkRestApiEndpoint} for Flink job submission");
+            TestContext.WriteLine($"🔧 Setting FLINK_JOB_GATEWAY_URL={FlinkRestApiEndpoint} for Flink job submission");
         }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 

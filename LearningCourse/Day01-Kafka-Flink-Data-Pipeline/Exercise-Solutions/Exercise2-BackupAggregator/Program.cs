@@ -32,7 +32,7 @@ namespace Exercise2_BackupAggregator
         // Flink Gateway configuration
         // Lazy evaluation - reads env var when first accessed, not at class load time
         private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
 
         static async Task Main(string[] args)
         {
@@ -701,7 +701,7 @@ namespace Exercise2_BackupAggregator
             throw new TimeoutException(
                 $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
                 $"Attempted to connect to: {FlinkGatewayUrl}. " +
-                $"Verify FLINK_GATEWAY_URL environment variable is set correctly and Flink is running. " +
+                $"Verify FLINK_JOB_GATEWAY_URL environment variable is set correctly and Flink is running. " +
                 $"Check Flink JobManager logs for issues.");
         }
         
