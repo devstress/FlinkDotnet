@@ -226,9 +226,9 @@ public partial class FlinkJobManager
             this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
                 ("🆔 JobId/SessionHandle", normalizedJobId));
             Console.WriteLine($"[DIAG] SQL Gateway submission returning identifier: {rawIdentifier} -> normalized: {normalizedJobId}");
-            
+
             // Consolidate Warning logs: combine final identifier and normalized result
-            this._logger.LogWarning("SQL Gateway identifiers - Raw: {RawIdentifier}, Normalized: {NormalizedResult}", 
+            this._logger.LogWarning("SQL Gateway identifiers - Raw: {RawIdentifier}, Normalized: {NormalizedResult}",
                 lastJobId ?? "(null)", normalizedJobId);
 
             return normalizedJobId;
