@@ -21,8 +21,9 @@ public partial class FlinkJobManager : IFlinkJobManager
     /// <summary>
     /// Regex to extract hexadecimal characters from Flink Job IDs.
     /// Compiled for better performance with repeated use.
+    /// Includes timeout to prevent ReDoS attacks.
     /// </summary>
-    private static readonly Regex s_hexOnlyRegex = new("[^0-9a-fA-F]", RegexOptions.Compiled);
+    private static readonly Regex s_hexOnlyRegex = new("[^0-9a-fA-F]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly IConfiguration _configuration;

@@ -188,11 +188,13 @@ public partial class FlinkJobManager
         try
         {
             using HttpClient sqlGatewayClient = this.CreateSqlGatewayClient();
-            this._logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress} | Waiting for ready state...", sqlGatewayClient.BaseAddress);
 
             await this.WaitForSqlGatewayReadyAsync(sqlGatewayClient);
             string sessionHandle = await this.CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
-            this._logger.LogInformation("✅ SQL Gateway ready | Session created: {SessionHandle}", sessionHandle);
+
+            // Consolidate logging to reduce number of Information calls
+            this._logger.LogInformation("✅ SQL Gateway ready at {BaseAddress} | Session: {SessionHandle}",
+                sqlGatewayClient.BaseAddress, sessionHandle);
             Console.WriteLine($"[DIAG] SQL Gateway session handle: {sessionHandle}");
 
             // SQL statements must be provided for SQL Gateway jobs
@@ -202,16 +204,13 @@ public partial class FlinkJobManager
             }
 
             Console.WriteLine($"[DIAG] SQL statement count: {sqlSource.Statements.Count}");
-            this._logger.LogInformation("📝 SQL statement count: {Count}", sqlSource.Statements.Count);
-            foreach (string stmt in sqlSource.Statements)
-            {
-                Console.WriteLine($"[DIAG] SQL statement: {stmt}");
-                this._logger.LogWarning("📝 SQL statement: {Statement}", stmt);
-            }
+            this._logger.LogInformation("📝 SQL statements: Count={Count}, Statements=[{Statements}]",
+                sqlSource.Statements.Count,
+                string.Join("; ", sqlSource.Statements));
 
             string? lastJobId = await this.ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
             Console.WriteLine($"[DIAG] SQL Gateway final identifier (jobId/sessionHandle): {lastJobId ?? "(null)"}");
-            this._logger.LogWarning("SQL Gateway returned final identifier (jobId/sessionHandle): {Identifier}", lastJobId ?? "(null)");
+            this._logger.LogWarning("SQL Gateway returned final identifier: {Identifier}", lastJobId ?? "(null)");
 
             // SQL Gateway jobs return session handle as tracking ID
             // This is expected behavior for SQL Gateway - it manages jobs within sessions
