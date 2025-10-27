@@ -13,6 +13,7 @@ public static class Ports
     public const int SqlGatewayHostPort = 8083;
 
     /// <summary>
+    /// Gateway HTTP port (Projects.FlinkDotNet_JobGateway runs on fixed host port)
     /// </summary>
     public const int GatewayHostPort = 8080;
 
