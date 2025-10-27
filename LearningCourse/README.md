@@ -30,49 +30,49 @@ dotnet test LearningCourse/IntegrationTests.sln --configuration Release --filter
 
 ```bash
 # Day 01 - Kafka-Flink Data Pipeline
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day01Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day01Tests"
 
 # Day 02 - Flink 2.1.0 Fundamentals
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day02Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day02Tests"
 
 # Day 03 - State Management & Checkpointing
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day03Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day03Tests"
 
 # Day 04 - Event Time & Watermarks
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day04Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day04Tests"
 
 # Day 05 - Advanced Transformations & Aggregations
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day05Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day05Tests"
 
 # Day 06 - Complex Event Processing (CEP)
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day06Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day06Tests"
 
 # Day 07 - Advanced Windows & Joins
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day07Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day07Tests"
 
 # Day 08 - Stress Testing
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day08Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day08Tests"
 
 # Day 09 - Exactly-Once Semantics
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day09Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day09Tests"
 
 # Day 10 - Performance Optimization & Scaling
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day10Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day10Tests"
 
 # Day 11 - Security, Privacy & Compliance
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day11Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day11Tests"
 
 # Day 12 - Disaster Recovery & Multi-Region
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day12Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day12Tests"
 
 # Day 13 - Advanced Streaming Patterns
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day13Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day13Tests"
 
 # Day 14 - Advanced Testing & Chaos Engineering
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day14Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day14Tests"
 
 # Day 15 - Capstone Project
-dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day15Tests" --configuration Release --logger "console;verbosity=normal"
+dotnet test LearningCourse/LearningCourse.IntegrationTests/LearningCourse.IntegrationTests.csproj --filter "FullyQualifiedName~Day15Tests"
 ```
 
 **Note**: Each day's tests can take 10-30 minutes depending on test complexity and system resources.
