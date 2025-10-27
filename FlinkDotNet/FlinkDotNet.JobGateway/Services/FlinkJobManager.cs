@@ -224,9 +224,11 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         string hexOnly = s_hexOnlyRegex.Replace(jobId, string.Empty);
+#pragma warning disable S4040 // Lowercase normalization is required for Flink job ID compatibility
         return hexOnly.Length != 32
             ? throw new ArgumentException($"Flink JobId must contain exactly 32 hexadecimal characters (received '{jobId}').", nameof(jobId))
-            : hexOnly.ToUpperInvariant();
+            : hexOnly.ToLowerInvariant();
+#pragma warning restore S4040
     }
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
