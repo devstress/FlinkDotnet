@@ -18,6 +18,7 @@ public class GlobalTestInfrastructure
 {
 
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static string? _previousLearningCourseMode;
 
     public static DistributedApplication? AppHost
     {
@@ -53,6 +54,13 @@ public class GlobalTestInfrastructure
 
         try
         {
+            _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
+            if (string.Equals(_previousLearningCourseMode, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("⚠️ LEARNINGCOURSE=true detected - forcing Aspire integration-test profile.");
+            }
+            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "false");
+
             // Clean up test-logs directory from previous test runs
             CleanupTestLogsDirectory();
 
@@ -248,6 +256,8 @@ public class GlobalTestInfrastructure
                 Console.WriteLine($"✅ Cleanup completed with: {ex.Message}");
             }
         }
+
+        Environment.SetEnvironmentVariable("LEARNINGCOURSE", _previousLearningCourseMode);
     }
 
     /// <summary>
