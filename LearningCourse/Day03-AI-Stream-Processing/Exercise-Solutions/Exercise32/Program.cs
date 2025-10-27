@@ -30,6 +30,9 @@ public class Program
     
     private static string FlinkGatewayUrl =>
         Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
+        
+    private static string FlinkJobManagerUrl =>
+        Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
 
     public static async Task Main(string[] args)
     {
@@ -331,7 +334,7 @@ public class Program
         var consumedCount = 0;
         var highRiskCount = 0;
         var stopwatch = Stopwatch.StartNew();
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
 
         try
         {
@@ -438,7 +441,7 @@ public class Program
 
     static async Task WaitForKafkaReadyAsync()
     {
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
         var stopwatch = Stopwatch.StartNew();
         var retryDelay = 1000;
 
@@ -478,7 +481,7 @@ public class Program
 
     static async Task WaitForFlinkHealthyAsync()
     {
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
         var stopwatch = Stopwatch.StartNew();
         var retryDelay = 1000;
 
@@ -487,7 +490,7 @@ public class Program
             try
             {
                 using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/v1/overview");
                 
                 if (response.IsSuccessStatusCode)
                 {

@@ -35,7 +35,10 @@ namespace Exercise51_ObservabilityDemo
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
         private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
+        Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
+        
+    private static string FlinkJobManagerUrl =>
+        Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
 
         static async Task Main(string[] args)
         {
@@ -484,7 +487,7 @@ namespace Exercise51_ObservabilityDemo
 
         static async Task WaitForFlinkHealthyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(30);
+            var timeout = TimeSpan.FromSeconds(60);
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;
             var attemptCount = 0;
@@ -497,7 +500,7 @@ namespace Exercise51_ObservabilityDemo
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/v1/overview");
                     
                     if (response.IsSuccessStatusCode)
                     {

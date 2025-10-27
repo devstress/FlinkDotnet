@@ -29,6 +29,9 @@ class Program
         
     private static string FlinkGatewayUrl =>
         Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
+        
+    private static string FlinkJobManagerUrl =>
+        Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
 
     // Kafka topics for resource monitoring
     private const string ResourceInputTopic = "resource-monitor-input";
@@ -384,7 +387,7 @@ class Program
 
     private static async Task WaitForKafkaReadyAsync()
     {
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
         var stopwatch = Stopwatch.StartNew();
 
         while (stopwatch.Elapsed < timeout)
@@ -419,7 +422,7 @@ class Program
 
     private static async Task WaitForFlinkHealthyAsync()
     {
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
         var stopwatch = Stopwatch.StartNew();
 
         while (stopwatch.Elapsed < timeout)
@@ -427,7 +430,7 @@ class Program
             try
             {
                 using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/v1/overview");
                 
                 if (response.IsSuccessStatusCode)
                 {
