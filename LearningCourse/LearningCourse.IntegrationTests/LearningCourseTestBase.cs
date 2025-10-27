@@ -391,8 +391,8 @@ public abstract class LearningCourseTestBase
                 PrometheusHostEndpoint = prometheusEndpoint;
                 GrafanaHostEndpoint = grafanaEndpoint;
                 FlinkRestApiEndpoint = flinkRestApi;
-                FlinkJobGatewayUrl = "http://localhost:8080/";  // Fixed port for JobGateway (not dynamic like JobManager)
-                FlinkJobManagerUrl = flinkRestApi;  // Dynamic Docker port for Flink JobManager health checks
+                FlinkJobGatewayUrl = "http://localhost:8080/";  // Fixed port for JobGateway (not dynamic)
+                FlinkJobManagerUrl = "http://localhost:8081/";  // Fixed port for JobManager (configured in Aspire)
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
                 TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
