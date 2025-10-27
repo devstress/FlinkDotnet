@@ -9,11 +9,11 @@ namespace LearningCourse.Common;
 public static class DockerInfrastructure
 {
     /// <summary>
-    /// Discovers the Kafka container IP address for Flink job configurations.
-    /// Docker's default bridge network doesn't support DNS between containers,
-    /// so we need to use the actual container IP address.
+    /// Discovers the Kafka bootstrap servers for Flink job configurations.
+    /// In Aspire-managed containers, uses DNS name (kafka:9093) for container-to-container communication.
+    /// Aspire creates a Docker network with DNS support, so containers can use service names.
     /// </summary>
-    /// <returns>Kafka container IP with port (e.g., "172.17.0.2:9093")</returns>
+    /// <returns>Kafka bootstrap servers for Flink (e.g., "kafka:9093")</returns>
     public static async Task<string> GetKafkaContainerIpAsync()
     {
         try
@@ -26,39 +26,17 @@ public static class DockerInfrastructure
                 throw new InvalidOperationException("Kafka container not found");
             }
 
-            // Try Docker bridge network first
-            var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
-            var ip = ipAddress.Trim();
+            Console.WriteLine($"✅ Kafka container found: {kafkaContainer}");
             
-            // If bridge network doesn't have IP, try podman network (for Podman runtime)
-            if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
-            {
-                Console.WriteLine($"🔍 Bridge network IP not found, trying podman network...");
-                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.podman.IPAddress}}}}\"");
-                ip = ipAddress.Trim();
-            }
-            
-            if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
-            {
-                // Fallback: Get the first available network IP
-                Console.WriteLine($"🔍 Specific network not found, getting first available IP...");
-                ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}\"");
-                ip = ipAddress.Trim();
-            }
-            
-            if (string.IsNullOrWhiteSpace(ip) || ip == "<no value>")
-            {
-                throw new InvalidOperationException($"Could not determine Kafka container IP from any network. Container: {kafkaContainer}");
-            }
-
-            Console.WriteLine($"✅ Kafka container IP discovered: {ip}");
-            
-            // Return IP with PLAINTEXT_INTERNAL port (9093)
-            return $"{ip}:9093";
+            // CRITICAL: In Aspire-managed Docker networks, containers support DNS resolution
+            // Flink containers can access Kafka using the service name "kafka" instead of IP
+            // This works because all Aspire containers are on the same Docker network
+            // Port 9093 is used for container-to-container communication (PLAINTEXT_INTERNAL)
+            return "kafka:9093";
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to get Kafka container IP: {ex.Message}", ex);
+            throw new InvalidOperationException($"Failed to get Kafka bootstrap servers: {ex.Message}", ex);
         }
     }
 
