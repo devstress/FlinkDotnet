@@ -100,9 +100,11 @@ There are 4 manual workflows for managing FlinkDotNet releases:
 The workflows require the following configuration:
 
 ### NuGet Publishing (Trusted Publishing)
-The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which eliminates the need for API keys.
+The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which eliminates the need for long-lived API keys.
 
 **Setup Steps:**
+
+**Configure Trusted Publishing on NuGet.org**
 1. Go to https://www.nuget.org/
 2. Navigate to your account settings
 3. Select the package you want to configure
@@ -114,21 +116,35 @@ The workflows use **NuGet Trusted Publishing** via OpenID Connect (OIDC), which 
    - **Workflow**: The workflow file name (e.g., `release-major.yml`, `release-minor.yml`, `release-patch.yml`, `retry-publish.yml`)
 
 **Benefits:**
-- ✅ No API keys to manage or rotate
-- ✅ More secure - tokens are short-lived and scoped
+- ✅ No long-lived API keys to manage or rotate
+- ✅ More secure - tokens are short-lived and scoped to specific workflows
 - ✅ Better audit trail
 - ✅ Automatic authentication via GitHub OIDC
 
 ### Docker Publishing
+The workflows require Docker Hub credentials to publish container images.
+
+**Required Secrets:**
 - **DOCKER_USERNAME**: Docker Hub username
 - **DOCKER_PASSWORD**: Docker Hub password or access token
   - Get from: https://hub.docker.com/settings/security
 
-### How to add Docker secrets:
+**How to add Docker secrets:**
 1. Go to repository Settings
 2. Navigate to Secrets and variables → Actions
 3. Click "New repository secret"
 4. Add each required secret
+
+## Required Secrets Summary
+
+The release workflows require the following GitHub repository secrets:
+
+| Secret Name | Description | Where to Get |
+|------------|-------------|--------------|
+| `DOCKER_USERNAME` | Docker Hub username | Your Docker Hub account username |
+| `DOCKER_PASSWORD` | Docker Hub password or token | Docker Hub Settings → Security → Access Tokens |
+
+**Note:** The NuGet.org username is hardcoded in the workflows as `DarrenDatBui` - no secret configuration needed.
 
 ## Release Artifacts
 
