@@ -392,7 +392,7 @@ public abstract class LearningCourseTestBase
                 GrafanaHostEndpoint = grafanaEndpoint;
                 FlinkRestApiEndpoint = flinkRestApi;
                 FlinkJobGatewayUrl = "http://localhost:8080/";  // Fixed port for JobGateway (not dynamic)
-                FlinkJobManagerUrl = "http://localhost:8081/";  // Fixed port for JobManager (configured in Aspire)
+                FlinkJobManagerUrl = flinkRestApi;  // Use discovered dynamic port from Aspire
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
                 TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
