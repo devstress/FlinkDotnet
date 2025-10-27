@@ -142,13 +142,16 @@ public static class FlinkDotNetJobs
                 'properties.bootstrap.servers'='{kafka}',
                 'properties.group.id'='flink-sql-test',
                 'scan.startup.mode'='earliest-offset',
-                'format'='json'
+                'value.format'='json',
+                'value.json.fail-on-missing-field'='false',
+                'value.json.ignore-parse-errors'='true'
             )",
             $@"CREATE TABLE output ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
                 'properties.bootstrap.servers'='{kafka}',
-                'format'='json'
+                'value.format'='json',
+                'value.json.timestamp-format.standard'='ISO-8601'
             )",
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
@@ -204,13 +207,16 @@ public static class FlinkDotNetJobs
                 'properties.bootstrap.servers'='{kafka}',
                 'properties.group.id'='flink-sql-transform',
                 'scan.startup.mode'='earliest-offset',
-                'format'='json'
+                'value.format'='json',
+                'value.json.fail-on-missing-field'='false',
+                'value.json.ignore-parse-errors'='true'
             )",
             $@"CREATE TABLE output ( `key` STRING, `transformed` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
                 'properties.bootstrap.servers'='{kafka}',
-                'format'='json'
+                'value.format'='json',
+                'value.json.timestamp-format.standard'='ISO-8601'
             )",
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
         };

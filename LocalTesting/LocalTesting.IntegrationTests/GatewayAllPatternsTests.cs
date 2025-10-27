@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Confluent.Kafka;
 using LocalTesting.FlinkSqlAppHost;
 using NUnit.Framework;
@@ -137,35 +137,35 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
         var ct = linkedCts.Token;
 
-        TestContext.WriteLine($"🚀 Starting Gateway Pattern Test: {patternName}");
-        TestContext.WriteLine($"📝 Description: {description}");
+        TestContext.WriteLine($"Starting Gateway Pattern Test: {patternName}");
+        TestContext.WriteLine($"Description: {description}");
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
             // Skip health check - global setup already validated everything
             // Create topics immediately
-            TestContext.WriteLine($"📝 Creating topics: {inputTopic} -> {outputTopic}");
+            TestContext.WriteLine($"Creating topics: {inputTopic} -> {outputTopic}");
             await CreateTopicAsync(inputTopic, 1);
             await CreateTopicAsync(outputTopic, 1);
 
             // Submit job using FlinkDotNetJobs helper
             // Use Kafka container IP for Flink jobs (container-to-container communication)
             // Test producers/consumers use host connection (host-to-container via port mapping)
-            TestContext.WriteLine($"🔧 Creating and submitting {patternName} job...");
-            TestContext.WriteLine($"📡 Kafka bootstrap (host): {KafkaConnectionString}");
-            TestContext.WriteLine($"📡 Kafka bootstrap (Flink): {GlobalTestInfrastructure.KafkaContainerIpForFlink}");
-            TestContext.WriteLine($"📍 Input topic: {inputTopic}");
-            TestContext.WriteLine($"📍 Output topic: {outputTopic}");
+            TestContext.WriteLine($"Creating and submitting {patternName} job...");
+            TestContext.WriteLine($"Kafka bootstrap (host): {KafkaConnectionString}");
+            TestContext.WriteLine($"Kafka bootstrap (Flink): {GlobalTestInfrastructure.KafkaContainerIpForFlink}");
+            TestContext.WriteLine($"Input topic: {inputTopic}");
+            TestContext.WriteLine($"Output topic: {outputTopic}");
 
             var submitResult = await jobCreator(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, ct);
 
-            TestContext.WriteLine($"📊 Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");
+            TestContext.WriteLine($"Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");
 
             // If job submission failed, retrieve detailed diagnostics
             if (!submitResult.Success)
             {
-                TestContext.WriteLine("⚠️ Job submission failed - retrieving Flink diagnostics...");
+                TestContext.WriteLine("Job submission failed - retrieving Flink diagnostics...");
                 var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
                 var diagnostics = await GetFlinkJobDiagnosticsAsync(flinkEndpoint, submitResult.FlinkJobId);
                 TestContext.WriteLine(diagnostics);
@@ -176,32 +176,32 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             // Wait for job to be running
             var gatewayBase = $"http://localhost:{Ports.GatewayHostPort}/";
             await WaitForJobRunningViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, JobRunTimeout, ct);
-            TestContext.WriteLine("✅ Job is RUNNING");
+            TestContext.WriteLine("Job is RUNNING");
 
             // Debug: Check job status immediately to verify it's actually running
             await LogJobStatusViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, "Immediately after RUNNING check");
 
             // Produce test messages immediately - job is already running
-            TestContext.WriteLine($"📤 Producing {inputMessages.Length} messages...");
+            TestContext.WriteLine($"Producing {inputMessages.Length} messages...");
             await ProduceMessagesAsync(inputTopic, inputMessages, ct, usesJson);
 
             // Consume and verify (reduced timeout for faster tests)
             var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(45) : MessageTimeout;
             var consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputCount, consumeTimeout, ct);
 
-            TestContext.WriteLine($"📊 Consumed {consumed.Count} messages (expected: {expectedOutputCount})");
+            TestContext.WriteLine($"Consumed {consumed.Count} messages (expected: {expectedOutputCount})");
 
             // Assert - use GreaterThanOrEqualTo to be more forgiving
             Assert.That(consumed.Count, Is.GreaterThanOrEqualTo(expectedOutputCount),
                 $"Should consume at least {expectedOutputCount} messages");
 
             stopwatch.Stop();
-            TestContext.WriteLine($"✅ {patternName} test completed successfully in {stopwatch.Elapsed.TotalSeconds:F1}s");
+            TestContext.WriteLine($"{patternName} test completed successfully in {stopwatch.Elapsed.TotalSeconds:F1}s");
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            TestContext.WriteLine($"❌ {patternName} test failed after {stopwatch.Elapsed.TotalSeconds:F1}s: {ex.Message}");
+            TestContext.WriteLine($"{patternName} test failed after {stopwatch.Elapsed.TotalSeconds:F1}s: {ex.Message}");
             throw;
         }
     }
@@ -259,7 +259,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             producer.Flush(TimeSpan.FromSeconds(10));
         }
 
-        TestContext.WriteLine($"✅ Produced {messages.Length} messages to {topic}");
+        TestContext.WriteLine($"Produced {messages.Length} messages to {topic}");
     }
 
     private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
@@ -283,7 +283,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         consumer.Subscribe(topic);
         var deadline = DateTime.UtcNow.Add(timeout);
 
-        TestContext.WriteLine($"📥 Starting consumption from '{topic}' (timeout: {timeout.TotalSeconds}s)");
+        TestContext.WriteLine($"Starting consumption from '{topic}' (timeout: {timeout.TotalSeconds}s)");
 
         while (DateTime.UtcNow < deadline && messages.Count < expectedCount && !ct.IsCancellationRequested)
         {
@@ -291,7 +291,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             if (consumeResult != null)
             {
                 messages.Add(consumeResult.Message.Value);
-                TestContext.WriteLine($"  📥 Consumed message {messages.Count}: {consumeResult.Message.Value}");
+                TestContext.WriteLine($"  Consumed message {messages.Count}: {consumeResult.Message.Value}");
             }
         }
 
@@ -304,7 +304,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         var deadline = DateTime.UtcNow.Add(timeout);
         var attempt = 0;
 
-        TestContext.WriteLine($"⏳ Waiting for job {jobId} to reach RUNNING state...");
+        TestContext.WriteLine($"Waiting for job {jobId} to reach RUNNING state...");
 
         // For SQL Gateway jobs, also check Flink REST API directly with converted job ID (without hyphens)
         // AND check for any RUNNING jobs as fallback since SQL Gateway creates different job IDs
@@ -336,7 +336,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             }
             catch (HttpRequestException ex)
             {
-                TestContext.WriteLine($"  ⏳ Attempt {attempt}: Request failed - {ex.Message}");
+                TestContext.WriteLine($"  Attempt {attempt}: Request failed - {ex.Message}");
             }
 
             await Task.Delay(500, ct); // Reduced from 1000ms to 500ms
@@ -357,7 +357,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         if (content.Contains("RUNNING", StringComparison.OrdinalIgnoreCase) ||
             content.Contains("FINISHED", StringComparison.OrdinalIgnoreCase))
         {
-            TestContext.WriteLine($"✅ Job {jobId} is running/finished after {attempt} attempt(s)");
+            TestContext.WriteLine($"Job {jobId} is running/finished after {attempt} attempt(s)");
             return true;
         }
 
@@ -367,7 +367,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             throw new InvalidOperationException($"Job {jobId} failed or was canceled: {content}");
         }
 
-        TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Gateway - {content}");
+        TestContext.WriteLine($"  Attempt {attempt}: Job status from Gateway - {content}");
         return false;
     }
 
@@ -383,7 +383,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         if (flinkContent.Contains("\"state\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase) ||
             flinkContent.Contains("\"state\":\"FINISHED\"", StringComparison.OrdinalIgnoreCase))
         {
-            TestContext.WriteLine($"✅ Job {flinkJobId} is running/finished after {attempt} attempt(s) (via Flink REST API)");
+            TestContext.WriteLine($"Job {flinkJobId} is running/finished after {attempt} attempt(s) (via Flink REST API)");
             return true;
         }
 
@@ -393,7 +393,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             throw new InvalidOperationException($"Job {flinkJobId} failed or was canceled: {flinkContent}");
         }
 
-        TestContext.WriteLine($"  ⏳ Attempt {attempt}: Job status from Flink API - {flinkContent}");
+        TestContext.WriteLine($"  Attempt {attempt}: Job status from Flink API - {flinkContent}");
         return false;
     }
 
@@ -402,18 +402,18 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         var allJobsResp = await http.GetAsync($"{flinkEndpoint}jobs", ct);
         if (!allJobsResp.IsSuccessStatusCode)
         {
-            TestContext.WriteLine($"  ⏳ Attempt {attempt}: No RUNNING jobs found");
+            TestContext.WriteLine($"  Attempt {attempt}: No RUNNING jobs found");
             return false;
         }
 
         var allJobsContent = await allJobsResp.Content.ReadAsStringAsync(ct);
         if (allJobsContent.Contains("\"status\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase))
         {
-            TestContext.WriteLine($"✅ Found RUNNING job after {attempt} attempt(s) (fallback check)");
+            TestContext.WriteLine($"Found RUNNING job after {attempt} attempt(s) (fallback check)");
             return true;
         }
 
-        TestContext.WriteLine($"  ⏳ Attempt {attempt}: No RUNNING jobs found");
+        TestContext.WriteLine($"  Attempt {attempt}: No RUNNING jobs found");
         return false;
     }
 
@@ -442,16 +442,13 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
                 }
             }
 
-            // Fallback to configured port if discovery fails
-            return $"http://localhost:{Ports.SqlGatewayHostPort}/";
+            throw new InvalidOperationException($"Could not determine SQL Gateway endpoint from Docker/Podman ports: {sqlGatewayContainers}");
         }
         catch (Exception ex)
         {
-            TestContext.WriteLine($"⚠️ SQL Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.SqlGatewayHostPort}");
-            return $"http://localhost:{Ports.SqlGatewayHostPort}/";
+            throw new InvalidOperationException($"SQL Gateway endpoint discovery failed: {ex.Message}", ex);
         }
     }
-
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
         // Try Docker first, then Podman if Docker fails or returns empty

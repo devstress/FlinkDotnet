@@ -370,8 +370,10 @@ public abstract class LocalTestingTestBase
 
         await Task.Delay(500); // Optimized: Reduced to 500ms (was 2000ms)
 
-        var portAccessible = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
-        TestContext.WriteLine($"🔍 [FlinkReady] Port {Ports.JobManagerHostPort} accessible: {portAccessible}");
+        var overviewUri = new Uri(overviewUrl);
+        var jobManagerPort = overviewUri.Port;
+        var portAccessible = await TestPortConnectivityAsync("localhost", jobManagerPort);
+        TestContext.WriteLine($"🔍 [FlinkReady] Port {jobManagerPort} accessible: {portAccessible}");
     }
 
     /// <summary>
@@ -530,9 +532,11 @@ public abstract class LocalTestingTestBase
             var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
             TestContext.WriteLine($"   Flink Containers: {flinkContainers.Trim()}");
 
-            // Check if port is listening
-            var portTest = await TestPortConnectivityAsync("localhost", Ports.JobManagerHostPort);
-            TestContext.WriteLine($"   Port {Ports.JobManagerHostPort} accessible: {portTest}");
+            // Check if port is listening using dynamically discovered endpoint
+            var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+            var flinkPort = new Uri(flinkEndpoint).Port;
+            var portTest = await TestPortConnectivityAsync("localhost", flinkPort);
+            TestContext.WriteLine($"   Port {flinkPort} accessible: {portTest}");
 
             // Try to get container logs
             var jobManagerLogs = await RunDockerCommandAsync("logs --tail 20 flink-jobmanager 2>&1 || echo 'Could not get logs'");
