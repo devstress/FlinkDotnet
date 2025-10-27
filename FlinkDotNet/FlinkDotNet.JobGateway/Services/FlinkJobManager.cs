@@ -18,6 +18,12 @@ public partial class FlinkJobManager : IFlinkJobManager
     private const string ProtocolHttp = "HTTP";
     private const string FlinkIRRunnerDirectory = "FlinkIRRunner";
 
+    /// <summary>
+    /// Regex to extract hexadecimal characters from Flink Job IDs.
+    /// Compiled for better performance with repeated use.
+    /// </summary>
+    private static readonly Regex s_hexOnlyRegex = new("[^0-9a-fA-F]", RegexOptions.Compiled);
+
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
@@ -216,13 +222,10 @@ public partial class FlinkJobManager : IFlinkJobManager
             throw new ArgumentException("Flink JobId cannot be null or empty.", nameof(jobId));
         }
 
-        string hexOnly = Regex.Replace(jobId, "[^0-9a-fA-F]", string.Empty);
-        if (hexOnly.Length != 32)
-        {
-            throw new ArgumentException($"Flink JobId must contain exactly 32 hexadecimal characters (received '{jobId}').", nameof(jobId));
-        }
-
-        return hexOnly.ToLowerInvariant();
+        string hexOnly = s_hexOnlyRegex.Replace(jobId, string.Empty);
+        return hexOnly.Length != 32
+            ? throw new ArgumentException($"Flink JobId must contain exactly 32 hexadecimal characters (received '{jobId}').", nameof(jobId))
+            : hexOnly.ToLowerInvariant();
     }
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
