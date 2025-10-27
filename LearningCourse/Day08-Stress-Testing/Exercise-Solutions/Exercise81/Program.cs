@@ -28,7 +28,7 @@ class Program
         Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
     private static string FlinkGatewayUrl =>
-        Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
+        Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
 
     // Kafka topics for stress testing
     private const string StressTestTopic = "stress-test-events";

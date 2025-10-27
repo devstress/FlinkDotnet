@@ -268,6 +268,12 @@ public class Day01Tests : LearningCourseTestBase
 
     private static Dictionary<string, (bool result, string failureMessage)> BuildExercise2ValidationChecks(string output)
     {
+        // Check that we actually consumed backups (not just 0)
+        bool backupsConsumed = !output.Contains("Consumed 0 backup") && 
+                               (output.Contains("Successfully aggregated") || 
+                                output.Contains("window fired") || 
+                                (output.Contains("Consumed") && output.Contains("backup") && !output.Contains("[ERROR] No backups consumed")));
+        
         return new Dictionary<string, (bool result, string failureMessage)>
         {
             ["Kafka Ready"] = (output.Contains("Kafka is ready") || output.Contains("Verifying Kafka"), "Kafka is not ready"),
@@ -276,7 +282,7 @@ public class Day01Tests : LearningCourseTestBase
             ["EventTime Used"] = (output.Contains("EventTime") || output.Contains("timestamped"), "EventTime was not used"),
             ["Time Windows"] = (output.Contains("Time windows") || output.Contains("TimeWindowAll") || output.Contains("24 hours") || output.Contains("time-based") || output.Contains("Time.Hours(24)"), "Time-based windows were not configured"),
             ["InputMessages Produced"] = (output.Contains("Producing") && output.Contains("InputMessage") || output.Contains("All 50 InputMessage objects produced"), "InputMessage objects were not produced"),
-            ["Backups Consumed"] = (output.Contains("Consumed") && output.Contains("Backup") || output.Contains("Successfully aggregated") || output.Contains("window fired"), "Should consume aggregated backups with time window"),
+            ["Backups Consumed"] = (backupsConsumed, "No backups were consumed - aggregation failed to produce output"),
             ["Job Running"] = (output.Contains("Job is running") || output.Contains("job submitted") || output.Contains("Flink") || output.Contains("SUCCESS"), "Job should be running in Flink")
         };
     }

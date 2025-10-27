@@ -39,7 +39,7 @@ namespace Exercise1_StringCapitalize
             Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
         
         private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
+            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
 
         private static string FlinkJobManagerUrl =>
             Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
@@ -677,7 +677,7 @@ namespace Exercise1_StringCapitalize
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/v1/overview");
                     
                     if (response.IsSuccessStatusCode)
                     {

@@ -24,7 +24,7 @@ echo.
 echo [INFO] Starting LocalTesting.FlinkSqlAppHost...
 echo.
 
-dotnet run --project LocalTesting.FlinkSqlAppHost
+dotnet run --project LocalTesting.FlinkSqlAppHost --configuration Release
 
 echo.
 echo ========================================

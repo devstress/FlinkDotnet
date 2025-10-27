@@ -53,7 +53,7 @@ public static class AspireValidationTest
             Console.WriteLine("Service URLs:");
             Console.WriteLine("   • Aspire Dashboard: http://localhost:15888");
             Console.WriteLine("   • Flink JobManager UI: http://localhost:8081");
-            Console.WriteLine("   • Flink Job Gateway: http://localhost:8080");
+            Console.WriteLine("   • Flink Job Gateway: http://localhost:8086");
             Console.WriteLine("   • Kafka: localhost:9092");
         }
         else
@@ -126,7 +126,7 @@ public static class AspireValidationTest
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://localhost:8080/api/v1/health");
+            var response = await _httpClient.GetAsync("http://localhost:8086/api/v1/health");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();

@@ -102,7 +102,7 @@ public static class AspireServiceDiscovery
             return envValue;
         }
 
-        // Flink Gateway typically uses fixed port 8080
-        return "http://localhost:8080";
+        // Flink Gateway typically uses fixed port 8086
+        return "http://localhost:8086";
     }
 }
