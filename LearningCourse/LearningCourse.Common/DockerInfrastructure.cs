@@ -363,8 +363,10 @@ public static class DockerInfrastructure
     {
         try
         {
-            var flinkContainers = await RunDockerCommandAsync("ps --filter name=flink-jobmanager --format {{.Ports}}");
-            Console.WriteLine($"🔍 Flink JobManager port mappings: {flinkContainers.Trim()}");
+            // Use broader filter to match any Flink container (Aspire may use different naming patterns)
+            // Then validate by checking for port 8081 mapping (Flink JobManager REST API)
+            var flinkContainers = await RunDockerCommandAsync("ps --filter name=flink --format {{.Ports}}");
+            Console.WriteLine($"🔍 All Flink container port mappings: {flinkContainers.Trim()}");
             
             // Log docker ps after discovering Flink ports
             await LogDockerPsAsync("After Flink REST API Discovery");
