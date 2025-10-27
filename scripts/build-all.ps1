@@ -421,6 +421,9 @@ function Build-Solutions {
                 
                 Invoke-BuildCommand "dotnet" $buildArgs -Description "Building $($solution.Name)"
                 Write-Success "$($solution.Name) built successfully"
+                
+                # Apply code formatting after successful build
+                Format-Solution $solution.Path $solution.Name
             } catch {
                 Write-Error "Failed to build $($solution.Name): $($_.Exception.Message)"
                 $script:BuildErrors += "Build failed for $($solution.Name)"
@@ -430,6 +433,27 @@ function Build-Solutions {
             Write-Warning "Solution not found: $($solution.Path)"
             $script:BuildErrors += "Solution not found: $($solution.Path)"
         }
+    }
+}
+
+function Format-Solution {
+    param(
+        [string]$SolutionPath,
+        [string]$SolutionName
+    )
+    
+    try {
+        Write-Progress "Formatting code in $SolutionName" "Applying dotnet format..."
+        
+        $formatArgs = "format `"$SolutionPath`" --verbosity quiet"
+        Invoke-BuildCommand "dotnet" $formatArgs -Description "Formatting $SolutionName"
+        
+        Write-Success "Code formatting applied to $SolutionName"
+    } catch {
+        # Formatting failures are warnings, not build failures
+        $errorMsg = $_.Exception.Message
+        Write-Warning "Code formatting encountered issues in ${SolutionName}: $errorMsg"
+        Write-Info "Build will continue, but formatting may not be complete"
     }
 }
 

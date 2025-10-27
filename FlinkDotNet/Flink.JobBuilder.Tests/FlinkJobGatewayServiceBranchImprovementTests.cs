@@ -21,7 +21,7 @@ namespace Flink.JobBuilder.Tests
             // Target: Line 42 (null configuration), Line 43 (null httpClient)
             // Set environment variable to provide BaseUrl for default configuration
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-            
+
             try
             {
                 using var service = new FlinkJobGatewayService(null, null, null);
@@ -39,9 +39,9 @@ namespace Flink.JobBuilder.Tests
             // Target: Line 43 (non-null httpClient branch)
             var httpClient = new HttpClient { BaseAddress = new Uri("http://test:8080") };
             var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
-            
+
             using var service = new FlinkJobGatewayService(config, httpClient, null);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 
@@ -54,9 +54,9 @@ namespace Flink.JobBuilder.Tests
                 BaseUrl = "http://localhost:8080",
                 ApiKey = "test-api-key-123"
             };
-            
+
             using var service = new FlinkJobGatewayService(config, null, null);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 
@@ -69,9 +69,9 @@ namespace Flink.JobBuilder.Tests
                 BaseUrl = "http://localhost:8080",
                 ApiKey = null
             };
-            
+
             using var service = new FlinkJobGatewayService(config, null, null);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 
@@ -83,13 +83,13 @@ namespace Flink.JobBuilder.Tests
             {
                 BaseUrl = "http://localhost:8080"
             };
-            
+
             var jobDef = CreateValidJobDefinition();
-            
+
             using var mockHandler = new MockHttpMessageHandler();
             using var httpClient = new HttpClient(mockHandler) { BaseAddress = new Uri(config.BaseUrl) };
             using var service = new FlinkJobGatewayService(config, httpClient, null);
-            
+
             try
             {
                 await service.SubmitJobAsync(jobDef);
@@ -98,7 +98,7 @@ namespace Flink.JobBuilder.Tests
             {
                 // Expected to fail due to mock handler, but validation should pass
             }
-            
+
             Assert.Pass("Validation logic executed");
         }
 
@@ -108,10 +108,10 @@ namespace Flink.JobBuilder.Tests
             // Target: Line 461, 466, 468 (Dispose branches)
             var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
             var service = new FlinkJobGatewayService(config, null, null);
-            
+
             service.Dispose(); // First dispose
             service.Dispose(); // Second dispose (should handle gracefully)
-            
+
             Assert.Pass("Multiple dispose calls handled");
         }
 
@@ -121,9 +121,9 @@ namespace Flink.JobBuilder.Tests
             // Target: Constructor with logger, Line 157 (logger != null)
             var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
             var mockLogger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<FlinkJobGatewayService>();
-            
+
             using var service = new FlinkJobGatewayService(config, null, mockLogger);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 

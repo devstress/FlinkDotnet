@@ -26,18 +26,18 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             Func<int, string> mapFunc = value => $"Mapped:{value}";
             var mappedSource = new MappedSourceFunction<int, string>(sourceFunc, mapFunc);
-            
+
             using var cts = new CancellationTokenSource();
             cts.Cancel(); // Cancel immediately
-            
+
             var results = new List<string>();
-            
+
             // RunAsync should respect cancellation
             await foreach (var item in mappedSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
             }
-            
+
             // Should not produce any results due to cancellation
             Assert.That(results, Is.Empty.Or.Count.LessThanOrEqualTo(1));
         }
@@ -49,11 +49,11 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             Func<int, string> mapFunc = value => $"Mapped:{value}";
             var mappedSource = new MappedSourceFunction<int, string>(sourceFunc, mapFunc);
-            
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            
+
             var results = new List<string>();
-            
+
             await foreach (var item in mappedSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
@@ -62,7 +62,7 @@ namespace FlinkDotNet.DataStream.Tests
                     break;
                 }
             }
-            
+
             Assert.That(results, Is.Not.Empty);
             Assert.That(results.All(r => r.StartsWith("Mapped:")), Is.True);
         }
@@ -78,17 +78,17 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             Func<int, IEnumerable<string>> flatMapFunc = value => new[] { $"Flat1:{value}", $"Flat2:{value}" };
             var flatMappedSource = new FlatMappedSourceFunction<int, string>(sourceFunc, flatMapFunc);
-            
+
             using var cts = new CancellationTokenSource();
             cts.Cancel(); // Cancel immediately
-            
+
             var results = new List<string>();
-            
+
             await foreach (var item in flatMappedSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
             }
-            
+
             Assert.That(results, Is.Empty.Or.Count.LessThanOrEqualTo(1));
         }
 
@@ -99,11 +99,11 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             Func<int, IEnumerable<string>> flatMapFunc = value => new[] { $"Flat1:{value}", $"Flat2:{value}" };
             var flatMappedSource = new FlatMappedSourceFunction<int, string>(sourceFunc, flatMapFunc);
-            
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            
+
             var results = new List<string>();
-            
+
             await foreach (var item in flatMappedSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
@@ -112,7 +112,7 @@ namespace FlinkDotNet.DataStream.Tests
                     break;
                 }
             }
-            
+
             Assert.That(results, Is.Not.Empty);
             Assert.That(results.Count, Is.GreaterThanOrEqualTo(2)); // At least one flattened result
         }
@@ -128,17 +128,17 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             Func<int, bool> filterFunc = value => value % 2 == 0; // Only even numbers
             var filteredSource = new FilteredSourceFunction<int>(sourceFunc, filterFunc);
-            
+
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            
+
             var results = new List<int>();
-            
+
             await foreach (var item in filteredSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
             }
-            
+
             Assert.That(results, Is.Empty.Or.Count.LessThanOrEqualTo(1));
         }
 
@@ -149,11 +149,11 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             Func<int, bool> filterFunc = value => value % 2 == 0; // Only even numbers
             var filteredSource = new FilteredSourceFunction<int>(sourceFunc, filterFunc);
-            
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            
+
             var results = new List<int>();
-            
+
             await foreach (var item in filteredSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
@@ -162,7 +162,7 @@ namespace FlinkDotNet.DataStream.Tests
                     break;
                 }
             }
-            
+
             // All results should pass the filter (even numbers)
             Assert.That(results.All(r => r % 2 == 0), Is.True);
         }
@@ -178,17 +178,17 @@ namespace FlinkDotNet.DataStream.Tests
             var sourceFunc = new TestSourceFunction<int>();
             var aggFunc = new TestAggregateFunc();
             var aggregatedSource = new AggregatedSourceFunction<int, int, int>(sourceFunc, aggFunc);
-            
+
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            
+
             var results = new List<int>();
-            
+
             await foreach (var item in aggregatedSource.RunAsync(cts.Token).ConfigureAwait(false))
             {
                 results.Add(item);
             }
-            
+
             Assert.That(results, Is.Empty.Or.Count.LessThanOrEqualTo(1));
         }
 
@@ -207,7 +207,7 @@ namespace FlinkDotNet.DataStream.Tests
                     await Task.Delay(10, cancellationToken).ConfigureAwait(false);
                     if (typeof(T) == typeof(int))
                     {
-                        yield return (T)(object)_counter++;
+                        yield return (T) (object) _counter++;
                     }
                     else
                     {

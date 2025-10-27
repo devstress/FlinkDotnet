@@ -22,7 +22,7 @@ public class DataStreamJobBackedBranchCoverageTests
             Operations = [],
             Metadata = new JobMetadata { JobId = "test-job", JobName = "Test Job" }
         };
-        
+
         // Create a DataStream directly with JobDefinition (no OperationCapture)
         var stream = new DataStream<string>(jobDef, env);
 
@@ -44,7 +44,7 @@ public class DataStreamJobBackedBranchCoverageTests
             Operations = [],
             Metadata = new JobMetadata { JobId = "test-job", JobName = "Test Job" }
         };
-        
+
         // Create a DataStream directly with JobDefinition (no OperationCapture)
         var stream = new DataStream<string>(jobDef, env);
 
@@ -66,7 +66,7 @@ public class DataStreamJobBackedBranchCoverageTests
             Operations = [],
             Metadata = new JobMetadata { JobId = "test-job", JobName = "Test Job" }
         };
-        
+
         // Create a DataStream directly with JobDefinition (no OperationCapture)
         var stream = new DataStream<string>(jobDef, env);
 
@@ -82,7 +82,7 @@ public class DataStreamJobBackedBranchCoverageTests
     {
         // Arrange
         var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        
+
         // Create a stream with OperationCapture (FromKafka scenario)
         var kafkaStream = env.FromKafka("test-topic", "localhost:9092");
 

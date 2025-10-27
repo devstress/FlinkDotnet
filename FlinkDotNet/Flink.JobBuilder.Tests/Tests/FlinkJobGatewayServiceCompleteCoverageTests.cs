@@ -25,16 +25,16 @@ public class FlinkJobGatewayServiceCompleteCoverageTests
     public void SetUp()
     {
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
-        
+
         // Set retry delay to 1ms for fast tests
         FlinkJobGatewayService.RetryDelay = TimeSpan.FromMilliseconds(1);
-        
+
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
         {
             BaseAddress = new Uri("http://localhost:8080")
         };
-        
+
         _mockLogger = new Mock<ILogger>();
     }
 
@@ -43,7 +43,7 @@ public class FlinkJobGatewayServiceCompleteCoverageTests
     {
         // Restore default retry delay
         FlinkJobGatewayService.RetryDelay = TimeSpan.FromSeconds(1);
-        
+
         _httpClient?.Dispose();
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
     }

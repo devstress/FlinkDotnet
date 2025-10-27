@@ -28,7 +28,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // This tests the branch: if (this._kafkaSource == null) at line 161
             // Arrange - Don't add any source, just try to execute
-            
+
             // Act & Assert - Should throw when trying to execute without a source
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -49,7 +49,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             Func<string, string> deserializer = s => s;
             var stream = this._env.AddKafkaSource("test-topic", "localhost:9092", "test-group", deserializer);
-            
+
             // Don't assign timestamps - this takes the FALSE branch
             var result = stream.SinkToKafka("output-topic", "localhost:9092");
 
@@ -204,7 +204,7 @@ namespace FlinkDotNet.DataStream.Tests
             // This happens when operation type is specified but function is null
             // Note: In practice, CaptureMapOperation is called with operationType, so function may be null
             // The code path exists but may be defensive coding
-            
+
             // This is implicitly tested by the upper/lower tests above where OperationType is set
             // and the else if (operation.Function != null) branch is not taken
             Assert.Pass("This branch is covered by upper/lower operation type tests");
@@ -260,7 +260,7 @@ namespace FlinkDotNet.DataStream.Tests
             var windowed = stream.TimeWindowAll(Time.Seconds(10));
             // Note: Aggregate always requires a function, so this is defensive code
             // The test verifies the stream operations work
-            
+
             Assert.That(windowed, Is.Not.Null);
         }
 
@@ -302,7 +302,7 @@ namespace FlinkDotNet.DataStream.Tests
             // This tests the else branch at line 342 - no window defined
             // This would happen if aggregate is called without a window, which shouldn't normally occur
             // but the defensive code exists
-            
+
             // Note: In the current API, aggregates require windows, so this is defensive
             // The test verifies the code path exists
             Assert.Pass("Defensive code path - aggregate always requires window in current API");
@@ -397,7 +397,7 @@ namespace FlinkDotNet.DataStream.Tests
             // This tests the default case at line 248-250
             // Note: This is defensive code as all operations should match known types
             // The test verifies known operations work
-            
+
             Assert.Pass("Unknown operation types are defensive code - all API operations are known");
         }
 

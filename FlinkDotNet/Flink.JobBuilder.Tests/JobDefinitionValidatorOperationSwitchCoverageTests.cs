@@ -160,11 +160,11 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
-                new AsyncFunctionOperationDefinition 
-                { 
-                    FunctionType = "http", 
+                new AsyncFunctionOperationDefinition
+                {
+                    FunctionType = "http",
                     TimeoutMs = 0, // Invalid: timeout <= 0
-                    MaxRetries = 3 
+                    MaxRetries = 3
                 }
             ],
             Sink = new ConsoleSinkDefinition()
@@ -257,9 +257,9 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
-                new RetryOperationDefinition 
-                { 
-                    MaxRetries = 3, 
+                new RetryOperationDefinition
+                {
+                    MaxRetries = 3,
                     DelayMs = [], // Invalid: no delay values
                     StateKey = "retry-state"
                 }
@@ -285,8 +285,8 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
-                new SideOutputOperationDefinition 
-                { 
+                new SideOutputOperationDefinition
+                {
                     OutputTag = "", // Invalid: empty outputTag
                     Condition = "amount > 1000",
                     SideOutputSink = new ConsoleSinkDefinition()
@@ -371,8 +371,8 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
-            Source = new DatabaseSourceDefinition 
-            { 
+            Source = new DatabaseSourceDefinition
+            {
                 ConnectionString = "", // Invalid
                 Query = "SELECT * FROM users",
                 PollingIntervalSeconds = 10
@@ -400,9 +400,9 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
-            Sink = new KafkaSinkDefinition 
-            { 
-                Topic = "output", 
+            Sink = new KafkaSinkDefinition
+            {
+                Topic = "output",
                 BootstrapServers = "localhost:9092",
                 Serializer = "invalid" // Invalid: must be 'json' or 'string'
             }
@@ -462,8 +462,8 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
-            Sink = new DatabaseSinkDefinition 
-            { 
+            Sink = new DatabaseSinkDefinition
+            {
                 ConnectionString = "Server=localhost",
                 Table = "" // Invalid: no table
             }
@@ -485,8 +485,8 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         {
             Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
-            Sink = new RedisSinkDefinition 
-            { 
+            Sink = new RedisSinkDefinition
+            {
                 ConnectionString = "localhost:6379",
                 OperationType = "" // Invalid: no operationType
             }

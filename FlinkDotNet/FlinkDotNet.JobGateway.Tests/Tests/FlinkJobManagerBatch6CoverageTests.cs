@@ -29,11 +29,11 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-            
+
             _mockLogger = new Mock<ILogger<FlinkJobManager>>();
             _mockConfiguration = new Mock<IConfiguration>();
-            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
-            
+            _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
@@ -76,10 +76,13 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "complex-job-5-vertices";
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { state = "RUNNING" }));
-            
+                JsonSerializer.Serialize(new
+                {
+                    state = "RUNNING"
+                }));
+
             var verticesResponse = new
             {
                 vertices = new[]
@@ -93,7 +96,7 @@ namespace FlinkDotNet.JobGateway.Tests
             };
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
-            
+
             // Setup metrics and backpressure for all vertices
             for (int i = 1; i <= 5; i++)
             {
@@ -101,12 +104,22 @@ namespace FlinkDotNet.JobGateway.Tests
                 SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vid}/metrics", HttpStatusCode.OK,
                     JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = $"{i * 1000}" } }));
                 SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vid}/backpressure", HttpStatusCode.OK,
-                    JsonSerializer.Serialize(new { backpressure_level = i % 2 == 0 ? "ok" : "low" }));
+                    JsonSerializer.Serialize(new
+                    {
+                        backpressure_level = i % 2 == 0 ? "ok" : "low"
+                    }));
             }
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/checkpoints", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { counts = new { completed = 20, restored = 5 } }));
-            
+                JsonSerializer.Serialize(new
+                {
+                    counts = new
+                    {
+                        completed = 20,
+                        restored = 5
+                    }
+                }));
+
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act
@@ -144,10 +157,16 @@ namespace FlinkDotNet.JobGateway.Tests
             };
 
             SetupHttpResponse("/overview", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { version = "1.18.0" }));
+                JsonSerializer.Serialize(new
+                {
+                    version = "1.18.0"
+                }));
 
             SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { filename = "flink-ir-runner.jar" }), "POST");
+                JsonSerializer.Serialize(new
+                {
+                    filename = "flink-ir-runner.jar"
+                }), "POST");
 
             var jarsResponse = new
             {
@@ -157,7 +176,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 JsonSerializer.Serialize(jarsResponse));
 
             SetupHttpResponse("/v1/jars/flink-ir-runner.jar/run", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { jobid = "flink-db-sink-123" }), "POST");
+                JsonSerializer.Serialize(new
+                {
+                    jobid = "flink-db-sink-123"
+                }), "POST");
 
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -194,10 +216,16 @@ namespace FlinkDotNet.JobGateway.Tests
             };
 
             SetupHttpResponse("/overview", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { version = "1.18.0" }));
+                JsonSerializer.Serialize(new
+                {
+                    version = "1.18.0"
+                }));
 
             SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { filename = "flink-ir-runner.jar" }), "POST");
+                JsonSerializer.Serialize(new
+                {
+                    filename = "flink-ir-runner.jar"
+                }), "POST");
 
             var jarsResponse = new
             {
@@ -207,7 +235,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 JsonSerializer.Serialize(jarsResponse));
 
             SetupHttpResponse("/v1/jars/flink-ir-runner.jar/run", HttpStatusCode.OK,
-                JsonSerializer.Serialize(new { jobid = "flink-file-sink-123" }), "POST");
+                JsonSerializer.Serialize(new
+                {
+                    jobid = "flink-file-sink-123"
+                }), "POST");
 
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
@@ -227,16 +258,16 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "canceling-job";
-            
+
             var statusResponse = new
             {
                 state = "CANCELING",
                 startTime = DateTime.UtcNow.AddMinutes(-30).ToString("o")
             };
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(statusResponse));
-            
+
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act
@@ -252,16 +283,16 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "restarting-job";
-            
+
             var statusResponse = new
             {
                 state = "RESTARTING",
                 startTime = DateTime.UtcNow.AddMinutes(-15).ToString("o")
             };
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(statusResponse));
-            
+
             var jobManager = new FlinkJobManager(_mockLogger.Object, _mockConfiguration.Object, _httpClient);
 
             // Act

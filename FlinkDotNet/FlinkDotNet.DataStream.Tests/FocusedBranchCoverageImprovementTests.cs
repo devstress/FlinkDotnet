@@ -19,7 +19,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Line coverage in SlidingEventTimeWindows constructor branches
             var windowAssigner = Window.Assigners.SlidingEventTimeWindows<int>.Of(
                 Time.Milliseconds(1), Time.Milliseconds(1));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -29,7 +29,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Offset parameter branch in SlidingEventTimeWindows
             var windowAssigner = Window.Assigners.SlidingEventTimeWindows<int>.Of(
                 Time.Seconds(10), Time.Seconds(5), Time.Seconds(2));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -39,7 +39,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Conditional branch for size > slide
             var windowAssigner = Window.Assigners.SlidingEventTimeWindows<int>.Of(
                 Time.Seconds(10), Time.Seconds(3));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -49,7 +49,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Conditional branch for size == slide (tumbling window case)
             var windowAssigner = Window.Assigners.SlidingEventTimeWindows<int>.Of(
                 Time.Seconds(5), Time.Seconds(5));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -63,7 +63,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Boundary branches in TumblingEventTimeWindows
             var windowAssigner = Window.Assigners.TumblingEventTimeWindows<int>.Of(
                 Time.Milliseconds(1));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -73,7 +73,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Offset parameter branch
             var windowAssigner = Window.Assigners.TumblingEventTimeWindows<int>.Of(
                 Time.Seconds(10), Time.Seconds(2));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -83,7 +83,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Large value branches
             var windowAssigner = Window.Assigners.TumblingEventTimeWindows<int>.Of(
                 Time.Days(1));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -97,7 +97,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Boundary branches in SessionWindows
             var windowAssigner = Window.Assigners.SessionWindows<string>.WithGap(
                 Time.Milliseconds(1));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -107,7 +107,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Large value branches
             var windowAssigner = Window.Assigners.SessionWindows<string>.WithGap(
                 Time.Hours(1));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -117,7 +117,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: SessionWindows creation and basic functionality
             var windowAssigner = Window.Assigners.SessionWindows<string>.WithGap(
                 Time.Seconds(30));
-            
+
             Assert.That(windowAssigner, Is.Not.Null);
         }
 
@@ -133,9 +133,9 @@ namespace FlinkDotNet.DataStream.Tests
             {
                 BaseUrl = "http://localhost:8080"
             };
-            
+
             using var service = new Flink.JobBuilder.Services.FlinkJobGatewayService(config, null, null);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 
@@ -148,9 +148,9 @@ namespace FlinkDotNet.DataStream.Tests
                 BaseUrl = "http://localhost:8080",
                 ApiKey = "" // Empty string, not null
             };
-            
+
             using var service = new Flink.JobBuilder.Services.FlinkJobGatewayService(config, null, null);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 
@@ -163,9 +163,9 @@ namespace FlinkDotNet.DataStream.Tests
                 BaseUrl = "http://localhost:8080",
                 ApiKey = null // Explicitly null
             };
-            
+
             using var service = new Flink.JobBuilder.Services.FlinkJobGatewayService(config, null, null);
-            
+
             Assert.That(service, Is.Not.Null);
         }
 
@@ -178,9 +178,9 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Target: Null check branch in Equals
             var tag = new OutputTag<string>("test-tag");
-            
+
             var result = tag.Equals(null);
-            
+
             Assert.That(result, Is.False);
         }
 
@@ -189,9 +189,9 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Target: ReferenceEquals branch
             var tag = new OutputTag<string>("test-tag");
-            
+
             var result = tag.Equals(tag);
-            
+
             Assert.That(result, Is.True);
         }
 
@@ -201,9 +201,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Type check branch
             var tag = new OutputTag<string>("test-tag");
             var other = "not-an-output-tag";
-            
+
             var result = tag.Equals(other);
-            
+
             Assert.That(result, Is.False);
         }
 
@@ -213,9 +213,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Name equality branch
             var tag1 = new OutputTag<string>("same-name");
             var tag2 = new OutputTag<string>("same-name");
-            
+
             var result = tag1.Equals(tag2);
-            
+
             Assert.That(result, Is.True);
         }
 
@@ -225,9 +225,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Name inequality branch
             var tag1 = new OutputTag<string>("name1");
             var tag2 = new OutputTag<string>("name2");
-            
+
             var result = tag1.Equals(tag2);
-            
+
             Assert.That(result, Is.False);
         }
 
@@ -241,9 +241,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Positive parallelism branch
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromCollection(new[] { 1, 2, 3 });
-            
+
             var result = stream.SetMaxParallelism(16);
-            
+
             Assert.That(result, Is.SameAs(stream));
         }
 
@@ -253,9 +253,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Minimum valid parallelism branch (1)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromCollection(new[] { 1, 2, 3 });
-            
+
             var result = stream.SetMaxParallelism(1);
-            
+
             Assert.That(result, Is.SameAs(stream));
         }
 
@@ -265,9 +265,9 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Maximum valid parallelism branch (32768)
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromCollection(new[] { 1, 2, 3 });
-            
+
             var result = stream.SetMaxParallelism(32768);
-            
+
             Assert.That(result, Is.SameAs(stream));
         }
 
@@ -283,10 +283,10 @@ namespace FlinkDotNet.DataStream.Tests
             // by using environment variables to bypass the connection
             Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "localhost");
             Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8081");
-            
+
             var env = StreamExecutionEnvironment.GetExecutionEnvironment();
             var stream = env.FromCollection(new[] { 1, 2, 3 });
-            
+
             // Just verify the stream is created - actual JobClient creation happens on execute
             Assert.That(stream, Is.Not.Null);
         }
