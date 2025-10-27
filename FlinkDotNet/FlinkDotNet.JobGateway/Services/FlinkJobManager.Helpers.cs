@@ -210,7 +210,6 @@ public partial class FlinkJobManager
 
             string? lastJobId = await this.ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
             Console.WriteLine($"[DIAG] SQL Gateway final identifier (jobId/sessionHandle): {lastJobId ?? "(null)"}");
-            this._logger.LogWarning("SQL Gateway returned final identifier: {Identifier}", lastJobId ?? "(null)");
 
             // SQL Gateway jobs return session handle as tracking ID
             // This is expected behavior for SQL Gateway - it manages jobs within sessions
@@ -227,7 +226,10 @@ public partial class FlinkJobManager
             this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
                 ("🆔 JobId/SessionHandle", normalizedJobId));
             Console.WriteLine($"[DIAG] SQL Gateway submission returning identifier: {rawIdentifier} -> normalized: {normalizedJobId}");
-            this._logger.LogWarning("SQL Gateway submission returning identifier (normalized): {Result}", normalizedJobId);
+            
+            // Consolidate Warning logs: combine final identifier and normalized result
+            this._logger.LogWarning("SQL Gateway identifiers - Raw: {RawIdentifier}, Normalized: {NormalizedResult}", 
+                lastJobId ?? "(null)", normalizedJobId);
 
             return normalizedJobId;
         }
