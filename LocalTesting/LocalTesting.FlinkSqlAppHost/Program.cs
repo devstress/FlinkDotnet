@@ -164,9 +164,9 @@ if (isLearningCourseMode)
 }
 
 // Flink JobManager with named HTTP endpoint for service references
-// Host port is managed dynamically by Aspire
+// Fixed host port 8081 for consistent access (not dynamic)
 var jobManagerBuilder = builder.AddContainer(FlinkJobManagerContainerName, "flink:2.1.0-java17")
-    .WithHttpEndpoint(targetPort: Ports.JobManagerHostPort, name: "jm-http");
+    .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: Ports.JobManagerHostPort, name: "jm-http");
 
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", FlinkJobManagerContainerName)
