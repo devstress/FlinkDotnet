@@ -358,7 +358,6 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithHttpEndpoint(port: 8080, name: "gateway-http")
-    .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8080")
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
