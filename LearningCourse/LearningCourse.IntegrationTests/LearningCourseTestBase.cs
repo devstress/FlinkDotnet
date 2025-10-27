@@ -2008,9 +2008,10 @@ public abstract class LearningCourseTestBase
         {
             TestContext.WriteLine($"🔧 Setting REDIS_ENDPOINT={RedisHostEndpoint} for Redis state management");
         }
-        if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
+        TestContext.WriteLine($"🔧 Setting FLINK_JOB_GATEWAY_URL=http://localhost:8086/ for Flink job submission");
+        if (!string.IsNullOrEmpty(FlinkJobManagerUrl))
         {
-            TestContext.WriteLine($"🔧 Setting FLINK_JOB_GATEWAY_URL={FlinkRestApiEndpoint} for Flink job submission");
+            TestContext.WriteLine($"🔧 Setting FLINK_JOBMANAGER_URL={FlinkJobManagerUrl} for Flink health checks");
         }
         TestContext.WriteLine($"🔧 Setting LOG_FILE_PATH={testLogsDir} for centralized logging");
 
