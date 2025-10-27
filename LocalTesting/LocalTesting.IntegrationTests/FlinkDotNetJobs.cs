@@ -17,6 +17,18 @@ namespace LocalTesting.IntegrationTests;
 public static class FlinkDotNetJobs
 {
     /// <summary>
+    /// Generates a Flink-compatible job ID.
+    /// Flink job IDs are 16 bytes (128-bit) shown as 32 lowercase hexadecimal characters without dashes.
+    /// This matches the format used by Flink's JobID.generate() and expected by the REST API.
+    /// </summary>
+    /// <returns>32 lowercase hexadecimal characters (e.g., "6511c409ff584d1e93b3638f56d14e01")</returns>
+    private static string GenerateFlinkJobId()
+    {
+        // Generate a GUID and convert to Flink format (32 hex chars, lowercase, no dashes)
+        return Guid.NewGuid().ToString("N").ToLowerInvariant();
+    }
+
+    /// <summary>
     /// Creates a simple DataStream job that converts input strings to uppercase
     /// </summary>
     public static async Task<JobSubmissionResult> CreateUppercaseJob(
@@ -142,13 +154,16 @@ public static class FlinkDotNetJobs
                 'properties.bootstrap.servers'='{kafka}',
                 'properties.group.id'='flink-sql-test',
                 'scan.startup.mode'='earliest-offset',
-                'format'='json'
+                'value.format'='json',
+                'value.json.fail-on-missing-field'='false',
+                'value.json.ignore-parse-errors'='true'
             )",
             $@"CREATE TABLE output ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
                 'properties.bootstrap.servers'='{kafka}',
-                'format'='json'
+                'value.format'='json',
+                'value.json.timestamp-format.standard'='ISO-8601'
             )",
             "INSERT INTO output SELECT `key`, `value` FROM input"
         };
@@ -163,7 +178,7 @@ public static class FlinkDotNetJobs
             },
             Metadata = new JobMetadata
             {
-                JobId = Guid.NewGuid().ToString(),
+                JobId = GenerateFlinkJobId(),
                 JobName = jobName,
                 CreatedAt = DateTime.UtcNow,
                 Version = "1.0"
@@ -204,13 +219,16 @@ public static class FlinkDotNetJobs
                 'properties.bootstrap.servers'='{kafka}',
                 'properties.group.id'='flink-sql-transform',
                 'scan.startup.mode'='earliest-offset',
-                'format'='json'
+                'value.format'='json',
+                'value.json.fail-on-missing-field'='false',
+                'value.json.ignore-parse-errors'='true'
             )",
             $@"CREATE TABLE output ( `key` STRING, `transformed` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{outputTopic}',
                 'properties.bootstrap.servers'='{kafka}',
-                'format'='json'
+                'value.format'='json',
+                'value.json.timestamp-format.standard'='ISO-8601'
             )",
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
         };
@@ -225,7 +243,7 @@ public static class FlinkDotNetJobs
             },
             Metadata = new JobMetadata
             {
-                JobId = Guid.NewGuid().ToString(),
+                JobId = GenerateFlinkJobId(),
                 JobName = jobName,
                 CreatedAt = DateTime.UtcNow,
                 Version = "1.0"

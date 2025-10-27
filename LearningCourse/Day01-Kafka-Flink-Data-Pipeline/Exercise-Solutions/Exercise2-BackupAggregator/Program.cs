@@ -32,7 +32,10 @@ namespace Exercise2_BackupAggregator
         // Flink Gateway configuration
         // Lazy evaluation - reads env var when first accessed, not at class load time
         private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_GATEWAY_URL") ?? "http://localhost:8080";
+            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
+
+        private static string FlinkJobManagerUrl =>
+            Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
 
         static async Task Main(string[] args)
         {
@@ -677,12 +680,12 @@ namespace Exercise2_BackupAggregator
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/api/v1/health");
 
                     if (response.IsSuccessStatusCode)
                     {
                         Console.WriteLine($"   [SUCCESS] Flink cluster is healthy");
-                        Console.WriteLine($"   Gateway URL: {FlinkGatewayUrl}");
+                        Console.WriteLine($"   JobManager URL: {FlinkJobManagerUrl}");
                         return;
                     }
                 }
@@ -700,8 +703,8 @@ namespace Exercise2_BackupAggregator
 
             throw new TimeoutException(
                 $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
-                $"Attempted to connect to: {FlinkGatewayUrl}. " +
-                $"Verify FLINK_GATEWAY_URL environment variable is set correctly and Flink is running. " +
+                $"Attempted to connect to: {FlinkJobManagerUrl}. " +
+                $"Verify FLINK_JOBMANAGER_URL environment variable is set correctly and Flink is running. " +
                 $"Check Flink JobManager logs for issues.");
         }
         

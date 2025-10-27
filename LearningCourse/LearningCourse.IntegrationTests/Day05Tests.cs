@@ -1750,11 +1750,11 @@ public class Day05Tests : LearningCourseTestBase
         startInfo.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
         startInfo.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
         // Exercise51 uses the Gateway to submit jobs, not Flink REST API directly
-        startInfo.Environment["FLINK_GATEWAY_URL"] = "http://localhost:8080";
+        startInfo.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8080";
 
         TestContext.WriteLine($"   🔧 KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers}");
         TestContext.WriteLine($"   🔧 KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers}");
-        TestContext.WriteLine($"   🔧 FLINK_GATEWAY_URL=http://localhost:8080");
+        TestContext.WriteLine($"   🔧 FLINK_JOB_GATEWAY_URL=http://localhost:8080");
 
         _exercise51Process = new Process { StartInfo = startInfo };
         

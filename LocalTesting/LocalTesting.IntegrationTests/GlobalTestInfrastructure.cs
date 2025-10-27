@@ -18,6 +18,7 @@ public class GlobalTestInfrastructure
 {
 
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static string? _previousLearningCourseMode;
 
     public static DistributedApplication? AppHost
     {
@@ -53,6 +54,13 @@ public class GlobalTestInfrastructure
 
         try
         {
+            _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
+            if (string.Equals(_previousLearningCourseMode, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("⚠️ LEARNINGCOURSE=true detected - forcing Aspire integration-test profile.");
+            }
+            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "false");
+
             // Clean up test-logs directory from previous test runs
             CleanupTestLogsDirectory();
 
@@ -248,6 +256,8 @@ public class GlobalTestInfrastructure
                 Console.WriteLine($"✅ Cleanup completed with: {ex.Message}");
             }
         }
+
+        Environment.SetEnvironmentVariable("LEARNINGCOURSE", _previousLearningCourseMode);
     }
 
     /// <summary>
@@ -610,33 +620,13 @@ public class GlobalTestInfrastructure
         }
     }
 
-    private static async Task<string> GetGatewayEndpointAsync()
+    private static Task<string> GetGatewayEndpointAsync()
     {
-        try
-        {
-            // Search specifically for flink-job-gateway, not flink-sql-gateway
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-job-gateway\" --format \"{{.Ports}}\"");
-
-            if (!string.IsNullOrWhiteSpace(gatewayContainers))
-            {
-                var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines)
-                {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->(\d+)/tcp");
-                    if (match.Success)
-                    {
-                        return $"http://localhost:{match.Groups[1].Value}/";
-                    }
-                }
-            }
-
-            return $"http://localhost:{Ports.GatewayHostPort}/";
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠️ Gateway endpoint discovery failed: {ex.Message}, using configured port {Ports.GatewayHostPort}");
-            return $"http://localhost:{Ports.GatewayHostPort}/";
-        }
+        // FlinkDotNet.JobGateway is a .NET Aspire project (Projects.FlinkDotNet_JobGateway),
+        // NOT a Docker container. It runs directly on the host at a fixed port.
+        // Do NOT attempt Docker discovery - always use the configured fixed port.
+        var gatewayEndpoint = $"http://localhost:{Ports.GatewayHostPort}/";
+        return Task.FromResult(gatewayEndpoint);
     }
 
     private static async Task<string> GetTemporalEndpointAsync()

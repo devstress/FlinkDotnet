@@ -318,7 +318,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             // Fall through to default
         }
 
-        return Task.FromResult($"http://localhost:{LocalTesting.FlinkSqlAppHost.Ports.JobManagerHostPort}/");
+        throw new InvalidOperationException("Could not discover Flink JobManager host port from docker ps output.");
     }
 
     // DTOs for Flink REST API

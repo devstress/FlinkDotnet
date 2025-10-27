@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Flink.JobBuilder.Models;
 
 namespace FlinkDotNet.JobGateway.Services;
@@ -16,6 +17,13 @@ public partial class FlinkJobManager : IFlinkJobManager
     private const string ProtocolHttps = "HTTPS";
     private const string ProtocolHttp = "HTTP";
     private const string FlinkIRRunnerDirectory = "FlinkIRRunner";
+
+    /// <summary>
+    /// Regex to extract hexadecimal characters from Flink Job IDs.
+    /// Compiled for better performance with repeated use.
+    /// Includes timeout to prevent ReDoS attacks.
+    /// </summary>
+    private static readonly Regex s_hexOnlyRegex = new("[^0-9a-fA-F]", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     private readonly ILogger<FlinkJobManager> _logger;
     private readonly IConfiguration _configuration;
@@ -208,6 +216,19 @@ public partial class FlinkJobManager : IFlinkJobManager
         return "http";
     }
 
+    private static string NormalizeFlinkJobId(string jobId)
+    {
+        if (string.IsNullOrWhiteSpace(jobId))
+        {
+            throw new ArgumentException("Flink JobId cannot be null or empty.", nameof(jobId));
+        }
+
+        string hexOnly = s_hexOnlyRegex.Replace(jobId, string.Empty);
+        return hexOnly.Length != 32
+            ? throw new ArgumentException($"Flink JobId must contain exactly 32 hexadecimal characters (received '{jobId}').", nameof(jobId))
+            : hexOnly.ToLowerInvariant();
+    }
+
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
     {
         const int maxRetries = 60; // 60 seconds total wait time (SQL Gateway needs time to start after JobManager)
@@ -284,9 +305,10 @@ public partial class FlinkJobManager : IFlinkJobManager
 
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
-                string flinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
-                this.TrackJob(jobDefinition, flinkJobId);
-                return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId);
+                string rawFlinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
+                string normalizedJobId = NormalizeFlinkJobId(rawFlinkJobId);
+                this.TrackJob(jobDefinition, normalizedJobId);
+                return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, normalizedJobId);
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
@@ -304,10 +326,11 @@ public partial class FlinkJobManager : IFlinkJobManager
             }
 
             string flinkJobId2 = await this.SubmitJobToFlinkClusterAsync(irBase64, jobDefinition);
-            this.TrackJob(jobDefinition, flinkJobId2);
+            string normalizedClusterJobId = NormalizeFlinkJobId(flinkJobId2);
+            this.TrackJob(jobDefinition, normalizedClusterJobId);
 
             this._logger.LogInformation("✅ Job submitted successfully to Flink cluster");
-            return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, flinkJobId2);
+            return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, normalizedClusterJobId);
         }
         catch (Exception ex)
         {
@@ -376,10 +399,12 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private void TrackJob(JobDefinition jobDefinition, string flinkJobId)
     {
-        this._jobMapping[flinkJobId] = new JobInfo
+        string normalizedJobId = NormalizeFlinkJobId(flinkJobId);
+
+        this._jobMapping[normalizedJobId] = new JobInfo
         {
             JobId = jobDefinition.Metadata.JobId,
-            FlinkJobId = flinkJobId,
+            FlinkJobId = normalizedJobId,
             Status = "RUNNING",  // Jobs only submitted to healthy clusters
             SubmissionTime = DateTime.UtcNow,
             JobDefinition = jobDefinition
@@ -414,10 +439,15 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
             }
 
-            return response.StatusCode == HttpStatusCode.NotFound
-                ? null
-                : throw new InvalidOperationException(
-                    $"Unexpected status code querying Flink job status: {(int) response.StatusCode} {response.StatusCode}");
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            string errorContent = await response.Content.ReadAsStringAsync();
+            this._logger.LogWarning("Flink job status query returned {StatusCode}: {Body}", response.StatusCode, errorContent);
+            throw new InvalidOperationException(
+                $"Unexpected status code querying Flink job status: {(int) response.StatusCode} {response.StatusCode}. Body: {errorContent}");
         }
         catch (Exception ex)
         {

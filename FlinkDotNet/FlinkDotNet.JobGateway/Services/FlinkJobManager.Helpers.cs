@@ -61,102 +61,122 @@ public partial class FlinkJobManager
         try
         {
             string jarId = await this.EnsureRunnerJarAsync();
+            this.LogJobSubmissionDiagnostics(jobDefinition, jarId);
 
-            // DIAGNOSTIC: Log job definition bootstrap servers before submission
-            KafkaSourceDefinition? kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
-            KafkaSinkDefinition? kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
-
-            this.LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
-                ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"),
-                ("✅ JAR", jarId),
-                ("📋 Kafka Source", kafkaSource?.BootstrapServers ?? "null"),
-                ("📋 Kafka Sink", kafkaSink?.BootstrapServers ?? "null"),
-                ("🌍 Gateway KAFKA_BOOTSTRAP", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set"));
-
-            // DIAGNOSTIC: Log environment variables that might override job definition
-            this._logger.LogWarning(
-                "⚠️ CRITICAL: Flink containers KAFKA_BOOTSTRAP env var overrides job definition " +
-                "(FlinkJobRunner.java L93: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\"))");
-
-            object runRequest = new
-            {
-                entryClass = "com.flink.jobgateway.FlinkJobRunner",
-                programArgsList = new[] { "--irBase64", irBase64 },
-                parallelism = jobDefinition.Metadata.Parallelism ?? 1,
-                jobName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId
-            };
-
-            string requestJson = JsonSerializer.Serialize(runRequest);
-            this._logger.LogDebug("📤 Flink run request: {RequestJson}", requestJson);
-
-            using StringContent content = new(requestJson, Encoding.UTF8, "application/json");
-
-            // Validate jarId from Flink response to prevent injection attacks
             string sanitizedJarId = ValidateAndSanitizePathSegment(jarId);
+            using HttpResponseMessage response = await this.PostFlinkRunRequestAsync(irBase64, jobDefinition, sanitizedJarId);
 
-            this._logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", this._httpClient.BaseAddress, jarId);
-            using HttpResponseMessage response = await this._httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
+            string? jobId = await this.ExtractJobIdFromResponseAsync(response, jobDefinition);
 
-            if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
-            {
-                string err = await response.Content.ReadAsStringAsync();
-                this._logger.LogError(
-                    "❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
-                    (int) response.StatusCode,
-                    response.ReasonPhrase,
-                    err);
-                throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
-            }
-
-            string runContent = await response.Content.ReadAsStringAsync();
-            this._logger.LogDebug("📥 Flink response body: {RunContent}", runContent);
-
-            string? jobId = null;
-            try
-            {
-                FlinkRunResponse? run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
-                    s_caseInsensitiveDeserializerOptions);
-                jobId = run?.JobId;
-                if (jobId != null)
-                {
-                    this._logger.LogInformation(
-                        "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
-                        (int) response.StatusCode,
-                        response.ReasonPhrase,
-                        jobId);
-                }
-            }
-            catch (JsonException ex)
-            {
-                this._logger.LogDebug(ex, "⚠️ Failed to deserialize Flink run response when extracting job id");
-            }
-
-            jobId ??= TryGetJobIdFromHeaders(response);
-
-            if (string.IsNullOrEmpty(jobId))
-            {
-                this._logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
-                string targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
-                jobId = await this.TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
-            }
-
-            if (string.IsNullOrEmpty(jobId))
-            {
-                string errorMsg = "Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
-                    $"Response status: {response.StatusCode}, Response body: {runContent}";
-                this._logger.LogError("❌ {ErrorMessage}", errorMsg);
-                throw new InvalidOperationException(errorMsg);
-            }
-
+            string normalizedJobId = NormalizeFlinkJobId(jobId);
             this.LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
-                ("🆔 Flink JobId", jobId));
+                ("🆔 Flink JobId", normalizedJobId));
+            this._logger.LogInformation("Normalized Flink JobId: {JobId} (raw: {RawJobId})", normalizedJobId, jobId);
 
-            return jobId;
+            return normalizedJobId;
         }
         catch (Exception ex)
         {
             this._logger.LogError(ex, "❌ Failed to submit jar to Flink REST API: {Message}", ex.Message);
             throw new InvalidOperationException($"Failed to submit jar to Flink REST API for job {jobDefinition.Metadata.JobId}", ex);
+        }
+    }
+
+    private void LogJobSubmissionDiagnostics(JobDefinition jobDefinition, string jarId)
+    {
+        KafkaSourceDefinition? kafkaSource = jobDefinition.Source as KafkaSourceDefinition;
+        KafkaSinkDefinition? kafkaSink = jobDefinition.Sink as KafkaSinkDefinition;
+
+        this.LogSectionHeader("📡 [FlinkJobManager] Submitting job to Flink JobManager",
+            ("🌐 Target", this._httpClient.BaseAddress?.ToString() ?? "unknown"),
+            ("✅ JAR", jarId),
+            ("📋 Kafka Source", kafkaSource?.BootstrapServers ?? "null"),
+            ("📋 Kafka Sink", kafkaSink?.BootstrapServers ?? "null"),
+            ("🌍 Gateway KAFKA_BOOTSTRAP", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set"));
+
+        this._logger.LogWarning(
+            "⚠️ CRITICAL: Flink containers KAFKA_BOOTSTRAP env var overrides job definition " +
+            "(FlinkJobRunner.java L93: orElse(k.bootstrapServers, System.getenv(\"KAFKA_BOOTSTRAP\"), \"kafka:9092\"))");
+    }
+
+    private async Task<HttpResponseMessage> PostFlinkRunRequestAsync(string irBase64, JobDefinition jobDefinition, string sanitizedJarId)
+    {
+        object runRequest = new
+        {
+            entryClass = "com.flink.jobgateway.FlinkJobRunner",
+            programArgsList = new[] { "--irBase64", irBase64 },
+            parallelism = jobDefinition.Metadata.Parallelism ?? 1,
+            jobName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId
+        };
+
+        string requestJson = JsonSerializer.Serialize(runRequest);
+        this._logger.LogDebug("📤 Flink run request: {RequestJson}", requestJson);
+
+        using StringContent content = new(requestJson, Encoding.UTF8, "application/json");
+        this._logger.LogInformation("🚀 POST {Endpoint}/v1/jars/{JarId}/run", this._httpClient.BaseAddress, sanitizedJarId);
+        HttpResponseMessage response = await this._httpClient.PostAsync($"/v1/jars/{sanitizedJarId}/run", content);
+
+        if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Accepted)
+        {
+            string err = await response.Content.ReadAsStringAsync();
+            this._logger.LogError(
+                "❌ Flink job submission failed: {StatusCode} {ReasonPhrase} - {Error}",
+                (int)response.StatusCode,
+                response.ReasonPhrase,
+                err);
+            throw new InvalidOperationException($"Flink run failed: {response.StatusCode} - {err}");
+        }
+
+        return response;
+    }
+
+    private async Task<string> ExtractJobIdFromResponseAsync(HttpResponseMessage response, JobDefinition jobDefinition)
+    {
+        string runContent = await response.Content.ReadAsStringAsync();
+        this._logger.LogDebug("📥 Flink response body: {RunContent}", runContent);
+
+        string? jobId = this.TryDeserializeJobIdFromResponse(runContent, response);
+        jobId ??= TryGetJobIdFromHeaders(response);
+
+        if (string.IsNullOrEmpty(jobId))
+        {
+            this._logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
+            string targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+            jobId = await this.TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
+        }
+
+        if (string.IsNullOrEmpty(jobId))
+        {
+            string errorMsg = "Flink JobManager did not return a job ID. This indicates the job may not have started correctly. " +
+                $"Response status: {response.StatusCode}, Response body: {runContent}";
+            this._logger.LogError("❌ {ErrorMessage}", errorMsg);
+            throw new InvalidOperationException(errorMsg);
+        }
+
+        return jobId;
+    }
+
+    private string? TryDeserializeJobIdFromResponse(string runContent, HttpResponseMessage response)
+    {
+        try
+        {
+            FlinkRunResponse? run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
+                s_caseInsensitiveDeserializerOptions);
+            string? jobId = run?.JobId;
+            if (jobId != null)
+            {
+                this._logger.LogInformation(
+                    "📥 Response: {StatusCode} {ReasonPhrase} | ✅ Extracted Flink JobId: {JobId}",
+                    (int)response.StatusCode,
+                    response.ReasonPhrase,
+                    jobId);
+            }
+            return jobId;
+        }
+        catch (JsonException ex)
+        {
+            this._logger.LogDebug(ex, "⚠️ Failed to deserialize Flink run response when extracting job id");
+            return null;
         }
     }
 
@@ -168,28 +188,50 @@ public partial class FlinkJobManager
         try
         {
             using HttpClient sqlGatewayClient = this.CreateSqlGatewayClient();
-            this._logger.LogInformation("🌐 SQL Gateway client created: {BaseAddress} | Waiting for ready state...", sqlGatewayClient.BaseAddress);
 
             await this.WaitForSqlGatewayReadyAsync(sqlGatewayClient);
             string sessionHandle = await this.CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
-            this._logger.LogInformation("✅ SQL Gateway ready | Session created: {SessionHandle}", sessionHandle);
+
+            // Consolidate logging to reduce number of Information calls
+            this._logger.LogInformation("✅ SQL Gateway ready at {BaseAddress} | Session: {SessionHandle}",
+                sqlGatewayClient.BaseAddress, sessionHandle);
+            Console.WriteLine($"[DIAG] SQL Gateway session handle: {sessionHandle}");
+
+            // SQL statements must be provided for SQL Gateway jobs
+            if (sqlSource.Statements == null || sqlSource.Statements.Count == 0)
+            {
+                throw new ArgumentException("SQL Gateway job requires at least one SQL statement", nameof(sqlSource));
+            }
+
+            Console.WriteLine($"[DIAG] SQL statement count: {sqlSource.Statements.Count}");
+            this._logger.LogInformation("📝 SQL statements: Count={Count}, Statements=[{Statements}]",
+                sqlSource.Statements.Count,
+                string.Join("; ", sqlSource.Statements));
 
             string? lastJobId = await this.ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
+            Console.WriteLine($"[DIAG] SQL Gateway final identifier (jobId/sessionHandle): {lastJobId ?? "(null)"}");
 
             // SQL Gateway jobs return session handle as tracking ID
             // This is expected behavior for SQL Gateway - it manages jobs within sessions
-            string result = lastJobId ?? sessionHandle;
+            string rawIdentifier = lastJobId ?? sessionHandle;
 
-            if (string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(rawIdentifier))
             {
                 this._logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
                 throw new InvalidOperationException("SQL Gateway did not return a job ID or session handle. This should not happen.");
             }
 
-            this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
-                ("🆔 JobId/SessionHandle", result));
+            string normalizedJobId = NormalizeFlinkJobId(rawIdentifier);
 
-            return result;
+            this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
+                ("🆔 JobId/SessionHandle", normalizedJobId));
+            Console.WriteLine($"[DIAG] SQL Gateway submission returning identifier: {rawIdentifier} -> normalized: {normalizedJobId}");
+
+            // Consolidate Warning logs: combine final identifier and normalized result
+            this._logger.LogWarning("SQL Gateway identifiers - Raw: {RawIdentifier}, Normalized: {NormalizedResult}",
+                lastJobId ?? "(null)", normalizedJobId);
+
+            return normalizedJobId;
         }
         catch (Exception ex)
         {
@@ -280,12 +322,17 @@ public partial class FlinkJobManager
                 continue;
             }
 
-            lastJobId = await this.ExecuteSingleStatementAsync(client, sessionHandle, statement) ?? lastJobId;
+            string? statementJobId = await this.ExecuteSingleStatementAsync(client, sessionHandle, statement);
+            if (!string.IsNullOrEmpty(statementJobId))
+            {
+                this._logger.LogWarning("SQL Gateway statement returned job identifier: {JobId}", statementJobId);
+                lastJobId = statementJobId;
+            }
         }
 
         if (string.IsNullOrEmpty(lastJobId))
         {
-            this._logger.LogInformation("Using session handle as job ID: {JobId}", sessionHandle);
+            this._logger.LogWarning("SQL Gateway did not emit a job identifier; defaulting to session handle {SessionHandle}", sessionHandle);
         }
 
         return lastJobId;
@@ -317,9 +364,16 @@ public partial class FlinkJobManager
         }
 
         string responseContent = await response.Content.ReadAsStringAsync();
-        this._logger.LogDebug("SQL Gateway response: {Response}", responseContent);
+        Console.WriteLine($"[DIAG] SQL Gateway response payload: {responseContent}");
+        this._logger.LogWarning("SQL Gateway response payload: {Response}", responseContent);
 
-        return this.ExtractJobIdFromStatementResponse(responseContent);
+        string? identifier = this.ExtractJobIdFromStatementResponse(responseContent);
+        if (!string.IsNullOrEmpty(identifier))
+        {
+            await this.LogSqlGatewayOperationStatusAsync(client, sessionHandle, identifier);
+        }
+
+        return identifier;
     }
 
     private string? ExtractJobIdFromStatementResponse(string responseContent)
@@ -345,6 +399,26 @@ public partial class FlinkJobManager
             this._logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
         }
         return null;
+    }
+
+    private async Task LogSqlGatewayOperationStatusAsync(HttpClient client, string sessionHandle, string operationHandle)
+    {
+        try
+        {
+            string sanitizedSessionHandle = ValidateAndSanitizePathSegment(sessionHandle);
+            string sanitizedOperationHandle = ValidateAndSanitizePathSegment(operationHandle);
+            string statusEndpoint = $"/v1/sessions/{sanitizedSessionHandle}/operations/{sanitizedOperationHandle}";
+            Console.WriteLine($"[DIAG] Fetching SQL Gateway operation status via {statusEndpoint}");
+            HttpResponseMessage statusResponse = await client.GetAsync(statusEndpoint);
+            string statusBody = await statusResponse.Content.ReadAsStringAsync();
+            Console.WriteLine($"[DIAG] SQL Gateway operation status ({operationHandle}): {statusResponse.StatusCode} {statusBody}");
+            this._logger.LogWarning("SQL Gateway operation status ({OperationHandle}): {Status} {Body}", operationHandle, statusResponse.StatusCode, statusBody);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DIAG] Failed to fetch SQL Gateway operation status for {operationHandle}: {ex.Message}");
+            this._logger.LogError(ex, "Failed to fetch SQL Gateway operation status for {OperationHandle}", operationHandle);
+        }
     }
 
     private async Task<string> EnsureRunnerJarAsync()
