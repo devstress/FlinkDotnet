@@ -81,6 +81,10 @@ if (diagnosticsVerbose && File.Exists(gatewayJarPath))
 PrepareConnectorDirectory(connectorsDir, diagnosticsVerbose);
 
 var builder = DistributedApplication.CreateBuilder(args);
+Console.WriteLine($"[DIAG] DistributedApplication EnvironmentName = {builder.Environment.EnvironmentName}");
+Console.WriteLine($"[DIAG] DistributedApplication ExecutionContext.IsRunMode = {builder.ExecutionContext.IsRunMode}");
+Console.WriteLine($"[DIAG] DistributedApplication ExecutionContext.IsPublishMode = {builder.ExecutionContext.IsPublishMode}");
+Console.WriteLine($"[DIAG] DistributedApplication ExecutionContext.PublisherName = {builder.ExecutionContext.PublisherName}");
 
 // Detect LEARNINGCOURSE mode for conditional metrics configuration
 var isLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";

@@ -148,10 +148,13 @@ public partial class FlinkJobManager
                 throw new InvalidOperationException(errorMsg);
             }
 
-            this.LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
-                ("🆔 Flink JobId", jobId));
+            string normalizedJobId = NormalizeFlinkJobId(jobId);
 
-            return jobId;
+            this.LogSectionHeader("✅ [FlinkJobManager] Job submitted to Flink successfully",
+                ("🆔 Flink JobId", normalizedJobId));
+            this._logger.LogInformation("Normalized Flink JobId: {JobId} (raw: {RawJobId})", normalizedJobId, jobId);
+
+            return normalizedJobId;
         }
         catch (Exception ex)
         {
@@ -173,23 +176,41 @@ public partial class FlinkJobManager
             await this.WaitForSqlGatewayReadyAsync(sqlGatewayClient);
             string sessionHandle = await this.CreateSqlGatewaySessionAsync(sqlGatewayClient, jobDefinition);
             this._logger.LogInformation("✅ SQL Gateway ready | Session created: {SessionHandle}", sessionHandle);
+            Console.WriteLine($"[DIAG] SQL Gateway session handle: {sessionHandle}");
+
+            Console.WriteLine($"[DIAG] SQL statement count: {sqlSource.Statements?.Count ?? 0}");
+            this._logger.LogInformation("📝 SQL statement count: {Count}", sqlSource.Statements?.Count ?? 0);
+            if (sqlSource.Statements != null)
+            {
+                foreach (string stmt in sqlSource.Statements)
+                {
+                    Console.WriteLine($"[DIAG] SQL statement: {stmt}");
+                    this._logger.LogWarning("📝 SQL statement: {Statement}", stmt);
+                }
+            }
 
             string? lastJobId = await this.ExecuteSqlStatementsAsync(sqlGatewayClient, sessionHandle, sqlSource.Statements);
+            Console.WriteLine($"[DIAG] SQL Gateway final identifier (jobId/sessionHandle): {lastJobId ?? "(null)"}");
+            this._logger.LogWarning("SQL Gateway returned final identifier (jobId/sessionHandle): {Identifier}", lastJobId ?? "(null)");
 
             // SQL Gateway jobs return session handle as tracking ID
             // This is expected behavior for SQL Gateway - it manages jobs within sessions
-            string result = lastJobId ?? sessionHandle;
+            string rawIdentifier = lastJobId ?? sessionHandle;
 
-            if (string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(rawIdentifier))
             {
                 this._logger.LogError("❌ SQL Gateway did not return a job ID or session handle");
                 throw new InvalidOperationException("SQL Gateway did not return a job ID or session handle. This should not happen.");
             }
 
-            this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
-                ("🆔 JobId/SessionHandle", result));
+            string normalizedJobId = NormalizeFlinkJobId(rawIdentifier);
 
-            return result;
+            this.LogSectionHeader("✅ [FlinkJobManager] SQL job submitted successfully",
+                ("🆔 JobId/SessionHandle", normalizedJobId));
+            Console.WriteLine($"[DIAG] SQL Gateway submission returning identifier: {rawIdentifier} -> normalized: {normalizedJobId}");
+            this._logger.LogWarning("SQL Gateway submission returning identifier (normalized): {Result}", normalizedJobId);
+
+            return normalizedJobId;
         }
         catch (Exception ex)
         {
@@ -280,12 +301,17 @@ public partial class FlinkJobManager
                 continue;
             }
 
-            lastJobId = await this.ExecuteSingleStatementAsync(client, sessionHandle, statement) ?? lastJobId;
+            string? statementJobId = await this.ExecuteSingleStatementAsync(client, sessionHandle, statement);
+            if (!string.IsNullOrEmpty(statementJobId))
+            {
+                this._logger.LogWarning("SQL Gateway statement returned job identifier: {JobId}", statementJobId);
+                lastJobId = statementJobId;
+            }
         }
 
         if (string.IsNullOrEmpty(lastJobId))
         {
-            this._logger.LogInformation("Using session handle as job ID: {JobId}", sessionHandle);
+            this._logger.LogWarning("SQL Gateway did not emit a job identifier; defaulting to session handle {SessionHandle}", sessionHandle);
         }
 
         return lastJobId;
@@ -317,9 +343,16 @@ public partial class FlinkJobManager
         }
 
         string responseContent = await response.Content.ReadAsStringAsync();
-        this._logger.LogDebug("SQL Gateway response: {Response}", responseContent);
+        Console.WriteLine($"[DIAG] SQL Gateway response payload: {responseContent}");
+        this._logger.LogWarning("SQL Gateway response payload: {Response}", responseContent);
 
-        return this.ExtractJobIdFromStatementResponse(responseContent);
+        string? identifier = this.ExtractJobIdFromStatementResponse(responseContent);
+        if (!string.IsNullOrEmpty(identifier))
+        {
+            await this.LogSqlGatewayOperationStatusAsync(client, sessionHandle, identifier);
+        }
+
+        return identifier;
     }
 
     private string? ExtractJobIdFromStatementResponse(string responseContent)
@@ -345,6 +378,26 @@ public partial class FlinkJobManager
             this._logger.LogWarning(ex, "Could not parse SQL Gateway response for job ID");
         }
         return null;
+    }
+
+    private async Task LogSqlGatewayOperationStatusAsync(HttpClient client, string sessionHandle, string operationHandle)
+    {
+        try
+        {
+            string sanitizedSessionHandle = ValidateAndSanitizePathSegment(sessionHandle);
+            string sanitizedOperationHandle = ValidateAndSanitizePathSegment(operationHandle);
+            string statusEndpoint = $"/v1/sessions/{sanitizedSessionHandle}/operations/{sanitizedOperationHandle}";
+            Console.WriteLine($"[DIAG] Fetching SQL Gateway operation status via {statusEndpoint}");
+            HttpResponseMessage statusResponse = await client.GetAsync(statusEndpoint);
+            string statusBody = await statusResponse.Content.ReadAsStringAsync();
+            Console.WriteLine($"[DIAG] SQL Gateway operation status ({operationHandle}): {statusResponse.StatusCode} {statusBody}");
+            this._logger.LogWarning("SQL Gateway operation status ({OperationHandle}): {Status} {Body}", operationHandle, statusResponse.StatusCode, statusBody);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DIAG] Failed to fetch SQL Gateway operation status for {operationHandle}: {ex.Message}");
+            this._logger.LogError(ex, "Failed to fetch SQL Gateway operation status for {OperationHandle}", operationHandle);
+        }
     }
 
     private async Task<string> EnsureRunnerJarAsync()
