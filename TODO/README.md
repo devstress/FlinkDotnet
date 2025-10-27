@@ -1,15 +1,42 @@
-# FlinkDotNet TODO - Missing Apache Flink 2.1.0 Features
+# FlinkDotNet TODO - Missing Apache Flink Features
 
-This folder tracks features from Apache Flink 2.1.0 that are not yet implemented in FlinkDotNet.
+This folder tracks features from **all Apache Flink versions** (1.0 through 2.1.0) that are not yet implemented in FlinkDotNet.
+
+## 📋 Quick Navigation
+
+- **[All Versions Coverage](all-versions-coverage.md)** - Comprehensive analysis of ALL Flink versions (1.0-2.1.0)
+- **[AI/ML Integration (Flink 2.1)](ai-ml-integration-features.md)** - CREATE MODEL, ML_PREDICT, AI providers
+- **[Table API & Advanced SQL (Flink 2.1)](table-api-advanced-sql-features.md)** - VARIANT, PTFs, native API
+- **[Performance Features (Flink 2.1)](performance-format-features.md)** - Smile format, async batching
+- **[Prometheus Exporter](prometheus-exporter-future-design.md)** - Custom metrics (deferred)
 
 ## Quick Status Overview
 
+### By Flink Version
+
+| Flink Version | Release | Coverage | Critical Missing | Details |
+|---------------|---------|----------|------------------|---------|
+| 1.0 - 1.9 | 2016-2019 | ✅ Excellent | None | Core features implemented |
+| 1.10 - 1.14 | 2020-2021 | ✅ Good | Unified Source, DDL | [View Details](all-versions-coverage.md#flink-110---114-2020-2021-table-api-maturation-) |
+| 1.15 - 1.18 | 2022-2023 | ⚠️ Partial | Table Store, Changelog | [View Details](all-versions-coverage.md#flink-115---118-2022-2023-unified-runtime--table-store-) |
+| 1.19 | Mar 2024 | ⚠️ Partial | Checkpoint merging | [View Details](all-versions-coverage.md#flink-119-mar-2024-pre-20-preparations-) |
+| 1.20 | Aug 2024 | ❌ Limited | Materialized Tables, Unified Sink v2 | [View Details](all-versions-coverage.md#flink-120-aug-2024-materialized-tables-) |
+| 2.0 | Expected | ❌ Not Yet | Unified runtime | [View Details](all-versions-coverage.md#flink-20-expected-late-2024-) |
+| 2.1 | 2025 | ❌ Limited | AI/ML Integration | [View Details](all-versions-coverage.md#flink-21-released-2025-) |
+
+### By Feature Category
+
+### By Feature Category
+
 | Feature Category | Status | Priority | Estimated Effort | Document |
 |------------------|--------|----------|------------------|----------|
-| **AI/ML Integration** | ❌ Not Implemented | **HIGH** | 10-16 weeks | [ai-ml-integration-features.md](ai-ml-integration-features.md) |
-| **Table API & Advanced SQL** | ⚠️ Partial | **MEDIUM** | 12-17 weeks | [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md) |
-| **Performance & Format** | ❌ Not Implemented | **LOW** | 7-10 weeks | [performance-format-features.md](performance-format-features.md) |
-| **Prometheus Exporter** | 📋 Planned | **LOW** | 8-10 days | [prometheus-exporter-future-design.md](prometheus-exporter-future-design.md) |
+| **AI/ML Integration (2.1)** | ❌ Not Implemented | **P0 - Critical** | 10-16 weeks | [ai-ml-integration-features.md](ai-ml-integration-features.md) |
+| **Materialized Tables (1.20)** | ❌ Not Implemented | **P0 - Critical** | 4-6 weeks | [all-versions-coverage.md](all-versions-coverage.md#1-materialized-tables-flip-435-) |
+| **Unified Sink API v2 (1.20)** | ❌ Not Implemented | **P0 - Critical** | 3-4 weeks | [all-versions-coverage.md](all-versions-coverage.md#2-unified-sink-api-v2-replaces-legacy-sinkfunction-) |
+| **Table API & Advanced SQL (2.1)** | ⚠️ Partial | **P1 - High** | 12-17 weeks | [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md) |
+| **Table Store/Paimon (1.15)** | ❌ Not Implemented | **P1 - High** | 3-4 weeks | [all-versions-coverage.md](all-versions-coverage.md#missing-from-115-may-2022) |
+| **Performance & Format (2.1)** | ❌ Not Implemented | **P2 - Medium** | 7-10 weeks | [performance-format-features.md](performance-format-features.md) |
+| **Prometheus Exporter** | 📋 Planned | **P3 - Low** | 8-10 days | [prometheus-exporter-future-design.md](prometheus-exporter-future-design.md) |
 
 ## What FlinkDotNet Already Supports ✅
 
@@ -38,16 +65,63 @@ FlinkDotNet has **excellent coverage** of core Apache Flink 2.1.0 features:
 - ✅ Kafka connector in SQL
 - ✅ Basic transformations (SELECT, INSERT, WHERE, GROUP BY)
 
-## What's Missing from Flink 2.1.0 ❌
+## What's Missing Across All Flink Versions ❌
 
-### 1. AI/ML Integration Features (HIGH Priority)
+### P0 - Critical Features (Must Implement Soon)
 
-Apache Flink 2.1.0's **flagship feature** is Data + AI integration. FlinkDotNet has **zero support** for these features.
+**From Flink 2.1 (2025)**:
+- ❌ **AI/ML Integration** - CREATE MODEL, ML_PREDICT, AI providers (10-16 weeks)
+  - Real-time AI inference in streaming pipelines
+  - OpenAI, Azure OpenAI, custom model providers
+  - [Details: ai-ml-integration-features.md](ai-ml-integration-features.md)
 
-**Missing**:
-- ❌ AI Model DDL (CREATE MODEL, ALTER MODEL, DROP MODEL, SHOW MODELS, DESCRIBE MODEL)
-- ❌ ML_PREDICT Table-Valued Function for real-time inference
-- ❌ AI provider integrations (OpenAI, Azure OpenAI, custom endpoints)
+**From Flink 1.20 (Aug 2024)**:
+- ❌ **Materialized Tables (FLIP-435)** - Declarative ETL with auto-refresh (4-6 weeks)
+  - Simplifies batch/stream pipeline development
+  - Automatic freshness management
+  - [Details: all-versions-coverage.md](all-versions-coverage.md#1-materialized-tables-flip-435-)
+
+- ❌ **Unified Sink API v2** - Modern sink pattern (3-4 weeks)
+  - Replaces deprecated SinkFunction
+  - Required for Flink 2.0+ compatibility
+  - [Details: all-versions-coverage.md](all-versions-coverage.md#2-unified-sink-api-v2-replaces-legacy-sinkfunction-)
+
+**From Flink 2.1 (2025)**:
+- ❌ **VARIANT Data Type** - Semi-structured JSON data (3-4 weeks)
+  - Efficient JSON processing
+  - PARSE_JSON/TRY_PARSE_JSON functions
+  - [Details: table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#2-variant-data-type-support)
+
+### P1 - High Priority Features
+
+**From Flink 1.15 (May 2022)**:
+- ❌ **Table Store (Apache Paimon)** - Lakehouse table format (3-4 weeks)
+  - ACID properties for persistent tables
+  - Data lake integration
+  - [Details: all-versions-coverage.md](all-versions-coverage.md#missing-from-115-may-2022)
+
+**From Flink 2.1 (2025)**:
+- ❌ **Process Table Functions (PTFs)** - Advanced stateful UDFs (3-4 weeks)
+- ❌ **Native Table API** - Type-safe table transformations (4-6 weeks)
+  - [Details: table-api-advanced-sql-features.md](table-api-advanced-sql-features.md)
+
+**From Earlier Versions**:
+- ⚠️ **Catalog API (1.10)** - Metadata management (2-3 weeks)
+- ⚠️ **Unified Source API (1.12)** - Modern source connectors (2-3 weeks)
+
+### P2 - Medium Priority Features
+
+- ⚠️ **Changelog State Backend (1.17)** - Performance optimization (2-3 weeks)
+- ⚠️ **DISTRIBUTED BY Clause (1.20)** - SQL bucketing (1-2 weeks)
+- ⚠️ **Enhanced DDL Support (1.11)** - Complete DDL vocabulary (2 weeks)
+
+### P3 - Low Priority Features
+
+- Performance optimizations (Smile format, checkpoint merging)
+- Configuration enhancements
+- Transparent features (data skew metrics)
+
+**See [all-versions-coverage.md](all-versions-coverage.md) for complete details on all versions.**
 - ❌ Model management in Table API
 
 **Impact**: Cannot build real-time AI inference pipelines (sentiment analysis, fraud detection, content moderation, predictive maintenance)
@@ -95,43 +169,44 @@ Custom Prometheus metrics for FlinkDotNet JobGateway.
 
 ## Implementation Roadmap
 
-### Phase 1: AI/ML Integration (Recommended First)
-**Why**: Flink 2.1.0's flagship feature, high user value, differentiates FlinkDotNet
+### Phase 1: Critical Flink 1.20 Features (7-10 weeks)
+**Goal**: Ensure FlinkDotNet works with modern Flink patterns
 
-**Estimated**: 10-16 weeks total
-1. Basic SQL DDL support (2-3 weeks)
-2. ML_PREDICT TVF (2-3 weeks)
-3. C# Table API for models (3-4 weeks)
-4. Provider integrations (2-3 weeks each)
+1. **Unified Sink API v2** (3-4 weeks) - Required for Flink 2.0 compatibility
+2. **Materialized Tables** (4-6 weeks) - Major productivity improvement
 
-**Key deliverables**:
-- CREATE MODEL SQL support
-- ML_PREDICT for real-time inference
-- OpenAI and Azure OpenAI providers
-- Documentation and examples
+### Phase 2: AI/ML Integration from Flink 2.1 (10-16 weeks)
+**Goal**: Support Flink 2.1's flagship AI features
 
-### Phase 2: Table API Enhancements (Recommended Second)
-**Why**: Improves developer experience, enables type-safe programming
+3. **CREATE MODEL DDL** (2-3 weeks)
+4. **ML_PREDICT TVF** (2-3 weeks)
+5. **AI Providers** (3-4 weeks) - OpenAI, Azure OpenAI
+6. **C# Model Management API** (3-4 weeks)
 
-**Estimated**: 12-17 weeks total
-1. VARIANT type and JSON functions (3-4 weeks)
-2. Native Table API (4-6 weeks)
-3. Structured types (2-3 weeks)
-4. Process Table Functions (3-4 weeks)
+### Phase 3: Advanced Table Features (9-13 weeks)
+**Goal**: Complete Table API parity
 
-**Key deliverables**:
-- JSON/semi-structured data support
-- Fluent table transformation API
-- Custom structured types
-- Advanced stateful UDFs
+7. **VARIANT Type & JSON Functions** (3-4 weeks)
+8. **Native Table API** (4-6 weeks)
+9. **Process Table Functions** (3-4 weeks)
 
-### Phase 3: Performance Features (Optional)
-**Why**: Expert-level optimizations for specific scenarios
+### Phase 4: Ecosystem Integration (5-7 weeks)
+**Goal**: Better connector and storage integration
 
-**Estimated**: 7-10 weeks total
-- Implement based on user demand
-- Most features work by default
-- Lower priority
+10. **Table Store (Paimon)** (3-4 weeks)
+11. **Unified Source API** (2-3 weeks)
+
+### Phase 5: Optional Enhancements (As Needed)
+**Goal**: Performance and polish
+
+12. **Catalog API** (2-3 weeks)
+13. **Changelog Backend** (2-3 weeks)
+14. **Other P2/P3 features** (varies)
+
+**Total Effort Estimates**:
+- P0 Features Only: 20-29 weeks (5-7 months)
+- P0 + P1 Features: 35-50 weeks (9-12 months)
+- Complete Parity: 50+ weeks (12+ months)
 
 ## How to Contribute
 
@@ -145,9 +220,14 @@ Want to implement one of these features? Great!
 
 ## References
 
-### Official Apache Flink 2.1.0 Documentation
-- [Release Notes](https://nightlies.apache.org/flink/flink-docs-master/release-notes/flink-2.1/)
-- [Release Announcement](https://flink.apache.org/2025/07/31/apache-flink-2.1.0-ushers-in-a-new-era-of-unified-real-time-data--ai-with-comprehensive-upgrades/)
+### Official Apache Flink Documentation
+- [Apache Flink Version History](https://flink.apache.org/downloads/)
+- [Flink 1.20 Release Notes](https://nightlies.apache.org/flink/flink-docs-master/release-notes/flink-1.20/)
+- [Flink 2.1 Release Notes](https://nightlies.apache.org/flink/flink-docs-master/release-notes/flink-2.1/)
+- [Flink 1.20 Announcement](https://flink.apache.org/2024/08/02/announcing-the-release-of-apache-flink-1.20/)
+- [Flink 2.1 Announcement](https://flink.apache.org/2025/07/31/apache-flink-2.1.0-ushers-in-a-new-era-of-unified-real-time-data--ai-with-comprehensive-upgrades/)
+- [Materialized Tables Documentation](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/materialized-table/)
+- [Unified Sink API](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/fault-tolerance/unified_sink/)
 - [Table API Documentation](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/overview/)
 - [Model DDL Reference](https://www.alibabacloud.com/help/en/flink/realtime-flink/developer-reference/model-ddl)
 
@@ -160,6 +240,5 @@ Want to implement one of these features? Great!
 ## Last Updated
 
 **Date**: 2025-10-27
-**Apache Flink Version**: 2.1.0
-**FlinkDotNet Version**: Current main branch
-**Audit Work Item**: WI5_flink-21-feature-coverage-audit.md
+**Scope**: Apache Flink 1.0 through 2.1.0 (all versions)
+**Next Review**: When Flink 2.2 or later is released
