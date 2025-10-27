@@ -36,6 +36,9 @@ In `ReleasePackagesTesting/ReleasePackagesTesting.FlinkSqlAppHost/Program.cs`, a
 **No cross-bridge issues**: All containers run on the same Docker network managed by Aspire, enabling simple DNS resolution.
 
 **Prometheus Configuration** (`ReleasePackagesTesting/prometheus.yml`):
+
+*Note: Simplified example for clarity. Actual file includes scrape_interval, scrape_timeout, and label configurations.*
+
 ```yaml
 scrape_configs:
   # Flink JobManager - Simple container name resolution
@@ -126,9 +129,11 @@ This design should be implemented **after**:
 
 1. **Development**: Implement metrics endpoints in JobGateway using prometheus-net
 2. **Testing**: Validate metrics collection in ReleasePackagesTesting (pure container architecture)
-3. **Configuration**: Update `ReleasePackagesTesting/prometheus.yml` with JobGateway scrape target
+3. **Configuration**: Update `ReleasePackagesTesting/prometheus.yml` with JobGateway scrape target (template already provided)
 4. **Verification**: Ensure all metrics appear in Prometheus and Grafana dashboards
 5. **Documentation**: Document metrics in observability guides
+
+**Note**: `ReleasePackagesTesting/prometheus.yml` has been updated to reflect JobGateway's containerized deployment and includes a commented template for future metrics scraping.
 
 **LocalTesting Considerations**: 
 - JobGateway metrics would require container-to-host networking (complex)
