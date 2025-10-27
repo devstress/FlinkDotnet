@@ -650,7 +650,7 @@ class Program
 
     private static async Task WaitForKafkaReadyAsync()
     {
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
         var stopwatch = Stopwatch.StartNew();
 
         while (stopwatch.Elapsed < timeout)
@@ -685,7 +685,7 @@ class Program
 
     private static async Task WaitForFlinkHealthyAsync()
     {
-        var timeout = TimeSpan.FromSeconds(30);
+        var timeout = TimeSpan.FromSeconds(60);
         var stopwatch = Stopwatch.StartNew();
 
         while (stopwatch.Elapsed < timeout)

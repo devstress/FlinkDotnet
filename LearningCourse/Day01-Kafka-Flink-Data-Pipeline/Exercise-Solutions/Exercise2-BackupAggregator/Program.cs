@@ -573,7 +573,7 @@ namespace Exercise2_BackupAggregator
 
         static async Task WaitForKafkaReadyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(30);  // Increased from 20s to 30s - Confluent Local takes time to initialize
+            var timeout = TimeSpan.FromSeconds(60);  // Increased from 20s to 30s - Confluent Local takes time to initialize
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;  // Start with 1 second
 
@@ -671,7 +671,7 @@ namespace Exercise2_BackupAggregator
         /// </summary>
         static async Task WaitForFlinkHealthyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(30);
+            var timeout = TimeSpan.FromSeconds(60);
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;  // Start with 1 second
 

@@ -484,7 +484,7 @@ namespace Exercise51_ObservabilityDemo
 
         static async Task WaitForFlinkHealthyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(30);
+            var timeout = TimeSpan.FromSeconds(60);
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;
             var attemptCount = 0;

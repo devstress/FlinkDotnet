@@ -273,7 +273,7 @@ namespace Exercise1_StringCapitalize
             var partitionCounts = new Dictionary<int, int>();
             var allMessages = new List<(int partition, string value)>();
             var stopwatch = Stopwatch.StartNew();
-            var timeout = TimeSpan.FromSeconds(30);
+            var timeout = TimeSpan.FromSeconds(60);
 
             try
             {
@@ -574,7 +574,7 @@ namespace Exercise1_StringCapitalize
 
         static async Task WaitForKafkaReadyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(30);  // Increased from 20s to 30s - Confluent Local takes time to initialize
+            var timeout = TimeSpan.FromSeconds(60);  // Increased from 20s to 30s - Confluent Local takes time to initialize
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;  // Start with 1 second
 
@@ -668,7 +668,7 @@ namespace Exercise1_StringCapitalize
 
         static async Task WaitForFlinkHealthyAsync()
         {
-            var timeout = TimeSpan.FromSeconds(30);
+            var timeout = TimeSpan.FromSeconds(60);
             var stopwatch = Stopwatch.StartNew();
             var retryDelay = 1000;
 
