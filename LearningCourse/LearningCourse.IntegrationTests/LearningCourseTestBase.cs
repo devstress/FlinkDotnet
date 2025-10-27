@@ -50,6 +50,12 @@ public abstract class LearningCourseTestBase
     public static string? RedisHostEndpoint { get; private set; }
     
     /// <summary>
+    /// FlinkDotNet JobGateway endpoint for job submission (e.g., "http://localhost:8080/").
+    /// JobGateway is a .NET Aspire project running on fixed port 8080.
+    /// </summary>
+    public static string? FlinkJobGatewayUrl { get; private set; }
+    
+    /// <summary>
     /// Prometheus metrics endpoint (e.g., "http://localhost:43212").
     /// Dynamically allocated host port mapped to Prometheus's container port 9090.
     /// Only available when LEARNINGCOURSE=true.
@@ -378,6 +384,7 @@ public abstract class LearningCourseTestBase
                 PrometheusHostEndpoint = prometheusEndpoint;
                 GrafanaHostEndpoint = grafanaEndpoint;
                 FlinkRestApiEndpoint = flinkRestApi;
+                FlinkJobGatewayUrl = "http://localhost:8080/";  // Fixed port for JobGateway (not dynamic like JobManager)
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
                 TestContext.WriteLine($"✅ All required infrastructure ready after {stopwatch.Elapsed.TotalSeconds:F1}s (saved {savedTime:F1}s with optimized polling)");
@@ -1786,11 +1793,17 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
+        // Set FLINK_JOB_GATEWAY_URL for exercises that submit Flink jobs
+        // FlinkDotNet.JobGateway is a .NET Aspire project running on fixed port 8080
+        // NOTE: This is different from FlinkRestApiEndpoint (Flink JobManager with dynamic Docker port)
+        psi.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8080/";
+        
         var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
         psi.Environment["LOG_FILE_PATH"] = testLogsDir;
         
         TestContext.WriteLine($"🔧 KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers}");
         TestContext.WriteLine($"🔧 KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers}");
+        TestContext.WriteLine($"🔧 FLINK_JOB_GATEWAY_URL=http://localhost:8080/");
 
         using var process = Process.Start(psi);
         if (process == null)
@@ -1952,15 +1965,10 @@ public abstract class LearningCourseTestBase
             psi.Environment["REDIS_ENDPOINT"] = RedisHostEndpoint;
         }
         
-        // Set FLINK_JOB_GATEWAY_URL for exercises that submit Flink jobs directly (use discovered endpoint)
-        if (!string.IsNullOrEmpty(FlinkRestApiEndpoint))
-        {
-            psi.Environment["FLINK_JOB_GATEWAY_URL"] = FlinkRestApiEndpoint;
-        }
-        else
-        {
-            throw new InvalidOperationException("Flink REST API endpoint not discovered. Ensure GlobalSetUp ran successfully.");
-        }
+        // Set FLINK_JOB_GATEWAY_URL for exercises that submit Flink jobs
+        // FlinkDotNet.JobGateway is a .NET Aspire project running on fixed port 8080
+        // NOTE: This is different from FlinkRestApiEndpoint (Flink JobManager with dynamic Docker port)
+        psi.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8080/";
         
         // Set LOG_FILE_PATH to ensure all logs go to LocalTesting/test-logs/
         // Use absolute path to ensure logs are written to the correct location
