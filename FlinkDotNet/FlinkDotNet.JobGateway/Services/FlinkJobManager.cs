@@ -226,7 +226,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         string hexOnly = s_hexOnlyRegex.Replace(jobId, string.Empty);
         return hexOnly.Length != 32
             ? throw new ArgumentException($"Flink JobId must contain exactly 32 hexadecimal characters (received '{jobId}').", nameof(jobId))
-            : hexOnly.ToLowerInvariant();
+            : hexOnly.ToUpperInvariant();
     }
 
     private async Task WaitForSqlGatewayReadyAsync(HttpClient client)
