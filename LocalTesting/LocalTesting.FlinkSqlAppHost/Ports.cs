@@ -15,7 +15,7 @@ public static class Ports
     /// <summary>
     /// Gateway HTTP port (Projects.FlinkDotNet_JobGateway runs on fixed host port)
     /// </summary>
-    public const int GatewayHostPort = 8080;
+    public const int GatewayHostPort = 8086;
 
     /// <summary>
     /// Kafka FIXED port configuration (no dynamic allocation).

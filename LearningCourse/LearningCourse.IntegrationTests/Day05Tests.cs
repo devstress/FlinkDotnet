@@ -88,7 +88,7 @@ public class Day05Tests : LearningCourseTestBase
             Assert.Fail("Prometheus endpoint not available. Ensure LEARNINGCOURSE=true and infrastructure is running.");
         }
 
-        var flinkGatewayUrl = "http://localhost:8080";
+        var flinkGatewayUrl = "http://localhost:8086";
         TestContext.WriteLine($"📊 Prometheus Endpoint: {PrometheusHostEndpoint}");
         TestContext.WriteLine($"🔧 Flink Gateway URL: {flinkGatewayUrl}");
         TestContext.WriteLine();
@@ -280,8 +280,8 @@ public class Day05Tests : LearningCourseTestBase
             Assert.Fail("Prometheus or Grafana endpoint not available. Ensure LEARNINGCOURSE=true and infrastructure is running.");
         }
 
-        // Use Gateway endpoint which is stable at localhost:8080 (same as non-Playwright test)
-        var flinkGatewayUrl = "http://localhost:8080";
+        // Use Gateway endpoint which is stable at localhost:8086 (same as non-Playwright test)
+        var flinkGatewayUrl = "http://localhost:8086";
         
         TestContext.WriteLine($"📊 Prometheus: {PrometheusHostEndpoint}");
         TestContext.WriteLine($"📊 Grafana: {GrafanaHostEndpoint}");
@@ -1178,7 +1178,7 @@ public class Day05Tests : LearningCourseTestBase
     /// </summary>
     private async Task VerifyJobGatewayPrometheusAsync()
     {
-        const string JobGatewayUrl = "http://localhost:8080";
+        const string JobGatewayUrl = "http://localhost:8086";
         TestContext.WriteLine($"   📊 1. JobGateway Prometheus Metrics (CRITICAL):");
         TestContext.WriteLine($"      Purpose: Verify JobGateway is exposing Prometheus metrics");
         TestContext.WriteLine($"      Endpoint: {JobGatewayUrl}/metrics");
@@ -1750,11 +1750,11 @@ public class Day05Tests : LearningCourseTestBase
         startInfo.Environment["KAFKA_BOOTSTRAP_SERVERS"] = KafkaHostBootstrapServers;
         startInfo.Environment["KAFKA_FLINK_BOOTSTRAP_SERVERS"] = KafkaFlinkBootstrapServers;
         // Exercise51 uses the Gateway to submit jobs, not Flink REST API directly
-        startInfo.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8080";
+        startInfo.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8086";
 
         TestContext.WriteLine($"   🔧 KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers}");
         TestContext.WriteLine($"   🔧 KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers}");
-        TestContext.WriteLine($"   🔧 FLINK_JOB_GATEWAY_URL=http://localhost:8080");
+        TestContext.WriteLine($"   🔧 FLINK_JOB_GATEWAY_URL=http://localhost:8086");
 
         _exercise51Process = new Process { StartInfo = startInfo };
         

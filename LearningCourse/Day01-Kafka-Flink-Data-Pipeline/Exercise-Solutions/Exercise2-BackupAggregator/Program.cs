@@ -32,7 +32,7 @@ namespace Exercise2_BackupAggregator
         // Flink Gateway configuration
         // Lazy evaluation - reads env var when first accessed, not at class load time
         private static string FlinkGatewayUrl =>
-            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
+            Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
 
         private static string FlinkJobManagerUrl =>
             Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";

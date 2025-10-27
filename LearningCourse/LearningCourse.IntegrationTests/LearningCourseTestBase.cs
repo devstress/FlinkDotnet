@@ -50,8 +50,8 @@ public abstract class LearningCourseTestBase
     public static string? RedisHostEndpoint { get; private set; }
     
     /// <summary>
-    /// FlinkDotNet JobGateway endpoint for job submission (e.g., "http://localhost:8080/").
-    /// JobGateway is a .NET Aspire project running on fixed port 8080.
+    /// FlinkDotNet JobGateway endpoint for job submission (e.g., "http://localhost:8086/").
+    /// JobGateway is a .NET Aspire project running on fixed port 8086.
     /// </summary>
     public static string? FlinkJobGatewayUrl { get; private set; }
     
@@ -391,7 +391,7 @@ public abstract class LearningCourseTestBase
                 PrometheusHostEndpoint = prometheusEndpoint;
                 GrafanaHostEndpoint = grafanaEndpoint;
                 FlinkRestApiEndpoint = flinkRestApi;
-                FlinkJobGatewayUrl = "http://localhost:8080/";  // Fixed port for JobGateway (not dynamic)
+                FlinkJobGatewayUrl = "http://localhost:8086/";  // Fixed port for JobGateway (not dynamic)
                 FlinkJobManagerUrl = flinkRestApi;  // Use discovered dynamic port from Aspire
                 
                 var savedTime = (maxWait - stopwatch.Elapsed).TotalSeconds;
@@ -771,7 +771,7 @@ public abstract class LearningCourseTestBase
     /// <summary>
     /// Kill any orphaned processes from previous test runs.
     /// This prevents "address already in use" errors and infrastructure startup failures.
-    /// Kills both JobGateway (port 8080) and AppHost processes.
+    /// Kills both JobGateway (port 8086) and AppHost processes.
     /// </summary>
     private static void KillOrphanedJobGatewayProcesses()
     {
@@ -1614,7 +1614,7 @@ public abstract class LearningCourseTestBase
     {
         try
         {
-            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
+            var flinkGatewayUrl = Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
             
             using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             
@@ -1802,9 +1802,9 @@ public abstract class LearningCourseTestBase
         }
         
         // Set FLINK_JOB_GATEWAY_URL for exercises that submit Flink jobs
-        // FlinkDotNet.JobGateway is a .NET Aspire project running on fixed port 8080
+        // FlinkDotNet.JobGateway is a .NET Aspire project running on fixed port 8086
         // NOTE: This is different from FlinkRestApiEndpoint (Flink JobManager with dynamic Docker port)
-        psi.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8080/";
+        psi.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8086/";
         
         // Set FLINK_JOBMANAGER_URL for exercises that check Flink cluster health
         // Flink JobManager REST API with dynamic Docker port
@@ -1819,7 +1819,7 @@ public abstract class LearningCourseTestBase
         
         TestContext.WriteLine($"🔧 KAFKA_BOOTSTRAP_SERVERS={KafkaHostBootstrapServers}");
         TestContext.WriteLine($"🔧 KAFKA_FLINK_BOOTSTRAP_SERVERS={KafkaFlinkBootstrapServers}");
-        TestContext.WriteLine($"🔧 FLINK_JOB_GATEWAY_URL=http://localhost:8080/");
+        TestContext.WriteLine($"🔧 FLINK_JOB_GATEWAY_URL=http://localhost:8086/");
 
         using var process = Process.Start(psi);
         if (process == null)
@@ -1982,9 +1982,9 @@ public abstract class LearningCourseTestBase
         }
         
         // Set FLINK_JOB_GATEWAY_URL for exercises that submit Flink jobs
-        // FlinkDotNet.JobGateway is a .NET Aspire project running on fixed port 8080
+        // FlinkDotNet.JobGateway is a .NET Aspire project running on fixed port 8086
         // NOTE: This is different from FlinkRestApiEndpoint (Flink JobManager with dynamic Docker port)
-        psi.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8080/";
+        psi.Environment["FLINK_JOB_GATEWAY_URL"] = "http://localhost:8086/";
         
         // Set FLINK_JOBMANAGER_URL for exercises that check Flink cluster health
         // Flink JobManager REST API with dynamic Docker port

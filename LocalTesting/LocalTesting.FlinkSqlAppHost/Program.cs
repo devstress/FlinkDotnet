@@ -355,10 +355,10 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 // Flink.JobGateway - Add Flink Job Gateway as .NET project
 // CRITICAL: Using .AddProject() for proper Aspire service discovery and endpoint management
 // JobGateway runs as a host process (not containerized) for reliable endpoint discovery
-// Note: JobGateway has default port 8080 in launchSettings.json, no need to set ASPNETCORE_URLS
+// Note: JobGateway has default port 8086 in launchSettings.json, no need to set ASPNETCORE_URLS
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(port: 8080, name: "gateway-http")
+    .WithHttpEndpoint(port: 8086, name: "gateway-http")
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
@@ -528,7 +528,7 @@ static void SetupEnvironment()
     Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
     // CRITICAL: Set ASPNETCORE_URLS for Aspire Dashboard (required by Aspire SDK)
     // This will be inherited by child processes, but we override it per-project using WithEnvironment()
-    // JobGateway explicitly sets ASPNETCORE_URLS=http://0.0.0.0:8080 via WithEnvironment()
+    // JobGateway explicitly sets ASPNETCORE_URLS=http://0.0.0.0:8086 via WithEnvironment()
     Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:15888");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:16686");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:16687");
