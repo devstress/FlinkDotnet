@@ -228,6 +228,12 @@ Traditional solutions require Java expertise or vendor lock-in. FlinkDotNet brin
 - **[Local Testing Setup](docs/local-testing-setup.md)** - Development environment details
 - **[Contributing Guide](CONTRIBUTING.md)** - Development guidelines
 
+### Roadmap
+- **[TODO: Missing Features](TODO/README.md)** - Apache Flink 2.1.0 features not yet implemented
+  - AI/ML Integration (CREATE MODEL, ML_PREDICT, AI providers)
+  - Advanced Table API (Process Table Functions, VARIANT type, native Table API)
+  - Performance optimizations
+
 ## Requirements
 
 - **.NET 9.0 SDK** - Required for all development

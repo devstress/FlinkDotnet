@@ -360,3 +360,4 @@ Console.WriteLine($"Job running with parallelism: {status.Parallelism}");
 - [API Reference](api-reference.md) - Complete DataStream API
 - [Architecture Guide](architecture-and-usecases.md) - System design
 - [Performance Benchmarks](performance-benchmarks.md) - Throughput metrics
+- [TODO: Missing Flink 2.1.0 Features](../TODO/README.md) - Features not yet implemented (AI/ML, advanced Table API, etc.)
