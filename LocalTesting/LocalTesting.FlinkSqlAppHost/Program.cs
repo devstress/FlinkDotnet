@@ -168,6 +168,13 @@ if (isLearningCourseMode)
 var jobManagerBuilder = builder.AddContainer(FlinkJobManagerContainerName, "flink:2.1.0-java17")
     .WithHttpEndpoint(port: Ports.JobManagerHostPort, targetPort: Ports.JobManagerHostPort, name: "jm-http");
 
+// Only add Podman-specific container runtime args if Podman is detected
+if (Environment.GetEnvironmentVariable(AspireContainerRuntimeEnv) == PodmanRuntime)
+{
+    jobManagerBuilder = jobManagerBuilder
+        .WithContainerRuntimeArgs("--publish", $"{Ports.JobManagerHostPort}:8081");
+}
+
 var jobManager = jobManagerBuilder
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", FlinkJobManagerContainerName)
     .WithEnvironment(LogFilePathEnv, FlinkTestLogsPath);  // Set log path inside container
