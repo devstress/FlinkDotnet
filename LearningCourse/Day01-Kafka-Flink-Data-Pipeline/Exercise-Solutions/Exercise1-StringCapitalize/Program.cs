@@ -41,6 +41,9 @@ namespace Exercise1_StringCapitalize
         private static string FlinkGatewayUrl =>
             Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8080";
 
+        private static string FlinkJobManagerUrl =>
+            Environment.GetEnvironmentVariable("FLINK_JOBMANAGER_URL") ?? "http://localhost:8081";
+
         static async Task Main(string[] args)
         {
             // Set console encoding to UTF-8
@@ -674,7 +677,7 @@ namespace Exercise1_StringCapitalize
                 try
                 {
                     using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                    var response = await httpClient.GetAsync($"{FlinkGatewayUrl}/api/v1/health");
+                    var response = await httpClient.GetAsync($"{FlinkJobManagerUrl}/api/v1/health");
                     
                     if (response.IsSuccessStatusCode)
                     {
@@ -696,7 +699,7 @@ namespace Exercise1_StringCapitalize
 
             throw new TimeoutException(
                 $"Flink cluster not healthy within {timeout.TotalSeconds} seconds. " +
-                $"Verify Flink JobManager is running and accessible at {FlinkGatewayUrl}");
+                $"Verify Flink JobManager is running and accessible at {FlinkJobManagerUrl}");
         }
     }
 
