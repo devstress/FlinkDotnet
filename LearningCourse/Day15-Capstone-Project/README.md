@@ -873,3 +873,110 @@ Congratulations on completing the FlinkDotNet Learning Course and building your 
 **[← Day 13: Advanced Testing & Chaos Engineering](../Day13-Advanced-Testing-Chaos-Engineering/)** | **[Course Overview](../README.md)**
 
 **Course Progress**: Day 14 of 14 Complete ✅
+
+## Running Exercises Manually
+
+The exercises can be run manually outside of the integration tests. This requires starting the infrastructure and setting environment variables that are normally discovered automatically by the test framework.
+
+### Step 1: Start Infrastructure
+
+From the repository root, start the LocalTesting infrastructure in LearningCourse mode:
+
+```bash
+# Linux/macOS
+cd LocalTesting
+./run-learningcourse.sh
+
+# Windows (PowerShell)
+cd LocalTesting
+$env:LEARNINGCOURSE="true"
+dotnet run --project LocalTesting.FlinkSqlAppHost --configuration Release
+```
+
+This starts:
+- Apache Flink cluster (JobManager + TaskManager + SQL Gateway)
+- Apache Kafka with JMX metrics
+- FlinkDotNet Gateway (port 8086)
+- Temporal workflow server (optional, for Day06+)
+- Redis (for state management)
+- Prometheus (metrics collection)
+- Grafana (metrics visualization)
+
+Wait approximately 60 seconds for all containers to be ready.
+
+### Step 2: Discover Service Endpoints
+
+The infrastructure uses dynamic port allocation. You need to discover the actual ports assigned:
+
+1. **Open Aspire Dashboard**: The AppHost will display a URL like `http://localhost:15000`
+2. **Find Kafka Port**: Look for "kafka" service, note the host port (e.g., `localhost:32785`)
+3. **Find Flink JobManager Port**: Look for "flink-jobmanager-jm-http" service, note the port (e.g., `localhost:32787`)
+
+### Step 3: Set Environment Variables
+
+Before running an exercise, set these environment variables:
+
+```bash
+# Linux/macOS
+export KAFKA_BOOTSTRAP_SERVERS="localhost:XXXXX"  # Replace XXXXX with discovered Kafka host port
+export KAFKA_FLINK_BOOTSTRAP_SERVERS="kafka:9093"  # Fixed container-to-container address
+export FLINK_JOB_GATEWAY_URL="http://localhost:8086/"  # Fixed JobGateway port
+export FLINK_JOBMANAGER_URL="http://localhost:YYYYY"  # Replace YYYYY with discovered Flink port
+
+# Windows (PowerShell)
+$env:KAFKA_BOOTSTRAP_SERVERS="localhost:XXXXX"
+$env:KAFKA_FLINK_BOOTSTRAP_SERVERS="kafka:9093"
+$env:FLINK_JOB_GATEWAY_URL="http://localhost:8086/"
+$env:FLINK_JOBMANAGER_URL="http://localhost:YYYYY"
+```
+
+**Optional environment variables** (depending on the exercise):
+```bash
+# For Day06 Temporal exercises
+export TEMPORAL_ENDPOINT="localhost:ZZZZZ"  # Replace with discovered Temporal port
+
+# For exercises using Redis
+export REDIS_ENDPOINT="localhost:WWWWW"  # Replace with discovered Redis port
+```
+
+### Step 4: Run Exercise
+
+Navigate to the exercise directory and run:
+
+```bash
+cd Day01-Kafka-Flink-Data-Pipeline/Exercise-Solutions/Exercise1-StringCapitalize
+dotnet run --configuration Release
+```
+
+### Environment Variable Reference
+
+| Variable | Purpose | Example Value |
+|----------|---------|---------------|
+| `KAFKA_BOOTSTRAP_SERVERS` | Kafka address for producer/consumer on host | `localhost:32785` |
+| `KAFKA_FLINK_BOOTSTRAP_SERVERS` | Kafka address for Flink jobs (container-to-container) | `kafka:9093` |
+| `FLINK_JOB_GATEWAY_URL` | FlinkDotNet Gateway endpoint for job submission | `http://localhost:8086/` |
+| `FLINK_JOBMANAGER_URL` | Flink JobManager REST API for health checks | `http://localhost:32787` |
+| `TEMPORAL_ENDPOINT` | Temporal server endpoint (Day06+) | `localhost:32789` |
+| `REDIS_ENDPOINT` | Redis endpoint for state management | `localhost:32783` |
+
+### Why Dynamic Ports?
+
+The test infrastructure uses .NET Aspire which assigns dynamic ports to avoid conflicts. This is why you need to discover ports from the Aspire Dashboard rather than using hardcoded values.
+
+### Alternative: Use Integration Tests
+
+For automated testing with automatic port discovery, use the integration test framework:
+
+```bash
+# Run all Day01 tests
+dotnet test LearningCourse/IntegrationTests.sln --filter "FullyQualifiedName~Day01Tests"
+```
+
+The integration tests automatically:
+- Start the infrastructure
+- Discover service endpoints
+- Set environment variables
+- Run exercises
+- Validate results
+- Clean up resources
+
