@@ -81,9 +81,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create and checkout release branch
+          # Delete remote branch if it exists (force delete to handle any state)
+          git push origin --delete "$RELEASE_BRANCH" 2>/dev/null || echo "Remote branch didn't exist (this is OK)"
+          
+          # Delete local branch if it exists
+          git branch -D "$RELEASE_BRANCH" 2>/dev/null || echo "Local branch didn't exist (this is OK)"
+          
+          # Create and checkout fresh release branch
           git checkout -b "$RELEASE_BRANCH"
-          echo "Created release branch: $RELEASE_BRANCH"
+          echo "Created fresh release branch: $RELEASE_BRANCH"
 
       - name: Update PackageVersion in .csproj files
         run: |
@@ -109,11 +115,11 @@ jobs:
           # Only commit if there are staged changes
           if ! git diff --staged --quiet; then
             git commit -m "Bump version to $VERSION"
-            git push origin "$RELEASE_BRANCH"
+            git push --force origin "$RELEASE_BRANCH"
             echo "Pushed version update to $RELEASE_BRANCH"
           else
             echo "No version changes to commit (already at version $VERSION)"
-            git push origin "$RELEASE_BRANCH"
+            git push --force origin "$RELEASE_BRANCH"
           fi
 
   build-and-package:
