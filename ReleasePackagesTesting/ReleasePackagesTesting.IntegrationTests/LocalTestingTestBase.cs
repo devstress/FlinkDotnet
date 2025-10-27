@@ -38,6 +38,20 @@ public abstract class LocalTestingTestBase
     protected static string? TemporalEndpoint => GlobalTestInfrastructure.TemporalEndpoint;
 
     /// <summary>
+    /// Access to discovered Prometheus endpoint from GlobalTestInfrastructure.
+    /// Only available when LEARNINGCOURSE=true environment variable is set.
+    /// Aspire allocates dynamic ports during testing, so we must use the discovered endpoint.
+    /// </summary>
+    protected static string? PrometheusHostEndpoint => GlobalTestInfrastructure.PrometheusHostEndpoint;
+
+    /// <summary>
+    /// Access to discovered Grafana endpoint from GlobalTestInfrastructure.
+    /// Only available when LEARNINGCOURSE=true environment variable is set.
+    /// Aspire allocates dynamic ports during testing, so we must use the discovered endpoint.
+    /// </summary>
+    protected static string? GrafanaHostEndpoint => GlobalTestInfrastructure.GrafanaHostEndpoint;
+
+    /// <summary>
     /// No infrastructure setup needed - using shared global infrastructure.
     /// Tests can start immediately without waiting for infrastructure startup.
     /// </summary>

@@ -25,6 +25,8 @@ public class GlobalTestInfrastructure
     public static string? KafkaConnectionStringFromConfig { get; private set; }
     public static string? KafkaContainerIpForFlink { get; private set; } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
     public static string? TemporalEndpoint { get; private set; } // Discovered Temporal endpoint with dynamic port
+    public static string? PrometheusHostEndpoint { get; private set; } // Discovered Prometheus endpoint (only available when LEARNINGCOURSE=true)
+    public static string? GrafanaHostEndpoint { get; private set; } // Discovered Grafana endpoint (only available when LEARNINGCOURSE=true)
 
     [OneTimeSetUp]
     public async Task GlobalSetUp()
@@ -164,6 +166,41 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
             await RetryWaitForReadyAsync("Temporal", () => LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Temporal server is fully ready");
+
+            // Discover Prometheus and Grafana endpoints if LEARNINGCOURSE mode is enabled
+            var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
+            if (isLearningCourse)
+            {
+                Console.WriteLine("📊 LEARNINGCOURSE mode detected - discovering observability endpoints...");
+                
+                // Discover Prometheus endpoint
+                PrometheusHostEndpoint = await GetPrometheusEndpointAsync();
+                if (!string.IsNullOrEmpty(PrometheusHostEndpoint))
+                {
+                    Console.WriteLine($"✅ Prometheus endpoint: {PrometheusHostEndpoint}");
+                }
+                else
+                {
+                    Console.WriteLine("⚠️  Prometheus endpoint not found - observability tests will be skipped");
+                }
+                
+                // Discover Grafana endpoint
+                GrafanaHostEndpoint = await GetGrafanaEndpointAsync();
+                if (!string.IsNullOrEmpty(GrafanaHostEndpoint))
+                {
+                    Console.WriteLine($"✅ Grafana endpoint: {GrafanaHostEndpoint}");
+                }
+                else
+                {
+                    Console.WriteLine("⚠️  Grafana endpoint not found");
+                }
+            }
+            else
+            {
+                Console.WriteLine("ℹ️  LEARNINGCOURSE mode not enabled - observability endpoints not available");
+                PrometheusHostEndpoint = null;
+                GrafanaHostEndpoint = null;
+            }
 
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();
@@ -649,6 +686,84 @@ public class GlobalTestInfrastructure
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to get Temporal endpoint: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Get the dynamically allocated Prometheus endpoint from Docker.
+    /// Only available when LEARNINGCOURSE=true environment variable is set.
+    /// Prometheus container exposes port 9090 internally, which gets mapped to a random host port.
+    /// </summary>
+    private static async Task<string?> GetPrometheusEndpointAsync()
+    {
+        try
+        {
+            var prometheusContainers = await RunDockerCommandAsync("ps --filter \"name=prometheus\" --format \"{{.Ports}}\"");
+            if (string.IsNullOrWhiteSpace(prometheusContainers))
+            {
+                return null; // Prometheus not running (LEARNINGCOURSE not enabled)
+            }
+            
+            var lines = prometheusContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                // Look for port mapping to 9090 (Prometheus HTTP port)
+                if (line.Contains("->9090/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->9090");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}";
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️  Failed to get Prometheus endpoint: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Get the dynamically allocated Grafana endpoint from Docker.
+    /// Only available when LEARNINGCOURSE=true environment variable is set.
+    /// Grafana container exposes port 3000 internally, which gets mapped to a random host port.
+    /// </summary>
+    private static async Task<string?> GetGrafanaEndpointAsync()
+    {
+        try
+        {
+            var grafanaContainers = await RunDockerCommandAsync("ps --filter \"name=grafana\" --format \"{{.Ports}}\"");
+            if (string.IsNullOrWhiteSpace(grafanaContainers))
+            {
+                return null; // Grafana not running (LEARNINGCOURSE not enabled)
+            }
+            
+            var lines = grafanaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var line in lines)
+            {
+                // Look for port mapping to 3000 (Grafana HTTP port)
+                if (line.Contains("->3000/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->3000");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}";
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️  Failed to get Grafana endpoint: {ex.Message}");
+            return null;
         }
     }
 
