@@ -11,6 +11,7 @@
     <PackageTags>Apache Flink;Streaming;Real-time;Data Processing;DataStream;Kafka;FlinkDotnet</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/devstress/FlinkDotnet</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,11 @@
     <ProjectReference Include="../FlinkDotNet.Common/FlinkDotNet.Common.csproj" PrivateAssets="All" />
     <ProjectReference Include="../Flink.JobBuilder/Flink.JobBuilder.csproj" PrivateAssets="All" />
     <ProjectReference Include="../FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Include README.md in the NuGet package -->
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <!-- Include referenced project DLLs in the package -->
