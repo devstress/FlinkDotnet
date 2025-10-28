@@ -51,7 +51,7 @@ jobs:
         echo "=== Building FlinkDotNet NuGet packages ==="
         dotnet restore FlinkDotNet/FlinkDotNet.sln
         dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release --no-restore
-        dotnet pack FlinkDotNet/FlinkDotNet.sln --configuration Release --no-build --output ./packages
+        dotnet pack FlinkDotNet/FlinkDotNet.sln --configuration Release --output ./packages
       
     - name: List built packages
       run: |
@@ -66,8 +66,10 @@ jobs:
     - name: Build JobGateway Docker image
       run: |
         echo "=== Building JobGateway Docker image ==="
-        cd FlinkDotNet/Flink.JobGateway
-        docker build -t flinkdotnet/jobgateway:latest .
+        docker build \
+          -f FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile \
+          -t flinkdotnet/jobgateway:latest \
+          .
         docker images | grep flinkdotnet
     
     - name: Verify Docker image
