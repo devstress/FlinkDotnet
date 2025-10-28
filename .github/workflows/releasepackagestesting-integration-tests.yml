@@ -1,0 +1,106 @@
+name: ReleasePackagesTesting Integration Tests
+
+on:
+  push:
+    paths: 
+      - 'ReleasePackagesTesting/**'
+  workflow_dispatch:
+
+jobs:
+  releasepackages-integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    
+    - name: Setup JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Install Maven
+      uses: stCarolas/setup-maven@v4
+      with:
+        maven-version: '3.9.6'
+        
+    - name: Ensure Docker is running
+      run: docker info
+
+    - name: Configure system for Flink and Kafka
+      run: |
+        echo "=== Configuring system for optimal performance ==="
+        sudo sysctl -w vm.max_map_count=262144
+        sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+        sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+        echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+        echo "Current ulimit -n: $(ulimit -n)"
+        echo "Available memory: $(free -h)"
+        echo "CPU info: $(nproc) cores"
+        cat /proc/cpuinfo | grep "model name" | head -1
+
+    # Build FlinkDotNet packages locally for testing
+    - name: Build FlinkDotNet packages
+      run: |
+        echo "=== Building FlinkDotNet NuGet packages ==="
+        dotnet restore FlinkDotNet/FlinkDotNet.sln
+        dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release --no-restore
+        dotnet pack FlinkDotNet/FlinkDotNet.sln --configuration Release --no-build --output ./packages
+      
+    - name: List built packages
+      run: |
+        echo "=== Built NuGet packages ==="
+        ls -lh ./packages/*.nupkg
+    
+    - name: Add local NuGet source
+      run: |
+        dotnet nuget add source ./packages --name LocalFeed || echo "LocalFeed already exists"
+    
+    # Build JobGateway Docker image locally
+    - name: Build JobGateway Docker image
+      run: |
+        echo "=== Building JobGateway Docker image ==="
+        cd FlinkDotNet/Flink.JobGateway
+        docker build -t flinkdotnet/jobgateway:latest .
+        docker images | grep flinkdotnet
+    
+    - name: Verify Docker image
+      run: |
+        echo "=== Verifying JobGateway Docker image ==="
+        docker inspect flinkdotnet/jobgateway:latest
+        docker history flinkdotnet/jobgateway:latest
+    
+    - name: Restore ReleasePackagesTesting dependencies
+      run: dotnet restore
+      working-directory: ./ReleasePackagesTesting
+      
+    - name: Build ReleasePackagesTesting solution
+      run: dotnet build --no-restore --configuration Release
+      working-directory: ./ReleasePackagesTesting
+      
+    - name: Run ReleasePackagesTesting integration tests
+      run: |
+        echo "=== Starting ReleasePackagesTesting Integration Tests ==="
+        dotnet test --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+      working-directory: ./ReleasePackagesTesting
+      env:
+        DOTNET_ENVIRONMENT: Testing
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: TestResults
+        path: ReleasePackagesTesting/TestResults/
+      if: always()
+ 
+    - name: Cleanup
+      if: always()
+      run: |
+        docker system prune -f || true
+        docker volume prune -f || true
