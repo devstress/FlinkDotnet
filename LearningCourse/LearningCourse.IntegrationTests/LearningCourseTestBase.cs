@@ -18,7 +18,7 @@ public abstract class LearningCourseTestBase
 {
     private static Process? _appHostProcess;
     private static bool _isSetupComplete = false;
-    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(120);
+    private static readonly TimeSpan AppHostStartupTimeout = TimeSpan.FromSeconds(900); // Increased to 15 minutes for initial Docker image pulls
     private static readonly string AppHostPath = Path.Combine(
         FindRepositoryRoot() ?? throw new InvalidOperationException("Could not find repository root"),
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
@@ -211,7 +211,7 @@ public abstract class LearningCourseTestBase
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = "run --no-restore --no-build --configuration Release",
+            Arguments = "run --no-restore --no-build --configuration Debug",
             WorkingDirectory = AppHostPath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
