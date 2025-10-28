@@ -90,7 +90,7 @@ jobs:
           fi
           
           # Check if target version branch exists and is merged
-          # If merged, keep incrementing until we find an unmerged or non-existent version
+          # If merged OR exists (unmerged), keep incrementing until we find a non-existent version
           FINAL_VERSION="$TARGET_VERSION"
           while true; do
             check_branch_merged "$FINAL_VERSION"
@@ -98,14 +98,16 @@ jobs:
             
             if [ $result -eq 0 ]; then
               # Branch exists and is merged - bump to next version
-              echo "Version $FINAL_VERSION already released, bumping to next version"
+              echo "Version $FINAL_VERSION already released (merged), bumping to next version"
               IFS='.' read -r MAJOR MINOR PATCH <<< "$FINAL_VERSION"
               MINOR=$((MINOR + 1))
               FINAL_VERSION="${MAJOR}.${MINOR}.0"
             elif [ $result -eq 1 ]; then
-              # Branch exists but not merged - reuse this version
-              echo "Using existing unmerged branch for version $FINAL_VERSION"
-              break
+              # Branch exists but not merged - still bump to next version (will force-delete later)
+              echo "Version $FINAL_VERSION has unmerged branch (will be deleted), bumping to next version"
+              IFS='.' read -r MAJOR MINOR PATCH <<< "$FINAL_VERSION"
+              MINOR=$((MINOR + 1))
+              FINAL_VERSION="${MAJOR}.${MINOR}.0"
             else
               # Branch doesn't exist - use this version
               echo "New version: $FINAL_VERSION"
@@ -129,7 +131,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create or checkout release branch
+      - name: Create release branch
         run: |
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
@@ -137,24 +139,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Check if branch exists remotely
-          if git ls-remote --heads origin "$RELEASE_BRANCH" | grep -q "$RELEASE_BRANCH"; then
-            echo "Release branch $RELEASE_BRANCH already exists remotely"
-            
-            # Fetch and checkout the existing branch
-            git fetch origin "$RELEASE_BRANCH"
-            git checkout -b "$RELEASE_BRANCH" "origin/$RELEASE_BRANCH" || git checkout "$RELEASE_BRANCH"
-            echo "Checked out existing release branch: $RELEASE_BRANCH"
-          else
-            echo "Creating new release branch: $RELEASE_BRANCH"
-            
-            # Delete local branch if it exists
-            git branch -D "$RELEASE_BRANCH" 2>/dev/null || echo "Local branch didn't exist"
-            
-            # Create and checkout fresh release branch
-            git checkout -b "$RELEASE_BRANCH"
-            echo "Created fresh release branch: $RELEASE_BRANCH"
-          fi
+          # Delete remote branch if it exists (force delete to handle any state)
+          git push origin --delete "$RELEASE_BRANCH" 2>/dev/null || echo "Remote branch didn't exist (this is OK)"
+          
+          # Delete local branch if it exists
+          git branch -D "$RELEASE_BRANCH" 2>/dev/null || echo "Local branch didn't exist (this is OK)"
+          
+          # Create and checkout fresh release branch
+          git checkout -b "$RELEASE_BRANCH"
+          echo "Created fresh release branch: $RELEASE_BRANCH"
 
       - name: Update PackageVersion in .csproj files
         run: |
