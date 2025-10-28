@@ -1,22 +1,3 @@
-# FlinkDotNet First Release
+<!-- This is a placeholder to automatically put release notes. -->
 
-- Complete Apache Flink 2.1 DataStream API in C# with fluent interface
-- Native .NET 9.0 SDK for building streaming jobs without Java code
-- Full Kafka integration with sources and sinks support
-- Event-time processing with watermarks and windowing (tumbling, sliding, session)
-- Exactly-once semantics with checkpointing and savepoints
-- JSON IR (Intermediate Representation) translator for job submission
-- JobGateway service for submitting jobs to Flink clusters
-- .NET Aspire integration for local development with one-command startup
-- Complete observability stack (Prometheus, Grafana, Loki, OpenTelemetry)
-- Temporal.io workflow orchestration integration
-- 10 passing integration tests validating end-to-end pipelines
-- Production-ready performance: 800K+ messages/sec throughput validated
-- Dynamic scaling support with Flink 2.1 adaptive scheduler and reactive mode
-- Advanced partitioning strategies (rebalance, rescale, forward, shuffle, broadcast, custom)
-- Comprehensive documentation including 15-day learning course
-- Three NuGet packages: FlinkDotNet.Common, FlinkDotNet.DataStream, Flink.JobBuilder
-- Docker image for JobGateway service
-- Multi-cluster orchestration support for enterprise deployments
-- Complete Table API and SQL support via Flink SQL Gateway
-- Stateful processing with timers and keyed state management
+Add release notes here for the next release.
