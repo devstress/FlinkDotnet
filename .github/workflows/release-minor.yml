@@ -6,7 +6,7 @@ on:
 env:
   DOTNET_VERSION: '9.0.x'
   CONFIGURATION: 'Release'
-  DOCKER_IMAGE_NAME: 'flinkdotnet/jobgateway'
+  DOCKER_IMAGE_NAME: 'devstress/flinkdotnet'
 
 jobs:
   calculate-version:
