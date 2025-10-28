@@ -11,7 +11,7 @@ The FlinkDotNet Docker image provides a pre-built, containerized version of the 
 ### Pull the Image
 
 ```bash
-docker pull flinkdotnet/jobgateway:latest
+docker pull devstress/flinkdotnet:latest
 ```
 
 ### Run the Container
@@ -22,7 +22,7 @@ docker run -d \
   -p 8080:8080 \
   -e FLINK_CLUSTER_HOST=your-flink-host \
   -e FLINK_CLUSTER_PORT=8081 \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ### Verify Deployment
@@ -59,17 +59,17 @@ docker logs flinkjobgateway
 # Mount configuration
 docker run -d \
   -v /path/to/appsettings.json:/app/appsettings.json:ro \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 
 # Mount logs directory
 docker run -d \
   -v /path/to/logs:/app/logs \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 
 # Mount IR Runner jar (optional)
 docker run -d \
   -v /path/to/flink-ir-runner.jar:/app/flink-ir-runner.jar:ro \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ## Deployment Scenarios
@@ -86,7 +86,7 @@ docker run -d \
   -e KAFKA_BOOTSTRAP=kafka:9092 \
   -e ASPNETCORE_ENVIRONMENT=Production \
   -v $(pwd)/logs:/app/logs \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ### Scenario 2: Docker Compose
@@ -98,7 +98,7 @@ version: '3.8'
 
 services:
   flinkjobgateway:
-    image: flinkdotnet/jobgateway:latest
+    image: devstress/flinkdotnet:latest
     container_name: flinkjobgateway
     ports:
       - "8080:8080"
@@ -223,7 +223,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: flinkdotnet/jobgateway:latest
+        image: devstress/flinkdotnet:latest
         ports:
         - containerPort: 8080
           name: http
@@ -327,7 +327,7 @@ version: '3.8'
 
 services:
   flinkjobgateway:
-    image: flinkdotnet/jobgateway:latest
+    image: devstress/flinkdotnet:latest
     ports:
       - "8080:8080"
     environment:
@@ -425,7 +425,7 @@ docker run -d \
   -e KAFKA_BOOTSTRAP=kafka:9092 \
   -e KAFKA_USERNAME=myuser \
   -e KAFKA_PASSWORD=mypassword \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ### HTTPS Configuration
@@ -444,7 +444,7 @@ docker run -d \
   -e ASPNETCORE_URLS=https://+:8443 \
   -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certificate.pfx \
   -e ASPNETCORE_Kestrel__Certificates__Default__Password=your-password \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ## Networking
@@ -459,7 +459,7 @@ docker network create flink-network
 docker run -d --name flink-jobmanager --network flink-network flink:2.1.0 jobmanager
 docker run -d --name flinkjobgateway --network flink-network \
   -e FLINK_CLUSTER_HOST=flink-jobmanager \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ### Host Network
@@ -469,7 +469,7 @@ docker run -d --name flinkjobgateway --network flink-network \
 docker run -d \
   --network host \
   -e FLINK_CLUSTER_HOST=localhost \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ### Overlay Network (Swarm)
@@ -488,7 +488,7 @@ docker run -d \
   --health-timeout=10s \
   --health-retries=3 \
   --health-start-period=40s \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 
 # Check health status
 docker inspect --format='{{.State.Health.Status}}' flinkjobgateway
@@ -562,7 +562,7 @@ docker stats flinkjobgateway
 docker run -d \
   --memory=2g \
   --cpus=2 \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 ## Security Best Practices
@@ -580,7 +580,7 @@ docker run -d \
      --read-only \
      --tmpfs /tmp \
      --tmpfs /app/logs \
-     flinkdotnet/jobgateway:latest
+     devstress/flinkdotnet:latest
    ```
 
 3. **Resource Limits**
@@ -590,7 +590,7 @@ docker run -d \
      --memory-swap=1g \
      --cpus=0.5 \
      --pids-limit=100 \
-     flinkdotnet/jobgateway:latest
+     devstress/flinkdotnet:latest
    ```
 
 4. **Security Options**
@@ -598,7 +598,7 @@ docker run -d \
    docker run -d \
      --security-opt=no-new-privileges \
      --cap-drop=ALL \
-     flinkdotnet/jobgateway:latest
+     devstress/flinkdotnet:latest
    ```
 
 ## Image Variants
@@ -613,8 +613,8 @@ docker run -d \
 ### Pulling Specific Version
 
 ```bash
-docker pull flinkdotnet/jobgateway:v1.2.3
-docker pull flinkdotnet/jobgateway:v1.2.3-alpine
+docker pull devstress/flinkdotnet:v1.2.3
+docker pull devstress/flinkdotnet:v1.2.3-alpine
 ```
 
 ## Building Custom Image
@@ -623,7 +623,7 @@ If you need to customize the image:
 
 ```dockerfile
 # Dockerfile.custom
-FROM flinkdotnet/jobgateway:latest
+FROM devstress/flinkdotnet:latest
 
 # Add custom IR Runner
 COPY custom-flink-ir-runner.jar /app/flink-ir-runner.jar
@@ -650,6 +650,6 @@ docker build -t my-flinkjobgateway:latest -f Dockerfile.custom .
 
 ## Support
 
-- **Docker Hub**: https://hub.docker.com/r/flinkdotnet/jobgateway
+- **Docker Hub**: https://hub.docker.com/r/devstress/flinkdotnet
 - **GitHub Issues**: https://github.com/devstress/FlinkDotnet/issues
 - **Discussions**: https://github.com/devstress/FlinkDotnet/discussions

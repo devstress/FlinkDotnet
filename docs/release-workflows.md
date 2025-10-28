@@ -156,8 +156,8 @@ Each release includes:
 ### Docker Image
 - `jobgateway-{version}.tar.gz` - Docker image tarball for JobGateway
 - Published to Docker Hub as:
-  - `flinkdotnet/jobgateway:{version}`
-  - `flinkdotnet/jobgateway:latest`
+  - `devstress/flinkdotnet:{version}`
+  - `devstress/flinkdotnet:latest`
 
 ## Workflow Steps
 
@@ -232,13 +232,13 @@ wget https://github.com/devstress/FlinkDotnet/releases/download/v1.0.0/jobgatewa
 docker load < jobgateway-1.0.0.tar.gz
 
 # Run container
-docker run -p 8080:8080 flinkdotnet/jobgateway:1.0.0
+docker run -p 8080:8080 devstress/flinkdotnet:1.0.0
 ```
 
 ### From Docker Hub
 ```bash
-docker pull flinkdotnet/jobgateway:1.0.0
-docker run -p 8080:8080 flinkdotnet/jobgateway:1.0.0
+docker pull devstress/flinkdotnet:1.0.0
+docker run -p 8080:8080 devstress/flinkdotnet:1.0.0
 ```
 
 ## Additional Notes

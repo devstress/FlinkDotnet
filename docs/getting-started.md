@@ -77,11 +77,11 @@ Your job will be submitted to the configured Flink cluster and start processing 
 Run FlinkJobGateway as a container:
 
 ```bash
-docker pull flinkdotnet/jobgateway:latest
+docker pull devstress/flinkdotnet:latest
 docker run -p 8080:8080 \
   -e FLINK_CLUSTER_HOST=your-flink-host \
   -e FLINK_CLUSTER_PORT=8081 \
-  flinkdotnet/jobgateway:latest
+  devstress/flinkdotnet:latest
 ```
 
 Access the API at `http://localhost:8080`.
