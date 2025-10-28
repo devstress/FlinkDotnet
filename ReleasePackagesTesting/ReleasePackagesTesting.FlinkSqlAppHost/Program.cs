@@ -31,14 +31,14 @@ if (isLearningCourse)
 var diagnosticsVerbose = Environment.GetEnvironmentVariable("DIAGNOSTICS_VERBOSE") == "1";
 if (diagnosticsVerbose)
 {
-    Console.WriteLine("[diag] DIAGNOSTICS_VERBOSE=1 enabled for LocalTesting.FlinkSqlAppHost startup diagnostics");
+    Console.WriteLine("[diag] DIAGNOSTICS_VERBOSE=1 enabled for ReleasePackagesTesting.FlinkSqlAppHost startup diagnostics");
 }
 
 const string JavaOpenOptions = "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED";
 
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
-var connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
-var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "LocalTesting", "test-logs"));
+var connectorsDir = Path.Combine(repoRoot, "ReleasePackagesTesting", "connectors", "flink", "lib");
+var testLogsDir = Path.GetFullPath(Path.Combine(repoRoot, "ReleasePackagesTesting", "test-logs"));
 
 // Ensure test-logs directory exists
 Directory.CreateDirectory(testLogsDir);
@@ -107,7 +107,7 @@ if (isLearningCourseMode)
 {
     Console.WriteLine("   📊 Deploying Kafka JMX Exporter for metrics collection");
     
-    var jmxConfigPath = Path.Combine(repoRoot, "LocalTesting", "jmx-exporter-kafka-config.yml");
+    var jmxConfigPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "jmx-exporter-kafka-config.yml");
     
     if (File.Exists(jmxConfigPath))
     {
@@ -174,7 +174,7 @@ if (isLearningCourseMode)
 // NOTE: Config file is NOT mounted because FLINK_PROPERTIES provides full Prometheus config
 if (isLearningCourseMode)
 {
-    var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+    var metricsJarPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
     if (File.Exists(metricsJarPath))
     {
         jobManager = jobManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
@@ -225,7 +225,7 @@ var taskManager = taskManagerBuilder;
 // NOTE: Config file is NOT mounted because FLINK_PROPERTIES provides full Prometheus config
 if (isLearningCourseMode)
 {
-    var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+    var metricsJarPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
     if (File.Exists(metricsJarPath))
     {
         taskManager = taskManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
@@ -299,7 +299,7 @@ var sqlGateway = sqlGatewayBuilder;
 // Mount Prometheus metrics JAR and config file only in LEARNINGCOURSE mode
 if (isLearningCourseMode)
 {
-    var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+    var metricsJarPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
     if (File.Exists(metricsJarPath))
     {
         sqlGateway = sqlGateway.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
@@ -307,7 +307,7 @@ if (isLearningCourseMode)
     }
     
     // Mount Flink config file with Prometheus metrics configuration
-    var flinkConfigPath = Path.Combine(repoRoot, "LocalTesting", "flink-conf-learningcourse.yaml");
+    var flinkConfigPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "flink-conf-learningcourse.yaml");
     if (File.Exists(flinkConfigPath))
     {
         sqlGateway = sqlGateway.WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true);
@@ -386,7 +386,7 @@ if (isLearningCourse)
     
     // Observability Stack - Prometheus for metrics collection
     // Required for monitoring and performance analysis exercises
-    var prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
+    var prometheusConfig = Path.Combine(repoRoot, "ReleasePackagesTesting", "prometheus.yml");
     
     // CRITICAL: Prometheus needs kafka-exporter dependency for Docker network DNS resolution
     // Using WaitFor() establishes network connectivity and ensures containers can resolve each other
@@ -419,8 +419,8 @@ if (isLearningCourse)
     // Provides dashboards and alerting for performance monitoring
     // CRITICAL: Anonymous authentication enabled for learning environment (no login required)
     // Complete anonymous access configuration to bypass login page entirely
-    var grafanaDashboardPath = Path.Combine(repoRoot, "LocalTesting", "grafana-kafka-dashboard.json");
-    var grafanaProvisioningPath = Path.Combine(repoRoot, "LocalTesting", "grafana-provisioning-dashboards.yaml");
+    var grafanaDashboardPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "grafana-kafka-dashboard.json");
+    var grafanaProvisioningPath = Path.Combine(repoRoot, "ReleasePackagesTesting", "grafana-provisioning-dashboards.yaml");
     
     var grafanaBuilder = builder.AddContainer("grafana", "grafana/grafana", "latest")
         .WithHttpEndpoint(port: Ports.GrafanaHostPort, targetPort: 3000, name: "grafana-http")
