@@ -40,25 +40,77 @@ jobs:
           
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
       
-      - name: Bump minor version
+      - name: Bump minor version and check for existing release branches
         id: bump
         run: |
           CURRENT="${{ steps.get_version.outputs.current }}"
           
-          # If starting fresh at 1.0.0, use it as-is for first release
+          # Function to check if a release branch exists and is merged
+          check_branch_merged() {
+            local version=$1
+            local branch="release/v$version"
+            
+            # Check if branch exists remotely
+            if git ls-remote --heads origin "$branch" | grep -q "$branch"; then
+              echo "Branch $branch exists remotely"
+              
+              # Fetch the branch to check merge status
+              git fetch origin "$branch:$branch" 2>/dev/null || true
+              
+              # Check if branch has been merged to the default branch
+              # We check both the current HEAD and look for merge commits
+              if git log --merges --oneline | grep -q "Merge.*$branch" || \
+                 git branch --contains "origin/$branch" 2>/dev/null | grep -q "HEAD"; then
+                echo "Branch $branch has been merged to main"
+                return 0  # Branch is merged
+              else
+                echo "Branch $branch exists but is NOT merged"
+                return 1  # Branch exists but not merged
+              fi
+            else
+              echo "Branch $branch does not exist"
+              return 2  # Branch doesn't exist
+            fi
+          }
+          
+          # Calculate initial target version
           if [ "$CURRENT" = "1.0.0" ]; then
-            NEW_VERSION="1.0.0"
-            echo "Starting with initial version: $NEW_VERSION"
+            TARGET_VERSION="1.0.0"
+            echo "Starting with initial version: $TARGET_VERSION"
           else
             # Bump minor version
             IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
             NEW_MINOR=$((MINOR + 1))
-            NEW_VERSION="${MAJOR}.${NEW_MINOR}.0"
-            echo "New version: $NEW_VERSION (minor bump from $CURRENT)"
+            TARGET_VERSION="${MAJOR}.${NEW_MINOR}.0"
+            echo "Initial target version: $TARGET_VERSION (minor bump from $CURRENT)"
           fi
           
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "release_branch=release/v$NEW_VERSION" >> $GITHUB_OUTPUT
+          # Check if target version branch exists and is merged
+          # If merged, keep incrementing until we find an unmerged or non-existent version
+          FINAL_VERSION="$TARGET_VERSION"
+          while true; do
+            check_branch_merged "$FINAL_VERSION"
+            result=$?
+            
+            if [ $result -eq 0 ]; then
+              # Branch exists and is merged - bump to next version
+              echo "Version $FINAL_VERSION already released, bumping to next version"
+              IFS='.' read -r MAJOR MINOR PATCH <<< "$FINAL_VERSION"
+              MINOR=$((MINOR + 1))
+              FINAL_VERSION="${MAJOR}.${MINOR}.0"
+            elif [ $result -eq 1 ]; then
+              # Branch exists but not merged - reuse this version
+              echo "Using existing unmerged branch for version $FINAL_VERSION"
+              break
+            else
+              # Branch doesn't exist - use this version
+              echo "New version: $FINAL_VERSION"
+              break
+            fi
+          done
+          
+          echo "new_version=$FINAL_VERSION" >> $GITHUB_OUTPUT
+          echo "release_branch=release/v$FINAL_VERSION" >> $GITHUB_OUTPUT
 
   update-version:
     name: Update Version in Release Branch
@@ -73,7 +125,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create release branch
+      - name: Create or checkout release branch
         run: |
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           RELEASE_BRANCH="${{ needs.calculate-version.outputs.release_branch }}"
@@ -81,15 +133,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Delete remote branch if it exists (force delete to handle any state)
-          git push origin --delete "$RELEASE_BRANCH" 2>/dev/null || echo "Remote branch didn't exist (this is OK)"
-          
-          # Delete local branch if it exists
-          git branch -D "$RELEASE_BRANCH" 2>/dev/null || echo "Local branch didn't exist (this is OK)"
-          
-          # Create and checkout fresh release branch
-          git checkout -b "$RELEASE_BRANCH"
-          echo "Created fresh release branch: $RELEASE_BRANCH"
+          # Check if branch exists remotely
+          if git ls-remote --heads origin "$RELEASE_BRANCH" | grep -q "$RELEASE_BRANCH"; then
+            echo "Release branch $RELEASE_BRANCH already exists remotely"
+            
+            # Fetch and checkout the existing branch
+            git fetch origin "$RELEASE_BRANCH"
+            git checkout -b "$RELEASE_BRANCH" "origin/$RELEASE_BRANCH" || git checkout "$RELEASE_BRANCH"
+            echo "Checked out existing release branch: $RELEASE_BRANCH"
+          else
+            echo "Creating new release branch: $RELEASE_BRANCH"
+            
+            # Delete local branch if it exists
+            git branch -D "$RELEASE_BRANCH" 2>/dev/null || echo "Local branch didn't exist"
+            
+            # Create and checkout fresh release branch
+            git checkout -b "$RELEASE_BRANCH"
+            echo "Created fresh release branch: $RELEASE_BRANCH"
+          fi
 
       - name: Update PackageVersion in .csproj files
         run: |
