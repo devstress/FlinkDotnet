@@ -382,15 +382,15 @@ public class PrometheusMetricsTests : LocalTestingTestBase
             var metricsContent = await response.Content.ReadAsStringAsync();
             TestContext.WriteLine($"      ✅ JobGateway /metrics endpoint accessible");
 
-            // Verify key JobGateway metrics (following Flink naming pattern: flinkdotnet_gateway_*)
+            // Verify key JobGateway metrics (following Flink naming pattern: flinkdotnet_jobgateway_*)
             // These metrics are defined in MetricsService.cs
             
             // Job submission metrics
-            await VerifyMetricHasData("flinkdotnet_gateway_jobs_submitted_total",
+            await VerifyMetricHasData("flinkdotnet_jobgateway_jobs_submitted_total",
                 "Total jobs submitted through JobGateway");
             
             // Running jobs gauge
-            await VerifyOptionalMetric("flinkdotnet_gateway_jobs_running",
+            await VerifyOptionalMetric("flinkdotnet_jobgateway_jobs_running",
                 "Currently running jobs tracked by JobGateway");
             
             // API request metrics (HTTP metrics from prometheus-net.AspNetCore)

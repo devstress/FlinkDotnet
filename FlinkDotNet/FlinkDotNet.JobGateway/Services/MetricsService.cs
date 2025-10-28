@@ -30,7 +30,7 @@ public class MetricsService
     {
         // Job metrics
         this._jobsSubmittedTotal = Metrics.CreateCounter(
-            "flinkdotnet_gateway_jobs_submitted_total",
+            "flinkdotnet_jobgateway_jobs_submitted_total",
             "Total number of jobs submitted to the gateway",
             new CounterConfiguration
             {
@@ -38,15 +38,15 @@ public class MetricsService
             });
 
         this._jobsRunning = Metrics.CreateGauge(
-            "flinkdotnet_gateway_jobs_running",
+            "flinkdotnet_jobgateway_jobs_running",
             "Current number of running jobs tracked by the gateway");
 
         this._jobsSucceededTotal = Metrics.CreateCounter(
-            "flinkdotnet_gateway_jobs_succeeded_total",
+            "flinkdotnet_jobgateway_jobs_succeeded_total",
             "Total number of successfully completed jobs");
 
         this._jobsFailedTotal = Metrics.CreateCounter(
-            "flinkdotnet_gateway_jobs_failed_total",
+            "flinkdotnet_jobgateway_jobs_failed_total",
             "Total number of failed jobs",
             new CounterConfiguration
             {
@@ -55,7 +55,7 @@ public class MetricsService
 
         // Request metrics
         this._requestsTotal = Metrics.CreateCounter(
-            "flinkdotnet_gateway_requests_total",
+            "flinkdotnet_jobgateway_requests_total",
             "Total number of API requests",
             new CounterConfiguration
             {
@@ -63,7 +63,7 @@ public class MetricsService
             });
 
         this._requestDuration = Metrics.CreateHistogram(
-            "flinkdotnet_gateway_request_duration_seconds",
+            "flinkdotnet_jobgateway_request_duration_seconds",
             "Duration of API requests in seconds",
             new HistogramConfiguration
             {
