@@ -524,22 +524,65 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Verify Docker Hub authentication
+        run: |
+          echo "Verifying Docker Hub authentication..."
+          docker info | grep -i username || echo "Warning: Could not verify Docker username"
+          echo "✅ Docker authentication verified"
+
       - name: Download Docker image
         uses: actions/download-artifact@v4
         with:
           name: docker-image
           path: ./docker
 
-      - name: Load and push Docker image
+      - name: Load and push Docker image with retry
         run: |
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           
-          # Load the image
+          echo "Loading Docker image..."
           gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
+          echo "✅ Docker image loaded successfully"
           
-          # Push to Docker Hub
-          docker push ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
-          docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
+          # List loaded images
+          docker images | grep ${{ env.DOCKER_IMAGE_NAME }} || true
+          
+          # Function to push with retry
+          push_with_retry() {
+            local image=$1
+            local max_attempts=3
+            local attempt=1
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "Attempt $attempt of $max_attempts: Pushing $image..."
+              
+              if docker push "$image"; then
+                echo "✅ Successfully pushed $image"
+                return 0
+              else
+                echo "⚠️  Push failed for $image (attempt $attempt/$max_attempts)"
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "Waiting 10 seconds before retry..."
+                  sleep 10
+                  
+                  # Re-authenticate before retry
+                  echo "Re-authenticating with Docker Hub..."
+                  echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+                fi
+              fi
+              
+              attempt=$((attempt + 1))
+            done
+            
+            echo "❌ Failed to push $image after $max_attempts attempts"
+            return 1
+          }
+          
+          # Push version tag with retry
+          push_with_retry "${{ env.DOCKER_IMAGE_NAME }}:$VERSION"
+          
+          # Push latest tag with retry
+          push_with_retry "${{ env.DOCKER_IMAGE_NAME }}:latest"
           
           echo "✅ Docker image published successfully!"
 
