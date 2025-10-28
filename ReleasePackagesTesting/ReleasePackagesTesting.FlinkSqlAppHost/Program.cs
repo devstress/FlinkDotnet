@@ -319,9 +319,9 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 
 // Flink.JobGateway - Use Docker image instead of project reference
 // CRITICAL: This validates the released Docker image works correctly
-// Uses flinkdotnet/jobgateway:latest Docker image from release artifacts
+// Uses devstress/flinkdotnet:latest Docker image from release artifacts (matches workflow DOCKER_IMAGE_NAME)
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
-var gateway = builder.AddContainer("flink-job-gateway", "flinkdotnet/jobgateway", "latest")
+var gateway = builder.AddContainer("flink-job-gateway", "devstress/flinkdotnet", "latest")
     .WithHttpEndpoint(port: Ports.GatewayHostPort, targetPort: 8080, name: "gateway-http")
     .WithContainerRuntimeArgs("--publish", $"{Ports.GatewayHostPort}:8080")  // Explicit port publishing for test access
     .WaitFor(jobManager)  // Wait for JobManager to be ready before starting Job Gateway
