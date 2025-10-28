@@ -80,8 +80,10 @@ jobs:
             TARGET_VERSION="1.0.0"
             echo "Starting with version 1.0.0 from main branch"
             
+            set +e  # Allow check_branch_merged to return non-zero without failing
             check_branch_merged "$TARGET_VERSION"
             result=$?
+            set -e  # Re-enable error exit
             
             if [ $result -eq 0 ]; then
               # Branch exists and is merged - bump to next version
@@ -103,8 +105,10 @@ jobs:
             TARGET_VERSION="${NEW_MAJOR}.0.0"
             echo "Bumped version from $CURRENT to $TARGET_VERSION"
             
+            set +e  # Allow check_branch_merged to return non-zero without failing
             check_branch_merged "$TARGET_VERSION"
             result=$?
+            set -e  # Re-enable error exit
             
             if [ $result -eq 0 ]; then
               # Bumped version branch exists and is merged - bump again
