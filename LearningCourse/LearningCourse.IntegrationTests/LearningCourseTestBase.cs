@@ -24,6 +24,10 @@ public abstract class LearningCourseTestBase
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
     private static StreamWriter? _debugLogWriter;
     
+    // Build configuration constants
+    private const string TargetFramework = "net9.0";
+    private const string AppHostAssemblyName = "LocalTesting.FlinkSqlAppHost.dll";
+    
     /// <summary>
     /// Kafka container IP for Flink jobs (e.g., "172.17.0.2:9093").
     /// Docker bridge network doesn't support DNS, so we use actual IP address.
@@ -190,6 +194,34 @@ public abstract class LearningCourseTestBase
     }
     
     /// <summary>
+    /// Determine which build configuration to use based on available builds.
+    /// Prefers Release if available, falls back to Debug, or builds Debug if none exist.
+    /// </summary>
+    /// <returns>Tuple of (shouldBuild, configuration) where shouldBuild indicates if we need to build first</returns>
+    private static (bool shouldBuild, string configuration) DetermineBuildConfiguration()
+    {
+        // Check for Release build
+        var releaseDll = Path.Combine(AppHostPath, "bin", "Release", TargetFramework, AppHostAssemblyName);
+        if (File.Exists(releaseDll))
+        {
+            TestContext.WriteLine($"✅ Release build found at {releaseDll}");
+            return (false, "Release");
+        }
+        
+        // Check for Debug build
+        var debugDll = Path.Combine(AppHostPath, "bin", "Debug", TargetFramework, AppHostAssemblyName);
+        if (File.Exists(debugDll))
+        {
+            TestContext.WriteLine($"✅ Debug build found at {debugDll}");
+            return (false, "Debug");
+        }
+        
+        // No build exists, need to build Debug
+        TestContext.WriteLine($"⚠️ No build found, will build Debug configuration first");
+        return (true, "Debug");
+    }
+    
+    /// <summary>
     /// Start AppHost process with output capture to both console and log file
     /// </summary>
     private static Process StartAppHostProcess()
@@ -208,10 +240,20 @@ public abstract class LearningCourseTestBase
         aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] Log file: {aspireLogPath}");
         aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] LEARNINGCOURSE=true (enabling Redis and Observability)");
         
+        // Determine which build configuration to use
+        var (shouldBuild, configuration) = DetermineBuildConfiguration();
+        
+        // Build arguments based on whether we need to build first
+        var arguments = shouldBuild
+            ? $"run --no-restore --configuration {configuration}"  // Allow build
+            : $"run --no-restore --no-build --configuration {configuration}";  // Skip build
+        
+        aspireLogWriter.WriteLine($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] Using configuration: {configuration} (shouldBuild: {shouldBuild})");
+        
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = "run --no-restore --no-build --configuration Debug",
+            Arguments = arguments,
             WorkingDirectory = AppHostPath,
             UseShellExecute = false,
             RedirectStandardOutput = true,
