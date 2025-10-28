@@ -21,22 +21,19 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Get latest version from NuGet.org
+      - name: Get version from main branch
         id: get_version
         run: |
-          # Check NuGet.org for published versions
-          echo "Checking NuGet.org for published versions of FlinkDotnet..."
-          NUGET_VERSIONS=$(curl -s "https://api.nuget.org/v3-flatcontainer/flinkdotnet/index.json" 2>/dev/null)
+          # Get the default branch name
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+          echo "Default branch: $DEFAULT_BRANCH"
           
-          if echo "$NUGET_VERSIONS" | jq -e '.versions' > /dev/null 2>&1; then
-            # Package exists, get the latest version
-            CURRENT=$(echo "$NUGET_VERSIONS" | jq -r '.versions[-1]')
-            echo "Found published version on NuGet.org: $CURRENT"
-          else
-            # Package not published yet, start from 1.0.0
-            CURRENT="1.0.0"
-            echo "No package found on NuGet.org, will start from 1.0.0"
-          fi
+          # Fetch the default branch to get the package version
+          git fetch origin "$DEFAULT_BRANCH" 2>/dev/null || true
+          
+          # Get package version from the project file in the default branch
+          CURRENT=$(git show "origin/$DEFAULT_BRANCH:FlinkDotNet/FlinkDotNet.DataStream/FlinkDotNet.DataStream.csproj" 2>/dev/null | grep -oP '(?<=<PackageVersion>)[^<]+' || echo "1.0.0")
+          echo "Package version in $DEFAULT_BRANCH branch: $CURRENT"
           
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
       
@@ -77,44 +74,55 @@ jobs:
             fi
           }
           
-          # Calculate initial target version
+          # Logic based on current version from main branch
           if [ "$CURRENT" = "1.0.0" ]; then
+            # Starting fresh at 1.0.0
             TARGET_VERSION="1.0.0"
-            echo "Starting with initial version: $TARGET_VERSION"
-          else
-            # Bump minor version
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-            NEW_MINOR=$((MINOR + 1))
-            TARGET_VERSION="${MAJOR}.${NEW_MINOR}.0"
-            echo "Initial target version: $TARGET_VERSION (minor bump from $CURRENT)"
-          fi
-          
-          # Check if target version branch exists and is merged
-          # If merged OR exists (unmerged), keep incrementing until we find a non-existent version
-          FINAL_VERSION="$TARGET_VERSION"
-          while true; do
-            check_branch_merged "$FINAL_VERSION"
+            echo "Starting with version 1.0.0 from main branch"
+            
+            check_branch_merged "$TARGET_VERSION"
             result=$?
             
             if [ $result -eq 0 ]; then
               # Branch exists and is merged - bump to next version
-              echo "Version $FINAL_VERSION already released (merged), bumping to next version"
-              IFS='.' read -r MAJOR MINOR PATCH <<< "$FINAL_VERSION"
-              MINOR=$((MINOR + 1))
-              FINAL_VERSION="${MAJOR}.${MINOR}.0"
+              echo "release/v1.0.0 is already merged, bumping to next version"
+              FINAL_VERSION="1.1.0"
             elif [ $result -eq 1 ]; then
-              # Branch exists but not merged - still bump to next version (will force-delete later)
-              echo "Version $FINAL_VERSION has unmerged branch (will be deleted), bumping to next version"
-              IFS='.' read -r MAJOR MINOR PATCH <<< "$FINAL_VERSION"
-              MINOR=$((MINOR + 1))
-              FINAL_VERSION="${MAJOR}.${MINOR}.0"
+              # Branch exists but not merged - use 1.0.0
+              echo "release/v1.0.0 exists but not merged, using 1.0.0"
+              FINAL_VERSION="1.0.0"
             else
-              # Branch doesn't exist - use this version
-              echo "New version: $FINAL_VERSION"
-              break
+              # Branch doesn't exist - use 1.0.0
+              echo "release/v1.0.0 doesn't exist, using 1.0.0"
+              FINAL_VERSION="1.0.0"
             fi
-          done
+          else
+            # Not starting fresh - bump version first
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            NEW_MINOR=$((MINOR + 1))
+            TARGET_VERSION="${MAJOR}.${NEW_MINOR}.0"
+            echo "Bumped version from $CURRENT to $TARGET_VERSION"
+            
+            check_branch_merged "$TARGET_VERSION"
+            result=$?
+            
+            if [ $result -eq 0 ]; then
+              # Bumped version branch exists and is merged - bump again
+              echo "release/v$TARGET_VERSION is already merged, bumping to next version"
+              NEW_MINOR=$((NEW_MINOR + 1))
+              FINAL_VERSION="${MAJOR}.${NEW_MINOR}.0"
+            elif [ $result -eq 1 ]; then
+              # Bumped version branch exists but not merged - use it
+              echo "release/v$TARGET_VERSION exists but not merged, using $TARGET_VERSION"
+              FINAL_VERSION="$TARGET_VERSION"
+            else
+              # Bumped version branch doesn't exist - use it
+              echo "release/v$TARGET_VERSION doesn't exist, using $TARGET_VERSION"
+              FINAL_VERSION="$TARGET_VERSION"
+            fi
+          fi
           
+          echo "Final version selected: $FINAL_VERSION"
           echo "new_version=$FINAL_VERSION" >> $GITHUB_OUTPUT
           echo "release_branch=release/v$FINAL_VERSION" >> $GITHUB_OUTPUT
 
