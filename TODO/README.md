@@ -4,6 +4,12 @@ This folder tracks features from **all Apache Flink versions** (1.0 through 2.1.
 
 ## 📋 Quick Navigation
 
+### For Contributors
+- **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - 📖 Step-by-step guide to implementing TODO features
+- **[TRACKING.md](TRACKING.md)** - 📊 Implementation progress tracking and roadmap
+- **[.implementation-template.md](.implementation-template.md)** - 📝 Work Item template for TODO features
+
+### Feature Documentation
 - **[All Versions Coverage](all-versions-coverage.md)** - Comprehensive analysis of ALL Flink versions (1.0-2.1.0)
 - **[AI/ML Integration (Flink 2.1)](ai-ml-integration-features.md)** - CREATE MODEL, ML_PREDICT, AI providers
 - **[Table API & Advanced SQL (Flink 2.1)](table-api-advanced-sql-features.md)** - VARIANT, PTFs, native API
@@ -212,11 +218,17 @@ Custom Prometheus metrics for FlinkDotNet JobGateway.
 
 Want to implement one of these features? Great!
 
+**📖 START HERE**: [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) - Complete step-by-step guide
+
+### Quick Overview
+
 1. **Review the detailed TODO document** for the feature category
-2. **Create a Work Item** in `WIs/` folder following the template
+2. **Create a Work Item** using the [implementation template](.implementation-template.md)
 3. **Follow TDD/BDD approach** - write tests first
 4. **Start small** - implement minimal viable feature first
 5. **Coordinate with maintainers** via GitHub issues
+
+**New Contributors**: See [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) for detailed walkthrough, best practices, and common patterns.
 
 ## References
 
@@ -239,6 +251,7 @@ Want to implement one of these features? Great!
 
 ## Last Updated
 
-**Date**: 2025-10-27
+**Date**: 2025-10-28
+**Changes**: Added IMPLEMENTATION_GUIDE.md and .implementation-template.md for contributors
 **Scope**: Apache Flink 1.0 through 2.1.0 (all versions)
 **Next Review**: When Flink 2.2 or later is released
