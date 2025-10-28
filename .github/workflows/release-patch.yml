@@ -45,6 +45,10 @@ jobs:
         run: |
           CURRENT="${{ steps.get_version.outputs.current }}"
           
+          # Get the default branch name
+          DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+          echo "Default branch: $DEFAULT_BRANCH"
+          
           # Function to check if a release branch exists and is merged
           check_branch_merged() {
             local version=$1
@@ -54,17 +58,17 @@ jobs:
             if git ls-remote --heads origin "$branch" | grep -q "$branch"; then
               echo "Branch $branch exists remotely"
               
-              # Fetch the branch to check merge status
-              git fetch origin "$branch:$branch" 2>/dev/null || true
+              # Fetch the default branch and the release branch to check merge status
+              git fetch origin "$DEFAULT_BRANCH" 2>/dev/null || true
+              git fetch origin "$branch" 2>/dev/null || true
               
               # Check if branch has been merged to the default branch
-              # We check both the current HEAD and look for merge commits
-              if git log --merges --oneline | grep -q "Merge.*$branch" || \
-                 git branch --contains "origin/$branch" 2>/dev/null | grep -q "HEAD"; then
-                echo "Branch $branch has been merged to main"
+              # Use git merge-base and git rev-parse to check if branch is ancestor of default branch
+              if git merge-base --is-ancestor "origin/$branch" "origin/$DEFAULT_BRANCH" 2>/dev/null; then
+                echo "Branch $branch has been merged to $DEFAULT_BRANCH"
                 return 0  # Branch is merged
               else
-                echo "Branch $branch exists but is NOT merged"
+                echo "Branch $branch exists but is NOT merged to $DEFAULT_BRANCH"
                 return 1  # Branch exists but not merged
               fi
             else
