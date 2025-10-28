@@ -42,7 +42,7 @@ Use the **Retry Publish** workflow:
 Each release creates:
 - ✅ GitHub Release with tag (e.g., `v1.0.0`)
 - ✅ 3 NuGet packages (Common, DataStream, JobBuilder)
-- ✅ Docker image (`flinkdotnet/jobgateway:version`)
+- ✅ Docker image (`devstress/flinkdotnet:version`)
 - ✅ Docker image tarball as release asset
 
 ## Semantic Versioning
