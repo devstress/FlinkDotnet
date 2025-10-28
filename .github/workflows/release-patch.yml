@@ -494,27 +494,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Download NuGet packages
-        uses: actions/download-artifact@v4
-        with:
-          name: nuget-packages
-          path: ./packages
-
-      - name: NuGet login (OIDC → temp API key)
-        uses: NuGet/login@v1
-        id: nuget-login
-        with:
-          user: DarrenDatBui
-
-      - name: Publish to NuGet.org
-        run: |
-          echo "📦 Publishing packages to NuGet.org using Trusted Publishing..."
-          dotnet nuget push "./packages/*.nupkg" \
-            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
-          echo "✅ NuGet packages published successfully!"
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -585,6 +564,27 @@ jobs:
           push_with_retry "${{ env.DOCKER_IMAGE_NAME }}:latest"
           
           echo "✅ Docker image published successfully!"
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./packages
+
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: DarrenDatBui
+
+      - name: Publish to NuGet.org
+        run: |
+          echo "📦 Publishing packages to NuGet.org using Trusted Publishing..."
+          dotnet nuget push "./packages/*.nupkg" \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+          echo "✅ NuGet packages published successfully!"
 
   validate-published-packages:
     name: Validate Published Packages (Post-Release Validation)
