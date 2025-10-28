@@ -61,17 +61,18 @@ scrape_configs:
   #         component: 'flink'
   #         role: 'sql-gateway'
 
-  # FlinkDotNet JobGateway metrics - FUTURE
+  # FlinkDotNet JobGateway metrics - ENABLED
   # NOTE: JobGateway is containerized in ReleasePackagesTesting (.AddContainer)
   # Container name: flink-job-gateway, Port: 8080
-  # When JobGateway adds Prometheus metrics endpoint, enable this configuration:
-  # - job_name: 'job-gateway'
-  #   metrics_path: '/metrics'
-  #   static_configs:
-  #     - targets: ['flink-job-gateway:8080']
-  #       labels:
-  #         component: 'jobgateway'
-  #         role: 'gateway'
+  # JobGateway exposes Prometheus metrics following Apache Flink naming conventions
+  # Metrics include: job submissions, running jobs, API requests (see MetricsService.cs)
+  - job_name: 'job-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flink-job-gateway:8080']
+        labels:
+          component: 'jobgateway'
+          role: 'gateway'
 
   # Prometheus self-monitoring
   - job_name: 'prometheus'
