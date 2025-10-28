@@ -24,6 +24,10 @@ public abstract class LearningCourseTestBase
         "LocalTesting", "LocalTesting.FlinkSqlAppHost");
     private static StreamWriter? _debugLogWriter;
     
+    // Build configuration constants
+    private const string TargetFramework = "net9.0";
+    private const string AppHostAssemblyName = "LocalTesting.FlinkSqlAppHost.dll";
+    
     /// <summary>
     /// Kafka container IP for Flink jobs (e.g., "172.17.0.2:9093").
     /// Docker bridge network doesn't support DNS, so we use actual IP address.
@@ -197,7 +201,7 @@ public abstract class LearningCourseTestBase
     private static (bool shouldBuild, string configuration) DetermineBuildConfiguration()
     {
         // Check for Release build
-        var releaseDll = Path.Combine(AppHostPath, "bin", "Release", "net9.0", "LocalTesting.FlinkSqlAppHost.dll");
+        var releaseDll = Path.Combine(AppHostPath, "bin", "Release", TargetFramework, AppHostAssemblyName);
         if (File.Exists(releaseDll))
         {
             TestContext.WriteLine($"✅ Release build found at {releaseDll}");
@@ -205,7 +209,7 @@ public abstract class LearningCourseTestBase
         }
         
         // Check for Debug build
-        var debugDll = Path.Combine(AppHostPath, "bin", "Debug", "net9.0", "LocalTesting.FlinkSqlAppHost.dll");
+        var debugDll = Path.Combine(AppHostPath, "bin", "Debug", TargetFramework, AppHostAssemblyName);
         if (File.Exists(debugDll))
         {
             TestContext.WriteLine($"✅ Debug build found at {debugDll}");
