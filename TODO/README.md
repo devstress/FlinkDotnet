@@ -42,19 +42,21 @@ This folder tracks features from **all Apache Flink versions** (1.0 through 2.1.
 
 ## 📊 Implementation Progress
 
-**Overall**: 0 of 19 features implemented (0%)
+**Overall**: 0 of 19 features implemented (0%), 1 in progress (5%)
 
 See **[TRACKING.md](TRACKING.md)** for detailed progress tracking, feature checklist, and implementation roadmap.
 
 | Priority | Features | Implemented | In Progress | Not Started | Progress |
 |----------|----------|-------------|-------------|-------------|----------|
-| P0 - Critical | 7 | 0 | 0 | 7 | 0% |
+| P0 - Critical | 7 | 0 | 1 | 6 | 14% started |
 | P1 - High | 5 | 0 | 0 | 5 | 0% |
 | P2 - Medium | 4 | 0 | 0 | 4 | 0% |
 | P3 - Low | 1 | 0 | 0 | 1 | 0% |
-| **Total** | **19** | **0** | **0** | **19** | **0%** |
+| **Total** | **19** | **0** | **1** | **18** | **5% started** |
 
-**Next Feature**: Recommended to start with **Unified Sink API v2** (P0, 3-4 weeks) - Required for Flink 2.0+ compatibility.
+**Current Work**: **Unified Sink API v2** (P0, 3-4 weeks) - Investigation phase started (WI6)
+- Status: Investigation phase - researching Flink 1.20 Unified Sink architecture
+- Required for Flink 2.0+ compatibility
 
 ## What FlinkDotNet Already Supports ✅
 
@@ -274,13 +276,19 @@ cp TODO/.implementation-template.md WIs/WI[#]_[feature-name].md
 
 ## Last Updated
 
-**Date**: 2025-10-27
+**Date**: 2025-10-28
 **Tracking System**: Added TRACKING.md, .implementation-template.md (WI5)
-**Implementation Progress**: 0 of 19 features (0%)
+**Implementation Progress**: 0 of 19 features implemented (0%), 1 in progress (5%)
+**Current Work**: Unified Sink API v2 (WI6) - Investigation phase
 **Scope**: Apache Flink 1.0 through 2.1.0 (all versions)
 **Next Review**: When Flink 2.2 or later is released, or after first feature implementation
 
 ### Change Log
+- **2025-10-28**:
+  - Started implementation of Unified Sink API v2 (WI6)
+  - Updated TRACKING.md to show 1 feature in progress
+  - Updated README.md progress dashboard (0 implemented, 1 in progress)
+  
 - **2025-10-27**: 
   - Added [TRACKING.md](TRACKING.md) for implementation progress tracking
   - Added [.implementation-template.md](.implementation-template.md) for Work Item creation

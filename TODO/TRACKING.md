@@ -2,7 +2,7 @@
 
 **Purpose**: Track incremental implementation progress for Apache Flink features documented in this folder.
 
-**Last Updated**: 2025-10-27
+**Last Updated**: 2025-10-28
 **Related WI**: WI5_todo-implementation-tracking.md
 
 ## Quick Status Dashboard
@@ -13,9 +13,9 @@
 | Table API & SQL | 7 | 0 | 0 | 7 | P1 |
 | Performance & Format | 4 | 0 | 0 | 4 | P2 |
 | Materialized Tables | 1 | 0 | 0 | 1 | P0 |
-| Unified Sink API v2 | 1 | 0 | 0 | 1 | P0 |
+| Unified Sink API v2 | 1 | 0 | 1 | 0 | P0 |
 | Table Store (Paimon) | 1 | 0 | 0 | 1 | P1 |
-| **TOTAL** | **19** | **0** | **0** | **19** | - |
+| **TOTAL** | **19** | **0** | **1** | **18** | - |
 
 ## Feature Implementation Checklist
 
@@ -54,9 +54,10 @@
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#1-materialized-tables-flip-435-)
 
 #### Unified Sink API v2 (Flink 1.20) - 3-4 weeks
-- [ ] Unified Sink API v2 (3-4 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started
+- [x] Unified Sink API v2 (3-4 weeks) - **IN PROGRESS**
+  - **WI**: WI6_unified-sink-api-v2.md
+  - **Status**: Investigation phase
+  - **Started**: 2025-10-28
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#2-unified-sink-api-v2-replaces-legacy-sinkfunction-)
 
 #### VARIANT Data Type (Flink 2.1) - 3-4 weeks
@@ -220,13 +221,14 @@ See `TODO/.implementation-template.md` for standardized WI template.
 ## Progress Metrics
 
 ### Completion by Priority
-- **P0 Features**: 0/7 (0%)
+- **P0 Features**: 0/7 implemented, 1/7 in progress (14% started)
 - **P1 Features**: 0/5 (0%)
 - **P2 Features**: 0/4 (0%)
 - **P3 Features**: 0/1 (0%)
 
 ### Estimated Time Investment
 - **Completed**: 0 weeks
+- **In Progress**: 0-0.5 weeks (Unified Sink API v2 - Investigation phase)
 - **Remaining P0**: 20-29 weeks
 - **Remaining P1**: 15-21 weeks
 - **Remaining P2**: 8-11 weeks
@@ -236,17 +238,18 @@ See `TODO/.implementation-template.md` for standardized WI template.
 ### Velocity Tracking
 *Update as features are completed to track implementation velocity*
 
-| Month | Features Completed | Weeks Invested | Velocity (features/week) |
-|-------|-------------------|----------------|--------------------------|
-| Nov 2025 | 0 | 0 | - |
-| Dec 2025 | 0 | 0 | - |
-| Jan 2026 | 0 | 0 | - |
+| Month | Features Completed | Features Started | Weeks Invested | Velocity (features/week) |
+|-------|-------------------|------------------|----------------|--------------------------|
+| Oct 2025 | 0 | 1 (Unified Sink API v2) | 0.5 | - |
+| Nov 2025 | 0 | 0 | 0 | - |
+| Dec 2025 | 0 | 0 | 0 | - |
 
 ## Next Steps
 
-1. **Immediate**: Validate current feature coverage (WI5)
-2. **Short-term**: Create WI for first P0 feature (Unified Sink API v2)
-3. **Medium-term**: Begin Phase 1 implementation
+1. ✅ **Immediate**: Validate current feature coverage (WI5) - COMPLETED
+2. ✅ **Short-term**: Create WI for first P0 feature (Unified Sink API v2) - COMPLETED (WI6)
+3. **Current**: Complete Investigation phase for WI6
+4. **Medium-term**: Begin Design and TDD phases for Unified Sink API v2
 4. **Long-term**: Follow roadmap phases 1-5
 
 ## Contributing
