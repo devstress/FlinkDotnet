@@ -78,7 +78,7 @@ await env.ExecuteAsync("order-processor");
 
 **What makes it different?**
 - ✅ **Native .NET API** - Full Apache Flink 2.1 DataStream API in C#
-- ✅ **Production-Ready** - 10 passing integration tests, validated end-to-end pipeline
+- ✅ **Production-Ready** - 9 passing integration tests, validated end-to-end pipeline
 - ✅ **Enterprise Scale** - Supports Kafka, event-time windowing, exactly-once semantics
 - ✅ **Zero Java Code** - Write everything in C#, runs on Flink clusters via IR translation
 - ✅ **Local Development** - .NET Aspire integration for one-command cluster startup
@@ -91,13 +91,13 @@ await env.ExecuteAsync("order-processor");
 # 1. Clone and build
 git clone https://github.com/devstress/FlinkDotnet.git
 cd FlinkDotnet
-dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
+dotnet build FlinkDotNet/FlinkDotNet.sln
 
 # 2. Run integration tests (validates complete pipeline)
 cd LocalTesting
-dotnet test LocalTesting.IntegrationTests --configuration Release
+dotnet test LocalTesting.IntegrationTests
 
-# Expected: ✅ 10 tests pass - Kafka → Flink → Processing → Output validated
+# Expected: ✅ 9 tests pass - Kafka → Flink → Processing → Output validated
 ```
 
 **Your first Flink job:**
