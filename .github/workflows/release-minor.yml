@@ -45,8 +45,8 @@ jobs:
         run: |
           CURRENT="${{ steps.get_version.outputs.current }}"
           
-          # Get the default branch name
-          DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+          # Get the default branch name (more reliable method)
+          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
           echo "Default branch: $DEFAULT_BRANCH"
           
           # Function to check if a release branch exists and is merged
