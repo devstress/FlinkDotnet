@@ -11,7 +11,7 @@ namespace FlinkDotNet.DataStream.Tests
     [TestFixture]
     public class StreamExecutionEnvironmentUrlExtractionTests
     {
-        private MethodInfo? _extractUrlMethod;
+        private MethodInfo _extractUrlMethod;
 
         [SetUp]
         public void Setup()
@@ -26,10 +26,10 @@ namespace FlinkDotNet.DataStream.Tests
         public void ExtractJobManagerUrlFromError_WithNullErrorMessage_ReturnsNotAvailable()
         {
             // Arrange
-            string? errorMessage = null;
+            string errorMessage = null;
 
             // Act
-            var result = _extractUrlMethod?.Invoke(null, new object?[] { errorMessage }) as string;
+            var result = _extractUrlMethod?.Invoke(null, new object[] { errorMessage }) as string;
 
             // Assert
             Assert.That(result, Is.EqualTo("(not available in error message)"));

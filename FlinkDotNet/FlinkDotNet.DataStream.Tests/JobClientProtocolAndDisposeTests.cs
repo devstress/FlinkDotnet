@@ -12,7 +12,7 @@ namespace FlinkDotNet.DataStream.Tests
     [TestFixture]
     public class JobClientProtocolAndDisposeTests
     {
-        private MethodInfo? _getProtocolMethod;
+        private MethodInfo _getProtocolMethod;
 
         [SetUp]
         public void Setup()
