@@ -523,6 +523,10 @@ jobs:
           gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
           echo "✅ Docker image loaded successfully"
           
+          # Tag the loaded image with :latest
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
+          echo "✅ Tagged image as latest"
+          
           # List loaded images
           docker images | grep ${{ env.DOCKER_IMAGE_NAME }} || true
           
