@@ -722,16 +722,7 @@ jobs:
           - ✅ Packages published successfully
           - ✅ Post-release validation passed
           
-          This PR will be auto-merged and the release branch will be automatically deleted.")
+          Please review and merge this PR manually. The release branch can be deleted after merge.")
           
           echo "Created PR: $PR_URL"
-          
-          # Enable auto-merge with branch deletion
-          # Extract PR number from URL
-          PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
-          
-          # Enable auto-merge (will merge when all checks pass) and delete branch after merge
-          gh pr merge "$PR_NUMBER" --auto --delete-branch --squash
-          
-          echo "Auto-merge enabled for PR #$PR_NUMBER"
-          echo "The release branch $RELEASE_BRANCH will be automatically deleted after merge."
+          echo "Please review and merge the PR manually to complete the release process."
