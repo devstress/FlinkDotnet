@@ -74,8 +74,9 @@ push_with_retry() {
         sleep 10
         
         # Re-authenticate before retry
+        # Note: In workflows, uses ${{ secrets.DOCKER_PASSWORD }} and ${{ secrets.DOCKER_USERNAME }}
         echo "Re-authenticating with Docker Hub..."
-        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        echo "<password>" | docker login -u "<username>" --password-stdin
       fi
     fi
     
@@ -86,6 +87,10 @@ push_with_retry() {
   return 1
 }
 ```
+
+**Note**: In the actual workflow implementation, the credentials are accessed via GitHub Actions secrets:
+- `${{ secrets.DOCKER_PASSWORD }}` for the password
+- `${{ secrets.DOCKER_USERNAME }}` for the username
 
 ### Affected Workflows
 - `.github/workflows/release-major.yml`
