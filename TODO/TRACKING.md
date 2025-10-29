@@ -49,8 +49,10 @@
 
 #### Materialized Tables (Flink 1.20) - 4-6 weeks
 - [ ] Materialized Tables FLIP-435 (4-6 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started
+  - **WI**: WI7_materialized-tables.md - Investigation phase started
+  - **Status**: Investigation in progress (Week 1)
+  - **Started**: 2025-10-29
+  - **Progress**: SQL DDL syntax researched, API design planned
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#1-materialized-tables-flip-435-)
 
 #### Unified Sink API v2 (Flink 1.20) - 3-4 weeks
@@ -226,7 +228,7 @@ See `TODO/.implementation-template.md` for standardized WI template.
 ## Progress Metrics
 
 ### Completion by Priority
-- **P0 Features**: 1/7 fully implemented ✅, 0/7 in progress (Unified Sink API v2 complete!)
+- **P0 Features**: 1/7 fully implemented ✅, 1/7 in progress (WI7 Materialized Tables - Investigation)
 - **P1 Features**: 0/5 (0%)
 - **P2 Features**: 0/4 (0%)
 - **P3 Features**: 0/1 (0%)
@@ -245,7 +247,7 @@ See `TODO/.implementation-template.md` for standardized WI template.
 
 | Month | Features Completed | Features Started | Weeks Invested | Velocity (features/week) | Notes |
 |-------|-------------------|------------------|----------------|--------------------------|-------|
-| Oct 2025 | 1 (Unified Sink API v2) ✅ | 1 | 2.0 | 0.50 | Full implementation: IR Schema + C# API + Java IR Runner (+30 tests, 431 passing) |
+| Oct 2025 | 1 (Unified Sink API v2) ✅ | 2 (WI6 complete, WI7 started) | 2.0 | 0.50 | WI6: Full implementation (IR + C# API + Java IR Runner, 5 tests). WI7: Investigation started (Materialized Tables) |
 | Nov 2025 | 0 | 0 | 0 | - | - |
 | Dec 2025 | 0 | 0 | 0 | - | - |
 

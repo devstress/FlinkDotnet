@@ -1,18 +1,18 @@
 # TODO Implementation Status Report
 
 **Last Updated**: 2025-10-29
-**Report Period**: Initial TODO Implementation Progress - WI6 Complete ✅
+**Report Period**: WI6 Complete ✅, WI7 Investigation Started 🚀
 **Total Features**: 19 (across all priority levels)
 
 ## Executive Summary
 
-FlinkDotNet has successfully completed its first P0 feature implementation! **WI6 - Unified Sink API v2** is now 100% complete with C# API layer, Java IR Runner integration, and comprehensive test coverage.
+FlinkDotNet has successfully completed its first P0 feature (WI6 - Unified Sink API v2) and has begun work on the second P0 feature (WI7 - Materialized Tables). Test optimization has reduced UnifiedSinkV2 tests from 12 to 5 comprehensive tests, adhering to the "max 5 tests per Flink version" guideline.
 
 ### Overall Progress
-- **Features In Progress**: 0
+- **Features In Progress**: 1 (WI7 - Materialized Tables 🚀 Investigation)
 - **Features Completed**: 1 (WI6 - Unified Sink API v2 ✅)
-- **Features Not Started**: 18
-- **Overall Completion**: 5.3% (1/19 features complete)
+- **Features Not Started**: 17
+- **Overall Completion**: 5.3% (1/19 features complete, 1 in progress)
 
 ## Completed Work Items
 
@@ -153,21 +153,62 @@ FlinkDotNet has successfully completed its first P0 feature implementation! **WI
 - Replaces legacy SinkFunction with modern patterns
 - Full backward compatibility maintained
 
+## In Progress Work Items
+
+### WI7: Materialized Tables (Flink 1.20) - P0 🚀 INVESTIGATION
+
+**Status**: Investigation Phase (Week 1 of 6)
+**Priority**: P0 - Critical (Second P0 feature after Unified Sink v2)
+**Started**: 2025-10-29
+**Estimated Completion**: Mid-December 2025 (4-6 weeks)
+**Assignee**: GitHub Copilot Agent
+
+**Progress**:
+- ✅ **Investigation Phase** (20% complete - Week 1/2)
+  - Reviewed Apache Flink 1.20 Materialized Tables documentation
+  - Analyzed SQL DDL syntax for CREATE MATERIALIZED TABLE
+  - Identified refresh modes: FULL and CONTINUOUS
+  - Documented freshness interval configuration
+  - Researched proposed C# API design patterns
+  - Assessed complexity: Moderate (simpler than WI6)
+  - Identified dependencies: Table API (exists), optional Catalog API (P1)
+  
+- ⏳ **Next Steps** (Week 2):
+  - Review Flink source code for Java implementation
+  - Design IR schema for MaterializedTableDefinition
+  - Design C# API with builder pattern
+  - Plan Java IR Runner integration
+  - Document design decisions and alternatives
+
+**Key Achievements So Far**:
+1. ✅ WI7 work item created with comprehensive investigation plan
+2. ✅ SQL DDL syntax documented and understood
+3. ✅ API design approach identified (SQL DDL + programmatic builder)
+4. ✅ Risk assessment completed
+5. ✅ 6-week implementation plan created
+
+**Technical Highlights**:
+- Simpler than WI6: Mostly SQL DDL passthrough to Flink
+- No complex custom sink logic required
+- Can leverage existing ExecuteSql infrastructure
+- Refresh jobs managed by Flink cluster, not FlinkDotNet
+- Optional catalog integration can be deferred
+
+**Estimated Timeline**:
+- Week 1-2: Investigation & Design (Current)
+- Week 3-4: Implementation (SQL DDL + C# API)
+- Week 5: Advanced features (CONTINUOUS mode, management ops)
+- Week 6: Testing, validation, documentation
+
 ## Upcoming Work (Next 3 Features)
 
-### 1. Materialized Tables (Flink 1.20) - P0
-**Status**: Not Started
-**Estimated Effort**: 4-6 weeks
-**Dependencies**: None
-**Priority Ranking**: #2 after Unified Sink v2
-
-### 2. AI/ML Integration - CREATE MODEL DDL (Flink 2.1) - P0
-**Status**: Not Started
+### 1. AI/ML Integration - CREATE MODEL DDL (Flink 2.1) - P0
+**Status**: Not Started (planned after WI7)
 **Estimated Effort**: 2-3 weeks
-**Dependencies**: None
+**Dependencies**: WI7 completion
 **Priority Ranking**: #3
 
-### 3. VARIANT Data Type (Flink 2.1) - P0
+### 2. VARIANT Data Type (Flink 2.1) - P0
 **Status**: Not Started
 **Estimated Effort**: 3-4 weeks
 **Dependencies**: None
