@@ -489,6 +489,73 @@ public class FlinkJobRunner {
             logger.info("[KAFKA SINK] Java equivalent: stream.addSink(new KafkaStringSink(\"{}\", props)).name(\"KafkaSink\");", s.topic);
             stream.addSink(new KafkaStringSink(s.topic, props)).name("KafkaSink");
             logger.info("[KAFKA SINK] ✓ Sink created successfully");
+        } else if (ir.sink instanceof UnifiedSinkV2Definition) {
+            UnifiedSinkV2Definition s = (UnifiedSinkV2Definition) ir.sink;
+            
+            logger.info("============================================================");
+            logger.info("[UNIFIED SINK V2] Configuration:");
+            logger.info("  - Sink Type: {}", s.sinkType);
+            logger.info("  - Semantics: {}", s.semantics);
+            logger.info("  - Stateful: {}", s.stateful);
+            logger.info("  - Writer Class: {}", s.writerConfig != null ? s.writerConfig.className : "N/A");
+            logger.info("  - Committer Enabled: {}", s.committerConfig != null && s.committerConfig.enabled);
+            logger.info("============================================================");
+            
+            // Currently only Kafka is supported via UnifiedSinkV2
+            if ("kafka".equalsIgnoreCase(s.sinkType)) {
+                // Extract Kafka configuration from writer config properties
+                if (s.writerConfig == null || s.writerConfig.properties == null) {
+                    throw new RuntimeException("UnifiedSinkV2 Kafka sink requires writerConfig.properties");
+                }
+                
+                Object topicObj = s.writerConfig.properties.get("topic");
+                Object bootstrapObj = s.writerConfig.properties.get("bootstrapServers");
+                
+                if (topicObj == null || bootstrapObj == null) {
+                    // Fallback to source bootstrap servers if not provided
+                    if (bootstrapObj == null && ir.source instanceof KafkaSourceDefinition) {
+                        bootstrapObj = ((KafkaSourceDefinition) ir.source).bootstrapServers;
+                    }
+                    if (topicObj == null || bootstrapObj == null) {
+                        throw new RuntimeException("UnifiedSinkV2 Kafka sink requires 'topic' and 'bootstrapServers' in writerConfig.properties");
+                    }
+                }
+                
+                String topic = topicObj.toString();
+                String bootstrap = bootstrapObj.toString();
+                
+                logger.info("[UNIFIED SINK V2 - KAFKA] Using Kafka configuration:");
+                logger.info("  - Topic: {}", topic);
+                logger.info("  - Bootstrap Servers: {}", bootstrap);
+                
+                // Create Kafka producer properties
+                Properties props = new Properties();
+                props.put("bootstrap.servers", bootstrap);
+                
+                // Add transaction support if exactly-once semantics requested
+                if ("exactly-once".equalsIgnoreCase(s.semantics) && s.committerConfig != null && s.committerConfig.enabled) {
+                    logger.info("[UNIFIED SINK V2 - KAFKA] Enabling exactly-once semantics with transactions");
+                    
+                    // Get transaction prefix from committer config or use default
+                    String txPrefix = "flink-";
+                    if (s.committerConfig.properties != null && s.committerConfig.properties.containsKey("transactionPrefix")) {
+                        txPrefix = s.committerConfig.properties.get("transactionPrefix").toString();
+                    }
+                    
+                    // Note: For full exactly-once support, we would need to use Flink's Kafka connector
+                    // For now, we'll use the simple sink with a note
+                    logger.warn("[UNIFIED SINK V2 - KAFKA] Full exactly-once support requires Flink Kafka connector");
+                    logger.warn("[UNIFIED SINK V2 - KAFKA] Currently using at-least-once semantics via simple sink");
+                }
+                
+                // Create and attach the Kafka sink
+                logger.info("[UNIFIED SINK V2 - KAFKA] Creating Kafka sink via Unified Sink API v2");
+                UnifiedSinkV2KafkaWrapper kafkaSink = new UnifiedSinkV2KafkaWrapper(topic, props, s);
+                stream.sinkTo(kafkaSink).name("UnifiedSinkV2-Kafka");
+                logger.info("[UNIFIED SINK V2 - KAFKA] ✓ Sink created successfully");
+            } else {
+                throw new RuntimeException("UnifiedSinkV2 sinkType '" + s.sinkType + "' not yet supported. Currently only 'kafka' is implemented.");
+            }
         } else {
             stream.print();
         }
@@ -545,7 +612,7 @@ public class FlinkJobRunner {
     public static class JobDefinition {
         public Source source;
         public List<Operation> operations;
-        public Sink sink;
+        public SinkDefinitionType sink;
         public JobMetadata metadata;
     }
 
@@ -565,9 +632,10 @@ public class FlinkJobRunner {
 public interface Source {}
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = KafkaSinkDefinition.class, name = "kafka")
+        @JsonSubTypes.Type(value = KafkaSinkDefinition.class, name = "kafka"),
+        @JsonSubTypes.Type(value = UnifiedSinkV2Definition.class, name = "unified_sink_v2")
 })
-public interface Sink {}
+public interface SinkDefinitionType {}
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = MapOperationDefinition.class, name = "map"),
@@ -600,11 +668,35 @@ public interface Operation {}
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class KafkaSinkDefinition implements Sink {
+    public static class KafkaSinkDefinition implements SinkDefinitionType {
         public String type;
         public String topic;
         public String bootstrapServers;
         public String serializer;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class UnifiedSinkV2Definition implements SinkDefinitionType {
+        public String type;
+        public String sinkType;
+        public SinkWriterConfig writerConfig;
+        public SinkCommitterConfig committerConfig;
+        public String semantics;
+        public boolean stateful;
+        public Map<String, String> properties;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SinkWriterConfig {
+        public String className;
+        public Map<String, Object> properties;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SinkCommitterConfig {
+        public boolean enabled;
+        public String className;
+        public Map<String, Object> properties;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -886,6 +978,106 @@ public interface Operation {}
         public void processElement(String value, Context ctx, Collector<String> out) throws Exception {
             state.update(value);
             out.collect(value);
+        }
+    }
+
+    /**
+     * UnifiedSinkV2 wrapper for Kafka that implements Flink's Sink API v2.
+     * This bridges the C# Unified Sink API to Flink's native org.apache.flink.api.connector.sink2.Sink interface.
+     */
+    public static class UnifiedSinkV2KafkaWrapper implements org.apache.flink.api.connector.sink2.Sink<String> {
+        private static final Logger logger = LoggerFactory.getLogger(UnifiedSinkV2KafkaWrapper.class);
+        private final String topic;
+        private final Properties kafkaProps;
+        private final UnifiedSinkV2Definition config;
+
+        public UnifiedSinkV2KafkaWrapper(String topic, Properties kafkaProps, UnifiedSinkV2Definition config) {
+            this.topic = topic;
+            this.kafkaProps = kafkaProps;
+            this.config = config;
+        }
+
+        @Override
+        public org.apache.flink.api.connector.sink2.SinkWriter<String> createWriter(org.apache.flink.api.connector.sink2.WriterInitContext context) throws java.io.IOException {
+            logger.info("[UNIFIED SINK V2] Creating SinkWriter for Kafka");
+            logger.info("[UNIFIED SINK V2]   - Topic: {}", topic);
+            logger.info("[UNIFIED SINK V2]   - Subtask: {}/{}", 
+                context.getTaskInfo().getIndexOfThisSubtask(), 
+                context.getTaskInfo().getNumberOfParallelSubtasks());
+            return new UnifiedSinkV2KafkaWriter(topic, kafkaProps, config);
+        }
+    }
+
+    /**
+     * SinkWriter implementation for Kafka using Unified Sink API v2.
+     * Handles writing elements to Kafka and manages producer lifecycle.
+     */
+    public static class UnifiedSinkV2KafkaWriter implements org.apache.flink.api.connector.sink2.SinkWriter<String> {
+        private static final Logger logger = LoggerFactory.getLogger(UnifiedSinkV2KafkaWriter.class);
+        private final String topic;
+        private final Properties kafkaProps;
+        private final UnifiedSinkV2Definition config;
+        private org.apache.kafka.clients.producer.KafkaProducer<String, String> producer;
+
+        public UnifiedSinkV2KafkaWriter(String topic, Properties kafkaProps, UnifiedSinkV2Definition config) {
+            this.topic = topic;
+            this.kafkaProps = kafkaProps;
+            this.config = config;
+            
+            // Initialize Kafka producer
+            try {
+                logger.info("[UNIFIED SINK V2 WRITER] Initializing Kafka producer");
+                this.producer = new org.apache.kafka.clients.producer.KafkaProducer<>(
+                    kafkaProps,
+                    new org.apache.kafka.common.serialization.StringSerializer(),
+                    new org.apache.kafka.common.serialization.StringSerializer()
+                );
+                logger.info("[UNIFIED SINK V2 WRITER] ✓ Kafka producer initialized successfully");
+            } catch (Exception e) {
+                logger.error("[UNIFIED SINK V2 WRITER] ✗ ERROR initializing producer: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to initialize Kafka producer", e);
+            }
+        }
+
+        @Override
+        public void write(String element, Context context) {
+            try {
+                logger.debug("[UNIFIED SINK V2 WRITER] Writing element to topic '{}': {}", topic, element);
+                var record = new org.apache.kafka.clients.producer.ProducerRecord<String, String>(topic, element);
+                producer.send(record);
+                logger.debug("[UNIFIED SINK V2 WRITER] ✓ Element written successfully");
+            } catch (Exception e) {
+                logger.error("[UNIFIED SINK V2 WRITER] ✗ ERROR writing element: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to write element to Kafka", e);
+            }
+        }
+
+        @Override
+        public void flush(boolean endOfInput) {
+            try {
+                logger.debug("[UNIFIED SINK V2 WRITER] Flushing producer (endOfInput={})", endOfInput);
+                if (producer != null) {
+                    producer.flush();
+                }
+                logger.debug("[UNIFIED SINK V2 WRITER] ✓ Flush completed");
+            } catch (Exception e) {
+                logger.error("[UNIFIED SINK V2 WRITER] ✗ ERROR during flush: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to flush Kafka producer", e);
+            }
+        }
+
+        @Override
+        public void close() {
+            try {
+                logger.info("[UNIFIED SINK V2 WRITER] Closing Kafka producer");
+                if (producer != null) {
+                    producer.flush();
+                    producer.close();
+                    logger.info("[UNIFIED SINK V2 WRITER] ✓ Producer closed successfully");
+                }
+            } catch (Exception e) {
+                logger.error("[UNIFIED SINK V2 WRITER] ✗ ERROR closing producer: {}", e.getMessage(), e);
+            }
         }
     }
 }
