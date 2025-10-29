@@ -154,7 +154,10 @@
 6. **Update Documentation**: 
    - Update `TODO/TRACKING.md`: Check off feature and add WI reference
    - Update `TODO/README.md`: Reflect new implementation status
-   - Update `LearningCourse/Day02-Flink21-Fundamentals/README.md`: Append version coverage and integration test locations
+   - Update `LearningCourse/Day02-Flink21-Fundamentals/README.md`: 
+     - Append feature implementation details with integration test locations
+     - When ALL features of a Flink version are complete, update the version status table to mark it as "FULLY COVERED"
+     - Update version-specific section with comprehensive feature list and test coverage
 7. **Verify Build**: Ensure zero warnings and zero errors in final build
 
 ### Code Quality Standards
@@ -174,6 +177,29 @@
 
 ### Work Item Template Location
 See `TODO/.implementation-template.md` for standardized WI template.
+
+### Apache Flink Version Completion Tracking
+
+**Purpose**: Track when FlinkDotNet achieves **full coverage** of specific Apache Flink versions.
+
+**Process**: When implementing features, check if completing a WI means a Flink version is now fully covered:
+
+1. **Review** `TODO/all-versions-coverage.md` to identify all features for the target Flink version
+2. **Verify** all listed features for that version are implemented (check TRACKING.md checklist)
+3. **Update** `LearningCourse/Day02-Flink21-Fundamentals/README.md` version status table:
+   - Change status from "⚠️ PARTIAL" or "🚀 IN PROGRESS" to "✅ **FULLY COVERED**"
+   - Update the version-specific section with complete feature list
+   - Add comprehensive integration test documentation
+4. **Document** the milestone in commit message (e.g., "Complete Flink 1.20 full coverage")
+
+**Example**: After completing WI7 (Materialized Tables):
+- Flink 1.20 has 3 major features: Unified Sink v2 ✅, Materialized Tables ✅, and one more
+- Once the third feature is complete, update Day02 README.md to mark Flink 1.20 as "✅ **FULLY COVERED**"
+
+**Current Fully Covered Versions**:
+- Flink 1.0 - 1.9: ✅ Fully Covered (foundational features)
+- Flink 1.10 - 1.14: ✅ Good Coverage (most Table API features)
+- Flink 1.15+: 🚧 Work in Progress
 
 ## Implementation Roadmap
 
