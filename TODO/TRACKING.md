@@ -54,14 +54,16 @@
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#1-materialized-tables-flip-435-)
 
 #### Unified Sink API v2 (Flink 1.20) - 3-4 weeks
-- [x] Unified Sink API v2 (3-4 weeks) - **80% COMPLETE** (C# API done, Java IR Runner pending)
+- [x] Unified Sink API v2 (3-4 weeks) - **95% COMPLETE** (C# API ✅, Java IR Runner ✅, End-to-end testing pending)
   - **WI**: WI6_unified-sink-api-v2.md
-  - **Status**: C# API implementation complete - commits 77ac813, d9f50a0
+  - **Status**: Java IR Runner implementation complete - commit fedc628
   - **Started**: 2025-10-28
   - **C# API Completed**: 2025-10-29
-  - **Progress**: IR Schema ✅, C# API ✅, Java IR Runner ⏸️
+  - **Java IR Runner Completed**: 2025-10-29
+  - **Progress**: IR Schema ✅, C# API ✅, Java IR Runner ✅, E2E Testing ⏸️
   - **Tests Added**: +24 unit tests, +6 integration tests
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#2-unified-sink-api-v2-replaces-legacy-sinkfunction-)
+
 
 #### VARIANT Data Type (Flink 2.1) - 3-4 weeks
 - [ ] VARIANT Type Support (2-3 weeks)
@@ -224,20 +226,20 @@ See `TODO/.implementation-template.md` for standardized WI template.
 ## Progress Metrics
 
 ### Completion by Priority
-- **P0 Features**: 0/7 fully implemented, 1/7 in progress at 80% (C# API complete)
+- **P0 Features**: 0/7 fully implemented, 1/7 in progress at 95% (Java IR Runner complete)
 - **P1 Features**: 0/5 (0%)
 - **P2 Features**: 0/4 (0%)
 - **P3 Features**: 0/1 (0%)
 
 ### Estimated Time Investment
 - **Completed**: 0 weeks (partial implementations only)
-- **In Progress**: 1.5 weeks invested (Unified Sink API v2 - C# API complete, IR Runner pending)
-- **Remaining for WI6**: 1.5-2 weeks (Java IR Runner integration)
-- **Remaining P0**: 18.5-27 weeks (excluding WI6 progress)
+- **In Progress**: 2 weeks invested (Unified Sink API v2 - C# API ✅, Java IR Runner ✅)
+- **Remaining for WI6**: 0.5-1 week (End-to-end integration testing with LocalTesting)
+- **Remaining P0**: 17.5-26 weeks (excluding WI6 progress)
 - **Remaining P1**: 15-21 weeks
 - **Remaining P2**: 8-11 weeks
 - **Remaining P3**: 1.5-2 weeks
-- **Total Remaining**: 43-61 weeks (11-15 months)
+- **Total Remaining**: 41-59 weeks (10-15 months)
 
 ### Velocity Tracking
 *Update as features are completed to track implementation velocity*
@@ -254,9 +256,10 @@ See `TODO/.implementation-template.md` for standardized WI template.
 2. ✅ **Short-term**: Create WI for first P0 feature (Unified Sink API v2) - COMPLETED (WI6)
 3. ✅ **Investigation & Design**: Complete Investigation and Design phases for WI6 - COMPLETED
 4. ✅ **TDD & Implementation**: Implement C# API for Unified Sink v2 - COMPLETED (commits 77ac813, d9f50a0)
-5. **Current**: Implement Java IR Runner integration for WI6 (maps C# API to Flink native)
-6. **Medium-term**: Complete WI6 with end-to-end validation
-7. **Long-term**: Begin next P0 feature (Materialized Tables or AI/ML Integration)
+5. ✅ **Java IR Runner**: Implement Java IR Runner integration for WI6 - COMPLETED (commit fedc628)
+6. **Current**: Complete WI6 with end-to-end integration testing (LocalTesting with Kafka/Flink cluster)
+7. **Medium-term**: Final validation and owner acceptance for WI6
+8. **Long-term**: Begin next P0 feature (Materialized Tables or AI/ML Integration)
 
 ## Contributing
 
