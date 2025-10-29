@@ -12,30 +12,28 @@ public class MaterializedTable
 {
     private readonly MaterializedTableDefinition _definition;
 
-    internal MaterializedTable(MaterializedTableDefinition definition)
-    {
-        _definition = definition;
-    }
+    internal MaterializedTable(MaterializedTableDefinition definition) => this._definition = definition;
 
     /// <summary>
     /// Gets the table name
     /// </summary>
-    public string TableName => _definition.TableName;
+    public string TableName => this._definition.TableName;
 
     /// <summary>
     /// Gets the refresh mode (FULL or CONTINUOUS)
     /// </summary>
-    public string RefreshMode => _definition.RefreshMode;
+    public string RefreshMode => this._definition.RefreshMode;
 
     /// <summary>
     /// Gets the freshness interval
     /// </summary>
-    public string? FreshnessInterval => _definition.FreshnessInterval;
+    public string? FreshnessInterval => this._definition.FreshnessInterval;
 
     /// <summary>
     /// Gets the underlying IR definition
     /// </summary>
-    public MaterializedTableDefinition Definition => _definition;
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "RCS1085:Use auto-implemented property", Justification = "Property returns value from private readonly field")]
+    public MaterializedTableDefinition Definition => this._definition;
 
     /// <summary>
     /// Suspend the materialized table (stops refresh jobs)
@@ -43,11 +41,11 @@ public class MaterializedTable
     /// <returns>A new MaterializedTable with suspend operation</returns>
     public MaterializedTable Suspend()
     {
-        var suspendDef = new MaterializedTableDefinition
+        MaterializedTableDefinition suspendDef = new()
         {
-            TableName = _definition.TableName,
+            TableName = this._definition.TableName,
             Operation = "SUSPEND",
-            ExecutionMode = _definition.ExecutionMode
+            ExecutionMode = this._definition.ExecutionMode
         };
         return new MaterializedTable(suspendDef);
     }
@@ -58,11 +56,11 @@ public class MaterializedTable
     /// <returns>A new MaterializedTable with resume operation</returns>
     public MaterializedTable Resume()
     {
-        var resumeDef = new MaterializedTableDefinition
+        MaterializedTableDefinition resumeDef = new()
         {
-            TableName = _definition.TableName,
+            TableName = this._definition.TableName,
             Operation = "RESUME",
-            ExecutionMode = _definition.ExecutionMode
+            ExecutionMode = this._definition.ExecutionMode
         };
         return new MaterializedTable(resumeDef);
     }
@@ -74,12 +72,12 @@ public class MaterializedTable
     /// <returns>A new MaterializedTable with refresh operation</returns>
     public MaterializedTable RefreshPartition(string partitionFilter)
     {
-        var refreshDef = new MaterializedTableDefinition
+        MaterializedTableDefinition refreshDef = new()
         {
-            TableName = _definition.TableName,
+            TableName = this._definition.TableName,
             Operation = "REFRESH",
             PartitionFilter = partitionFilter,
-            ExecutionMode = _definition.ExecutionMode
+            ExecutionMode = this._definition.ExecutionMode
         };
         return new MaterializedTable(refreshDef);
     }
@@ -90,11 +88,11 @@ public class MaterializedTable
     /// <returns>A new MaterializedTable with drop operation</returns>
     public MaterializedTable Drop()
     {
-        var dropDef = new MaterializedTableDefinition
+        MaterializedTableDefinition dropDef = new()
         {
-            TableName = _definition.TableName,
+            TableName = this._definition.TableName,
             Operation = "DROP",
-            ExecutionMode = _definition.ExecutionMode
+            ExecutionMode = this._definition.ExecutionMode
         };
         return new MaterializedTable(dropDef);
     }
@@ -103,54 +101,51 @@ public class MaterializedTable
     /// Generate the SQL DDL statement for this materialized table
     /// </summary>
     /// <returns>SQL DDL statement</returns>
-    public string ToSql()
+    public string ToSql() => this._definition.Operation switch
     {
-        return _definition.Operation switch
-        {
-            "CREATE" => GenerateCreateStatement(),
-            "SUSPEND" => $"ALTER MATERIALIZED TABLE {_definition.TableName} SUSPEND",
-            "RESUME" => $"ALTER MATERIALIZED TABLE {_definition.TableName} RESUME",
-            "REFRESH" => $"ALTER MATERIALIZED TABLE {_definition.TableName} REFRESH PARTITION ({_definition.PartitionFilter})",
-            "DROP" => $"DROP MATERIALIZED TABLE {_definition.TableName}",
-            _ => throw new InvalidOperationException($"Unknown operation: {_definition.Operation}")
-        };
-    }
+        "CREATE" => this.GenerateCreateStatement(),
+        "SUSPEND" => $"ALTER MATERIALIZED TABLE {this._definition.TableName} SUSPEND",
+        "RESUME" => $"ALTER MATERIALIZED TABLE {this._definition.TableName} RESUME",
+        "REFRESH" => $"ALTER MATERIALIZED TABLE {this._definition.TableName} REFRESH PARTITION ({this._definition.PartitionFilter})",
+        "DROP" => $"DROP MATERIALIZED TABLE {this._definition.TableName}",
+        _ => throw new InvalidOperationException($"Unknown operation: {this._definition.Operation}")
+    };
 
     private string GenerateCreateStatement()
     {
-        var sql = $"CREATE MATERIALIZED TABLE {_definition.TableName}";
+        string sql = $"CREATE MATERIALIZED TABLE {this._definition.TableName}";
 
         // Add schema
-        if (_definition.Schema.Any())
+        if (this._definition.Schema.Any())
         {
             sql += " (\n";
-            sql += string.Join(",\n", _definition.Schema.Select(kv => $"  {kv.Key} {kv.Value}"));
+            sql += string.Join(",\n", this._definition.Schema.Select(kv => $"  {kv.Key} {kv.Value}"));
 
             // Add primary key if specified
-            if (_definition.PrimaryKey.Any())
+            if (this._definition.PrimaryKey.Any())
             {
-                sql += $",\n  PRIMARY KEY({string.Join(", ", _definition.PrimaryKey)}) NOT ENFORCED";
+                sql += $",\n  PRIMARY KEY({string.Join(", ", this._definition.PrimaryKey)}) NOT ENFORCED";
             }
 
             sql += "\n)";
         }
 
         // Add partitioning
-        if (_definition.PartitionBy.Any())
+        if (this._definition.PartitionBy.Any())
         {
-            sql += $"\nPARTITIONED BY ({string.Join(", ", _definition.PartitionBy)})";
+            sql += $"\nPARTITIONED BY ({string.Join(", ", this._definition.PartitionBy)})";
         }
 
         // Add freshness interval
-        if (!string.IsNullOrEmpty(_definition.FreshnessInterval))
+        if (!string.IsNullOrEmpty(this._definition.FreshnessInterval))
         {
-            sql += $"\nFRESHNESS = {_definition.FreshnessInterval}";
+            sql += $"\nFRESHNESS = {this._definition.FreshnessInterval}";
         }
 
         // Add query
-        if (!string.IsNullOrEmpty(_definition.Query))
+        if (!string.IsNullOrEmpty(this._definition.Query))
         {
-            sql += $"\nAS\n{_definition.Query}";
+            sql += $"\nAS\n{this._definition.Query}";
         }
 
         return sql;
@@ -168,10 +163,7 @@ public class MaterializedTableBuilder
     /// Creates a new MaterializedTableBuilder with the specified table name
     /// </summary>
     /// <param name="tableName">Name of the materialized table</param>
-    public MaterializedTableBuilder(string tableName)
-    {
-        _definition.TableName = tableName;
-    }
+    public MaterializedTableBuilder(string tableName) => this._definition.TableName = tableName;
 
     /// <summary>
     /// Sets the SQL query for the materialized table
@@ -180,7 +172,7 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithQuery(string query)
     {
-        _definition.Query = query;
+        this._definition.Query = query;
         return this;
     }
 
@@ -191,7 +183,7 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithRefreshMode(string mode)
     {
-        _definition.RefreshMode = mode;
+        this._definition.RefreshMode = mode;
         return this;
     }
 
@@ -205,20 +197,21 @@ public class MaterializedTableBuilder
         // Convert TimeSpan to SQL INTERVAL format
         if (interval.TotalDays >= 1)
         {
-            _definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalDays}' DAY";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalDays}' DAY";
         }
         else if (interval.TotalHours >= 1)
         {
-            _definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalHours}' HOUR";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalHours}' HOUR";
         }
         else if (interval.TotalMinutes >= 1)
         {
-            _definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalMinutes}' MINUTE";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalMinutes}' MINUTE";
         }
         else
         {
-            _definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalSeconds}' SECOND";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalSeconds}' SECOND";
         }
+
         return this;
     }
 
@@ -229,7 +222,7 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithFreshnessInterval(string intervalSql)
     {
-        _definition.FreshnessInterval = intervalSql;
+        this._definition.FreshnessInterval = intervalSql;
         return this;
     }
 
@@ -240,8 +233,8 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithPrimaryKey(params string[] columns)
     {
-        _definition.PrimaryKey.Clear();
-        _definition.PrimaryKey.AddRange(columns);
+        this._definition.PrimaryKey.Clear();
+        this._definition.PrimaryKey.AddRange(columns);
         return this;
     }
 
@@ -252,8 +245,8 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithPartitioning(params string[] columns)
     {
-        _definition.PartitionBy.Clear();
-        _definition.PartitionBy.AddRange(columns);
+        this._definition.PartitionBy.Clear();
+        this._definition.PartitionBy.AddRange(columns);
         return this;
     }
 
@@ -265,7 +258,7 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder AddColumn(string columnName, string dataType)
     {
-        _definition.Schema[columnName] = dataType;
+        this._definition.Schema[columnName] = dataType;
         return this;
     }
 
@@ -277,7 +270,7 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithProperty(string key, string value)
     {
-        _definition.Properties[key] = value;
+        this._definition.Properties[key] = value;
         return this;
     }
 
@@ -288,7 +281,7 @@ public class MaterializedTableBuilder
     /// <returns>This builder for fluent chaining</returns>
     public MaterializedTableBuilder WithExecutionMode(string mode)
     {
-        _definition.ExecutionMode = mode;
+        this._definition.ExecutionMode = mode;
         return this;
     }
 
@@ -299,17 +292,14 @@ public class MaterializedTableBuilder
     public MaterializedTable Build()
     {
         // Validation
-        if (string.IsNullOrEmpty(_definition.TableName))
+        if (string.IsNullOrEmpty(this._definition.TableName))
         {
             throw new InvalidOperationException("Table name is required");
         }
 
-        if (string.IsNullOrEmpty(_definition.Query) && _definition.Schema.Count == 0)
-        {
-            throw new InvalidOperationException("Either query or schema must be specified");
-        }
-
-        return new MaterializedTable(_definition);
+        return string.IsNullOrEmpty(this._definition.Query) && this._definition.Schema.Count == 0
+            ? throw new InvalidOperationException("Either query or schema must be specified")
+            : new MaterializedTable(this._definition);
     }
 }
 
@@ -324,10 +314,9 @@ public static class MaterializedTableExtensions
     /// <param name="env">Stream execution environment</param>
     /// <param name="tableName">Name of the materialized table</param>
     /// <returns>A new MaterializedTableBuilder</returns>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Extension method pattern requires this parameter")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "RCS1175:Unused 'this' parameter", Justification = "Extension method pattern requires this parameter")]
     public static MaterializedTableBuilder CreateMaterializedTable(
         this StreamExecutionEnvironment env,
-        string tableName)
-    {
-        return new MaterializedTableBuilder(tableName);
-    }
+        string tableName) => new(tableName);
 }
