@@ -286,10 +286,10 @@ namespace FlinkDotNet.DataStream
 
         public Task<ISinkWriter<TInput, TCommittable, TWriterState>> CreateWriterAsync(
             SinkWriterContext context,
-            TWriterState? restoredState = default,
+            TWriterState restoredState = default!,
             CancellationToken cancellationToken = default)
         {
-            return _writerFactory(context, restoredState, cancellationToken);
+            return this._writerFactory(context, restoredState, cancellationToken);
         }
 
         public ICommitter<TCommittable>? CreateCommitter()
