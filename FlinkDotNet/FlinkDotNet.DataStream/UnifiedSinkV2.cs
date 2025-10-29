@@ -28,7 +28,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TInput">Type of elements to write</typeparam>
     /// <typeparam name="TCommittable">Type of committable objects for two-phase commit (use object if not needed)</typeparam>
     /// <typeparam name="TWriterState">Type of writer state for checkpointing (use object if stateless)</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Matching Flink's native API design
     public interface ISink<TInput, TCommittable, TWriterState>
+#pragma warning restore S2436
     {
         /// <summary>
         /// Creates a new sink writer instance.
@@ -37,7 +39,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="restoredState">Restored state from previous checkpoint (default value if no state to restore)</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>A new sink writer instance</returns>
-        Task<ISinkWriter<TInput, TCommittable, TWriterState>> CreateWriterAsync(
+        public Task<ISinkWriter<TInput, TCommittable, TWriterState>> CreateWriterAsync(
             SinkWriterContext context,
             TWriterState restoredState = default!,
             CancellationToken cancellationToken = default);
@@ -47,7 +49,7 @@ namespace FlinkDotNet.DataStream
         /// Return null if the sink uses at-least-once semantics.
         /// </summary>
         /// <returns>Committer instance or null</returns>
-        ICommitter<TCommittable>? CreateCommitter();
+        public ICommitter<TCommittable>? CreateCommitter();
 
         /// <summary>
         /// Creates a global committer for exactly-once semantics (optional).
@@ -55,7 +57,7 @@ namespace FlinkDotNet.DataStream
         /// Return null if not needed.
         /// </summary>
         /// <returns>Global committer instance or null</returns>
-        IGlobalCommitter<TCommittable, TCommittable>? CreateGlobalCommitter();
+        public IGlobalCommitter<TCommittable, TCommittable>? CreateGlobalCommitter();
     }
 
     /// <summary>
@@ -65,7 +67,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TInput">Type of elements to write</typeparam>
     /// <typeparam name="TCommittable">Type of committable objects</typeparam>
     /// <typeparam name="TWriterState">Type of writer state for checkpointing</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Matching Flink's native API design
     public interface ISinkWriter<TInput, TCommittable, TWriterState> : IAsyncDisposable
+#pragma warning restore S2436
     {
         /// <summary>
         /// Writes a single element to the sink.
@@ -73,14 +77,14 @@ namespace FlinkDotNet.DataStream
         /// <param name="element">Element to write</param>
         /// <param name="context">Context with timestamp and watermark information</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        Task WriteAsync(TInput element, ElementContext context, CancellationToken cancellationToken = default);
+        public Task WriteAsync(TInput element, ElementContext context, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Flushes buffered data. Called before checkpoints and when the writer is closed.
         /// </summary>
         /// <param name="endOfInput">True if this is the final flush before the stream ends</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        Task FlushAsync(bool endOfInput, CancellationToken cancellationToken = default);
+        public Task FlushAsync(bool endOfInput, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Prepares commit for exactly-once semantics. Returns committables that will be committed
@@ -88,7 +92,7 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>List of committables or empty list if using at-least-once semantics</returns>
-        Task<List<TCommittable>> PrepareCommitAsync(CancellationToken cancellationToken = default);
+        public Task<List<TCommittable>> PrepareCommitAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Snapshots the current state for checkpointing. Called during checkpoint creation.
@@ -97,7 +101,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="checkpointId">Checkpoint identifier</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Current writer state or default if stateless</returns>
-        Task<TWriterState> SnapshotStateAsync(long checkpointId, CancellationToken cancellationToken = default);
+        public Task<TWriterState> SnapshotStateAsync(long checkpointId, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -113,12 +117,12 @@ namespace FlinkDotNet.DataStream
         /// <param name="committables">List of committables to commit</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>List of committables that failed to commit (for retry)</returns>
-        Task<List<TCommittable>> CommitAsync(List<TCommittable> committables, CancellationToken cancellationToken = default);
+        public Task<List<TCommittable>> CommitAsync(List<TCommittable> committables, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Closes the committer and releases resources.
         /// </summary>
-        Task CloseAsync();
+        public Task CloseAsync();
     }
 
     /// <summary>
@@ -135,7 +139,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="committables">Committables from all parallel writer instances</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Combined global committables</returns>
-        Task<List<TGlobalCommittable>> CombineAsync(List<TCommittable> committables, CancellationToken cancellationToken = default);
+        public Task<List<TGlobalCommittable>> CombineAsync(List<TCommittable> committables, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Performs the global commit operation.
@@ -143,12 +147,12 @@ namespace FlinkDotNet.DataStream
         /// <param name="globalCommittables">Global committables to commit</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>List of global committables that failed (for retry)</returns>
-        Task<List<TGlobalCommittable>> CommitAsync(List<TGlobalCommittable> globalCommittables, CancellationToken cancellationToken = default);
+        public Task<List<TGlobalCommittable>> CommitAsync(List<TGlobalCommittable> globalCommittables, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Closes the global committer and releases resources.
         /// </summary>
-        Task CloseAsync();
+        public Task CloseAsync();
     }
 
     /// <summary>
@@ -204,7 +208,9 @@ namespace FlinkDotNet.DataStream
     /// <typeparam name="TInput">Type of elements to write</typeparam>
     /// <typeparam name="TCommittable">Type of committable objects</typeparam>
     /// <typeparam name="TWriterState">Type of writer state</typeparam>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Matching Flink's native API design
     public class SinkBuilder<TInput, TCommittable, TWriterState>
+#pragma warning restore S2436
     {
         private Func<SinkWriterContext, TWriterState, CancellationToken, Task<ISinkWriter<TInput, TCommittable, TWriterState>>>? _writerFactory;
         private Func<ICommitter<TCommittable>?>? _committerFactory;
@@ -218,7 +224,7 @@ namespace FlinkDotNet.DataStream
         public SinkBuilder<TInput, TCommittable, TWriterState> WithWriter(
             Func<SinkWriterContext, TWriterState, CancellationToken, Task<ISinkWriter<TInput, TCommittable, TWriterState>>> factory)
         {
-            _writerFactory = factory ?? throw new ArgumentNullException(nameof(factory));
+            this._writerFactory = factory ?? throw new ArgumentNullException(nameof(factory));
             return this;
         }
 
@@ -230,7 +236,7 @@ namespace FlinkDotNet.DataStream
         public SinkBuilder<TInput, TCommittable, TWriterState> WithCommitter(
             Func<ICommitter<TCommittable>?> factory)
         {
-            _committerFactory = factory ?? throw new ArgumentNullException(nameof(factory));
+            this._committerFactory = factory ?? throw new ArgumentNullException(nameof(factory));
             return this;
         }
 
@@ -242,7 +248,7 @@ namespace FlinkDotNet.DataStream
         public SinkBuilder<TInput, TCommittable, TWriterState> WithGlobalCommitter(
             Func<IGlobalCommitter<TCommittable, TCommittable>?> factory)
         {
-            _globalCommitterFactory = factory ?? throw new ArgumentNullException(nameof(factory));
+            this._globalCommitterFactory = factory ?? throw new ArgumentNullException(nameof(factory));
             return this;
         }
 
@@ -253,22 +259,24 @@ namespace FlinkDotNet.DataStream
         /// <exception cref="InvalidOperationException">If writer factory is not set</exception>
         public ISink<TInput, TCommittable, TWriterState> Build()
         {
-            if (_writerFactory == null)
+            if (this._writerFactory == null)
             {
                 throw new InvalidOperationException("Writer factory must be set before building sink");
             }
 
             return new BuiltSink<TInput, TCommittable, TWriterState>(
-                _writerFactory,
-                _committerFactory,
-                _globalCommitterFactory);
+                this._writerFactory,
+                this._committerFactory,
+                this._globalCommitterFactory);
         }
     }
 
     /// <summary>
     /// Internal implementation of ISink created by SinkBuilder.
     /// </summary>
+#pragma warning disable S2436 // Types and methods should not have too many generic parameters - Matching Flink's native API design
     internal class BuiltSink<TInput, TCommittable, TWriterState> : ISink<TInput, TCommittable, TWriterState>
+#pragma warning restore S2436
     {
         private readonly Func<SinkWriterContext, TWriterState, CancellationToken, Task<ISinkWriter<TInput, TCommittable, TWriterState>>> _writerFactory;
         private readonly Func<ICommitter<TCommittable>?>? _committerFactory;
@@ -279,9 +287,9 @@ namespace FlinkDotNet.DataStream
             Func<ICommitter<TCommittable>?>? committerFactory,
             Func<IGlobalCommitter<TCommittable, TCommittable>?>? globalCommitterFactory)
         {
-            _writerFactory = writerFactory ?? throw new ArgumentNullException(nameof(writerFactory));
-            _committerFactory = committerFactory;
-            _globalCommitterFactory = globalCommitterFactory;
+            this._writerFactory = writerFactory ?? throw new ArgumentNullException(nameof(writerFactory));
+            this._committerFactory = committerFactory;
+            this._globalCommitterFactory = globalCommitterFactory;
         }
 
         public Task<ISinkWriter<TInput, TCommittable, TWriterState>> CreateWriterAsync(
@@ -294,12 +302,12 @@ namespace FlinkDotNet.DataStream
 
         public ICommitter<TCommittable>? CreateCommitter()
         {
-            return _committerFactory?.Invoke();
+            return this._committerFactory?.Invoke();
         }
 
         public IGlobalCommitter<TCommittable, TCommittable>? CreateGlobalCommitter()
         {
-            return _globalCommitterFactory?.Invoke();
+            return this._globalCommitterFactory?.Invoke();
         }
     }
 }
