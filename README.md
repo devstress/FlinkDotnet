@@ -64,7 +64,10 @@ cd FlinkDotnet/LocalTesting
 dotnet run --project LocalTesting.FlinkSqlAppHost
 
 # 2. Aspire Dashboard opens at http://localhost:15888
-# 3. Run integration tests to validate everything works
+# 3. Navigate to LearningCourse folder and follow the instructions there
+```
+```bash
+# Or run integration tests to validate everything works
 dotnet test LocalTesting.IntegrationTests
 ```
 
