@@ -163,17 +163,26 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the subtask index (0-based) of this writer instance.
         /// </summary>
-        public int SubtaskId { get; init; }
+        public int SubtaskId
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the total number of parallel writer instances.
         /// </summary>
-        public int NumberOfParallelSubtasks { get; init; }
+        public int NumberOfParallelSubtasks
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the attempt number for this writer (0 for first attempt, incremented on failures).
         /// </summary>
-        public int AttemptNumber { get; init; }
+        public int AttemptNumber
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets custom properties from the job configuration.
@@ -189,17 +198,26 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the timestamp of the element (milliseconds since epoch).
         /// </summary>
-        public long Timestamp { get; init; }
+        public long Timestamp
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the current watermark (milliseconds since epoch).
         /// </summary>
-        public long Watermark { get; init; }
+        public long Watermark
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets whether this is the last element in the stream.
         /// </summary>
-        public bool IsLastElement { get; init; }
+        public bool IsLastElement
+        {
+            get; init;
+        }
     }
 
     /// <summary>

@@ -37,9 +37,18 @@ namespace FlinkDotNet.DataStream.Tests
         {
             public List<string> WrittenElements { get; } = [];
             public List<string> Committables { get; } = [];
-            public int State { get; set; }
-            public bool FlushCalled { get; set; }
-            public bool DisposeCalled { get; set; }
+            public int State
+            {
+                get; set;
+            }
+            public bool FlushCalled
+            {
+                get; set;
+            }
+            public bool DisposeCalled
+            {
+                get; set;
+            }
 
             public Task WriteAsync(string element, ElementContext context, CancellationToken cancellationToken = default)
             {
@@ -73,7 +82,10 @@ namespace FlinkDotNet.DataStream.Tests
         private class TestCommitter : ICommitter<string>
         {
             public List<string> CommittedItems { get; } = [];
-            public bool CloseCalled { get; set; }
+            public bool CloseCalled
+            {
+                get; set;
+            }
 
             public Task<List<string>> CommitAsync(List<string> committables, CancellationToken cancellationToken = default)
             {
@@ -92,7 +104,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             public List<string> CombinedItems { get; } = [];
             public List<string> CommittedItems { get; } = [];
-            public bool CloseCalled { get; set; }
+            public bool CloseCalled
+            {
+                get; set;
+            }
 
             public Task<List<string>> CombineAsync(List<string> committables, CancellationToken cancellationToken = default)
             {
@@ -118,7 +133,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             TestSinkWriter writer = new();
-            ElementContext context = new() { Timestamp = 1000, Watermark = 900 };
+            ElementContext context = new()
+            {
+                Timestamp = 1000,
+                Watermark = 900
+            };
 
             // Act
             await writer.WriteAsync("element1", context);
@@ -164,7 +183,10 @@ namespace FlinkDotNet.DataStream.Tests
         public async Task SinkWriter_SnapshotStateAsync_ReturnsState()
         {
             // Arrange
-            TestSinkWriter writer = new() { State = 42 };
+            TestSinkWriter writer = new()
+            {
+                State = 42
+            };
 
             // Act
             int state = await writer.SnapshotStateAsync(1000);
@@ -405,7 +427,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
             DataStream<string> stream = env.FromCollection(new[] { "test" });
-            
+
             ISink<string, string, int> sink = new SinkBuilder<string, string, int>()
                 .WithWriter((context, state, ct) => Task.FromResult<ISinkWriter<string, string, int>>(new TestSinkWriter()))
                 .Build();

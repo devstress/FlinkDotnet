@@ -748,7 +748,7 @@ public class JobDefinitionModelTests
 
         Assert.That(deserialized, Is.Not.Null);
         Assert.That(deserialized, Is.InstanceOf<UnifiedSinkV2Definition>());
-        
+
         var sink = deserialized as UnifiedSinkV2Definition;
         Assert.That(sink, Is.Not.Null);
         Assert.That(sink.SinkType, Is.EqualTo("kafka"));

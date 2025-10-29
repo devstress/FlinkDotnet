@@ -876,7 +876,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Committer configuration (optional, for exactly-once semantics)
         /// </summary>
-        public SinkCommitterConfig? CommitterConfig { get; set; }
+        public SinkCommitterConfig? CommitterConfig
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Delivery semantics: exactly-once or at-least-once
@@ -886,7 +889,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Whether sink writer is stateful (supports state snapshots)
         /// </summary>
-        public bool Stateful { get; set; }
+        public bool Stateful
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Additional properties for sink configuration
@@ -918,12 +924,18 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Whether committer is enabled
         /// </summary>
-        public bool Enabled { get; set; }
+        public bool Enabled
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Committer class name (for custom committers)
         /// </summary>
-        public string? ClassName { get; set; }
+        public string? ClassName
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Committer-specific properties

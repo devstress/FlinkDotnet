@@ -154,7 +154,7 @@ namespace FlinkDotNet.DataStream.Tests
             Assert.That(windows.TimeCharacteristic, Is.EqualTo(Window.Assigners.TimeCharacteristic.EventTime));
             Assert.That(windows.IsEventTime, Is.True);
             Assert.That(windows.CanMerge, Is.True);
-            
+
             // Call again to ensure consistency
             Assert.That(windows.TimeCharacteristic, Is.EqualTo(Window.Assigners.TimeCharacteristic.EventTime));
             Assert.That(windows.IsEventTime, Is.True);
