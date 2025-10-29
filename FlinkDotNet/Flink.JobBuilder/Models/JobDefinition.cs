@@ -679,6 +679,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(DatabaseSinkDefinition), "database")]
     [JsonDerivedType(typeof(HttpSinkDefinition), "http")]
     [JsonDerivedType(typeof(RedisSinkDefinition), "redis")]
+    [JsonDerivedType(typeof(UnifiedSinkV2Definition), "unified_sink_v2")]
     public interface ISinkDefinition
     {
         public string Type
@@ -849,5 +850,84 @@ namespace Flink.JobBuilder.Models
         /// Gets or sets the configuration
         /// </summary>
         public Dictionary<string, object> Configuration { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Unified Sink API v2 definition (Flink 1.20+) for modern sink pattern with exactly-once semantics
+    /// </summary>
+    public class UnifiedSinkV2Definition : ISinkDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "unified_sink_v2";
+
+        /// <summary>
+        /// Type of sink (kafka, file, database, http, custom)
+        /// </summary>
+        public string SinkType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Writer configuration
+        /// </summary>
+        public SinkWriterConfig WriterConfig { get; set; } = new();
+
+        /// <summary>
+        /// Committer configuration (optional, for exactly-once semantics)
+        /// </summary>
+        public SinkCommitterConfig? CommitterConfig { get; set; }
+
+        /// <summary>
+        /// Delivery semantics: exactly-once or at-least-once
+        /// </summary>
+        public string Semantics { get; set; } = "at-least-once";
+
+        /// <summary>
+        /// Whether sink writer is stateful (supports state snapshots)
+        /// </summary>
+        public bool Stateful { get; set; }
+
+        /// <summary>
+        /// Additional properties for sink configuration
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Configuration for Unified Sink v2 writer
+    /// </summary>
+    public class SinkWriterConfig
+    {
+        /// <summary>
+        /// Writer class name (for custom sinks)
+        /// </summary>
+        public string ClassName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Writer-specific properties
+        /// </summary>
+        public Dictionary<string, object> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Configuration for Unified Sink v2 committer (two-phase commit)
+    /// </summary>
+    public class SinkCommitterConfig
+    {
+        /// <summary>
+        /// Whether committer is enabled
+        /// </summary>
+        public bool Enabled { get; set; }
+
+        /// <summary>
+        /// Committer class name (for custom committers)
+        /// </summary>
+        public string? ClassName { get; set; }
+
+        /// <summary>
+        /// Committer-specific properties
+        /// </summary>
+        public Dictionary<string, object> Properties { get; init; } = [];
     }
 }
