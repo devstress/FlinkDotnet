@@ -71,7 +71,7 @@ dotnet run --project LocalTesting.FlinkSqlAppHost
 dotnet test LocalTesting.IntegrationTests
 ```
 
-**LocalTesting** includes 9 integration tests that validate the complete pipeline: Kafka → Flink → Processing → Output. See [LocalTesting/README.md](LocalTesting/README.md) for details.
+**LocalTesting** includes integration tests that validate the complete pipeline: Kafka → Flink → Processing → Output.
 
 ## Learn FlinkDotNet
 
