@@ -14,6 +14,8 @@
 //  See the License for the specific language governing permissions and
 // limitations under the License.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -327,7 +329,7 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         [Test]
-        public async Task SinkBuilder_WithCommitter_CreatesCommitter()
+        public void SinkBuilder_WithCommitter_CreatesCommitter()
         {
             // Arrange
             bool committerCreated = false;
@@ -398,7 +400,7 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         [Test]
-        public async Task DataStream_AddSink_WithUnifiedSinkV2_ReturnsDataStream()
+        public void DataStream_AddSink_WithUnifiedSinkV2_ReturnsDataStream()
         {
             // Arrange
             StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();

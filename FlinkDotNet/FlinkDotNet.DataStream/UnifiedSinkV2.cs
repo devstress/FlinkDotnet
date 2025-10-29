@@ -257,24 +257,20 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <returns>Configured sink instance</returns>
         /// <exception cref="InvalidOperationException">If writer factory is not set</exception>
-        public ISink<TInput, TCommittable, TWriterState> Build()
-        {
-            if (this._writerFactory == null)
-            {
-                throw new InvalidOperationException("Writer factory must be set before building sink");
-            }
-
-            return new BuiltSink<TInput, TCommittable, TWriterState>(
-                this._writerFactory,
-                this._committerFactory,
-                this._globalCommitterFactory);
-        }
+        public ISink<TInput, TCommittable, TWriterState> Build() =>
+            this._writerFactory == null
+                ? throw new InvalidOperationException("Writer factory must be set before building sink")
+                : new BuiltSink<TInput, TCommittable, TWriterState>(
+                    this._writerFactory,
+                    this._committerFactory,
+                    this._globalCommitterFactory);
     }
 
     /// <summary>
     /// Internal implementation of ISink created by SinkBuilder.
     /// </summary>
 #pragma warning disable S2436 // Types and methods should not have too many generic parameters - Matching Flink's native API design
+#pragma warning disable IDE0290 // Use primary constructor - Keeping explicit constructor for clarity
     internal class BuiltSink<TInput, TCommittable, TWriterState> : ISink<TInput, TCommittable, TWriterState>
 #pragma warning restore S2436
     {
@@ -295,19 +291,14 @@ namespace FlinkDotNet.DataStream
         public Task<ISinkWriter<TInput, TCommittable, TWriterState>> CreateWriterAsync(
             SinkWriterContext context,
             TWriterState restoredState = default!,
-            CancellationToken cancellationToken = default)
-        {
-            return this._writerFactory(context, restoredState, cancellationToken);
-        }
+            CancellationToken cancellationToken = default) =>
+            this._writerFactory(context, restoredState, cancellationToken);
 
-        public ICommitter<TCommittable>? CreateCommitter()
-        {
-            return this._committerFactory?.Invoke();
-        }
+        public ICommitter<TCommittable>? CreateCommitter() =>
+            this._committerFactory?.Invoke();
 
-        public IGlobalCommitter<TCommittable, TCommittable>? CreateGlobalCommitter()
-        {
-            return this._globalCommitterFactory?.Invoke();
-        }
+        public IGlobalCommitter<TCommittable, TCommittable>? CreateGlobalCommitter() =>
+            this._globalCommitterFactory?.Invoke();
     }
+#pragma warning restore IDE0290
 }
