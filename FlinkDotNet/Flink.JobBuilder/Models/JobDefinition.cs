@@ -87,10 +87,11 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(HttpSourceDefinition), "http")]
     [JsonDerivedType(typeof(DatabaseSourceDefinition), "database")]
     [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
+    [JsonDerivedType(typeof(MaterializedTableDefinition), "materialized_table")]
     public interface ISourceDefinition
     {
         /// <summary>
-        /// Type discriminator for the source (kafka, file, http, database, sql)
+        /// Type discriminator for the source (kafka, file, http, database, sql, materialized_table)
         /// </summary>
         public string Type
         {
@@ -254,6 +255,74 @@ namespace Flink.JobBuilder.Models
         /// Gets or sets the properties
         /// </summary>
         public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Materialized Table definition for Flink 1.20+ (FLIP-435)
+    /// Represents a declarative SQL pattern for both batch and streaming ETL with automatic refresh management
+    /// </summary>
+    public class MaterializedTableDefinition : ISourceDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "materialized_table";
+
+        /// <summary>
+        /// Name of the materialized table
+        /// </summary>
+        public string TableName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// SQL query defining the materialized table content
+        /// </summary>
+        public string Query { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Refresh mode: "FULL" (complete refresh) or "CONTINUOUS" (streaming)
+        /// </summary>
+        public string RefreshMode { get; set; } = "CONTINUOUS";
+
+        /// <summary>
+        /// Freshness interval (e.g., "INTERVAL '3' MINUTE", "INTERVAL '1' HOUR")
+        /// </summary>
+        public string? FreshnessInterval { get; set; }
+
+        /// <summary>
+        /// Primary key columns (NOT ENFORCED in Flink)
+        /// </summary>
+        public List<string> PrimaryKey { get; init; } = [];
+
+        /// <summary>
+        /// Partition columns
+        /// </summary>
+        public List<string> PartitionBy { get; init; } = [];
+
+        /// <summary>
+        /// Schema definition for the materialized table (column_name: data_type)
+        /// </summary>
+        public Dictionary<string, string> Schema { get; init; } = [];
+
+        /// <summary>
+        /// Operation to perform: "CREATE", "SUSPEND", "RESUME", "REFRESH", "DROP"
+        /// </summary>
+        public string Operation { get; set; } = "CREATE";
+
+        /// <summary>
+        /// Partition filter for REFRESH operation (e.g., "ds='2024-10-27'")
+        /// </summary>
+        public string? PartitionFilter { get; set; }
+
+        /// <summary>
+        /// Additional table properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+
+        /// <summary>
+        /// Execution mode: "tableenv" (default) or "gateway" (uses Flink SQL Gateway REST API)
+        /// </summary>
+        public string ExecutionMode { get; set; } = "gateway";
     }
 
     /// <summary>

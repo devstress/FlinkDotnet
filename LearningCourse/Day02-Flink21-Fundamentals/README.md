@@ -1,7 +1,154 @@
 # Day 2: Apache Flink 2.1.0 Fundamentals & Production Environment
 
 ## 🗺️ Course Navigation
-📚 **[← Back to Course Overview](../README.md)** | **[Next: Day 2 - Comprehensive Real-Time AI Processing →](../Day02-AI-Stream-Processing/)**
+📚 **[← Back to Course Overview](../README.md)** | **[Next: Day 3 - Comprehensive Real-Time AI Processing →](../Day03-AI-Stream-Processing/)**
+
+---
+
+## 🎯 FlinkDotNet Apache Flink Version Coverage
+
+This course demonstrates features across all Apache Flink versions (1.0 through 2.1.0). Below is the comprehensive version-by-version implementation status showing which Flink releases are fully supported by FlinkDotNet.
+
+### 📊 Version Coverage Summary
+
+| Flink Version | Release Date | FlinkDotNet Status | Core Features | Integration Tests |
+|---------------|--------------|-------------------|---------------|-------------------|
+| **1.0 - 1.9** | 2016-2019 | ✅ **FULLY COVERED** | Stream/Batch API, Windows, State, Savepoints, CEP | ✅ Comprehensive |
+| **1.10 - 1.14** | 2020-2021 | ✅ **GOOD COVERAGE** | Table API, SQL, Connectors | ✅ Basic SQL tests |
+| **1.15 - 1.18** | 2022-2023 | ⚠️ **PARTIAL** | Advanced Table features | ⚠️ Some features missing |
+| **1.19** | Mar 2024 | ⚠️ **PARTIAL** | Performance improvements | ⚠️ Some features missing |
+| **1.20** | Oct 2024 | 🚀 **IN PROGRESS** | Unified Sink v2 ✅, Materialized Tables ✅ | ✅ 10 new tests (Oct 2025) |
+| **2.0** | Late 2024 | ❌ **NOT STARTED** | Unified runtime | ❌ Not implemented |
+| **2.1** | Jul 2025 | ❌ **NOT STARTED** | AI/ML Integration | ❌ Not implemented |
+
+### ✅ Flink 1.0 - 1.9 (2016-2019): Core Foundation - **FULLY COVERED**
+
+**Status**: FlinkDotNet has **complete coverage** of these foundational versions.
+
+**Implemented Core Features**:
+- ✅ **Stream and Batch Processing** (Flink 1.0) - Unified DataStream API
+- ✅ **Windows & Watermarks** (Flink 1.0) - Time-based processing
+- ✅ **State Management** (Flink 1.0) - Keyed and operator state
+- ✅ **Savepoints** (Flink 1.1) - Job upgrades and recovery
+- ✅ **Complex Event Processing (CEP)** (Flink 1.1) - Pattern detection
+- ✅ **Exactly-Once Kafka** (Flink 1.2) - Transactional sinks
+- ✅ **RocksDB State Backend** (Flink 1.3) - Large state support
+- ✅ **Dynamic Scaling** (Flink 1.5) - Elastic job scaling
+- ✅ **State TTL** (Flink 1.7) - Automatic state cleanup
+- ✅ **Kubernetes Integration** (Flink 1.7) - Cloud-native deployment
+
+**Integration Test Coverage**: All core DataStream patterns tested in `LocalTesting/LocalTesting.IntegrationTests/`
+
+### ✅ Flink 1.10 - 1.14 (2020-2021): Table API Maturation - **GOOD COVERAGE**
+
+**Status**: FlinkDotNet supports **most features** from these versions.
+
+**Implemented Features**:
+- ✅ **Unified Table/SQL API** (Flink 1.10) - Batch and stream SQL
+- ✅ **Basic DDL Support** (Flink 1.11) - CREATE TABLE, INSERT INTO
+- ✅ **SQL Connectors** (Flink 1.12) - Kafka, File systems
+- ✅ **SQL Functions** (Flink 1.13) - Built-in and UDFs
+- ✅ **SQL Client** (Flink 1.14) - Interactive SQL queries
+
+**Partially Implemented**:
+- ⚠️ **Catalog API** (Flink 1.10) - Basic support via SQL, programmatic API pending
+- ⚠️ **Unified Source API** (Flink 1.12) - Legacy sources work, new API pending
+
+**Integration Test Coverage**: SQL execution and basic Table API tested
+
+### ⚠️ Flink 1.15 - 1.19 (2022-2024): Advanced Features - **PARTIAL COVERAGE**
+
+**Status**: FlinkDotNet has **some features** from these versions.
+
+**Implemented Features**:
+- ✅ **Basic SQL Execution** - Core SQL queries work
+- ✅ **Flink SQL Gateway** - Gateway integration for SQL execution
+
+**Missing Features** (documented in `TODO/all-versions-coverage.md`):
+- ❌ **Table Store/Paimon** (Flink 1.15) - Not implemented
+- ❌ **Changelog State Backend** (Flink 1.17) - Not implemented
+- ❌ **Checkpoint File Merging** (Flink 1.19) - Not implemented
+
+**Integration Test Coverage**: Basic SQL tests, advanced features not tested
+
+### 🚀 Flink 1.20 (October 2024): Modern APIs - **IN PROGRESS (2/3 features)**
+
+**Status**: FlinkDotNet is **actively implementing** Flink 1.20 features.
+
+#### ✅ IMPLEMENTED: Unified Sink API v2 (WI6) - Oct 2025
+- **What**: Modern sink API replacing deprecated SinkFunction
+- **C# API**: `ISink<TInput, TCommittable, TWriterState>`, `SinkBuilder` pattern
+- **Features**: Exactly-once semantics, two-phase commit, state management
+- **Integration Tests**: `LocalTesting/LocalTesting.IntegrationTests/UnifiedSinkV2ConsolidatedTests.cs`
+  - Test 1: IR schema serialization (exactly-once, at-least-once, custom sinks)
+  - Test 2: C# API end-to-end (write, commit, SinkBuilder)
+  - Test 3: State management (snapshots, parallel writers, restoration)
+  - Test 4: Backward compatibility (coexistence with legacy sinks)
+  - Test 5: Advanced features (DataStream integration, committer retry)
+
+#### ✅ IMPLEMENTED: Materialized Tables (WI7, FLIP-435) - Oct 2025
+- **What**: Declarative SQL for batch/streaming ETL with auto-refresh
+- **C# API**: `MaterializedTable`, `MaterializedTableBuilder` with fluent API
+- **Features**: CREATE/SUSPEND/RESUME/REFRESH/DROP operations, freshness intervals, partitioning
+- **SQL DDL**: `CREATE MATERIALIZED TABLE ... FRESHNESS = INTERVAL '3' MINUTE AS SELECT ...`
+- **Integration Tests**: `LocalTesting/LocalTesting.IntegrationTests/MaterializedTableTests.cs`
+  - Test 1: IR schema serialization and JSON round-trip
+  - Test 2: C# API builder pattern validation
+  - Test 3: SQL DDL generation for CREATE statements
+  - Test 4: Management operations (SUSPEND, RESUME, REFRESH, DROP)
+  - Test 5: Advanced features (TimeSpan conversions, validation, edge cases)
+
+**Flink 1.20 Progress**: 2 of 3 major features complete (67% coverage)
+
+### ❌ Flink 2.0 (Late 2024): Unified Runtime - **NOT STARTED**
+
+**Status**: Not yet implemented in FlinkDotNet.
+
+**Planned Features**:
+- Fully unified batch and stream runtime
+- Improved state management
+- Enhanced performance
+
+**Timeline**: To be determined based on Flink 2.1 AI/ML priority
+
+### ❌ Flink 2.1 (July 2025): AI/ML Integration - **NOT STARTED**
+
+**Status**: Not yet implemented in FlinkDotNet.
+
+**Planned Features** (P0 Priority):
+- ❌ **CREATE MODEL DDL** - Define ML models in SQL (2-3 weeks estimated)
+- ❌ **ML_PREDICT Function** - Real-time inference in queries (2-3 weeks estimated)
+- ❌ **AI Provider Integration** - OpenAI, Azure OpenAI (3-4 weeks estimated)
+- ❌ **VARIANT Data Type** - Semi-structured JSON data (3-4 weeks estimated)
+- ❌ **C# Model Management API** - Programmatic model operations (3-4 weeks estimated)
+
+**Total Estimated Implementation**: 10-16 weeks for AI/ML features
+
+**Timeline**: Next priority after Flink 1.20 completion
+
+### 📍 Integration Test Locations
+
+All integration tests are located in:
+```
+LocalTesting/LocalTesting.IntegrationTests/
+├── UnifiedSinkV2ConsolidatedTests.cs  (5 tests - Flink 1.20)
+├── MaterializedTableTests.cs          (5 tests - Flink 1.20)
+├── GatewayPatternTests.cs             (7 tests - Gateway patterns)
+├── AspireOrchestrationTests.cs        (1 test  - Aspire DCP)
+└── TemporalGatewayTests.cs            (1 test  - Temporal integration)
+```
+
+**Total**: 19 integration tests, all passing ✅
+
+### 🎓 Learning Path Alignment
+
+This course covers:
+- **Flink 1.20 Features**: Unified Sink v2 API, Materialized Tables
+- **Flink 2.1 Features**: Will be added as implementation progresses
+- **Production Patterns**: State backends, backpressure, observability
+- **Enterprise Integration**: Kafka, Temporal, Prometheus
+
+For the latest implementation status, see: `TODO/TRACKING.md`
 
 ---
 
