@@ -1,8 +1,8 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using FlinkDotNet.DataStream;
+using System.Linq;
 using Flink.JobBuilder.Models;
+using FlinkDotNet.DataStream;
 using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
@@ -184,7 +184,10 @@ namespace FlinkDotNet.DataStream.Tests
 
         private class TestRecord
         {
-            public int Id { get; set; }
+            public int Id
+            {
+                get; set;
+            }
             public string Name { get; set; } = string.Empty;
         }
     }

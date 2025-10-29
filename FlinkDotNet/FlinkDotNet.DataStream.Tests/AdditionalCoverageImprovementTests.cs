@@ -42,7 +42,7 @@ namespace FlinkDotNet.DataStream.Tests
             var tag2 = new OutputTag<int>("test-id");
 
             // Act & Assert
-            Assert.That(tag1.Equals((object)tag2), Is.False);
+            Assert.That(tag1.Equals((object) tag2), Is.False);
         }
 
         [Test]
