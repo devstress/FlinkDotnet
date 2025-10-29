@@ -11,11 +11,12 @@
 |----------|---------------|-------------|-------------|-------------|----------|
 | AI/ML Integration | 5 | 1 | 0 | 4 | P0 |
 | Table API & SQL | 7 | 0 | 0 | 7 | P1 |
+| Observability Testing | 1 | 0 | 0 | 1 | P1 |
 | Performance & Format | 4 | 0 | 0 | 4 | P2 |
 | Materialized Tables | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Unified Sink API v2 | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Table Store (Paimon) | 1 | 0 | 0 | 1 | P1 |
-| **TOTAL** | **19** | **3** | **0** | **16** | - |
+| **TOTAL** | **20** | **3** | **0** | **17** | - |
 
 ## Feature Implementation Checklist
 
@@ -85,6 +86,13 @@
   - **Document**: [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#2-variant-data-type-support)
 
 ### P1 - High Priority Features
+
+#### Observability Testing (All Versions) - 2-3 weeks
+- [ ] Comprehensive Observability Tests in ReleasePackageVerification (2-3 weeks)
+  - **WI**: Not yet created
+  - **Status**: Not started - basic features exist in LocalTesting, need ReleasePackageVerification tests
+  - **Document**: [observability-features.md](observability-features.md)
+  - **Note**: Tests must be in ReleasePackageVerification (not LocalTesting) due to Aspire network requirements
 
 #### Table Store / Apache Paimon (Flink 1.15) - 3-4 weeks
 - [ ] Table Store Integration (3-4 weeks)
@@ -280,7 +288,7 @@ See `TODO/.implementation-template.md` for standardized WI template.
 
 ### Completion by Priority
 - **P0 Features**: 3/7 fully implemented ✅, 0/7 in progress (WI6 Unified Sink v2 ✅, WI7 Materialized Tables ✅, WI8 CREATE MODEL DDL ✅)
-- **P1 Features**: 0/5 (0%)
+- **P1 Features**: 0/6 (0%)
 - **P2 Features**: 0/4 (0%)
 - **P3 Features**: 0/1 (0%)
 
@@ -288,10 +296,10 @@ See `TODO/.implementation-template.md` for standardized WI template.
 - **Completed**: 3 weeks (WI6 Unified Sink API v2 ✅, WI7 Materialized Tables ✅, WI8 CREATE MODEL DDL ✅)
 - **In Progress**: 0 weeks
 - **Remaining P0**: 14.5-23 weeks (4 features remaining)
-- **Remaining P1**: 15-21 weeks
+- **Remaining P1**: 17-24 weeks (6 features: Observability + 5 others)
 - **Remaining P2**: 8-11 weeks
 - **Remaining P3**: 1.5-2 weeks
-- **Total Remaining**: 37-55 weeks (9-13 months)
+- **Total Remaining**: 39-58 weeks (10-14 months)
 
 ### Velocity Tracking
 *Update as features are completed to track implementation velocity*
