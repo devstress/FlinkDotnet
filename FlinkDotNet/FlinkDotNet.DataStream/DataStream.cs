@@ -363,10 +363,7 @@ namespace FlinkDotNet.DataStream
         /// <returns>This DataStream</returns>
         public DataStream<T> AddSink<TCommittable, TWriterState>(ISink<T, TCommittable, TWriterState> sink)
         {
-            if (sink == null)
-            {
-                throw new ArgumentNullException(nameof(sink));
-            }
+            ArgumentNullException.ThrowIfNull(sink);
 
             // Note: Full IR integration with OperationCapture will be implemented in Java IR Runner phase
             // For now, the unified sink v2 is registered for future execution

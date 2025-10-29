@@ -1032,31 +1032,49 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Input schema definition (column_name: data_type)
         /// </summary>
-        public Dictionary<string, string> InputSchema { get; init; } = [];
+        public Dictionary<string, string> InputSchema
+        {
+            get; init;
+        } = [];
 
         /// <summary>
         /// Output schema definition (column_name: data_type)
         /// </summary>
-        public Dictionary<string, string> OutputSchema { get; init; } = [];
+        public Dictionary<string, string> OutputSchema
+        {
+            get; init;
+        } = [];
 
         /// <summary>
         /// AI provider: "openai", "azure_openai", "custom", etc.
         /// </summary>
-        public string Provider { get; set; } = string.Empty;
+        public string Provider
+        {
+            get; set;
+        } = string.Empty;
 
         /// <summary>
         /// Provider-specific properties (e.g., API keys, endpoints, model names)
         /// </summary>
-        public Dictionary<string, string> Properties { get; init; } = [];
+        public Dictionary<string, string> Properties
+        {
+            get; init;
+        } = [];
 
         /// <summary>
         /// Operation to perform: "CREATE", "ALTER", "DROP", "SHOW", "DESCRIBE"
         /// </summary>
-        public string Operation { get; set; } = "CREATE";
+        public string Operation
+        {
+            get; set;
+        } = "CREATE";
 
         /// <summary>
         /// Execution mode: "gateway" (SQL Gateway execution)
         /// </summary>
-        public string ExecutionMode { get; set; } = "gateway";
+        public string ExecutionMode
+        {
+            get; set;
+        } = "gateway";
     }
 }

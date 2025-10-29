@@ -116,13 +116,13 @@ public class MaterializedTable
         string sql = $"CREATE MATERIALIZED TABLE {this._definition.TableName}";
 
         // Add schema
-        if (this._definition.Schema.Any())
+        if (this._definition.Schema.Count > 0)
         {
             sql += " (\n";
             sql += string.Join(",\n", this._definition.Schema.Select(kv => $"  {kv.Key} {kv.Value}"));
 
             // Add primary key if specified
-            if (this._definition.PrimaryKey.Any())
+            if (this._definition.PrimaryKey.Count > 0)
             {
                 sql += $",\n  PRIMARY KEY({string.Join(", ", this._definition.PrimaryKey)}) NOT ENFORCED";
             }
@@ -131,7 +131,7 @@ public class MaterializedTable
         }
 
         // Add partitioning
-        if (this._definition.PartitionBy.Any())
+        if (this._definition.PartitionBy.Count > 0)
         {
             sql += $"\nPARTITIONED BY ({string.Join(", ", this._definition.PartitionBy)})";
         }
@@ -198,20 +198,22 @@ public class MaterializedTableBuilder
         if (interval.TotalDays >= 1)
         {
             this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalDays}' DAY";
-        }
-        else if (interval.TotalHours >= 1)
-        {
-            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalHours}' HOUR";
-        }
-        else if (interval.TotalMinutes >= 1)
-        {
-            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalMinutes}' MINUTE";
-        }
-        else
-        {
-            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalSeconds}' SECOND";
+            return this;
         }
 
+        if (interval.TotalHours >= 1)
+        {
+            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalHours}' HOUR";
+            return this;
+        }
+
+        if (interval.TotalMinutes >= 1)
+        {
+            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalMinutes}' MINUTE";
+            return this;
+        }
+
+        this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalSeconds}' SECOND";
         return this;
     }
 
@@ -297,9 +299,12 @@ public class MaterializedTableBuilder
             throw new InvalidOperationException("Table name is required");
         }
 
-        return string.IsNullOrEmpty(this._definition.Query) && this._definition.Schema.Count == 0
-            ? throw new InvalidOperationException("Either query or schema must be specified")
-            : new MaterializedTable(this._definition);
+        if (string.IsNullOrEmpty(this._definition.Query) && this._definition.Schema.Count == 0)
+        {
+            throw new InvalidOperationException("Either query or schema must be specified");
+        }
+
+        return new MaterializedTable(this._definition);
     }
 }
 
