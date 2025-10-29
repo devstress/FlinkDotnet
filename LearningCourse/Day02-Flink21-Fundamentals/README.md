@@ -1,7 +1,79 @@
 # Day 2: Apache Flink 2.1.0 Fundamentals & Production Environment
 
 ## 🗺️ Course Navigation
-📚 **[← Back to Course Overview](../README.md)** | **[Next: Day 2 - Comprehensive Real-Time AI Processing →](../Day02-AI-Stream-Processing/)**
+📚 **[← Back to Course Overview](../README.md)** | **[Next: Day 3 - Comprehensive Real-Time AI Processing →](../Day03-AI-Stream-Processing/)**
+
+---
+
+## 🎯 FlinkDotNet Version Coverage
+
+This course demonstrates features available across all Apache Flink versions supported by FlinkDotNet. Below is the current implementation status and integration test coverage.
+
+### ✅ Implemented Features (Version History)
+
+#### Flink 1.20 (October 2024)
+**WI6: Unified Sink API v2** - ✅ COMPLETE (Oct 2025)
+- **What**: Modern sink API replacing deprecated SinkFunction
+- **C# API**: `ISink<TInput, TCommittable, TWriterState>`, `SinkBuilder` pattern
+- **Features**: Exactly-once semantics, two-phase commit, state management
+- **Integration Tests**: `LocalTesting/LocalTesting.IntegrationTests/UnifiedSinkV2ConsolidatedTests.cs`
+  - Test 1: IR schema serialization (exactly-once, at-least-once, custom sinks)
+  - Test 2: C# API end-to-end (write, commit, SinkBuilder)
+  - Test 3: State management (snapshots, parallel writers, restoration)
+  - Test 4: Backward compatibility (coexistence with legacy sinks)
+  - Test 5: Advanced features (DataStream integration, committer retry)
+
+**WI7: Materialized Tables (FLIP-435)** - ✅ COMPLETE (Oct 2025)
+- **What**: Declarative SQL for batch/streaming ETL with auto-refresh
+- **C# API**: `MaterializedTable`, `MaterializedTableBuilder` with fluent API
+- **Features**: CREATE/SUSPEND/RESUME/REFRESH/DROP operations, freshness intervals, partitioning
+- **SQL DDL**: `CREATE MATERIALIZED TABLE ... FRESHNESS = INTERVAL '3' MINUTE AS SELECT ...`
+- **Integration Tests**: `LocalTesting/LocalTesting.IntegrationTests/MaterializedTableTests.cs`
+  - Test 1: IR schema serialization and JSON round-trip
+  - Test 2: C# API builder pattern validation
+  - Test 3: SQL DDL generation for CREATE statements
+  - Test 4: Management operations (SUSPEND, RESUME, REFRESH, DROP)
+  - Test 5: Advanced features (TimeSpan conversions, validation, edge cases)
+
+### 🚧 Planned Features (P0 - Critical Priority)
+
+#### Flink 2.1 (July 2025)
+**AI/ML Integration** - NOT STARTED
+- CREATE MODEL DDL syntax
+- ML_PREDICT Table Value Function
+- AI Provider Integration (OpenAI, Azure OpenAI)
+- C# Model Management API
+- **Estimated**: 10-16 weeks total
+
+**VARIANT Data Type** - NOT STARTED
+- Semi-structured JSON data handling
+- JSON path expressions
+- Type-safe C# API
+- **Estimated**: 3-4 weeks
+
+### 📍 Integration Test Locations
+
+All integration tests are located in:
+```
+LocalTesting/LocalTesting.IntegrationTests/
+├── UnifiedSinkV2ConsolidatedTests.cs  (5 tests - Flink 1.20)
+├── MaterializedTableTests.cs          (5 tests - Flink 1.20)
+├── GatewayPatternTests.cs             (7 tests - Gateway patterns)
+├── AspireOrchestrationTests.cs        (1 test  - Aspire DCP)
+└── TemporalGatewayTests.cs            (1 test  - Temporal integration)
+```
+
+**Total**: 19 integration tests, all passing ✅
+
+### 🎓 Learning Path Alignment
+
+This course covers:
+- **Flink 1.20 Features**: Unified Sink v2 API, Materialized Tables
+- **Flink 2.1 Features**: Will be added as implementation progresses
+- **Production Patterns**: State backends, backpressure, observability
+- **Enterprise Integration**: Kafka, Temporal, Prometheus
+
+For the latest implementation status, see: `TODO/TRACKING.md`
 
 ---
 

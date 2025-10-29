@@ -150,8 +150,27 @@
 2. **Create Work Item**: Use template at `TODO/.implementation-template.md`
 3. **Follow TDD/BDD**: Write tests first
 4. **Implement Minimally**: Smallest viable feature
-5. **Update This File**: Check off feature and add WI reference
-6. **Update TODO/README.md**: Reflect new implementation status
+5. **Fix Code Quality Issues**: At the end of each WI completion, fix ALL errors and code analysis warnings without bypass or suppress (use proper code fixes instead)
+6. **Update Documentation**: 
+   - Update `TODO/TRACKING.md`: Check off feature and add WI reference
+   - Update `TODO/README.md`: Reflect new implementation status
+   - Update `LearningCourse/Day02-Flink21-Fundamentals/README.md`: Append version coverage and integration test locations
+7. **Verify Build**: Ensure zero warnings and zero errors in final build
+
+### Code Quality Standards
+
+**MANDATORY**: At the end of each Work Item (WI) completion:
+- Fix ALL compiler errors
+- Fix ALL code analysis warnings
+- Do NOT use `#pragma` to suppress warnings
+- Do NOT use `[SuppressMessage]` unless absolutely necessary for intentional design patterns
+- Use proper code fixes (e.g., add `this` qualification, use expression bodies, explicit types)
+- Validate with clean build: `dotnet build --configuration Release` should show 0 warnings
+
+**Exception**: Suppression attributes are acceptable ONLY for:
+- Extension method parameters (required by language design)
+- Properties that intentionally wrap readonly fields
+- Specific analyzer rules that conflict with project architecture
 
 ### Work Item Template Location
 See `TODO/.implementation-template.md` for standardized WI template.
