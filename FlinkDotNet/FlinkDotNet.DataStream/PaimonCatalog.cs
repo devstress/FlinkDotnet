@@ -148,16 +148,10 @@ public class PaimonCatalogBuilder
     public PaimonCatalog Build()
     {
         // Validate required fields
-        if (string.IsNullOrEmpty(this._definition.CatalogName))
-        {
-            throw new InvalidOperationException("Catalog name is required");
-        }
-
-        if (string.IsNullOrEmpty(this._definition.Warehouse))
-        {
-            throw new InvalidOperationException("Warehouse path is required");
-        }
-
-        return new PaimonCatalog(this._definition);
+        return string.IsNullOrEmpty(this._definition.CatalogName)
+            ? throw new InvalidOperationException("Catalog name is required")
+            : string.IsNullOrEmpty(this._definition.Warehouse)
+            ? throw new InvalidOperationException("Warehouse path is required")
+            : new PaimonCatalog(this._definition);
     }
 }
