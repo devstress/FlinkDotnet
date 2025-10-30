@@ -32,7 +32,7 @@
 FlinkDotNet provides a complete distributed message-oriented architecture for building enterprise stream processing applications in .NET. It combines:
 
 - **Apache Flink 2.1** - Production-grade stream processing engine
-- **Apache Kafka** - Distributed message streaming platform  
+- **Apache Kafka** - Distributed message streaming platform
 - **Temporal** - Durable workflow orchestration
 - **Microsoft Aspire** - Local development orchestration and service discovery
 - **FlinkDotNet SDK** - Native .NET API for writing Flink jobs in C#
