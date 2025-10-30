@@ -33,12 +33,9 @@ public class StructuredType
     /// <returns>Builder instance</returns>
     public static StructuredTypeBuilder NewBuilder(string typeName)
     {
-        if (string.IsNullOrWhiteSpace(typeName))
-        {
-            throw new ArgumentException("Type name cannot be null or empty", nameof(typeName));
-        }
-
-        return new StructuredTypeBuilder(typeName);
+        return string.IsNullOrWhiteSpace(typeName)
+            ? throw new ArgumentException("Type name cannot be null or empty", nameof(typeName))
+            : new StructuredTypeBuilder(typeName);
     }
 
     /// <summary>
@@ -47,7 +44,7 @@ public class StructuredType
     /// <returns>CREATE TYPE SQL statement</returns>
     public string ToSql()
     {
-        var fieldDefinitions = this.Fields.Select(f => $"  {f.FieldName} {f.DataType}");
+        IEnumerable<string> fieldDefinitions = this.Fields.Select(f => $"  {f.FieldName} {f.DataType}");
         return $"CREATE TYPE {this.TypeName} AS ROW(\n{string.Join(",\n", fieldDefinitions)}\n)";
     }
 
@@ -114,12 +111,9 @@ public class StructuredType
         /// <returns>The constructed structured type</returns>
         public StructuredType Build()
         {
-            if (this._fields.Count == 0)
-            {
-                throw new InvalidOperationException("Structured type must have at least one field");
-            }
-
-            return new StructuredType(this._typeName, this._fields);
+            return this._fields.Count == 0
+                ? throw new InvalidOperationException("Structured type must have at least one field")
+                : new StructuredType(this._typeName, this._fields);
         }
     }
 }

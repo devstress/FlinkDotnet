@@ -1475,7 +1475,7 @@ namespace Flink.JobBuilder.Models
 
         /// <summary>
         /// State descriptors for managed state used by the function
-        /// Key: state name, Value: state type (e.g., "ValueState<SessionData>")
+        /// Key: state name, Value: state type (e.g., "ValueState&lt;SessionData&gt;")
         /// </summary>
         public Dictionary<string, string> StateDescriptors { get; init; } = [];
 
