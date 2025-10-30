@@ -385,7 +385,6 @@ See `TODO/.implementation-template.md` for standardized WI template.
 - **Remaining P2**: 6-9 weeks (3 features remaining after WI12)
 - **Remaining P3**: 1.5-2 weeks
 - **Total Remaining**: 26.5-37 weeks (7-9 months)
->>>>>>> a453ee73964c031255bde6ad5365bb48e854ee23
 
 ### Velocity Tracking
 *Update as features are completed to track implementation velocity*
