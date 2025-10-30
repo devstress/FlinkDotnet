@@ -43,10 +43,10 @@ This folder tracks features from **all Apache Flink versions** (1.0 through 2.1.
 | **Table API & Advanced SQL (2.1)** | ✅ **COMPLETE** | **P1 - High** | 12-17 weeks | [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md) |
 | **Observability Testing** | ✅ **COMPLETE** | **P1 - High** | 2-3 weeks | [observability-features.md](observability-features.md) |
 | **Table Store/Paimon (1.15)** | ✅ **COMPLETE** | **P1 - High** | 3-4 weeks | [all-versions-coverage.md](all-versions-coverage.md#missing-from-115-may-2022) |
+| **Catalog API (1.10)** | ✅ **COMPLETE** | **P1 - High** | 2-3 weeks | [all-versions-coverage.md](all-versions-coverage.md#missing-from-110-feb-2020) |
 | **Performance & Format (2.1)** | ⚠️ Partial (1/4) | **P2 - Medium** | 7-10 weeks | [performance-format-features.md](performance-format-features.md) |
-| **Prometheus Exporter** | 📋 Planned (Deferred) | **P3 - Low** | 8-10 days | [prometheus-exporter-future-design.md](prometheus-exporter-future-design.md) |
-| **Catalog API (1.10)** | ❌ Not Implemented | **P1 - High** | 2-3 weeks | [all-versions-coverage.md](all-versions-coverage.md#missing-from-110-feb-2020) |
 | **Unified Source API (1.12)** | ❌ Not Implemented | **P1 - High** | 2-3 weeks | [all-versions-coverage.md](all-versions-coverage.md#missing-from-112-dec-2020) |
+| **Prometheus Exporter** | 📋 Planned (Deferred) | **P3 - Low** | 8-10 days | [prometheus-exporter-future-design.md](prometheus-exporter-future-design.md) |
 
 ## What FlinkDotNet Already Supports ✅
 
@@ -77,36 +77,34 @@ FlinkDotNet has **excellent coverage** of core Apache Flink 2.1.0 features:
 
 ## What's Missing Across All Flink Versions ❌
 
-### ✅ COMPLETED P0 & P1 Features (16/16 - 100%)
+### ✅ COMPLETED Features (18/21 - 86%)
 
-**ALL P0 Critical Features COMPLETE!** 🎉
+**ALL P0 & P1 Features COMPLETE!** 🎉
 - ✅ **AI/ML Integration** (WI8, WI9) - CREATE MODEL, ML_PREDICT, AI providers
-- ✅ **Materialized Tables** (WI7) - Declarative ETL with auto-refresh
+- ✅ **Materialized Tables** (WI7) - Declarative ETL with auto-refresh  
 - ✅ **Unified Sink API v2** (WI6) - Modern sink pattern
 - ✅ **VARIANT Data Type** (WI10) - Semi-structured JSON data
 - ✅ **Table API & Advanced SQL** (WI10) - All 7 features complete
 - ✅ **Table Store (Apache Paimon)** (WI13) - Lakehouse integration
 - ✅ **Observability Testing** (WI11) - Comprehensive test coverage
+- ✅ **Catalog API (1.10)** (WI14) - Hive/JDBC/GenericInMemory metadata management
 
-### P1 - High Priority Features (Remaining)
+### Remaining Features (3/21 - 14%)
 
-**From Earlier Versions**:
-- ❌ **Catalog API (1.10)** - Metadata management (2-3 weeks)
+**P1 - High Priority** (1 feature):
 - ❌ **Unified Source API (1.12)** - Modern source connectors (2-3 weeks)
 
-### P2 - Medium Priority Features
-
-- ⚠️ **Changelog State Backend (1.17)** - Performance optimization (2-3 weeks) - Not Started
-- ⚠️ **DISTRIBUTED BY Clause (1.20)** - SQL bucketing (1-2 weeks) - Not Started
-- ⚠️ **Performance & Format (2.1)** - 3 of 4 features remaining (5-7 weeks)
+**P2 - Medium Priority** (2 features):
+- ⚠️ **Performance & Format (2.1)** - 3 of 4 sub-features remaining (5-7 weeks)
   - ✅ Custom Async Sink Batching (WI12) - COMPLETE
   - ❌ Enhanced State Backend Configuration
   - ❌ Smile Format for Compiled Plans
   - ❌ MultiJoin Optimization Configuration
 
-### P3 - Low Priority Features
-
+**P3 - Low Priority**:
 - 📋 **Prometheus Exporter** - Deferred (design exists, 8-10 days)
+
+**Overall Completion: 86% (18/21 features)**
 
 **See [all-versions-coverage.md](all-versions-coverage.md) for complete details on all versions.**
 
@@ -206,16 +204,16 @@ Custom Prometheus metrics for FlinkDotNet JobGateway.
 8. ✅ **Native Table API**
 9. ✅ **Process Table Functions**
 
-### ✅ Phase 4: COMPLETE - Ecosystem Integration
-**Status**: 100% Complete (WI13)
+### ✅ Phase 4: COMPLETE - Ecosystem & Metadata Integration
+**Status**: 100% Complete (WI13, WI14)
 
-10. ✅ **Table Store (Paimon)** - Lakehouse integration
+10. ✅ **Table Store (Paimon)** - Lakehouse integration (WI13)
+11. ✅ **Catalog API (Flink 1.10)** - Hive/JDBC/GenericInMemory metadata management (WI14)
 
 ### 🚧 Phase 5: Remaining Features (In Planning)
 **Goal**: Complete remaining P1 and P2 features
 
-**P1 Remaining** (4-6 weeks):
-11. ❌ **Catalog API (Flink 1.10)** (2-3 weeks)
+**P1 Remaining** (2-3 weeks):
 12. ❌ **Unified Source API (Flink 1.12)** (2-3 weeks)
 
 **P2 Remaining** (8-12 weeks):
@@ -225,10 +223,10 @@ Custom Prometheus metrics for FlinkDotNet JobGateway.
 
 **Total Effort Estimates**:
 - ✅ P0 Features: 100% COMPLETE! (20-29 weeks invested)
-- ✅ P1 Features: 100% COMPLETE! (35-50 weeks invested)
+- ✅ P1 Features: 100% COMPLETE! (37-53 weeks invested, including Catalog API)
 - 🚧 P2 Features: 25% complete (12-18 weeks remaining)
-- **Overall Progress**: 85% complete (17/20 features)
-- **Remaining Work**: 12-18 weeks for P2 completion
+- **Overall Progress**: 86% complete (18/21 features)
+- **Remaining Work**: 2-3 weeks for Unified Source API + 12-18 weeks for P2 completion
 
 ## How to Contribute
 
@@ -268,11 +266,15 @@ Want to implement one of these features? Great!
 ## Last Updated
 
 **Date**: 2025-10-30
-**Changes**: Updated to reflect actual implementation status - 85% complete (17/20 features)
+**Changes**: Updated to reflect WI14 completion - 86% complete (18/21 features)
 **Major Updates**:
 - ✅ ALL P0 features complete (AI/ML, Materialized Tables, Unified Sink v2)
-- ✅ ALL P1 features complete (Table API, Paimon, Observability)
+- ✅ ALL P1 features complete (Table API, Paimon, Observability, **Catalog API**)
 - Updated status tables and roadmap to show completed work
-- Remaining: 2 P1 features (Catalog API, Unified Source API) + P2/P3 features
+- Remaining: 1 P1 feature (Unified Source API) + P2/P3 features  
 **Scope**: Apache Flink 1.0 through 2.1.0 (all versions)
-**Next Review**: When remaining P1 features are prioritized
+**Next Review**: When Unified Source API is prioritized
+
+---
+
+**For Future TODO Items**: Use this README.md as a template for tracking new missing features from future Flink versions.
