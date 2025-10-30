@@ -32,6 +32,10 @@ if (!MemoryCalculator.ValidateMinimumMemory())
     return;
 }
 
+// Calculate memory allocations for Flink containers
+var taskManagerMemoryMb = MemoryCalculator.CalculateTaskManagerProcessMemoryMb();
+var jobManagerMemoryMb = MemoryCalculator.CalculateJobManagerProcessMemoryMb();
+
 Console.WriteLine("[INFO] Memory resources validated\n");
 
 // Check if LearningCourse mode is enabled - enables additional infrastructure for learning exercises
@@ -183,16 +187,19 @@ var jobManager = jobManagerBuilder
                                                                 // This caused jobs to use wrong Kafka address (localhost:17901 instead of kafka:9092)
                                                                 // Job definitions explicitly provide bootstrapServers, so environment variable is not needed
 
-// Configure Prometheus metrics for JobManager only in LEARNINGCOURSE mode
+// Configure JobManager memory and optional Prometheus metrics
+var jobManagerFlinkProperties = $"jobmanager.memory.process.size: {jobManagerMemoryMb}m\n";
+
 if (isLearningCourseMode)
 {
-    var jobManagerFlinkProperties =
+    jobManagerFlinkProperties +=
         "metrics.reporters: prom\n" +
         "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
         "metrics.reporter.prom.port: 9250\n" +
         "metrics.reporter.prom.filterLabelValueCharacters: false\n";
-    jobManager = jobManager.WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties);
 }
+
+jobManager = jobManager.WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties);
 
 jobManager = jobManager
     .WithEnvironment(JavaToolOptionsEnv, JavaOpenOptions)
@@ -231,16 +238,19 @@ var taskManagerBuilder = builder.AddContainer("flink-taskmanager", "flink:2.1.0-
     .WithEnvironment("TASK_MANAGER_NUMBER_OF_TASK_SLOTS", "10")
     .WithEnvironment(LogFilePathEnv, FlinkTestLogsPath);  // Set log path inside container
 
-// Configure Prometheus metrics for TaskManager only in LEARNINGCOURSE mode
+// Configure TaskManager memory and optional Prometheus metrics
+var taskManagerFlinkProperties = $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n";
+
 if (isLearningCourseMode)
 {
-    var taskManagerFlinkProperties =
+    taskManagerFlinkProperties +=
         "metrics.reporters: prom\n" +
         "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
         "metrics.reporter.prom.port: 9251\n" +
         "metrics.reporter.prom.filterLabelValueCharacters: false\n";
-    taskManagerBuilder = taskManagerBuilder.WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties);
 }
+
+taskManagerBuilder = taskManagerBuilder.WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties);
 
 taskManagerBuilder = taskManagerBuilder
     .WithEnvironment(JavaToolOptionsEnv, JavaOpenOptions)
