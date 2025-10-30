@@ -424,5 +424,331 @@ namespace FlinkDotNet.DataStream.Tests
         }
 
         #endregion
+
+        #region Catalog Management Tests (Flink 1.10+)
+
+        [Test]
+        public void TableEnvironment_RegisterCatalog_ShouldRegisterCatalog()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var catalog = Catalog.Hive("my_hive").Build();
+
+            // Act
+            tableEnv.RegisterCatalog(catalog);
+
+            // Assert
+            var catalogs = tableEnv.ListCatalogs().ToList();
+            Assert.That(catalogs, Does.Contain("my_hive"));
+        }
+
+        [Test]
+        public void TableEnvironment_RegisterCatalog_WithNull_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.RegisterCatalog(null!));
+        }
+
+        [Test]
+        public void TableEnvironment_RegisterCatalog_DuplicateName_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var catalog1 = Catalog.Hive("my_catalog").Build();
+            var catalog2 = Catalog.Jdbc("my_catalog").Build();
+            tableEnv.RegisterCatalog(catalog1);
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => tableEnv.RegisterCatalog(catalog2));
+        }
+
+        [Test]
+        public void TableEnvironment_UseCatalog_ShouldSetCurrentCatalog()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var catalog = Catalog.GenericInMemory("test_catalog").Build();
+            tableEnv.RegisterCatalog(catalog);
+
+            // Act
+            tableEnv.UseCatalog("test_catalog");
+
+            // Assert
+            Assert.That(tableEnv.GetCurrentCatalog(), Is.EqualTo("test_catalog"));
+        }
+
+        [Test]
+        public void TableEnvironment_UseCatalog_WithNullOrWhiteSpace_ShouldThrowArgumentException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.UseCatalog(null!));
+            Assert.Throws<ArgumentException>(() => tableEnv.UseCatalog(""));
+            Assert.Throws<ArgumentException>(() => tableEnv.UseCatalog(" "));
+        }
+
+        [Test]
+        public void TableEnvironment_UseCatalog_NotRegistered_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => tableEnv.UseCatalog("non_existent"));
+        }
+
+        [Test]
+        public void TableEnvironment_GetCatalog_ShouldReturnCatalog()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var catalog = Catalog.Hive("my_hive").Build();
+            tableEnv.RegisterCatalog(catalog);
+
+            // Act
+            var retrieved = tableEnv.GetCatalog("my_hive");
+
+            // Assert
+            Assert.That(retrieved, Is.Not.Null);
+            Assert.That(retrieved!.Name, Is.EqualTo("my_hive"));
+        }
+
+        [Test]
+        public void TableEnvironment_GetCatalog_NotFound_ShouldReturnNull()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act
+            var result = tableEnv.GetCatalog("non_existent");
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void TableEnvironment_GetCatalog_WithNullOrWhiteSpace_ShouldThrowArgumentException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.GetCatalog(null!));
+            Assert.Throws<ArgumentException>(() => tableEnv.GetCatalog(""));
+            Assert.Throws<ArgumentException>(() => tableEnv.GetCatalog(" "));
+        }
+
+        [Test]
+        public void TableEnvironment_ListCatalogs_ShouldReturnAllCatalogs()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var catalog1 = Catalog.Hive("cat1").Build();
+            var catalog2 = Catalog.Jdbc("cat2").Build();
+            tableEnv.RegisterCatalog(catalog1);
+            tableEnv.RegisterCatalog(catalog2);
+
+            // Act
+            var catalogs = tableEnv.ListCatalogs().ToList();
+
+            // Assert
+            Assert.That(catalogs, Has.Count.EqualTo(2));
+            Assert.That(catalogs, Does.Contain("cat1"));
+            Assert.That(catalogs, Does.Contain("cat2"));
+        }
+
+        [Test]
+        public void TableEnvironment_GetCurrentCatalog_Initially_ShouldReturnNull()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act
+            var current = tableEnv.GetCurrentCatalog();
+
+            // Assert
+            Assert.That(current, Is.Null);
+        }
+
+        #endregion
+
+        #region Database Management Tests (Flink 1.10+)
+
+        [Test]
+        public void TableEnvironment_CreateDatabase_ShouldRegisterDatabase()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var database = Database.Builder("my_catalog", "my_db").Build();
+
+            // Act
+            tableEnv.CreateDatabase(database);
+
+            // Assert
+            var databases = tableEnv.ListDatabases("my_catalog").ToList();
+            Assert.That(databases, Does.Contain("my_db"));
+        }
+
+        [Test]
+        public void TableEnvironment_CreateDatabase_WithNull_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.CreateDatabase(null!));
+        }
+
+        [Test]
+        public void TableEnvironment_CreateDatabase_Duplicate_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var database1 = Database.Builder("cat", "db").Build();
+            var database2 = Database.Builder("cat", "db").Build();
+            tableEnv.CreateDatabase(database1);
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => tableEnv.CreateDatabase(database2));
+        }
+
+        [Test]
+        public void TableEnvironment_UseDatabase_ShouldSetCurrentDatabase()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var database = Database.Builder("my_catalog", "my_db").Build();
+            tableEnv.CreateDatabase(database);
+
+            // Act
+            tableEnv.UseDatabase("my_catalog", "my_db");
+
+            // Assert
+            Assert.That(tableEnv.GetCurrentDatabase(), Is.EqualTo("my_db"));
+            Assert.That(tableEnv.GetCurrentCatalog(), Is.EqualTo("my_catalog"));
+        }
+
+        [Test]
+        public void TableEnvironment_UseDatabase_WithNullOrWhiteSpace_ShouldThrowArgumentException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.UseDatabase(null!, "db"));
+            Assert.Throws<ArgumentException>(() => tableEnv.UseDatabase("", "db"));
+            Assert.Throws<ArgumentException>(() => tableEnv.UseDatabase(" ", "db"));
+            Assert.Throws<ArgumentNullException>(() => tableEnv.UseDatabase("cat", null!));
+            Assert.Throws<ArgumentException>(() => tableEnv.UseDatabase("cat", ""));
+            Assert.Throws<ArgumentException>(() => tableEnv.UseDatabase("cat", " "));
+        }
+
+        [Test]
+        public void TableEnvironment_UseDatabase_NotFound_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => tableEnv.UseDatabase("cat", "db"));
+        }
+
+        [Test]
+        public void TableEnvironment_GetDatabase_ShouldReturnDatabase()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var database = Database.Builder("my_catalog", "my_db").Build();
+            tableEnv.CreateDatabase(database);
+
+            // Act
+            var retrieved = tableEnv.GetDatabase("my_catalog", "my_db");
+
+            // Assert
+            Assert.That(retrieved, Is.Not.Null);
+            Assert.That(retrieved!.DatabaseName, Is.EqualTo("my_db"));
+        }
+
+        [Test]
+        public void TableEnvironment_GetDatabase_NotFound_ShouldReturnNull()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act
+            var result = tableEnv.GetDatabase("cat", "db");
+
+            // Assert
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void TableEnvironment_GetDatabase_WithNullOrWhiteSpace_ShouldThrowArgumentException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.GetDatabase(null!, "db"));
+            Assert.Throws<ArgumentException>(() => tableEnv.GetDatabase("", "db"));
+            Assert.Throws<ArgumentException>(() => tableEnv.GetDatabase(" ", "db"));
+            Assert.Throws<ArgumentNullException>(() => tableEnv.GetDatabase("cat", null!));
+            Assert.Throws<ArgumentException>(() => tableEnv.GetDatabase("cat", ""));
+            Assert.Throws<ArgumentException>(() => tableEnv.GetDatabase("cat", " "));
+        }
+
+        [Test]
+        public void TableEnvironment_ListDatabases_ShouldReturnAllDatabasesInCatalog()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+            var db1 = Database.Builder("cat1", "db1").Build();
+            var db2 = Database.Builder("cat1", "db2").Build();
+            var db3 = Database.Builder("cat2", "db3").Build();
+            tableEnv.CreateDatabase(db1);
+            tableEnv.CreateDatabase(db2);
+            tableEnv.CreateDatabase(db3);
+
+            // Act
+            var databases = tableEnv.ListDatabases("cat1").ToList();
+
+            // Assert
+            Assert.That(databases, Has.Count.EqualTo(2));
+            Assert.That(databases, Does.Contain("db1"));
+            Assert.That(databases, Does.Contain("db2"));
+            Assert.That(databases, Does.Not.Contain("db3"));
+        }
+
+        [Test]
+        public void TableEnvironment_ListDatabases_WithNullOrWhiteSpace_ShouldThrowArgumentException()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => tableEnv.ListDatabases(null!));
+            Assert.Throws<ArgumentException>(() => tableEnv.ListDatabases(""));
+            Assert.Throws<ArgumentException>(() => tableEnv.ListDatabases(" "));
+        }
+
+        [Test]
+        public void TableEnvironment_GetCurrentDatabase_Initially_ShouldReturnNull()
+        {
+            // Arrange
+            var tableEnv = _env.GetTableEnvironment();
+
+            // Act
+            var current = tableEnv.GetCurrentDatabase();
+
+            // Assert
+            Assert.That(current, Is.Null);
+        }
+
+        #endregion
     }
 }

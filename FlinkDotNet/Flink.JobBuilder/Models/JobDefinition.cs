@@ -1697,4 +1697,68 @@ namespace Flink.JobBuilder.Models
             get; set;
         }
     }
+
+    /// <summary>
+    /// Generic catalog definition for Flink 1.10+ Catalog API
+    /// Supports Hive, JDBC, and GenericInMemory catalog types
+    /// </summary>
+    public class CatalogDefinition
+    {
+        /// <summary>
+        /// Name of the catalog
+        /// </summary>
+        public string CatalogName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Catalog type: "hive", "jdbc", or "generic_in_memory"
+        /// </summary>
+        public string CatalogType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Default database name (optional)
+        /// </summary>
+        public string? DefaultDatabase
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Catalog-specific properties (e.g., hive-conf-dir, jdbc.url, jdbc.username)
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Database definition for CREATE DATABASE operations
+    /// </summary>
+    public class DatabaseDefinition
+    {
+        /// <summary>
+        /// Name of the catalog containing this database
+        /// </summary>
+        public string CatalogName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Name of the database
+        /// </summary>
+        public string DatabaseName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether to ignore if database already exists
+        /// </summary>
+        public bool IfNotExists { get; set; }
+
+        /// <summary>
+        /// Optional comment for the database
+        /// </summary>
+        public string? Comment
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Database properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
 }
