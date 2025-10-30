@@ -4,6 +4,7 @@
 
 **Last Updated**: 2025-10-30
 **Related WI**: WI5_todo-implementation-tracking.md
+**Last Codebase Scan**: 2025-10-30 ([See Scan Report](CODEBASE_SCAN_2025-10-30.md))
 
 ## Quick Status Dashboard
 
