@@ -1535,6 +1535,74 @@ namespace Flink.JobBuilder.Models
     }
 
     /// <summary>
+    /// Unified Source API (FLIP-27) definition for modern source connectors (Flink 1.12+)
+    /// Supports split discovery, enumeration, and exactly-once semantics
+    /// </summary>
+    public class UnifiedSourceDefinition : ISourceDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "unifiedSource";
+
+        /// <summary>
+        /// Source type (kafka, file, custom, etc.)
+        /// </summary>
+        public string SourceType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Boundedness of the source (bounded or unbounded)
+        /// </summary>
+        public string Boundedness { get; set; } = "unbounded";
+
+        /// <summary>
+        /// Bootstrap servers for Kafka sources
+        /// </summary>
+        public string? BootstrapServers { get; set; }
+
+        /// <summary>
+        /// Topics to consume from (Kafka sources)
+        /// </summary>
+        public List<string> Topics { get; init; } = [];
+
+        /// <summary>
+        /// Consumer group ID (Kafka sources)
+        /// </summary>
+        public string? GroupId { get; set; }
+
+        /// <summary>
+        /// Starting offsets strategy (earliest, latest, group, timestamp, specific)
+        /// </summary>
+        public string StartingOffsets { get; set; } = "latest";
+
+        /// <summary>
+        /// Stopping offsets strategy for bounded sources (latest, timestamp, specific, unbounded)
+        /// </summary>
+        public string StoppingOffsets { get; set; } = "unbounded";
+
+        /// <summary>
+        /// File paths for file sources
+        /// </summary>
+        public List<string> FilePaths { get; init; } = [];
+
+        /// <summary>
+        /// File format (csv, json, parquet, etc.) for file sources
+        /// </summary>
+        public string? FileFormat { get; set; }
+
+        /// <summary>
+        /// Additional source properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+
+        /// <summary>
+        /// Schema definition for deserialization
+        /// </summary>
+        public Dictionary<string, string> Schema { get; init; } = [];
+    }
+
+    /// <summary>
     /// Process Table Function (PTF) operation definition for stateful table UDFs
     /// Supports advanced stateful processing with timers and managed state
     /// </summary>
