@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <SonarQubeTestProject>true</SonarQubeTestProject>
+    <IsAspireIntegrationTest>true</IsAspireIntegrationTest>
+    <!-- Disable code analysis for test projects -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Testing" Version="9.5.1" />
+    <PackageReference Include="Aspire.Hosting.Kafka" Version="9.5.1" />
+    <PackageReference Include="Confluent.Kafka" Version="2.11.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="NUnit" Version="4.2.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ObservabilityTesting.FlinkSqlAppHost\ObservabilityTesting.FlinkSqlAppHost.csproj" />
+    <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" SetConfiguration="Configuration=Release" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" SetConfiguration="Configuration=Release" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" SetConfiguration="Configuration=Release" />
+    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj" SetConfiguration="Configuration=Release" />
+  </ItemGroup>
+
+  <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->
+  <Target Name="CopyFlinkRunnerJarsToTestOutput" AfterTargets="Build">
+    <PropertyGroup>
+      <_GatewayOutputDir>..\..\FlinkDotNet\FlinkDotNet.JobGateway\bin\$(Configuration)\net9.0</_GatewayOutputDir>
+      <_TestOutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_TestOutDir>
+    </PropertyGroup>
+
+    <Message Text="[ObservabilityTesting.IntegrationTests] Copying Flink IR Runner JARs from Gateway output to test output..." Importance="high" />
+
+    <!-- Copy flink-ir-runner-java17.jar if it exists -->
+    <Copy SourceFiles="$(_GatewayOutputDir)\flink-ir-runner-java17.jar" DestinationFiles="$(_TestOutDir)flink-ir-runner-java17.jar" SkipUnchangedFiles="true" Condition="Exists('$(_GatewayOutputDir)\flink-ir-runner-java17.jar')" />
+
+    <Message Text="[ObservabilityTesting.IntegrationTests] Flink IR Runner JARs copied to test output directory" Importance="high" />
+  </Target>
+
+</Project>

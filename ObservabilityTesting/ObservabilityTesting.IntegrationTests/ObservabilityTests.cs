@@ -2,13 +2,13 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using LocalTesting.FlinkSqlAppHost;
+using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
-namespace LocalTesting.IntegrationTests;
+namespace ObservabilityTesting.IntegrationTests;
 
 /// <summary>
-/// Comprehensive observability tests for FlinkDotNet LocalTesting.
+/// Comprehensive observability tests for FlinkDotNet ObservabilityTesting.
 /// Tests Gateway metrics, Prometheus integration, Grafana configuration, backpressure detection, and end-to-end observability workflow.
 /// Implements WI11 requirements: 5 comprehensive tests covering all observability aspects while maintaining ≥70% code coverage.
 /// </summary>

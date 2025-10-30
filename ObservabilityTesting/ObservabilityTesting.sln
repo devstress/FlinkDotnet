@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObservabilityTesting.FlinkSqlAppHost", "ObservabilityTesting.FlinkSqlAppHost\ObservabilityTesting.FlinkSqlAppHost.csproj", "{BCC82AAE-3F37-444C-8F35-E7227BBA9509}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ObservabilityTesting.IntegrationTests", "ObservabilityTesting.IntegrationTests\ObservabilityTesting.IntegrationTests.csproj", "{B4A534D3-90F8-4213-88E9-266FEF2BF645}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Debug|x64.Build.0 = Debug|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Debug|x86.Build.0 = Debug|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Release|x64.ActiveCfg = Release|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Release|x64.Build.0 = Release|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Release|x86.ActiveCfg = Release|Any CPU
+		{BCC82AAE-3F37-444C-8F35-E7227BBA9509}.Release|x86.Build.0 = Release|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Debug|x64.Build.0 = Debug|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Debug|x86.Build.0 = Debug|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Release|x64.ActiveCfg = Release|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Release|x64.Build.0 = Release|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Release|x86.ActiveCfg = Release|Any CPU
+		{B4A534D3-90F8-4213-88E9-266FEF2BF645}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
