@@ -105,8 +105,10 @@ if (!File.Exists(gatewayDockerfilePath))
 
 #pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
 // Use PublishAsDockerFile to build the Gateway image from Dockerfile as part of the Aspire build
+// NOTE: When using AddProject with PublishAsDockerFile, we must NOT specify port parameter to avoid proxy errors
+// The container's targetPort 8086 is exposed, and Aspire will allocate a dynamic port on the host
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("gateway")
-    .WithHttpEndpoint(targetPort: 8086, port: Ports.GatewayHostPort, name: "gateway-http")
+    .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .PublishAsDockerFile()
     .WaitFor(jobManager);
@@ -120,6 +122,6 @@ Console.WriteLine("   - Flink JobManager: Port 8081, Metrics: 9250");
 Console.WriteLine("   - Flink TaskManager: Metrics: 9251");
 Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
 Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
-Console.WriteLine($"   - Gateway: Port {Ports.GatewayHostPort}");
+Console.WriteLine("   - Gateway: Dynamic port (container port 8086)");
 
 builder.Build().Run();
