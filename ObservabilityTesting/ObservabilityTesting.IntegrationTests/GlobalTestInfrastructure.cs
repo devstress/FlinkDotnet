@@ -722,6 +722,9 @@ public class GlobalTestInfrastructure
     {
         try
         {
+            // Note: Docker --filter "name=XXX" does substring matching, not prefix matching.
+            // Using "name=kafka" matches both "kafka-xxxxx" and "kafka-ui-xxxxx" containers.
+            // We filter out kafka-ui explicitly in code for reliability.
             var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}\"");
             var kafkaContainer = kafkaContainers
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
