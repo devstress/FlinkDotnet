@@ -266,26 +266,15 @@ public class PaimonTableBuilder
     public PaimonTable Build()
     {
         // Validate required fields
-        if (string.IsNullOrEmpty(this._definition.CatalogName))
-        {
-            throw new InvalidOperationException("Catalog name is required");
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.CatalogName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.TableName);
 
-        if (string.IsNullOrEmpty(this._definition.TableName))
-        {
-            throw new InvalidOperationException("Table name is required");
-        }
-
-        if (this._definition.Schema.Count == 0)
-        {
-            throw new InvalidOperationException("At least one column is required");
-        }
-
-        if (this._definition.PrimaryKey.Count == 0)
-        {
-            throw new InvalidOperationException("Primary key is required for Paimon ACID tables");
-        }
-
-        return new PaimonTable(this._definition);
+#pragma warning disable S3358 // Nested ternary required to satisfy IDE0046 while maintaining validation flow
+        return this._definition.Schema.Count == 0
+            ? throw new InvalidOperationException("At least one column is required")
+            : this._definition.PrimaryKey.Count == 0
+            ? throw new InvalidOperationException("Primary key is required for Paimon ACID tables")
+            : new PaimonTable(this._definition);
+#pragma warning restore S3358
     }
 }
