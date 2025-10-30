@@ -72,6 +72,42 @@ await env.ExecuteAsync("order-processor");
 
 With one command, Aspire starts all containers, configures service discovery, and provides a unified dashboard - enabling you to develop and test complete distributed streaming applications locally.
 
+### Component Roles in High-Throughput Processing
+
+When processing millions of messages per second, each component plays a critical role:
+
+**Apache Kafka** - Message ingestion and buffering
+- Handles message ingestion at scale (millions of messages/second)
+- Provides durable message storage with partitioning for parallel consumption
+- Acts as buffer between producers and stream processors
+- Enables replay and reprocessing of historical data
+
+**Apache Flink 2.1** - Distributed stream processing engine
+- Processes messages in parallel across multiple TaskManager instances
+- Provides stateful computations with exactly-once processing guarantees
+- Scales horizontally by adding more TaskManager slots
+- Handles backpressure to prevent system overload
+
+**FlinkDotNet SDK** - .NET development interface
+- Enables writing stream processing logic in C# with type safety
+- Compiles to Flink's native execution model
+- Provides fluent API for common streaming patterns (map, filter, window, join)
+- Eliminates need for Java expertise while maintaining full Flink performance
+
+**Temporal** - Durable workflow orchestration
+- Manages long-running workflows across distributed job submissions
+- Provides guaranteed execution with automatic retries and compensation
+- Maintains workflow state even during infrastructure failures
+- Coordinates complex multi-step processing pipelines
+
+**Microsoft Aspire** - Local development orchestration
+- Simulates production environment locally with container orchestration
+- Manages service discovery between Kafka, Flink, Temporal, and custom services
+- Provides unified dashboard for monitoring all components
+- Enables rapid iteration and testing before production deployment
+
+Together, these components form a production-grade streaming architecture capable of processing high-volume event streams with reliability and fault tolerance.
+
 ### Try It Out
 
 ```bash
