@@ -129,8 +129,29 @@ public class GlobalTestInfrastructure
             // CRITICAL FIX: Discover Kafka container IP for Flink job configurations
             // Docker default bridge doesn't support DNS, so we need to use the actual container IP
             Console.WriteLine("🔧 Discovering Kafka container IP for Flink jobs...");
-            var kafkaContainerIp = await GetKafkaContainerIpAsync();
-            Console.WriteLine($"✅ Kafka container IP: {kafkaContainerIp}");
+            
+            // Retry to get Kafka container IP (in case container just started)
+            string kafkaContainerIp = null!;
+            for (int attempt = 1; attempt <= 10; attempt++)
+            {
+                try
+                {
+                    kafkaContainerIp = await GetKafkaContainerIpAsync();
+                    Console.WriteLine($"✅ Kafka container IP discovered: {kafkaContainerIp}");
+                    break;
+                }
+                catch (InvalidOperationException ex) when (attempt < 10)
+                {
+                    Console.WriteLine($"⏳ Attempt {attempt}/10 to get Kafka IP failed: {ex.Message}");
+                    Console.WriteLine($"   Retrying in 3 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                }
+            }
+
+            if (kafkaContainerIp == null)
+            {
+                throw new InvalidOperationException("Failed to discover Kafka container IP after 10 attempts (30s)");
+            }
 
             // Store for use in tests (replaces hostname-based connection)
             KafkaContainerIpForFlink = kafkaContainerIp;
@@ -141,8 +162,28 @@ public class GlobalTestInfrastructure
             KafkaConnectionStringFromConfig = app.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()
                 .GetConnectionString("kafka");
 
-            // Also discover from Docker for comparison/debugging
-            var discoveredKafkaEndpoint = await GetKafkaEndpointAsync();
+            // Also discover from Docker for comparison/debugging (with retry)
+            string discoveredKafkaEndpoint = null!;
+            for (int attempt = 1; attempt <= 10; attempt++)
+            {
+                try
+                {
+                    discoveredKafkaEndpoint = await GetKafkaEndpointAsync();
+                    Console.WriteLine($"✅ Kafka endpoint discovered from Docker");
+                    break;
+                }
+                catch (InvalidOperationException ex) when (attempt < 10)
+                {
+                    Console.WriteLine($"⏳ Attempt {attempt}/10 to get Kafka endpoint failed: {ex.Message}");
+                    Console.WriteLine($"   Retrying in 3 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                }
+            }
+
+            if (discoveredKafkaEndpoint == null)
+            {
+                throw new InvalidOperationException("Failed to discover Kafka endpoint after 10 attempts (30s)");
+            }
 
             // Use config value as primary, fallback to discovered if not available
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
@@ -733,7 +774,8 @@ public class GlobalTestInfrastructure
             // Note: Docker --filter "name=XXX" does substring matching, not prefix matching.
             // Using "name=kafka" matches both "kafka-xxxxx" and "kafka-ui-xxxxx" containers.
             // We filter out kafka-ui explicitly in code for reliability.
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}\"");
+            // Also filter by status=running to only get running containers.
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --filter \"status=running\" --format \"{{.Names}}\"");
             var kafkaContainer = kafkaContainers
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .FirstOrDefault(name => !name.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase));
