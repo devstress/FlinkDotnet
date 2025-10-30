@@ -4,7 +4,7 @@ public static class Ports
 {
     public const int JobManagerHostPort = 8081; // Host REST/UI port
     public const int SqlGatewayHostPort = 8083; // SQL Gateway REST API port
-    public const int GatewayHostPort = 8080;    // Gateway HTTP port
+    public const int GatewayHostPort = 8086;    // Gateway HTTP port
     
     // Kafka FIXED port configuration (no dynamic allocation)
     // CRITICAL: Kafka dual listener setup with FIXED ports:

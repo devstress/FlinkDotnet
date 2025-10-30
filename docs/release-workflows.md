@@ -232,13 +232,13 @@ wget https://github.com/devstress/FlinkDotnet/releases/download/v1.0.0/jobgatewa
 docker load < jobgateway-1.0.0.tar.gz
 
 # Run container
-docker run -p 8080:8080 devstress/flinkdotnet:1.0.0
+docker run -p 8086:8086 devstress/flinkdotnet:1.0.0
 ```
 
 ### From Docker Hub
 ```bash
 docker pull devstress/flinkdotnet:1.0.0
-docker run -p 8080:8080 devstress/flinkdotnet:1.0.0
+docker run -p 8086:8086 devstress/flinkdotnet:1.0.0
 ```
 
 ## Additional Notes

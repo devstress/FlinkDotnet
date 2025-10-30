@@ -99,7 +99,7 @@ dotnet add package FlinkDotNet
 ### Docker Image
 ```bash
 docker pull devstress/flinkdotnet:latest
-docker run -p 8080:8080 \
+docker run -p 8086:8086 \
   -e FLINK_CLUSTER_HOST=your-flink-host \
   -e FLINK_CLUSTER_PORT=8081 \
   devstress/flinkdotnet:latest

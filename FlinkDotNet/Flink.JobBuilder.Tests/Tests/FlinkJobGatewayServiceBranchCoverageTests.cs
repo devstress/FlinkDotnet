@@ -20,7 +20,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
     public void SetUp()
     {
         // Set environment variable required by FlinkJobGatewayConfiguration
-        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
 
         // Set retry delay to 1ms for fast tests
         FlinkJobGatewayService.RetryDelay = TimeSpan.FromMilliseconds(1);
@@ -198,7 +198,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
         // Arrange
         var config = new FlinkJobGatewayConfiguration
         {
-            BaseUrl = "http://test-gateway:8080",
+            BaseUrl = "http://test-gateway:8086",
             HttpTimeout = TimeSpan.FromSeconds(45)
         };
 
@@ -225,7 +225,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
         // Arrange
         var config = new FlinkJobGatewayConfiguration
         {
-            BaseUrl = "http://localhost:8080",
+            BaseUrl = "http://localhost:8086",
             ApiKey = "" // Empty API key
         };
 
@@ -242,7 +242,7 @@ public class FlinkJobGatewayServiceBranchCoverageTests
         // Arrange
         var config = new FlinkJobGatewayConfiguration
         {
-            BaseUrl = "http://localhost:8080",
+            BaseUrl = "http://localhost:8086",
             ApiKey = null // Null API key
         };
 

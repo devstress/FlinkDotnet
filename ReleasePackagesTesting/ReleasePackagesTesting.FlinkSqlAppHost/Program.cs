@@ -322,11 +322,11 @@ sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foregro
 // Uses devstress/flinkdotnet:latest Docker image from release artifacts (matches workflow DOCKER_IMAGE_NAME)
 #pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
 var gateway = builder.AddContainer("flink-job-gateway", "devstress/flinkdotnet", "latest")
-    .WithHttpEndpoint(port: Ports.GatewayHostPort, targetPort: 8080, name: "gateway-http")
-    .WithContainerRuntimeArgs("--publish", $"{Ports.GatewayHostPort}:8080")  // Explicit port publishing for test access
+    .WithHttpEndpoint(port: Ports.GatewayHostPort, targetPort: 8086, name: "gateway-http")
+    .WithContainerRuntimeArgs("--publish", $"{Ports.GatewayHostPort}:8086")  // Explicit port publishing for test access
     .WaitFor(jobManager)  // Wait for JobManager to be ready before starting Job Gateway
     .WaitFor(sqlGateway)  // Wait for SQL Gateway to be ready before starting Job Gateway
-    .WithEnvironment("ASPNETCORE_URLS", "http://+:8080")
+    .WithEnvironment("ASPNETCORE_URLS", "http://+:8086")
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/opt/connectors")
     .WithEnvironment("LOG_FILE_PATH", "/opt/test-logs")
     .WithEnvironment("Flink__JobManager__BaseUrl", jobManager.GetEndpoint("jm-http"))
@@ -495,7 +495,7 @@ static void SetupEnvironment()
     Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
     // CRITICAL: Set ASPNETCORE_URLS for Aspire Dashboard (required by Aspire SDK)
     // This will be inherited by child processes, but we override it per-project using WithEnvironment()
-    // JobGateway explicitly sets ASPNETCORE_URLS=http://0.0.0.0:8080 via WithEnvironment()
+    // JobGateway explicitly sets ASPNETCORE_URLS=http://0.0.0.0:8086 via WithEnvironment()
     Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:15888");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:16686");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:16687");

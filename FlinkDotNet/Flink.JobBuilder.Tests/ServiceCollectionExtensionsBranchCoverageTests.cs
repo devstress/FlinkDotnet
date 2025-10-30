@@ -25,7 +25,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var configBuilder = new ConfigurationBuilder();
         _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            { "FlinkJobGateway:BaseUrl", "http://config-url:8080/" },
+            { "FlinkJobGateway:BaseUrl", "http://config-url:8086/" },
             { "FlinkJobGateway:HttpTimeout", "00:05:00" },
             { "FlinkJobGateway:MaxRetries", "3" },
             { "FlinkJobGateway:RetryDelay", "00:00:01" }
@@ -38,7 +38,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var options = provider.GetRequiredService<IOptions<FlinkJobGatewayConfiguration>>().Value;
 
         // Assert
-        Assert.That(options.BaseUrl, Is.EqualTo("http://config-url:8080/"));
+        Assert.That(options.BaseUrl, Is.EqualTo("http://config-url:8086/"));
         Assert.That(options.MaxRetries, Is.EqualTo(3));
     }
 
@@ -160,7 +160,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var configBuilder = new ConfigurationBuilder();
         _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string>
         {
-            { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
+            { "FlinkJobGateway:BaseUrl", "http://test:8086/" }
         }!);
         var configuration = configBuilder.Build();
 
@@ -171,7 +171,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         // Assert
         var options = provider.GetService<IOptions<FlinkJobGatewayConfiguration>>();
         Assert.That(options, Is.Not.Null);
-        Assert.That(options!.Value.BaseUrl, Is.EqualTo("http://test:8080/"));
+        Assert.That(options!.Value.BaseUrl, Is.EqualTo("http://test:8086/"));
     }
 
     [Test]
@@ -183,7 +183,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var configBuilder = new ConfigurationBuilder();
         _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string>
         {
-            { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
+            { "FlinkJobGateway:BaseUrl", "http://test:8086/" }
         }!);
         var configuration = configBuilder.Build();
 
@@ -220,7 +220,7 @@ public class ServiceCollectionExtensionsBranchCoverageTests
         var configBuilder = new ConfigurationBuilder();
         _ = configBuilder.AddInMemoryCollection(new Dictionary<string, string>
         {
-            { "FlinkJobGateway:BaseUrl", "http://test:8080/" }
+            { "FlinkJobGateway:BaseUrl", "http://test:8086/" }
         }!);
         var configuration = configBuilder.Build();
 

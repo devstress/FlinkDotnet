@@ -1,6 +1,6 @@
 # Gateway API
 
-Base URL defaults to `http://localhost:8080`.
+Base URL defaults to `http://localhost:8086`.
 
 ## Enhanced Job Management
 

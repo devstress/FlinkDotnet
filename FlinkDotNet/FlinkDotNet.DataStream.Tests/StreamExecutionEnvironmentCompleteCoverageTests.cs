@@ -16,7 +16,7 @@ namespace FlinkDotNet.DataStream.Tests
         [SetUp]
         public void SetUp() =>
             // Set environment variable required by FlinkJobGatewayConfiguration
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
 
         [TearDown]
         public void TearDown() =>

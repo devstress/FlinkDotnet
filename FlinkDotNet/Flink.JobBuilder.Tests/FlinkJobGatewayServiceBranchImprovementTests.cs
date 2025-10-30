@@ -20,7 +20,7 @@ namespace Flink.JobBuilder.Tests
         {
             // Target: Line 42 (null configuration), Line 43 (null httpClient)
             // Set environment variable to provide BaseUrl for default configuration
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
 
             try
             {
@@ -37,8 +37,8 @@ namespace Flink.JobBuilder.Tests
         public void Constructor_WithValidHttpClient_UsesProvidedClient()
         {
             // Target: Line 43 (non-null httpClient branch)
-            var httpClient = new HttpClient { BaseAddress = new Uri("http://test:8080") };
-            var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
+            var httpClient = new HttpClient { BaseAddress = new Uri("http://test:8086") };
+            var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8086" };
 
             using var service = new FlinkJobGatewayService(config, httpClient, null);
 
@@ -51,7 +51,7 @@ namespace Flink.JobBuilder.Tests
             // Target: Line 64 (non-empty API key branch - TRUE path)
             var config = new FlinkJobGatewayConfiguration
             {
-                BaseUrl = "http://localhost:8080",
+                BaseUrl = "http://localhost:8086",
                 ApiKey = "test-api-key-123"
             };
 
@@ -66,7 +66,7 @@ namespace Flink.JobBuilder.Tests
             // Target: Line 64 (empty API key branch - FALSE path)
             var config = new FlinkJobGatewayConfiguration
             {
-                BaseUrl = "http://localhost:8080",
+                BaseUrl = "http://localhost:8086",
                 ApiKey = null
             };
 
@@ -81,7 +81,7 @@ namespace Flink.JobBuilder.Tests
             // Target: Line 98 (validation.IsValid == true), Line 104 branch
             var config = new FlinkJobGatewayConfiguration
             {
-                BaseUrl = "http://localhost:8080"
+                BaseUrl = "http://localhost:8086"
             };
 
             var jobDef = CreateValidJobDefinition();
@@ -106,7 +106,7 @@ namespace Flink.JobBuilder.Tests
         public void Dispose_MultipleTimes_HandlesGracefully()
         {
             // Target: Line 461, 466, 468 (Dispose branches)
-            var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
+            var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8086" };
             var service = new FlinkJobGatewayService(config, null, null);
 
             service.Dispose(); // First dispose
@@ -119,7 +119,7 @@ namespace Flink.JobBuilder.Tests
         public void Service_WithLogger_UsesProvidedLogger()
         {
             // Target: Constructor with logger, Line 157 (logger != null)
-            var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8080" };
+            var config = new FlinkJobGatewayConfiguration { BaseUrl = "http://localhost:8086" };
             var mockLogger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<FlinkJobGatewayService>();
 
             using var service = new FlinkJobGatewayService(config, null, mockLogger);
