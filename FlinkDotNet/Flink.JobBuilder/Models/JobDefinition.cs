@@ -346,6 +346,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(TableOperationDefinition), "table")]
     [JsonDerivedType(typeof(ParseJsonOperationDefinition), "parseJson")]
     [JsonDerivedType(typeof(ProcessTableFunctionDefinition), "processTableFunction")]
+    [JsonDerivedType(typeof(WindowTvfOperationDefinition), "windowTvf")]
     public interface IOperationDefinition
     {
         public string Type
@@ -1254,6 +1255,59 @@ namespace Flink.JobBuilder.Models
 
         /// <summary>
         /// Function-specific properties and configuration
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Window Table-Valued Function (TVF) operation definition
+    /// Supports modern SQL window functions: TUMBLE, HOP, CUMULATE
+    /// </summary>
+    public class WindowTvfOperationDefinition : IOperationDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "windowTvf";
+
+        /// <summary>
+        /// Window function type: "TUMBLE", "HOP", or "CUMULATE"
+        /// </summary>
+        public string WindowType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Time attribute column for windowing (e.g., "event_time")
+        /// </summary>
+        public string TimeColumn { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Window size (e.g., "INTERVAL '1' HOUR")
+        /// </summary>
+        public string WindowSize { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Window slide/hop interval (for HOP windows)
+        /// </summary>
+        public string? SlideInterval { get; set; }
+
+        /// <summary>
+        /// Maximum window size (for CUMULATE windows)
+        /// </summary>
+        public string? MaxWindowSize { get; set; }
+
+        /// <summary>
+        /// Group by columns after windowing
+        /// </summary>
+        public List<string> GroupByColumns { get; init; } = [];
+
+        /// <summary>
+        /// Aggregation functions to apply
+        /// </summary>
+        public List<string> Aggregations { get; init; } = [];
+
+        /// <summary>
+        /// Additional window properties
         /// </summary>
         public Dictionary<string, string> Properties { get; init; } = [];
     }

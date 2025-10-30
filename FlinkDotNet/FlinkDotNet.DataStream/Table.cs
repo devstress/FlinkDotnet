@@ -128,6 +128,79 @@ public class Table
     }
 
     /// <summary>
+    /// Applies a window table-valued function (TUMBLE, HOP, or CUMULATE)
+    /// </summary>
+    /// <param name="windowType">Type of window: "TUMBLE", "HOP", or "CUMULATE"</param>
+    /// <param name="timeColumn">Time attribute column name</param>
+    /// <param name="windowSize">Window size (e.g., "INTERVAL '1' HOUR")</param>
+    /// <param name="slideInterval">Slide interval for HOP windows (optional)</param>
+    /// <param name="maxWindowSize">Maximum window size for CUMULATE windows (optional)</param>
+    /// <returns>A new Table with the window operation applied</returns>
+    public Table Window(string windowType, string timeColumn, string windowSize, string? slideInterval = null, string? maxWindowSize = null)
+    {
+        if (string.IsNullOrWhiteSpace(windowType))
+        {
+            throw new ArgumentException("Window type cannot be null or empty", nameof(windowType));
+        }
+
+        if (string.IsNullOrWhiteSpace(timeColumn))
+        {
+            throw new ArgumentException("Time column cannot be null or empty", nameof(timeColumn));
+        }
+
+        if (string.IsNullOrWhiteSpace(windowSize))
+        {
+            throw new ArgumentException("Window size cannot be null or empty", nameof(windowSize));
+        }
+
+        var newTable = this.Clone();
+        newTable.Operations.Add(new WindowTvfOperationDefinition
+        {
+            WindowType = windowType.ToUpper(),
+            TimeColumn = timeColumn,
+            WindowSize = windowSize,
+            SlideInterval = slideInterval,
+            MaxWindowSize = maxWindowSize
+        });
+        return newTable;
+    }
+
+    /// <summary>
+    /// Applies a TUMBLE window (fixed, non-overlapping windows)
+    /// </summary>
+    /// <param name="timeColumn">Time attribute column name</param>
+    /// <param name="windowSize">Window size (e.g., "INTERVAL '1' HOUR")</param>
+    /// <returns>A new Table with TUMBLE window applied</returns>
+    public Table TumbleWindow(string timeColumn, string windowSize)
+    {
+        return this.Window("TUMBLE", timeColumn, windowSize);
+    }
+
+    /// <summary>
+    /// Applies a HOP window (sliding windows with overlap)
+    /// </summary>
+    /// <param name="timeColumn">Time attribute column name</param>
+    /// <param name="slideInterval">How often windows are created</param>
+    /// <param name="windowSize">Size of each window</param>
+    /// <returns>A new Table with HOP window applied</returns>
+    public Table HopWindow(string timeColumn, string slideInterval, string windowSize)
+    {
+        return this.Window("HOP", timeColumn, windowSize, slideInterval);
+    }
+
+    /// <summary>
+    /// Applies a CUMULATE window (expanding windows within a maximum size)
+    /// </summary>
+    /// <param name="timeColumn">Time attribute column name</
+    /// <param name="stepInterval">How often windows expand</param>
+    /// <param name="maxWindowSize">Maximum window size</param>
+    /// <returns>A new Table with CUMULATE window applied</returns>
+    public Table CumulateWindow(string timeColumn, string stepInterval, string maxWindowSize)
+    {
+        return this.Window("CUMULATE", timeColumn, stepInterval, null, maxWindowSize);
+    }
+
+    /// <summary>
     /// Generates SQL query from table operations
     /// </summary>
     /// <returns>SQL query string representing the table transformation</returns>
@@ -150,6 +223,32 @@ public class Table
                     sql.Append($" WHERE {tableOp.Condition}");
                     break;
 
+
+                case WindowTvfOperationDefinition windowOp:
+                    {
+                        // Generate window TVF SQL
+                        var windowFunc = windowOp.WindowType switch
+                        {
+                            "TUMBLE" => $"TUMBLE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize})",
+                            "HOP" => $"HOP(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.SlideInterval}, {windowOp.WindowSize})",
+                            "CUMULATE" => $"CUMULATE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize}, {windowOp.MaxWindowSize})",
+                            _ => throw new InvalidOperationException($"Unknown window type: {windowOp.WindowType}")
+                        };
+
+                        sql = new StringBuilder($"SELECT * FROM TABLE({windowFunc})");
+
+                        if (windowOp.GroupByColumns.Count > 0)
+                        {
+                            sql.Append($" GROUP BY {string.Join(", ", windowOp.GroupByColumns)}");
+                        }
+
+                        if (windowOp.Aggregations.Count > 0)
+                        {
+                            sql.Replace("SELECT *", $"SELECT window_start, window_end, {string.Join(", ", windowOp.Aggregations)}");
+                        }
+
+                        break;
+                    }
                 case ParseJsonOperationDefinition parseOp:
                     {
                         var jsonFunc = parseOp.FunctionType;
