@@ -94,10 +94,11 @@ public class GlobalTestInfrastructure
             {
                 await Task.Delay(TimeSpan.FromSeconds(3));
 
-                var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
+                // Check for kafka container with "Up" status (not just "Created")
+                var containers = await RunDockerCommandAsync("ps --filter name=kafka --filter status=running --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
                 {
-                    Console.WriteLine($"✅ Kafka container detected after {attempt * 3}s");
+                    Console.WriteLine($"✅ Kafka container running after {attempt * 3}s");
                     containersDetected = true;
 
                     // Show all containers for diagnostics
@@ -105,14 +106,21 @@ public class GlobalTestInfrastructure
                     Console.WriteLine($"🐳 All containers:\n{allContainers}");
                     break;
                 }
-                Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 3}s elapsed)");
+                
+                // Show current status for debugging
+                var currentStatus = await RunDockerCommandAsync("ps -a --filter name=kafka --format \"{{.Names}} - {{.Status}}\"");
+                Console.WriteLine($"⏳ Still waiting for kafka container to be running... ({attempt * 3}s elapsed)");
+                if (!string.IsNullOrWhiteSpace(currentStatus))
+                {
+                    Console.WriteLine($"   Current kafka status: {currentStatus.Trim()}");
+                }
             }
 
             if (!containersDetected)
             {
-                Console.WriteLine("⚠️ Containers not detected within 30s, proceeding anyway...");
-                var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
-                Console.WriteLine($"🐳 Current containers:\n{allContainers}");
+                Console.WriteLine("⚠️ Kafka container not running within 30s, proceeding anyway...");
+                var allContainers = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                Console.WriteLine($"🐳 Current containers (including non-running):\n{allContainers}");
             }
 
             // Capture network state after containers are detected
