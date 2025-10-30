@@ -88,6 +88,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(DatabaseSourceDefinition), "database")]
     [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
     [JsonDerivedType(typeof(MaterializedTableDefinition), "materialized_table")]
+    [JsonDerivedType(typeof(ModelDefinition), "model")]
     public interface ISourceDefinition
     {
         /// <summary>
@@ -1010,5 +1011,70 @@ namespace Flink.JobBuilder.Models
         /// Committer-specific properties
         /// </summary>
         public Dictionary<string, object> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// AI/ML Model definition for Flink 2.1+ MODEL DDL support
+    /// </summary>
+    public class ModelDefinition : ISourceDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "model";
+
+        /// <summary>
+        /// Name of the AI/ML model
+        /// </summary>
+        public string ModelName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Input schema definition (column_name: data_type)
+        /// </summary>
+        public Dictionary<string, string> InputSchema
+        {
+            get; init;
+        } = [];
+
+        /// <summary>
+        /// Output schema definition (column_name: data_type)
+        /// </summary>
+        public Dictionary<string, string> OutputSchema
+        {
+            get; init;
+        } = [];
+
+        /// <summary>
+        /// AI provider: "openai", "azure_openai", "custom", etc.
+        /// </summary>
+        public string Provider
+        {
+            get; set;
+        } = string.Empty;
+
+        /// <summary>
+        /// Provider-specific properties (e.g., API keys, endpoints, model names)
+        /// </summary>
+        public Dictionary<string, string> Properties
+        {
+            get; init;
+        } = [];
+
+        /// <summary>
+        /// Operation to perform: "CREATE", "ALTER", "DROP", "SHOW", "DESCRIBE"
+        /// </summary>
+        public string Operation
+        {
+            get; set;
+        } = "CREATE";
+
+        /// <summary>
+        /// Execution mode: "gateway" (SQL Gateway execution)
+        /// </summary>
+        public string ExecutionMode
+        {
+            get; set;
+        } = "gateway";
     }
 }

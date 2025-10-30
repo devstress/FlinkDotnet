@@ -14,6 +14,7 @@ This folder tracks features from **all Apache Flink versions** (1.0 through 2.1.
 - **[AI/ML Integration (Flink 2.1)](ai-ml-integration-features.md)** - CREATE MODEL, ML_PREDICT, AI providers
 - **[Table API & Advanced SQL (Flink 2.1)](table-api-advanced-sql-features.md)** - VARIANT, PTFs, native API
 - **[Performance Features (Flink 2.1)](performance-format-features.md)** - Smile format, async batching
+- **[Observability](observability-features.md)** - Comprehensive testing in ReleasePackageVerification
 - **[Prometheus Exporter](prometheus-exporter-future-design.md)** - Custom metrics (deferred)
 
 ## Quick Status Overview
@@ -40,6 +41,7 @@ This folder tracks features from **all Apache Flink versions** (1.0 through 2.1.
 | **Materialized Tables (1.20)** | ❌ Not Implemented | **P0 - Critical** | 4-6 weeks | [all-versions-coverage.md](all-versions-coverage.md#1-materialized-tables-flip-435-) |
 | **Unified Sink API v2 (1.20)** | ❌ Not Implemented | **P0 - Critical** | 3-4 weeks | [all-versions-coverage.md](all-versions-coverage.md#2-unified-sink-api-v2-replaces-legacy-sinkfunction-) |
 | **Table API & Advanced SQL (2.1)** | ⚠️ Partial | **P1 - High** | 12-17 weeks | [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md) |
+| **Observability Testing** | ⚠️ Partial | **P1 - High** | 2-3 weeks | [observability-features.md](observability-features.md) |
 | **Table Store/Paimon (1.15)** | ❌ Not Implemented | **P1 - High** | 3-4 weeks | [all-versions-coverage.md](all-versions-coverage.md#missing-from-115-may-2022) |
 | **Performance & Format (2.1)** | ❌ Not Implemented | **P2 - Medium** | 7-10 weeks | [performance-format-features.md](performance-format-features.md) |
 | **Prometheus Exporter** | 📋 Planned | **P3 - Low** | 8-10 days | [prometheus-exporter-future-design.md](prometheus-exporter-future-design.md) |
