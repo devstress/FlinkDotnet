@@ -84,7 +84,32 @@ if (File.Exists(metricsJarPath))
     Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for TaskManager");
 }
 
-// 4. Prometheus - Metrics collection (LEARNINGCOURSE mode only)
+// 4. Flink SQL Gateway - Required for Gateway to communicate with Flink
+Console.WriteLine("[INFO] Configuring Flink SQL Gateway...");
+var baseSqlGatewayFlinkProperties =
+    "jobmanager.rpc.address: flink-jobmanager\n" +
+    "rest.address: flink-jobmanager\n" +
+    "rest.port: 8081\n" +
+    "sql-gateway.endpoint.rest.address: flink-sql-gateway\n" +
+    "sql-gateway.endpoint.rest.bind-address: 0.0.0.0\n" +
+    "sql-gateway.endpoint.rest.port: 8083\n" +
+    "sql-gateway.endpoint.rest.bind-port: 8083\n" +
+    "sql-gateway.endpoint.type: rest\n" +
+    "sql-gateway.session.check-interval: 60000\n" +
+    "sql-gateway.session.idle-timeout: 600000\n" +
+    "sql-gateway.worker.threads.max: 10\n" +
+    "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n";
+
+var sqlGateway = builder.AddContainer("flink-sql-gateway", "flink", "2.1.0-java17")
+    .WithHttpEndpoint(targetPort: 8083, name: "sg-http")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("FLINK_PROPERTIES", baseSqlGatewayFlinkProperties)
+    .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
+    .WaitFor(jobManager);
+
+Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
+
+// 5. Prometheus - Metrics collection (LEARNINGCOURSE mode only)
 if (isLearningCourseMode)
 {
     Console.WriteLine("[INFO] Configuring Prometheus...");
@@ -93,7 +118,7 @@ if (isLearningCourseMode)
         .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
         .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
 
-    // 5. Grafana - Metrics visualization
+    // 6. Grafana - Metrics visualization
     Console.WriteLine("[INFO] Configuring Grafana...");
 #pragma warning disable S1481 // grafana resource is created and used by Aspire infrastructure
     var grafana = builder.AddContainer("grafana", "grafana/grafana", LatestTag)
@@ -110,7 +135,7 @@ else
     Console.WriteLine("[INFO] Skipping Prometheus and Grafana (LEARNINGCOURSE mode disabled)");
 }
 
-// 6. Gateway - FlinkDotNet job submission endpoint (built from Dockerfile)
+// 7. Gateway - FlinkDotNet job submission endpoint (built from Dockerfile)
 Console.WriteLine("[INFO] Configuring Gateway to build from Dockerfile...");
 
 var gatewayDockerfilePath = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "Dockerfile");
@@ -126,8 +151,11 @@ if (!File.Exists(gatewayDockerfilePath))
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("gateway")
     .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
+    .WithEnvironment("Flink__JobManager__BaseUrl", jobManager.GetEndpoint("jm-http"))
+    .WithEnvironment("Flink__SqlGateway__BaseUrl", sqlGateway.GetEndpoint("sg-http"))
     .PublishAsDockerFile()
-    .WaitFor(jobManager);
+    .WaitFor(jobManager)
+    .WaitFor(sqlGateway);
 #pragma warning restore S1481
 
 Console.WriteLine($"   [INFO] Gateway will be built from Dockerfile: {gatewayDockerfilePath}");
@@ -136,6 +164,7 @@ Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
 Console.WriteLine("   - Flink JobManager: Port 8081");
 Console.WriteLine("   - Flink TaskManager: 8 task slots");
+Console.WriteLine("   - Flink SQL Gateway: Port 8083");
 Console.WriteLine("   - Gateway: Port 8086");
 if (isLearningCourseMode)
 {
