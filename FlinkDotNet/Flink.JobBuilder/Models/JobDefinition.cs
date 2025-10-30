@@ -81,6 +81,16 @@ namespace Flink.JobBuilder.Models
         /// Optional state backend configuration for performance tuning (Flink 2.1+)
         /// </summary>
         public StateBackendConfig? StateBackendConfig { get; set; }
+
+        /// <summary>
+        /// Optional execution plan format configuration (Flink 2.1+)
+        /// </summary>
+        public ExecutionPlanConfig? ExecutionPlanConfig { get; set; }
+
+        /// <summary>
+        /// Optional optimizer configuration for query optimization (Flink 2.1+)
+        /// </summary>
+        public OptimizerConfig? OptimizerConfig { get; set; }
     }
 
     /// <summary>
@@ -1088,6 +1098,60 @@ namespace Flink.JobBuilder.Models
         /// RocksDB column family options
         /// </summary>
         public Dictionary<string, object>? ColumnFamilyOptions { get; init; }
+    }
+
+    /// <summary>
+    /// Execution plan format configuration (Flink 2.1+)
+    /// Configures plan serialization format for compiled execution plans
+    /// </summary>
+    public class ExecutionPlanConfig
+    {
+        /// <summary>
+        /// Plan serialization format: "json" or "smile" (binary JSON)
+        /// </summary>
+        public string Format { get; set; } = "json";
+
+        /// <summary>
+        /// Enable compression for plan serialization
+        /// </summary>
+        public bool? EnableCompression { get; set; }
+
+        /// <summary>
+        /// Additional format-specific properties
+        /// </summary>
+        public Dictionary<string, object>? Properties { get; init; }
+    }
+
+    /// <summary>
+    /// Optimizer configuration for query optimization (Flink 2.1+)
+    /// Provides hints and controls for Flink's query optimizer
+    /// </summary>
+    public class OptimizerConfig
+    {
+        /// <summary>
+        /// Enable multi-join optimization for cascaded joins
+        /// </summary>
+        public bool? EnableMultiJoinOptimization { get; set; }
+
+        /// <summary>
+        /// Join reordering strategy: "none", "cost_based", "bushy", "left_deep"
+        /// </summary>
+        public string? JoinReorderingStrategy { get; set; }
+
+        /// <summary>
+        /// Enable join predicate pushdown optimization
+        /// </summary>
+        public bool? EnableJoinPredicatePushdown { get; set; }
+
+        /// <summary>
+        /// Enable filter pushdown optimization
+        /// </summary>
+        public bool? EnableFilterPushdown { get; set; }
+
+        /// <summary>
+        /// Additional optimizer hints and properties
+        /// </summary>
+        public Dictionary<string, object>? Properties { get; init; }
     }
 
     /// <summary>

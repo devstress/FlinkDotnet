@@ -403,4 +403,372 @@ public class PerformanceConfigModelTests
     }
 
     #endregion
+
+    #region ExecutionPlanConfig Tests
+
+    [Test]
+    public void ExecutionPlanConfig_DefaultConstructor_HasDefaultValues()
+    {
+        var config = new ExecutionPlanConfig();
+
+        Assert.That(config.Format, Is.EqualTo("json"));
+        Assert.That(config.EnableCompression, Is.Null);
+        Assert.That(config.Properties, Is.Null);
+    }
+
+    [Test]
+    public void ExecutionPlanConfig_SetFormat_ReturnsValue()
+    {
+        var config = new ExecutionPlanConfig { Format = "smile" };
+
+        Assert.That(config.Format, Is.EqualTo("smile"));
+    }
+
+    [Test]
+    public void ExecutionPlanConfig_SetEnableCompression_ReturnsValue()
+    {
+        var config = new ExecutionPlanConfig { EnableCompression = true };
+
+        Assert.That(config.EnableCompression, Is.True);
+    }
+
+    [Test]
+    public void ExecutionPlanConfig_SetProperties_ReturnsValue()
+    {
+        var properties = new Dictionary<string, object>
+        {
+            { "bufferSize", 8192 },
+            { "encoding", "utf-8" }
+        };
+        var config = new ExecutionPlanConfig { Properties = properties };
+
+        Assert.That(config.Properties, Is.Not.Null);
+        Assert.That(config.Properties, Is.EqualTo(properties));
+        Assert.That(config.Properties!.ContainsKey("bufferSize"), Is.True);
+    }
+
+    [Test]
+    public void ExecutionPlanConfig_SetAllProperties_ReturnsAllValues()
+    {
+        var properties = new Dictionary<string, object>
+        {
+            { "maxSize", 1024000 }
+        };
+        var config = new ExecutionPlanConfig
+        {
+            Format = "smile",
+            EnableCompression = true,
+            Properties = properties
+        };
+
+        Assert.That(config.Format, Is.EqualTo("smile"));
+        Assert.That(config.EnableCompression, Is.True);
+        Assert.That(config.Properties, Is.Not.Null);
+        Assert.That(config.Properties, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void ExecutionPlanConfig_JsonFormat_ValidConfiguration()
+    {
+        var config = new ExecutionPlanConfig
+        {
+            Format = "json",
+            EnableCompression = false
+        };
+
+        Assert.That(config.Format, Is.EqualTo("json"));
+        Assert.That(config.EnableCompression, Is.False);
+    }
+
+    [Test]
+    public void ExecutionPlanConfig_SmileFormat_ValidConfiguration()
+    {
+        var config = new ExecutionPlanConfig
+        {
+            Format = "smile",
+            EnableCompression = true
+        };
+
+        Assert.That(config.Format, Is.EqualTo("smile"));
+        Assert.That(config.EnableCompression, Is.True);
+    }
+
+    #endregion
+
+    #region OptimizerConfig Tests
+
+    [Test]
+    public void OptimizerConfig_DefaultConstructor_AllPropertiesNull()
+    {
+        var config = new OptimizerConfig();
+
+        Assert.That(config.EnableMultiJoinOptimization, Is.Null);
+        Assert.That(config.JoinReorderingStrategy, Is.Null);
+        Assert.That(config.EnableJoinPredicatePushdown, Is.Null);
+        Assert.That(config.EnableFilterPushdown, Is.Null);
+        Assert.That(config.Properties, Is.Null);
+    }
+
+    [Test]
+    public void OptimizerConfig_SetEnableMultiJoinOptimization_ReturnsValue()
+    {
+        var config = new OptimizerConfig { EnableMultiJoinOptimization = true };
+
+        Assert.That(config.EnableMultiJoinOptimization, Is.True);
+    }
+
+    [Test]
+    public void OptimizerConfig_SetJoinReorderingStrategy_ReturnsValue()
+    {
+        var config = new OptimizerConfig { JoinReorderingStrategy = "bushy" };
+
+        Assert.That(config.JoinReorderingStrategy, Is.EqualTo("bushy"));
+    }
+
+    [Test]
+    public void OptimizerConfig_SetEnableJoinPredicatePushdown_ReturnsValue()
+    {
+        var config = new OptimizerConfig { EnableJoinPredicatePushdown = true };
+
+        Assert.That(config.EnableJoinPredicatePushdown, Is.True);
+    }
+
+    [Test]
+    public void OptimizerConfig_SetEnableFilterPushdown_ReturnsValue()
+    {
+        var config = new OptimizerConfig { EnableFilterPushdown = true };
+
+        Assert.That(config.EnableFilterPushdown, Is.True);
+    }
+
+    [Test]
+    public void OptimizerConfig_SetProperties_ReturnsValue()
+    {
+        var properties = new Dictionary<string, object>
+        {
+            { "maxJoinDepth", 5 },
+            { "estimatorType", "legacy" }
+        };
+        var config = new OptimizerConfig { Properties = properties };
+
+        Assert.That(config.Properties, Is.Not.Null);
+        Assert.That(config.Properties, Is.EqualTo(properties));
+        Assert.That(config.Properties!.ContainsKey("maxJoinDepth"), Is.True);
+    }
+
+    [Test]
+    public void OptimizerConfig_SetAllProperties_ReturnsAllValues()
+    {
+        var properties = new Dictionary<string, object>
+        {
+            { "hint1", "value1" },
+            { "hint2", "value2" }
+        };
+        var config = new OptimizerConfig
+        {
+            EnableMultiJoinOptimization = true,
+            JoinReorderingStrategy = "cost_based",
+            EnableJoinPredicatePushdown = true,
+            EnableFilterPushdown = true,
+            Properties = properties
+        };
+
+        Assert.That(config.EnableMultiJoinOptimization, Is.True);
+        Assert.That(config.JoinReorderingStrategy, Is.EqualTo("cost_based"));
+        Assert.That(config.EnableJoinPredicatePushdown, Is.True);
+        Assert.That(config.EnableFilterPushdown, Is.True);
+        Assert.That(config.Properties, Is.Not.Null);
+        Assert.That(config.Properties, Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public void OptimizerConfig_BushyStrategy_ValidConfiguration()
+    {
+        var config = new OptimizerConfig
+        {
+            EnableMultiJoinOptimization = true,
+            JoinReorderingStrategy = "bushy"
+        };
+
+        Assert.That(config.EnableMultiJoinOptimization, Is.True);
+        Assert.That(config.JoinReorderingStrategy, Is.EqualTo("bushy"));
+    }
+
+    [Test]
+    public void OptimizerConfig_LeftDeepStrategy_ValidConfiguration()
+    {
+        var config = new OptimizerConfig
+        {
+            JoinReorderingStrategy = "left_deep",
+            EnableJoinPredicatePushdown = true
+        };
+
+        Assert.That(config.JoinReorderingStrategy, Is.EqualTo("left_deep"));
+        Assert.That(config.EnableJoinPredicatePushdown, Is.True);
+    }
+
+    [Test]
+    public void OptimizerConfig_AllOptimizationsEnabled_ValidConfiguration()
+    {
+        var config = new OptimizerConfig
+        {
+            EnableMultiJoinOptimization = true,
+            EnableJoinPredicatePushdown = true,
+            EnableFilterPushdown = true
+        };
+
+        Assert.That(config.EnableMultiJoinOptimization, Is.True);
+        Assert.That(config.EnableJoinPredicatePushdown, Is.True);
+        Assert.That(config.EnableFilterPushdown, Is.True);
+    }
+
+    #endregion
+
+    #region Integration with JobMetadata Tests (New Features)
+
+    [Test]
+    public void JobMetadata_WithExecutionPlanConfig_StoresExecutionPlanSettings()
+    {
+        var planConfig = new ExecutionPlanConfig
+        {
+            Format = "smile",
+            EnableCompression = true
+        };
+
+        var metadata = new JobMetadata
+        {
+            JobId = "test-job",
+            ExecutionPlanConfig = planConfig
+        };
+
+        Assert.That(metadata.ExecutionPlanConfig, Is.Not.Null);
+        Assert.That(metadata.ExecutionPlanConfig, Is.EqualTo(planConfig));
+        Assert.That(metadata.ExecutionPlanConfig!.Format, Is.EqualTo("smile"));
+    }
+
+    [Test]
+    public void JobMetadata_WithOptimizerConfig_StoresOptimizerSettings()
+    {
+        var optimizerConfig = new OptimizerConfig
+        {
+            EnableMultiJoinOptimization = true,
+            JoinReorderingStrategy = "bushy"
+        };
+
+        var metadata = new JobMetadata
+        {
+            JobId = "test-job",
+            OptimizerConfig = optimizerConfig
+        };
+
+        Assert.That(metadata.OptimizerConfig, Is.Not.Null);
+        Assert.That(metadata.OptimizerConfig, Is.EqualTo(optimizerConfig));
+        Assert.That(metadata.OptimizerConfig!.EnableMultiJoinOptimization, Is.True);
+    }
+
+    [Test]
+    public void JobMetadata_WithAllPerformanceConfigs_StoresAllSettings()
+    {
+        var metadata = new JobMetadata
+        {
+            JobId = "fully-optimized-job",
+            StateBackendConfig = new StateBackendConfig
+            {
+                Type = "rocksdb",
+                CheckpointDir = "s3://bucket/checkpoints"
+            },
+            ExecutionPlanConfig = new ExecutionPlanConfig
+            {
+                Format = "smile",
+                EnableCompression = true
+            },
+            OptimizerConfig = new OptimizerConfig
+            {
+                EnableMultiJoinOptimization = true,
+                JoinReorderingStrategy = "cost_based"
+            }
+        };
+
+        Assert.That(metadata.StateBackendConfig, Is.Not.Null);
+        Assert.That(metadata.ExecutionPlanConfig, Is.Not.Null);
+        Assert.That(metadata.OptimizerConfig, Is.Not.Null);
+        Assert.That(metadata.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
+        Assert.That(metadata.ExecutionPlanConfig!.Format, Is.EqualTo("smile"));
+        Assert.That(metadata.OptimizerConfig!.EnableMultiJoinOptimization, Is.True);
+    }
+
+    #endregion
+
+    #region Complete Job Definition Tests (All 4 Features)
+
+    [Test]
+    public void JobDefinition_WithAll4PerformanceFeatures_StoresAllConfigs()
+    {
+        var job = new JobDefinition
+        {
+            Source = new KafkaSourceDefinition { Topic = "input" },
+            Sink = new UnifiedSinkV2Definition
+            {
+                SinkType = "kafka",
+                WriterConfig = new SinkWriterConfig
+                {
+                    ClassName = "KafkaWriter",
+                    BatchingConfig = new BatchingConfig
+                    {
+                        MaxBatchSize = 1000,
+                        MaxBatchSizeInBytes = 5242880,
+                        MaxTimeInBufferMs = 1000
+                    }
+                }
+            },
+            Metadata = new JobMetadata
+            {
+                JobId = "fully-optimized-job",
+                StateBackendConfig = new StateBackendConfig
+                {
+                    Type = "rocksdb",
+                    CheckpointDir = "s3://production/checkpoints",
+                    IncrementalCheckpoints = true,
+                    PredefinedProfile = "flash_ssd_optimized"
+                },
+                ExecutionPlanConfig = new ExecutionPlanConfig
+                {
+                    Format = "smile",
+                    EnableCompression = true
+                },
+                OptimizerConfig = new OptimizerConfig
+                {
+                    EnableMultiJoinOptimization = true,
+                    JoinReorderingStrategy = "bushy",
+                    EnableJoinPredicatePushdown = true,
+                    EnableFilterPushdown = true
+                }
+            }
+        };
+
+        // Assert: All 4 performance features configured
+        Assert.That(job.Metadata.StateBackendConfig, Is.Not.Null);
+        Assert.That(job.Metadata.ExecutionPlanConfig, Is.Not.Null);
+        Assert.That(job.Metadata.OptimizerConfig, Is.Not.Null);
+
+        var sink = job.Sink as UnifiedSinkV2Definition;
+        Assert.That(sink!.WriterConfig.BatchingConfig, Is.Not.Null);
+
+        // Feature 1: Custom Async Sink Batching
+        Assert.That(sink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
+
+        // Feature 2: Enhanced State Backend Configuration
+        Assert.That(job.Metadata.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
+        Assert.That(job.Metadata.StateBackendConfig.PredefinedProfile, Is.EqualTo("flash_ssd_optimized"));
+
+        // Feature 3: Smile Format for Compiled Plans
+        Assert.That(job.Metadata.ExecutionPlanConfig!.Format, Is.EqualTo("smile"));
+        Assert.That(job.Metadata.ExecutionPlanConfig.EnableCompression, Is.True);
+
+        // Feature 4: MultiJoin Optimization Configuration
+        Assert.That(job.Metadata.OptimizerConfig!.EnableMultiJoinOptimization, Is.True);
+        Assert.That(job.Metadata.OptimizerConfig.JoinReorderingStrategy, Is.EqualTo("bushy"));
+    }
+
+    #endregion
 }

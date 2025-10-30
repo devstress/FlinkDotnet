@@ -270,17 +270,19 @@ public class PerformanceFormatTests
 
     #endregion
 
-    #region Test 3: Combined Performance Optimizations
+    #region Test 3: All 4 Performance & Format Features
 
     /// <summary>
-    /// Test 3: Validates combined performance optimizations including:
-    /// - State backend config + async sink batching together
+    /// Test 3: Validates ALL 4 Performance & Format features including:
+    /// - Feature 1: Custom Async Sink Batching
+    /// - Feature 2: Enhanced State Backend Configuration  
+    /// - Feature 3: Smile Format for Compiled Plans
+    /// - Feature 4: MultiJoin Optimization Configuration
     /// - Complete job definition with all performance features
-    /// - Realistic production-like configuration
     /// - Backward compatibility (optional configs)
     /// </summary>
     [Test]
-    public void Test3_CombinedOptimizations_ValidatesCompleteJobConfiguration()
+    public void Test3_CombinedOptimizations_ValidatesAll4PerformanceFeatures()
     {
         // Part A: Complete job with all performance features
         var optimizedJob = new JobDefinition
@@ -349,6 +351,28 @@ public class PerformanceFormatTests
                         { "blockCacheSize", 512 * 1024 * 1024L }, // 512MB
                         { "writeBufferSize", 128 * 1024 * 1024L }  // 128MB
                     }
+                },
+                // Feature 3: Smile Format for Compiled Plans
+                ExecutionPlanConfig = new ExecutionPlanConfig
+                {
+                    Format = "smile",
+                    EnableCompression = true,
+                    Properties = new Dictionary<string, object>
+                    {
+                        { "bufferSize", 8192 }
+                    }
+                },
+                // Feature 4: MultiJoin Optimization Configuration
+                OptimizerConfig = new OptimizerConfig
+                {
+                    EnableMultiJoinOptimization = true,
+                    JoinReorderingStrategy = "bushy",
+                    EnableJoinPredicatePushdown = true,
+                    EnableFilterPushdown = true,
+                    Properties = new Dictionary<string, object>
+                    {
+                        { "maxJoinDepth", 5 }
+                    }
                 }
             }
         };
@@ -368,29 +392,52 @@ public class PerformanceFormatTests
         var optimizedDeserialized = JsonSerializer.Deserialize<JobDefinition>(optimizedJson);
         var standardDeserialized = JsonSerializer.Deserialize<JobDefinition>(standardJson);
 
-        // Assert: Optimized job has all features
+        // Assert: Optimized job has ALL 4 features
         Assert.That(optimizedDeserialized, Is.Not.Null);
         Assert.That(optimizedDeserialized!.Metadata.StateBackendConfig, Is.Not.Null);
+        Assert.That(optimizedDeserialized.Metadata.ExecutionPlanConfig, Is.Not.Null);
+        Assert.That(optimizedDeserialized.Metadata.OptimizerConfig, Is.Not.Null);
         
+        // Feature 2: State Backend Configuration
         var stateConfig = optimizedDeserialized.Metadata.StateBackendConfig;
         Assert.That(stateConfig!.Type, Is.EqualTo("rocksdb"));
         Assert.That(stateConfig.IncrementalCheckpoints, Is.True);
         Assert.That(stateConfig.PredefinedProfile, Is.EqualTo("flash_ssd_optimized"));
 
+        // Feature 1: Async Sink Batching
         var sink = optimizedDeserialized.Sink as UnifiedSinkV2Definition;
         Assert.That(sink, Is.Not.Null);
         Assert.That(sink!.WriterConfig.BatchingConfig, Is.Not.Null);
         Assert.That(sink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
         Assert.That(sink.Semantics, Is.EqualTo("exactly-once"));
 
+        // Feature 3: Execution Plan Config (Smile Format)
+        var planConfig = optimizedDeserialized.Metadata.ExecutionPlanConfig;
+        Assert.That(planConfig!.Format, Is.EqualTo("smile"));
+        Assert.That(planConfig.EnableCompression, Is.True);
+        Assert.That(planConfig.Properties, Is.Not.Null);
+
+        // Feature 4: Optimizer Config (MultiJoin Optimization)
+        var optimizerConfig = optimizedDeserialized.Metadata.OptimizerConfig;
+        Assert.That(optimizerConfig!.EnableMultiJoinOptimization, Is.True);
+        Assert.That(optimizerConfig.JoinReorderingStrategy, Is.EqualTo("bushy"));
+        Assert.That(optimizerConfig.EnableJoinPredicatePushdown, Is.True);
+        Assert.That(optimizerConfig.EnableFilterPushdown, Is.True);
+
         // Assert: Standard job works without performance configs
         Assert.That(standardDeserialized, Is.Not.Null);
         Assert.That(standardDeserialized!.Metadata.StateBackendConfig, Is.Null, "Config should be optional");
+        Assert.That(standardDeserialized.Metadata.ExecutionPlanConfig, Is.Null, "Config should be optional");
+        Assert.That(standardDeserialized.Metadata.OptimizerConfig, Is.Null, "Config should be optional");
         
-        // Assert: JSON contains expected performance keywords
+        // Assert: JSON contains ALL 4 performance feature keywords
         Assert.That(optimizedJson, Does.Contain("StateBackendConfig"));
         Assert.That(optimizedJson, Does.Contain("BatchingConfig"));
+        Assert.That(optimizedJson, Does.Contain("ExecutionPlanConfig"));
+        Assert.That(optimizedJson, Does.Contain("OptimizerConfig"));
         Assert.That(optimizedJson, Does.Contain("flash_ssd_optimized"));
+        Assert.That(optimizedJson, Does.Contain("smile"));
+        Assert.That(optimizedJson, Does.Contain("bushy"));
         Assert.That(optimizedJson, Does.Contain("MaxBatchSize"));
     }
 
