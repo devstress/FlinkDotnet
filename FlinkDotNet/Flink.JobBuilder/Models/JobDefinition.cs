@@ -104,6 +104,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
     [JsonDerivedType(typeof(MaterializedTableDefinition), "materialized_table")]
     [JsonDerivedType(typeof(ModelDefinition), "model")]
+    [JsonDerivedType(typeof(PaimonTableDefinition), "paimon_table")]
     [JsonDerivedType(typeof(TableSourceDefinition), "table")]
     public interface ISourceDefinition
     {
@@ -1307,6 +1308,99 @@ namespace Flink.JobBuilder.Models
         /// Used when JSON path points to a specific primitive type
         /// </summary>
         public string? OutputType { get; set; }
+    }
+
+    /// <summary>
+    /// Apache Paimon catalog definition for lakehouse table storage
+    /// </summary>
+    public class PaimonCatalogDefinition
+    {
+        /// <summary>
+        /// Name of the Paimon catalog
+        /// </summary>
+        public string CatalogName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Catalog type: "paimon" (filesystem) or "paimon-generic" (Hive metastore)
+        /// </summary>
+        public string CatalogType { get; set; } = "paimon";
+
+        /// <summary>
+        /// Warehouse path for Paimon tables (file://, hdfs://, s3://, oss://)
+        /// </summary>
+        public string Warehouse { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional Hive configuration directory for Hive metastore integration
+        /// </summary>
+        public string? HiveConfDir { get; set; }
+
+        /// <summary>
+        /// Optional Hadoop configuration directory for HDFS integration
+        /// </summary>
+        public string? HadoopConfDir { get; set; }
+
+        /// <summary>
+        /// Additional catalog properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Apache Paimon table definition with ACID semantics
+    /// </summary>
+    public class PaimonTableDefinition : ISourceDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "paimon_table";
+
+        /// <summary>
+        /// Name of the catalog containing this table
+        /// </summary>
+        public string CatalogName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Name of the Paimon table
+        /// </summary>
+        public string TableName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Schema definition for the table (column_name: data_type)
+        /// </summary>
+        public Dictionary<string, string> Schema { get; init; } = [];
+
+        /// <summary>
+        /// Primary key columns (required for ACID semantics)
+        /// </summary>
+        public List<string> PrimaryKey { get; init; } = [];
+
+        /// <summary>
+        /// Partition columns for data organization
+        /// </summary>
+        public List<string> PartitionKeys { get; init; } = [];
+
+        /// <summary>
+        /// Number of buckets for parallelism (optional)
+        /// </summary>
+        public int? Buckets { get; set; }
+
+        /// <summary>
+        /// Changelog producer mode: "none", "input", "lookup", "full-compaction"
+        /// </summary>
+        public string ChangelogProducerMode { get; set; } = "none";
+
+        /// <summary>
+        /// Table properties (e.g., compaction settings, snapshot retention)
+        /// </summary>
+        public Dictionary<string, string> TableProperties { get; init; } = [];
+
+        /// <summary>
+        /// Operation to perform: "CREATE", "DROP", "INSERT", "QUERY"
+        /// </summary>
+        public string Operation { get; set; } = "CREATE";
     }
 
     /// <summary>
