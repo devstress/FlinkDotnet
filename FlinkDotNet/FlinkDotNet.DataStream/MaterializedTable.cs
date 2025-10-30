@@ -294,10 +294,9 @@ public class MaterializedTableBuilder
     public MaterializedTable Build()
     {
         // Validation
-        if (string.IsNullOrEmpty(this._definition.TableName))
-        {
-            throw new InvalidOperationException("Table name is required");
-        }
+        _ = string.IsNullOrEmpty(this._definition.TableName)
+            ? throw new InvalidOperationException("Table name is required")
+            : this._definition.TableName;
 
         return string.IsNullOrEmpty(this._definition.Query) && this._definition.Schema.Count == 0
             ? throw new InvalidOperationException("Either query or schema must be specified")
