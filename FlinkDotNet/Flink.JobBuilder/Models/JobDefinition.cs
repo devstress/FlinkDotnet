@@ -89,6 +89,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(SqlSourceDefinition), "sql")]
     [JsonDerivedType(typeof(MaterializedTableDefinition), "materialized_table")]
     [JsonDerivedType(typeof(ModelDefinition), "model")]
+    [JsonDerivedType(typeof(TableSourceDefinition), "table")]
     public interface ISourceDefinition
     {
         /// <summary>
@@ -342,6 +343,8 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(TimerOperationDefinition), "timer")]
     [JsonDerivedType(typeof(RetryOperationDefinition), "retry")]
     [JsonDerivedType(typeof(SideOutputOperationDefinition), "sideOutput")]
+    [JsonDerivedType(typeof(TableOperationDefinition), "table")]
+    [JsonDerivedType(typeof(ParseJsonOperationDefinition), "parseJson")]
     public interface IOperationDefinition
     {
         public string Type
@@ -1076,5 +1079,127 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } = "gateway";
+    }
+
+    /// <summary>
+    /// Table API operation definition for fluent table transformations
+    /// Supports programmatic table operations without SQL strings
+    /// </summary>
+    public class TableOperationDefinition : IOperationDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "table";
+
+        /// <summary>
+        /// Operation type: "select", "where", "groupBy", "join", "window", "aggregate"
+        /// </summary>
+        public string OperationType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Column/field selections or expressions
+        /// </summary>
+        public List<string> Columns { get; init; } = [];
+
+        /// <summary>
+        /// Filter condition (for where operations)
+        /// </summary>
+        public string? Condition { get; set; }
+
+        /// <summary>
+        /// Group by keys (for groupBy operations)
+        /// </summary>
+        public List<string> GroupByKeys { get; init; } = [];
+
+        /// <summary>
+        /// Aggregation functions (for aggregate operations)
+        /// Format: "function(column) AS alias"
+        /// </summary>
+        public List<string> Aggregations { get; init; } = [];
+
+        /// <summary>
+        /// Table-specific properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// PARSE_JSON operation definition for converting JSON strings to VARIANT type
+    /// Supports both PARSE_JSON (strict) and TRY_PARSE_JSON (lenient) functions
+    /// </summary>
+    public class ParseJsonOperationDefinition : IOperationDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "parseJson";
+
+        /// <summary>
+        /// Function type: "PARSE_JSON" (throws on invalid JSON) or "TRY_PARSE_JSON" (returns NULL on invalid JSON)
+        /// </summary>
+        public string FunctionType { get; set; } = "TRY_PARSE_JSON";
+
+        /// <summary>
+        /// Source field containing JSON string
+        /// </summary>
+        public string SourceField { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Target field for VARIANT result
+        /// </summary>
+        public string TargetField { get; set; } = string.Empty;
+
+        /// <summary>
+        /// JSON path for extracting nested values (e.g., "$.user.name", "$['metadata']['tags'][0]")
+        /// If null or empty, parses entire JSON
+        /// </summary>
+        public string? JsonPath { get; set; }
+
+        /// <summary>
+        /// Output data type hint (e.g., "STRING", "INT", "DOUBLE")
+        /// Used when JSON path points to a specific primitive type
+        /// </summary>
+        public string? OutputType { get; set; }
+    }
+
+    /// <summary>
+    /// Table source definition for Table API operations
+    /// Represents a table in Flink's catalog that can be queried programmatically
+    /// </summary>
+    public class TableSourceDefinition : ISourceDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "table";
+
+        /// <summary>
+        /// Table name in the catalog
+        /// </summary>
+        public string TableName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Catalog name (optional, uses default catalog if not specified)
+        /// </summary>
+        public string? CatalogName { get; set; }
+
+        /// <summary>
+        /// Database name (optional, uses default database if not specified)
+        /// </summary>
+        public string? DatabaseName { get; set; }
+
+        /// <summary>
+        /// Schema definition (column_name: data_type including VARIANT)
+        /// </summary>
+        public Dictionary<string, string> Schema { get; init; } = [];
+
+        /// <summary>
+        /// Additional table properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
     }
 }
