@@ -121,11 +121,14 @@ public class PaimonTable
             if (!string.IsNullOrEmpty(this._definition.ChangelogProducerMode) && this._definition.ChangelogProducerMode != "none")
             {
                 // Paimon configuration requires lowercase values, with special handling for FULLCOMPACTION
-                string normalizedMode = this._definition.ChangelogProducerMode.ToUpperInvariant() switch
+                string upperMode = this._definition.ChangelogProducerMode.ToUpperInvariant();
+#pragma warning disable S4040 // Paimon configuration requires lowercase output, ToUpperInvariant used for comparison only
+                string normalizedMode = upperMode switch
                 {
                     "FULLCOMPACTION" => "full-compaction",
-                    string s => s.ToLowerInvariant()
+                    _ => upperMode.ToLowerInvariant()
                 };
+#pragma warning restore S4040
                 properties.Add($"  'changelog-producer' = '{normalizedMode}'");
             }
 
@@ -231,11 +234,15 @@ public class PaimonTableBuilder
     public PaimonTableBuilder WithChangelogMode(ChangelogProducerMode mode)
     {
         // Paimon configuration requires lowercase values, with special handling for FULLCOMPACTION
-        this._definition.ChangelogProducerMode = mode.ToString().ToUpperInvariant() switch
+        string modeStr = mode.ToString();
+        string upperMode = modeStr.ToUpperInvariant();
+#pragma warning disable S4040 // Paimon configuration requires lowercase output, ToUpperInvariant used for comparison only
+        this._definition.ChangelogProducerMode = upperMode switch
         {
             "FULLCOMPACTION" => "full-compaction",
-            string s => s.ToLowerInvariant()
+            _ => upperMode.ToLowerInvariant()
         };
+#pragma warning restore S4040
         return this;
     }
 
