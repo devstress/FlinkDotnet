@@ -74,9 +74,9 @@ public class ProcessingContext
         get; set;
     }
 
-    private readonly List<object> _outputBuffer = new();
-    private readonly List<long> _eventTimeTimers = new();
-    private readonly List<long> _processingTimeTimers = new();
+    private readonly List<object> _outputBuffer = [];
+    private readonly List<long> _eventTimeTimers = [];
+    private readonly List<long> _processingTimeTimers = [];
 
     /// <summary>
     /// Collects an output row to emit from the function
@@ -84,10 +84,7 @@ public class ProcessingContext
     /// <param name="output">Output row to emit</param>
     public void Collect(object output)
     {
-        if (output == null)
-        {
-            throw new ArgumentNullException(nameof(output));
-        }
+        ArgumentNullException.ThrowIfNull(output);
 
         this._outputBuffer.Add(output);
     }
@@ -180,7 +177,7 @@ public enum TimerType
 /// </summary>
 public class FunctionContext
 {
-    private readonly Dictionary<string, object> _state = new();
+    private readonly Dictionary<string, object> _state = [];
 
     /// <summary>
     /// Gets or creates a value state with the specified descriptor
@@ -190,17 +187,15 @@ public class FunctionContext
     /// <returns>Value state instance</returns>
     public IPtfValueState<T> GetState<T>(ValueStateDescriptor<T> descriptor)
     {
-        if (descriptor == null)
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        if (!this._state.TryGetValue(descriptor.Name, out object? state))
         {
-            throw new ArgumentNullException(nameof(descriptor));
+            state = new SimpleValueState<T>();
+            this._state[descriptor.Name] = state;
         }
 
-        if (!this._state.ContainsKey(descriptor.Name))
-        {
-            this._state[descriptor.Name] = new SimpleValueState<T>();
-        }
-
-        return (IPtfValueState<T>) this._state[descriptor.Name];
+        return (IPtfValueState<T>) state;
     }
 
     /// <summary>
@@ -211,17 +206,15 @@ public class FunctionContext
     /// <returns>List state instance</returns>
     public IPtfListState<T> GetListState<T>(ListStateDescriptor<T> descriptor)
     {
-        if (descriptor == null)
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        if (!this._state.TryGetValue(descriptor.Name, out object? state))
         {
-            throw new ArgumentNullException(nameof(descriptor));
+            state = new SimpleListState<T>();
+            this._state[descriptor.Name] = state;
         }
 
-        if (!this._state.ContainsKey(descriptor.Name))
-        {
-            this._state[descriptor.Name] = new SimpleListState<T>();
-        }
-
-        return (IPtfListState<T>) this._state[descriptor.Name];
+        return (IPtfListState<T>) state;
     }
 }
 
@@ -297,7 +290,7 @@ internal class SimpleValueState<T> : IPtfValueState<T>
 /// </summary>
 internal class SimpleListState<T> : IPtfListState<T>
 {
-    private readonly List<T> _list = new();
+    private readonly List<T> _list = [];
 
     public IEnumerable<T> Get() => this._list;
 

@@ -76,7 +76,7 @@ public class PaimonCatalog
             sb.AppendLine($"  ,'{prop.Key}' = '{prop.Value}'");
         }
 
-        sb.Append(")");
+        sb.Append(')');
         return sb.ToString();
     }
 }
