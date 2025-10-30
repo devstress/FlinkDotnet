@@ -665,8 +665,9 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
-            Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
+            // Get both names and ports to filter out kafka-ui container
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}|{{.Ports}}\"");
+            Console.WriteLine($"🔍 Kafka containers found: {kafkaContainers.Trim()}");
 
             return ExtractKafkaEndpointFromPorts(kafkaContainers);
         }
@@ -681,14 +682,31 @@ public class GlobalTestInfrastructure
         var lines = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
+            // Parse format: "container-name|port-mappings"
+            var parts = line.Split('|', 2);
+            if (parts.Length != 2)
+            {
+                continue;
+            }
+
+            var containerName = parts[0];
+            var ports = parts[1];
+
+            // Exclude kafka-ui container - we only want the actual Kafka broker
+            if (containerName.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"🔍 Skipping kafka-ui container: {containerName}");
+                continue;
+            }
+
             // Look for port mapping to 9092 (Kafka's default listener port)
             // Aspire maps container port 9092 to a dynamic host port for external access
             // Format: 127.0.0.1:PORT->9092/tcp or 0.0.0.0:PORT->9092/tcp
-            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
+            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
             if (match.Success)
             {
                 var port = match.Groups[1].Value;
-                Console.WriteLine($"🔍 Found Kafka port mapping: host {port} -> container 9092");
+                Console.WriteLine($"🔍 Found Kafka port mapping for {containerName}: host {port} -> container 9092");
                 return $"localhost:{port}";
             }
         }
@@ -704,13 +722,17 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka-\" --format \"{{.Names}}\"");
-            var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}\"");
+            var kafkaContainer = kafkaContainers
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault(name => !name.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase));
 
             if (string.IsNullOrWhiteSpace(kafkaContainer))
             {
-                throw new InvalidOperationException("Kafka container not found");
+                throw new InvalidOperationException("Kafka container not found (excluding kafka-ui)");
             }
+
+            Console.WriteLine($"🔍 Using Kafka container: {kafkaContainer}");
 
             // Try Docker bridge network first
             var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");
