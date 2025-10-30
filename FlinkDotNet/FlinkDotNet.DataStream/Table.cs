@@ -280,6 +280,67 @@ public class Table
     }
 
     /// <summary>
+    /// Applies ML_PREDICT operation to this table for AI/ML inference
+    /// </summary>
+    /// <param name="modelName">Name of the registered model</param>
+    /// <param name="inputColumns">Input column names to pass to the model</param>
+    /// <returns>New table with model predictions</returns>
+    public Table Predict(string modelName, params string[] inputColumns)
+    {
+        if (string.IsNullOrWhiteSpace(modelName))
+        {
+            throw new ArgumentException("Model name cannot be null or empty", nameof(modelName));
+        }
+
+        if (inputColumns == null || inputColumns.Length == 0)
+        {
+            throw new ArgumentException("At least one input column must be specified", nameof(inputColumns));
+        }
+
+        var newTable = this.Clone();
+        newTable.Operations.Add(new MLPredictDefinition
+        {
+            ModelName = modelName,
+            InputColumns = new List<string>(inputColumns)
+        });
+        return newTable;
+    }
+
+    /// <summary>
+    /// Applies ML_PREDICT operation with an output prefix/alias
+    /// </summary>
+    /// <param name="modelName">Name of the registered model</param>
+    /// <param name="outputPrefix">Output prefix for prediction results</param>
+    /// <param name="inputColumns">Input column names to pass to the model</param>
+    /// <returns>New table with model predictions</returns>
+    public Table PredictWithPrefix(string modelName, string outputPrefix, params string[] inputColumns)
+    {
+        if (string.IsNullOrWhiteSpace(modelName))
+        {
+            throw new ArgumentException("Model name cannot be null or empty", nameof(modelName));
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPrefix))
+        {
+            throw new ArgumentException("Output prefix cannot be null or empty", nameof(outputPrefix));
+        }
+
+        if (inputColumns == null || inputColumns.Length == 0)
+        {
+            throw new ArgumentException("At least one input column must be specified", nameof(inputColumns));
+        }
+
+        var newTable = this.Clone();
+        newTable.Operations.Add(new MLPredictDefinition
+        {
+            ModelName = modelName,
+            InputColumns = new List<string>(inputColumns),
+            OutputPrefix = outputPrefix
+        });
+        return newTable;
+    }
+
+    /// <summary>
     /// Clones this table with all operations
     /// </summary>
     internal Table Clone()
