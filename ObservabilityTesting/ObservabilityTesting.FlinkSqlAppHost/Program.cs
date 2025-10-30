@@ -94,22 +94,25 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana", LatestTag)
     .WaitFor(prometheus);
 #pragma warning restore S1481
 
-// 6. Gateway - FlinkDotNet job submission endpoint (Docker container)
-Console.WriteLine("[INFO] Configuring Gateway Docker container...");
+// 6. Gateway - FlinkDotNet job submission endpoint (built from Dockerfile)
+Console.WriteLine("[INFO] Configuring Gateway to build from Dockerfile...");
 
-// The Gateway image should be built with: docker build -f FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile -t flinkdotnet-gateway:latest .
-// For now, we'll use AddContainer assuming the image exists or will be built by the workflow
-const string gatewayImageName = "flinkdotnet-gateway";
-const string gatewayImageTag = "latest";
+var gatewayDockerfilePath = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "Dockerfile");
+if (!File.Exists(gatewayDockerfilePath))
+{
+    throw new FileNotFoundException($"Gateway Dockerfile not found at: {gatewayDockerfilePath}");
+}
 
 #pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
-var gateway = builder.AddContainer("gateway", gatewayImageName, gatewayImageTag)
+// Use PublishAsDockerFile to build the Gateway image from Dockerfile as part of the Aspire build
+var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("gateway")
     .WithHttpEndpoint(targetPort: 8080, port: Ports.GatewayHostPort, name: "gateway-http")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
+    .PublishAsDockerFile()
     .WaitFor(jobManager);
 #pragma warning restore S1481
 
-Console.WriteLine($"   [INFO] Gateway will use Docker image: {gatewayImageName}:{gatewayImageTag}");
+Console.WriteLine($"   [INFO] Gateway will be built from Dockerfile: {gatewayDockerfilePath}");
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
