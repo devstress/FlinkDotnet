@@ -21,7 +21,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_Dispose_CanBeCalledOnce()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             var client = new JobClient("test-job");
 
             // Act - Dispose should complete without error
@@ -35,7 +35,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_Dispose_CanBeCalledMultipleTimes()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             var client = new JobClient("test-job");
 
             // Act - Call Dispose multiple times (tests the _disposed branch)
@@ -51,7 +51,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_UsingStatement_DisposesCorrectly()
         {
             // Arrange & Act - Use 'using' statement to test automatic disposal
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
 
             using (var client = new JobClient("test-job"))
             {
@@ -67,7 +67,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_NestedUsingStatements_DisposeCorrectly()
         {
             // Arrange & Act - Test nested using statements
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
 
             using (var client1 = new JobClient("job1"))
             {

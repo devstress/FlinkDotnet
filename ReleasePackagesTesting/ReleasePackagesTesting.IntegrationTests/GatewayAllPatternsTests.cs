@@ -461,10 +461,10 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             
             foreach (var line in lines)
             {
-                // Look for port mapping to 8080 (Job Gateway's default listener port)
-                if (line.Contains("->8080/tcp"))
+                // Look for port mapping to 8086 (Job Gateway's default listener port)
+                if (line.Contains("->8086/tcp"))
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8080");
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8086");
                     if (match.Success)
                     {
                         return $"http://localhost:{match.Groups[1].Value}/";

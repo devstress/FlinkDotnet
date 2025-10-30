@@ -53,7 +53,7 @@ public static class AspireValidationTest
             Console.WriteLine("Service URLs:");
             Console.WriteLine("   • Aspire Dashboard: http://localhost:15888");
             Console.WriteLine("   • Flink JobManager UI: http://localhost:8081");
-            Console.WriteLine("   • Flink Job Gateway: http://localhost:8080");
+            Console.WriteLine("   • Flink Job Gateway: http://localhost:8086");
             Console.WriteLine("   • Kafka: localhost:9092");
         }
         else
@@ -191,13 +191,13 @@ public static class AspireValidationTest
             }
 
             // Fallback to default port if discovery fails
-            Console.WriteLine($"   ⚠️ Gateway endpoint discovery failed, using default: http://localhost:8080/");
-            return "http://localhost:8080/";
+            Console.WriteLine($"   ⚠️ Gateway endpoint discovery failed, using default: http://localhost:8086/");
+            return "http://localhost:8086/";
         }
         catch (Exception ex)
         {
             Console.WriteLine($"   ⚠️ Gateway endpoint discovery error: {ex.Message}, using default port");
-            return "http://localhost:8080/";
+            return "http://localhost:8086/";
         }
     }
 

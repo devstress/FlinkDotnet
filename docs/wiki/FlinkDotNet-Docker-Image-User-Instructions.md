@@ -19,7 +19,7 @@ docker pull devstress/flinkdotnet:latest
 ```bash
 docker run -d \
   --name flinkjobgateway \
-  -p 8080:8080 \
+  -p 8086:8086 \
   -e FLINK_CLUSTER_HOST=your-flink-host \
   -e FLINK_CLUSTER_PORT=8081 \
   devstress/flinkdotnet:latest
@@ -32,7 +32,7 @@ docker run -d \
 docker ps | grep flinkjobgateway
 
 # Check health
-curl http://localhost:8080/health
+curl http://localhost:8086/health
 
 # View logs
 docker logs flinkjobgateway
@@ -47,7 +47,7 @@ docker logs flinkjobgateway
 | `FLINK_CLUSTER_HOST` | Flink JobManager hostname | - | Yes |
 | `FLINK_CLUSTER_PORT` | Flink JobManager REST API port | `8081` | No |
 | `KAFKA_BOOTSTRAP` | Kafka bootstrap servers | - | No* |
-| `ASPNETCORE_URLS` | Internal listening URLs | `http://+:8080` | No |
+| `ASPNETCORE_URLS` | Internal listening URLs | `http://+:8086` | No |
 | `ASPNETCORE_ENVIRONMENT` | Runtime environment | `Production` | No |
 | `LOG_FILE_PATH` | Log file directory | `/app/logs` | No |
 
@@ -80,7 +80,7 @@ docker run -d \
 docker run -d \
   --name flinkjobgateway \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 8086:8086 \
   -e FLINK_CLUSTER_HOST=flink-jobmanager \
   -e FLINK_CLUSTER_PORT=8081 \
   -e KAFKA_BOOTSTRAP=kafka:9092 \
@@ -101,7 +101,7 @@ services:
     image: devstress/flinkdotnet:latest
     container_name: flinkjobgateway
     ports:
-      - "8080:8080"
+      - "8086:8086"
     environment:
       - FLINK_CLUSTER_HOST=flink-jobmanager
       - FLINK_CLUSTER_PORT=8081
@@ -117,7 +117,7 @@ services:
       - kafka
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -225,7 +225,7 @@ spec:
       - name: gateway
         image: devstress/flinkdotnet:latest
         ports:
-        - containerPort: 8080
+        - containerPort: 8086
           name: http
         envFrom:
         - configMapRef:
@@ -240,13 +240,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8086
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8086
           initialDelaySeconds: 10
           periodSeconds: 5
         volumeMounts:
@@ -268,7 +268,7 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 8080
+    targetPort: 8086
     name: http
 
 ---
@@ -329,7 +329,7 @@ services:
   flinkjobgateway:
     image: devstress/flinkdotnet:latest
     ports:
-      - "8080:8080"
+      - "8086:8086"
     environment:
       - FLINK_CLUSTER_HOST=flink-jobmanager
       - FLINK_CLUSTER_PORT=8081
@@ -353,7 +353,7 @@ services:
           cpus: '0.25'
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -483,7 +483,7 @@ Automatically created with Docker Swarm stack deployment.
 ```bash
 # Docker healthcheck
 docker run -d \
-  --health-cmd="curl -f http://localhost:8080/health || exit 1" \
+  --health-cmd="curl -f http://localhost:8086/health || exit 1" \
   --health-interval=30s \
   --health-timeout=10s \
   --health-retries=3 \
@@ -501,7 +501,7 @@ docker inspect --format='{{.State.Health.Status}}' flinkjobgateway
 scrape_configs:
   - job_name: 'flinkdotnet-gateway'
     static_configs:
-      - targets: ['flinkjobgateway:8080']
+      - targets: ['flinkjobgateway:8086']
     metrics_path: '/metrics'
 ```
 

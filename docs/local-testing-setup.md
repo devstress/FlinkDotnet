@@ -106,7 +106,7 @@ The LocalTesting infrastructure **automatically detects Podman** and configures 
 
 1. **Gateway IP Detection**: Queries the Podman VM gateway IP dynamically
 2. **Host Mapping**: Adds `--add-host=host.containers.internal:<gatewayIP>` to containers
-3. **JobGateway Binding**: Binds to `0.0.0.0:8080` (all interfaces) instead of `localhost:8080`
+3. **JobGateway Binding**: Binds to `0.0.0.0:8086` (all interfaces) instead of `localhost:8086`
 
 ### Expected Console Output
 
@@ -136,7 +136,7 @@ If Prometheus cannot connect to JobGateway (target shows as DOWN):
 3. **Verify JobGateway Metrics Endpoint**:
    ```bash
    # From host, should work
-   curl http://localhost:8080/metrics
+   curl http://localhost:8086/metrics
    
    # Check Prometheus targets
    # Open: http://localhost:9090/targets

@@ -536,7 +536,7 @@ public class JobResultsModelTests
     }
 
     // Helper methods for test environment variable management
-    private static void SetTestEnvironmentVariable() => Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:8080");
+    private static void SetTestEnvironmentVariable() => Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:8086");
 
     private static void ClearTestEnvironmentVariable() => Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", null);
 
