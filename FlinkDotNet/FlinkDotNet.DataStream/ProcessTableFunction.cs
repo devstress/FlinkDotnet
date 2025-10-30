@@ -227,17 +227,17 @@ public interface IPtfValueState<T>
     /// <summary>
     /// Gets the current value
     /// </summary>
-    T? Value();
+    public T? Value();
 
     /// <summary>
     /// Updates the value
     /// </summary>
-    void Update(T value);
+    public void Update(T value);
 
     /// <summary>
     /// Clears the state
     /// </summary>
-    void Clear();
+    public void Clear();
 }
 
 /// <summary>
@@ -249,17 +249,17 @@ public interface IPtfListState<T>
     /// <summary>
     /// Gets all elements
     /// </summary>
-    IEnumerable<T> Get();
+    public IEnumerable<T> Get();
 
     /// <summary>
     /// Adds an element
     /// </summary>
-    void Add(T value);
+    public void Add(T value);
 
     /// <summary>
     /// Clears the state
     /// </summary>
-    void Clear();
+    public void Clear();
 }
 
 /// <summary>

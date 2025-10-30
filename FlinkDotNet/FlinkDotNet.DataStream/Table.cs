@@ -191,7 +191,7 @@ public class Table
     /// <summary>
     /// Applies a CUMULATE window (expanding windows within a maximum size)
     /// </summary>
-    /// <param name="timeColumn">Time attribute column name</
+    /// <param name="timeColumn">Time attribute column name</param>
     /// <param name="stepInterval">How often windows expand</param>
     /// <param name="maxWindowSize">Maximum window size</param>
     /// <returns>A new Table with CUMULATE window applied</returns>
@@ -222,7 +222,6 @@ public class Table
                 case TableOperationDefinition tableOp when tableOp.OperationType == "where":
                     sql.Append($" WHERE {tableOp.Condition}");
                     break;
-
 
                 case WindowTvfOperationDefinition windowOp:
                     {
