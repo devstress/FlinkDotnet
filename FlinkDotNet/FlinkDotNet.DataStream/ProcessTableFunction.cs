@@ -48,7 +48,9 @@ public abstract class ProcessTableFunction<TInput, TOutput>
     /// <summary>
     /// Gets the output type for this function
     /// </summary>
+#pragma warning disable S2325 // Methods and properties that don't access instance data should be static - Cannot be static as it uses generic type parameter TOutput
     protected Type OutputType => typeof(TOutput);
+#pragma warning restore S2325
 }
 
 /// <summary>

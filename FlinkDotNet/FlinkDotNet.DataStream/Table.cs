@@ -216,7 +216,7 @@ public class Table
             switch (operation)
             {
                 case TableOperationDefinition tableOp when tableOp.OperationType == "select":
-                    this.ApplySelectOperation(sql, tableOp);
+                    ApplySelectOperation(sql, tableOp);
                     break;
 
                 case TableOperationDefinition tableOp when tableOp.OperationType == "where":
@@ -228,7 +228,7 @@ public class Table
                     break;
 
                 case ParseJsonOperationDefinition parseOp:
-                    this.ApplyParseJsonOperation(sql, parseOp);
+                    ApplyParseJsonOperation(sql, parseOp);
                     break;
 
                 default:
@@ -240,7 +240,7 @@ public class Table
         return sql.ToString();
     }
 
-    private void ApplySelectOperation(StringBuilder sql, TableOperationDefinition tableOp)
+    private static void ApplySelectOperation(StringBuilder sql, TableOperationDefinition tableOp)
     {
         string selectColumns = string.Join(", ", tableOp.Columns);
         sql.Replace(SelectAllColumns, $"SELECT {selectColumns}");
@@ -271,7 +271,7 @@ public class Table
         return sql;
     }
 
-    private void ApplyParseJsonOperation(StringBuilder sql, ParseJsonOperationDefinition parseOp)
+    private static void ApplyParseJsonOperation(StringBuilder sql, ParseJsonOperationDefinition parseOp)
     {
         string jsonFunc = parseOp.FunctionType;
         string jsonExpr = string.IsNullOrEmpty(parseOp.JsonPath)
