@@ -404,6 +404,64 @@ public class MLPredictTests
         Assert.That(edgeMlPredict.ModelName, Is.Not.Null);
         Assert.That(edgeMlPredict.InputColumns, Is.Not.Null);
         Assert.That(edgeMlPredict.OutputColumns, Is.Not.Null);
+
+        // Part H: AI Provider Integration - OpenAI
+        var openaiProvider = ModelProviderFactory.GetProvider("openai");
+        Assert.That(openaiProvider, Is.Not.Null);
+        Assert.That(openaiProvider!.ProviderName, Is.EqualTo("openai"));
+
+        var openaiConfig = new Dictionary<string, string>
+        {
+            { "openai.api_key", "sk-test" },
+            { "openai.model", "gpt-4" }
+        };
+        Assert.That(openaiProvider.ValidateConfiguration(openaiConfig), Is.True);
+
+        // Part I: AI Provider Integration - Azure OpenAI
+        var azureProvider = ModelProviderFactory.GetProvider("azure_openai");
+        Assert.That(azureProvider, Is.Not.Null);
+        Assert.That(azureProvider!.ProviderName, Is.EqualTo("azure_openai"));
+
+        var azureConfig = new Dictionary<string, string>
+        {
+            { "azure.endpoint", "https://test.openai.azure.com" },
+            { "azure.deployment", "gpt-4" },
+            { "azure.api_key", "test-key" }
+        };
+        Assert.That(azureProvider.ValidateConfiguration(azureConfig), Is.True);
+
+        // Part J: Model Management API - TableEnvironment
+        var tableEnv = env.GetTableEnvironment();
+        Assert.That(tableEnv, Is.Not.Null);
+
+        // Create and register model
+        var mgmtModel = env.CreateModel("test_model")
+            .InputColumn("input", "STRING")
+            .OutputColumn("output", "STRING")
+            .WithProvider("openai")
+            .Build();
+
+        tableEnv.CreateModel("test_model", mgmtModel);
+
+        // List models
+        var models = tableEnv.ListModels();
+        Assert.That(models, Contains.Item("test_model"));
+
+        // Get model
+        var retrievedModel = tableEnv.GetModel("test_model");
+        Assert.That(retrievedModel, Is.Not.Null);
+        Assert.That(retrievedModel!.ModelName, Is.EqualTo("test_model"));
+
+        // Describe model
+        var description = tableEnv.DescribeModel("test_model");
+        Assert.That(description.ModelName, Is.EqualTo("test_model"));
+        Assert.That(description.Provider, Is.EqualTo("openai"));
+        Assert.That(description.InputSchema, Has.Count.EqualTo(1));
+        Assert.That(description.OutputSchema, Has.Count.EqualTo(1));
+
+        // Drop model
+        tableEnv.DropModel("test_model");
+        Assert.That(tableEnv.ListModels(), Does.Not.Contain("test_model"));
     }
 
     #endregion
