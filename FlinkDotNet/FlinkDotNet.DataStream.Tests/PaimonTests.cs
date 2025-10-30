@@ -113,7 +113,7 @@ namespace FlinkDotNet.DataStream.Tests
             var builder = new PaimonCatalogBuilder("my_catalog");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         [Test]
@@ -124,7 +124,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithWarehouse("/tmp/paimon");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         #endregion
@@ -439,7 +439,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithPrimaryKey("id");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         [Test]
@@ -450,7 +450,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithColumn("id", "BIGINT");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         [Test]
@@ -462,7 +462,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithPrimaryKey("id");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         [Test]
@@ -474,7 +474,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithPrimaryKey("id");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         #endregion

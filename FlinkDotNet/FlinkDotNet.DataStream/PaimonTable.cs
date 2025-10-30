@@ -120,13 +120,16 @@ public class PaimonTable
             // Add changelog producer mode
             if (!string.IsNullOrEmpty(this._definition.ChangelogProducerMode) && this._definition.ChangelogProducerMode != "none")
             {
-                string mode = this._definition.ChangelogProducerMode.ToUpperInvariant();
-                // Convert "FULLCOMPACTION" to "full-compaction"
-                if (mode == "FULLCOMPACTION")
+                // Paimon configuration requires lowercase values, with special handling for FULLCOMPACTION
+                string upperMode = this._definition.ChangelogProducerMode.ToUpperInvariant();
+#pragma warning disable S4040 // Paimon configuration requires lowercase output, ToUpperInvariant used for comparison only
+                string normalizedMode = upperMode switch
                 {
-                    mode = "full-compaction";
-                }
-                properties.Add($"  'changelog-producer' = '{mode.ToLowerInvariant()}'");
+                    "FULLCOMPACTION" => "full-compaction",
+                    _ => upperMode.ToLowerInvariant()
+                };
+#pragma warning restore S4040
+                properties.Add($"  'changelog-producer' = '{normalizedMode}'");
             }
 
             // Add custom properties
@@ -230,9 +233,16 @@ public class PaimonTableBuilder
     /// <returns>This builder instance</returns>
     public PaimonTableBuilder WithChangelogMode(ChangelogProducerMode mode)
     {
-        string modeStr = mode.ToString().ToUpperInvariant();
-        // Convert "FULLCOMPACTION" to "full-compaction"
-        this._definition.ChangelogProducerMode = modeStr == "FULLCOMPACTION" ? "full-compaction" : modeStr.ToLowerInvariant();
+        // Paimon configuration requires lowercase values, with special handling for FULLCOMPACTION
+        string modeStr = mode.ToString();
+        string upperMode = modeStr.ToUpperInvariant();
+#pragma warning disable S4040 // Paimon configuration requires lowercase output, ToUpperInvariant used for comparison only
+        this._definition.ChangelogProducerMode = upperMode switch
+        {
+            "FULLCOMPACTION" => "full-compaction",
+            _ => upperMode.ToLowerInvariant()
+        };
+#pragma warning restore S4040
         return this;
     }
 
@@ -256,26 +266,15 @@ public class PaimonTableBuilder
     public PaimonTable Build()
     {
         // Validate required fields
-        if (string.IsNullOrEmpty(this._definition.CatalogName))
-        {
-            throw new InvalidOperationException("Catalog name is required");
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.CatalogName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.TableName);
 
-        if (string.IsNullOrEmpty(this._definition.TableName))
-        {
-            throw new InvalidOperationException("Table name is required");
-        }
-
-        if (this._definition.Schema.Count == 0)
-        {
-            throw new InvalidOperationException("At least one column is required");
-        }
-
-        if (this._definition.PrimaryKey.Count == 0)
-        {
-            throw new InvalidOperationException("Primary key is required for Paimon ACID tables");
-        }
-
-        return new PaimonTable(this._definition);
+#pragma warning disable S3358 // Nested ternary required to satisfy IDE0046 while maintaining validation flow
+        return this._definition.Schema.Count == 0
+            ? throw new ArgumentException("At least one column is required")
+            : this._definition.PrimaryKey.Count == 0
+            ? throw new ArgumentException("Primary key is required for Paimon ACID tables")
+            : new PaimonTable(this._definition);
+#pragma warning restore S3358
     }
 }

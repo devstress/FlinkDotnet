@@ -142,7 +142,7 @@ namespace FlinkDotNet.DataStream.Tests
             var builder = StructuredType.NewBuilder("TestType");
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => builder.Field("field", (string)null!));
+            Assert.Throws<ArgumentException>(() => builder.Field("field", (string) null!));
         }
 
         [Test]
@@ -180,7 +180,7 @@ namespace FlinkDotNet.DataStream.Tests
             var builder = StructuredType.NewBuilder("TestType");
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => builder.Field("field", (StructuredType)null!));
+            Assert.Throws<ArgumentNullException>(() => builder.Field("field", (StructuredType) null!));
         }
 
         [Test]
@@ -238,7 +238,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void DataTypes_String_ShouldReturnStringType()
         {
             // Act
-            var type = DataTypes.String();
+            var type = DataTypes.String;
 
             // Assert
             Assert.That(type, Is.EqualTo("STRING"));
@@ -248,7 +248,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void DataTypes_Boolean_ShouldReturnBooleanType()
         {
             // Act
-            var type = DataTypes.Boolean();
+            var type = DataTypes.Boolean;
 
             // Assert
             Assert.That(type, Is.EqualTo("BOOLEAN"));
@@ -258,7 +258,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void DataTypes_Int_ShouldReturnIntType()
         {
             // Act
-            var type = DataTypes.Int();
+            var type = DataTypes.Int;
 
             // Assert
             Assert.That(type, Is.EqualTo("INT"));
@@ -268,7 +268,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void DataTypes_BigInt_ShouldReturnBigIntType()
         {
             // Act
-            var type = DataTypes.BigInt();
+            var type = DataTypes.BigInt;
 
             // Assert
             Assert.That(type, Is.EqualTo("BIGINT"));
@@ -278,7 +278,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void DataTypes_Double_ShouldReturnDoubleType()
         {
             // Act
-            var type = DataTypes.Double();
+            var type = DataTypes.Double;
 
             // Assert
             Assert.That(type, Is.EqualTo("DOUBLE"));
@@ -328,7 +328,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void DataTypes_Variant_ShouldReturnVariantType()
         {
             // Act
-            var type = DataTypes.Variant();
+            var type = DataTypes.Variant;
 
             // Assert
             Assert.That(type, Is.EqualTo("VARIANT"));
@@ -343,17 +343,17 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var addressType = StructuredType.NewBuilder("AddressType")
-                .Field("street", DataTypes.String())
-                .Field("city", DataTypes.String())
-                .Field("zipCode", DataTypes.String())
+                .Field("street", DataTypes.String)
+                .Field("city", DataTypes.String)
+                .Field("zipCode", DataTypes.String)
                 .Build();
 
             var personType = StructuredType.NewBuilder("PersonType")
-                .Field("id", DataTypes.BigInt())
-                .Field("name", DataTypes.String())
-                .Field("age", DataTypes.Int())
-                .Field("isActive", DataTypes.Boolean())
-                .Field("score", DataTypes.Double())
+                .Field("id", DataTypes.BigInt)
+                .Field("name", DataTypes.String)
+                .Field("age", DataTypes.Int)
+                .Field("isActive", DataTypes.Boolean)
+                .Field("score", DataTypes.Double)
                 .Field("address", addressType)
                 .Build();
 
@@ -374,10 +374,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var type = StructuredType.NewBuilder("ComplexType")
-                .Field("tags", DataTypes.Array(DataTypes.String()))
-                .Field("metadata", DataTypes.Map(DataTypes.String(), DataTypes.String()))
+                .Field("tags", DataTypes.Array(DataTypes.String))
+                .Field("metadata", DataTypes.Map(DataTypes.String, DataTypes.String))
                 .Field("timestamp", DataTypes.Timestamp(6))
-                .Field("data", DataTypes.Variant())
+                .Field("data", DataTypes.Variant)
                 .Build();
 
             // Act

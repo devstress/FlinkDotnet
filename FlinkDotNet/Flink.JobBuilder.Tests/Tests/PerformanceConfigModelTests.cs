@@ -395,7 +395,7 @@ public class PerformanceConfigModelTests
 
         Assert.That(job.Metadata.StateBackendConfig, Is.Not.Null);
         Assert.That(job.Metadata.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
-        
+
         var sink = job.Sink as UnifiedSinkV2Definition;
         Assert.That(sink, Is.Not.Null);
         Assert.That(sink!.WriterConfig.BatchingConfig, Is.Not.Null);

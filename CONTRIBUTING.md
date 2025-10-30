@@ -28,6 +28,40 @@ Maintainers are trusted contributors with commit access to the repository. To be
 
 Maintainers are expected to uphold project standards, review contributions, and help guide the project's direction.
 
+## Code Formatting and Quality
+
+FlinkDotNet uses `dotnet format` to maintain consistent code style across the project. Before submitting a pull request:
+
+### Running Code Formatting
+
+Format your code using the .NET formatter:
+
+```bash
+# Format the FlinkDotNet solution
+cd FlinkDotNet
+dotnet format FlinkDotNet.sln
+
+# Verify formatting without making changes
+dotnet format FlinkDotNet.sln --verify-no-changes
+```
+
+### Code Style Rules
+
+The project follows these code style guidelines:
+
+- **EditorConfig**: All code style rules are defined in `.editorconfig` at the repository root
+- **Analyzers**: SonarAnalyzer.CSharp and Roslynator analyzers are enabled for code quality
+- **SOLID Principles**: Code should follow SOLID principles as outlined in `.github/copilot-instructions.md`
+
+### Common Code Quality Checks
+
+Before submitting your PR, ensure:
+
+- ✅ Code builds without warnings: `dotnet build --configuration Release`
+- ✅ Code is properly formatted: `dotnet format FlinkDotNet.sln --verify-no-changes`
+- ✅ No SonarCloud or Roslyn analyzer warnings
+- ✅ All tests pass (see below)
+
 ## Make Sure Tests Work
 
 Before submitting your pull request, ensure all tests pass:

@@ -14,7 +14,10 @@ public interface IModelProvider
     /// <summary>
     /// Gets the provider name (e.g., "openai", "azure_openai", "custom")
     /// </summary>
-    public string ProviderName { get; }
+    public string ProviderName
+    {
+        get;
+    }
 
     /// <summary>
     /// Validates provider configuration
