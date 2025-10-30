@@ -1,6 +1,6 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a .NET framework that enables developers to write Apache Flink 2.1 streaming jobs in C# and submit them to production Flink clusters.
+**FlinkDotNet** is a comprehensive distributed message-oriented architecture that enables developers to build production-grade stream processing applications using Apache Flink 2.1, Apache Kafka, Temporal workflows, and Microsoft Aspire orchestration - all accessible through a native .NET SDK.
 
 <!-- Build & Test Status -->
 [![Build](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml)
@@ -29,7 +29,15 @@
 
 ## What is FlinkDotNet?
 
-FlinkDotNet lets you write **Apache Flink 2.1** streaming jobs in C# and submit them to Flink clusters. No Java required.
+FlinkDotNet provides a complete distributed message-oriented architecture for building enterprise stream processing applications in .NET. It combines:
+
+- **Apache Flink 2.1** - Production-grade stream processing engine
+- **Apache Kafka** - Distributed message streaming platform  
+- **Temporal** - Durable workflow orchestration
+- **Microsoft Aspire** - Local development orchestration and service discovery
+- **FlinkDotNet SDK** - Native .NET API for writing Flink jobs in C#
+
+Write streaming jobs in C# and deploy them to production Flink clusters - no Java required.
 
 ```csharp
 var env = Flink.GetExecutionEnvironment();
@@ -41,17 +49,28 @@ var stream = env.FromKafka("orders")
 await env.ExecuteAsync("order-processor");
 ```
 
-## Local Development with Aspire
+## Distributed Architecture with Aspire Orchestration
 
-**[.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/)** is a container orchestrator that simplifies running distributed applications locally. It manages the lifecycle of containers and provides a unified dashboard for monitoring.
+**[.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/)** orchestrates the complete distributed message-oriented architecture locally, providing production-parity development environments.
 
-FlinkDotNet uses Aspire to orchestrate a complete streaming stack:
-- **Apache Flink** - Real-time stream processing engine
-- **Apache Kafka** - Message streaming broker
-- **Temporal** - Workflow orchestration platform
-- **FlinkDotNet Gateway** - Job submission service
+### Full Architecture Stack
 
-With one command, Aspire starts all containers and connects them together, making it easy to develop and test distributed streaming applications locally.
+**Stream Processing Layer**:
+- **Apache Flink 2.1** - JobManager, TaskManager, and SQL Gateway for real-time stream processing
+- **FlinkDotNet SDK** - Native .NET DataStream API with fluent C# DSL
+- **Job Gateway** - ASP.NET Core service for job submission and management
+
+**Messaging & Orchestration Layer**:
+- **Apache Kafka** - KRaft-mode message broker with JMX metrics export
+- **Temporal** - Durable workflow orchestration with PostgreSQL backend
+- **Redis** - Distributed state management and caching
+
+**Observability Stack** (LearningCourse mode):
+- **Prometheus** - Metrics collection from Flink, Kafka, and custom applications
+- **Grafana** - Visualization dashboards for performance monitoring
+- **JMX Exporters** - Metrics bridge for Java components
+
+With one command, Aspire starts all containers, configures service discovery, and provides a unified dashboard - enabling you to develop and test complete distributed streaming applications locally.
 
 ### Try It Out
 
