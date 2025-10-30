@@ -62,7 +62,6 @@ await env.ExecuteAsync("order-processor");
 **Messaging & Orchestration Layer**:
 - **Apache Kafka** - KRaft-mode message broker with JMX metrics export
 - **Temporal** - Durable workflow orchestration with PostgreSQL backend
-- **Redis** - Distributed state management and caching
 
 **Observability Stack** (LearningCourse mode):
 - **Prometheus** - Metrics collection from Flink, Kafka, and custom applications
