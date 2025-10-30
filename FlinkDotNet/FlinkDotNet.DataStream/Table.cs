@@ -42,7 +42,9 @@ public class Table
     public Table(string tableName)
     {
         if (string.IsNullOrWhiteSpace(tableName))
+        {
             throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
+        }
 
         Definition = new TableSourceDefinition
         {
@@ -58,9 +60,11 @@ public class Table
     public Table Select(params string[] columns)
     {
         if (columns == null || columns.Length == 0)
+        {
             throw new ArgumentException("At least one column must be selected", nameof(columns));
+        }
 
-        var newTable = Clone();
+        Table newTable = Clone();
         newTable.Operations.Add(new TableOperationDefinition
         {
             OperationType = "select",
@@ -77,9 +81,11 @@ public class Table
     public Table Where(string condition)
     {
         if (string.IsNullOrWhiteSpace(condition))
+        {
             throw new ArgumentException("Condition cannot be null or empty", nameof(condition));
+        }
 
-        var newTable = Clone();
+        Table newTable = Clone();
         newTable.Operations.Add(new TableOperationDefinition
         {
             OperationType = "where",
@@ -95,10 +101,9 @@ public class Table
     /// <returns>A GroupedTable that can be used for aggregations</returns>
     public GroupedTable GroupBy(params string[] keys)
     {
-        if (keys == null || keys.Length == 0)
-            throw new ArgumentException("At least one grouping key must be specified", nameof(keys));
-
-        return new GroupedTable(this, keys);
+        return keys == null || keys.Length == 0
+            ? throw new ArgumentException("At least one grouping key must be specified", nameof(keys))
+            : new GroupedTable(this, keys);
     }
 
     /// <summary>
@@ -112,11 +117,16 @@ public class Table
     public Table AddJsonColumn(string sourceField, string targetField, string? jsonPath = null, bool strict = false)
     {
         if (string.IsNullOrWhiteSpace(sourceField))
+        {
             throw new ArgumentException("Source field cannot be null or empty", nameof(sourceField));
-        if (string.IsNullOrWhiteSpace(targetField))
-            throw new ArgumentException("Target field cannot be null or empty", nameof(targetField));
+        }
 
-        var newTable = Clone();
+        if (string.IsNullOrWhiteSpace(targetField))
+        {
+            throw new ArgumentException("Target field cannot be null or empty", nameof(targetField));
+        }
+
+        Table newTable = Clone();
         newTable.Operations.Add(new ParseJsonOperationDefinition
         {
             FunctionType = strict ? "PARSE_JSON" : "TRY_PARSE_JSON",
@@ -153,7 +163,7 @@ public class Table
             throw new ArgumentException("Window size cannot be null or empty", nameof(windowSize));
         }
 
-        var newTable = this.Clone();
+        Table newTable = this.Clone();
         newTable.Operations.Add(new WindowTvfOperationDefinition
         {
             WindowType = windowType.ToUpper(),
@@ -206,15 +216,15 @@ public class Table
     /// <returns>SQL query string representing the table transformation</returns>
     public string ToSql()
     {
-        var sql = new StringBuilder($"SELECT * FROM {this.Definition.TableName}");
+        StringBuilder sql = new StringBuilder($"SELECT * FROM {this.Definition.TableName}");
 
-        foreach (var operation in this.Operations)
+        foreach (IOperationDefinition operation in this.Operations)
         {
             switch (operation)
             {
                 case TableOperationDefinition tableOp when tableOp.OperationType == "select":
                     {
-                        var selectColumns = string.Join(", ", tableOp.Columns);
+                        string selectColumns = string.Join(", ", tableOp.Columns);
                         sql.Replace("SELECT *", $"SELECT {selectColumns}");
                         break;
                     }
@@ -226,7 +236,7 @@ public class Table
                 case WindowTvfOperationDefinition windowOp:
                     {
                         // Generate window TVF SQL
-                        var windowFunc = windowOp.WindowType switch
+                        string windowFunc = windowOp.WindowType switch
                         {
                             "TUMBLE" => $"TUMBLE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize})",
                             "HOP" => $"HOP(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.SlideInterval}, {windowOp.WindowSize})",
@@ -250,20 +260,20 @@ public class Table
                     }
                 case ParseJsonOperationDefinition parseOp:
                     {
-                        var jsonFunc = parseOp.FunctionType;
-                        var jsonExpr = string.IsNullOrEmpty(parseOp.JsonPath)
+                        string jsonFunc = parseOp.FunctionType;
+                        string jsonExpr = string.IsNullOrEmpty(parseOp.JsonPath)
                             ? $"{jsonFunc}({parseOp.SourceField})"
                             : $"{jsonFunc}({parseOp.SourceField})::VARIANT{parseOp.JsonPath}";
 
                         // Insert the new column into SELECT clause
-                        var sqlStr = sql.ToString();
+                        string sqlStr = sql.ToString();
                         if (sqlStr.Contains("SELECT *"))
                         {
                             sql.Replace("SELECT *", $"SELECT *, {jsonExpr} AS {parseOp.TargetField}");
                         }
                         else
                         {
-                            var selectIdx = sqlStr.IndexOf("FROM");
+                            int selectIdx = sqlStr.IndexOf("FROM");
                             sql.Insert(selectIdx, $", {jsonExpr} AS {parseOp.TargetField} ");
                         }
                         break;
@@ -296,7 +306,7 @@ public class Table
             throw new ArgumentException("At least one input column must be specified", nameof(inputColumns));
         }
 
-        var newTable = this.Clone();
+        Table newTable = this.Clone();
         newTable.Operations.Add(new MLPredictDefinition
         {
             ModelName = modelName,
@@ -329,7 +339,7 @@ public class Table
             throw new ArgumentException("At least one input column must be specified", nameof(inputColumns));
         }
 
-        var newTable = this.Clone();
+        Table newTable = this.Clone();
         newTable.Operations.Add(new MLPredictDefinition
         {
             ModelName = modelName,
@@ -344,7 +354,7 @@ public class Table
     /// </summary>
     internal Table Clone()
     {
-        var newTable = new Table(this.Definition);
+        Table newTable = new Table(this.Definition);
         newTable.Operations.AddRange(this.Operations);
         return newTable;
     }
@@ -372,9 +382,11 @@ public class GroupedTable
     public Table Aggregate(params string[] aggregations)
     {
         if (aggregations == null || aggregations.Length == 0)
+        {
             throw new ArgumentException("At least one aggregation must be specified", nameof(aggregations));
+        }
 
-        var newTable = this._table.Clone();
+        Table newTable = this._table.Clone();
         newTable.Operations.Add(new TableOperationDefinition
         {
             OperationType = "aggregate",
@@ -411,9 +423,11 @@ public static class TableExtensions
     public static Table ToTable<T>(this DataStream<T> stream, string tableName, Dictionary<string, string>? schema = null)
     {
         if (string.IsNullOrWhiteSpace(tableName))
+        {
             throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
+        }
 
-        var tableSource = new TableSourceDefinition
+        TableSourceDefinition tableSource = new TableSourceDefinition
         {
             TableName = tableName,
             Schema = schema != null ? new Dictionary<string, string>(schema) : []
