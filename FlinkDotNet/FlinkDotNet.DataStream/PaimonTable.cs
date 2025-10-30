@@ -271,8 +271,11 @@ public class PaimonTableBuilder
             throw new InvalidOperationException("At least one column is required");
         }
 
-        return this._definition.PrimaryKey.Count == 0
-            ? throw new InvalidOperationException("Primary key is required for Paimon ACID tables")
-            : new PaimonTable(this._definition);
+        if (this._definition.PrimaryKey.Count == 0)
+        {
+            throw new InvalidOperationException("Primary key is required for Paimon ACID tables");
+        }
+
+        return new PaimonTable(this._definition);
     }
 }

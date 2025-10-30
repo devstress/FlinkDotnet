@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void TableEnvironmentExtensions_GetTableEnvironment_WithNullEnv_ShouldThrow()
         {
             // Arrange
-            StreamExecutionEnvironment? nullEnv = null;
+            StreamExecutionEnvironment nullEnv = null;
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => nullEnv!.GetTableEnvironment());
@@ -119,7 +119,7 @@ namespace FlinkDotNet.DataStream.Tests
             tableEnv.CreateModel("test_model", model);
 
             // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => 
+            var ex = Assert.Throws<InvalidOperationException>(() =>
                 tableEnv.CreateModel("test_model", model));
             Assert.That(ex.Message, Does.Contain("already exists"));
         }
@@ -160,7 +160,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .OutputColumn("result", "STRING")
                 .WithProvider("custom")
                 .Build();
-            
+
             tableEnv.CreateModel("model1", model1);
             tableEnv.CreateModel("model2", model2);
 
@@ -222,7 +222,7 @@ namespace FlinkDotNet.DataStream.Tests
             var tableEnv = _env.GetTableEnvironment();
 
             // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => 
+            var ex = Assert.Throws<InvalidOperationException>(() =>
                 tableEnv.DropModel("nonexistent"));
             Assert.That(ex.Message, Does.Contain("does not exist"));
         }
@@ -272,7 +272,7 @@ namespace FlinkDotNet.DataStream.Tests
             var tableEnv = _env.GetTableEnvironment();
 
             // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => 
+            var ex = Assert.Throws<InvalidOperationException>(() =>
                 tableEnv.DescribeModel("nonexistent"));
             Assert.That(ex.Message, Does.Contain("does not exist"));
         }
@@ -358,7 +358,7 @@ namespace FlinkDotNet.DataStream.Tests
             var tableDef2 = new Flink.JobBuilder.Models.TableSourceDefinition { TableName = "table2" };
             var table1 = new Table(tableDef1);
             var table2 = new Table(tableDef2);
-            
+
             tableEnv.RegisterTable("table1", table1);
             tableEnv.RegisterTable("table2", table2);
 

@@ -11,10 +11,15 @@ namespace FlinkDotNet.DataStream;
 /// </summary>
 public class Table
 {
+    private const string SelectAllColumns = "SELECT *";
+
     /// <summary>
     /// Gets the table source definition
     /// </summary>
-    public TableSourceDefinition Definition { get; }
+    public TableSourceDefinition Definition
+    {
+        get;
+    }
 
     /// <summary>
     /// Gets the list of operations applied to this table
@@ -30,10 +35,7 @@ public class Table
     /// Initializes a new instance of the Table class with a table source
     /// </summary>
     /// <param name="definition">Table source definition</param>
-    public Table(TableSourceDefinition definition)
-    {
-        Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-    }
+    public Table(TableSourceDefinition definition) => this.Definition = definition ?? throw new ArgumentNullException(nameof(definition));
 
     /// <summary>
     /// Initializes a new instance of the Table class with a table name
@@ -46,7 +48,7 @@ public class Table
             throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
         }
 
-        Definition = new TableSourceDefinition
+        this.Definition = new TableSourceDefinition
         {
             TableName = tableName
         };
@@ -64,7 +66,7 @@ public class Table
             throw new ArgumentException("At least one column must be selected", nameof(columns));
         }
 
-        Table newTable = Clone();
+        Table newTable = this.Clone();
         newTable.Operations.Add(new TableOperationDefinition
         {
             OperationType = "select",
@@ -85,7 +87,7 @@ public class Table
             throw new ArgumentException("Condition cannot be null or empty", nameof(condition));
         }
 
-        Table newTable = Clone();
+        Table newTable = this.Clone();
         newTable.Operations.Add(new TableOperationDefinition
         {
             OperationType = "where",
@@ -126,7 +128,7 @@ public class Table
             throw new ArgumentException("Target field cannot be null or empty", nameof(targetField));
         }
 
-        Table newTable = Clone();
+        Table newTable = this.Clone();
         newTable.Operations.Add(new ParseJsonOperationDefinition
         {
             FunctionType = strict ? "PARSE_JSON" : "TRY_PARSE_JSON",
@@ -181,10 +183,7 @@ public class Table
     /// <param name="timeColumn">Time attribute column name</param>
     /// <param name="windowSize">Window size (e.g., "INTERVAL '1' HOUR")</param>
     /// <returns>A new Table with TUMBLE window applied</returns>
-    public Table TumbleWindow(string timeColumn, string windowSize)
-    {
-        return this.Window("TUMBLE", timeColumn, windowSize);
-    }
+    public Table TumbleWindow(string timeColumn, string windowSize) => this.Window("TUMBLE", timeColumn, windowSize);
 
     /// <summary>
     /// Applies a HOP window (sliding windows with overlap)
@@ -193,10 +192,7 @@ public class Table
     /// <param name="slideInterval">How often windows are created</param>
     /// <param name="windowSize">Size of each window</param>
     /// <returns>A new Table with HOP window applied</returns>
-    public Table HopWindow(string timeColumn, string slideInterval, string windowSize)
-    {
-        return this.Window("HOP", timeColumn, windowSize, slideInterval);
-    }
+    public Table HopWindow(string timeColumn, string slideInterval, string windowSize) => this.Window("HOP", timeColumn, windowSize, slideInterval);
 
     /// <summary>
     /// Applies a CUMULATE window (expanding windows within a maximum size)
@@ -205,10 +201,7 @@ public class Table
     /// <param name="stepInterval">How often windows expand</param>
     /// <param name="maxWindowSize">Maximum window size</param>
     /// <returns>A new Table with CUMULATE window applied</returns>
-    public Table CumulateWindow(string timeColumn, string stepInterval, string maxWindowSize)
-    {
-        return this.Window("CUMULATE", timeColumn, stepInterval, null, maxWindowSize);
-    }
+    public Table CumulateWindow(string timeColumn, string stepInterval, string maxWindowSize) => this.Window("CUMULATE", timeColumn, stepInterval, null, maxWindowSize);
 
     /// <summary>
     /// Generates SQL query from table operations
@@ -216,68 +209,27 @@ public class Table
     /// <returns>SQL query string representing the table transformation</returns>
     public string ToSql()
     {
-        StringBuilder sql = new StringBuilder($"SELECT * FROM {this.Definition.TableName}");
+        StringBuilder sql = new($"{SelectAllColumns} FROM {this.Definition.TableName}");
 
         foreach (IOperationDefinition operation in this.Operations)
         {
             switch (operation)
             {
                 case TableOperationDefinition tableOp when tableOp.OperationType == "select":
-                    {
-                        string selectColumns = string.Join(", ", tableOp.Columns);
-                        sql.Replace("SELECT *", $"SELECT {selectColumns}");
-                        break;
-                    }
+                    this.ApplySelectOperation(sql, tableOp);
+                    break;
 
                 case TableOperationDefinition tableOp when tableOp.OperationType == "where":
                     sql.Append($" WHERE {tableOp.Condition}");
                     break;
 
                 case WindowTvfOperationDefinition windowOp:
-                    {
-                        // Generate window TVF SQL
-                        string windowFunc = windowOp.WindowType switch
-                        {
-                            "TUMBLE" => $"TUMBLE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize})",
-                            "HOP" => $"HOP(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.SlideInterval}, {windowOp.WindowSize})",
-                            "CUMULATE" => $"CUMULATE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize}, {windowOp.MaxWindowSize})",
-                            _ => throw new InvalidOperationException($"Unknown window type: {windowOp.WindowType}")
-                        };
+                    sql = this.ApplyWindowOperation(windowOp);
+                    break;
 
-                        sql = new StringBuilder($"SELECT * FROM TABLE({windowFunc})");
-
-                        if (windowOp.GroupByColumns.Count > 0)
-                        {
-                            sql.Append($" GROUP BY {string.Join(", ", windowOp.GroupByColumns)}");
-                        }
-
-                        if (windowOp.Aggregations.Count > 0)
-                        {
-                            sql.Replace("SELECT *", $"SELECT window_start, window_end, {string.Join(", ", windowOp.Aggregations)}");
-                        }
-
-                        break;
-                    }
                 case ParseJsonOperationDefinition parseOp:
-                    {
-                        string jsonFunc = parseOp.FunctionType;
-                        string jsonExpr = string.IsNullOrEmpty(parseOp.JsonPath)
-                            ? $"{jsonFunc}({parseOp.SourceField})"
-                            : $"{jsonFunc}({parseOp.SourceField})::VARIANT{parseOp.JsonPath}";
-
-                        // Insert the new column into SELECT clause
-                        string sqlStr = sql.ToString();
-                        if (sqlStr.Contains("SELECT *"))
-                        {
-                            sql.Replace("SELECT *", $"SELECT *, {jsonExpr} AS {parseOp.TargetField}");
-                        }
-                        else
-                        {
-                            int selectIdx = sqlStr.IndexOf("FROM");
-                            sql.Insert(selectIdx, $", {jsonExpr} AS {parseOp.TargetField} ");
-                        }
-                        break;
-                    }
+                    this.ApplyParseJsonOperation(sql, parseOp);
+                    break;
 
                 default:
                     // Other operation types not yet implemented
@@ -286,6 +238,57 @@ public class Table
         }
 
         return sql.ToString();
+    }
+
+    private void ApplySelectOperation(StringBuilder sql, TableOperationDefinition tableOp)
+    {
+        string selectColumns = string.Join(", ", tableOp.Columns);
+        sql.Replace(SelectAllColumns, $"SELECT {selectColumns}");
+    }
+
+    private StringBuilder ApplyWindowOperation(WindowTvfOperationDefinition windowOp)
+    {
+        string windowFunc = windowOp.WindowType switch
+        {
+            "TUMBLE" => $"TUMBLE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize})",
+            "HOP" => $"HOP(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.SlideInterval}, {windowOp.WindowSize})",
+            "CUMULATE" => $"CUMULATE(TABLE {this.Definition.TableName}, DESCRIPTOR({windowOp.TimeColumn}), {windowOp.WindowSize}, {windowOp.MaxWindowSize})",
+            _ => throw new InvalidOperationException($"Unknown window type: {windowOp.WindowType}")
+        };
+
+        StringBuilder sql = new($"{SelectAllColumns} FROM TABLE({windowFunc})");
+
+        if (windowOp.GroupByColumns.Count > 0)
+        {
+            sql.Append($" GROUP BY {string.Join(", ", windowOp.GroupByColumns)}");
+        }
+
+        if (windowOp.Aggregations.Count > 0)
+        {
+            sql.Replace(SelectAllColumns, $"SELECT window_start, window_end, {string.Join(", ", windowOp.Aggregations)}");
+        }
+
+        return sql;
+    }
+
+    private void ApplyParseJsonOperation(StringBuilder sql, ParseJsonOperationDefinition parseOp)
+    {
+        string jsonFunc = parseOp.FunctionType;
+        string jsonExpr = string.IsNullOrEmpty(parseOp.JsonPath)
+            ? $"{jsonFunc}({parseOp.SourceField})"
+            : $"{jsonFunc}({parseOp.SourceField})::VARIANT{parseOp.JsonPath}";
+
+        // Insert the new column into SELECT clause
+        string sqlStr = sql.ToString();
+        if (sqlStr.Contains(SelectAllColumns))
+        {
+            sql.Replace(SelectAllColumns, $"SELECT *, {jsonExpr} AS {parseOp.TargetField}");
+        }
+        else
+        {
+            int selectIdx = sqlStr.IndexOf("FROM");
+            sql.Insert(selectIdx, $", {jsonExpr} AS {parseOp.TargetField} ");
+        }
     }
 
     /// <summary>
@@ -354,7 +357,7 @@ public class Table
     /// </summary>
     internal Table Clone()
     {
-        Table newTable = new Table(this.Definition);
+        Table newTable = new(this.Definition);
         newTable.Operations.AddRange(this.Operations);
         return newTable;
     }
@@ -401,10 +404,7 @@ public class GroupedTable
     /// </summary>
     /// <param name="selections">Column selections and aggregations</param>
     /// <returns>A new Table with the selection applied</returns>
-    public Table Select(params string[] selections)
-    {
-        return Aggregate(selections);
-    }
+    public Table Select(params string[] selections) => this.Aggregate(selections);
 }
 
 /// <summary>
@@ -422,12 +422,14 @@ public static class TableExtensions
     /// <returns>A Table representing the stream</returns>
     public static Table ToTable<T>(this DataStream<T> stream, string tableName, Dictionary<string, string>? schema = null)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
         if (string.IsNullOrWhiteSpace(tableName))
         {
             throw new ArgumentException("Table name cannot be null or empty", nameof(tableName));
         }
 
-        TableSourceDefinition tableSource = new TableSourceDefinition
+        TableSourceDefinition tableSource = new()
         {
             TableName = tableName,
             Schema = schema != null ? new Dictionary<string, string>(schema) : []
