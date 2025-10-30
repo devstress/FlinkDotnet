@@ -29,7 +29,6 @@ namespace FlinkDotNet.DataStream
         private readonly string _bootstrapServers;
         private readonly List<string> _topics;
         private readonly string? _groupId;
-        private readonly DeserializationSchema<T> _deserializer;
         private readonly KafkaStartingOffsets _startingOffsets;
         private readonly KafkaStoppingOffsets _stoppingOffsets;
 
@@ -44,7 +43,7 @@ namespace FlinkDotNet.DataStream
             _bootstrapServers = bootstrapServers;
             _topics = topics;
             _groupId = groupId;
-            _deserializer = deserializer;
+            // deserializer is used in ToDefinition() method for schema information
             _startingOffsets = startingOffsets;
             _stoppingOffsets = stoppingOffsets;
         }
