@@ -2,7 +2,7 @@
 # This containerizes the Gateway to run in the same Docker network as Flink/Kafka/Prometheus
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
-EXPOSE 8080
+EXPOSE 8086
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
@@ -59,7 +59,7 @@ COPY --from=build /src/FlinkIRRunner /app/FlinkIRRunner
 USER app
 
 # Set environment for container deployment
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:8086
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "FlinkDotNet.JobGateway.dll"]

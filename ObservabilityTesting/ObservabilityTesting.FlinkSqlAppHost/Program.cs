@@ -106,7 +106,7 @@ if (!File.Exists(gatewayDockerfilePath))
 #pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
 // Use PublishAsDockerFile to build the Gateway image from Dockerfile as part of the Aspire build
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("gateway")
-    .WithHttpEndpoint(targetPort: 8080, port: Ports.GatewayHostPort, name: "gateway-http")
+    .WithHttpEndpoint(targetPort: 8086, port: Ports.GatewayHostPort, name: "gateway-http")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .PublishAsDockerFile()
     .WaitFor(jobManager);
