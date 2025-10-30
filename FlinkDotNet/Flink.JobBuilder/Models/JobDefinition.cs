@@ -80,17 +80,26 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Optional state backend configuration for performance tuning (Flink 2.1+)
         /// </summary>
-        public StateBackendConfig? StateBackendConfig { get; set; }
+        public StateBackendConfig? StateBackendConfig
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Optional execution plan format configuration (Flink 2.1+)
         /// </summary>
-        public ExecutionPlanConfig? ExecutionPlanConfig { get; set; }
+        public ExecutionPlanConfig? ExecutionPlanConfig
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Optional optimizer configuration for query optimization (Flink 2.1+)
         /// </summary>
-        public OptimizerConfig? OptimizerConfig { get; set; }
+        public OptimizerConfig? OptimizerConfig
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -305,7 +314,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Freshness interval (e.g., "INTERVAL '3' MINUTE", "INTERVAL '1' HOUR")
         /// </summary>
-        public string? FreshnessInterval { get; set; }
+        public string? FreshnessInterval
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Primary key columns (NOT ENFORCED in Flink)
@@ -330,7 +342,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Partition filter for REFRESH operation (e.g., "ds='2024-10-27'")
         /// </summary>
-        public string? PartitionFilter { get; set; }
+        public string? PartitionFilter
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Additional table properties
@@ -1010,7 +1025,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Optional batching configuration for async sink performance optimization
         /// </summary>
-        public BatchingConfig? BatchingConfig { get; set; }
+        public BatchingConfig? BatchingConfig
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -1048,27 +1066,42 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Maximum number of records per batch
         /// </summary>
-        public int? MaxBatchSize { get; set; }
+        public int? MaxBatchSize
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Maximum batch size in bytes
         /// </summary>
-        public long? MaxBatchSizeInBytes { get; set; }
+        public long? MaxBatchSizeInBytes
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Maximum time in milliseconds to buffer records before flushing
         /// </summary>
-        public int? MaxTimeInBufferMs { get; set; }
+        public int? MaxTimeInBufferMs
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Maximum number of in-flight requests
         /// </summary>
-        public int? MaxInFlightRequests { get; set; }
+        public int? MaxInFlightRequests
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Maximum number of buffered requests
         /// </summary>
-        public int? MaxBufferedRequests { get; set; }
+        public int? MaxBufferedRequests
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -1084,27 +1117,42 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Checkpoint directory URI (s3://, hdfs://, file://)
         /// </summary>
-        public string? CheckpointDir { get; set; }
+        public string? CheckpointDir
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Enable incremental checkpointing (RocksDB only)
         /// </summary>
-        public bool? IncrementalCheckpoints { get; set; }
+        public bool? IncrementalCheckpoints
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Predefined RocksDB profile: "default", "flash_ssd_optimized", "spinning_disk_optimized"
         /// </summary>
-        public string? PredefinedProfile { get; set; }
+        public string? PredefinedProfile
+        {
+            get; set;
+        }
 
         /// <summary>
         /// RocksDB database options
         /// </summary>
-        public Dictionary<string, object>? DbOptions { get; init; }
+        public Dictionary<string, object>? DbOptions
+        {
+            get; init;
+        }
 
         /// <summary>
         /// RocksDB column family options
         /// </summary>
-        public Dictionary<string, object>? ColumnFamilyOptions { get; init; }
+        public Dictionary<string, object>? ColumnFamilyOptions
+        {
+            get; init;
+        }
     }
 
     /// <summary>
@@ -1121,12 +1169,18 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Enable compression for plan serialization
         /// </summary>
-        public bool? EnableCompression { get; set; }
+        public bool? EnableCompression
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Additional format-specific properties
         /// </summary>
-        public Dictionary<string, object>? Properties { get; init; }
+        public Dictionary<string, object>? Properties
+        {
+            get; init;
+        }
     }
 
     /// <summary>
@@ -1138,27 +1192,42 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Enable multi-join optimization for cascaded joins
         /// </summary>
-        public bool? EnableMultiJoinOptimization { get; set; }
+        public bool? EnableMultiJoinOptimization
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Join reordering strategy: "none", "cost_based", "bushy", "left_deep"
         /// </summary>
-        public string? JoinReorderingStrategy { get; set; }
+        public string? JoinReorderingStrategy
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Enable join predicate pushdown optimization
         /// </summary>
-        public bool? EnableJoinPredicatePushdown { get; set; }
+        public bool? EnableJoinPredicatePushdown
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Enable filter pushdown optimization
         /// </summary>
-        public bool? EnableFilterPushdown { get; set; }
+        public bool? EnableFilterPushdown
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Additional optimizer hints and properties
         /// </summary>
-        public Dictionary<string, object>? Properties { get; init; }
+        public Dictionary<string, object>? Properties
+        {
+            get; init;
+        }
     }
 
     /// <summary>
@@ -1251,7 +1320,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Filter condition (for where operations)
         /// </summary>
-        public string? Condition { get; set; }
+        public string? Condition
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Group by keys (for groupBy operations)
@@ -1301,13 +1373,19 @@ namespace Flink.JobBuilder.Models
         /// JSON path for extracting nested values (e.g., "$.user.name", "$['metadata']['tags'][0]")
         /// If null or empty, parses entire JSON
         /// </summary>
-        public string? JsonPath { get; set; }
+        public string? JsonPath
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Output data type hint (e.g., "STRING", "INT", "DOUBLE")
         /// Used when JSON path points to a specific primitive type
         /// </summary>
-        public string? OutputType { get; set; }
+        public string? OutputType
+        {
+            get; set;
+        }
     }
 
     /// <summary>
@@ -1333,12 +1411,18 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Optional Hive configuration directory for Hive metastore integration
         /// </summary>
-        public string? HiveConfDir { get; set; }
+        public string? HiveConfDir
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Optional Hadoop configuration directory for HDFS integration
         /// </summary>
-        public string? HadoopConfDir { get; set; }
+        public string? HadoopConfDir
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Additional catalog properties
@@ -1385,7 +1469,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Number of buckets for parallelism (optional)
         /// </summary>
-        public int? Buckets { get; set; }
+        public int? Buckets
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Changelog producer mode: "none", "input", "lookup", "full-compaction"
@@ -1423,12 +1510,18 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Catalog name (optional, uses default catalog if not specified)
         /// </summary>
-        public string? CatalogName { get; set; }
+        public string? CatalogName
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Database name (optional, uses default database if not specified)
         /// </summary>
-        public string? DatabaseName { get; set; }
+        public string? DatabaseName
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Schema definition (column_name: data_type including VARIANT)
@@ -1482,12 +1575,18 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Whether the function uses event-time timers
         /// </summary>
-        public bool UsesEventTimeTimers { get; set; }
+        public bool UsesEventTimeTimers
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Whether the function uses processing-time timers
         /// </summary>
-        public bool UsesProcessingTimeTimers { get; set; }
+        public bool UsesProcessingTimeTimers
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Function-specific properties and configuration
@@ -1525,12 +1624,18 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Window slide/hop interval (for HOP windows)
         /// </summary>
-        public string? SlideInterval { get; set; }
+        public string? SlideInterval
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Maximum window size (for CUMULATE windows)
         /// </summary>
-        public string? MaxWindowSize { get; set; }
+        public string? MaxWindowSize
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Group by columns after windowing

@@ -44,6 +44,13 @@ public abstract class ProcessTableFunction<TInput, TOutput>
     {
         // Default implementation - override to cleanup
     }
+
+    /// <summary>
+    /// Gets the output type for this function
+    /// </summary>
+#pragma warning disable S2325 // Methods and properties that don't access instance data should be static - Cannot be static as it uses generic type parameter TOutput
+    protected Type OutputType => typeof(TOutput);
+#pragma warning restore S2325
 }
 
 /// <summary>
@@ -54,12 +61,18 @@ public class ProcessingContext
     /// <summary>
     /// Gets or sets the current event timestamp
     /// </summary>
-    public long Timestamp { get; set; }
+    public long Timestamp
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Gets or sets the current watermark
     /// </summary>
-    public long CurrentWatermark { get; set; }
+    public long CurrentWatermark
+    {
+        get; set;
+    }
 
     private readonly List<object> _outputBuffer = new();
     private readonly List<long> _eventTimeTimers = new();
@@ -83,37 +96,25 @@ public class ProcessingContext
     /// Registers an event-time timer that will fire when watermark passes the specified time
     /// </summary>
     /// <param name="timestamp">Timer timestamp in milliseconds</param>
-    public void RegisterEventTimeTimer(long timestamp)
-    {
-        this._eventTimeTimers.Add(timestamp);
-    }
+    public void RegisterEventTimeTimer(long timestamp) => this._eventTimeTimers.Add(timestamp);
 
     /// <summary>
     /// Registers a processing-time timer that will fire after the specified duration
     /// </summary>
     /// <param name="timestamp">Timer timestamp in milliseconds</param>
-    public void RegisterProcessingTimeTimer(long timestamp)
-    {
-        this._processingTimeTimers.Add(timestamp);
-    }
+    public void RegisterProcessingTimeTimer(long timestamp) => this._processingTimeTimers.Add(timestamp);
 
     /// <summary>
     /// Deletes an event-time timer
     /// </summary>
     /// <param name="timestamp">Timer timestamp to delete</param>
-    public void DeleteEventTimeTimer(long timestamp)
-    {
-        this._eventTimeTimers.Remove(timestamp);
-    }
+    public void DeleteEventTimeTimer(long timestamp) => this._eventTimeTimers.Remove(timestamp);
 
     /// <summary>
     /// Deletes a processing-time timer
     /// </summary>
     /// <param name="timestamp">Timer timestamp to delete</param>
-    public void DeleteProcessingTimeTimer(long timestamp)
-    {
-        this._processingTimeTimers.Remove(timestamp);
-    }
+    public void DeleteProcessingTimeTimer(long timestamp) => this._processingTimeTimers.Remove(timestamp);
 
     /// <summary>
     /// Gets all collected output rows
@@ -144,12 +145,18 @@ public class OnTimerContext
     /// <summary>
     /// Gets or sets the timestamp of the timer that fired
     /// </summary>
-    public long TimerTimestamp { get; set; }
+    public long TimerTimestamp
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Gets or sets the type of timer (event-time or processing-time)
     /// </summary>
-    public TimerType TimerType { get; set; }
+    public TimerType TimerType
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -193,7 +200,7 @@ public class FunctionContext
             this._state[descriptor.Name] = new SimpleValueState<T>();
         }
 
-        return (IPtfValueState<T>)this._state[descriptor.Name];
+        return (IPtfValueState<T>) this._state[descriptor.Name];
     }
 
     /// <summary>
@@ -214,7 +221,7 @@ public class FunctionContext
             this._state[descriptor.Name] = new SimpleListState<T>();
         }
 
-        return (IPtfListState<T>)this._state[descriptor.Name];
+        return (IPtfListState<T>) this._state[descriptor.Name];
     }
 }
 
@@ -270,10 +277,7 @@ internal class SimpleValueState<T> : IPtfValueState<T>
     private T? _value;
     private bool _hasValue;
 
-    public T? Value()
-    {
-        return this._hasValue ? this._value : default;
-    }
+    public T? Value() => this._hasValue ? this._value : default;
 
     public void Update(T value)
     {
@@ -295,18 +299,9 @@ internal class SimpleListState<T> : IPtfListState<T>
 {
     private readonly List<T> _list = new();
 
-    public IEnumerable<T> Get()
-    {
-        return this._list;
-    }
+    public IEnumerable<T> Get() => this._list;
 
-    public void Add(T value)
-    {
-        this._list.Add(value);
-    }
+    public void Add(T value) => this._list.Add(value);
 
-    public void Clear()
-    {
-        this._list.Clear();
-    }
+    public void Clear() => this._list.Clear();
 }

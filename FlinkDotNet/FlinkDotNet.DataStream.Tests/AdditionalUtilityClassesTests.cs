@@ -60,7 +60,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var context = new ProcessingContext();
-            var output = new { Value = "test" };
+            var output = new
+            {
+                Value = "test"
+            };
 
             // Act
             context.Collect(output);

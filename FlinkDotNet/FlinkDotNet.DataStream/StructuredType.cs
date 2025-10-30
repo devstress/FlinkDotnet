@@ -13,12 +13,18 @@ public class StructuredType
     /// <summary>
     /// Gets the name of the structured type
     /// </summary>
-    public string TypeName { get; }
+    public string TypeName
+    {
+        get;
+    }
 
     /// <summary>
     /// Gets the fields of the structured type
     /// </summary>
-    public IReadOnlyList<StructuredTypeField> Fields { get; }
+    public IReadOnlyList<StructuredTypeField> Fields
+    {
+        get;
+    }
 
     private StructuredType(string typeName, List<StructuredTypeField> fields)
     {
@@ -56,10 +62,7 @@ public class StructuredType
         private readonly string _typeName;
         private readonly List<StructuredTypeField> _fields = new();
 
-        internal StructuredTypeBuilder(string typeName)
-        {
-            this._typeName = typeName;
-        }
+        internal StructuredTypeBuilder(string typeName) => this._typeName = typeName;
 
         /// <summary>
         /// Adds a field to the structured type
@@ -126,12 +129,18 @@ public class StructuredTypeField
     /// <summary>
     /// Gets the field name
     /// </summary>
-    public string FieldName { get; }
+    public string FieldName
+    {
+        get;
+    }
 
     /// <summary>
     /// Gets the field data type
     /// </summary>
-    public string DataType { get; }
+    public string DataType
+    {
+        get;
+    }
 
     internal StructuredTypeField(string fieldName, string dataType)
     {
@@ -148,27 +157,32 @@ public static class DataTypes
     /// <summary>
     /// STRING data type
     /// </summary>
-    public static string String() => "STRING";
+    public const string String = "STRING";
 
     /// <summary>
     /// BOOLEAN data type
     /// </summary>
-    public static string Boolean() => "BOOLEAN";
+    public const string Boolean = "BOOLEAN";
 
     /// <summary>
     /// INT data type
     /// </summary>
-    public static string Int() => "INT";
+    public const string Int = "INT";
 
     /// <summary>
     /// BIGINT data type
     /// </summary>
-    public static string BigInt() => "BIGINT";
+    public const string BigInt = "BIGINT";
 
     /// <summary>
     /// DOUBLE data type
     /// </summary>
-    public static string Double() => "DOUBLE";
+    public const string Double = "DOUBLE";
+
+    /// <summary>
+    /// VARIANT data type for semi-structured JSON data
+    /// </summary>
+    public const string Variant = "VARIANT";
 
     /// <summary>
     /// TIMESTAMP data type with precision
@@ -188,9 +202,4 @@ public static class DataTypes
     /// <param name="keyType">Key type</param>
     /// <param name="valueType">Value type</param>
     public static string Map(string keyType, string valueType) => $"MAP<{keyType}, {valueType}>";
-
-    /// <summary>
-    /// VARIANT data type for semi-structured JSON data
-    /// </summary>
-    public static string Variant() => "VARIANT";
 }

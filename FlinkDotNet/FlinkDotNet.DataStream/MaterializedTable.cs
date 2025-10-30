@@ -197,23 +197,23 @@ public class MaterializedTableBuilder
         // Convert TimeSpan to SQL INTERVAL format
         if (interval.TotalDays >= 1)
         {
-            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalDays}' DAY";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int) interval.TotalDays}' DAY";
             return this;
         }
 
         if (interval.TotalHours >= 1)
         {
-            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalHours}' HOUR";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int) interval.TotalHours}' HOUR";
             return this;
         }
 
         if (interval.TotalMinutes >= 1)
         {
-            this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalMinutes}' MINUTE";
+            this._definition.FreshnessInterval = $"INTERVAL '{(int) interval.TotalMinutes}' MINUTE";
             return this;
         }
 
-        this._definition.FreshnessInterval = $"INTERVAL '{(int)interval.TotalSeconds}' SECOND";
+        this._definition.FreshnessInterval = $"INTERVAL '{(int) interval.TotalSeconds}' SECOND";
         return this;
     }
 
