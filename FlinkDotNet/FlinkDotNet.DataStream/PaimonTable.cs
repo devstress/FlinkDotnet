@@ -92,7 +92,7 @@ public class PaimonTable
             sb.AppendLine($"  ,PRIMARY KEY ({primaryKeyColumns}) NOT ENFORCED");
         }
 
-        sb.Append(")");
+        sb.Append(')');
 
         // Add partitioning if specified
         if (this._definition.PartitionKeys.Count > 0)
@@ -139,7 +139,7 @@ public class PaimonTable
             }
 
             sb.AppendJoin("," + Environment.NewLine, properties).AppendLine()
-                .AppendLine().Append(")");
+                .AppendLine().Append(')');
         }
 
         return sb.ToString();

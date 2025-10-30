@@ -94,10 +94,11 @@ public class GlobalTestInfrastructure
             {
                 await Task.Delay(TimeSpan.FromSeconds(3));
 
-                var containers = await RunDockerCommandAsync("ps --filter name=kafka --format \"{{.Names}}\"");
+                // Check for kafka container with "Up" status (not just "Created")
+                var containers = await RunDockerCommandAsync("ps --filter name=kafka --filter status=running --format \"{{.Names}}\"");
                 if (!string.IsNullOrWhiteSpace(containers))
                 {
-                    Console.WriteLine($"✅ Kafka container detected after {attempt * 3}s");
+                    Console.WriteLine($"✅ Kafka container running after {attempt * 3}s");
                     containersDetected = true;
 
                     // Show all containers for diagnostics
@@ -105,14 +106,21 @@ public class GlobalTestInfrastructure
                     Console.WriteLine($"🐳 All containers:\n{allContainers}");
                     break;
                 }
-                Console.WriteLine($"⏳ Still waiting for containers... ({attempt * 3}s elapsed)");
+                
+                // Show current status for debugging
+                var currentStatus = await RunDockerCommandAsync("ps -a --filter name=kafka --format \"{{.Names}} - {{.Status}}\"");
+                Console.WriteLine($"⏳ Still waiting for kafka container to be running... ({attempt * 3}s elapsed)");
+                if (!string.IsNullOrWhiteSpace(currentStatus))
+                {
+                    Console.WriteLine($"   Current kafka status: {currentStatus.Trim()}");
+                }
             }
 
             if (!containersDetected)
             {
-                Console.WriteLine("⚠️ Containers not detected within 30s, proceeding anyway...");
-                var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
-                Console.WriteLine($"🐳 Current containers:\n{allContainers}");
+                Console.WriteLine("⚠️ Kafka container not running within 30s, proceeding anyway...");
+                var allContainers = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                Console.WriteLine($"🐳 Current containers (including non-running):\n{allContainers}");
             }
 
             // Capture network state after containers are detected
@@ -121,8 +129,29 @@ public class GlobalTestInfrastructure
             // CRITICAL FIX: Discover Kafka container IP for Flink job configurations
             // Docker default bridge doesn't support DNS, so we need to use the actual container IP
             Console.WriteLine("🔧 Discovering Kafka container IP for Flink jobs...");
-            var kafkaContainerIp = await GetKafkaContainerIpAsync();
-            Console.WriteLine($"✅ Kafka container IP: {kafkaContainerIp}");
+            
+            // Retry to get Kafka container IP (in case container just started)
+            string kafkaContainerIp = null!;
+            for (int attempt = 1; attempt <= 10; attempt++)
+            {
+                try
+                {
+                    kafkaContainerIp = await GetKafkaContainerIpAsync();
+                    Console.WriteLine($"✅ Kafka container IP discovered: {kafkaContainerIp}");
+                    break;
+                }
+                catch (InvalidOperationException ex) when (attempt < 10)
+                {
+                    Console.WriteLine($"⏳ Attempt {attempt}/10 to get Kafka IP failed: {ex.Message}");
+                    Console.WriteLine($"   Retrying in 3 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                }
+            }
+
+            if (kafkaContainerIp == null)
+            {
+                throw new InvalidOperationException("Failed to discover Kafka container IP after 10 attempts (30s)");
+            }
 
             // Store for use in tests (replaces hostname-based connection)
             KafkaContainerIpForFlink = kafkaContainerIp;
@@ -133,8 +162,28 @@ public class GlobalTestInfrastructure
             KafkaConnectionStringFromConfig = app.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()
                 .GetConnectionString("kafka");
 
-            // Also discover from Docker for comparison/debugging
-            var discoveredKafkaEndpoint = await GetKafkaEndpointAsync();
+            // Also discover from Docker for comparison/debugging (with retry)
+            string discoveredKafkaEndpoint = null!;
+            for (int attempt = 1; attempt <= 10; attempt++)
+            {
+                try
+                {
+                    discoveredKafkaEndpoint = await GetKafkaEndpointAsync();
+                    Console.WriteLine($"✅ Kafka endpoint discovered from Docker");
+                    break;
+                }
+                catch (InvalidOperationException ex) when (attempt < 10)
+                {
+                    Console.WriteLine($"⏳ Attempt {attempt}/10 to get Kafka endpoint failed: {ex.Message}");
+                    Console.WriteLine($"   Retrying in 3 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                }
+            }
+
+            if (discoveredKafkaEndpoint == null)
+            {
+                throw new InvalidOperationException("Failed to discover Kafka endpoint after 10 attempts (30s)");
+            }
 
             // Use config value as primary, fallback to discovered if not available
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
@@ -665,8 +714,9 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Ports}}\"");
-            Console.WriteLine($"🔍 Kafka container port mappings: {kafkaContainers.Trim()}");
+            // Get both names and ports to filter out kafka-ui container
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}|{{.Ports}}\"");
+            Console.WriteLine($"🔍 Kafka containers found: {kafkaContainers.Trim()}");
 
             return ExtractKafkaEndpointFromPorts(kafkaContainers);
         }
@@ -681,14 +731,31 @@ public class GlobalTestInfrastructure
         var lines = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         foreach (var line in lines)
         {
+            // Parse format: "container-name|port-mappings"
+            var parts = line.Split('|', 2);
+            if (parts.Length != 2)
+            {
+                continue;
+            }
+
+            var containerName = parts[0];
+            var ports = parts[1];
+
+            // Exclude kafka-ui container - we only want the actual Kafka broker
+            if (containerName.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"🔍 Skipping kafka-ui container: {containerName}");
+                continue;
+            }
+
             // Look for port mapping to 9092 (Kafka's default listener port)
             // Aspire maps container port 9092 to a dynamic host port for external access
             // Format: 127.0.0.1:PORT->9092/tcp or 0.0.0.0:PORT->9092/tcp
-            var match = System.Text.RegularExpressions.Regex.Match(line, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
+            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
             if (match.Success)
             {
                 var port = match.Groups[1].Value;
-                Console.WriteLine($"🔍 Found Kafka port mapping: host {port} -> container 9092");
+                Console.WriteLine($"🔍 Found Kafka port mapping for {containerName}: host {port} -> container 9092");
                 return $"localhost:{port}";
             }
         }
@@ -704,13 +771,21 @@ public class GlobalTestInfrastructure
     {
         try
         {
-            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka-\" --format \"{{.Names}}\"");
-            var kafkaContainer = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            // Note: Docker --filter "name=XXX" does substring matching, not prefix matching.
+            // Using "name=kafka" matches both "kafka-xxxxx" and "kafka-ui-xxxxx" containers.
+            // We filter out kafka-ui explicitly in code for reliability.
+            // Also filter by status=running to only get running containers.
+            var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --filter \"status=running\" --format \"{{.Names}}\"");
+            var kafkaContainer = kafkaContainers
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault(name => !name.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase));
 
             if (string.IsNullOrWhiteSpace(kafkaContainer))
             {
-                throw new InvalidOperationException("Kafka container not found");
+                throw new InvalidOperationException("Kafka container not found (excluding kafka-ui)");
             }
+
+            Console.WriteLine($"🔍 Using Kafka container: {kafkaContainer}");
 
             // Try Docker bridge network first
             var ipAddress = await RunDockerCommandAsync($"inspect {kafkaContainer} --format \"{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}\"");

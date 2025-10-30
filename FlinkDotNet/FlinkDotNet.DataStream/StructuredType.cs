@@ -8,7 +8,7 @@ namespace FlinkDotNet.DataStream;
 /// Represents a structured (ROW) type definition in Flink's type system.
 /// Structured types allow defining complex nested data structures with named fields.
 /// </summary>
-public class StructuredType
+public sealed class StructuredType
 {
     /// <summary>
     /// Gets the name of the structured type
@@ -60,7 +60,7 @@ public class StructuredType
     public class StructuredTypeBuilder
     {
         private readonly string _typeName;
-        private readonly List<StructuredTypeField> _fields = new();
+        private readonly List<StructuredTypeField> _fields = [];
 
         internal StructuredTypeBuilder(string typeName) => this._typeName = typeName;
 
@@ -99,10 +99,7 @@ public class StructuredType
                 throw new ArgumentException("Field name cannot be null or empty", nameof(fieldName));
             }
 
-            if (structuredType == null)
-            {
-                throw new ArgumentNullException(nameof(structuredType));
-            }
+            ArgumentNullException.ThrowIfNull(structuredType);
 
             this._fields.Add(new StructuredTypeField(fieldName, structuredType.TypeName));
             return this;

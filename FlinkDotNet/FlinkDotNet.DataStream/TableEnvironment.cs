@@ -279,17 +279,17 @@ public class ModelDescription
     /// <summary>
     /// Input schema (column name -> data type)
     /// </summary>
-    public Dictionary<string, string> InputSchema { get; init; } = new();
+    public Dictionary<string, string> InputSchema { get; init; } = [];
 
     /// <summary>
     /// Output schema (column name -> data type)
     /// </summary>
-    public Dictionary<string, string> OutputSchema { get; init; } = new();
+    public Dictionary<string, string> OutputSchema { get; init; } = [];
 
     /// <summary>
     /// Provider-specific properties
     /// </summary>
-    public Dictionary<string, string> Properties { get; init; } = new();
+    public Dictionary<string, string> Properties { get; init; } = [];
 }
 
 /// <summary>
@@ -297,7 +297,7 @@ public class ModelDescription
 /// </summary>
 public static class TableEnvironmentExtensions
 {
-    private static readonly Dictionary<StreamExecutionEnvironment, TableEnvironment> _environments = new();
+    private static readonly Dictionary<StreamExecutionEnvironment, TableEnvironment> _environments = [];
 
     /// <summary>
     /// Gets or creates a TableEnvironment for the execution environment
